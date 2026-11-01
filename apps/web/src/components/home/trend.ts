@@ -1,5 +1,5 @@
 import dayjs from 'dayjs';
-import { formatMonthName, formatPct } from '@/lib/format';
+import { formatMonthName, formatPct, todayDate } from '@/lib/format';
 
 export interface Trend {
   values: number[];
@@ -16,7 +16,7 @@ export interface Trend {
 }
 
 /** Share of the month `month` (YYYY-MM) gone by on `today` (YYYY-MM-DD): 1 for a past month. */
-export function monthElapsed(month: string, today = dayjs().format('YYYY-MM-DD')): number {
+export function monthElapsed(month: string, today = todayDate()): number {
   if (today.slice(0, 7) !== month) return 1;
   return dayjs(today).date() / dayjs(today).daysInMonth();
 }

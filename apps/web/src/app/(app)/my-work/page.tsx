@@ -7,7 +7,7 @@ import { Card, Col, Empty, Flex, Grid, Progress, Row, Skeleton, Typography } fro
 import type { CompanyDashboard, HomeTrendsDto } from '@erp/shared';
 import { isCompanyWide } from '@erp/shared';
 import { useCompanyDashboard, useHomeTrends, useMyWork } from '@/lib/queries';
-import { formatINR, formatINRCompact, formatMonthName, formatPct, toNumber } from '@/lib/format';
+import { formatINR, formatINRCompact, formatMonthName, formatPct, toNumber, plural } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { FigureStrip, type StripFigure } from '@/components/common/FigureStrip';
@@ -75,7 +75,6 @@ export default function MyWorkPage() {
 }
 
 const small = { fontSize: themeFontSize('fontSizeSM') } as const;
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 function monthFigure(key: KpiKey, href: string, label: string, series: string[], months: string[], upIsGood = true, extra?: string): StripFigure {
   const now = toNumber(series[series.length - 1]);

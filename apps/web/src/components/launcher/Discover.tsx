@@ -1,11 +1,10 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import dayjs from 'dayjs';
 import { Button, Drawer, Flex, Form, Input, Typography } from 'antd';
 import type { AuthUser, DiscoverEntry, LauncherDto, NavNode } from '@erp/shared';
 import { NAV_TREE, discoverFor, navDestination, navTilesFor } from '@erp/shared';
-import { formatDate } from '@/lib/format';
+import { formatDate, todayDate } from '@/lib/format';
 import { useNotify } from '@/lib/notify';
 import { useRequestAccess } from '@/lib/queries';
 import { FormShell } from '@/components/form/FormShell';
@@ -134,7 +133,7 @@ function DiscoverDrawer({ user, entry, onClose }: { user: AuthUser; entry: Disco
  */
 export function DiscoverSection({ user, launcher }: { user: AuthUser; launcher: LauncherDto | undefined }) {
   const [picked, setPicked] = useState<DiscoverEntry | null>(null);
-  const entries = useMemo(() => (launcher ? discoverFor(user, launcher, dayjs().format('YYYY-MM-DD')) : []), [user, launcher]);
+  const entries = useMemo(() => (launcher ? discoverFor(user, launcher, todayDate()) : []), [user, launcher]);
   // The picked tile as it is now, so a request just sent shows as Requested.
   const current = picked ? (entries.find((e) => e.node.id === picked.node.id) ?? picked) : null;
   if (!entries.length) return null;

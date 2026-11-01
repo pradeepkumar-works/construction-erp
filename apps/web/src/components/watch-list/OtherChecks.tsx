@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { INSIGHT_HREFS, INSIGHT_TITLES, PRODUCT_NAME, type InsightDto } from '@erp/shared';
 import { FigureStrip, type StripFigure } from '@/components/common/FigureStrip';
-import { formatDate, formatINRCompact, formatMonthName } from '@/lib/format';
+import { formatDate, formatINRCompact, formatMonthName, plural } from '@/lib/format';
 
 const AI_OFF: Record<NonNullable<InsightDto['aiReason']>, string> = {
   NOT_CONFIGURED: 'The server has no AI key yet: set OPENROUTER_API_KEY on the API, then switch it on here.',
@@ -14,7 +14,6 @@ const AI_OFF: Record<NonNullable<InsightDto['aiReason']>, string> = {
   ROLE_OFF: 'Not open to your role.',
 };
 
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 /** What one check's headline says: the figure, and a line on what it means. */
 function figureOf(c: InsightDto): Pick<StripFigure, 'value' | 'note' | 'tone'> {

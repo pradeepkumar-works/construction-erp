@@ -31,7 +31,7 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
 import { useOm, WATCH_LIST_KEY } from '@/lib/queries';
 import { useUrlParam, useUrlTab } from '@/lib/url-state';
-import { formatDate, formatDayMonth, formatINR, formatMonth, formatPct, formatQty } from '@/lib/format';
+import { formatDate, formatDayMonth, formatINR, formatMonth, formatPct, formatQty, formatCount } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { Section } from '@/components/common/Section';
@@ -109,7 +109,7 @@ export function OmPanel({ project }: { project: ProjectDetail }) {
         <Statistic title="Periods due to bill" value={due} styles={figure} />
       </Space>
       <Typography.Text type="secondary">
-        {`${c.years} years from ${formatDate(c.startOn)} to ${formatDate(c.endsOn)}${c.extensionYears ? ` (extendable by ${c.extensionYears})` : ''}, paid in ${c.instalmentsPerYear} instalments a year, serving ${c.population.toLocaleString('en-IN')} people.`}
+        {`${c.years} years from ${formatDate(c.startOn)} to ${formatDate(c.endsOn)}${c.extensionYears ? ` (extendable by ${c.extensionYears})` : ''}, paid in ${c.instalmentsPerYear} instalments a year, serving ${formatCount(c.population)} people.`}
       </Typography.Text>
 
       <Segmented<View>

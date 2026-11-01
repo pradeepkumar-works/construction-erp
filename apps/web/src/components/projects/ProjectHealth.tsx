@@ -6,7 +6,7 @@ import { AppTag } from '@/components/common/AppTag';
 import type { ProjectDashboard, ProjectDetail } from '@erp/shared';
 import { canViewCost, scheduleReading, type ScheduleReading } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
-import { formatDate, formatPct } from '@/lib/format';
+import { formatDate, formatPct, plural, todayDate } from '@/lib/format';
 import { useProjectCost, useProjectDashboard } from '@/lib/queries';
 
 type Level = 'success' | 'warning' | 'error' | 'default';
@@ -20,7 +20,6 @@ export interface HealthSignal {
   detail: string;
 }
 
-const today = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
 
 export type ScheduleStatus = ScheduleReading;
 
@@ -28,11 +27,10 @@ export type ScheduleStatus = ScheduleReading;
  * Where the project stands against its schedule, the one reading behind the header's chip and the
  * overview's lead line: `scheduleReading` in shared, which the phone's project screen reads too.
  */
-export function scheduleStatus(project: ProjectDetail, dash: ProjectDashboard, on = today()): ScheduleStatus {
+export function scheduleStatus(project: ProjectDetail, dash: ProjectDashboard, on = todayDate()): ScheduleStatus {
   return scheduleReading(project, dash, on);
 }
 
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 /** The chip's words: "Schedule: ends 245 days late", "Schedule: no plan yet", "Schedule: on track". */
 export function scheduleChipText(s: ScheduleStatus): string {

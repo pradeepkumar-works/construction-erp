@@ -22,7 +22,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
 import { useLetterContacts, useLetterPeople, useLetterSettings, useLetterTemplates, useLetters, useMasterList, useProjects, useRisks } from '@/lib/queries';
-import { formatDate } from '@/lib/format';
+import { formatDate, todayDate } from '@/lib/format';
 import { DatePicker } from '@/components/common/DatePicker';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
@@ -208,7 +208,7 @@ export function LetterForm({
       theirRef: prefill?.theirRef,
       theirDate: prefill?.theirDate ? formatDate(prefill.theirDate) : null,
       subject: prefill?.subject?.replace(/^Re:\s*/, '') ?? form.getFieldValue('subject'),
-      date: formatDate(dayjs().format('YYYY-MM-DD')),
+      date: formatDate(todayDate()),
     };
     form.setFieldsValue({ subject: fillLetterTemplate(t.subject, values), body: fillLetterTemplate(t.body, values), category: form.getFieldValue('category') ?? t.category });
   };
