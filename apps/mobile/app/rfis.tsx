@@ -8,7 +8,7 @@ import { useFetch } from '../src/api/hooks';
 import { Button, Card, Chips, EmptyState, ErrorBanner, Loading, Pill, Screen, SectionTitle, Select, Stat, Touchable } from '../src/components';
 import { rfiStatus } from '../src/components/rfiTone';
 import { useProjectOptions } from '../src/forms/common';
-import { colors, radius, spacing, touch, typography } from '../src/theme';
+import { colors, maxFontScale, radius, spacing, touch, typography } from '../src/theme';
 import { formatDate } from '../src/utils/format';
 import { useT } from '../src/i18n/LanguageContext';
 
@@ -44,7 +44,7 @@ export default function RfisScreen() {
       <ErrorBanner message={projects.error ?? (list.data ? null : list.error)} />
       <Card>
         <Select label={t('Project')} value={projectId} options={[{ value: '', label: t('All my projects') }, ...projects.options]} onChange={(v) => setProjectId(v || null)} placeholder={t('All my projects')} />
-        {mayRaise ? <Button title={t('Raise RFI')} icon="help-circle-outline" onPress={() => router.push(`/rfi/new${projectId ? `?projectId=${projectId}` : ''}`)} /> : null}
+        {mayRaise ? <Button title={t('New RFI')} icon="help-circle-outline" onPress={() => router.push(`/rfi/new${projectId ? `?projectId=${projectId}` : ''}`)} /> : null}
       </Card>
       {s ? (
         <View style={styles.stats}>
@@ -78,14 +78,14 @@ export default function RfisScreen() {
                   <Ionicons name="help-circle" size={20} color={colors.primary} />
                 </View>
                 <View style={styles.flex}>
-                  <Text style={typography.bodyStrong} numberOfLines={2}>
+                  <Text maxFontSizeMultiplier={maxFontScale} style={typography.bodyStrong} numberOfLines={2}>
                     {r.subject}
                   </Text>
-                  <Text style={typography.caption} numberOfLines={1}>
+                  <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption} numberOfLines={1}>
                     {r.rfiNo} · {t('answer by {date}', { date: formatDate(r.replyBy) })}
                     {r.priority === 'URGENT' ? ` · ${t('Urgent')}` : ''}
                   </Text>
-                  <Text style={typography.caption} numberOfLines={1}>
+                  <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption} numberOfLines={1}>
                     {projectId ? (r.location ?? r.toParty) : r.projectName}
                   </Text>
                 </View>

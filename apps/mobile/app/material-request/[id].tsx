@@ -41,22 +41,22 @@ export default function MaterialRequestDetailScreen() {
 
   return (
     <Screen refreshing={refreshing} onRefresh={refresh}>
-      <SubmissionHeader item={data} title={data.requestNo} subtitle={t('Material request')} />
+      <SubmissionHeader item={data} title={data.requestNo} subtitle={t('Indent')} />
       <Card>
         <KeyValue label={t('Required by')} value={formatDate(data.requiredDate)} />
         <KeyValue label={t('Priority')} value={<Pill text={t(MATERIAL_PRIORITY_LABELS[data.priority])} fg={tone.fg} bg={tone.bg} />} />
         <KeyValue label={t('Remarks')} value={data.remarks} multiline />
       </Card>
-      <Card title={t('Items ({n})', { n: data.items.length })}>
+      <Card title={t('Items')} count={data.items.length}>
         {data.items.map((it, i) => (
           <View key={it.id} style={[styles.item, i === data.items.length - 1 && styles.itemLast]}>
             <View style={styles.itemBody}>
-              <Text style={typography.bodyStrong}>{it.itemName}</Text>
-              {it.specification ? <Text style={typography.caption}>{it.specification}</Text> : null}
+              <Text maxFontSizeMultiplier={maxFontScale} style={typography.bodyStrong}>{it.itemName}</Text>
+              {it.specification ? <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{it.specification}</Text> : null}
               {stockLine(stock.data?.lines.find((l) => l.materialRequestItemId === it.id), Number(it.coveredQty) > 0 ? it.coveredQty : null)}
             </View>
-            <Text style={styles.qty}>
-              {fmtQty(it.quantity)} <Text style={styles.unit}>{it.unit}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={styles.qty}>
+              {fmtQty(it.quantity)} <Text maxFontSizeMultiplier={maxFontScale} style={styles.unit}>{it.unit}</Text>
             </Text>
           </View>
         ))}

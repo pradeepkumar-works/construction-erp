@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SUBMISSION_TYPE_LABELS, canRecordAttendance, mayApprove, type CompanyTodayDto, type RoleKey } from '@erp/shared';
 import { useAuth } from '../auth/AuthContext';
 import { phoneRoute } from '../ai/links';
-import { colors, radius, spacing, touch, typography } from '../theme';
+import { colors, maxFontScale, radius, spacing, touch, typography } from '../theme';
 import { fmtQty, formatDate, formatMoneyCompact } from '../utils/format';
 import { useT } from '../i18n/LanguageContext';
 import { BottomSheet } from './BottomSheet';
@@ -185,7 +185,7 @@ export function CompanyTodayPanel({ data, loading }: { data: CompanyTodayDto | n
           tone: p.ordersLate > 0 ? 'error' : 'normal',
           summary: [
             t(p.ordersOpen === 1 ? '{n} order to come, {amount}' : '{n} orders to come, {amount}', { n: p.ordersOpen, amount: money(p.ordersOpenValue) }),
-            t(p.requestsToOrder === 1 ? '{n} request still to order' : '{n} requests still to order', { n: p.requestsToOrder }),
+            t(p.requestsToOrder === 1 ? '{n} indent still to order' : '{n} indents still to order', { n: p.requestsToOrder }),
             t('{n} GRNs today · {c} awaiting QA/QC', { n: p.grnsToday, c: p.grnsAwaitingCheck }),
           ],
           rows: p.rows.map((r, i) => ({
@@ -234,7 +234,7 @@ export function CompanyTodayPanel({ data, loading }: { data: CompanyTodayDto | n
           summary: [t('Your entries waiting for someone else to approve.')],
           rows: [],
           empty: '',
-          open: { label: t('My submissions'), route: '/submissions' },
+          open: { label: t('My entries'), route: '/submissions' },
         };
       }
     }
@@ -252,7 +252,7 @@ export function CompanyTodayPanel({ data, loading }: { data: CompanyTodayDto | n
 
   return (
     <>
-      <SectionTitle title={t('Company today')} right={<Text style={typography.caption}>{formatDate(data.date)}</Text>} />
+      <SectionTitle title={t('Company today')} right={<Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{formatDate(data.date)}</Text>} />
       <View style={styles.grid}>
         {tiles.map((x) => (
           <Touchable
@@ -264,14 +264,14 @@ export function CompanyTodayPanel({ data, loading }: { data: CompanyTodayDto | n
           >
             <View style={styles.tileHead}>
               <Ionicons name={ICONS[x.key]} size={18} color={TONE[x.tone]} />
-              <Text style={styles.tileTitle} numberOfLines={2}>
+              <Text maxFontSizeMultiplier={maxFontScale} style={styles.tileTitle} numberOfLines={2}>
                 {x.title}
               </Text>
             </View>
-            <Text style={styles.value} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+            <Text maxFontSizeMultiplier={maxFontScale} style={styles.value} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
               {x.value}
             </Text>
-            <Text style={[styles.sub, x.tone !== 'normal' && { color: TONE[x.tone] }]} numberOfLines={2}>
+            <Text maxFontSizeMultiplier={maxFontScale} style={[styles.sub, x.tone !== 'normal' && { color: TONE[x.tone] }]} numberOfLines={2}>
               {x.sub}
             </Text>
           </Touchable>
@@ -282,7 +282,7 @@ export function CompanyTodayPanel({ data, loading }: { data: CompanyTodayDto | n
         {picked ? (
           <>
             {picked.summary.map((s) => (
-              <Text key={s} style={[typography.body, styles.summary]}>
+              <Text maxFontSizeMultiplier={maxFontScale} key={s} style={[typography.body, styles.summary]}>
                 {s}
               </Text>
             ))}
@@ -291,22 +291,22 @@ export function CompanyTodayPanel({ data, loading }: { data: CompanyTodayDto | n
                 {picked.rows.map((r) => (
                   <Touchable key={r.key} onPress={r.route ? () => go(r.route!) : undefined} disabled={!r.route} accessibilityRole={r.route ? 'link' : 'text'} style={styles.row}>
                     <View style={styles.flex}>
-                      <Text style={typography.body} numberOfLines={2}>
+                      <Text maxFontSizeMultiplier={maxFontScale} style={typography.body} numberOfLines={2}>
                         {r.label}
                       </Text>
                       {r.note ? (
-                        <Text style={[typography.caption, r.tone && r.tone !== 'normal' ? { color: TONE[r.tone] } : null]} numberOfLines={2}>
+                        <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, r.tone && r.tone !== 'normal' ? { color: TONE[r.tone] } : null]} numberOfLines={2}>
                           {r.note}
                         </Text>
                       ) : null}
                     </View>
-                    {r.right ? <Text style={styles.right}>{r.right}</Text> : null}
+                    {r.right ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.right}>{r.right}</Text> : null}
                     {r.route ? <Ionicons name="chevron-forward" size={16} color={colors.textMuted} /> : null}
                   </Touchable>
                 ))}
               </ScrollView>
             ) : picked.empty ? (
-              <Text style={[typography.caption, styles.summary]}>{picked.empty}</Text>
+              <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, styles.summary]}>{picked.empty}</Text>
             ) : null}
             {picked.open ? <Button title={picked.open.label} variant="secondary" onPress={() => go(picked.open!.route)} style={styles.openBtn} /> : null}
           </>

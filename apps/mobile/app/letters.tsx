@@ -6,7 +6,7 @@ import { LETTER_STATUS_LABELS, type LetterDto, type LetterSummaryDto, type Pagin
 import { useFetch } from '../src/api/hooks';
 import { Chips, EmptyState, ErrorBanner, Loading, Pill, Screen, SectionTitle, Stat, Touchable } from '../src/components';
 import { LETTER_STATUS_TONE } from '../src/components/letterTone';
-import { colors, radius, spacing, touch, typography } from '../src/theme';
+import { colors, maxFontScale, radius, spacing, touch, typography } from '../src/theme';
 import { formatDate } from '../src/utils/format';
 import { useT } from '../src/i18n/LanguageContext';
 
@@ -63,14 +63,14 @@ export default function LettersScreen() {
                   <Ionicons name={l.direction === 'IN' ? 'mail-open-outline' : 'send-outline'} size={20} color={colors.primary} />
                 </View>
                 <View style={styles.flex}>
-                  <Text style={typography.bodyStrong} numberOfLines={2}>
+                  <Text maxFontSizeMultiplier={maxFontScale} style={typography.bodyStrong} numberOfLines={2}>
                     {l.subject}
                   </Text>
-                  <Text style={typography.caption} numberOfLines={1}>
+                  <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption} numberOfLines={1}>
                     {l.letterNo ?? t('Draft')} · {l.party}
                   </Text>
                   {due ? (
-                    <Text style={[typography.caption, l.actionOverdue || l.overdue ? styles.late : null]} numberOfLines={1}>
+                    <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, l.actionOverdue || l.overdue ? styles.late : null]} numberOfLines={1}>
                       {t('by {date}', { date: formatDate(due) })}
                     </Text>
                   ) : null}

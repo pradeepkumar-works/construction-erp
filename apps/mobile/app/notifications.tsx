@@ -7,7 +7,7 @@ import { useApi, useFetch } from '../src/api/hooks';
 import { useNotifications } from '../src/notifications/NotificationsContext';
 import { notificationRoute, openNotificationRoute } from '../src/notifications/push';
 import { Button, EmptyState, ErrorState, Loading, Screen, Touchable, useSnackbar } from '../src/components';
-import { colors, fontSize, radius, spacing, touch, typography } from '../src/theme';
+import { colors, fontSize, maxFontScale, radius, spacing, touch, typography } from '../src/theme';
 import { timeAgo } from '../src/utils/format';
 import { useT } from '../src/i18n/LanguageContext';
 
@@ -94,7 +94,7 @@ export default function NotificationsScreen() {
         ListHeaderComponent={
           items.length ? (
             <View style={styles.headerRow}>
-              <Text style={typography.caption}>{unread ? t('{n} unread', { n: unread }) : t('All read')}</Text>
+              <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{unread ? t('{n} unread', { n: unread }) : t('All read')}</Text>
               {unread ? <Button title={t('Mark all read')} variant="ghost" size="sm" icon="checkmark-done" onPress={() => void markAll()} loading={busy} /> : null}
             </View>
           ) : null
@@ -117,15 +117,15 @@ function Row({ item, onPress }: { item: NotificationDto; onPress: () => void }) 
       </View>
       <View style={styles.body}>
         <View style={styles.titleRow}>
-          <Text style={[styles.title, !item.readAt && styles.titleUnread]} numberOfLines={2}>
+          <Text maxFontSizeMultiplier={maxFontScale} style={[styles.title, !item.readAt && styles.titleUnread]} numberOfLines={2}>
             {item.title}
           </Text>
           {!item.readAt ? <View style={styles.dot} /> : null}
         </View>
-        <Text style={styles.text} numberOfLines={3}>
+        <Text maxFontSizeMultiplier={maxFontScale} style={styles.text} numberOfLines={3}>
           {item.body}
         </Text>
-        <Text style={styles.meta}>
+        <Text maxFontSizeMultiplier={maxFontScale} style={styles.meta}>
           {t(NOTIFICATION_TYPE_LABELS[item.type] ?? 'Notification')} · {timeAgo(item.createdAt)}
           {item.projectName ? ` · ${item.projectName}` : ''}
         </Text>

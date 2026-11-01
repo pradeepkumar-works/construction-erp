@@ -3,12 +3,12 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PRODUCT_NAME, type AiDraftDto } from '@erp/shared';
 import { useT } from '../i18n/LanguageContext';
-import { colors, radius, spacing, typography } from '../theme';
+import { colors, maxFontScale, radius, spacing, typography } from '../theme';
 
 /** English names of a draft's fields, shown through t(), for its "to check" list. */
 const FIELD_LABELS: Record<string, string> = {
   projectId: 'Project',
-  date: 'Report date',
+  date: 'Date',
   weather: 'Weather',
   siteCondition: 'Site condition',
   manpower: 'Manpower',
@@ -18,7 +18,7 @@ const FIELD_LABELS: Record<string, string> = {
   testsConducted: 'Tests conducted',
   safetyObservations: 'Safety observations',
   issues: 'Issues / hindrances',
-  nextDayPlan: 'Next-day plan',
+  nextDayPlan: 'Next day plan',
 };
 
 /**
@@ -31,14 +31,14 @@ export function AskDraftNotice({ draft }: { draft: AiDraftDto }) {
     <View style={styles.notice} accessibilityLiveRegion="polite">
       <View style={styles.head}>
         <Ionicons name="sparkles" size={20} color={colors.primary} />
-        <Text style={styles.title}>{t('Filled in by Ask {name} from what you said. Check each field, then send it.', { name: PRODUCT_NAME })}</Text>
+        <Text maxFontSizeMultiplier={maxFontScale} style={styles.title}>{t('Filled in by Ask {name} from what you said. Check each field, then send it.', { name: PRODUCT_NAME })}</Text>
       </View>
       {draft.flags.length ? (
         <View accessibilityLabel={t('To check')}>
           {draft.flags.map((f, i) => {
             const label = FIELD_LABELS[f.field.split('.')[0]];
             return (
-              <Text key={i} style={styles.flag}>
+              <Text maxFontSizeMultiplier={maxFontScale} key={i} style={styles.flag}>
                 • {label ? `${t(label)}: ` : ''}
                 {f.note}
               </Text>

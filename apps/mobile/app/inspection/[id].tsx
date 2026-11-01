@@ -8,7 +8,7 @@ import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
 import { AttachmentGallery, Button, Card, Chips, ErrorBanner, ErrorState, Input, KeyValue, Loading, PhotoPicker, Screen, SubmissionHeader, SubmitterActions, type LocalPhoto } from '../../src/components';
 import { attachmentIds, photosFailed, photosQueued, photosUploading } from '../../src/forms/common';
-import { colors, fontSize, radius, spacing, typography } from '../../src/theme';
+import { colors, fontSize, maxFontScale, radius, spacing, typography } from '../../src/theme';
 import { formatDate } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 import { useFieldChain } from '../../src/forms/keyboard';
@@ -20,10 +20,10 @@ const RESULT_TONE: Record<InspectionResult, { fg: string; bg: string }> = {
 };
 
 /** English labels; shown through t(). */
-const DECISIONS: { decision: ReviewDecision; label: string; confirm: string; variant: 'success' | 'accent' | 'danger'; icon: 'checkmark' | 'refresh' | 'close'; hint: string }[] = [
-  { decision: 'APPROVE', label: 'Pass', confirm: 'Confirm pass', variant: 'success', icon: 'checkmark', hint: 'The work may proceed.' },
-  { decision: 'REQUEST_CHANGES', label: 'Re-inspect', confirm: 'Confirm re-inspect', variant: 'accent', icon: 'refresh', hint: 'Site rectifies the points not OK and requests the inspection again.' },
-  { decision: 'REJECT', label: 'Fail', confirm: 'Confirm fail', variant: 'danger', icon: 'close', hint: 'The inspection is closed as failed.' },
+const DECISIONS: { decision: ReviewDecision; label: string; variant: 'success' | 'accent' | 'danger'; icon: 'checkmark' | 'refresh' | 'close'; hint: string }[] = [
+  { decision: 'APPROVE', label: 'Pass', variant: 'success', icon: 'checkmark', hint: 'The work may proceed.' },
+  { decision: 'REQUEST_CHANGES', label: 'Re-inspect', variant: 'accent', icon: 'refresh', hint: 'Site rectifies the points not OK and requests the inspection again.' },
+  { decision: 'REJECT', label: 'Fail', variant: 'danger', icon: 'close', hint: 'The inspection is closed as failed.' },
 ];
 
 type Point = { result: InspectionResult | null; remark: string };
@@ -80,7 +80,7 @@ function Inspect({ data, onDone }: { data: InspectionDto; onDone: (x: Inspection
         <Card title={`${t('Checklist')} · ${open ? t('{open} of {total} to check', { open, total: points.length }) : failed ? t('{n} not OK', { n: failed }) : t('all checked')}`}>
           {data.checklist.map((c, i) => (
             <View key={i} style={styles.point}>
-              <Text style={styles.pointText}>
+              <Text maxFontSizeMultiplier={maxFontScale} style={styles.pointText}>
                 {i + 1}. {c.item}
               </Text>
               <Chips<InspectionResult>
@@ -113,13 +113,13 @@ function Inspect({ data, onDone }: { data: InspectionDto; onDone: (x: Inspection
       <Modal visible={!!pending} transparent animationType="fade" onRequestClose={() => !busy && setPending(null)}>
         <View style={styles.backdrop}>
           <View style={styles.sheet}>
-            <Text style={typography.h2}>{meta ? t(meta.label) : null}</Text>
-            <Text style={[typography.caption, styles.sheetSub]}>{meta ? t(meta.hint) : null}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={typography.h2}>{meta ? t(meta.label) : null}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, styles.sheetSub]}>{meta ? t(meta.hint) : null}</Text>
             <Input value={note} onChangeText={setNote} placeholder={t(pending === 'APPROVE' || failed ? 'Note (optional)' : 'Say what is wrong')} accessibilityLabel={pending === 'APPROVE' || failed ? t('Note for the requester (optional)') : t('What is wrong')} multiline autoFocus />
             <ErrorBanner message={error} />
             <View style={styles.sheetBtns}>
               <Button title={t('Cancel')} variant="ghost" onPress={() => setPending(null)} disabled={busy} style={styles.flex} />
-              <Button title={meta ? t(meta.confirm) : ''} variant={meta?.variant ?? 'primary'} onPress={confirm} loading={busy} style={styles.flex2} />
+              <Button title={meta ? t(meta.label) : ''} variant={meta?.variant ?? 'primary'} onPress={confirm} loading={busy} style={styles.flex2} />
             </View>
           </View>
         </View>
@@ -153,18 +153,18 @@ export default function InspectionScreen() {
       {inspector ? (
         <Inspect data={data} onDone={setData} />
       ) : data.checklist.length ? (
-        <Card title={counts.open === counts.total ? t('Checklist ({n} points)', { n: counts.total }) : t('Checklist · {pass} OK, {fail} not OK', { pass: counts.pass, fail: counts.fail })}>
+        <Card title={counts.open === counts.total ? t('Checklist · {n} points', { n: counts.total }) : t('Checklist · {pass} OK, {fail} not OK', { pass: counts.pass, fail: counts.fail })}>
           {data.checklist.map((c, i) => (
             <View key={i} style={styles.row}>
               <View style={styles.flex}>
-                <Text style={styles.pointText}>
+                <Text maxFontSizeMultiplier={maxFontScale} style={styles.pointText}>
                   {i + 1}. {c.item}
                 </Text>
-                {c.remark ? <Text style={typography.caption}>{c.remark}</Text> : null}
+                {c.remark ? <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{c.remark}</Text> : null}
               </View>
               {c.result ? (
                 <View style={[styles.result, { backgroundColor: RESULT_TONE[c.result].bg }]}>
-                  <Text style={[styles.resultText, { color: RESULT_TONE[c.result].fg }]}>{t(INSPECTION_RESULT_LABELS[c.result])}</Text>
+                  <Text maxFontSizeMultiplier={maxFontScale} style={[styles.resultText, { color: RESULT_TONE[c.result].fg }]}>{t(INSPECTION_RESULT_LABELS[c.result])}</Text>
                 </View>
               ) : null}
             </View>

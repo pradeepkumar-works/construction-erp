@@ -6,9 +6,9 @@ import { DELAY_PARTY_LABELS, RISK_CATEGORY_LABELS, RISK_KIND_LABELS, RISK_LEVEL_
 import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
 import { useAuth } from '../../src/auth/AuthContext';
-import { AttachmentGallery, Button, Card, ErrorBanner, ErrorState, Input, KeyValue, Loading, Pill, Screen } from '../../src/components';
+import { AttachmentGallery, Button, Card, ErrorBanner, ErrorState, Input, KeyValue, Loading, Pill, RecordHead, Screen } from '../../src/components';
 import { LEVEL_TONE, RISK_STATUS_TONE } from '../../src/components/riskTone';
-import { colors, spacing, typography, toneIcon } from '../../src/theme';
+import { colors, maxFontScale, spacing, toneIcon, typography } from '../../src/theme';
 import { formatDate, formatDateTime } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 
@@ -22,6 +22,7 @@ export default function RiskScreen() {
   const { data, loading, refreshing, error, refresh, reload, setData } = useFetch<RiskDto>((a) => a.get(`/risks/${id}`), [id], { enabled: !!id });
   const [closing, setClosing] = useState(false);
   const [note, setNote] = useState('');
+  const [noteError, setNoteError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -31,6 +32,7 @@ export default function RiskScreen() {
 
   const level = riskLevel(data.score);
   const mayEdit = !!user && canEditRisk(user, data);
+  const closeLabel = t(data.kind === 'DELAY' ? 'Close delay' : 'Close risk');
   const change = async (body: Record<string, unknown>) => {
     setBusy(true);
     setActionError(null);
@@ -47,23 +49,27 @@ export default function RiskScreen() {
 
   return (
     <Screen refreshing={refreshing} onRefresh={refresh} keyboard>
-      <View style={styles.head}>
-        <Text style={typography.caption}>
-          {data.riskNo} · {t(RISK_KIND_LABELS[data.kind])} · {data.projectName}
-        </Text>
-        <Text style={typography.h2}>{data.title}</Text>
-        <View style={styles.pills}>
-          <Pill text={t(RISK_STATUS_LABELS[data.status])} {...RISK_STATUS_TONE[data.status]} />
-          <Pill text={`${t('Score {n}', { n: data.score })} · ${t(RISK_LEVEL_LABELS[level])}`} {...LEVEL_TONE[level]} />
-          {data.overdue ? <Pill text={t('Action overdue')} fg={colors.danger} bg={colors.dangerSoft} icon={toneIcon.alert} /> : null}
-        </View>
-      </View>
+      <RecordHead
+        caption={`${data.riskNo} · ${t(RISK_KIND_LABELS[data.kind])} · ${data.projectName}`}
+        title={data.title}
+        pills={
+          <>
+            <Pill text={t(RISK_STATUS_LABELS[data.status])} {...RISK_STATUS_TONE[data.status]} />
+            <Pill text={`${t('Score {n}', { n: data.score })} · ${t(RISK_LEVEL_LABELS[level])}`} {...LEVEL_TONE[level]} />
+            {data.overdue ? <Pill text={t('Action overdue')} fg={colors.danger} bg={colors.dangerSoft} icon={toneIcon.alert} /> : null}
+          </>
+        }
+        more={[
+          { label: t('Open project'), icon: 'business-outline', onPress: () => router.push(`/project/${data.projectId}`) },
+          { label: t('Delays and risks at this project'), icon: 'alert-circle-outline', onPress: () => router.push(`/risks?projectId=${data.projectId}`) },
+        ]}
+      />
       <ErrorBanner message={actionError} />
       {data.kind === 'DELAY' ? (
         <Card title={t('Delay')}>
           <View style={styles.daysBox}>
-            <Text style={styles.days}>{data.daysLost ?? 0}</Text>
-            <Text style={typography.caption}>{data.daysLost === 1 ? t(data.delayEnd ? 'day lost' : 'day lost so far') : t(data.delayEnd ? 'days lost' : 'days lost so far')}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={styles.days}>{data.daysLost ?? 0}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{data.daysLost === 1 ? t(data.delayEnd ? 'day lost' : 'day lost so far') : t(data.delayEnd ? 'days lost' : 'days lost so far')}</Text>
           </View>
           <KeyValue label={t('Held up since')} value={formatDate(data.delayStart)} />
           <KeyValue label={t('Resumed on')} value={data.delayEnd ? formatDate(data.delayEnd) : t('Still held up')} />
@@ -85,10 +91,25 @@ export default function RiskScreen() {
       <AttachmentGallery attachments={data.attachments} />
       {mayEdit ? (
         closing ? (
-          <Card title={t('Close this entry')}>
-            {data.kind === 'DELAY' && !data.delayEnd ? <Text style={[typography.caption, styles.gap]}>{t('The delay will be recorded as ending today.')}</Text> : null}
-            <Input label={t('How was it resolved')} required value={note} onChangeText={setNote} multiline />
-            <Button title={t('Close entry')} icon="checkmark-circle" onPress={() => change({ status: 'CLOSED', closureNote: note.trim() })} loading={busy} disabled={!note.trim()} />
+          <Card title={closeLabel}>
+            {data.kind === 'DELAY' && !data.delayEnd ? <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, styles.gap]}>{t('The delay will be recorded as ending today.')}</Text> : null}
+            <Input
+              label={t('How was it resolved')}
+              required
+              value={note}
+              onChangeText={(v) => {
+                setNote(v);
+                setNoteError(null);
+              }}
+              error={noteError}
+              multiline
+            />
+            <Button
+              title={closeLabel}
+              icon="checkmark-circle"
+              onPress={() => (note.trim() ? change({ status: 'CLOSED', closureNote: note.trim() }) : setNoteError(t('Say how it was resolved')))}
+              loading={busy}
+            />
             <Button title={t('Cancel')} variant="ghost" onPress={() => setClosing(false)} />
           </Card>
         ) : (
@@ -96,20 +117,17 @@ export default function RiskScreen() {
             {data.status === 'CLOSED' ? (
               <Button title={t('Reopen')} icon="refresh" variant="secondary" onPress={() => change({ status: 'OPEN' })} loading={busy} style={styles.flex} />
             ) : (
-              <Button title={t('Close')} icon="checkmark-circle" onPress={() => setClosing(true)} style={styles.flex} />
+              <Button title={closeLabel} icon="checkmark-circle" onPress={() => setClosing(true)} style={styles.flex} />
             )}
             <Button title={t('Update')} icon="create" variant="secondary" onPress={() => router.push(`/risk/new?editId=${data.id}`)} style={styles.flex} />
           </View>
         )
       ) : null}
-      <Button title={t('Open project')} variant="ghost" icon="business-outline" onPress={() => router.push(`/project/${data.projectId}`)} />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  head: { marginBottom: spacing.md, gap: spacing.xs },
-  pills: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.xs },
   daysBox: { alignItems: 'center', paddingVertical: spacing.md, marginBottom: spacing.sm, backgroundColor: colors.dangerSoft, borderRadius: 12 },
   days: { fontSize: 32, fontWeight: '800', color: colors.danger },
   actions: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.md },

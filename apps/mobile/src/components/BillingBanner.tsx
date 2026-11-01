@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PRODUCT_NAME } from '@erp/shared';
 import { useAuth } from '../auth/AuthContext';
-import { colors, fontSize, radius, spacing } from '../theme';
+import { colors, fontSize, maxFontScale, radius, spacing } from '../theme';
 import { useT } from '../i18n/LanguageContext';
 
 /** The company's trial or subscription has ended: entries wait on the phone until an admin renews on the web. */
@@ -14,7 +14,7 @@ export function BillingBanner() {
   return (
     <View style={styles.banner} accessibilityRole="alert">
       <Ionicons name="lock-closed-outline" size={20} color={colors.danger} />
-      <Text style={styles.text}>
+      <Text maxFontSizeMultiplier={maxFontScale} style={styles.text}>
         {t('{org} is read-only on {product} until the subscription is renewed. New entries wait on this phone and send once it is.', { org: user.organizationName, product: PRODUCT_NAME })}
       </Text>
     </View>

@@ -34,7 +34,7 @@ export async function streamAsk(input: AiAskInput, token: string | null, onEvent
       throw new ApiError(0, 'Cannot reach Nirmaan. Check your signal and try again.');
     }
     if (!res.ok || !res.body) {
-      let msg = res.status === 401 ? 'Your sign-in has expired. Sign in again.' : 'Something went wrong. Try again.';
+      let msg = res.status === 401 ? 'You were signed out. Sign in again.' : 'Could not reach the office. Check the signal and try again.';
       try {
         const data = (await res.json()) as { message?: string | string[] };
         if (data.message) msg = Array.isArray(data.message) ? data.message.join('; ') : data.message;

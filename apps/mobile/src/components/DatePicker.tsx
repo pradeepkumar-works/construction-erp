@@ -69,7 +69,7 @@ export function DatePicker({ label, value, onChange, error, required, max, min }
       {label ? (
         <Text style={styles.label} maxFontSizeMultiplier={maxFontScale}>
           {label}
-          {required ? <Text style={styles.req}> *</Text> : null}
+          {required ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.req}> *</Text> : null}
         </Text>
       ) : null}
       <View style={styles.row}>
@@ -115,11 +115,11 @@ export function DatePicker({ label, value, onChange, error, required, max, min }
         </Touchable>
       </View>
       {error ? (
-        <Text style={styles.error}>{error}</Text>
+        <Text maxFontSizeMultiplier={maxFontScale} style={styles.error}>{error}</Text>
       ) : !valid ? (
-        <Text style={styles.error}>{Platform.OS === 'web' ? t('Enter a date as YYYY-MM-DD') : t('Choose a date')}</Text>
+        <Text maxFontSizeMultiplier={maxFontScale} style={styles.error}>{Platform.OS === 'web' ? t('Enter a date as YYYY-MM-DD') : t('Choose a date')}</Text>
       ) : value === today() ? (
-        <Text style={styles.hint}>{t('Today')}</Text>
+        <Text maxFontSizeMultiplier={maxFontScale} style={styles.hint}>{t('Today')}</Text>
       ) : null}
 
       {Platform.OS === 'ios' ? (
@@ -179,7 +179,7 @@ export function TimePicker({ label, value, onChange, error, required }: { label?
       {label ? (
         <Text style={styles.label} maxFontSizeMultiplier={maxFontScale}>
           {label}
-          {required ? <Text style={styles.req}> *</Text> : null}
+          {required ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.req}> *</Text> : null}
         </Text>
       ) : null}
       <View style={styles.row}>
@@ -207,7 +207,7 @@ export function TimePicker({ label, value, onChange, error, required }: { label?
           </Touchable>
         ) : null}
       </View>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.error}>{error}</Text> : null}
 
       {Platform.OS === 'ios' ? (
         <BottomSheet visible={iosOpen} onClose={() => setIosOpen(false)} title={label ?? t('Time')}>
