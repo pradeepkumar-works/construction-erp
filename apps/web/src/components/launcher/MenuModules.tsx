@@ -4,27 +4,28 @@ import React, { useMemo } from 'react';
 import Link from 'next/link';
 import type { AuthUser, NavLook, NavMenuModule, NavMenuSub } from '@erp/shared';
 import { NAV_MENU_GROUPS, mayApprove, moduleScreenHref, navDestination, navMenuGroup, navNode } from '@erp/shared';
-import { familyColors } from '@/lib/brand';
-import { useAppearance } from '@/lib/appearance';
 import { inSentence } from '@/lib/format';
 import { useLauncherBadges, usePendingApprovals } from '@/lib/queries';
 import { TreeIcon } from '@/components/shell/nav-icons';
 import { moduleWaiting } from '@/components/shell/menu';
-import { TileGrid, type TileEntry, type TileMenu } from './TileGrid';
+import { TileGrid, tileBadge, type TileBadge, type TileEntry, type TileMenu } from './TileGrid';
 import s from './MenuModules.module.css';
 
-/** What waits on the user in each of the company's modules: a work-area module's own badge, else its pages' and approvals'. */
-export function useMenuWaiting(user: AuthUser | null, menu: NavMenuModule[]): Record<string, number> {
+/** What waits on the user in each of the company's modules: a work-area module's own badge in its own word ("12 to approve"),
+ *  else its pages' and approvals' together ("12 waiting"). */
+export function useMenuWaiting(user: AuthUser | null, menu: NavMenuModule[]): Record<string, TileBadge> {
   const approver = !!user && mayApprove(user);
   const { data: badges } = useLauncherBadges(!!user);
   const { data: pending } = usePendingApprovals(approver);
   return useMemo(() => {
-    const own = moduleWaiting(menu, approver ? pending : [], badges?.nodes);
+    const counts = moduleWaiting(menu, approver ? pending : [], badges?.nodes);
+    const out: Record<string, TileBadge> = {};
     for (const m of menu) {
-      const badge = badges?.nodes?.[m.key];
-      if (badge !== undefined) own[m.key] = badge;
+      const own = badges?.nodes?.[m.key];
+      const badge = own !== undefined ? tileBadge(own, badges?.words?.[m.key]) : tileBadge(counts[m.key]);
+      if (badge) out[m.key] = badge;
     }
-    return own;
+    return out;
   }, [menu, pending, badges, approver]);
 }
 
@@ -35,12 +36,11 @@ function subHref(module: NavMenuModule, sub: NavMenuSub): string {
 }
 
 // A work-area module is a node of the tree, so its tile can be pinned like any other.
-const tile = (m: NavMenuModule, waiting: Record<string, number>, group?: string): TileEntry => ({
+const tile = (m: NavMenuModule, waiting: Record<string, TileBadge>, group?: string): TileEntry => ({
   key: m.key,
   node: navNode(m.key),
   label: m.label,
   icon: m.icon,
-  family: m.family,
   description: m.description,
   href: moduleScreenHref(m.key),
   badge: waiting[m.key],
@@ -51,27 +51,26 @@ const tile = (m: NavMenuModule, waiting: Record<string, number>, group?: string)
  * Home's modules (Menu and names): the company's set under its names. The navy look and the sidebar have tiles; the light
  * frame lists each module with its sub-modules, so a page is one click from Home; the one-bar look groups the tiles.
  */
-export function MenuModules({ menu, look, waiting, label, menuFor }: { menu: NavMenuModule[]; look: NavLook | 'SIDEBAR'; waiting: Record<string, number>; label: string; menuFor?: TileMenu }) {
-  const { dark } = useAppearance();
+export function MenuModules({ menu, look, waiting, label, menuFor }: { menu: NavMenuModule[]; look: NavLook | 'SIDEBAR'; waiting: Record<string, TileBadge>; label: string; menuFor?: TileMenu }) {
   if (look === 'FRAME')
     return (
       <ul className={s.directory} aria-label={label}>
         {menu.map((m) => {
-          const { fg, bg } = familyColors(m.family, dark);
-          const count = waiting[m.key];
+          const badge = waiting[m.key];
+          const said = badge ? `${badge.count.toLocaleString('en-IN')} ${badge.word}` : null;
           return (
             <li key={m.key} className={s.entry}>
-              <span className={s.chip} style={{ color: fg, background: bg }} aria-hidden>
+              <span className={s.chip} aria-hidden>
                 <TreeIcon name={m.icon} />
               </span>
               <div className={s.body}>
                 <div className={s.nameRow}>
-                  <Link href={moduleScreenHref(m.key)} className={s.name} aria-label={count ? `${m.label}, ${count} waiting` : undefined}>
+                  <Link href={moduleScreenHref(m.key)} className={s.name} aria-label={said ? `${m.label}, ${said}` : undefined}>
                     {m.label}
                   </Link>
-                  {!!count && (
+                  {said && (
                     <span className={s.waiting} aria-hidden translate="no">
-                      {count} waiting
+                      {said}
                     </span>
                   )}
                 </div>

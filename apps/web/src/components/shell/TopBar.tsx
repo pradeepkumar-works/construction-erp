@@ -127,7 +127,7 @@ function TopLinks({ user, pendingCount }: { user: AuthUser; pendingCount: number
                 {l.label}
                 {!!l.count && (
                   <span className={s.count} translate="no">
-                    {l.count > 99 ? '99+' : l.count}
+                    {l.count.toLocaleString('en-IN')}
                   </span>
                 )}
               </Link>

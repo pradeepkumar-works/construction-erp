@@ -46,7 +46,7 @@ function KindOption({ label, count, paused }: { label: string; count: number; pa
   return (
     <Flex align="center" gap={6}>
       {label}
-      {paused ? <Typography.Text type="secondary">paused</Typography.Text> : count > 0 && <Badge count={count} size="small" aria-label={`${count} open`} />}
+      {paused ? <Typography.Text type="secondary">paused</Typography.Text> : count > 0 && <Badge count={count} overflowCount={Infinity} size="small" aria-label={`${count} open`} />}
     </Flex>
   );
 }

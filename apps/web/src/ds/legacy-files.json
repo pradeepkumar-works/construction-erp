@@ -188,7 +188,6 @@
  "src/components/launcher/EditPins.module.css",
  "src/components/launcher/HomeLauncher.module.css",
  "src/components/launcher/MenuModules.module.css",
- "src/components/launcher/MenuModules.tsx",
  "src/components/launcher/TileGrid.module.css",
  "src/components/launcher/TileGrid.tsx",
  "src/components/list/DataTable.tsx",

@@ -55,15 +55,16 @@
   outline-offset: -2px;
 }
 
+/* The page's icon in the one ink, as on the tiles. */
 .chip {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex: none;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  width: 24px;
+  height: 24px;
   font-size: 19px;
+  color: var(--c-text-base);
 }
 
 .text {
@@ -83,18 +84,17 @@
   line-height: 1.4;
 }
 
+/* What waits there with its word ("12 to approve"), in the waiting tone, as a waiting tag. */
 .badge {
   flex: none;
-  min-width: 22px;
-  height: 22px;
-  padding: 0 7px;
-  border-radius: 11px;
-  background: var(--c-state-count-fill);
-  color: var(--c-text-on-accent);
+  padding: 0 var(--s-2);
+  border-radius: var(--r-pill);
+  background: var(--c-tone-pending-bg);
+  color: var(--c-tone-pending-fg);
   font-size: var(--ant-font-size-sm);
   font-weight: 700;
   line-height: 22px;
-  text-align: center;
+  white-space: nowrap;
 }
 
 /* A pipeline's stages: each stage's count in the display face, in the order the work moves. */

@@ -14,17 +14,3 @@ export const BRAND = {
   colors: PALETTE,
 } as const;
 
-type Family = 'work' | 'materials' | 'buying' | 'money' | 'people' | 'business' | 'insight' | 'admin';
-const cap = (f: Family) => (f[0].toUpperCase() + f.slice(1)) as Capitalize<Family>;
-
-/** A module family's icon colour and fill, for the theme in use (the night fill is the icon colour at 16%). */
-export function familyColors(family: Family | undefined, dark: boolean): { fg: string; bg: string } {
-  const c = BRAND.colors;
-  const k = cap(family ?? 'work');
-  if (dark) {
-    const fg = c[`family${k}Night`];
-    return { fg, bg: `color-mix(in srgb, ${fg} 16%, transparent)` };
-  }
-  return { fg: c[`family${k}`], bg: c[`family${k}Bg`] };
-}
-

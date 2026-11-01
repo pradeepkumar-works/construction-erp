@@ -90,6 +90,8 @@ export interface HomeTilesDto {
 /** `GET /launcher/badges`: counts waiting on the user, by node id. Only nodes with something waiting are listed. */
 export interface LauncherBadgesDto {
   nodes: Record<string, number>;
+  /** What each count in `nodes` is, said after it on a tile: "53 to approve", "4 to order". Same keys as `nodes`. */
+  words: Record<string, string>;
   /** The approvals waiting on the user by type, so a module of the company's menu counts its own (`menuWaiting`) */
   approvals?: { type: SubmissionType; count: number }[];
 }

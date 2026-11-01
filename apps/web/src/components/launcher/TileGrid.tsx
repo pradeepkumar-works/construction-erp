@@ -4,28 +4,25 @@ import React, { useId, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Dropdown, Form, Modal, type MenuProps } from 'antd';
-import type { NavFamily, NavNode } from '@erp/shared';
-import { navDestination, navNode, navTarget, projectTabHref } from '@erp/shared';
-import { familyColors } from '@/lib/brand';
-import { useAppearance } from '@/lib/appearance';
+import type { LauncherBadgesDto, NavNode } from '@erp/shared';
+import { navDestination, projectTabHref } from '@erp/shared';
 import { useProjectScope } from '@/lib/project-scope';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { TreeIcon } from '@/components/shell/nav-icons';
 import s from './TileGrid.module.css';
 
-/** What a tile shows: a node of the tree in its module's colour family (a page takes its module's), or a place of its own
- *  (a pinned project or saved view) with its own name, icon and address. */
+/** What a tile shows: a node of the tree, or a place of its own (a pinned project or saved view) with its own name, icon
+ *  and address. Every tile's icon is in the one ink; colour on a tile is only for what waits. */
 export interface TileEntry {
   key: string;
   node?: NavNode;
-  family?: NavFamily;
   label?: string;
   icon?: string;
   description?: string;
   /** Where it goes, for a tile that is not a node. */
   href?: string;
-  /** What waits on the user there; the tile's name says it too ("Purchases, 3 waiting"). */
-  badge?: number;
+  /** What waits on the user there, said with its word ("53 to approve"), in full; the tile's name says it too. */
+  badge?: TileBadge;
   /** A short mark in the tile's corner (Discover: New, Featured, Not opened yet, Ask for access). */
   tag?: { text: string; tone?: 'new' | 'featured' };
   /** Opens a dialog about the tile instead of going there (Discover). */
@@ -36,16 +33,23 @@ export interface TileEntry {
   group?: string | null;
 }
 
+/** A count on a tile and what it counts, said after it: `{ count: 53, word: 'to approve' }` reads "53 to approve". */
+export interface TileBadge {
+  count: number;
+  word: string;
+}
+
+/** A badge from a count, or none for nothing waiting. */
+export const tileBadge = (count: number | undefined, word = 'waiting'): TileBadge | undefined => (count ? { count, word } : undefined);
+
 /** A tile's menu (Pin to Home, Unpin, Move left…): drawn as ⋮ on the tile, and opened by right-click, a long press or Shift F10. */
 export type TileMenu = (entry: TileEntry, index: number) => MenuProps['items'];
 
-/** One tile: the icon in its family's colours, the name and a line on what it is for; the whole tile a link (or a button
+/** One tile: the icon in ink, the name, what waits there and a line on what it is for; the whole tile a link (or a button
  *  that asks for the project, for a project tab with no project chosen in the header). */
 function Tile({ entry, tabIndex, onFocus, onKeyDown, onPickProject }: { entry: TileEntry; tabIndex: number; onFocus: () => void; onKeyDown: (e: React.KeyboardEvent) => void; onPickProject: (node: NavNode) => void }) {
-  const { dark } = useAppearance();
   const [projectId] = useProjectScope();
   const { node } = entry;
-  const { fg, bg } = familyColors(entry.family, dark);
   const to = node ? navDestination(node) : null;
   const label = entry.label ?? node?.label ?? '';
   const description = entry.description ?? node?.description;
@@ -53,7 +57,8 @@ function Tile({ entry, tabIndex, onFocus, onKeyDown, onPickProject }: { entry: T
   const tagId = useId();
   // The name is the label (and what waits); the mark and the line under it describe it, so a tile reads like its sidebar link.
   const describedBy = [entry.tag && tagId, description && descId].filter(Boolean).join(' ') || undefined;
-  const a11y = { 'aria-label': entry.badge ? `${label}, ${entry.badge} waiting` : label, 'aria-describedby': describedBy };
+  const waiting = entry.badge?.count ? `${entry.badge.count.toLocaleString('en-IN')} ${entry.badge.word}` : null;
+  const a11y = { 'aria-label': waiting ? `${label}, ${waiting}` : label, 'aria-describedby': describedBy };
   const className = entry.locked ? `${s.tile} ${s.locked}` : s.tile;
   const body = (
     <>
@@ -62,15 +67,15 @@ function Tile({ entry, tabIndex, onFocus, onKeyDown, onPickProject }: { entry: T
           {entry.tag.text}
         </span>
       )}
-      <span className={s.chip} style={entry.locked ? undefined : { color: fg, background: bg }}>
+      <span className={s.chip} aria-hidden>
         <TreeIcon name={entry.icon ?? node?.icon ?? 'layout-grid'} />
-        {!!entry.badge && (
-          <span className={s.badge} aria-hidden translate="no">
-            {entry.badge > 99 ? '99+' : entry.badge}
-          </span>
-        )}
       </span>
       <span className={s.label}>{label}</span>
+      {waiting && (
+        <span className={s.badge} aria-hidden translate="no">
+          {waiting}
+        </span>
+      )}
       {description && (
         <span id={descId} className={s.desc}>
           {description}
@@ -250,14 +255,6 @@ export function TileGrid({ entries, label, menu, compact, headingLevel = 2 }: { 
   );
 }
 
-const familyOf = (node: NavNode): NavFamily | undefined => {
-  let n: NavNode | undefined = node;
-  while (n && !n.family) n = n.parent ? navNode(n.parent) : undefined;
-  return n?.family;
-};
-
-/** Tiles in their module's colours (a shortcut in its own module's, where the page lives). */
-export const tileEntries = (nodes: NavNode[], badges?: Record<string, number>): TileEntry[] =>
-  nodes.map((node) => ({ key: node.id, node, family: familyOf(navTarget(node)), badge: badges?.[node.id] }));
-
-export { familyOf };
+/** Tiles for nodes of the tree, each with what waits there in the launcher badges' own words ("53 to approve"). */
+export const tileEntries = (nodes: NavNode[], badges?: LauncherBadgesDto): TileEntry[] =>
+  nodes.map((node) => ({ key: node.id, node, badge: tileBadge(badges?.nodes[node.id], badges?.words?.[node.id]) }));

@@ -28,7 +28,7 @@ function Counted({ label, count }: { label: string; count: number }) {
   return (
     <Flex align="center" gap={6}>
       {label}
-      {count > 0 && <Badge count={count} size="small" aria-label={`${count} unread`} />}
+      {count > 0 && <Badge count={count} overflowCount={Infinity} size="small" aria-label={`${count} unread`} />}
     </Flex>
   );
 }
