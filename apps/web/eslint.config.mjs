@@ -7,6 +7,14 @@ import tseslint from 'typescript-eslint';
 import nextPlugin from '@next/eslint-plugin-next';
 import reactHooks from 'eslint-plugin-react-hooks';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
+import { readFileSync } from 'node:fs';
+import ds from './eslint-rules/ds.mjs';
+
+/** Files not yet moved onto the design tokens (docs/design/REDESIGN.md). The list only shrinks: scripts/tokens-check.ts. */
+const legacyFiles = JSON.parse(readFileSync(new URL('./src/ds/legacy-files.json', import.meta.url), 'utf8')).map((/** @type {string} */ f) =>
+  // Next's route folders ((app), [id]) are glob syntax in `ignores`, so they are escaped to match as written.
+  f.replace(/[()[\]{}*?!]/g, '\\$&'),
+);
 
 /** A preset's rules, each one an error (its options kept, rules it turns off left off). */
 function asErrors(rules) {
@@ -90,5 +98,11 @@ export default defineConfig([
   {
     files: ['src/components/common/AppTag.tsx', 'src/components/common/DatePicker.tsx'],
     rules: { 'no-restricted-imports': 'off' },
+  },
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: ['src/ds/**', 'src/lib/theme.ts', 'src/lib/brand.ts', ...legacyFiles],
+    plugins: { ds },
+    rules: { 'ds/no-raw-style': 'error' },
   },
 ]);
