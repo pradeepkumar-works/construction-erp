@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Button, Space, theme } from 'antd';
-import { AppTag } from '@/components/common/AppTag';
 import { PlusOutlined } from '@/components/common/icons';
 import type { SubcontractBillDto, SubcontractBillSortField, VendorKind } from '@erp/shared';
 import { LIST_SORT_FIELDS, canPrepareSubcontractBill } from '@erp/shared';
@@ -24,7 +23,7 @@ import { RowActions } from '@/components/list/RowActions';
 import { RecordLink } from '@/components/record/RecordLink';
 import { exportSelected, useBulkApprove } from '@/components/list/bulk';
 import { useListFrame } from '@/components/list/useListFrame';
-import { overdueDays } from '@/components/purchasing/VendorBillDrawer';
+import { DueCell } from '@/components/list/DueCell';
 import { SubBillDrawer } from './SubBillDrawer';
 import { SubBillFormModal } from './SubBillFormModal';
 import { VendorSelect, useVendorName } from '@/components/common/SearchSelect';
@@ -78,21 +77,7 @@ function subBillColumns({ showProject, onOpen, onEdit, sortOrderFor }: { showPro
       dataIndex: 'dueDate',
       width: 130,
       ...sort('dueDate'),
-      render: (v, r) => {
-        const late = overdueDays(r);
-        return (
-          <div>
-            {formatDate(v)}
-            {late ? (
-              <div>
-                <AppTag meaning="failed" style={{ margin: 0 }}>
-                  {late} days late
-                </AppTag>
-              </div>
-            ) : null}
-          </div>
-        );
-      },
+      render: (v, r) => <DueCell date={v} done={r.status !== 'APPROVED' || !!r.paidDate} />,
     },
     { key: 'submittedByName', title: 'Prepared by', dataIndex: 'submittedByName', width: 140, defaultHidden: true },
     {

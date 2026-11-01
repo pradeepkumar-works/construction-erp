@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Button, Dropdown, Select, Space, theme } from 'antd';
-import { AppTag } from '@/components/common/AppTag';
 import { DownOutlined, PlusOutlined } from '@/components/common/icons';
 import type { VendorBillDto, VendorBillKind, VendorBillSortField } from '@erp/shared';
 import { LIST_SORT_FIELDS, MATCH_STATE_LABELS, VENDOR_BILL_KINDS, VENDOR_BILL_KIND_LABELS, canRecordVendorBill } from '@erp/shared';
@@ -24,7 +23,8 @@ import { RowActions } from '@/components/list/RowActions';
 import { RecordLink } from '@/components/record/RecordLink';
 import { exportSelected, useBulkApprove } from '@/components/list/bulk';
 import { useListFrame } from '@/components/list/useListFrame';
-import { MatchTag, VendorBillDrawer, overdueDays } from './VendorBillDrawer';
+import { MatchTag, VendorBillDrawer } from './VendorBillDrawer';
+import { DueCell } from '@/components/list/DueCell';
 import { VendorBillForm } from './VendorBillFormModal';
 import { VendorSelect, useVendorName } from '@/components/common/SearchSelect';
 
@@ -102,7 +102,7 @@ function vendorBillColumns({ showProject, onOpen, onEdit, sortOrderFor }: { show
       dataIndex: 'dueDate',
       width: 130,
       ...sort('dueDate'),
-      render: (v, r) => (overdueDays(r) ? <AppTag meaning="failed">{formatDate(v)}</AppTag> : formatDate(v)),
+      render: (v, r) => <DueCell date={v} done={r.status !== 'APPROVED' || !!r.paidDate} />,
     },
     { defaultFrom: 1400, key: 'matched', title: 'Match', label: 'Match with the PO', dataIndex: 'matched', width: 120, render: (v, r) => <span title={r.exceptions.join('\n')}><MatchTag matched={v} po={!!r.purchaseOrderId} /></span> },
     { key: 'submittedByName', title: 'Recorded by', dataIndex: 'submittedByName', width: 140, defaultHidden: true },

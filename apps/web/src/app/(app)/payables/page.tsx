@@ -18,7 +18,7 @@ import { useListPage } from '@/lib/listPage';
 import { useUrlTab } from '@/lib/url-state';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { PAYABLE_BILL_EXPORT, PAYABLE_VENDOR_EXPORT, VENDOR_PAYMENT_EXPORT } from '@/lib/exportColumns';
-import { formatDate, formatDue, formatINR, formatINRCompact, toNumber, NO_VALUE } from '@/lib/format';
+import { formatDate, formatINR, formatINRCompact, toNumber, NO_VALUE } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
@@ -36,6 +36,7 @@ import { CardToolbar } from '@/components/common/CardToolbar';
 import { EmptyArt } from '@/components/common/EmptyArt';
 import { DataTable, useColumnChoice, type ListColumn } from '@/components/list/DataTable';
 import { LocalDataTable } from '@/components/list/LocalDataTable';
+import { DueCell } from '@/components/list/DueCell';
 import { exportSelected } from '@/components/list/bulk';
 import { RecordLink } from '@/components/record/RecordLink';
 import { themeColor, themeFontSize } from '@/lib/theme';
@@ -48,13 +49,6 @@ const lateOnly = (v: string) => (toNumber(v) > 0 ? v : null);
 const danger = () => 'danger' as const;
 const sumMoney = (values: string[]) => formatINR(values.reduce((n, v) => n + toNumber(v), 0));
 const isSmall = (m: string | null) => m === 'MICRO' || m === 'SMALL';
-
-/** When a bill falls due, in words: "in 5 days", "today", "12 days late". */
-function DueText({ days }: { days: number }) {
-  if (days < 0) return <Typography.Text type="danger">{formatDue(days)}</Typography.Text>;
-  if (days === 0) return <Typography.Text type="warning">{formatDue(days)}</Typography.Text>;
-  return <Typography.Text type={days <= 7 ? 'warning' : undefined}>{formatDue(days)}</Typography.Text>;
-}
 
 /** The ageing columns of the by-vendor and by-project tables (keys are stable: the column chooser keeps them). */
 function ageingColumns<T extends PayableTotalsDto>(): ListColumn<T>[] {
@@ -314,14 +308,7 @@ export default function PayablesPage() {
       cardText: (r) => (r.daysToDue < 0 ? `Due ${formatDate(r.dueDate)}, ${-r.daysToDue} days late` : r.daysToDue === 0 ? `Due today` : `Due ${formatDate(r.dueDate)}, in ${r.daysToDue} days`),
       dataIndex: 'dueDate',
       width: 140,
-      render: (v, r) => (
-        <div>
-          {formatDate(v)}
-          <div style={{ fontSize: themeFontSize('fontSizeSM') }}>
-            <DueText days={r.daysToDue} />
-          </div>
-        </div>
-      ),
+      render: (v) => <DueCell date={v} />,
     },
     {
       key: 'request',
