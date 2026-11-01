@@ -48,7 +48,12 @@ test('an admin makes a group with a lab, and a colleague moves between the two o
   await form.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page.getByText(`${lab} added.`)).toBeVisible();
   await expect(page.getByRole('cell', { name: lab, exact: true })).toBeVisible();
-  await expect(page.getByText('AABCQ5678F')).toBeVisible();
+  // The PAN is kept in capitals (the table may leave its column out when narrow, so read it in the form).
+  await page.getByRole('button', { name: `Edit ${lab}` }).click();
+  const edit = page.getByRole('dialog', { name: `Edit ${lab}` });
+  await expect(edit.getByLabel('PAN')).toHaveValue('AABCQ5678F');
+  await edit.getByRole('button', { name: 'Cancel' }).click();
+  await expect(edit).toBeHidden();
 
   // Sunil gets a place in the lab, on the sign-in he already has.
   await page.getByRole('tab', { name: /People/ }).click();
