@@ -33,7 +33,7 @@ import { TemplatesService } from '../templates/templates.service';
 import { ProjectTypesService } from '../templates/project-types.service';
 import { StructureService } from '../structure/structure.service';
 import { MastersService } from '../masters/masters.service';
-import { dateOnly, iso, money, parseDate, pct } from '../common/serialize';
+import { dateOnly, iso, money, parseDate } from '../common/serialize';
 import { AddMemberDto, CopyTeamDto, CreateProjectDto, ListProjectsQuery, UpdateProjectDto } from './projects.dto';
 
 const projectInclude = {

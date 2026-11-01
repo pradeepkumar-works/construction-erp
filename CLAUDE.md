@@ -25,6 +25,7 @@ cd apps/web && npx tsx --tsconfig tsconfig.json scripts/nav-check.ts   # navigat
 cd apps/web && npx tsx --tsconfig tsconfig.json scripts/copy-check.ts  # shared labels and menu names against docs/WRITING.md
 cd apps/web && npx tsx --tsconfig tsconfig.json scripts/tokens-check.ts # design tokens: contrast, and the not-yet-moved list only shrinks
 pnpm --filter @erp/web lint           # ESLint (typescript-eslint, hooks, Next, jsx-a11y) on the web; 0 errors, CI runs it
+pnpm --filter @erp/api lint           # ESLint (typescript-eslint, no today in UTC) on the API; 0 errors, CI runs it
 cd apps/mobile && npx tsc --noEmit && CI=1 npx expo export --platform android
 cd e2e && npx playwright test         # browser tests; needs API + web running (docs/TESTING.md), CI runs them on PRs
 cd e2e && npx playwright test --project=walk --workers=2   # just the route walk (every sidebar page, see Accessibility)

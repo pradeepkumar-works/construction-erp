@@ -22,7 +22,6 @@ import { type Check, type Link, expenseChecks, otherVendorBillChecks, qty, raBil
 
 const day = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: 'UTC' });
 
-const TYPE_OF: Record<CheckKind, SubmissionType> = { 'vendor-bill': 'VENDOR_BILL', 'subcontract-bill': 'SUBCONTRACT_BILL', expense: 'EXPENSE', 'ra-bill': 'BILL' };
 const n = (d: Prisma.Decimal | null | undefined) => (d ? d.toNumber() : 0);
 /** Invoice numbers as people type them: "INV-884", "inv 884" and "INV/884" are the same invoice. */
 const norm = (s: string | null | undefined) => (s ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');

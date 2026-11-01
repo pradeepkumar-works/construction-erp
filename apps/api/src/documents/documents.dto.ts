@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Max, MaxLength, Min, ValidateIf, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Max, MaxLength, Min, ValidateNested } from 'class-validator';
 import {
   DOCUMENT_DISCIPLINES,
   DOCUMENT_KINDS,
@@ -32,7 +32,6 @@ import { PageQuery, QueryBool } from '../common/paging';
 import { CLIENT_ID_DOC } from '../common/idempotency';
 
 const trim = () => Transform(({ value }) => (typeof value === 'string' ? value.trim() : value));
-const opt = () => ValidateIf((_, v) => v !== null && v !== undefined);
 
 export class CreateRevisionDto {
   @ApiProperty({ example: 'R1', description: 'As printed on the title block; unique per document' }) @trim() @IsString() @IsNotEmpty() @MaxLength(20) revision: string;

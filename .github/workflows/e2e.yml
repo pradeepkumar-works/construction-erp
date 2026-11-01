@@ -69,6 +69,10 @@ jobs:
       - name: ESLint (with jsx-a11y) on the web app
         if: matrix.suite == 'flows'
         run: pnpm --filter @erp/web lint
+      # ESLint on the API: typescript-eslint, and no today taken in UTC (apps/api/eslint.config.mjs).
+      - name: ESLint on the API
+        if: matrix.suite == 'flows'
+        run: pnpm --filter @erp/api lint
       - name: Database owner like Neon's (BYPASSRLS, not superuser)
         run: |
           psql "postgresql://postgres:postgres@localhost:5432/postgres" -c "CREATE ROLE erp_owner LOGIN PASSWORD 'owner' CREATEROLE BYPASSRLS" -c "CREATE DATABASE erp OWNER erp_owner"

@@ -7,6 +7,7 @@
     "dev": "nest start --watch",
     "start": "node dist/main.js",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.seed.json",
+    "lint": "eslint src --max-warnings=12",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
@@ -46,8 +47,10 @@
     "@types/multer": "^2.0.0",
     "@types/node": "^22.20.5",
     "@types/passport-jwt": "^4.0.1",
+    "eslint": "9.39.5",
     "prisma": "^6.19.3",
     "tsx": "^4.23.15",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "typescript-eslint": "8.71.0"
   }
 }
