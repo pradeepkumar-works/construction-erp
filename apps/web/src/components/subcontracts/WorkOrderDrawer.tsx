@@ -2,12 +2,12 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Alert, App, Button, Form, Input, Progress, Table, Typography } from 'antd';
+import { Alert, App, Button, Form, Input, Table, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { FileAddOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { WorkOrderDto, WorkOrderLineDto } from '@erp/shared';
-import { MSME_CATEGORY_LABELS, canEditSubmission, canIssueWorkOrder, canPrepareSubcontractBill, canResubmit, canViewPaymentRequests } from '@erp/shared';
+import { MSME_CATEGORY_LABELS, canEditSubmission, canIssueWorkOrder, canPrepareSubcontractBill, canResubmit, canViewPaymentRequests, figure } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
@@ -26,7 +26,8 @@ import { openWoPrint } from './subcontractPrint';
 import { themeFontSize } from '@/lib/theme';
 import { Section } from '@/components/common/Section';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
-import { TargetRequests } from '@/components/payables/TargetRequests';
+import { TargetRequests, useTargetRequests } from '@/components/payables/TargetRequests';
+import { projectContext } from '@/components/record/RecordParts';
 import { Money } from '@/components/common/Money';
 
 
@@ -91,6 +92,7 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
   const advancePaid = data ? toNumber(data.advancePaid) : 0;
   const advanceLeft = data ? (advancePaid > 0 ? advancePaid : toNumber(data.advanceAmount)) - toNumber(data.advanceRecovered) : 0;
   const requests = approved && !data?.closedAt && !!user && canViewPaymentRequests(user.roleKey);
+  const asked = useTargetRequests({ workOrderId: data?.id }, requests);
 
   return (
     <RecordFrame
@@ -107,6 +109,8 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
         data && {
           href: `/work-orders/${data.id}`,
           title: `${data.woNo} · ${data.vendorName}`,
+          context: projectContext(data),
+          headline: [figure('workOrderValue', data.value), approved && figure('workOrderBilled', data.billedPct)],
           tags: (
             <>
               <StatusTag status={data.status} /> <WoStateTag order={data} />
@@ -153,12 +157,7 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
             },
             { key: 'date', label: 'WO date', children: formatDate(data.woDate) },
             { key: 'title', label: 'Work', span: 2, children: data.title },
-            { key: 'value', label: 'Value before GST', children: <strong><Money value={data.value} paise /></strong> },
-            { key: 'project', label: 'Project', children: <Link href={`/projects/${data.projectId}`}>{data.projectName}</Link> },
             { key: 'period', label: 'Period', children: `${data.startDate ? formatDate(data.startDate) : NO_VALUE} to ${data.endDate ? formatDate(data.endDate) : NO_VALUE}` },
-            { key: 'gst', label: 'GST on their bills', children: formatPct(data.gstRate) },
-            { key: 'ret', label: 'Retention', children: formatPct(data.retentionPct) },
-            { key: 'tds', label: 'TDS (194C)', children: formatPct(data.tdsPct) },
             {
               key: 'adv',
               label: 'Advance',
@@ -175,13 +174,18 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
                   NO_VALUE
                 ),
             },
-            { key: 'pay', label: 'Payment', children: data.paymentDays !== null ? `${data.paymentDays} days from the bill` : NO_VALUE },
-            ...(approved ? [{ key: 'billed', label: 'Billed', children: <Progress percent={data.billedPct} size="small" style={{ maxWidth: 320, margin: 0 }} format={() => `${formatPct(data.billedPct)} · ${formatINR(data.billedAmount, true)}`} aria-label={`${formatPct(data.billedPct)} billed`} /> }] : []),
+            ...(approved ? [{ key: 'billed', label: 'Billed', children: <Money value={data.billedAmount} paise /> }] : []),
             ...(data.supplierAcceptedAt
               ? [{ key: 'accepted', label: 'Subcontractor accepted', children: `${formatDateTime(data.supplierAcceptedAt)}${data.supplierAcceptedBy ? ` by ${data.supplierAcceptedBy}` : ''}${data.supplierNote ? `: ${data.supplierNote}` : ''}` }]
               : []),
+            ...submissionMetaItems(data),
+          ],
+          details: [
+            { key: 'gst', label: 'GST on their bills', children: formatPct(data.gstRate) },
+            { key: 'ret', label: 'Retention', children: formatPct(data.retentionPct) },
+            { key: 'tds', label: 'TDS (194C)', children: formatPct(data.tdsPct) },
+            { key: 'pay', label: 'Payment', children: data.paymentDays !== null ? `${data.paymentDays} days from the bill` : NO_VALUE },
             ...(data.remarks ? [{ key: 'remarks', label: 'Remarks', children: data.remarks }] : []),
-            ...submissionMetaItems(data).filter((i) => i.key !== 'status' && i.key !== 'project'),
           ],
           lifecycle: submissionLifecycle(data, [
             data.closedAt
@@ -200,7 +204,7 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
                     size="small"
                     pagination={false}
                     dataSource={data.lines}
-                    scroll={{ x: 900 }}
+                    scroll={{ x: 760 }}
                     columns={[
                       {
                         title: 'Item',
@@ -213,7 +217,6 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
                       },
                       { title: 'Quantity', dataIndex: 'quantity', width: 130, align: 'right', render: (v, l) => <span className="mono" translate="no">{formatQty(v)} {l.unit}</span> },
                       { title: 'Rate', dataIndex: 'rate', width: 110, align: 'right', render: (v) => <Money value={v} paise /> },
-                      { title: 'Amount', dataIndex: 'amount', width: 140, align: 'right', render: (v) => <strong><Money value={v} paise /></strong> },
                       ...(approved
                         ? [
                             {
@@ -224,15 +227,17 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
                               render: (v: string, l: WorkOrderLineDto) =>
                                 l.boqItemId ? (
                                   <Typography.Text type={toNumber(v) > toNumber(l.quantity) ? 'danger' : undefined} className="mono">
-                                    {formatQty(v)}
+                                    {formatQty(v)} {l.unit}
+                                    {toNumber(v) > toNumber(l.quantity) ? <div><AppTag meaning="failed">Beyond the order</AppTag></div> : null}
                                   </Typography.Text>
                                 ) : (
                                   <span className="text-muted">{NO_VALUE}</span>
                                 ),
                             },
-                            { title: 'Billed', dataIndex: 'billedQty', width: 100, align: 'right' as const, render: (v: string) => <span className="mono" translate="no">{formatQty(v)}</span> },
+                            { title: 'Billed', dataIndex: 'billedQty', width: 110, align: 'right' as const, render: (v: string, l: WorkOrderLineDto) => <span className="mono" translate="no">{formatQty(v)} {l.unit}</span> },
                           ]
                         : []),
+                      { title: 'Amount', dataIndex: 'amount', width: 140, align: 'right', render: (v) => <strong><Money value={v} paise /></strong> },
                     ]}
                   />
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
@@ -253,6 +258,7 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
                     key: 'bills',
                     title: 'Bills',
                     count: data.bills?.length ?? 0,
+                    empty: !data.bills?.length,
                     children: (
                       <Table
                         rowKey="id"
@@ -263,9 +269,9 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
                         columns={[
                           { title: 'Bill', dataIndex: 'label', render: (v, b) => (billingRole ? <Link href={`/subcontract-bills/${b.id}`}>{v}</Link> : v) },
                           { title: 'Date', dataIndex: 'billDate', width: 120, render: (v) => formatDate(v) },
+                          { title: 'Status', dataIndex: 'status', width: 130, render: (s) => <StatusTag status={s} /> },
                           { title: 'Work done', dataIndex: 'grossAmount', width: 150, align: 'right', render: (v) => <Money value={v} paise /> },
                           { title: 'Net payable', dataIndex: 'netPayable', width: 150, align: 'right', render: (v) => <Money value={v} paise /> },
-                          { title: 'Status', dataIndex: 'status', width: 130, render: (s) => <StatusTag status={s} /> },
                         ]}
                       />
                     ),
@@ -273,9 +279,9 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
                 ]
               : []),
             ...(requests
-              ? [{ key: 'advances', title: 'Advance requests', children: <TargetRequests approved target={{ kind: 'WO_ADVANCE', workOrderId: data.id, label: data.woNo, vendorName: data.vendorName }} base={String(toNumber(data.value) - toNumber(data.advanceRequested))} /> }]
+              ? [{ key: 'advances', title: 'Advance requests', empty: asked.loaded && asked.rows.length === 0, children: <TargetRequests approved target={{ kind: 'WO_ADVANCE', workOrderId: data.id, label: data.woNo, vendorName: data.vendorName }} base={String(toNumber(data.value) - toNumber(data.advanceRequested))} /> }]
               : []),
-            { key: 'documents', title: 'Documents', count: data.attachments.length, children: <AttachmentGallery attachments={data.attachments} /> },
+            { key: 'documents', title: 'Documents', count: data.attachments.length, empty: data.attachments.length === 0, children: <AttachmentGallery attachments={data.attachments} emptyText="No documents" /> },
           ],
           activity: { type: 'work_order', id: data.id, submission: data },
           actions: (size) => (

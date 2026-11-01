@@ -8,8 +8,8 @@ import { fileUrl } from '@/lib/api';
 import { themeColor } from '@/lib/theme';
 import { NO_VALUE } from '@/lib/format';
 
-export function AttachmentGallery({ attachments, size = 96 }: { attachments: AttachmentDto[]; size?: number }) {
-  if (!attachments || attachments.length === 0) return <Typography.Text type="secondary">No photos</Typography.Text>;
+export function AttachmentGallery({ attachments, size = 96, emptyText = 'No photos' }: { attachments: AttachmentDto[]; size?: number; emptyText?: string }) {
+  if (!attachments || attachments.length === 0) return <Typography.Text type="secondary">{emptyText}</Typography.Text>;
   const images = attachments.filter((a) => a.mimeType?.startsWith('image/'));
   const files = attachments.filter((a) => !a.mimeType?.startsWith('image/'));
   return (

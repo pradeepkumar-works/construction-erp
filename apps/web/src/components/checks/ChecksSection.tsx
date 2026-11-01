@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Alert, App, Button, Flex, Form, Input, Skeleton, Spin, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { CheckCircleFilled, CheckOutlined, ExclamationCircleFilled } from '@/components/common/icons';
-import type { BillCheckDto, CheckKind } from '@erp/shared';
+import { figure, type BillCheckDto, type CheckKind, type FigureInput } from '@erp/shared';
 import { useNotify } from '@/lib/notify';
 import { useAcceptCheck, useBillCheckSummary, useBillChecks } from '@/lib/queries';
 import { formatDateTime } from '@/lib/format';
@@ -98,6 +98,12 @@ export function ChecksSection({ kind, id, version }: { kind: CheckKind; id: stri
 
 /** The Checks section for a record's sections list. */
 export const checksSection = (kind: CheckKind, id: string, version?: number): RecordSection => ({ key: 'checks', title: 'Checks', children: <ChecksSection kind={kind} id={id} version={version} /> });
+
+/** What a record's checks found to look at, for its headline: nothing until the checks have loaded. */
+export function useChecksFigure(kind: CheckKind, id: string | undefined, version?: number): FigureInput {
+  const { data } = useBillChecks(kind, id, version);
+  return data ? figure('checksRaised', data.openFlags) : null;
+}
 
 /** The flags, each with what it is about and an optional action, then a tick for each check that passed. */
 export function CheckRows({ checks, action }: { checks: BillCheckDto[]; action?: (c: BillCheckDto) => React.ReactNode }) {
