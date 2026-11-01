@@ -5,8 +5,9 @@ import { Space, Table, Tooltip } from 'antd';
 import dayjs from 'dayjs';
 import { TrophyOutlined } from '@/components/common/icons';
 import { AppTag } from '@/components/common/AppTag';
+import { RankText } from '@/components/tenders/tenderUi';
 import type { ComparativeStatementDto, MaterialRequestDto, QuotationDto } from '@erp/shared';
-import { lastRateKey, rankLabel, rankQuotations } from '@erp/shared';
+import { lastRateKey, rankQuotations } from '@erp/shared';
 import { useLastRates, usePurchaseOrders } from '@/lib/queries';
 import { formatDate, formatINR, formatQty, toNumber } from '@/lib/format';
 import { themeColor, themeFontSize } from '@/lib/theme';
@@ -103,14 +104,10 @@ export function ComparativeTable({ request, data, loading, actions }: { request:
                 {[q.quoteRef, formatDate(q.quoteDate), q.deliveryDays != null ? `${q.deliveryDays} days` : null].filter(Boolean).join(' · ')}
               </div>
               <Space size={4} wrap style={{ justifyContent: 'flex-end' }}>
-                {ranks.get(q.id) ? (
-                  <AppTag tone={ranks.get(q.id) === 1 ? 'success' : 'neutral'} style={{ margin: 0, fontWeight: 400 }}>
-                    {rankLabel(ranks.get(q.id))}
-                  </AppTag>
-                ) : null}
+                <RankText rank={ranks.get(q.id)} />
                 {q.fromSupplier && (
                   <Tooltip title="Typed by the vendor on the enquiry link">
-                    <AppTag tone="info" style={{ margin: 0, fontWeight: 400 }}>
+                    <AppTag variant="kind" style={{ margin: 0, fontWeight: 400 }}>
                       From vendor
                     </AppTag>
                   </Tooltip>

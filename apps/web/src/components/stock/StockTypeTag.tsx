@@ -4,10 +4,10 @@ import React from 'react';
 import { AppTag } from '@/components/common/AppTag';
 import type { StockEntryType } from '@erp/shared';
 import { STOCK_ENTRY_TYPE_LABELS } from '@erp/shared';
-import { STOCK_ENTRY_COLORS, NO_VALUE } from '@/lib/format';
+import { NO_VALUE } from '@/lib/format';
 
 export const StockTypeTag = ({ type }: { type: StockEntryType }) => (
-  <AppTag color={STOCK_ENTRY_COLORS[type]} style={{ margin: 0 }}>
+  <AppTag variant="kind" style={{ margin: 0 }}>
     {STOCK_ENTRY_TYPE_LABELS[type]}
   </AppTag>
 );

@@ -9,11 +9,9 @@ import { formatDate, formatDayMonth, formatTime } from '@/lib/format';
 import { fileUrl } from '@/lib/api';
 import { themeColor } from '@/lib/theme';
 
-export const LEAVE_STATUS_COLORS: Record<LeaveStatus, string> = { PENDING: 'orange', APPROVED: 'green', REJECTED: 'red', CANCELLED: 'default' };
-export const ATTENDANCE_COLORS: Record<StaffAttendanceStatus, string> = { PRESENT: 'green', HALF_DAY: 'gold', ABSENT: 'red' };
 
-export const LeaveStatusTag = ({ status }: { status: LeaveStatus }) => <AppTag color={LEAVE_STATUS_COLORS[status]}>{LEAVE_STATUS_LABELS[status]}</AppTag>;
-export const AttendanceTag = ({ status }: { status: StaffAttendanceStatus }) => <AppTag color={ATTENDANCE_COLORS[status]}>{STAFF_ATTENDANCE_LABELS[status]}</AppTag>;
+export const LeaveStatusTag = ({ status }: { status: LeaveStatus }) => <AppTag kind="leave" status={status}>{LEAVE_STATUS_LABELS[status]}</AppTag>;
+export const AttendanceTag = ({ status }: { status: StaffAttendanceStatus }) => <AppTag kind="staffAttendance" status={status}>{STAFF_ATTENDANCE_LABELS[status]}</AppTag>;
 
 /** "21 Oct 2026" or "21 Oct to 23 Oct 2026", with "(half day)". */
 export function leaveSpan(l: Pick<LeaveRequestDto, 'fromDate' | 'toDate' | 'halfDay'>) {
@@ -33,11 +31,11 @@ export const metres = (m: number) => (m < 1000 ? `${m} m` : `${(m / 1000).toFixe
 /** Where a check-in was: at the site, outside it, or a position with no site location to measure from. */
 export function CheckInPlaceTag({ place }: { place: StaffAttendanceDto['checkInPlace'] }) {
   if (!place) return null;
-  if (place.inside === null) return <AppTag>Location recorded</AppTag>;
+  if (place.inside === null) return <AppTag meaning="done">Location recorded</AppTag>;
   return place.inside ? (
-    <AppTag tone="success">At the site{place.distanceM !== null ? ` (${metres(place.distanceM)})` : ''}</AppTag>
+    <AppTag meaning="done">At the site{place.distanceM !== null ? ` (${metres(place.distanceM)})` : ''}</AppTag>
   ) : (
-    <AppTag tone="pending">Outside the site{place.distanceM !== null ? `, ${metres(place.distanceM)} away` : ''}</AppTag>
+    <AppTag meaning="waiting">Outside the site{place.distanceM !== null ? `, ${metres(place.distanceM)} away` : ''}</AppTag>
   );
 }
 
@@ -59,8 +57,7 @@ export function FacePhotos({ attendance, size = 36 }: { attendance: Pick<StaffAt
   );
 }
 
-export const OVERTIME_COLORS: Record<OvertimeStatus, string> = { PENDING: 'orange', APPROVED: 'green', REJECTED: 'red' };
-export const OvertimeTag = ({ status }: { status: OvertimeStatus }) => <AppTag color={OVERTIME_COLORS[status]}>{OVERTIME_STATUS_LABELS[status]}</AppTag>;
+export const OvertimeTag = ({ status }: { status: OvertimeStatus }) => <AppTag kind="overtime" status={status}>{OVERTIME_STATUS_LABELS[status]}</AppTag>;
 
 /**
  * The browser's position for a check-in, or null when it is refused, unavailable or slow (the server decides whether

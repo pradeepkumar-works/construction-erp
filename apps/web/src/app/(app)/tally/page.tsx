@@ -28,7 +28,6 @@ import { NoAccess } from '@/components/common/NoAccess';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { Money } from '@/components/common/Money';
 
-const KIND_COLORS: Record<TallyVoucherKind, string> = { SALES: 'green', RECEIPT: 'cyan', PURCHASE: 'orange', SUBCONTRACT: 'volcano', PAYMENT: 'purple', EXPENSE: 'gold', DEBIT_NOTE: 'magenta', SALARY: 'blue', SALARY_PAYMENT: 'geekblue', STAFF_LOAN: 'lime', RMC_SALE: 'green', RMC_RECEIPT: 'cyan', MACHINE_LOAN: 'blue', LOAN_EMI: 'purple' };
 const LEDGER_KIND_LABELS: Record<TallyLedgerKind, string> = { FIXED: 'Accounts', EXPENSE: 'Expense categories', CLIENT: 'Clients', VENDOR: 'Vendors', LOAN: 'Machine loans' };
 
 /** Save an XML file the API sends (the file name header is not readable across origins, so the name is ours). */
@@ -47,7 +46,7 @@ const exportFile = (e: Pick<TallyExportDto, 'id' | 'upTo'>) => `nirmaan-tally-up
 
 function KindTag({ kind }: { kind: TallyVoucherKind }) {
   return (
-    <AppTag color={KIND_COLORS[kind]} style={{ margin: 0 }}>
+    <AppTag variant="kind" style={{ margin: 0 }}>
       {TALLY_VOUCHER_KIND_LABELS[kind]}
     </AppTag>
   );
@@ -118,13 +117,11 @@ function ToExport() {
           <Typography.Text>Up to the end of</Typography.Text>
           <DatePicker picker="month" value={month} onChange={(d) => d && setMonth(d)} allowClear={false} format={MONTH_PICKER_FORMAT} disabledDate={(d) => d.isAfter(dayjs(), 'month')} aria-label="Month" />
         </Space>
-        <Space wrap size={4}>
-          {TALLY_VOUCHER_KINDS.filter((k) => data?.counts[k]).map((k) => (
-            <AppTag key={k} color={KIND_COLORS[k]}>
-              {TALLY_VOUCHER_KIND_LABELS[k]}: {data!.counts[k]}
-            </AppTag>
-          ))}
-        </Space>
+        <span translate="no">
+          {TALLY_VOUCHER_KINDS.filter((k) => data?.counts[k])
+            .map((k) => `${TALLY_VOUCHER_KIND_LABELS[k]} ${data!.counts[k]}`)
+            .join(' · ')}
+        </span>
         <Popconfirm
           title={`Export ${vouchers.length} vouchers?`}
           description="They are marked exported and will not go again. Undo the export if Tally does not take it."
@@ -229,14 +226,12 @@ function Exports() {
       card: 'meta',
       cardText: (r) => [`${r.voucherCount} vouchers`, ...TALLY_VOUCHER_KINDS.filter((k) => r.counts[k]).map((k) => `${TALLY_VOUCHER_KIND_LABELS[k]}: ${r.counts[k]}`)].join(' · '),
       render: (_, r) => (
-        <Space wrap size={4}>
+        <span translate="no">
           <strong>{r.voucherCount}</strong>
-          {TALLY_VOUCHER_KINDS.filter((k) => r.counts[k]).map((k) => (
-            <AppTag key={k} color={KIND_COLORS[k]} style={{ margin: 0 }}>
-              {TALLY_VOUCHER_KIND_LABELS[k]}: {r.counts[k]}
-            </AppTag>
-          ))}
-        </Space>
+          {TALLY_VOUCHER_KINDS.filter((k) => r.counts[k])
+            .map((k) => ` · ${TALLY_VOUCHER_KIND_LABELS[k]} ${r.counts[k]}`)
+            .join('')}
+        </span>
       ),
     },
     {

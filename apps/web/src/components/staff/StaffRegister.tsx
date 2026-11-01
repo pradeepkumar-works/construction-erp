@@ -96,7 +96,7 @@ export function StaffRegister() {
       width: 170,
       render: (_, r) =>
         r.leave ? (
-          <AppTag color={r.leave.status === 'APPROVED' ? 'blue' : 'orange'}>
+          <AppTag kind="leave" status={r.leave.status}>
             {LEAVE_TYPE_LABELS[r.leave.type]}
             {r.leave.halfDay ? ', half day' : ''}
             {r.leave.status === 'PENDING' ? ' (waiting)' : ''}

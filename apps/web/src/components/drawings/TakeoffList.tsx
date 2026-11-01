@@ -256,13 +256,13 @@ export function TakeoffList({
                           {takeoffFigure(t.kind, t.value)}
                         </Typography.Text>
                         {scope === 'all' ? (
-                          <AppTag translate="no" style={{ margin: 0 }}>
+                          <AppTag variant="kind" translate="no" style={{ margin: 0 }}>
                             {revLabel(t.revision)}
                             {t.page > 1 ? `, p ${t.page}` : ''}
                           </AppTag>
                         ) : null}
                         {t.mbNo ? (
-                          <AppTag translate="no" style={{ margin: 0 }}>
+                          <AppTag meaning="done" translate="no" style={{ margin: 0 }}>
                             In {t.mbNo}
                           </AppTag>
                         ) : null}

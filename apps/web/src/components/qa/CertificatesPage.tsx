@@ -62,7 +62,7 @@ function CategoryChooser() {
         </Flex>
       ) : (
         <Flex gap={token.marginXS} wrap>
-          {data.categories.length ? data.categories.map((c) => <AppTag key={c}>{names.get(c) ?? c}</AppTag>) : <Typography.Text type="secondary">None chosen</Typography.Text>}
+          {data.categories.length ? data.categories.map((c) => <AppTag variant="kind" key={c}>{names.get(c) ?? c}</AppTag>) : <Typography.Text type="secondary">None chosen</Typography.Text>}
         </Flex>
       )}
     </Card>
@@ -120,7 +120,7 @@ export function CertificatesPage() {
               title: 'QA/QC',
               dataIndex: 'checked',
               width: 160,
-              render: (v: boolean) => (v ? <AppTag tone="pending">Accepted without it</AppTag> : <AppTag tone="neutral">Not checked</AppTag>),
+              render: (v: boolean) => (v ? <AppTag meaning="waiting">Accepted without it</AppTag> : <AppTag meaning="closed">Not checked</AppTag>),
             },
           ]}
         />

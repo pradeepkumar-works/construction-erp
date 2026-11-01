@@ -77,7 +77,7 @@ export function EmployeeService({ employee }: { employee: EmployeeDto }) {
             title: 'Event',
             dataIndex: 'type',
             width: 120,
-            render: (v: EmployeeEventDto['type']) => <AppTag color={isExitEvent(v) ? 'default' : v === 'WARNING' ? 'warning' : 'processing'}>{EMPLOYEE_EVENT_LABELS[v]}</AppTag>,
+            render: (v: EmployeeEventDto['type']) => <AppTag variant="kind">{EMPLOYEE_EVENT_LABELS[v]}</AppTag>,
           },
           { title: 'Change', key: 'change', render: (_, r) => eventChange(r) || <Typography.Text type="secondary">{NO_VALUE}</Typography.Text> },
           { title: 'Letter', dataIndex: 'letterNo', width: 120, render: (v: string) => <span translate="no">{v}</span> },

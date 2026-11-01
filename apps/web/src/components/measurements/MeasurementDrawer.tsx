@@ -70,7 +70,7 @@ export function MeasurementRecord({ id, mode, open, onClose, onEdit }: RecordPro
                   dataSource={data.lines}
                   scroll={{ x: 640 }}
                   columns={[
-                    { title: 'Description', dataIndex: 'description', render: (v, l) => (l.deduct ? <span>{v} <AppTag tone="danger">Deduct</AppTag></span> : v) },
+                    { title: 'Description', dataIndex: 'description', render: (v, l) => (l.deduct ? <span>{v} <AppTag meaning="failed">Deduct</AppTag></span> : v) },
                     { title: 'Nos', dataIndex: 'nos', width: 70, align: 'right', render: dim },
                     { title: 'L', dataIndex: 'length', width: 80, align: 'right', render: dim },
                     { title: 'B', dataIndex: 'breadth', width: 80, align: 'right', render: dim },
@@ -113,7 +113,7 @@ export function MeasurementRecord({ id, mode, open, onClose, onEdit }: RecordPro
                             key: 'outcome',
                             render: (_, c) => (
                               <span>
-                                <AppTag tone={c.outcome === 'AGREED' ? 'success' : c.outcome === 'LESS' ? 'danger' : 'pending'}>{CHECK_OUTCOME_LABELS[c.outcome]}</AppTag>
+                                <AppTag kind="checkOutcome" status={c.outcome}>{CHECK_OUTCOME_LABELS[c.outcome]}</AppTag>
                                 {c.note ? <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{c.note}</div> : null}
                               </span>
                             ),

@@ -86,10 +86,10 @@ function VendorsTab({ editable, onEdit, onPortal, emptyAction }: { editable: boo
         sortOrder: sortOrderFor('name'),
         render: (_, v) => (
           <div>
-            <Typography.Text strong>{v.name}</Typography.Text> {!v.isActive && <AppTag>Inactive</AppTag>}
+            <Typography.Text strong>{v.name}</Typography.Text> {!v.isActive && <AppTag meaning="closed">Inactive</AppTag>}
             <Flex gap={4} wrap style={{ marginTop: 2 }}>
               {v.kinds.map((k) => (
-                <AppTag key={k} style={{ margin: 0 }}>
+                <AppTag variant="kind" key={k} style={{ margin: 0 }}>
                   {VENDOR_KIND_LABELS[k]}
                 </AppTag>
               ))}
@@ -115,7 +115,7 @@ function VendorsTab({ editable, onEdit, onPortal, emptyAction }: { editable: boo
         width: 120,
         render: (_, v) =>
           v.msmeCategory ? (
-            <AppTag color={v.msmeCategory === 'MEDIUM' ? 'default' : 'orange'} title={v.udyamNo ?? undefined} style={{ margin: 0 }}>
+            <AppTag variant="kind" title={v.udyamNo ?? undefined} style={{ margin: 0 }}>
               {MSME_CATEGORY_LABELS[v.msmeCategory]}
             </AppTag>
           ) : (

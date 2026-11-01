@@ -33,11 +33,11 @@ import { Money } from '@/components/common/Money';
 /** Whether a bill matches its PO and GRNs, or (a bill without a PO) passed its own checks. */
 export const MatchTag = ({ matched, po = true }: { matched: boolean; po?: boolean }) =>
   matched ? (
-    <AppTag tone="success" style={{ margin: 0 }}>
+    <AppTag meaning="done" style={{ margin: 0 }}>
       {po ? MATCH_STATE_LABELS.MATCHES : MATCH_STATE_LABELS.CHECKED}
     </AppTag>
   ) : (
-    <AppTag tone="danger" style={{ margin: 0 }}>
+    <AppTag meaning="failed" style={{ margin: 0 }}>
       {MATCH_STATE_LABELS.DOES_NOT_MATCH}
     </AppTag>
   );
@@ -126,7 +126,7 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
                 <span>
                   {data.vendorName}
                   {data.vendorGstin && <span className="text-muted"> · GSTIN <span translate="no">{data.vendorGstin}</span></span>}
-                  {data.vendorMsme && <AppTag color={data.vendorMsme === 'MEDIUM' ? 'default' : 'orange'} style={{ marginLeft: 8 }}>{MSME_CATEGORY_LABELS[data.vendorMsme]}</AppTag>}
+                  {data.vendorMsme && <AppTag variant="kind" style={{ marginLeft: 8 }}>{MSME_CATEGORY_LABELS[data.vendorMsme]}</AppTag>}
                 </span>
               ),
             },
@@ -159,7 +159,7 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
               label: 'Due',
               children: (
                 <span>
-                  {formatDate(data.dueDate)} {late ? <AppTag tone="danger">{late} days overdue</AppTag> : null}
+                  {formatDate(data.dueDate)} {late ? <AppTag meaning="failed">{late} days overdue</AppTag> : null}
                 </span>
               ),
             },

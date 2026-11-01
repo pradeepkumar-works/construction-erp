@@ -432,12 +432,12 @@ export function YearClose() {
               render: (_, y) =>
                 y.closed ? (
                   <Space size={4} wrap>
-                    <AppTag tone="success">Closed</AppTag>
+                    <AppTag meaning="done">Closed</AppTag>
                     <Typography.Text type="secondary">{`${y.closedByName ?? ""}${y.closedAt ? `, ${formatDateTime(y.closedAt)}` : ""}`}</Typography.Text>
                   </Space>
                 ) : (
                   <Space orientation="vertical" size={0}>
-                    <AppTag>Open</AppTag>
+                    <AppTag meaning="inHand">Open</AppTag>
                     {y.blockers.map((b) => (
                       <Typography.Text key={b} type="secondary">
                         {b}

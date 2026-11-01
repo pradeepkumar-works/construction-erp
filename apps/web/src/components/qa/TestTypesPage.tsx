@@ -212,8 +212,8 @@ export function TestTypesPage() {
                 <Flex vertical gap={2}>
                   <Flex gap={token.marginXS} align="center" wrap>
                     <Typography.Text strong>{t.name}</Typography.Text>
-                    {!t.standard ? <AppTag tone="info">Company's own</AppTag> : t.changed ? <AppTag tone="violet">Changed from standard</AppTag> : null}
-                    {!t.active ? <AppTag tone="neutral">Not in use</AppTag> : null}
+                    {!t.standard ? <AppTag variant="kind">Company's own</AppTag> : t.changed ? <AppTag variant="kind">Changed from standard</AppTag> : null}
+                    {!t.active ? <AppTag meaning="closed">Not in use</AppTag> : null}
                   </Flex>
                   <Typography.Text type="secondary" translate="no">
                     {t.code}

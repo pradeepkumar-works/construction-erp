@@ -1,105 +1,57 @@
 'use client';
 
 import React from 'react';
-import { Tag, theme } from 'antd';
+import { Tag } from 'antd';
 import type { TagProps } from 'antd';
-import { useAppearance } from '@/lib/appearance';
-import { BRAND } from '@/lib/brand';
+import { statusTone, type StatusKind, type StatusMeaning, type StatusOf } from '@erp/shared';
+import { tk, type Tone } from '@/ds';
 
-/**
- * What a tag says, by meaning rather than colour (brand guide: status colour is never decoration). `pending` waits on
- * someone, `success` is done or approved, `danger` is rejected, overdue or lost, `info` is planned or in hand, `violet` is a
- * state that is none of these (changes requested, completed), and `neutral` is a draft or a plain label.
- */
-export type TagTone = 'neutral' | 'info' | 'pending' | 'success' | 'danger' | 'violet';
+/** A record's status, read through the one meaning map (`statusTone` in `@erp/shared`, ARCHITECTURE "Status colour"). */
+type StateProps = { [K in StatusKind]: { kind: K; status: StatusOf<K>; meaning?: never; variant?: never } }[StatusKind];
+/** A state that is no enum of its own ("Overdue", "Hold point", "3 days late"), said by its meaning. */
+type FlagProps = { meaning: StatusMeaning; kind?: never; status?: never; variant?: never };
+/** A category rather than a state (a project's type, a voucher's kind, "Own"): outlined, with no dot and no colour. */
+type CategoryProps = { variant: 'kind'; kind?: never; status?: never; meaning?: never };
 
-/** antd's preset colour names, which the colour maps in `lib/format.ts` and the pages still use, as tones. */
-const TONE_OF_COLOR: Record<string, TagTone> = {
-  default: 'neutral',
-  blue: 'info',
-  geekblue: 'info',
-  cyan: 'info',
-  processing: 'info',
-  orange: 'pending',
-  gold: 'pending',
-  yellow: 'pending',
-  volcano: 'pending',
-  warning: 'pending',
-  green: 'success',
-  lime: 'success',
-  success: 'success',
-  red: 'danger',
-  magenta: 'danger',
-  pink: 'danger',
-  error: 'danger',
-  purple: 'violet',
+export type AppTagProps = Omit<TagProps, 'color' | 'variant' | 'bordered'> & (StateProps | FlagProps | CategoryProps);
+
+/** The meanings that need someone draw in their tone with a dot; done and closed are quiet text. */
+const LOUD: Partial<Record<StatusMeaning, Tone>> = { waiting: 'pending', inHand: 'info', failed: 'danger' };
+
+const base: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: tk.space[1],
+  marginInlineEnd: 0,
+  borderRadius: tk.radius.pill,
+  fontVariantNumeric: 'tabular-nums',
 };
 
-/** The tone for an antd colour name; anything else (undefined, a hex) is neutral. */
-export const toneOf = (color: string | undefined | null): TagTone => (color && TONE_OF_COLOR[color]) || 'neutral';
-
-const c = BRAND.colors;
-
-/** Each tone's text and fill, in either theme (every pair keeps 4.5:1). */
-export function toneColors(tone: TagTone, dark: boolean): { fg: string; bg: string } {
-  switch (tone) {
-    case 'info':
-      return dark ? { fg: c.nightLink, bg: c.nightToneInfoBg } : { fg: c.link, bg: c.accentSoft };
-    case 'pending':
-      return dark ? { fg: c.nightPending, bg: c.nightTonePendingBg } : { fg: c.pending, bg: c.pendingBg };
-    case 'success':
-      return dark ? { fg: c.nightSuccess, bg: c.nightToneSuccessBg } : { fg: c.success, bg: c.successBg };
-    case 'danger':
-      return dark ? { fg: c.nightDanger, bg: c.nightToneDangerBg } : { fg: c.danger, bg: c.dangerBg };
-    case 'violet':
-      return dark ? { fg: c.nightViolet, bg: c.nightToneVioletBg } : { fg: c.violet, bg: c.violetBg };
-    default:
-      return dark ? { fg: c.nightNeutralText, bg: c.nightNeutralBg } : { fg: c.muted, bg: c.neutralBg };
+function look(meaning: StatusMeaning | null): React.CSSProperties {
+  if (meaning === null) {
+    return { ...base, ...tk.type.label, paddingInline: tk.space[2], border: tk.line('base'), background: 'transparent', color: tk.color.text.muted };
   }
-}
-
-export interface AppTagProps extends Omit<TagProps, 'color' | 'bordered'> {
-  /** What the tag means. */
-  tone?: TagTone;
-  /** An antd colour name from one of the colour maps, read as its tone. Prefer `tone` in new code. */
-  color?: string;
-  /** A dot before the words, so a status does not rest on colour alone. On by default for every tone but `neutral`. */
-  dot?: boolean;
+  const tone = LOUD[meaning];
+  if (!tone) {
+    const color = meaning === 'done' ? tk.color.text.base : tk.color.text.muted;
+    return { ...base, ...tk.type.body, paddingInline: 0, border: 'none', background: 'transparent', color };
+  }
+  const t = tk.color.tone[tone];
+  return { ...base, ...tk.type.label, paddingInline: tk.space[2], border: 'none', background: t.bg, color: t.fg };
 }
 
 /**
- * Every tag in the web app: a pill in its tone's soft fill, no outline, semibold, with a dot for a status. `variant="outlined"`
- * draws the tone as an outline on no fill instead, for a kind rather than a state (a project's type). Wraps antd `Tag`, so
- * `closable`, `icon` and `onClose` work as before.
+ * Every tag in the web app, in one of two forms. A state, `status` of a `kind` (or a `meaning` for a flag): what waits on
+ * someone, what is in hand and what failed is a tinted pill with a dot; what is done or closed is plain text, so a column of
+ * approved rows stays quiet. A category, `variant="kind"`: an outlined pill in muted ink. Wraps antd `Tag`, so `closable`,
+ * `icon` and `onClose` work as before. Scores and counts are not tags: write them as text or a figure.
  */
-export function AppTag({ tone, color, dot, variant, icon, style, children, ...rest }: AppTagProps) {
-  const { token } = theme.useToken();
-  const { dark } = useAppearance();
-  const t = tone ?? toneOf(color);
-  const { fg, bg } = toneColors(t, dark);
-  const outlined = variant === 'outlined';
-  const showDot = !icon && (dot ?? t !== 'neutral');
+export function AppTag({ kind, status, meaning, variant, icon, style, children, ...rest }: AppTagProps) {
+  const m: StatusMeaning | null = variant === 'kind' ? null : (meaning ?? statusTone(kind as StatusKind, status as never));
+  const dot = !icon && m !== null && LOUD[m] !== undefined;
   return (
-    <Tag
-      {...rest}
-      icon={icon}
-      variant="filled"
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: token.marginXXS + 2,
-        marginInlineEnd: 0,
-        paddingInline: showDot ? `${token.paddingXS - 1}px ${token.paddingXS + 2}px` : token.paddingXS + 2,
-        borderRadius: 999,
-        border: `${token.lineWidth}px solid ${outlined ? fg : 'transparent'}`,
-        background: outlined ? 'transparent' : bg,
-        color: fg,
-        fontWeight: 600,
-        fontVariantNumeric: 'tabular-nums',
-        ...style,
-      }}
-    >
-      {showDot && <span aria-hidden style={{ width: 6, height: 6, borderRadius: '50%', background: 'currentColor', flex: 'none' }} />}
+    <Tag {...rest} icon={icon} variant="filled" style={{ ...look(m), ...style }}>
+      {dot && <span aria-hidden style={{ width: 6, height: 6, borderRadius: '50%', background: 'currentColor', flex: 'none' }} />}
       {children}
     </Tag>
   );

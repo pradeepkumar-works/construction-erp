@@ -64,7 +64,7 @@ export function DayView() {
           {data.byGrade.length > 0 && (
             <Space wrap style={{ marginBottom: 16 }}>
               {data.byGrade.map((g) => (
-                <AppTag key={g.grade} translate="no">{`${g.grade}: ${m3(g.m3)} in ${g.trucks} ${g.trucks === 1 ? 'truck' : 'trucks'}`}</AppTag>
+                <AppTag variant="kind" key={g.grade} translate="no">{`${g.grade}: ${m3(g.m3)} in ${g.trucks} ${g.trucks === 1 ? 'truck' : 'trucks'}`}</AppTag>
               ))}
             </Space>
           )}
@@ -140,7 +140,7 @@ export function DayView() {
               { title: 'Material', dataIndex: 'itemName' },
               { title: 'Needed', key: 'n', align: 'right', render: (_, m) => <span translate="no">{`${formatQty(m.needed)} ${unitLabel(m.unit)}`}</span> },
               { title: 'In the store', key: 'i', align: 'right', render: (_, m) => <span translate="no">{`${formatQty(m.inStock)} ${unitLabel(m.unit)}`}</span> },
-              { title: '', dataIndex: 'short', width: 110, render: (s: boolean) => (s ? <AppTag tone="danger">Short</AppTag> : <AppTag tone="success">Enough</AppTag>) },
+              { title: '', dataIndex: 'short', width: 110, render: (s: boolean) => (s ? <AppTag meaning="failed">Short</AppTag> : <AppTag meaning="done">Enough</AppTag>) },
             ]}
           />
         </>

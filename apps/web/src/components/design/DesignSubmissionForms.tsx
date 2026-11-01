@@ -37,30 +37,19 @@ import { PhotoUpload } from '@/components/common/PhotoUpload';
 const ymd = (d?: dayjs.Dayjs | null) => (d ? d.format('YYYY-MM-DD') : null);
 const afterToday = (d: dayjs.Dayjs) => d.isAfter(dayjs(), 'day');
 
-const STATUS_TONE: Record<DesignSubmissionStatus, 'neutral' | 'info' | 'success' | 'pending' | 'danger'> = {
-  DRAFT: 'neutral',
-  UNDER_REVIEW: 'info',
-  APPROVED: 'success',
-  APPROVED_AS_NOTED: 'success',
-  REVISE_RESUBMIT: 'pending',
-  REJECTED: 'danger',
-  WITHDRAWN: 'neutral',
-};
-
 /** Where a submission stands; a review past its reply-by date says how late. */
 export function DesignStatusTag({ status, purpose, daysLate }: { status: DesignSubmissionStatus; purpose: DesignPurpose; daysLate?: number | null }) {
-  if (status === 'UNDER_REVIEW' && daysLate) return <AppTag tone="danger" dot>{`Reply ${daysLate} day${daysLate === 1 ? '' : 's'} late`}</AppTag>;
+  if (status === 'UNDER_REVIEW' && daysLate) return <AppTag meaning="failed">{`Reply ${daysLate} day${daysLate === 1 ? '' : 's'} late`}</AppTag>;
   return (
-    <AppTag tone={STATUS_TONE[status]} dot>
+    <AppTag kind="designSubmission" status={status}>
       {designStatusLabel(status, purpose)}
     </AppTag>
   );
 }
 
-const CODE_TONE: Record<DesignCode, 'success' | 'pending' | 'danger'> = { A: 'success', B: 'success', C: 'pending', D: 'danger' };
 export const codeLabel = (code: DesignCode, purpose: DesignPurpose) => `Code ${code}, ${designStatusLabel(statusForCode(code), purpose).toLowerCase()}`;
 export function CodeTag({ code, purpose }: { code: DesignCode; purpose: DesignPurpose }) {
-  return <AppTag tone={CODE_TONE[code]}>{codeLabel(code, purpose)}</AppTag>;
+  return <AppTag kind="designCode" status={code}>{codeLabel(code, purpose)}</AppTag>;
 }
 
 interface SubmissionValues {

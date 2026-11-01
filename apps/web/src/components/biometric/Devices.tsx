@@ -155,7 +155,7 @@ export function Devices() {
     { title: 'Site', dataIndex: 'projectName', ellipsis: true, render: (v: string | null) => v ?? 'Head office' },
     { title: 'Last heard', dataIndex: 'lastSeenAt', width: 170, render: (v: string | null, d) => (d.protocol === 'FILE' ? NO_VALUE : ago(v)) },
     { title: 'Punches today', dataIndex: 'punchesToday', width: 120, align: 'right' },
-    { title: 'Status', dataIndex: 'isActive', width: 90, render: (v: boolean) => (v ? <AppTag tone="success">On</AppTag> : <AppTag>Off</AppTag>) },
+    { title: 'Status', dataIndex: 'isActive', width: 90, render: (v: boolean) => (v ? <AppTag meaning="done">On</AppTag> : <AppTag meaning="closed">Off</AppTag>) },
     {
       title: 'Commands',
       key: 'commands',
@@ -165,8 +165,8 @@ export function Devices() {
           NO_VALUE
         ) : (
           <div>
-            {d.commandsFailed ? <AppTag tone="danger">{`${d.commandsFailed} failed`}</AppTag> : null}
-            {d.commandsWaiting ? <AppTag tone="pending">{`${d.commandsWaiting} waiting`}</AppTag> : null}
+            {d.commandsFailed ? <AppTag meaning="failed">{`${d.commandsFailed} failed`}</AppTag> : null}
+            {d.commandsWaiting ? <AppTag meaning="waiting">{`${d.commandsWaiting} waiting`}</AppTag> : null}
             <div className="text-muted">{d.clockSetAt ? `Clock set ${formatDateTime(d.clockSetAt)}` : 'Clock not set yet'}</div>
           </div>
         ),

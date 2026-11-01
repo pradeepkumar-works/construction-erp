@@ -3,15 +3,14 @@
 import React, { useState } from 'react';
 import { Button, Divider, Flex, Table, Typography, theme } from 'antd';
 import Link from 'next/link';
-import { copyLabel, type ControlledCopyDto, type ImpactTone, type RevisionImpactItem } from '@erp/shared';
+import { copyLabel, type ControlledCopyDto, type RevisionImpactItem } from '@erp/shared';
 import { useRevisionImpact } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
-import { AppTag, type TagTone } from '@/components/common/AppTag';
+import { AppTag } from '@/components/common/AppTag';
 import { PlusOutlined } from '@/components/common/icons';
 import { CopyStateTag, IssueCopiesDialog, ReissueDialog, TakeBackDialog } from './ControlledCopies';
 
 const srOnly: React.CSSProperties = { position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 };
-const TONE: Record<ImpactTone, TagTone> = { danger: 'danger', warning: 'pending', info: 'info' };
 const KEY_LABEL: Record<RevisionImpactItem['key'], string> = {
   copies: 'Copies',
   submissions: 'Approval',
@@ -29,7 +28,7 @@ export function ImpactList({ items }: { items: RevisionImpactItem[] }) {
     <Flex vertical gap={token.marginXS}>
       {items.map((i, n) => (
         <Flex key={`${i.key}-${n}`} gap={token.marginXS} align="baseline">
-          <AppTag tone={TONE[i.tone]} style={{ flex: 'none' }}>
+          <AppTag kind="impact" status={i.tone} style={{ flex: 'none' }}>
             {KEY_LABEL[i.key]}
           </AppTag>
           <span>

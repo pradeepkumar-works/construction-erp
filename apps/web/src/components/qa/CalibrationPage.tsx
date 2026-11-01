@@ -244,7 +244,7 @@ function InstrumentDrawer({ id, onClose }: { id: string | null; onClose: () => v
             columns={[
               { title: 'Calibrated on', dataIndex: 'calibratedOn', render: (v: string) => formatDate(v) },
               { title: 'Certificate', key: 'cert', render: (_, c) => <span translate="no">{[c.certificateNo, c.agency].filter(Boolean).join(', ') || '-'}</span> },
-              { title: 'Result', dataIndex: 'result', render: (v: CalibrationResult) => <AppTag tone={v === 'FAILED' ? 'danger' : 'success'}>{CALIBRATION_RESULT_LABELS[v]}</AppTag> },
+              { title: 'Result', dataIndex: 'result', render: (v: CalibrationResult) => <AppTag kind="calibrationResult" status={v}>{CALIBRATION_RESULT_LABELS[v]}</AppTag> },
               { title: 'Next due', dataIndex: 'nextDueOn', render: (v: string | null) => (v ? formatDate(v) : '-') },
               { title: 'Certificate', key: 'files', render: (_, c) => (c.attachments.length ? <AttachmentGallery attachments={c.attachments} size={48} /> : '-') },
             ]}

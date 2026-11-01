@@ -53,7 +53,7 @@ export function expenseColumns({
         </div>
       ),
     },
-    { defaultFrom: 1400, card: 'meta', title: 'Category', dataIndex: 'category', width: 170, ...sort('category'), render: (c) => <AppTag style={{ margin: 0 }}>{EXPENSE_CATEGORY_LABELS[c as ExpenseDto['category']]}</AppTag> },
+    { defaultFrom: 1400, card: 'meta', title: 'Category', dataIndex: 'category', width: 170, ...sort('category'), render: (c) => <AppTag variant="kind" style={{ margin: 0 }}>{EXPENSE_CATEGORY_LABELS[c as ExpenseDto['category']]}</AppTag> },
     {
       card: 'amount',
       cardText: (r) => formatINR(r.totalAmount, true),
@@ -82,7 +82,7 @@ export function expenseColumns({
           <PhotoThumbs attachments={a} />
         ) : (
           <Tooltip title="No bill photo attached">
-            <AppTag tone="pending" icon={<WarningOutlined />} style={{ margin: 0 }}>
+            <AppTag meaning="waiting" icon={<WarningOutlined />} style={{ margin: 0 }}>
               None
             </AppTag>
           </Tooltip>

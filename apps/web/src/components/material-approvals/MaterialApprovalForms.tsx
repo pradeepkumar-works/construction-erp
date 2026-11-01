@@ -28,23 +28,13 @@ import { PhotoUpload } from '@/components/common/PhotoUpload';
 const ymd = (d?: dayjs.Dayjs | null) => (d ? d.format('YYYY-MM-DD') : null);
 const notAfterToday = (d: dayjs.Dayjs) => d.isAfter(dayjs(), 'day');
 
-const STATUS_COLORS: Record<MaterialApprovalStatus, string | undefined> = {
-  DRAFT: undefined,
-  UNDER_REVIEW: 'processing',
-  APPROVED: 'success',
-  APPROVED_AS_NOTED: 'success',
-  REVISE_RESUBMIT: 'warning',
-  REJECTED: 'error',
-  WITHDRAWN: undefined,
-};
 export function MaterialApprovalStatusTag({ status, overdue }: { status: MaterialApprovalStatus; overdue?: boolean }) {
-  if (status === 'UNDER_REVIEW' && overdue) return <AppTag tone="danger">Reply overdue</AppTag>;
-  return <AppTag color={STATUS_COLORS[status]}>{MATERIAL_APPROVAL_STATUS_LABELS[status]}</AppTag>;
+  if (status === 'UNDER_REVIEW' && overdue) return <AppTag meaning="failed">Reply overdue</AppTag>;
+  return <AppTag kind="materialApproval" status={status}>{MATERIAL_APPROVAL_STATUS_LABELS[status]}</AppTag>;
 }
 
-const OUTCOME_COLORS: Record<MaterialReviewOutcome, string> = { APPROVED: 'success', APPROVED_AS_NOTED: 'success', REVISE_RESUBMIT: 'warning', REJECTED: 'error' };
 export function OutcomeTag({ outcome }: { outcome: MaterialReviewOutcome }) {
-  return <AppTag color={OUTCOME_COLORS[outcome]}>{MATERIAL_REVIEW_OUTCOME_LABELS[outcome]}</AppTag>;
+  return <AppTag kind="materialReview" status={outcome}>{MATERIAL_REVIEW_OUTCOME_LABELS[outcome]}</AppTag>;
 }
 
 interface ApprovalValues {

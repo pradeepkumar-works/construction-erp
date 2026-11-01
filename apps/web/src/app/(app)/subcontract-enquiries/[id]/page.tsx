@@ -14,7 +14,7 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { LinkButton } from '@/components/common/LinkButton';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
-import { RankTag } from '@/components/tenders/tenderUi';
+import { RankText } from '@/components/tenders/tenderUi';
 import { AwardDialog, CancelDialog, InviteDialog, QuoteDrawer, ScEnquiryForm, ScEnquiryStatusTag } from '@/components/sc-enquiries/ScEnquiryForms';
 
 const money = (v: string | null | undefined, paise = true) => <span translate="no">{v === null || v === undefined ? NO_VALUE : formatINR(v, paise)}</span>;
@@ -146,7 +146,7 @@ function EnquiryView({ e }: { e: ScEnquiryDetailDto }) {
         subtitle={
           <span>
             <ScEnquiryStatusTag status={e.status} />
-            {isOpen && e.closed ? <AppTag tone="pending">Past its last day</AppTag> : null}
+            {isOpen && e.closed ? <AppTag meaning="waiting">Past its last day</AppTag> : null}
             <span translate="no">{`${e.enquiryNo} · ${e.projectCode} ${e.projectName}`}</span>
           </span>
         }
@@ -263,8 +263,8 @@ function Comparison({ e, onQuote, onAward }: { e: ScEnquiryDetailDto; onQuote: (
       <div style={{ textAlign: 'right' }}>
         <div translate="no">{q.vendorName}</div>
         <Flex gap={4} justify="flex-end" wrap>
-          {q.rank ? <RankTag rank={q.rank} /> : <AppTag>{q.complete ? NO_VALUE : `${q.priced} of ${e.items.length} priced`}</AppTag>}
-          {q.awarded ? <AppTag tone="success">Awarded</AppTag> : null}
+          {q.rank ? <RankText rank={q.rank} /> : <span className="text-muted">{q.complete ? NO_VALUE : `${q.priced} of ${e.items.length} priced`}</span>}
+          {q.awarded ? <AppTag meaning="done">Awarded</AppTag> : null}
         </Flex>
         <Space size={0} style={{ marginTop: 4 }}>
           {e.status === 'OPEN' && e.canEdit ? (
@@ -400,7 +400,7 @@ function QuotesCard({ e, onEnter, onRemove }: { e: ScEnquiryDetailDto; onEnter?:
                 <Typography.Text strong translate="no">
                   {q.vendorName}
                 </Typography.Text>{' '}
-                {q.rank ? <RankTag rank={q.rank} /> : null}
+                {q.rank ? <RankText rank={q.rank} /> : null}
                 <Typography.Text type="secondary" style={{ display: 'block', fontSize: token.fontSizeSM }} translate="no">
                   {[
                     q.received ? `In on ${formatDate(q.receivedOn!)}` : 'Awaited',

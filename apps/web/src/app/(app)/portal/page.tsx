@@ -6,7 +6,7 @@ import { Card, Col, Empty, Progress, Row, Space, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { PROJECT_STATUS_LABELS, PROJECT_TYPE_LABELS } from '@erp/shared';
 import { usePortalProjects } from '@/lib/queries';
-import { formatDate, formatINRCompact, PROJECT_STATUS_COLORS } from '@/lib/format';
+import { formatDate, formatINRCompact } from '@/lib/format';
 import { useAuth } from '@/lib/auth';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
@@ -30,10 +30,10 @@ export default function PortalPage() {
                 <Space orientation="vertical" size={8} style={{ width: '100%' }}>
                   <Space wrap size={6}>
                     <Typography.Text type="secondary">{p.code}</Typography.Text>
-                    <AppTag color={PROJECT_STATUS_COLORS[p.status]} style={{ margin: 0 }}>
+                    <AppTag kind="project" status={p.status} style={{ margin: 0 }}>
                       {PROJECT_STATUS_LABELS[p.status]}
                     </AppTag>
-                    <AppTag style={{ margin: 0 }}>{PROJECT_TYPE_LABELS[p.type]}</AppTag>
+                    <AppTag variant="kind" style={{ margin: 0 }}>{PROJECT_TYPE_LABELS[p.type]}</AppTag>
                   </Space>
                   <Typography.Title level={5} style={{ margin: 0 }}>
                     {p.name}
@@ -49,8 +49,8 @@ export default function PortalPage() {
                     ) : null}
                   </div>
                   <Space wrap size={12}>
-                    {p.billsToCertify ? <AppTag tone="pending">{`${p.billsToCertify} ${p.billsToCertify === 1 ? 'bill' : 'bills'} to certify`}</AppTag> : <Typography.Text type="secondary">No bills to certify</Typography.Text>}
-                    {p.openInspections ? <AppTag tone="pending">{`${p.openInspections} ${p.openInspections === 1 ? 'inspection' : 'inspections'} requested`}</AppTag> : null}
+                    {p.billsToCertify ? <AppTag meaning="waiting">{`${p.billsToCertify} ${p.billsToCertify === 1 ? 'bill' : 'bills'} to certify`}</AppTag> : <Typography.Text type="secondary">No bills to certify</Typography.Text>}
+                    {p.openInspections ? <AppTag meaning="waiting">{`${p.openInspections} ${p.openInspections === 1 ? 'inspection' : 'inspections'} requested`}</AppTag> : null}
                   </Space>
                   <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                     Last daily report: {p.lastDprDate ? formatDate(p.lastDprDate) : 'none yet'}

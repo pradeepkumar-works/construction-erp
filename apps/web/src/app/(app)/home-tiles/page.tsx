@@ -113,7 +113,7 @@ function RequestRow({ r, highlighted, onDecide }: { r: AccessRequestDto; highlig
             </Button>
           </Flex>
         ) : (
-          <AppTag tone={r.status === 'GRANTED' ? 'success' : 'neutral'}>{ACCESS_REQUEST_STATUS_LABELS[r.status]}</AppTag>
+          <AppTag kind="accessRequest" status={r.status}>{ACCESS_REQUEST_STATUS_LABELS[r.status]}</AppTag>
         )}
       </Flex>
     </li>

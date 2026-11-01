@@ -103,7 +103,7 @@ function vendorBillColumns({ showProject, onOpen, onEdit, sortOrderFor }: { show
       dataIndex: 'dueDate',
       width: 130,
       ...sort('dueDate'),
-      render: (v, r) => (overdueDays(r) ? <AppTag tone="danger">{formatDate(v)}</AppTag> : formatDate(v)),
+      render: (v, r) => (overdueDays(r) ? <AppTag meaning="failed">{formatDate(v)}</AppTag> : formatDate(v)),
     },
     { defaultFrom: 1400, key: 'matched', title: 'Match', label: 'Match with the PO', dataIndex: 'matched', width: 120, render: (v, r) => <span title={r.exceptions.join('\n')}><MatchTag matched={v} po={!!r.purchaseOrderId} /></span> },
     { key: 'submittedByName', title: 'Recorded by', dataIndex: 'submittedByName', width: 140, defaultHidden: true },

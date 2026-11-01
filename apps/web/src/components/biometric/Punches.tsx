@@ -14,7 +14,6 @@ import { useBiometricAction, useBiometricDevices, useBiometricPunches } from '@/
 import { QueryError } from '@/components/common/QueryState';
 import { FormShell } from '@/components/form/FormShell';
 
-const RESULT_COLOR: Record<BiometricPunchResult, string> = { APPLIED: 'green', UNMATCHED: 'orange', LOCKED: 'default', SKIPPED: 'default' };
 
 /** A punch file from the device or its software: Excel is turned into CSV here, the API reads the columns. */
 function ImportModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -94,7 +93,7 @@ export function Punches() {
     { title: 'User number', dataIndex: 'pin', width: 120, render: (v: string) => <span translate="no">{v}</span> },
     { title: 'Person', key: 'who', ellipsis: true, render: (_, p) => (p.personName ? <span translate="no">{`${p.personName} (${p.personCode})`}</span> : <Typography.Text type="secondary">Not matched</Typography.Text>) },
     { title: 'Device', dataIndex: 'deviceName', width: 180, ellipsis: true },
-    { title: 'Attendance', dataIndex: 'result', width: 140, render: (v: BiometricPunchResult) => <AppTag color={RESULT_COLOR[v]}>{BIOMETRIC_PUNCH_RESULT_LABELS[v]}</AppTag> },
+    { title: 'Attendance', dataIndex: 'result', width: 140, render: (v: BiometricPunchResult) => <AppTag kind="biometricPunch" status={v}>{BIOMETRIC_PUNCH_RESULT_LABELS[v]}</AppTag> },
     { title: 'Note', dataIndex: 'note', ellipsis: true, render: (v: string | null) => v ?? '' },
   ];
 

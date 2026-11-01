@@ -22,7 +22,7 @@ function DprChecks({ checks }: { checks: DprCheckDto[] }) {
         {checks.map((c, i) => (
           <li key={`${c.kind}-${c.lineId ?? 'day'}-${i}`}>
             <Flex gap={token.marginXS} wrap align="baseline">
-              <AppTag tone="pending">{DPR_CHECK_LABELS[c.kind]}</AppTag>
+              <AppTag meaning="waiting">{DPR_CHECK_LABELS[c.kind]}</AppTag>
               <Typography.Text>{c.text}</Typography.Text>
               {c.refs.map((r) => (
                 <Link key={r.href} href={r.href}>

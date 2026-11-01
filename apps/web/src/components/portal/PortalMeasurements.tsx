@@ -20,7 +20,6 @@ import { QuantityInput } from '@/components/form/inputs';
 import { CheckCoverage } from './CheckCoverage';
 import { Money } from '@/components/common/Money';
 
-const OUTCOME_TONE: Record<CheckOutcome, 'success' | 'danger' | 'pending'> = { AGREED: 'success', LESS: 'danger', MORE: 'pending' };
 
 /**
  * Check measurement: the contractor's approved sheets, with each level's share checked. The caller checks a sheet
@@ -95,7 +94,7 @@ export function PortalMeasurements({ measurements, openId, onOpen }: { measureme
               r.checks.length ? (
                 <Space size={4} wrap>
                   {r.checks.map((c) => (
-                    <AppTag key={c.id} tone={OUTCOME_TONE[c.outcome]}>
+                    <AppTag key={c.id} kind="checkOutcome" status={c.outcome}>
                       {CHECK_LEVEL_LABELS[c.level]}
                     </AppTag>
                   ))}
@@ -162,7 +161,7 @@ function MeasurementDrawer({ data, level, onClose }: { data: PortalMeasurementDt
                 { title: 'By', key: 'by', render: (_, c) => `${c.checkedByName}, ${CHECK_LEVEL_LABELS[c.level].toLowerCase()}` },
                 { title: 'On', dataIndex: 'checkedOn', width: 110, render: (v: string) => formatDate(v) },
                 { title: 'Found', dataIndex: 'checkedQty', align: 'right', width: 110, render: (v: string) => formatQty(v) },
-                { title: 'Result', dataIndex: 'outcome', width: 160, render: (o: CheckOutcome, c) => <span><AppTag tone={OUTCOME_TONE[o]}>{CHECK_OUTCOME_LABELS[o]}</AppTag>{c.note ? <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{c.note}</div> : null}</span> },
+                { title: 'Result', dataIndex: 'outcome', width: 160, render: (o: CheckOutcome, c) => <span><AppTag kind="checkOutcome" status={o}>{CHECK_OUTCOME_LABELS[o]}</AppTag>{c.note ? <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{c.note}</div> : null}</span> },
               ]}
             />
           ) : (

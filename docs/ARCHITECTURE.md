@@ -228,6 +228,32 @@ stated by `ModuleHomeService` (a department picks its modules' figures by `Figur
 such as "3 of 12 projects behind plan" is a count with `versus: { of }`; a module figure's note is a comparison or a
 verdict with its reason, never words of its own. `src/scripts/figures-test.ts` (CI) holds the registry and the presenter.
 
+### Status colour
+
+A status's colour says one thing, what it means for the reader, so the same word looks the same on every register and a
+list of approved work is quiet. Five meanings, in `@erp/shared/status-tone.ts`:
+
+- **waiting** (the pending tone, amber): it waits on someone (submitted, open, due soon, behind plan).
+- **in hand** (info, blue): with us, moving (a draft, in progress, on the way).
+- **done** (quiet: plain text, no fill, no dot): approved, paid, received, passed.
+- **failed** (danger, red): rejected, sent back, overdue, missed, late.
+- **closed** (quiet, muted text): cancelled, withdrawn, closed, not set.
+
+`STATUS_TONES` maps every status of every kind the web shows (submissions, projects, bills, risks, NCRs, letters, the
+Gantt's activities…) to one meaning, and `statusTone(kind, status)` reads it (pure; a status the map does not know is
+quiet, never an alarm). `src/scripts/status-tone-test.ts` (CI) holds that each kind maps exactly its enum's values and that
+a word means the same everywhere: Open waits on every register (risks, NCRs, defects, findings, RFIs, actions, site
+orders), Rejected and Overdue fail, Approved and Paid are quiet.
+
+`AppTag` has two forms. A state is `<AppTag kind="risk" status={r.status}>` (typed, so a status of another kind does not
+compile), or `meaning="failed"` for a flag that is no enum ("3 days late"); waiting, in hand and failed draw their tone
+with a dot, done and closed draw as plain text. A category (a trade, a type, a priority grade) is `variant="kind"`:
+outlined, muted, no dot. A score, rank or count is text or a figure, never a tag. `StageBar` follows the same meanings:
+finished stages solid, the current one half drawn while in hand, amber while it waits (`LaterStage.waits`), red when
+sent back, what is to come the track. The launcher's tiles draw every icon in one ink and say a count with its word
+(`LauncherBadgesDto.words`, "53 to approve"), in full. The Gantt colours bars and milestones by `statusTone` (red only
+for late) and draws the critical path and today in the neutral ink.
+
 ### Launcher Home, pins and Recent (launcher phase 2)
 
 Home (`app/(app)/page.tsx`, `components/launcher/HomeLauncher.tsx`) is a launcher: a greeting (the page's `<h1>`), a search

@@ -11,7 +11,6 @@ import { QueryError } from '@/components/common/QueryState';
 import { CardToolbar } from '@/components/common/CardToolbar';
 import { themeFontSize } from '@/lib/theme';
 
-const STATUS_COLOR: Record<OutboundMessageStatus, string> = { SENT: 'green', FAILED: 'red', SKIPPED: 'default' };
 
 /** Every WhatsApp and SMS the company sent, or tried to, newest first (admin and management). */
 export function MessageLog() {
@@ -113,7 +112,7 @@ export function MessageLog() {
             width: 190,
             render: (_, m) => (
               <>
-                <AppTag color={STATUS_COLOR[m.status]}>{OUTBOUND_MESSAGE_STATUS_LABELS[m.status]}</AppTag>
+                <AppTag kind="outboundMessage" status={m.status}>{OUTBOUND_MESSAGE_STATUS_LABELS[m.status]}</AppTag>
                 {m.error ? (
                   <div style={{ fontSize: themeFontSize('fontSizeSM') }}>
                     <Typography.Text type="secondary">{m.error}</Typography.Text>

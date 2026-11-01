@@ -120,8 +120,8 @@ export function TemplateEditor({ template, editable, standard = true }: { templa
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
         <Typography.Text type="secondary">
-          {standard && template.isDefault ? <AppTag tone="info">Standard list</AppTag> : null}
-          {standard && !template.isDefault ? <AppTag tone="success">Your list</AppTag> : null}
+          {standard && template.isDefault ? <AppTag variant="kind">Standard list</AppTag> : null}
+          {standard && !template.isDefault ? <AppTag variant="kind">Your list</AppTag> : null}
           {rows.length} activities for a {inSentence(template.typeName)} project, besides those of its components. When a project has start and end dates the schedule is stretched or squeezed to fit them.
         </Typography.Text>
         {editable ? (

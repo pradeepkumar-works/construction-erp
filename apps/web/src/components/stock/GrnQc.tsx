@@ -15,18 +15,17 @@ import { DatePicker } from '@/components/common/DatePicker';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { CODE_INPUT, QuantityInput, upper } from '@/components/form/inputs';
 
-const COLORS: Record<GrnQcStatus, string> = { ACCEPTED: 'green', PARTLY_ACCEPTED: 'gold', REJECTED: 'red' };
 
 /** Where a GRN stands with QA/QC. */
 export function GrnQcTag({ status }: { status: GrnQcStatus | null | undefined }) {
   if (!status)
     return (
-      <AppTag style={{ margin: 0 }}>
+      <AppTag meaning="waiting" style={{ margin: 0 }}>
         Awaiting QA/QC
       </AppTag>
     );
   return (
-    <AppTag color={COLORS[status]} style={{ margin: 0 }}>
+    <AppTag kind="grnQc" status={status} style={{ margin: 0 }}>
       QA/QC: {GRN_QC_STATUS_LABELS[status]}
     </AppTag>
   );

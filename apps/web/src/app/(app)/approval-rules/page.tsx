@@ -259,7 +259,7 @@ export default function ApprovalRulesPage() {
             scroll={{ x: 190 + 170 * SUBMISSION_TYPES.length }}
             footer={() => (
               <Typography.Text type="secondary">
-                <AppTag style={{ marginRight: 8 }}>Admin</AppTag>approves everything with no limit and is always notified. Approvers still only see projects they have access to.
+                <AppTag variant="kind" style={{ marginRight: 8 }}>Admin</AppTag>approves everything with no limit and is always notified. Approvers still only see projects they have access to.
               </Typography.Text>
             )}
           />

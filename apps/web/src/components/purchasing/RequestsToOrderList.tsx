@@ -20,18 +20,9 @@ import { Money } from '@/components/common/Money';
 
 const KEYS = ['stage'] as const;
 
-/** A stage's tone: what waits on purchase is pending, the order to raise is the call to act. */
-export const STAGE_TONE: Record<OrderStage, 'neutral' | 'info' | 'pending' | 'success'> = {
-  TO_ENQUIRE: 'neutral',
-  AWAITING_QUOTES: 'info',
-  TO_FINALISE: 'pending',
-  AWAITING_APPROVAL: 'info',
-  READY: 'success',
-};
-
 export function StageTag({ stage }: { stage: OrderStage }) {
   return (
-    <AppTag tone={STAGE_TONE[stage]} dot style={{ margin: 0 }}>
+    <AppTag kind="orderStage" status={stage} style={{ margin: 0 }}>
       {ORDER_STAGE_LABELS[stage]}
     </AppTag>
   );

@@ -25,9 +25,9 @@ export function HindranceRow({ s, onRecorded, showProject = true, showDpr = true
     <Flex data-hindrance={s.id} vertical gap={token.marginXXS} style={{ paddingBlock: token.paddingXS, borderTop: `1px solid ${token.colorSplit}` }}>
       <Flex wrap align="center" gap={token.marginXS}>
         <Typography.Text strong>{s.title}</Typography.Text>
-        <AppTag>{RISK_CATEGORY_LABELS[s.category]}</AppTag>
+        <AppTag variant="kind">{RISK_CATEGORY_LABELS[s.category]}</AppTag>
         {s.party ? <Typography.Text type="secondary">{DELAY_PARTY_LABELS[s.party]}</Typography.Text> : <Typography.Text type="secondary">Cause not clear</Typography.Text>}
-        {s.source === 'MODEL' ? <AppTag tone="violet">Check this</AppTag> : null}
+        {s.source === 'MODEL' ? <AppTag meaning="waiting">Check this</AppTag> : null}
       </Flex>
       <p style={{ margin: 0 }}>
         “{s.remark}”{' '}

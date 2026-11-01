@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Alert, App, Button, Descriptions, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Table, Typography } from 'antd';
 import type { TableProps } from 'antd';
 import { PlusOutlined } from '@/components/common/icons';
-import { AppTag, type TagTone } from '@/components/common/AppTag';
+import { AppTag } from '@/components/common/AppTag';
 import type { ConnectionHealth, FeedAuth, FeedPollResultDto, IntegrationConnectionDto, IntegrationKind, IntegrationSecretDto, WeighbridgeSource } from '@erp/shared';
 import { BATCH_SINCE_DAYS, CONNECTION_HEALTH_LABELS, FEED_AUTHS, FEED_AUTH_LABELS, INTEGRATION_KINDS, INTEGRATION_KIND_INFO, WEIGH_BAUDS, WEIGH_MIN_KG, WEIGH_STABLE_SECONDS, WEIGHBRIDGE_SOURCES, WEIGHBRIDGE_SOURCE_LABELS } from '@erp/shared';
 import { API_URL, errorMessage } from '@/lib/api';
@@ -15,7 +15,6 @@ import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { MoreActions } from '@/components/record/MoreActions';
 
-export const HEALTH_TONE: Record<ConnectionHealth, TagTone> = { LIVE: 'success', FAILING: 'danger', QUIET: 'pending', NOT_SET_UP: 'info', OFF: 'neutral' };
 
 interface Values {
   kind: IntegrationKind;
@@ -431,7 +430,7 @@ export function Connections() {
         </span>
       ),
     },
-    { title: 'Status', dataIndex: 'health', width: 200, render: (h: ConnectionHealth) => <AppTag tone={HEALTH_TONE[h]}>{CONNECTION_HEALTH_LABELS[h]}</AppTag> },
+    { title: 'Status', dataIndex: 'health', width: 200, render: (h: ConnectionHealth) => <AppTag kind="connectionHealth" status={h}>{CONNECTION_HEALTH_LABELS[h]}</AppTag> },
     { title: 'Site', dataIndex: 'projectName', ellipsis: true, render: (v: string | null) => v ?? 'Any site' },
     { title: 'Comes in by', key: 'by', width: 180, render: (_, c) => {
         const t = INTEGRATION_KIND_INFO[c.kind].transport;

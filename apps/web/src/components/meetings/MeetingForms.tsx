@@ -15,7 +15,6 @@ import {
   MEETING_STATUS_LABELS,
   isGuest,
   type MeetingActionDto,
-  type MeetingActionStatus,
   type MeetingDetailDto,
   type MeetingKind,
   type MeetingLinkKind,
@@ -33,17 +32,15 @@ import { EMAIL_INPUT, PHONE_INPUT, emailRule, phoneRule } from '@/components/for
 const ymd = (d?: dayjs.Dayjs | null) => (d ? d.format('YYYY-MM-DD') : null);
 const notAfterToday = (d: dayjs.Dayjs) => d.isAfter(dayjs(), 'day');
 
-const STATUS_COLORS: Record<MeetingStatus, string | undefined> = { DRAFT: undefined, ISSUED: 'success' };
 export function MeetingStatusTag({ status }: { status: MeetingStatus }) {
-  return <AppTag color={STATUS_COLORS[status]}>{MEETING_STATUS_LABELS[status]}</AppTag>;
+  return <AppTag kind="meeting" status={status}>{MEETING_STATUS_LABELS[status]}</AppTag>;
 }
 
-const ACTION_COLORS: Record<MeetingActionStatus, string | undefined> = { OPEN: 'processing', DONE: 'success', DROPPED: undefined };
 /** An action's state: open (late or due today in words), done or dropped. */
 export function ActionStatusTag({ a }: { a: MeetingActionDto }) {
-  if (a.status === 'OPEN' && a.daysOverdue) return <AppTag tone="danger">{`${a.daysOverdue} day${a.daysOverdue === 1 ? '' : 's'} late`}</AppTag>;
-  if (a.status === 'OPEN' && a.daysOverdue === 0) return <AppTag tone="pending">Due today</AppTag>;
-  return <AppTag color={ACTION_COLORS[a.status]}>{MEETING_ACTION_STATUS_LABELS[a.status]}</AppTag>;
+  if (a.status === 'OPEN' && a.daysOverdue) return <AppTag meaning="failed">{`${a.daysOverdue} day${a.daysOverdue === 1 ? '' : 's'} late`}</AppTag>;
+  if (a.status === 'OPEN' && a.daysOverdue === 0) return <AppTag meaning="waiting">Due today</AppTag>;
+  return <AppTag kind="meetingAction" status={a.status}>{MEETING_ACTION_STATUS_LABELS[a.status]}</AppTag>;
 }
 
 /** Where an action's due date stands, in words: "Due 4 Nov", "3 days late", "Done 2 Nov". */

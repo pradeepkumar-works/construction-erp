@@ -139,7 +139,7 @@ export function OfficialReportView({ projectId, kind, picker }: { projectId: str
               data ? (
                 <Space wrap size={8}>
                   <span translate="no">{data.docNo}</span>
-                  <AppTag tone={data.issue ? 'success' : 'neutral'}>{data.issue ? `Rev ${data.issue.revision} issued` : 'Draft'}</AppTag>
+                  <AppTag meaning={data.issue ? 'done' : 'inHand'}>{data.issue ? `Rev ${data.issue.revision} issued` : 'Draft'}</AppTag>
                 </Space>
               ) : (
                 OFFICIAL_REPORTS[kind].title

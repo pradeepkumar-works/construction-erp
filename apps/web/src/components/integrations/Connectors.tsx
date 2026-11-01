@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Alert, App, Button, Form, Input, Modal, Space, Table, Typography } from 'antd';
 import type { TableProps } from 'antd';
 import { PlusOutlined } from '@/components/common/icons';
-import { AppTag, type TagTone } from '@/components/common/AppTag';
+import { AppTag } from '@/components/common/AppTag';
 import type { AgentState, ConnectorAgentDto, ConnectorPairCodeDto } from '@erp/shared';
 import { AGENT_STATE_LABELS } from '@erp/shared';
 import { API_URL, errorMessage } from '@/lib/api';
@@ -17,7 +17,6 @@ import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { MoreActions } from '@/components/record/MoreActions';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
 
-const STATE_TONE: Record<AgentState, TagTone> = { ONLINE: 'success', OFFLINE: 'pending', WAITING_TO_PAIR: 'info', CODE_EXPIRED: 'pending', REVOKED: 'neutral' };
 
 function AgentForm({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: (r: ConnectorPairCodeDto) => void }) {
   const [form] = Form.useForm<{ name: string; projectId?: string | null }>();
@@ -92,7 +91,7 @@ export function Connectors() {
 
   const columns: TableProps<ConnectorAgentDto>['columns'] = [
     { title: 'Connector', dataIndex: 'name', width: 200 },
-    { title: 'Status', dataIndex: 'state', width: 150, render: (s: AgentState) => <AppTag tone={STATE_TONE[s]}>{AGENT_STATE_LABELS[s]}</AppTag> },
+    { title: 'Status', dataIndex: 'state', width: 150, render: (s: AgentState) => <AppTag kind="agent" status={s}>{AGENT_STATE_LABELS[s]}</AppTag> },
     { title: 'Site', dataIndex: 'projectName', ellipsis: true, render: (v: string | null) => v ?? 'Head office' },
     { title: 'Computer', dataIndex: 'hostname', width: 160, render: (v: string | null) => (v ? <span translate="no">{v}</span> : NO_VALUE) },
     { title: 'Version', dataIndex: 'version', width: 90, render: (v: string | null) => (v ? <span translate="no">{v}</span> : NO_VALUE) },

@@ -82,9 +82,9 @@ function StoreCard({ store: s }: { store: StoreSummaryDto }) {
         </Col>
       </Row>
       <Flex gap={8} wrap style={{ marginTop: token.marginSM }}>
-        {s.low ? <AppTag tone="danger">{`${s.low} item${s.low === 1 ? '' : 's'} below minimum`}</AppTag> : null}
-        {s.outInTransit ? <AppTag tone="info">{`${s.outInTransit} transfer${s.outInTransit === 1 ? '' : 's'} to sites in transit`}</AppTag> : null}
-        {s.inInTransit ? <AppTag tone="pending">{`${s.inInTransit} in transit to receive`}</AppTag> : null}
+        {s.low ? <AppTag meaning="failed">{`${s.low} item${s.low === 1 ? '' : 's'} below minimum`}</AppTag> : null}
+        {s.outInTransit ? <AppTag meaning="inHand">{`${s.outInTransit} transfer${s.outInTransit === 1 ? '' : 's'} to sites in transit`}</AppTag> : null}
+        {s.inInTransit ? <AppTag meaning="waiting">{`${s.inInTransit} in transit to receive`}</AppTag> : null}
       </Flex>
       <LinkButton href={`/stores/${s.id}`} style={{ marginTop: token.marginMD }} aria-label={`Open store: ${s.name}`}>
         Open store

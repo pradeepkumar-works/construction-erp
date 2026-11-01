@@ -98,9 +98,9 @@ export function MarkupList({
                       M{m.markupNo}
                     </Typography.Text>
                     <Typography.Text type="secondary">{MARKUP_KIND_LABELS[m.kind]}</Typography.Text>
-                    {m.status === 'RESOLVED' ? <AppTag tone="success">Resolved</AppTag> : null}
+                    {m.status === 'RESOLVED' ? <AppTag meaning="done">Resolved</AppTag> : null}
                     {carriedIds.has(m.id) || scope === 'all' ? (
-                      <AppTag translate="no" style={{ margin: 0 }}>
+                      <AppTag variant="kind" translate="no" style={{ margin: 0 }}>
                         {revLabel(m.revision)}
                         {m.page > 1 ? `, p ${m.page}` : ''}
                       </AppTag>

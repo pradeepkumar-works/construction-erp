@@ -9,14 +9,11 @@ import { useRmcPlants } from '@/lib/queries';
 import { useProjectScope } from '@/lib/project-scope';
 import { formatQty } from '@/lib/format';
 
-const ORDER_COLOR: Record<RmcOrderStatus, string> = { QUOTED: 'default', CONFIRMED: 'processing', CLOSED: 'success', CANCELLED: 'default' };
-const BATCH_COLOR: Record<RmcBatchStatus, string> = { DISPATCHED: 'processing', DELIVERED: 'success', REJECTED: 'error' };
-const DESIGN_COLOR: Record<MixDesignStatus, string> = { DRAFT: 'warning', APPROVED: 'success', RETIRED: 'default' };
 
-export const OrderStatusTag = ({ status }: { status: RmcOrderStatus }) => <AppTag color={ORDER_COLOR[status]}>{RMC_ORDER_STATUS_LABELS[status]}</AppTag>;
-export const BatchStatusTag = ({ status }: { status: RmcBatchStatus }) => <AppTag color={BATCH_COLOR[status]}>{RMC_BATCH_STATUS_LABELS[status]}</AppTag>;
-export const DesignStatusTag = ({ status }: { status: MixDesignStatus }) => <AppTag color={DESIGN_COLOR[status]}>{MIX_DESIGN_STATUS_LABELS[status]}</AppTag>;
-export const InvoiceStatusTag = ({ status }: { status: RmcInvoiceStatus }) => <AppTag color={status === 'ISSUED' ? 'blue' : 'default'}>{RMC_INVOICE_STATUS_LABELS[status]}</AppTag>;
+export const OrderStatusTag = ({ status }: { status: RmcOrderStatus }) => <AppTag kind="rmcOrder" status={status}>{RMC_ORDER_STATUS_LABELS[status]}</AppTag>;
+export const BatchStatusTag = ({ status }: { status: RmcBatchStatus }) => <AppTag kind="rmcBatch" status={status}>{RMC_BATCH_STATUS_LABELS[status]}</AppTag>;
+export const DesignStatusTag = ({ status }: { status: MixDesignStatus }) => <AppTag kind="mixDesign" status={status}>{MIX_DESIGN_STATUS_LABELS[status]}</AppTag>;
+export const InvoiceStatusTag = ({ status }: { status: RmcInvoiceStatus }) => <AppTag kind="rmcInvoice" status={status}>{RMC_INVOICE_STATUS_LABELS[status]}</AppTag>;
 
 /** Cubic metres, as people say them: "6 m³", "16.5 m³". */
 export const m3 = (v: string | number | null | undefined) => `${formatQty(v)} m³`;

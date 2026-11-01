@@ -70,7 +70,7 @@ export function MrRecord({ id, mode, open, onClose, onEdit }: RecordProps & { mo
             <>
               <StatusTag status={data.status} />
               {deciding && check.data?.flagged ? (
-                <AppTag tone="pending" dot>
+                <AppTag meaning="waiting">
                   {check.data.flagged === 1 ? '1 line to look at' : `${check.data.flagged} lines to look at`}
                 </AppTag>
               ) : null}

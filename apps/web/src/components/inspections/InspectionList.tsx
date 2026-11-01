@@ -47,7 +47,7 @@ function inspectionColumns({ showProject, onOpen, onEdit, sortOrderFor }: { show
         <div>
           <RecordLink href={`/inspections/${r.id}`} onOpen={() => onOpen(r.id)}>{r.activityName}</RecordLink>
           {r.holdPoint && (
-            <AppTag tone="pending" style={{ marginLeft: 6 }}>
+            <AppTag meaning="waiting" style={{ marginLeft: 6 }}>
               Hold point
             </AppTag>
           )}

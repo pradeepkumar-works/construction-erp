@@ -172,23 +172,27 @@ export class LauncherService {
   async badges(user: RequestUser): Promise<LauncherBadgesDto> {
     const work = await this.home.myWork(user);
     const nodes: Record<string, number> = {};
-    const add = (id: string, n: number | undefined) => {
-      if (n && n > 0) nodes[id] = (nodes[id] ?? 0) + n;
+    const words: Record<string, string> = {};
+    // A count and what it counts go on together, so a tile says "53 to approve" rather than a bare number.
+    const add = (id: string, n: number | undefined, word: string) => {
+      if (!n || n <= 0) return;
+      nodes[id] = (nodes[id] ?? 0) + n;
+      words[id] = word;
     };
     const approvals = work.approvals ?? [];
-    add('approvals', approvals.reduce((t, a) => t + a.count, 0));
+    add('approvals', approvals.reduce((t, a) => t + a.count, 0), 'to approve');
     for (const key of MODULE_KEYS) {
       const types = new Set<string>(MODULE_SUBMISSION_TYPES[key]);
-      add(key, approvals.filter((a) => types.has(a.type)).reduce((t, a) => t + a.count, 0));
+      add(key, approvals.filter((a) => types.has(a.type)).reduce((t, a) => t + a.count, 0), 'to approve');
     }
-    add('my-work', (nodes.approvals ?? 0) + (work.sentBack?.count ?? 0) + (work.dprsMissing?.count ?? 0));
-    add('watch', work.watchList?.count);
+    add('my-work', (nodes.approvals ?? 0) + (work.sentBack?.count ?? 0) + (work.dprsMissing?.count ?? 0), 'waiting');
+    add('watch', work.watchList?.count, 'to look at');
     // Each desk's queue on the tile that opens it.
-    add('purchases.toOrder', work.toOrder?.count);
-    add('quality.grns', work.grnsToCheck?.count);
-    add('quality.audits', work.findingsToClose?.count);
-    add('purchases.toBill', work.toMatch?.count);
-    add('accounts.debitNotes', work.toDebit?.count);
-    return { nodes, approvals: approvals.filter((a) => a.count > 0) };
+    add('purchases.toOrder', work.toOrder?.count, 'to order');
+    add('quality.grns', work.grnsToCheck?.count, 'to check');
+    add('quality.audits', work.findingsToClose?.count, 'to close');
+    add('purchases.toBill', work.toMatch?.count, 'to match');
+    add('accounts.debitNotes', work.toDebit?.count, 'to debit');
+    return { nodes, words, approvals: approvals.filter((a) => a.count > 0) };
   }
 }

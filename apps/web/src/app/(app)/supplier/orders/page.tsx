@@ -73,7 +73,7 @@ export default function SupplierOrdersPage() {
                     { title: 'Date', dataIndex: 'date', width: 110, render: (v: string) => formatDate(v) },
                     { title: 'Due by', dataIndex: 'dueBy', width: 110, render: (v: string | null) => formatDate(v) },
                     { title: 'Value', dataIndex: 'amount', width: 140, align: 'right', render: (v: string) => <Money paise value={v} /> },
-                    { title: 'Status', key: 'state', width: 120, render: (_, o) => (o.closed ? <AppTag>Closed</AppTag> : <AcceptedTag acceptedAt={o.acceptedAt} />) },
+                    { title: 'Status', key: 'state', width: 120, render: (_, o) => (o.closed ? <AppTag meaning="closed">Closed</AppTag> : <AcceptedTag acceptedAt={o.acceptedAt} />) },
                     {
                       title: 'Action',
                       key: 'action',

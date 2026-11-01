@@ -5,12 +5,9 @@ import { AppTag } from '@/components/common/AppTag';
 import { SUPPLIER_CHANGE_STATUS_LABELS, SUPPLIER_DISPATCH_STATUS_LABELS, SUPPLIER_INVOICE_STAGE_LABELS, type SupplierChangeStatus, type SupplierDispatchStatus, type SupplierInvoiceStage } from '@erp/shared';
 
 
-const STAGE_COLOR: Record<SupplierInvoiceStage, string> = { SUBMITTED: 'processing', BILLED: 'blue', PAID: 'success', RETURNED: 'error', WITHDRAWN: 'default' };
-const DISPATCH_COLOR: Record<SupplierDispatchStatus, string> = { ON_THE_WAY: 'processing', RECEIVED: 'success', CANCELLED: 'default' };
-const CHANGE_COLOR: Record<SupplierChangeStatus, string> = { PENDING: 'warning', APPROVED: 'success', REJECTED: 'error' };
 
-export const InvoiceStageTag = ({ stage }: { stage: SupplierInvoiceStage }) => <AppTag color={STAGE_COLOR[stage]}>{SUPPLIER_INVOICE_STAGE_LABELS[stage]}</AppTag>;
-export const DispatchStatusTag = ({ status }: { status: SupplierDispatchStatus }) => <AppTag color={DISPATCH_COLOR[status]}>{SUPPLIER_DISPATCH_STATUS_LABELS[status]}</AppTag>;
-export const ChangeStatusTag = ({ status }: { status: SupplierChangeStatus }) => <AppTag color={CHANGE_COLOR[status]}>{SUPPLIER_CHANGE_STATUS_LABELS[status]}</AppTag>;
-export const AcceptedTag = ({ acceptedAt }: { acceptedAt: string | null }) => (acceptedAt ? <AppTag tone="success">Accepted</AppTag> : <AppTag tone="pending">To accept</AppTag>);
+export const InvoiceStageTag = ({ stage }: { stage: SupplierInvoiceStage }) => <AppTag kind="supplierInvoice" status={stage}>{SUPPLIER_INVOICE_STAGE_LABELS[stage]}</AppTag>;
+export const DispatchStatusTag = ({ status }: { status: SupplierDispatchStatus }) => <AppTag kind="supplierDispatch" status={status}>{SUPPLIER_DISPATCH_STATUS_LABELS[status]}</AppTag>;
+export const ChangeStatusTag = ({ status }: { status: SupplierChangeStatus }) => <AppTag kind="supplierChange" status={status}>{SUPPLIER_CHANGE_STATUS_LABELS[status]}</AppTag>;
+export const AcceptedTag = ({ acceptedAt }: { acceptedAt: string | null }) => (acceptedAt ? <AppTag meaning="done">Accepted</AppTag> : <AppTag meaning="waiting">To accept</AppTag>);
 

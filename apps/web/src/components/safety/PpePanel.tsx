@@ -31,7 +31,6 @@ const counted = (label: string, n: number) => (
 type Show = 'all' | 'missing' | 'present' | 'due';
 const RED = themeColor('colorErrorText');
 const big = (color?: string) => ({ content: { fontSize: themeFontSize('fontSizeXL'), color } });
-const STATUS_COLOR: Record<PpeIssueDto['status'], string> = { ISSUED: 'blue', RETURNED: 'default', REPLACED: 'default', LOST: 'error' };
 
 interface CloseTarget {
   id: string;
@@ -128,7 +127,7 @@ export function PpePanel({ projectId: fixedProject }: { projectId?: string }) {
     const h = w.holding.find((x) => x.kind === k);
     if (!h)
       return (
-        <AppTag tone="danger" style={{ margin: 0 }}>
+        <AppTag meaning="failed" style={{ margin: 0 }}>
           Missing
         </AppTag>
       );
@@ -137,7 +136,7 @@ export function PpePanel({ projectId: fixedProject }: { projectId?: string }) {
         {formatDate(h.issuedOn)}
         {h.due ? (
           <Tooltip title={`Due for replacement since ${formatDate(h.replaceBy)}`}>
-            <AppTag tone="pending" style={{ marginLeft: 6 }}>
+            <AppTag meaning="waiting" style={{ marginLeft: 6 }}>
               Due
             </AppTag>
           </Tooltip>
@@ -178,7 +177,7 @@ export function PpePanel({ projectId: fixedProject }: { projectId?: string }) {
         return extra.length ? (
           <Space size={4} wrap>
             {extra.map((h) => (
-              <AppTag key={h.kind} color={h.due ? 'warning' : undefined} style={{ margin: 0 }}>
+              <AppTag key={h.kind} {...(h.due ? { meaning: 'waiting' as const } : { variant: 'kind' as const })} style={{ margin: 0 }}>
                 {PPE_KIND_LABELS[h.kind]}
                 {h.due ? ' · due' : ''}
               </AppTag>
@@ -230,17 +229,17 @@ export function PpePanel({ projectId: fixedProject }: { projectId?: string }) {
       width: 200,
       render: (s: PpeIssueDto['status'], r) => (
         <Space size={4} wrap>
-          <AppTag color={STATUS_COLOR[s]} style={{ margin: 0 }}>
+          <AppTag kind="ppeIssue" status={s} style={{ margin: 0 }}>
             {PPE_ISSUE_STATUS_LABELS[s]}
             {r.closedOn ? ` ${formatDate(r.closedOn)}` : ''}
           </AppTag>
           {r.dueForReplacement ? (
-            <AppTag tone="pending" style={{ margin: 0 }}>
+            <AppTag meaning="waiting" style={{ margin: 0 }}>
               Due
             </AppTag>
           ) : null}
           {r.recoverable ? (
-            <AppTag tone="danger" style={{ margin: 0 }}>
+            <AppTag meaning="failed" style={{ margin: 0 }}>
               Recover
             </AppTag>
           ) : null}
@@ -334,7 +333,7 @@ export function PpePanel({ projectId: fixedProject }: { projectId?: string }) {
             <Typography.Text type="secondary">Required kit:</Typography.Text>
             {reg.required.length ? (
               reg.required.map((k) => (
-                <AppTag key={k} style={{ margin: 0 }}>
+                <AppTag variant="kind" key={k} style={{ margin: 0 }}>
                   {PPE_KIND_LABELS[k]}
                 </AppTag>
               ))

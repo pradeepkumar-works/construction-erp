@@ -9,7 +9,6 @@ import { HEALTH_LABELS, PORTFOLIO_SCHEDULE_LABELS, type HealthLevel, type Portfo
 import { AppTag } from '@/components/common/AppTag';
 import { formatINRCompact, formatPct, toNumber, NO_VALUE } from '@/lib/format';
 import { ScheduleBullet } from './MoneyPipeline';
-import { HEALTH_TONES } from './report-format';
 
 const days = (n: number) => `${n} ${n === 1 ? 'day' : 'days'}`;
 const RANK: Record<HealthLevel, number> = { act: 0, watch: 1, good: 2 };
@@ -65,7 +64,7 @@ export function ProjectsHealthTable({ projects }: { projects: PortfolioProjectDt
       key: 'health',
       title: 'Health',
       render: (_, p) => (
-        <AppTag tone={HEALTH_TONES[p.health]} title={p.reasons.map((r) => r.text).join('; ') || undefined}>
+        <AppTag kind="health" status={p.health} title={p.reasons.map((r) => r.text).join('; ') || undefined}>
           {HEALTH_LABELS[p.health]}
         </AppTag>
       ),

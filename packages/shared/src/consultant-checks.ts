@@ -151,7 +151,6 @@ export const SITE_ORDER_DEFAULT_DAYS = 7;
 export const SITE_ORDER_STATES = ['OPEN', 'OVERDUE', 'REPLIED', 'CLOSED'] as const;
 export type SiteOrderState = (typeof SITE_ORDER_STATES)[number];
 export const SITE_ORDER_STATE_LABELS: Record<SiteOrderState, string> = { OPEN: 'Waiting for compliance', OVERDUE: 'Compliance overdue', REPLIED: 'Complied, to accept', CLOSED: 'Closed' };
-export const SITE_ORDER_STATE_COLORS: Record<SiteOrderState, string> = { OPEN: 'gold', OVERDUE: 'red', REPLIED: 'blue', CLOSED: 'green' };
 
 /** Where an order stands today: an open order past its comply-by date is overdue. */
 export function siteOrderState(o: { status: SiteOrderStatus; complyBy: string | null }, today: string): SiteOrderState {

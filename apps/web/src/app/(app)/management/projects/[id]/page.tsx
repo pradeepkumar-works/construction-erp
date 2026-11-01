@@ -30,7 +30,6 @@ import { ChartCard } from '@/components/home/ChartCard';
 import { Figures } from '@/components/figures';
 import { BudgetTrack, MoneyPipeline, ScheduleBullet } from '@/components/management/MoneyPipeline';
 import { AttentionList } from '@/components/management/AttentionList';
-import { HEALTH_TONES } from '@/components/management/report-format';
 import { NoAccess } from '@/components/common/NoAccess';
 import { TrendTable, trendSummary } from '@/components/management/TrendTable';
 import { Money } from '@/components/common/Money';
@@ -96,7 +95,7 @@ function Detail({ data }: { data: PortfolioProjectDetailDto }) {
         crumbs={[{ title: 'Management dashboard', href: '/management' }, { title: p.code }]}
         subtitle={
           <>
-            <AppTag tone={HEALTH_TONES[p.health]} style={{ marginInlineEnd: token.marginXS }}>
+            <AppTag kind="health" status={p.health} style={{ marginInlineEnd: token.marginXS }}>
               {HEALTH_LABELS[p.health]}
             </AppTag>
             <span translate="no">{p.code}</span>

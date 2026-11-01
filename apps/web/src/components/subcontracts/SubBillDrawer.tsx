@@ -127,7 +127,7 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                   {data.vendorName}
                   {data.vendorPan && <span className="text-muted"> · PAN {data.vendorPan}</span>}
                   {data.vendorMsme && (
-                    <AppTag color={data.vendorMsme === 'MEDIUM' ? 'default' : 'orange'} style={{ marginLeft: 8 }}>
+                    <AppTag variant="kind" style={{ marginLeft: 8 }}>
                       {MSME_CATEGORY_LABELS[data.vendorMsme]}
                     </AppTag>
                   )}
@@ -147,7 +147,7 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                 <span>
                   {formatDate(data.dueDate)}
                   {late && (
-                    <AppTag tone="danger" style={{ marginLeft: 8 }}>
+                    <AppTag meaning="failed" style={{ marginLeft: 8 }}>
                       {late} days overdue
                     </AppTag>
                   )}
@@ -180,7 +180,7 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                         title: 'Item',
                         render: (_, l) => (
                           <div>
-                            {l.itemNo ? <AppTag style={{ marginRight: 6 }}>{l.itemNo}</AppTag> : <AppTag tone="violet" style={{ marginRight: 6 }}>Own item</AppTag>}
+                            {l.itemNo ? <AppTag variant="kind" style={{ marginRight: 6 }}>{l.itemNo}</AppTag> : <AppTag variant="kind" style={{ marginRight: 6 }}>Own item</AppTag>}
                             {l.description}
                           </div>
                         ),

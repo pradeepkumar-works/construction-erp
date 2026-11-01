@@ -93,7 +93,7 @@ export function TestsDuePage() {
                   dataIndex: 'short',
                   width: 90,
                   align: 'right',
-                  render: (v: number) => (v ? <AppTag tone="danger">{`${v} short`}</AppTag> : <Typography.Text type="secondary">-</Typography.Text>),
+                  render: (v: number) => (v ? <AppTag meaning="failed">{`${v} short`}</AppTag> : <Typography.Text type="secondary">-</Typography.Text>),
                 },
                 { title: 'Last test', dataIndex: 'lastTestOn', width: 120, render: (v: string | null) => (v ? formatDate(v) : '-') },
                 { title: 'Witness', key: 'witness', width: 170, render: (_, r) => <WitnessTag line={r.line} /> },

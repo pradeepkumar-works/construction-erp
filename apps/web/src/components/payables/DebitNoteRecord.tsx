@@ -22,13 +22,13 @@ export const debitNoteBillHref = (n: Pick<DebitNoteDto, 'vendorBillId' | 'subcon
 
 export const DebitNoteTag = ({ note }: { note: Pick<DebitNoteDto, 'cancelledAt' | 'exportedToTally'> }) =>
   note.cancelledAt ? (
-    <AppTag style={{ margin: 0 }}>Cancelled</AppTag>
+    <AppTag meaning="closed" style={{ margin: 0 }}>Cancelled</AppTag>
   ) : note.exportedToTally ? (
-    <AppTag tone="info" style={{ margin: 0 }}>
+    <AppTag meaning="done" style={{ margin: 0 }}>
       In Tally
     </AppTag>
   ) : (
-    <AppTag tone="success" style={{ margin: 0 }}>
+    <AppTag meaning="done" style={{ margin: 0 }}>
       Taken off the bill
     </AppTag>
   );

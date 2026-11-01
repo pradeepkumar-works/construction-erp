@@ -30,15 +30,15 @@ export function ApprovalLevels({ type, id }: { type: ApprovalTypeParam; id: stri
             return (
               <span role="listitem" key={l}>
                 {step ? (
-                  <AppTag tone="success" icon={<CheckOutlined />} style={{ margin: 0 }}>
+                  <AppTag meaning="done" icon={<CheckOutlined />} style={{ margin: 0 }}>
                     Level {l}: {step.byName ?? 'approved'}, {formatDateTime(step.at)}
                   </AppTag>
                 ) : waiting && l === data.level ? (
-                  <AppTag tone="pending" icon={<ClockCircleOutlined />} style={{ margin: 0 }}>
+                  <AppTag meaning="waiting" icon={<ClockCircleOutlined />} style={{ margin: 0 }}>
                     Level {l}: waiting
                   </AppTag>
                 ) : (
-                  <AppTag style={{ margin: 0 }}>Level {l}</AppTag>
+                  <AppTag meaning="closed" style={{ margin: 0 }}>Level {l}</AppTag>
                 )}
               </span>
             );
@@ -56,7 +56,7 @@ export function ApprovalLevels({ type, id }: { type: ApprovalTypeParam; id: stri
           )}
           {data.waitingSince ? ` since ${formatDateTime(data.waitingSince)}` : ''}
           {data.escalated ? (
-            <AppTag tone="pending" icon={<RiseOutlined />} style={{ marginInlineStart: token.marginXS }}>
+            <AppTag meaning="waiting" icon={<RiseOutlined />} style={{ marginInlineStart: token.marginXS }}>
               Escalated
             </AppTag>
           ) : null}

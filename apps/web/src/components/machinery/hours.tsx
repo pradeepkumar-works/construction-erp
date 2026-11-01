@@ -9,7 +9,7 @@ import { formatQty, toNumber } from '@/lib/format';
 import { themeColor, themeFontSize } from '@/lib/theme';
 
 export const OwnershipTag = ({ ownership }: { ownership: EquipmentOwnership }) => (
-  <AppTag color={ownership === 'HIRED' ? 'orange' : 'geekblue'} style={{ margin: 0 }}>
+  <AppTag variant="kind" style={{ margin: 0 }}>
     {EQUIPMENT_OWNERSHIP_LABELS[ownership]}
   </AppTag>
 );

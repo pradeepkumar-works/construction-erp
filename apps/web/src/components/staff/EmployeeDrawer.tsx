@@ -36,7 +36,7 @@ function EmployeeDetails({ data }: { data: EmployeeDto }) {
         <Descriptions.Item label="Grade">{val(data.grade)}</Descriptions.Item>
         <Descriptions.Item label="Joined">
           {formatDate(data.joinedOn)}
-          {!data.isActive && <AppTag style={{ marginLeft: 8 }}>Left {formatDate(data.leftOn)}</AppTag>}
+          {!data.isActive && <AppTag meaning="closed" style={{ marginLeft: 8 }}>Left {formatDate(data.leftOn)}</AppTag>}
         </Descriptions.Item>
         <Descriptions.Item label={data.confirmedOn ? 'Confirmed' : 'Probation until'}>{formatDate(data.confirmedOn ?? data.probationEndsOn)}</Descriptions.Item>
         <Descriptions.Item label="Notice period">{data.noticeDays ? `${data.noticeDays} days` : none}</Descriptions.Item>

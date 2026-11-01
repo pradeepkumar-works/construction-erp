@@ -21,7 +21,6 @@ import { ImportScheduleModal, LinksDrawer, exportSchedule } from './ScheduleLink
 import { AskButton } from '@/components/ai/AskButton';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
-const MILESTONE_COLORS: Record<MilestoneState, string> = { UPCOMING: 'blue', DUE_SOON: 'orange', MISSED: 'red', ACHIEVED: 'green', ACHIEVED_LATE: 'gold' };
 const big = { content: { fontSize: themeFontSize('fontSizeXL') } };
 
 const moved = (days: number | null) =>
@@ -85,7 +84,7 @@ export function GanttPanel({ projectId }: { projectId: string }) {
     { title: 'Due on', dataIndex: 'dueDate', width: 120, render: (v) => formatDate(v) },
     ...(data.baselineAt ? [{ title: 'Baseline', dataIndex: 'baselineDate', width: 120, render: (v: string | null) => (v ? formatDate(v) : <span className="text-muted">not in baseline</span>) }, { title: 'Moved', dataIndex: 'slipDays', width: 130, render: (v: number | null) => moved(v) }] : []),
     { title: 'Achieved on', dataIndex: 'achievedOn', width: 120, render: (v) => (v ? formatDate(v) : <span className="text-muted">-</span>) },
-    { title: 'State', dataIndex: 'state', width: 120, render: (v: MilestoneState) => <AppTag color={MILESTONE_COLORS[v]}>{MILESTONE_STATE_LABELS[v]}</AppTag> },
+    { title: 'State', dataIndex: 'state', width: 120, render: (v: MilestoneState) => <AppTag kind="milestone" status={v}>{MILESTONE_STATE_LABELS[v]}</AppTag> },
     ...(editor
       ? [
           {

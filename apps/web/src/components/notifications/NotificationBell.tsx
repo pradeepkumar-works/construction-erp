@@ -107,7 +107,7 @@ export function NotificationBell() {
 
   return (
     <>
-      <Badge count={unread} size="small" offset={[-4, 4]}>
+      <Badge count={unread} overflowCount={Infinity} size="small" offset={[-4, 4]}>
         <Button type="text" icon={<BellOutlined style={{ fontSize: 18 }} />} aria-label={unread ? `Notifications, ${unread} unread` : 'Notifications'} style={{ height: 40, width: 40 }} onClick={() => setOpen(true)} />
       </Badge>
       <Drawer

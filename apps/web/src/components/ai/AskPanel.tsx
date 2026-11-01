@@ -468,7 +468,7 @@ function AnswerFooter({ item, onRate, onCopy, onRetry }: { item: ChatItem; onRat
             Sources
           </Typography.Text>
           {item.citations.map((c) => (
-            <AppTag key={c.href} variant="filled" style={{ marginInlineEnd: 0 }}>
+            <AppTag key={c.href} variant="kind" style={{ marginInlineEnd: 0 }}>
               <CitationLink href={c.href}>{c.label}</CitationLink>
             </AppTag>
           ))}

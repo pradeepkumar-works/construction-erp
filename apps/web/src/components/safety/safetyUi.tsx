@@ -9,37 +9,26 @@ import { formatDateTime, formatDayMonth } from '@/lib/format';
 import dayjs from 'dayjs';
 import { themeFontSize } from '@/lib/theme';
 
-export const INCIDENT_TYPE_COLORS: Record<SafetyIncidentType, string> = {
-  NEAR_MISS: 'gold',
-  FIRST_AID: 'orange',
-  MEDICAL_TREATMENT: 'volcano',
-  LOST_TIME: 'red',
-  PROPERTY_DAMAGE: 'purple',
-  FATALITY: 'magenta',
-};
-
 export const IncidentTypeTag = ({ type }: { type: SafetyIncidentType }) => (
-  <AppTag color={INCIDENT_TYPE_COLORS[type]} style={{ margin: 0 }}>
+  <AppTag variant="kind" style={{ margin: 0 }}>
     {SAFETY_INCIDENT_TYPE_LABELS[type]}
   </AppTag>
 );
 
 export const IncidentStatusTag = ({ status }: { status: SafetyIncidentStatus }) => (
-  <AppTag color={status === 'OPEN' ? 'red' : 'default'} style={{ margin: 0 }}>
+  <AppTag kind="safetyIncident" status={status} style={{ margin: 0 }}>
     {SAFETY_INCIDENT_STATUS_LABELS[status]}
   </AppTag>
 );
 
-const PERMIT_COLORS = { REQUESTED: 'gold', ISSUED: 'green', REJECTED: 'red', CLOSED: 'default' } as const;
-
 /** Status, with an issued permit past its end shown as expired. */
 export const PermitStatusTag = ({ p }: { p: Pick<WorkPermitDto, 'status' | 'expired'> }) =>
   p.expired ? (
-    <AppTag tone="pending" style={{ margin: 0 }}>
+    <AppTag meaning="waiting" style={{ margin: 0 }}>
       {WORK_PERMIT_EXPIRED_LABEL}
     </AppTag>
   ) : (
-    <AppTag color={PERMIT_COLORS[p.status]} style={{ margin: 0 }}>
+    <AppTag kind="workPermit" status={p.status} style={{ margin: 0 }}>
       {WORK_PERMIT_STATUS_LABELS[p.status]}
     </AppTag>
   );
@@ -55,14 +44,12 @@ export function permitWindow(p: Pick<WorkPermitDto, 'validFrom' | 'validTo'>) {
   return d(from) === d(to) ? `${d(from)}, ${t(from)} to ${t(to)}` : `${d(from)} ${t(from)} to ${d(to)} ${t(to)}`;
 }
 
-const HISTORY_COLORS: Record<string, string> = { CREATED: 'gray', REQUESTED: 'gray', UPDATED: 'blue', ISSUED: 'green', CLOSED: 'green', REOPENED: 'orange', REJECTED: 'red', DELETED: 'red' };
-
 export function SafetyHistory({ history }: { history: AuditLogDto[] | undefined }) {
   return (
     <Timeline
       items={(history ?? []).map((h) => ({
         key: h.id,
-        color: HISTORY_COLORS[h.action] ?? 'blue',
+        color: 'gray',
         content: (
           <div>
             <Typography.Text strong>{h.action.charAt(0) + h.action.slice(1).toLowerCase()}</Typography.Text> <Typography.Text type="secondary">by {h.actorName}</Typography.Text>

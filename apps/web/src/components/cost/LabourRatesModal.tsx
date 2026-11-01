@@ -60,7 +60,7 @@ export function LabourRatesModal({ open, onClose }: { open: boolean; onClose: ()
                     {t}
                   </Button>
                 ) : (
-                  <AppTag key={t}>{t}</AppTag>
+                  <AppTag variant="kind" key={t}>{t}</AppTag>
                 )
               ))}
             </span>

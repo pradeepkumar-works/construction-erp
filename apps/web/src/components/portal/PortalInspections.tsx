@@ -43,12 +43,12 @@ export function PortalInspections({ inspections, openId, onOpen }: { inspections
               <span>
                 {v}
                 {r.holdPoint && (
-                  <AppTag tone="pending" style={{ marginLeft: 8 }}>
+                  <AppTag meaning="waiting" style={{ marginLeft: 8 }}>
                     Hold point
                   </AppTag>
                 )}
                 {r.hiddenWork && (
-                  <AppTag tone={r.hidden?.countersignedAt ? 'success' : r.hidden?.signedAt ? 'info' : 'pending'} style={{ marginLeft: 8 }}>
+                  <AppTag meaning={r.hidden?.countersignedAt ? 'done' : r.hidden?.signedAt ? 'waiting' : 'inHand'} style={{ marginLeft: 8 }}>
                     {r.hidden?.countersignedAt ? 'Hidden work countersigned' : r.hidden?.signedAt ? 'Hidden work to countersign' : 'Hidden work'}
                   </AppTag>
                 )}

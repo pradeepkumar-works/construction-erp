@@ -130,22 +130,22 @@ export function EngineHoursPanel({ projectId: fixedProject }: { projectId?: stri
         const tags = [
           ...(d.fuel ? fuelTags(d.fuel, false) : []),
           d.hoursAbove !== null ? (
-            <AppTag key="above" tone="danger">
+            <AppTag key="above" meaning="failed">
               {`${formatQty(d.hoursAbove)} h above engine`}
             </AppTag>
           ) : null,
           d.outsideSite && d.farthestM !== null ? (
-            <AppTag key="away" tone="pending">
+            <AppTag key="away" meaning="waiting">
               {`${distanceText(d.farthestM)} from site`}
             </AppTag>
           ) : null,
           !d.log && Number(d.engineHours) > 0 ? (
-            <AppTag key="nolog" tone="info">
+            <AppTag key="nolog" meaning="waiting">
               Ran with no log
             </AppTag>
           ) : null,
         ].filter(Boolean);
-        return tags.length ? <Space size={4} wrap>{tags}</Space> : <AppTag tone="success">In order</AppTag>;
+        return tags.length ? <Space size={4} wrap>{tags}</Space> : <AppTag meaning="done">In order</AppTag>;
       },
     },
   ];

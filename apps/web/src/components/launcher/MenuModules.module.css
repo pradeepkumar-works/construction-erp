@@ -22,15 +22,16 @@
   border-bottom: var(--ant-line-width) solid var(--ant-color-border-secondary);
 }
 
+/* The module's icon in the one ink, as on the tiles. */
 .chip {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex: none;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  width: 24px;
+  height: 24px;
   font-size: 20px;
+  color: var(--c-text-base);
 }
 
 .body {
@@ -61,10 +62,10 @@
 }
 
 .waiting {
-  padding: 0 8px;
-  border-radius: 10px;
-  background: var(--ant-color-warning-bg);
-  color: var(--ant-color-warning-text);
+  padding: 0 var(--s-2);
+  border-radius: var(--r-pill);
+  background: var(--c-tone-pending-bg);
+  color: var(--c-tone-pending-fg);
   font-size: var(--ant-font-size-sm);
   font-weight: 600;
   line-height: 20px;

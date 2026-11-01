@@ -21,7 +21,6 @@ import {
   type OmChemicalRowDto,
   type OmDto,
   type OmPeriodDto,
-  type OmPeriodStatus,
   type ProjectDetail,
   type RaBillDto,
   type ServiceLevelDayDto,
@@ -56,8 +55,6 @@ const VIEWS = ['service', 'periods', 'staff', 'chemicals', 'terms'] as const;
 type View = (typeof VIEWS)[number];
 const figure = { content: { fontSize: themeFontSize('fontSizeXL') } };
 const small = { fontSize: themeFontSize('fontSizeSM') };
-const PERIOD_COLORS: Record<OmPeriodStatus, string> = { FUTURE: 'default', RUNNING: 'blue', DUE: 'orange', BILLED: 'green' };
-const CHEMICAL_COLORS: Record<OmChemicalRowDto['status'], string> = { OVER: 'red', UNDER: 'orange', WITHIN: 'green', NO_WATER: 'default' };
 const num = (v: string | number | null) => (v === null || v === '' ? '-' : <span translate="no">{formatQty(v)}</span>);
 const shiftMonth = (m: string, n: number) => dayjs(`${m}-01`).add(n, 'month').format('YYYY-MM');
 const toStr = (v: number | null | undefined) => (v === null || v === undefined ? null : String(v));
@@ -217,7 +214,7 @@ function ServiceLevels({ data, benchmarks, missing, onEdit }: { data: OmDto; ben
                 </Flex>
               ),
             },
-            { key: 'p', title: 'Penalty', width: 130, align: 'right', render: (_, b) => (Number(b.penalty) ? <AppTag tone="danger">{formatINR(b.penalty)}</AppTag> : <Money value={0} />) },
+            { key: 'p', title: 'Penalty', width: 130, align: 'right', render: (_, b) => (Number(b.penalty) ? <AppTag meaning="failed">{formatINR(b.penalty)}</AppTag> : <Money value={0} />) },
           ]}
         />
       </Section>
@@ -255,7 +252,7 @@ function ServiceLevels({ data, benchmarks, missing, onEdit }: { data: OmDto; ben
                   {d.failures.length ? (
                     <Flex gap={4} wrap>
                       {d.failures.map((f) => (
-                        <AppTag key={f} tone="danger">
+                        <AppTag key={f} meaning="failed">
                           {OM_BENCHMARK_INFO[f].short}
                         </AppTag>
                       ))}
@@ -469,7 +466,7 @@ function Periods({ project, data }: { project: ProjectDetail; data: OmDto }) {
           { key: 's', title: 'Staff short', width: 120, align: 'right', render: (_, p) => <span translate="no">{Number(p.staffDeduction) ? `− ${formatINR(p.staffDeduction)}` : '-'}</span> },
           { key: 'pen', title: 'Penalties', width: 120, align: 'right', render: (_, p) => <span translate="no">{Number(p.penalty) ? `− ${formatINR(p.penalty)}` : '-'}</span> },
           { key: 'n', title: 'Net', width: 130, align: 'right', render: (_, p) => <Typography.Text strong translate="no">{formatINR(p.net)}</Typography.Text> },
-          { key: 'st', title: 'Status', width: 120, render: (_, p) => <AppTag color={PERIOD_COLORS[p.status]}>{OM_PERIOD_STATUS_LABELS[p.status]}</AppTag> },
+          { key: 'st', title: 'Status', width: 120, render: (_, p) => <AppTag kind="omPeriod" status={p.status}>{OM_PERIOD_STATUS_LABELS[p.status]}</AppTag> },
           {
             key: 'bill',
             title: 'Bill',
@@ -530,7 +527,7 @@ function Staff({ data, onRecord }: { data: OmDto; onRecord: () => void }) {
           { key: 'r', title: 'Role', dataIndex: 'role' },
           { key: 'q', title: 'Minimum', width: 100, align: 'right', render: (_, r) => <span translate="no">{r.required}</span> },
           { key: 'd', title: 'Deployed', width: 100, align: 'right', render: (_, r) => (r.deployed === null ? '-' : <span translate="no">{r.deployed}</span>) },
-          { key: 's', title: 'Short', width: 90, align: 'right', render: (_, r) => (r.short ? <AppTag tone="danger">{r.short}</AppTag> : '0') },
+          { key: 's', title: 'Short', width: 90, align: 'right', render: (_, r) => (r.short ? <AppTag meaning="failed">{r.short}</AppTag> : '0') },
           { key: 'x', title: 'Deducted', width: 130, align: 'right', render: (_, r) => <Money value={r.deduction} /> },
         ]}
       />
@@ -624,7 +621,7 @@ function Chemicals({ data }: { data: OmDto }) {
             key: 's',
             title: 'Against the norm',
             width: 190,
-            render: (_, r) => <AppTag color={CHEMICAL_COLORS[r.status]}>{r.variancePct === null ? OM_CHEMICAL_STATE_LABELS[r.status] : `${OM_CHEMICAL_STATE_LABELS[r.status]} (${r.variancePct > 0 ? '+' : ''}${formatPct(r.variancePct)})`}</AppTag>,
+            render: (_, r) => <AppTag kind="omChemical" status={r.status}>{r.variancePct === null ? OM_CHEMICAL_STATE_LABELS[r.status] : `${OM_CHEMICAL_STATE_LABELS[r.status]} (${r.variancePct > 0 ? '+' : ''}${formatPct(r.variancePct)})`}</AppTag>,
           },
         ]}
       />
