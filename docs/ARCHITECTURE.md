@@ -1017,6 +1017,9 @@ for `ProjectAccessService.assertCanApproveSubmission`; `pending()` keeps only en
 `GET /approvals/:type/:id/stage` gives a record its levels, steps, whose queue it is in (`waitingWith`) and since when,
 `canReview` and the reason; `GET /approvals/waiting` lists the caller's own waiting entries (Home's Waiting with others
 card and the phone's My submissions). The web's buttons follow the stage on a record and the Approvals queue in lists.
+The Approvals inbox groups its queue by type (`groupQueue`, `components/approvals/queue.ts`) and orders the groups by
+`rankWaiting`: the rupees a group adds up to, then the days its oldest entry has waited, then the type's usual place. Each
+group's header says "7 · ₹14.20 L · oldest 3 days"; Oldest first or Newest first orders the entries inside a group.
 
 `ApprovalEscalation` (per type: `remindAfterHours`, `escalateAfterHours`) drives `NotificationJobsService.approvalEscalation`,
 run hourly (`GET /notifications/jobs/approval-escalation`, the in-process scheduler on the hour, and inside both daily
