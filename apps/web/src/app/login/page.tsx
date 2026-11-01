@@ -49,7 +49,7 @@ export default function LoginPage() {
   };
 
   return (
-    <AuthCard title="Sign in" subtitle="Welcome back. Manage projects, site progress and approvals.">
+    <AuthCard title="Sign in" subtitle="Manage projects, site progress and approvals.">
       {error && <Alert type="error" showIcon title={error} style={{ marginBottom: 24 }} />}
 
       <Form form={form} layout="vertical" onFinish={onFinish} requiredMark={false}>
