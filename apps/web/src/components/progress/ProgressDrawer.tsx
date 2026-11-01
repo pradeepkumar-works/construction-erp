@@ -25,6 +25,7 @@ interface RecordProps {
 /** A progress entry, in a drawer from a list or as its own page at `/progress/<id>`. */
 export function ProgressRecord({ id, mode, open, onClose, onEdit }: RecordProps & { mode: RecordMode }) {
   const { data, isLoading, error, refetch } = useProgressEntry(id ?? undefined);
+  const where = data ? [data.location, sectorLocation(data)].filter((x, i, a) => x && a.indexOf(x) === i).join(' · ') : '';
   return (
     <RecordFrame
       mode={mode}
@@ -41,15 +42,15 @@ export function ProgressRecord({ id, mode, open, onClose, onEdit }: RecordProps 
           href: `/progress/${data.id}`,
           title: `Progress entry · ${data.activityName}`,
           tags: <StatusTag status={data.status} />,
+          context: { label: data.projectName, href: `/projects/${data.projectId}` },
           facts: [
+            { key: 'qty', label: 'Quantity', children: <span translate="no">{`${formatQty(data.quantity)} ${unitLabel(data.unit)}`}</span> },
             { key: 'date', label: 'Date', children: formatDate(data.date) },
-            { key: 'qty', label: 'Quantity', children: `${formatQty(data.quantity)} ${unitLabel(data.unit)}` },
-            { key: 'activity', label: 'Activity', children: data.activityName },
             ...(data.dailyReportId ? [{ key: 'dpr', label: 'Daily report', children: <Link href={`/dpr/${data.dailyReportId}`}>DPR of {formatDate(data.date)}</Link> }] : []),
-            { key: 'location', label: 'Location / chainage', children: [data.location, sectorLocation(data)].filter((x, i, a) => x && a.indexOf(x) === i).join(' · ') || '-' },
-            { key: 'manpower', label: 'Labour', children: data.manpowerCount ?? '-' },
-            { key: 'machinery', label: 'Machines used', children: data.machineryUsed ?? '-' },
-            ...submissionMetaItems(data).filter((i) => i.key !== 'status'),
+            ...(where ? [{ key: 'location', label: 'Location / chainage', children: where }] : []),
+            ...(data.manpowerCount !== null ? [{ key: 'manpower', label: 'Labour', children: data.manpowerCount }] : []),
+            ...(data.machineryUsed ? [{ key: 'machinery', label: 'Machines used', children: data.machineryUsed }] : []),
+            ...submissionMetaItems(data),
           ],
           lifecycle: submissionLifecycle(data),
           sections: [

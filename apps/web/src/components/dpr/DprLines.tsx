@@ -27,12 +27,13 @@ import { Section } from '@/components/common/Section';
 
 const crew = (l: DprLineDto) => l.labour.map((m) => `${m.category} ${m.count}`).join(', ');
 const machines = (l: DprLineDto) => l.machines.map((m) => `${m.name} ${formatQty(m.hours)} h`).join(', ');
+const qty = (v: string, unit: string) => `${formatQty(v)} ${unitLabel(unit)}`;
 const material = (l: DprLineDto) => l.materials.map((m) => `${m.itemName} ${formatQty(m.quantity)} ${unitLabel(m.unit)}`).join(', ');
 
 /**
  * A DPR's work lines, grouped by component › sub-component, in the shape of the site's DPR: activity and
- * where, today, up to previous, cumulative against scope, %, balance, then the crew, machines and material. With the
- * report's form, each line's own fields and its photos too.
+ * where with its crew, machines and material under it, then today, up to previous, cumulative against scope, % and
+ * balance, each quantity in its unit. With the report's form, each line's own fields and its photos too.
  */
 export function DprWorkLines({ lines, def }: { lines: DprLineDto[]; def?: DprFormDef }) {
   const own = def ? ownFieldsOf(def, 'LINE') : [];
@@ -46,7 +47,7 @@ export function DprWorkLines({ lines, def }: { lines: DprLineDto[]; def?: DprFor
             rowKey="id"
             pagination={false}
             dataSource={g.lines}
-            scroll={{ x: 820 }}
+            scroll={{ x: 720 }}
             columns={[
               {
                 key: 'activity',
@@ -59,6 +60,11 @@ export function DprWorkLines({ lines, def }: { lines: DprLineDto[]; def?: DprFor
                         {[lineLocation(l), l.workOrderNo].filter(Boolean).join(' · ')}
                       </Typography.Text>
                     ) : null}
+                    {[crew(l), machines(l), material(l)].filter(Boolean).map((p) => (
+                      <Typography.Text key={p} type="secondary" style={{ display: 'block' }}>
+                        {p}
+                      </Typography.Text>
+                    ))}
                     {l.remarks ? <div>{l.remarks}</div> : null}
                     {filledExtra(own, l.extra).map((x) => (
                       <div key={x.field.key}>
@@ -77,20 +83,11 @@ export function DprWorkLines({ lines, def }: { lines: DprLineDto[]; def?: DprFor
                   </>
                 ),
               },
-              { key: 'today', title: 'Today', align: 'right', width: 100, render: (_, l) => <span translate="no">{`${formatQty(l.quantity)} ${unitLabel(l.unit)}`}</span> },
-              { key: 'previous', title: 'Up to previous', align: 'right', width: 110, render: (_, l) => <span translate="no">{formatQty(l.previous)}</span> },
-              { key: 'cumulative', title: 'Cumulative / planned', align: 'right', width: 140, render: (_, l) => <span translate="no">{`${formatQty(l.cumulative)} / ${formatQty(l.scope)}`}</span> },
+              { key: 'today', title: 'Today', align: 'right', width: 110, render: (_, l) => <span translate="no">{qty(l.quantity, l.unit)}</span> },
+              { key: 'previous', title: 'Up to previous', align: 'right', width: 110, render: (_, l) => <span translate="no">{qty(l.previous, l.unit)}</span> },
+              { key: 'cumulative', title: 'Cumulative / planned', align: 'right', width: 150, render: (_, l) => <span translate="no">{`${formatQty(l.cumulative)} / ${qty(l.scope, l.unit)}`}</span> },
               { key: 'pct', title: '%', align: 'right', width: 64, render: (_, l) => <span translate="no">{l.pct === null ? '-' : formatPct(l.pct)}</span> },
-              { key: 'balance', title: 'Balance', align: 'right', width: 90, render: (_, l) => <span translate="no">{formatQty(l.balance)}</span> },
-              {
-                key: 'resources',
-                title: 'Labour, machines, material',
-                width: 220,
-                render: (_, l) => {
-                  const parts = [crew(l), machines(l), material(l)].filter(Boolean);
-                  return parts.length ? parts.map((p) => <div key={p}>{p}</div>) : <span className="text-muted">-</span>;
-                },
-              },
+              { key: 'balance', title: 'Balance', align: 'right', width: 100, render: (_, l) => <span translate="no">{qty(l.balance, l.unit)}</span> },
             ]}
           />
         </Section>

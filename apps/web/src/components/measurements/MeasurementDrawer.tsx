@@ -4,7 +4,7 @@ import React from 'react';
 import { Table, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import type { MeasurementSheetDto } from '@erp/shared';
-import { CHECK_LEVEL_LABELS, CHECK_OUTCOME_LABELS, sectorLocation, unitLabel } from '@erp/shared';
+import { CHECK_LEVEL_LABELS, CHECK_OUTCOME_LABELS, figure, sectorLocation, unitLabel } from '@erp/shared';
 import { useMeasurement, useMeasurementChecks } from '@/lib/queries';
 import { formatDate, formatINR, formatQty } from '@/lib/format';
 import { StatusTag } from '@/components/common/StatusTag';
@@ -14,8 +14,7 @@ import { EditResubmitButton } from '@/components/common/EditResubmitButton';
 import { submissionMetaItems } from '@/components/common/SubmitterInfo';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
 import { submissionLifecycle } from '@/components/record/lifecycle';
-import { themeFontSize } from '@/lib/theme';
-import { Money } from '@/components/common/Money';
+import { tk } from '@/ds';
 
 const dim = (v: string | null) => (v === null ? '' : formatQty(v));
 
@@ -30,6 +29,7 @@ interface RecordProps {
 export function MeasurementRecord({ id, mode, open, onClose, onEdit }: RecordProps & { mode: RecordMode }) {
   const { data, isLoading, error, refetch } = useMeasurement(id ?? undefined);
   const checks = useMeasurementChecks(data?.status === 'APPROVED' ? data.id : undefined);
+  const where = data ? [data.location, sectorLocation(data)].filter((x, i, a) => x && a.indexOf(x) === i).join(' · ') : '';
   return (
     <RecordFrame
       mode={mode}
@@ -46,15 +46,17 @@ export function MeasurementRecord({ id, mode, open, onClose, onEdit }: RecordPro
           href: `/measurements/${data.id}`,
           title: `Measurement · ${data.mbNo}`,
           tags: <StatusTag status={data.status} />,
+          context: { label: data.projectName, href: `/projects/${data.projectId}` },
+          headline: [figure('measuredValue', data.amount)],
           facts: [
             { key: 'boq', label: 'BOQ item', children: `${data.boqItemNo} - ${data.boqDescription}` },
+            { key: 'qty', label: 'Quantity', children: <span className="mono" translate="no">{`${formatQty(data.totalQty)} ${unitLabel(data.unit)}`}</span> },
+            { key: 'rate', label: 'Rate', children: <span translate="no">{`${formatINR(data.rate, true)} / ${unitLabel(data.unit)}`}</span> },
             { key: 'date', label: 'Date', children: formatDate(data.date) },
-            { key: 'loc', label: 'Location', children: [data.location, sectorLocation(data)].filter((x, i, a) => x && a.indexOf(x) === i).join(' · ') || '-' },
+            ...(where ? [{ key: 'loc', label: 'Location', children: where }] : []),
             ...(data.woNo ? [{ key: 'wo', label: 'Done by', children: `${data.contractorName ?? ''} (${data.woNo})` }] : []),
-            { key: 'qty', label: 'Quantity', children: <strong className="mono" translate="no">{`${formatQty(data.totalQty)} ${unitLabel(data.unit)}`}</strong> },
-            { key: 'amount', label: `Value at ${formatINR(data.rate, true)} / ${data.unit}`, children: <Money value={data.amount} paise strong /> },
             ...(data.raBillNo !== null ? [{ key: 'bill', label: 'Billed in', children: `RA bill ${data.raBillNo}` }] : []),
-            ...submissionMetaItems(data).filter((i) => i.key !== 'status'),
+            ...submissionMetaItems(data),
           ],
           lifecycle: submissionLifecycle(data, [{ title: 'Billed', done: data.raBillNo !== null, content: data.raBillNo !== null ? `RA bill ${data.raBillNo}` : undefined }]),
           sections: [
@@ -75,7 +77,7 @@ export function MeasurementRecord({ id, mode, open, onClose, onEdit }: RecordPro
                     { title: 'L', dataIndex: 'length', width: 80, align: 'right', render: dim },
                     { title: 'B', dataIndex: 'breadth', width: 80, align: 'right', render: dim },
                     { title: 'D / H', dataIndex: 'depth', width: 80, align: 'right', render: dim },
-                    { title: `Qty (${data.unit})`, dataIndex: 'quantity', width: 110, align: 'right', render: (v) => <span className="mono" translate="no">{formatQty(v)}</span> },
+                    { title: `Qty (${unitLabel(data.unit)})`, dataIndex: 'quantity', width: 110, align: 'right', render: (v) => <span className="mono" translate="no">{formatQty(v)}</span> },
                   ]}
                   summary={() => (
                     <Table.Summary.Row>
@@ -95,7 +97,7 @@ export function MeasurementRecord({ id, mode, open, onClose, onEdit }: RecordPro
             ...(checks.data?.length
               ? [
                   {
-                    key: 'checks',
+                    key: 'clientChecks',
                     title: "Client's checks",
                     count: checks.data.length,
                     children: (
@@ -114,7 +116,7 @@ export function MeasurementRecord({ id, mode, open, onClose, onEdit }: RecordPro
                             render: (_, c) => (
                               <span>
                                 <AppTag kind="checkOutcome" status={c.outcome}>{CHECK_OUTCOME_LABELS[c.outcome]}</AppTag>
-                                {c.note ? <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{c.note}</div> : null}
+                                {c.note ? <div className="text-muted" style={tk.type.caption}>{c.note}</div> : null}
                               </span>
                             ),
                           },
@@ -128,10 +130,11 @@ export function MeasurementRecord({ id, mode, open, onClose, onEdit }: RecordPro
               key: 'photos',
               title: 'Photos and sketches',
               count: data.attachments.length,
+              empty: data.attachments.length === 0,
               children: (
                 <>
                   <AttachmentGallery attachments={data.attachments} />
-                  <Typography.Text type="secondary" style={{ display: 'block', fontSize: themeFontSize('fontSizeSM') }}>
+                  <Typography.Text type="secondary" style={{ display: 'block', ...tk.type.caption }}>
                     Measurement ID: {data.id}
                   </Typography.Text>
                 </>
