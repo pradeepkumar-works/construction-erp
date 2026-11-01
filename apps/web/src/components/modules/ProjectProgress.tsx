@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Button, Card, Col, Flex, Grid, Row, Segmented, Table, Typography, theme } from 'antd';
+import { Button, Card, Flex, Grid, Segmented, Table, Typography, theme } from 'antd';
 import type { TableColumnsType } from 'antd';
 import { PROJECT_STATUS_LABELS, canSeeNav, navNode, progressNotes, type ModuleProgressDto, type ProjectProgressDto } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
@@ -14,8 +14,8 @@ import { useAppearance } from '@/lib/appearance';
 import { formatDate, formatINRCompact, formatPct, toNumber } from '@/lib/format';
 import { ProjectStatusTag } from '@/components/common/StatusTag';
 import { QueryError } from '@/components/common/QueryState';
-import { kpiColumns } from '@/components/home/KpiTile';
-import { ModuleFigure } from './ModuleFigure';
+import { FigureStrip } from '@/components/common/FigureStrip';
+import { moduleFigure } from './moduleFigure';
 
 type View = 'chart' | 'table';
 /** Rows shown before Show all */
@@ -335,21 +335,11 @@ export function ProjectProgressPanel() {
   const projects = navNode('projects');
   const allowed = !!user && !!projects && canSeeNav(user, projects);
   const { data, error, refetch } = useModuleHome('projects', projectId, allowed);
-  const screens = Grid.useBreakpoint();
   if (error) return <QueryError error={error} onRetry={() => refetch()} />;
   if (!data?.progress?.projects.length) return null;
-  const perRow = kpiColumns(data.figures.length, screens);
   return (
     <Flex vertical gap={16}>
-      <section aria-label="Project figures">
-        <Row gutter={[16, 16]}>
-          {data.figures.map((f) => (
-            <Col key={f.key} flex={`0 0 ${100 / perRow}%`}>
-              <ModuleFigure f={f} />
-            </Col>
-          ))}
-        </Row>
-      </section>
+      <FigureStrip label="Project figures" figures={data.figures.map(moduleFigure)} />
       <ProjectProgress data={data.progress} />
     </Flex>
   );

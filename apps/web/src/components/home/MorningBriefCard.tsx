@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { App, Button, Card, Flex, Typography, theme } from 'antd';
-import { CloseOutlined, CoffeeOutlined } from '@/components/common/icons';
+import { CloseOutlined } from '@/components/common/icons';
 import { PRODUCT_NAME } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { errorMessage } from '@/lib/api';
@@ -56,12 +56,7 @@ export function MorningBriefCard() {
     return (
       <Card size="small" style={{ marginBottom: token.margin }}>
         <Flex gap={token.margin} align="center" wrap justify="space-between">
-          <Flex gap={token.marginSM} align="center" style={{ flex: '1 1 320px', minWidth: 0 }}>
-            <CoffeeOutlined style={{ fontSize: 20, color: token.colorPrimary }} aria-hidden />
-            <Typography.Text>
-              Get a three-line brief each morning on what needs you, written by Ask {PRODUCT_NAME} from your own records. It also comes by email, and on WhatsApp if your alerts are on.
-            </Typography.Text>
-          </Flex>
+          <Typography.Text style={{ flex: '1 1 320px', minWidth: 0 }}>Three lines each morning on what needs you, here and by email.</Typography.Text>
           <Flex gap={token.marginXS}>
             <Button type="primary" onClick={() => turn(true)} loading={set.isPending}>
               Get the morning brief
@@ -77,12 +72,7 @@ export function MorningBriefCard() {
   return (
     <Card
       size="small"
-      title={
-        <span>
-          <CoffeeOutlined style={{ marginRight: token.marginXS }} aria-hidden />
-          Your morning brief
-        </span>
-      }
+      title="Your morning brief"
       extra={
         <Button type="link" size="small" onClick={() => turn(false)} loading={set.isPending}>
           Turn off

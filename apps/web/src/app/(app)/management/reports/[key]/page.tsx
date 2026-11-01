@@ -14,7 +14,7 @@ import { DatePicker } from '@/components/common/DatePicker';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { ResultMark } from '@/components/common/ResultMark';
 import { FileExcelOutlined, PrinterOutlined } from '@/components/common/icons';
-import { FigureStrip } from '@/components/management/FigureStrip';
+import { FigureStrip } from '@/components/common/FigureStrip';
 import { ReportSection } from '@/components/management/ReportSection';
 import { cellText } from '@/components/management/report-format';
 import { NoAccess } from '@/components/common/NoAccess';

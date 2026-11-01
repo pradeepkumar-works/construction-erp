@@ -24,7 +24,7 @@ import { AppTabs } from '@/components/common/AppTabs';
 import { AppTag } from '@/components/common/AppTag';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { ChartCard } from '@/components/home/ChartCard';
-import { FigureStrip, type StripFigure } from '@/components/management/FigureStrip';
+import { FigureStrip, type StripFigure } from '@/components/common/FigureStrip';
 import { BudgetTrack, MoneyPipeline, ScheduleBullet } from '@/components/management/MoneyPipeline';
 import { AttentionList } from '@/components/management/AttentionList';
 import { HEALTH_TONES } from '@/components/management/report-format';

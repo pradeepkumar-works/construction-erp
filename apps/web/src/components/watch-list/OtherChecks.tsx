@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { INSIGHT_HREFS, INSIGHT_TITLES, PRODUCT_NAME, type InsightDto } from '@erp/shared';
-import { FigureStrip, type StripFigure } from '@/components/management/FigureStrip';
+import { FigureStrip, type StripFigure } from '@/components/common/FigureStrip';
 import { formatDate, formatINRCompact, formatMonthName } from '@/lib/format';
 
 const AI_OFF: Record<NonNullable<InsightDto['aiReason']>, string> = {

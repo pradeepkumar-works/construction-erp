@@ -2,15 +2,15 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Card, Col, Flex, Grid, Row, Table, Typography } from 'antd';
+import { Card, Flex, Table, Typography } from 'antd';
 import { PIPELINE_STAGES, type DepartmentPipelineDto, type PipelineRowDto } from '@erp/shared';
 import { useDepartmentHome } from '@/lib/queries';
 import { useProjectScope } from '@/lib/project-scope';
 import { formatDate } from '@/lib/format';
 import { AppTag, type TagTone } from '@/components/common/AppTag';
 import { QueryError } from '@/components/common/QueryState';
-import { kpiColumns } from '@/components/home/KpiTile';
-import { ModuleFigure } from './ModuleFigure';
+import { FigureStrip } from '@/components/common/FigureStrip';
+import { moduleFigure } from './moduleFigure';
 import s from './DepartmentHome.module.css';
 
 /** A stage's tone: what waits on a decision is pending, part received violet, the rest in hand. */
@@ -112,22 +112,12 @@ function Pipeline({ p }: { p: DepartmentPipelineDto }) {
 export function DepartmentPanel({ department }: { department: string }) {
   const [projectId] = useProjectScope();
   const { data, error, refetch } = useDepartmentHome(department, projectId);
-  const screens = Grid.useBreakpoint();
   if (error) return <QueryError error={error} onRetry={() => refetch()} />;
   if (!data || (!data.figures.length && !data.pipelines.length)) return null;
-  const perRow = kpiColumns(data.figures.length, screens);
   return (
     <Flex vertical gap={16}>
       {data.figures.length > 0 && (
-        <section aria-label="Department figures">
-          <Row gutter={[16, 16]}>
-            {data.figures.map((f) => (
-              <Col key={f.key} flex={`0 0 ${100 / perRow}%`}>
-                <ModuleFigure f={f} />
-              </Col>
-            ))}
-          </Row>
-        </section>
+        <FigureStrip label="Department figures" figures={data.figures.map(moduleFigure)} />
       )}
       {data.pipelines.map((p) => (
         <Pipeline key={p.key} p={p} />

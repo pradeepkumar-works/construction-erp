@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Button, Card, Col, Flex, Grid, Result, Row, Typography, theme } from 'antd';
+import { Button, Card, Col, Flex, Result, Row, Typography, theme } from 'antd';
 import { CheckSquareOutlined, HourglassOutlined, RollbackOutlined } from '@/components/common/icons';
 import type { ModuleHomeDto, ModuleKey } from '@erp/shared';
 import { MODULE_INTROS, MODULE_LABELS, MODULE_SUBMISSION_TYPES, SUBMISSION_TYPE_PLURAL_LABELS, canManageStaff, canSeeNav, canViewEmployeePrivate, isModuleKey, navDestination, navNode, navTilesFor, projectTabHref, submissionListHref } from '@erp/shared';
@@ -14,11 +14,11 @@ import { requestNew } from '@/lib/new-intent';
 import { formatINRCompact, inSentence } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
-import { kpiColumns } from '@/components/home/KpiTile';
+import { FigureStrip } from '@/components/common/FigureStrip';
 import { newEntriesFor } from '@/components/shell/NewMenu';
 import { HrDashboard } from '@/components/staff/HrDashboard';
 import { ProjectProgress } from './ProjectProgress';
-import { ModuleFigure as Figure } from './ModuleFigure';
+import { moduleFigure } from './moduleFigure';
 import { TileGrid, tileEntries } from '@/components/launcher/TileGrid';
 import { usePins } from '@/components/launcher/pins';
 import { useNavMenu } from '@/components/shell/menu';
@@ -90,7 +90,6 @@ export function ModuleHome({ moduleKey }: { moduleKey: string }) {
   const visible = !!user && !!node && isModuleKey(moduleKey) && canSeeNav(user, node);
   const tiles = visible ? navTilesFor(user, moduleKey) : [];
   const { data, isLoading, error, refetch } = useModuleHome(moduleKey, projectId, visible && tiles.length > 1);
-  const screens = Grid.useBreakpoint();
   const { tileMenu } = usePins(visible ? user : null);
   const { settings } = useNavMenu(user);
 
@@ -125,7 +124,6 @@ export function ModuleHome({ moduleKey }: { moduleKey: string }) {
       ))}
     </>
   ) : undefined;
-  const perRow = kpiColumns(data?.figures.length ?? 4, screens);
   const waits = MODULE_SUBMISSION_TYPES[key].length > 0;
 
   return (
@@ -139,15 +137,7 @@ export function ModuleHome({ moduleKey }: { moduleKey: string }) {
           <Row gutter={[16, 16]}>
             {data.figures.length > 0 && (
               <Col xs={24} xl={waits ? 15 : 24}>
-                <section aria-label={`${label} figures`}>
-                  <Row gutter={[16, 16]}>
-                    {data.figures.map((f) => (
-                      <Col key={f.key} flex={`0 0 ${100 / (waits && screens.xl ? Math.min(perRow, 3) : perRow)}%`}>
-                        <Figure f={f} />
-                      </Col>
-                    ))}
-                  </Row>
-                </section>
+                <FigureStrip label={`${label} figures`} figures={data.figures.map(moduleFigure)} />
               </Col>
             )}
             {waits && (
