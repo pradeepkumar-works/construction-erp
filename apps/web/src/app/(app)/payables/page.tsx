@@ -284,6 +284,7 @@ export default function PayablesPage() {
     {
       key: 'vendor',
       title: 'Vendor',
+      width: 260,
       card: 'meta',
       cardText: (r) => `${r.vendorName} · ${r.projectCode} · ${r.projectName}`,
       render: (_, r) => (
