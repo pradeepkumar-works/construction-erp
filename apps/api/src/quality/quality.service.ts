@@ -7,7 +7,6 @@ import {
   canActOnNcr,
   canApprove,
   canEditTest,
-  canRaiseNcr,
   comparePipeCodes,
   judgeTest,
   planLineFor,

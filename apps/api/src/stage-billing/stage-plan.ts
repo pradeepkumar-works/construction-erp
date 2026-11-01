@@ -310,7 +310,11 @@ export async function boqBasis(db: Db, projectId: string, components?: { basis: 
     let grew = true;
     while (grew) {
       grew = false;
-      for (const e of elementTree) if (e.parentId && out.has(e.parentId) && !out.has(e.id)) (out.add(e.id), (grew = true));
+      for (const e of elementTree)
+        if (e.parentId && out.has(e.parentId) && !out.has(e.id)) {
+          out.add(e.id);
+          grew = true;
+        }
     }
     return out;
   };

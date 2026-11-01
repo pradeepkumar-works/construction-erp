@@ -17,7 +17,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
-import { dec, iso } from '../common/serialize';
+import { dec } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
 import { nextTicketNo, type WeighingIn } from './weighbridge-rules';
 import type { CancelWeighTicketDto, CreateWeighTicketDto, TicketDetailsDto, UpdateWeighTicketDto, WeightDto } from './weighbridge.dto';

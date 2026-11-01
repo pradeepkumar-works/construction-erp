@@ -45,9 +45,6 @@ Reply with JSON only: {"hindrance": true|false, "category": one of ${RISK_CATEGO
 CONTRACTOR is the contractor's own labour, material or machines; CLIENT the client's land, drawings, decisions, payments
 or supplied material; THIRD_PARTY villagers, utilities and permitting bodies; FORCE_MAJEURE weather, bandh and the like.`;
 
-/** "Clause 9.1 of RD-AGR-01, page 3" */
-const clauseSource = (c: { clause: string; docNo: string; page: number }) => `Clause ${c.clause} of ${c.docNo}, page ${c.page}`;
-
 /**
  * Hindrance register to notice. DPR remarks are read for hindrances (rules first, the model for those the
  * rules cannot place) and kept with what the project manager decided, so each is read once. Recording one raises a delay
