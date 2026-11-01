@@ -20,7 +20,7 @@ import {
 } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useNotify } from '@/lib/notify';
-import { formatDate, formatDateTime } from '@/lib/format';
+import { formatDate, formatDateTime, todayDate } from '@/lib/format';
 import { useDecideAccess, useHomeTiles, useSetHomeTilesSettings, useSetLauncherFlag } from '@/lib/queries';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
@@ -150,7 +150,7 @@ function FlagRow({ node, flag }: { node: NavNode; flag: LauncherFlagDto | undefi
   const { token } = theme.useToken();
   const set = useSetLauncherFlag();
   const notify = useNotify();
-  const today = dayjs().format('YYYY-MM-DD');
+  const today = todayDate();
   const marks = launcherMarks(node, flag, today);
   const newUntil = flag && flag.isNew !== null ? flag.newUntil : (node.newUntil ?? null);
   const save = (next: Partial<LauncherFlagDto>) => {

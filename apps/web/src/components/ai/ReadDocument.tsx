@@ -7,9 +7,8 @@ import type { AttachmentDto } from '@erp/shared';
 import type { FormInstance, FormItemProps } from 'antd';
 import type { DocReadField, DocReadKind, DocReadResultDto } from '@erp/shared';
 import { DOC_READ_MAX_PAGES, DOC_READ_PAGES_OF, readDateProblem } from '@erp/shared';
-import dayjs from 'dayjs';
 import { errorMessage } from '@/lib/api';
-import { formatDate } from '@/lib/format';
+import { formatDate, todayDate } from '@/lib/format';
 import { useAsk } from '@/lib/ask';
 import { pagesOf, type PageImage } from '@/lib/doc-pages';
 import { uploadFile, useReadDocument } from '@/lib/queries';
@@ -243,7 +242,7 @@ export function readFieldProps(state: ReadState | null, key: string, setActive: 
  * taken.
  */
 export function readDateReason(value: string | null | undefined): string | null {
-  const problem = readDateProblem(value, dayjs().format('YYYY-MM-DD'));
+  const problem = readDateProblem(value, todayDate());
   if (!problem || !value) return null;
   if (problem === 'unreadable') return `“${value}” is not a date`;
   return problem === 'future' ? `the date read, ${formatDate(value)}, is still to come` : `the date read, ${formatDate(value)}, is over a year old`;

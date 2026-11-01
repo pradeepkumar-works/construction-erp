@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { TablePaginationConfig, TableProps } from 'antd';
 import type { SorterResult } from 'antd/es/table/interface';
 import { DEFAULT_PAGE_SIZE, type SortOrder } from '@erp/shared';
+import { todayDate } from './format';
 
 /** A list's filters as strings, the way they sit in the URL and in a saved view: `q`, `status`, `from`, `sortBy`… */
 export type ListFilters = Record<string, string>;
@@ -159,7 +160,7 @@ export type ListPage<S extends string> = ReturnType<typeof useListPage<S>>;
 
 /** Monday of this week to today, as the sites count days (India). */
 export function thisWeek(): { from: string; to: string } {
-  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+  const today = todayDate();
   const d = new Date(`${today}T00:00:00Z`);
   const monday = new Date(d.getTime() - ((d.getUTCDay() + 6) % 7) * 86_400_000);
   return { from: monday.toISOString().slice(0, 10), to: today };

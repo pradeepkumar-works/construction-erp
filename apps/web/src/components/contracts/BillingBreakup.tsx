@@ -12,7 +12,7 @@ import { BILLING_BASIS_LABELS, PACKAGE_STAGES, PACKAGE_STAGE_LABELS, STAGE_TRIGG
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useActivities, useBillingBreakup, useEpc, useStockItems } from '@/lib/queries';
-import { formatMoney, formatMonthShort, formatPct, inContract, moneyPrefix, outOfContract, toNumber, NO_VALUE } from '@/lib/format';
+import { formatMoney, formatMonthShort, formatPct, inContract, moneyPrefix, outOfContract, toNumber, NO_VALUE, todayDate } from '@/lib/format';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { QueryError } from '@/components/common/QueryState';
 import { Section } from '@/components/common/Section';
@@ -335,7 +335,7 @@ export function BillingBreakup({ projectId }: { projectId: string }) {
 
 /** Targets against what was billed, month by month; a month behind its target shows in the error colour with "behind". */
 function MilestoneGrid({ data }: { data: BillingBreakupDto }) {
-  const today = dayjs().format('YYYY-MM-DD');
+  const today = todayDate();
   const set = data.grid.some((r) => r.targets.some((t) => t !== null));
   if (!set) return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={data.canEditTerms ? 'No targets yet. Edit targets to propose them from the schedule.' : 'No targets set yet'} />;
   return (

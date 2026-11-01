@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { App, Button, Card, Col, Empty, Flex, Form, Grid, Input, Row, Space, Statistic, Table, Typography, theme } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import dayjs from 'dayjs';
 import { CheckCircleOutlined, ClockCircleOutlined, CloseCircleFilled, DeleteOutlined, EditOutlined, MailOutlined, PlusOutlined, ShoppingCartOutlined, TrophyOutlined } from '@/components/common/icons';
 import type { ComparativeStatementDto, EnquiryDto, MaterialRequestDto, MaterialRequestItemDto, QuotationDto, RankedQuote, RequestToOrderDto } from '@erp/shared';
 import { awardLowestPerItem, canPurchase, enquiryOpen, finaliseProblem, lastRateKey, rankLabel, type OrderStage } from '@erp/shared';
@@ -12,7 +11,7 @@ import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useUrlTab } from '@/lib/url-state';
 import { useComparative, useFinaliseL1, useLastRates, useMaterialRequest, useRequestToOrder } from '@/lib/queries';
-import { formatDate, formatDateTime, formatINR, formatQty, toNumber, NO_VALUE } from '@/lib/format';
+import { formatDate, formatDateTime, formatINR, formatQty, toNumber, NO_VALUE, todayDate } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';
 import { AppTabs } from '@/components/common/AppTabs';
 import { AppTag } from '@/components/common/AppTag';
@@ -121,7 +120,7 @@ function EnquiryStep({ request, row, buyer, onNext }: { request: MaterialRequest
   const [enquiring, setEnquiring] = useState(false);
   const [sent, setSent] = useState<EnquiryDto | null>(null);
   const left = request.items.filter((i) => toNumber(i.toOrderQty) > 0);
-  const waiting = row.enquiry && enquiryOpen(row.enquiry, dayjs().format('YYYY-MM-DD'));
+  const waiting = row.enquiry && enquiryOpen(row.enquiry, todayDate());
   return (
     <>
       <Flex justify="space-between" align="center" wrap gap={token.marginXS} style={{ marginBottom: token.marginSM }}>
@@ -203,7 +202,7 @@ function QuotationsStep({ request, cs, loading, buyer, onNext }: { request: Mate
   const [quoting, setQuoting] = useState<QuotationDto | 'new' | null>(null);
   const ranked = new Map(ranksFor(request, cs).map((x) => [x.quotationId, x]));
   const left = request.items.filter((i) => toNumber(i.toOrderQty) > 0).length;
-  const today = dayjs().format('YYYY-MM-DD');
+  const today = todayDate();
   const remove = useMutation({
     mutationFn: async (qid: string) => (await api.delete(`/quotations/${qid}`)).data,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['quotations'] }),

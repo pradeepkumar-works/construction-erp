@@ -52,9 +52,9 @@ import {
   StatusDialog,
   SubmitDialog,
 } from "@/components/tenders/TenderDialogs";
+import { todayDate } from '@/lib/format';
 
 type Tab = "boq" | "bids" | "details";
-const today = () => new Date().toLocaleDateString("en-CA");
 const money = (v: string | null | undefined) => (
   <span translate="no">
     {v === null || v === undefined ? NO_VALUE : formatINR(v, true)}
@@ -131,7 +131,7 @@ function TenderView({ tender }: { tender: TenderDetailDto }) {
       onOk: async () => {
         await act.mutateAsync({
           path: `/tenders/${t.id}/status`,
-          body: { status: to, on: today() },
+          body: { status: to, on: todayDate() },
         });
         notify.saved(`Tender ${t.tenderNo} ${done}`);
       },

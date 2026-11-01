@@ -3,7 +3,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Button, Card, Flex, Form, Input, Radio, Select, Table, Typography, theme } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import dayjs from 'dayjs';
 import type { LetterApprovalRule, LetterDirection, LetterSeriesDto, LetterSettingsDto } from '@erp/shared';
 import {
   CONTRACTUAL_LETTER_CATEGORIES,
@@ -26,6 +25,7 @@ import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { EditOutlined, PlusOutlined } from '@/components/common/icons';
 import { CODE_INPUT } from '@/components/form/inputs';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
+import { todayDate } from '@/lib/format';
 
 const srOnly: React.CSSProperties = { position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 };
 const HO = 'HO';
@@ -53,7 +53,7 @@ function SeriesDialog({ editing, onClose }: { editing: LetterSeriesDto | 'new' |
     form.setFieldsValue(series ? { projectId: series.projectId ?? HO, direction: series.direction, prefix: series.prefix, pattern: series.pattern } : { projectId: HO, direction: 'IN', prefix: HEAD_OFFICE_PREFIX, pattern: LETTER_NUMBER_PATTERN });
   }, [editing, series, form]);
   const problem = letterPatternProblem(pattern) ?? letterPrefixProblem(prefix.trim());
-  const example = problem ? null : formatLetterNo(pattern, { prefix: prefix.trim(), direction, date: dayjs().format('YYYY-MM-DD'), n: 42 });
+  const example = problem ? null : formatLetterNo(pattern, { prefix: prefix.trim(), direction, date: todayDate(), n: 42 });
   const save = useMutation({
     mutationFn: async (v: SeriesForm) =>
       series
