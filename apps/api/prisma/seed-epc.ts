@@ -19,14 +19,9 @@ import { createStandardBreakup, proposedGrid, stagePlan } from '../src/stage-bil
 import { BILL_TERMS_SELECT, billTotals, measuredLines, writeBill } from '../src/ra-bills/ra-bill-pricing';
 import { syncBillStage } from '../src/receivables/bill-settlement';
 import { seedElementTree, type ElementSeed } from './seed-structure';
+import { day } from './seed-clock';
 
 const D = (v: string | number) => new Prisma.Decimal(v);
-const day = (offset: number) => {
-  const d = new Date();
-  d.setUTCHours(0, 0, 0, 0);
-  d.setUTCDate(d.getUTCDate() + offset);
-  return d;
-};
 const CODE = 'WW-2026-07';
 const RATE = 83.25;
 const VALUE_USD = 6_200_000;

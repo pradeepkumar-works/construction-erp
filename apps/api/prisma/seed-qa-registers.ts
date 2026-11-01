@@ -7,13 +7,8 @@
  */
 import { Prisma, PrismaClient } from '@prisma/client';
 import { masterCode } from '@erp/shared';
+import { day } from './seed-clock';
 
-const day = (offset: number) => {
-  const d = new Date();
-  d.setUTCHours(0, 0, 0, 0);
-  d.setUTCDate(d.getUTCDate() + offset);
-  return d;
-};
 const plus = (d: Date, days: number) => new Date(d.getTime() + days * 86_400_000);
 
 export async function seedQaRegisters(prisma: PrismaClient, organizationId: string) {

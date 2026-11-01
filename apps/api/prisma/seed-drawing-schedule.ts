@@ -5,13 +5,8 @@
  * team owes. Runs once per company (when it has no schedule yet), after the demo documents.
  */
 import { PrismaClient } from '@prisma/client';
+import { day } from './seed-clock';
 
-const day = (offset: number) => {
-  const d = new Date();
-  d.setUTCHours(0, 0, 0, 0);
-  d.setUTCDate(d.getUTCDate() + offset);
-  return d;
-};
 const plus = (d: Date, days: number) => new Date(d.getTime() + days * 86_400_000);
 
 const CONSULTANT = 'The Structural Consultant, Health Department';

@@ -9,14 +9,9 @@
  */
 import { Prisma, PrismaClient, type PipeMaterial, type PipeNodeKind } from '@prisma/client';
 import { VALVE_NODE_KINDS, activityPipeStage, isLengthUnit, lineLocation, segmentLabel, workSummary, type PipeStage } from '@erp/shared';
+import { day } from './seed-clock';
 
 const D = (v: string | number) => new Prisma.Decimal(v);
-const day = (offset: number) => {
-  const d = new Date();
-  d.setUTCHours(0, 0, 0, 0);
-  d.setUTCDate(d.getUTCDate() + offset);
-  return d;
-};
 const round1 = (n: number) => Math.round(n * 10) / 10;
 
 interface NodeSeed {

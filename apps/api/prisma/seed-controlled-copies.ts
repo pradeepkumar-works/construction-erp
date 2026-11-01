@@ -5,6 +5,7 @@
  * Runs once per company (when it has none yet), after the demo documents.
  */
 import { PrismaClient } from '@prisma/client';
+import { day } from './seed-clock';
 
 const plus = (d: Date, days: number) => new Date(d.getTime() + days * 86_400_000);
 
@@ -36,8 +37,7 @@ export async function seedControlledCopies(prisma: PrismaClient, organizationId:
   if (await prisma.controlledCopy.count({ where: { organizationId } })) return;
   const by = await prisma.user.findFirst({ where: { organizationId, email: { in: ['docs@demo.com', 'pm@demo.com'] } }, orderBy: { email: 'asc' }, select: { id: true } });
   if (!by) return;
-  const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
+  const today = day(0);
   for (const plan of PLANS) {
     const doc = await prisma.document.findFirst({
       where: { organizationId, docNo: plan.docNo, project: { code: plan.project } },

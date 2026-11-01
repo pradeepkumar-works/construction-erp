@@ -4,13 +4,14 @@ import { api, apiToken, axeViolations, signIn } from './helpers';
 
 /**
  * Operation and maintenance on the water supply scheme handed over 19 months ago: the seed gives it five
- * years of O&M paid quarterly, a reading for every day (pressure short twice in September and twice this month), the
+ * years of O&M paid quarterly, a reading for every day (pressure short twice at the end of the last quarter and twice in the running one), the
  * staff recorded each month (a pump operator short in August), chemicals issued against their norm and six O&M bills,
  * the last a draft. Everything a test adds is removed again.
  */
 
 type Project = { id: string; code: string };
 const CODE = 'WS-2025-05';
+const pressureFailures = (om: OmDto, month: string) => om.months.find((m) => m.month === month)?.benchmarks.find((b) => b.key === 'PRESSURE')?.failures ?? 0;
 
 test('daily service levels and staff drive the quarterly O&M bill of a handed-over water scheme', async ({ page }) => {
   const pm = await apiToken('pm2@demo.com');
@@ -31,8 +32,11 @@ test('daily service levels and staff drive the quarterly O&M bill of a handed-ov
   expect(Number(last.staffDeduction)).toBe(16000);
   expect(Number(last.penalty)).toBe(5000);
   expect(data.periods.filter((p) => p.billState === 'Paid').length).toBe(5);
-  expect(data.months.find((m) => m.month === data.month)!.benchmarks.find((b) => b.key === 'PRESSURE')!.failures).toBe(2);
-  expect(data.chemicals.find((c) => c.itemName === 'Bleaching powder')!.status).toBe('OVER');
+  // The running quarter's first month is the seed's "this month" (last month until the 21st): pressure short twice.
+  const lowMonth = data.periods.find((p) => p.year === 2 && p.instalment === 3)!.from.slice(0, 7);
+  expect(pressureFailures(data, lowMonth)).toBe(2);
+  const lows = await api<OmDto>(pm, `${base}?month=${lowMonth}`);
+  expect(lows.chemicals.find((c) => c.itemName === 'Bleaching powder')!.status).toBe('OVER');
 
   // Who does what: engineers log, managers set the terms; a QS cannot.
   expect(data.canManage && data.canBill).toBe(true);
@@ -50,7 +54,7 @@ test('daily service levels and staff drive the quarterly O&M bill of a handed-ov
   const logged = await api<OmDto>(engineer, `${base}/days`, { method: 'PUT', body: { ...reading, date: data.today } });
   const mine = logged.days.find((d) => d.date === data.today)!;
   expect(mine.failures).toEqual(['PRESSURE']);
-  expect(logged.months.find((m) => m.month === data.today.slice(0, 7))!.benchmarks.find((b) => b.key === 'PRESSURE')!.failures).toBe(3);
+  expect(pressureFailures(logged, data.today.slice(0, 7))).toBe(pressureFailures(data, data.today.slice(0, 7)) + 1);
   await api(engineer, `${base}/days/${mine.id}`, { method: 'DELETE' });
 
   // The running quarter cannot be billed yet, nor anything while the last bill is a draft.
