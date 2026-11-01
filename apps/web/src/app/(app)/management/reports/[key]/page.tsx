@@ -17,6 +17,7 @@ import { FileExcelOutlined, PrinterOutlined } from '@/components/common/icons';
 import { FigureStrip } from '@/components/management/FigureStrip';
 import { ReportSection } from '@/components/management/ReportSection';
 import { cellText } from '@/components/management/report-format';
+import { NoAccess } from '@/components/common/NoAccess';
 import { exportManagementReport, openManagementReportPrint } from '@/components/management/reportOutput';
 import { MONTH_PICKER_FORMAT } from '@/lib/format';
 
@@ -42,7 +43,7 @@ export default function Page() {
     return (
       <div className="page-container">
         <PageHeader title={MANAGEMENT_REPORTS[key].title} crumbs={crumbs} />
-        <Result icon={<ResultMark kind="no-access" />} title="Management reports are for management, accounts and project managers" />
+        <NoAccess title="Management reports are for management, accounts and project managers" />
       </div>
     );
   if (!user) return <PageSkeleton shape="list" />;

@@ -3,7 +3,7 @@
 import React from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { Card, Col, Result, Row, Skeleton, Typography, theme } from 'antd';
+import { Card, Col, Row, Skeleton, Typography, theme } from 'antd';
 import { SUBMISSION_TYPE_LABELS, canSeeManagement, type PortfolioDto } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useManagementPortfolio } from '@/lib/queries';
@@ -11,7 +11,6 @@ import { formatDate, formatINRCompact, formatPct, toNumber } from '@/lib/format'
 import { PageHeader } from '@/components/common/PageHeader';
 import { LinkButton } from '@/components/common/LinkButton';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
-import { ResultMark } from '@/components/common/ResultMark';
 import { AppTag } from '@/components/common/AppTag';
 import { FileExcelOutlined } from '@/components/common/icons';
 import { ChartCard } from '@/components/home/ChartCard';
@@ -22,6 +21,7 @@ import { ProjectsHealthTable } from '@/components/management/ProjectsHealthTable
 import { TrendTable, trendSummary } from '@/components/management/TrendTable';
 import { ReportsList } from '@/components/management/ReportsList';
 import { VerticalsTable } from '@/components/management/VerticalsTable';
+import { NoAccess } from '@/components/common/NoAccess';
 import { useVerticalScope } from '@/lib/project-scope';
 
 const TrendChart = dynamic(() => import('@/components/management/TrendChart').then((m) => m.TrendChart), {
@@ -52,11 +52,7 @@ export default function Page() {
     return (
       <div className="page-container">
         <PageHeader title="Management dashboard" />
-        <Result
-          icon={<ResultMark kind="no-access" />}
-          title="The management dashboard is for management, accounts and project managers"
-          subTitle="Your role does not see project cost. Choose a page from the menu."
-        />
+        <NoAccess title="The management dashboard is for management, accounts and project managers" />
       </div>
     );
   if (!user || (isLoading && !data)) return <PageSkeleton shape="home" />;

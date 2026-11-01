@@ -14,6 +14,7 @@ import { buildCompanyExport, type ExportProgress } from '@/lib/companyExport';
 import { formatDate, formatDateTime, NO_VALUE, formatCount, formatBytes } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
+import { NoAccess } from '@/components/common/NoAccess';
 import { themeFontSize } from '@/lib/theme';
 
 
@@ -240,7 +241,7 @@ export default function CompanyDataPage() {
     return (
       <div className="page-container" style={{ maxWidth: 948, marginLeft: 0 }}>
         <PageHeader title="Data and privacy" />
-        <Alert type="info" title="Only an admin can export or delete company data." />
+        <NoAccess title="Only an admin can export or delete company data" />
       </div>
     );
   return (

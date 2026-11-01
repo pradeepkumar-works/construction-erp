@@ -2,15 +2,15 @@
 
 import React, { Suspense } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Card, Result } from 'antd';
+import { Card } from 'antd';
 import { AppTabs } from '@/components/common/AppTabs';
 import { canManageIntegrations } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { PageHeader } from '@/components/common/PageHeader';
-import { ResultMark } from '@/components/common/ResultMark';
 import { Connections } from '@/components/integrations/Connections';
 import { Connectors } from '@/components/integrations/Connectors';
 import { Devices } from '@/components/integrations/Devices';
+import { NoAccess } from '@/components/common/NoAccess';
 import { EventLog } from '@/components/integrations/EventLog';
 
 const TABS = ['connections', 'connectors', 'devices', 'log'] as const;
@@ -26,7 +26,7 @@ function ConnectionsPage() {
     return (
       <div className="page-container">
         <PageHeader title="Connections" />
-        <Result icon={<ResultMark kind="no-access" />} title="Only an admin or management manage the connections" />
+        <NoAccess title="Only an admin or management manage the connections" />
       </div>
     );
   return (

@@ -21,6 +21,7 @@ import { rangePresets } from '@/lib/dates';
 import { useUrlTab, writeUrlParam } from '@/lib/url-state';
 import { LocalDataTable } from '@/components/list/LocalDataTable';
 import type { ListColumn } from '@/components/list/DataTable';
+import { NoAccess } from '@/components/common/NoAccess';
 import { themeFontSize } from '@/lib/theme';
 
 const money = (v: string | number) => <span className="mono" translate="no">{formatINR(v)}</span>;
@@ -57,7 +58,7 @@ function GstRegistersPage() {
     return (
       <div className="page-container">
         <PageHeader title="GST registers" />
-        <Alert type="warning" showIcon title="Only admin, management and accounts see the GST registers." />
+        <NoAccess title="Only admin, management and accounts see the GST registers" />
       </div>
     );
 
