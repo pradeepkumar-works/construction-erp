@@ -4,12 +4,13 @@
  * (`ModuleHomeService`), picked per department here; the pipelines are read from the modules' own services (requests,
  * requests to order, procurement status, letters) and put in stage order by `pipelineStages` / `byPipelineUrgency`.
  */
-import type { ModuleFigureDto, ModuleKey } from './modules';
+import { MAX_FIGURES, type Figure, type FigureId } from './figures';
+import type { ModuleKey } from './modules';
 
-/** Which area modules' figures a department shows, and which of them (all when `keys` is left out). */
+/** Which area modules' figures a department shows, and which of them by measure (all when `ids` is left out). */
 export interface DepartmentFigureSource {
   module: ModuleKey;
-  keys?: string[];
+  ids?: FigureId[];
 }
 
 /**
@@ -21,29 +22,29 @@ export const DEPARTMENT_FIGURES: Record<string, DepartmentFigureSource[]> = {
   'quality-control': [{ module: 'quality' }, { module: 'safety' }],
   'design-drawings': [{ module: 'documents' }],
   correspondence: [{ module: 'correspondence' }],
-  'planning-estimation': [{ module: 'site', keys: ['openRisks'] }],
-  'purchase-management': [{ module: 'materials', keys: ['openRequests'] }, { module: 'purchases' }],
-  'store-inventory': [{ module: 'materials' }, { module: 'purchases', keys: ['ordersLate'] }],
+  'planning-estimation': [{ module: 'site', ids: ['openRisks'] }],
+  'purchase-management': [{ module: 'materials', ids: ['materialRequestsToApprove'] }, { module: 'purchases' }],
+  'store-inventory': [{ module: 'materials' }, { module: 'purchases', ids: ['lateDeliveries'] }],
   'contractor-management': [],
   'machinery-vehicles': [{ module: 'plant' }],
   'plant-production': [{ module: 'rmc' }],
-  'accounts-finance': [{ module: 'accounts' }, { module: 'billing', keys: ['receivable', 'notSent'] }],
-  'labour-management': [{ module: 'site', keys: ['labourToday', 'dprToday'] }],
+  'accounts-finance': [{ module: 'accounts' }, { module: 'billing', ids: ['clientsOwe', 'billsNotSent'] }],
+  'labour-management': [{ module: 'site', ids: ['labour', 'dailyReports'] }],
   'hr-payroll': [{ module: 'people' }],
   'reports-mis': [],
   administration: [],
 };
 
-/** At most this many figures in the strip, in the order of `DEPARTMENT_FIGURES`. */
-export const DEPARTMENT_FIGURE_MAX = 6;
+/** At most this many figures in the strip (the strip's own limit), in the order of `DEPARTMENT_FIGURES`. */
+export const DEPARTMENT_FIGURE_MAX = MAX_FIGURES;
 
-/** The strip from the modules' figures (by module), each source's keys in its own order. */
-export function departmentFigures(department: string, byModule: Partial<Record<ModuleKey, ModuleFigureDto[]>>): ModuleFigureDto[] {
-  const out: ModuleFigureDto[] = [];
+/** The strip from the modules' figures (by module), each source's measures in its own order, each measure once. */
+export function departmentFigures(department: string, byModule: Partial<Record<ModuleKey, readonly Figure[]>>): Figure[] {
+  const out: Figure[] = [];
   for (const src of DEPARTMENT_FIGURES[department] ?? []) {
     const figures = byModule[src.module] ?? [];
-    const picked = src.keys ? src.keys.flatMap((k) => figures.filter((f) => f.key === k)) : figures;
-    for (const f of picked) if (!out.some((o) => o.key === f.key)) out.push(f);
+    const picked = src.ids ? src.ids.flatMap((id) => figures.filter((f) => f.id === id)) : figures;
+    for (const f of picked) if (!out.some((o) => o.id === f.id)) out.push(f);
   }
   return out.slice(0, DEPARTMENT_FIGURE_MAX);
 }
@@ -129,7 +130,7 @@ export interface DepartmentPipelineDto {
 export interface DepartmentHomeDto {
   department: string;
   date: string;
-  figures: ModuleFigureDto[];
+  figures: Figure[];
   pipelines: DepartmentPipelineDto[];
 }
 

@@ -14,11 +14,10 @@ import { requestNew } from '@/lib/new-intent';
 import { formatINRCompact, inSentence } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
-import { FigureStrip } from '@/components/common/FigureStrip';
+import { Figures } from '@/components/figures';
 import { newEntriesFor } from '@/components/shell/NewMenu';
 import { HrDashboard } from '@/components/staff/HrDashboard';
 import { ProjectProgress } from './ProjectProgress';
-import { moduleFigure } from './moduleFigure';
 import { TileGrid, tileEntries } from '@/components/launcher/TileGrid';
 import { usePins } from '@/components/launcher/pins';
 import { useNavMenu } from '@/components/shell/menu';
@@ -132,7 +131,7 @@ export function ModuleHome({ moduleKey }: { moduleKey: string }) {
           <Row gutter={[16, 16]}>
             {data.figures.length > 0 && (
               <Col xs={24} xl={waits ? 15 : 24}>
-                <FigureStrip label={`${label} figures`} figures={data.figures.map(moduleFigure)} />
+                <Figures label={`${label} figures`} figures={data.figures} scope={{ projectId }} />
               </Col>
             )}
             {waits && (

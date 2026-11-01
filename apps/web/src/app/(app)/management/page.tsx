@@ -4,17 +4,17 @@ import React from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { Card, Col, Row, Skeleton, Typography, theme } from 'antd';
-import { SUBMISSION_TYPE_LABELS, canSeeManagement, type PortfolioDto } from '@erp/shared';
+import { SUBMISSION_TYPE_LABELS, canSeeManagement, figure, unbilledAttention, type FigureInput, type PortfolioDto } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useManagementPortfolio } from '@/lib/queries';
-import { formatDate, formatINRCompact, formatPct, toNumber } from '@/lib/format';
+import { formatDate } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { LinkButton } from '@/components/common/LinkButton';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { AppTag } from '@/components/common/AppTag';
 import { FileExcelOutlined } from '@/components/common/icons';
 import { ChartCard } from '@/components/home/ChartCard';
-import { FigureStrip, type StripFigure } from '@/components/common/FigureStrip';
+import { Figures } from '@/components/figures';
 import { MoneyPipeline } from '@/components/management/MoneyPipeline';
 import { AttentionList } from '@/components/management/AttentionList';
 import { ProjectsHealthTable } from '@/components/management/ProjectsHealthTable';
@@ -63,53 +63,19 @@ export default function Page() {
 function Dashboard({ data }: { data: PortfolioDto }) {
   const { token } = theme.useToken();
   const t = data.totals;
-  const margin = toNumber(t.margin);
   const acts = data.attention.filter((a) => a.level === 'act').length;
-  const figures: StripFigure[] = [
-    {
-      key: 'contract',
-      label: 'Contract value',
-      value: formatINRCompact(t.contractValue),
-      note: `${t.active} active of ${t.projects} projects`,
-    },
-    {
-      key: 'order',
-      label: 'Order book',
-      value: formatINRCompact(t.orderBook),
-      note: 'Contract still to bill',
-    },
-    {
-      key: 'unbilled',
-      label: 'Work done, not billed',
-      value: formatINRCompact(t.unbilled),
-      note: 'Bill it to get paid',
-      tone: toNumber(t.unbilled) > 0 && data.attention.some((a) => a.key === 'billing') ? 'danger' : undefined,
-    },
-    {
-      key: 'owe',
-      label: 'Clients owe',
-      value: formatINRCompact(t.outstanding),
-      note: toNumber(t.over90) > 0 ? `${formatINRCompact(t.over90)} over 90 days` : 'Nothing over 90 days',
-      tone: toNumber(t.over90) > 0 ? 'danger' : undefined,
-    },
-    {
-      key: 'margin',
-      label: 'Margin to date',
-      value: formatINRCompact(t.margin),
-      note: t.marginPct === null ? 'Nothing done yet' : `${formatPct(t.marginPct)} of work done`,
-      tone: margin < 0 ? 'danger' : undefined,
-    },
-    ...(data.cash
-      ? [
-          {
-            key: 'cash',
-            label: 'Bank and cash',
-            value: formatINRCompact(data.cash.today),
-            note: data.cash.firstShort ? `Short in the week of ${day(data.cash.firstShort)}` : `Lowest ${formatINRCompact(data.cash.lowest)} in 13 weeks`,
-            tone: data.cash.firstShort ? ('danger' as const) : undefined,
-          },
-        ]
-      : []),
+  const billing = unbilledAttention(data.attention);
+  const cash = data.cash;
+  const figures: FigureInput[] = [
+    figure('contractValue', t.contractValue, { count: t.projects }),
+    figure('orderBook', t.orderBook, { versus: { of: figure('contractValue', t.contractValue) } }),
+    figure('workNotBilled', t.unbilled, billing && { attention: billing }),
+    figure('clientsOwe', t.outstanding, { versus: { part: figure('clientsOweOver90', t.over90) } }),
+    figure('marginToDate', t.margin, { versus: { of: figure('workDone', t.workDone) } }),
+    cash &&
+      (cash.firstShort
+        ? figure('bankAndCash', cash.today, { attention: { level: 'act', because: `Short in the week of ${day(cash.firstShort)}` } })
+        : figure('bankAndCash', cash.today, { versus: { part: figure('cashLowest', cash.lowest) } })),
   ];
 
   return (
@@ -125,7 +91,7 @@ function Dashboard({ data }: { data: PortfolioDto }) {
       />
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: token.margin }}>
-        <FigureStrip label="Portfolio figures" figures={figures} />
+        <Figures label="Portfolio figures" figures={figures} />
 
         <Row gutter={[16, 16]}>
           <Col xs={24} xl={14}>

@@ -160,7 +160,8 @@ keys in `MODULE_KEYS`, which `MODULE_LABELS` and `MODULE_INTROS` take from the t
 
 A new page is one node in its module (and an `NAV_ACCESS` line if it needs a new rule). A roadmap item that ships a planned
 node turns it `live` and gives it its route. A new module is a node with `parent: null`, its key in `MODULE_KEYS` with its
-submission types, and, if it has figures, a branch in `ModuleHomeService.figures`.
+submission types, and, if it has figures, a branch in `ModuleHomeService.figures` that states each through `figure()`
+over a `MEASURES` line (Headline figures).
 
 ### Progress by project
 
@@ -195,6 +196,37 @@ web's period pickers start from `defaultPeriod()` (`components/cost/PeriodPicker
 This month), and the API's month defaults (MIS, quality report, leakage) call the same function, so a page and its export
 agree. The watch list's leakage warnings read the same month, so they match the Leakage checks page. A history note writes money with `inr` and days with `formatDay`, never a raw number or an ISO date.
 `src/scripts/reporting-period-test.ts` (CI) holds both.
+
+### Headline figures
+
+The three to six numbers at the top of a dashboard or report are one block, so one company figure has one name, one
+look and one rule for what stands out. Three parts, all in `@erp/shared` but the last:
+
+- **`MEASURES`** (`figures/measures.ts`) is the registry: each figure's name, kind (money, count, %, quantity, days),
+  which way is good, its definition, the list it opens, and either a flag (above zero it needs a look; at zero it folds
+  into one quiet line, in its own `clear` words) or a limit (a margin below zero). A margin below zero reads by its
+  `negativeLabel` ("Loss to date") with the amount above zero. `FIGURE_LABELS` is derived from it, so copy-check holds the
+  names to WRITING.md and retires "Outstanding", "Receivables" and "Vendor payable" as figure names.
+- **`figure(id, value, opts)`** states facts only: the value (a Decimal string or a number, or `{ none: reason }`), its
+  period (`when`), a count behind it, and at most one comparison (`was` last period, `plan`, `of` a whole, `part` that
+  matters, `trend` of months). A verdict from a domain rule comes with its reason in words (`unbilledAttention` for work
+  not billed). The API sends the same objects: `ManagementReportDto.figures` is `Figure[]`.
+- **`presentFigures(facts, { today, scope, currency })`** is pure and does the rest: one money unit across the values from
+  the largest (a note keeps its own), every word twice (shown, and spoken: "crore", "September", "minus"), each figure's
+  state (act, watch, calm, or quiet for a zero or no value), flag figures at zero folded into one line, the lead (the
+  figure that most needs action, money first, then the larger amount; none on a calm day) and the grid spans at two,
+  four and all columns so no row is ragged. It throws in development past `MAX_FIGURES` (6).
+
+On the web `<Figures label figures scope currency bare>` (`components/figures/`) draws the view on `tk` tokens: a `dl` whose
+columns follow the block's own width (a container query, so a block beside a side panel wraps), the lead first and two columns wide, danger for act, pending for watch, muted for quiet, never a success colour; the label
+links to the measure's list with the scope's filters and carries its definition as help; the value sits in
+`<data value>` with its spoken words in `.visually-hidden`. The management report's print and Excel read the same
+`presentFigures` view, so the page, the paper and the sheet say the same words. Every headline strip uses it: the
+management dashboard and reports, My work, one project's management page, the watch list's other checks, and the module,
+department and project progress screens, whose `ModuleHomeDto.figures` and `DepartmentHomeDto.figures` are `Figure[]`
+stated by `ModuleHomeService` (a department picks its modules' figures by `FigureId` in `DEPARTMENT_FIGURES`). A ratio
+such as "3 of 12 projects behind plan" is a count with `versus: { of }`; a module figure's note is a comparison or a
+verdict with its reason, never words of its own. `src/scripts/figures-test.ts` (CI) holds the registry and the presenter.
 
 ### Launcher Home, pins and Recent (launcher phase 2)
 
@@ -363,8 +395,8 @@ Letters in and out for every project and for head office (`CorrespondenceService
 A department's screen (`DepartmentHome`) opens, under what waits for the user, with `DepartmentPanel` over
 `GET /dashboard/departments/:key?projectId` (`DepartmentHomeService`, `DepartmentHomeDto`):
 
-- **Figures.** The area modules' own (`ModuleHomeService.figures`), picked per department by `DEPARTMENT_FIGURES` and
-  `departmentFigures` (`@erp/shared/department-home.ts`, at most six): purchase shows requests to approve and orders to
+- **Figures.** The area modules' own (`ModuleHomeService.figures`, `Figure[]`), picked per department by measure id in
+  `DEPARTMENT_FIGURES` and `departmentFigures` (`@erp/shared/department-home.ts`, at most `MAX_FIGURES`), drawn by `<Figures>`: purchase shows requests to approve and orders to
   receive, the store its stock and late deliveries, accounts its books and what clients owe. Project management keeps the
   Projects figures and progress by project it had.
 - **Pipelines** (`DEPARTMENT_PIPELINES`): the work in flight through the department, read from the modules' own services
@@ -4050,7 +4082,8 @@ in `apps/api/src/rmc/batching-rules.ts`, and reading a row, the first column map
   and not billed (`readiness`), man-day flags (`AttendanceCheckService.get`) and, for those who may switch it on, Ask
   Nirmaan while `AiService.status` says it is off and why. `GET /insights` (`apps/api/src/insights`); which checks a role
   gets is `insightKeysFor` (`@erp/shared/insights.ts`), each the helper of the check's own page. A check that fails shows a
-  dash and the rest still come. Web: `components/watch-list/OtherChecks.tsx` over `FigureStrip`.
+  dash with its reason and the rest still come. Web: `components/watch-list/OtherChecks.tsx`, each check a figure in
+  `<Figures>` (Headline figures) whose label opens its page; Ask Nirmaan, a switch rather than a figure, is a line under it.
 - **Q1 Margin fade.** A watch list kind, `MARGIN_FADE` (Margin falling), for those who see cost and approve. At each month
   end of the earned value curve (`EarnedValueService.get` with the caller) the forecast cost is BAC ÷ CPI and the margin
   the revised contract value (contract plus approved variations) less it (`marginAt`); a month under a tenth earned, or

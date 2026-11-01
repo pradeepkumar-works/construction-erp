@@ -1,4 +1,5 @@
 import type { RoleKey, SubmissionType } from './enums';
+import type { Because, Figure } from './figures/figure';
 import { canViewCost } from './permissions';
 
 /**
@@ -16,6 +17,18 @@ export const canSeeManagement = (role: RoleKey) => canViewCost(role);
 export const FORECAST_MIN_DONE_PCT = 5;
 /** Work done and not billed for this many days is worth a word; twice as long needs action. */
 export const UNBILLED_WATCH_DAYS = 45;
+/**
+ * The "Work done, not billed" figure's verdict, on the dashboard and in the Monthly MIS alike: act when a project's work
+ * has waited twice UNBILLED_WATCH_DAYS for a bill, watch from UNBILLED_WATCH_DAYS, else none.
+ */
+export function unbilledAttention(reasons: readonly { key: string; level: 'watch' | 'act' }[]): Because | undefined {
+  const billing = reasons.filter((r) => r.key === 'billing');
+  const act = billing.filter((r) => r.level === 'act').length;
+  const n = act || billing.length;
+  if (!n) return undefined;
+  return { level: act ? 'act' : 'watch', because: `Work on ${n === 1 ? '1 project' : `${n} projects`} not billed for ${act ? UNBILLED_WATCH_DAYS * 2 : UNBILLED_WATCH_DAYS} days or more` };
+}
+
 /** Approvals waiting longer than this many days count as old. */
 export const APPROVAL_OLD_DAYS = 7;
 
@@ -270,13 +283,6 @@ export interface ReportSectionDto {
   empty?: string;
 }
 
-export interface ReportFigureDto {
-  label: string;
-  value: ReportCell;
-  kind: ReportColumnKind;
-  note?: string;
-}
-
 export interface ManagementReportDto {
   key: ManagementReportKey;
   title: string;
@@ -291,7 +297,8 @@ export interface ManagementReportDto {
   generatedAt: string;
   /** The paragraph the report opens with, written from its own figures (the Monthly MIS) */
   commentary?: string | null;
-  figures: ReportFigureDto[];
+  /** The headline figures (ARCHITECTURE "Headline figures"), worded by `presentFigures` for the page, print and Excel alike */
+  figures: Figure[];
   sections: ReportSectionDto[];
   /** How the figures are worked out, for the last page */
   notes: string[];

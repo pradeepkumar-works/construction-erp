@@ -1,4 +1,7 @@
 export * from './enums';
+export * from './numbers';
+export * from './trend';
+export * from './figures';
 export * from './labels';
 export * from './permissions';
 export * from './types';

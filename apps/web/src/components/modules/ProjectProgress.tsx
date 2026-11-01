@@ -14,8 +14,7 @@ import { useAppearance } from '@/lib/appearance';
 import { formatDate, formatINRCompact, formatPct, toNumber } from '@/lib/format';
 import { ProjectStatusTag } from '@/components/common/StatusTag';
 import { QueryError } from '@/components/common/QueryState';
-import { FigureStrip } from '@/components/common/FigureStrip';
-import { moduleFigure } from './moduleFigure';
+import { Figures } from '@/components/figures';
 
 type View = 'chart' | 'table';
 /** Rows shown before Show all */
@@ -339,7 +338,7 @@ export function ProjectProgressPanel() {
   if (!data?.progress?.projects.length) return null;
   return (
     <Flex vertical gap={16}>
-      <FigureStrip label="Project figures" figures={data.figures.map(moduleFigure)} />
+      <Figures label="Project figures" figures={data.figures} scope={{ projectId }} />
       <ProjectProgress data={data.progress} />
     </Flex>
   );

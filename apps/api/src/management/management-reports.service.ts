@@ -16,14 +16,16 @@ import {
   byVertical,
   NO_VERTICAL,
   reportingMonth,
+  figure,
+  unbilledAttention,
   type AgeingDto,
+  type Figure,
   type BillStage,
   type ManagementReportDto,
   type ManagementReportKey,
   type ProjectSummary,
   type ReportColumnDto,
   type ReportColumnKind,
-  type ReportFigureDto,
   type ReportRowDto,
   type ReportSectionDto,
   type SubmissionType,
@@ -234,14 +236,6 @@ export class ManagementReportsService {
     const attention = rows.flatMap((r) => r.reasons.map((x) => ({ _href: projectHref(r.projectId), project: projectCell(r), level: x.level === 'act' ? 'Act now' : 'Watch', what: x.text })));
     attention.sort((a, b) => (a.level === b.level ? 0 : a.level === 'Act now' ? -1 : 1));
     const sum = (rs: ReportRowDto[], k: string) => r2(rs.reduce((s, r) => s + N(r[k] as number), 0));
-    const figures: ReportFigureDto[] = [
-      { label: 'Work done in the month', value: sum(inMonth.rows, 'workDone'), kind: 'money', note: 'Item-rate contracts, at BOQ rates' },
-      { label: 'Billed in the month', value: sum(inMonth.rows, 'billed'), kind: 'money' },
-      { label: 'Received in the month', value: sum(inMonth.rows, 'received'), kind: 'money' },
-      { label: 'Cost in the month', value: sum(inMonth.rows, 'cost'), kind: 'money' },
-      { label: 'Work done not billed', value: sum(standing.rows, 'unbilled'), kind: 'money', note: 'Today, all projects' },
-      { label: 'Clients owe', value: sum(standing.rows, 'outstanding'), kind: 'money', note: 'Today, with GST' },
-    ];
     const flowOf = (acc: Map<string, Acc>): MisFlow =>
       projects.reduce(
         (f, p) => {
@@ -255,13 +249,27 @@ export class ManagementReportsService {
       return top ? { name: top.name, amount: N(top.money[key]) } : null;
     };
     const acting = rows.filter((r) => r.reasons.some((x) => x.level === 'act'));
+    // Each flow against the month before, to its same days while this month is still running, as the commentary says it.
+    const now = flowOf(month);
+    const was = flowOf(before);
+    const inMonthWhen = { month: period.from!.slice(0, 7) };
+    const wasWhen = { month: prevSpan.from.slice(0, 7), sameDays: running };
+    const billing = unbilledAttention(rows.flatMap((r) => r.reasons));
+    const figures: Figure[] = [
+      figure('workDone', r2(now.workDone), { when: inMonthWhen, versus: { was: r2(was.workDone), when: wasWhen } }),
+      figure('billed', r2(now.billed), { when: inMonthWhen, versus: { was: r2(was.billed), when: wasWhen } }),
+      figure('moneyReceived', r2(now.received), { when: inMonthWhen, versus: { was: r2(was.received), when: wasWhen } }),
+      figure('cost', r2(now.cost), { when: inMonthWhen, versus: { was: r2(was.cost), when: wasWhen } }),
+      figure('workNotBilled', sum(standing.rows, 'unbilled'), billing && { attention: billing }),
+      figure('clientsOwe', sum(standing.rows, 'outstanding'), { when: 'today', versus: { part: figure('clientsOweOver90', r2(rows.reduce((s, r) => s + N(r.money.over90), 0))) } }),
+    ];
     const prevName = new Date(`${prevSpan.from}T00:00:00Z`).toLocaleDateString('en-GB', { month: 'long', timeZone: 'UTC' });
     const commentary = misCommentary({
       month: period.label,
       previous: running ? `the same days of ${prevName}` : prevName,
       projects: projects.length,
-      inMonth: flowOf(month),
-      before: flowOf(before),
+      inMonth: now,
+      before: was,
       year: { billed: N(sum(inYear.rows, 'billed')), cost: N(sum(inYear.rows, 'cost')) },
       unbilled: N(sum(standing.rows, 'unbilled')),
       outstanding: N(sum(standing.rows, 'outstanding')),
@@ -341,10 +349,10 @@ export class ManagementReportsService {
     };
     return {
       figures: [
-        { label: 'Billed', value: t.billed, kind: 'money' as const },
-        { label: 'Cost', value: t.cost, kind: 'money' as const },
-        { label: 'Gross margin', value: t.margin, kind: 'money' as const },
-        { label: 'Margin', value: t.marginPct, kind: 'pct' as const, note: 'Of billed' },
+        figure('billed', N(t.billed)),
+        figure('cost', N(t.cost)),
+        figure('grossMargin', N(t.margin)),
+        figure('marginOnBilling', typeof t.marginPct === 'number' ? t.marginPct : { none: 'Too little billed to say' }),
       ],
       sections: [
         { key: 'projects', title: 'By project', columns, rows, ...(rows.length > 1 ? { total: t } : {}) },
@@ -397,13 +405,14 @@ export class ManagementReportsService {
       };
     });
     const t = totalRow(columns, out);
+    const billing = unbilledAttention(rows.flatMap((r) => r.reasons));
     return {
       figures: [
-        { label: 'Work done not billed', value: t.unbilled, kind: 'money' as const },
-        { label: 'Measured, in no bill', value: t.measuredOpen, kind: 'money' as const },
-        { label: 'Bills not sent', value: t.notSent, kind: 'money' as const },
-        { label: 'Awaiting certificate', value: t.sent, kind: 'money' as const },
-        { label: 'Certified, not paid', value: t.certified, kind: 'money' as const },
+        figure('workNotBilled', N(t.unbilled), billing && { attention: billing }),
+        figure('measuredNotBilled', N(t.measuredOpen)),
+        figure('billsNotSent', N(t.notSent)),
+        figure('billsAwaitingCertificate', N(t.sent)),
+        figure('certifiedNotPaid', N(t.certified)),
       ],
       sections: [{ key: 'projects', title: 'By project', note: 'Work value before GST. Not billed is work done less billed; days are since the last bill’s “measured up to” date, or the start.', columns, rows: out, ...(out.length > 1 ? { total: t } : {}) }],
       notes: [
@@ -430,10 +439,9 @@ export class ManagementReportsService {
     const bills = r.openBills.map((b) => ({ _href: `/bills/${b.billId}`, bill: b.billLabel, project: projectCell({ code: b.projectCode, name: b.projectName }), stage: BILL_STAGE_LABELS[b.stage], sent: b.sentDate, invoice: N(b.invoiceAmount), settled: N(b.settledAmount), outstanding: N(b.outstanding), days: b.daysOutstanding }));
     return {
       figures: [
-        { label: 'Outstanding', value: N(r.totals.outstanding), kind: 'money' as const, note: 'Sent bills with GST, less what is settled' },
-        { label: 'Over 90 days', value: N(r.totals.ageing.over90), kind: 'money' as const },
-        { label: 'Not yet sent', value: N(r.totals.notSent), kind: 'money' as const },
-        { label: 'Retention held', value: N(r.totals.retentionHeld), kind: 'money' as const },
+        figure('clientsOwe', N(r.totals.outstanding), { count: bills.length, versus: { part: figure('clientsOweOver90', N(r.totals.ageing.over90)) } }),
+        figure('billsNotSent', N(r.totals.notSent)),
+        figure('retentionWithClients', N(r.totals.retentionHeld)),
       ],
       sections: [
         section({ key: 'clients', title: 'By client', columns: clientCols, rows: clients, totals: true, empty: 'No bills sent yet.' }),
@@ -462,10 +470,9 @@ export class ManagementReportsService {
     const bills = overdue.map((b) => ({ bill: b.billLabel, vendor: b.vendorName, project: projectCell({ code: b.projectCode, name: b.projectName }), due: b.dueDate, outstanding: N(b.outstanding), days: -b.daysToDue, msme: b.msmeFlag ? 'Yes' : null }));
     return {
       figures: [
-        { label: 'Outstanding', value: N(p.totals.outstanding), kind: 'money' as const },
-        { label: 'Overdue', value: N(p.totals.overdue), kind: 'money' as const },
-        { label: 'Due in 7 days', value: N(p.totals.dueSoon), kind: 'money' as const },
-        { label: 'MSME at risk', value: N(p.totals.msmeAtRisk), kind: 'money' as const, note: 'Micro and small enterprises due within 7 days or overdue' },
+        figure('weOwe', N(p.totals.outstanding), { count: p.openBills.length, versus: { part: figure('weOweDueSoon', N(p.totals.dueSoon)) } }),
+        figure('weOweOverdue', N(p.totals.overdue)),
+        figure('msmeAtRisk', N(p.totals.msmeAtRisk)),
       ],
       sections: [
         section({ key: 'vendors', title: 'By vendor', columns: vendorCols, rows: vendors, totals: true, empty: 'Nothing is owed.' }),
@@ -564,12 +571,11 @@ export class ManagementReportsService {
     const total$ = r2(pos.reduce((s, o) => s + value(o), 0));
     return {
       figures: [
-        { label: 'Ordered', value: total$, kind: 'money' as const, note: 'Approved purchase orders before GST' },
-        { label: 'Orders', value: pos.length, kind: 'count' as const },
-        { label: 'Vendors', value: vendors.size, kind: 'count' as const },
-        { label: 'Days from request to order', value: avg(pos.map(toOrder).filter((d): d is number => d !== null)), kind: 'days' as const, note: 'Average' },
-        { label: 'Days from order to receipt', value: avg(pos.map(toReceive).filter((d): d is number => d !== null)), kind: 'days' as const, note: 'Average, to the first GRN' },
-        { label: 'Delivered on time', value: onTime(pos), kind: 'pct' as const, note: 'First GRN by the delivery date' },
+        figure('ordered', total$, { count: pos.length }),
+        figure('vendorsOrderedFrom', vendors.size),
+        figure('daysToOrder', avg(pos.map(toOrder).filter((d): d is number => d !== null)) ?? { none: 'No order from an indent' }),
+        figure('daysToReceive', avg(pos.map(toReceive).filter((d): d is number => d !== null)) ?? { none: 'Nothing received yet' }),
+        figure('deliveredOnTime', onTime(pos) ?? { none: 'No delivery date to judge by' }),
       ],
       sections: [
         section({ key: 'vendors', title: 'By vendor', columns: vendorCols, rows: vendorRows, totals: true, empty: 'No orders in the period.' }),
@@ -628,10 +634,10 @@ export class ManagementReportsService {
     const days = new Set(sheets.map((s) => dateOnly(s.date))).size;
     return {
       figures: [
-        { label: 'Man-days', value: all, kind: 'count' as const },
-        { label: 'Average on site a day', value: days ? r1(all / days) : null, kind: 'qty' as const, note: 'All projects, over the days with a muster' },
-        { label: 'Labour cost', value: r2(projectRows.reduce((s, r) => s + r.cost, 0)), kind: 'money' as const },
-        { label: 'Trades without a rate', value: tradeRows.filter((t) => t.rate === null).length, kind: 'count' as const, note: 'Set them on Project cost' },
+        figure('manDays', all),
+        figure('averageOnSite', days ? r1(all / days) : { none: 'No muster in the period' }),
+        figure('labourCost', r2(projectRows.reduce((s, r) => s + r.cost, 0))),
+        figure('tradesWithoutRate', tradeRows.filter((t) => t.rate === null).length),
       ],
       sections: [
         section({ key: 'projects', title: 'By project', columns: projectCols, rows: projectRows, totals: true, empty: 'No attendance in the period.' }),
@@ -674,10 +680,9 @@ export class ManagementReportsService {
     const old = N(valuation.ageingValue[2]) + N(valuation.ageingValue[3]);
     return {
       figures: [
-        { label: 'Stock value', value: N(valuation.totalValue), kind: 'money' as const, note: 'At item master rates' },
-        { label: 'Over 90 days old', value: r2(old), kind: 'money' as const },
-        { label: 'Items below minimum', value: lowRows.length, kind: 'count' as const },
-        { label: 'Items without a rate', value: valuation.unpricedItems, kind: 'count' as const, note: 'Not valued' },
+        figure('stockValue', N(valuation.totalValue), { versus: { part: figure('stockOver90', r2(old)) } }),
+        figure('itemsBelowMinimum', lowRows.length),
+        figure('itemsWithoutRate', valuation.unpricedItems),
       ],
       sections: [
         section({ key: 'projects', title: 'By project and store', note: 'Value by how long the stock has been held, the oldest assumed used first.', columns: projectCols, rows: projectRows, totals: true, empty: 'No stock on hand.' }),
@@ -714,10 +719,9 @@ export class ManagementReportsService {
       .map((w) => ({ _href: submissionHref(w.type, w.id), what: w.title, type: SUBMISSION_TYPE_LABELS[w.type], project: w.projectName, by: w.submittedByName, sent: w.submittedAt.slice(0, 10), days: days(w.submittedAt), amount: w.amount === null ? null : N(w.amount) }));
     return {
       figures: [
-        { label: 'Waiting', value: ageing.waiting, kind: 'count' as const },
-        { label: `Over ${APPROVAL_OLD_DAYS} days`, value: ageing.buckets[2] + ageing.buckets[3], kind: 'count' as const },
-        { label: 'Over 15 days', value: ageing.buckets[3], kind: 'count' as const },
-        { label: 'Oldest', value: ageing.oldestDays, kind: 'days' as const },
+        figure('approvalsWaiting', ageing.waiting, { versus: { part: figure('approvalsOld', ageing.buckets[2] + ageing.buckets[3]) } }),
+        figure('approvalsOver15', ageing.buckets[3]),
+        figure('oldestWait', ageing.oldestDays ?? { none: 'Nothing waiting' }),
       ],
       sections: [
         section({ key: 'types', title: 'By type', columns: typeCols, rows: typeRows, totals: true, empty: 'Nothing is waiting.' }),

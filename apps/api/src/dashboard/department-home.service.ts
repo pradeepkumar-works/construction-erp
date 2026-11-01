@@ -12,7 +12,7 @@ import {
   pipelineOf,
   type DepartmentHomeDto,
   type DepartmentPipelineDto,
-  type ModuleFigureDto,
+  type Figure,
   type ModuleKey,
   type PipelineKey,
   type PipelineRowDto,
@@ -51,10 +51,10 @@ export class DepartmentHomeService {
     const today = todayIn();
     const sources = [...new Set((DEPARTMENT_FIGURES[department] ?? []).map((s) => s.module))];
     const [figureSets, pipelines] = await Promise.all([
-      Promise.all(sources.map(async (m) => [m, await this.modules.figures(user, m, today, projectId).catch(() => [] as ModuleFigureDto[])] as const)),
+      Promise.all(sources.map(async (m) => [m, await this.modules.figures(user, m, today, projectId).catch(() => [] as Figure[])] as const)),
       Promise.all((DEPARTMENT_PIPELINES[department] ?? []).map((k) => this.pipeline(user, k, today, projectId))),
     ]);
-    const byModule = Object.fromEntries(figureSets) as Partial<Record<ModuleKey, ModuleFigureDto[]>>;
+    const byModule = Object.fromEntries(figureSets) as Partial<Record<ModuleKey, Figure[]>>;
     return { department, date: today, figures: departmentFigures(department, byModule), pipelines: pipelines.filter((p): p is DepartmentPipelineDto => !!p) };
   }
 

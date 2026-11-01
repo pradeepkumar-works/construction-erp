@@ -14,9 +14,8 @@ import { DatePicker } from '@/components/common/DatePicker';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { ResultMark } from '@/components/common/ResultMark';
 import { FileExcelOutlined, PrinterOutlined } from '@/components/common/icons';
-import { FigureStrip } from '@/components/common/FigureStrip';
+import { Figures } from '@/components/figures';
 import { ReportSection } from '@/components/management/ReportSection';
-import { cellText } from '@/components/management/report-format';
 import { NoAccess } from '@/components/common/NoAccess';
 import { exportManagementReport, openManagementReportPrint } from '@/components/management/reportOutput';
 import { MONTH_PICKER_FORMAT, todayDate } from '@/lib/format';
@@ -159,13 +158,13 @@ function Report({ reportKey }: { reportKey: ManagementReportKey }) {
       ) : error || !data ? (
         <QueryError error={error} onRetry={() => refetch()} />
       ) : (
-        <ReportBody data={data} />
+        <ReportBody data={data} projectId={projectId} />
       )}
     </div>
   );
 }
 
-function ReportBody({ data }: { data: ManagementReportDto }) {
+function ReportBody({ data, projectId }: { data: ManagementReportDto; projectId: string | undefined }) {
   const { token } = theme.useToken();
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: token.margin }}>
@@ -173,18 +172,7 @@ function ReportBody({ data }: { data: ManagementReportDto }) {
         <span translate="no">{data.period}</span>, {data.projectName ? <span translate="no">{data.projectName}</span> : data.verticalName ? <span translate="no">{`every project in ${data.verticalName}`}</span> : 'every contract project'}
       </Typography.Text>
       {data.commentary ? <p style={{ margin: 0, fontSize: token.fontSizeLG, lineHeight: 1.6, maxWidth: 960 }}>{data.commentary}</p> : null}
-      {data.figures.length ? (
-        <FigureStrip
-          label={`${data.title} figures`}
-          figures={data.figures.map((f, i) => ({
-            key: `${i}`,
-            label: f.label,
-            value: cellText(f.kind, f.value, true),
-            note: f.note,
-            tone: typeof f.value === 'number' && f.value < 0 && (f.kind === 'money' || f.kind === 'pct') ? 'danger' : undefined,
-          }))}
-        />
-      ) : null}
+      <Figures label={`${data.title} figures`} figures={data.figures} scope={projectId ? { projectId } : undefined} />
       {data.sections.map((s) => (
         <ReportSection key={s.key} section={s} />
       ))}
