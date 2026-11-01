@@ -98,7 +98,7 @@ export function CostOverview() {
       kind: 'money',
       strong: true,
       card: 'amount',
-      tone: (r) => (toNumber(r.margin) < 0 ? 'danger' : 'success'),
+      tone: (r) => (toNumber(r.margin) < 0 ? 'danger' : undefined),
       sorter: (a, b) => toNumber(a.margin) - toNumber(b.margin),
     },
     { key: 'costPct', title: 'Cost %', dataIndex: 'costPct', width: 90, kind: 'pct', sorter: (a, b) => (a.costPct ?? 0) - (b.costPct ?? 0) },

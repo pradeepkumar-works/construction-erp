@@ -60,7 +60,7 @@ export type ListColumn<T> = TableColumnType<T> & {
   /** The column's figures in bold (the one that answers the list's question). */
   strong?: boolean;
   /** A row's figure in a meaning's colour (an overdue amount in `danger`); none keeps the text colour. */
-  tone?: (row: T) => "danger" | "success" | undefined;
+  tone?: (row: T) => "danger" | undefined;
   /** What it is on a phone's card (see `cardFields`); false keeps it off the card. */
   card?: CardRole | false;
   /** The card's words for it, where the cell holds a link or more than text. */
