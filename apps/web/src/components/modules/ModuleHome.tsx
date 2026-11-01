@@ -102,12 +102,7 @@ export function ModuleHome({ moduleKey }: { moduleKey: string }) {
 
   if (!user || onlyHref) return <PageSkeleton shape="home" />;
   if (!visible || !isModuleKey(moduleKey))
-    return (
-      <div className="page-container">
-        <PageHeader title="Module" docTitle="Module not found" />
-        <Result icon={<ResultMark kind="not-found" />} title="This module is not in your menu" subTitle="Your role does not use it. Choose a module from Home." />
-      </div>
-    );
+    return <NotInYourMenu />;
   const key: ModuleKey = moduleKey;
   // The company's name for the module (Menu and names), else its own
   const label = settings.names[key]?.trim() || MODULE_LABELS[key];
@@ -150,6 +145,16 @@ export function ModuleHome({ moduleKey }: { moduleKey: string }) {
         {data?.progress && <ProjectProgress data={data.progress} />}
         {key === 'people' && (canManageStaff(user.roleKey) || canViewEmployeePrivate(user.roleKey)) && <HrDashboard />}
       </Flex>
+    </div>
+  );
+}
+
+/** A module or department the caller's menu does not hold, or no such key: one page for both routes. */
+export function NotInYourMenu() {
+  return (
+    <div className="page-container">
+      <PageHeader title="Not in your menu" />
+      <Result icon={<ResultMark kind="not-found" />} title="Your role does not use this module" subTitle="Choose a module from Home." />
     </div>
   );
 }

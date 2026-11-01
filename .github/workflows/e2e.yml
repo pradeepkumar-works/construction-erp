@@ -146,6 +146,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/small-fixes-test.js
+      - name: Screens open on a month with figures in it, and history notes read rupees and days as people write them
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/reporting-period-test.js
       - name: The RA bill email carries the bill, and the weekly summary adds up the money in
         if: matrix.suite == 'flows'
         working-directory: apps/api

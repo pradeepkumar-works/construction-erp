@@ -17,6 +17,7 @@ import { ProjectAccessService } from '../common/project-access.service';
 import { isUniqueViolation } from '../common/idempotency';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { dateOnly, dec, iso, money, parseDate } from '../common/serialize';
+import { inr } from '../common/submission-titles';
 import { CreateVariationDto, DecideVariationDto, ListVariationsQuery, SubmitVariationDto, UpdateVariationDto, VariationLineInput, VariationSummaryQuery } from './variations.dto';
 import { todayIn } from '../notifications/time';
 
@@ -243,7 +244,7 @@ export class VariationsService {
       throw e;
     }
     await this.attachments.link(user, 'variationId', id, dto.attachmentIds);
-    await this.audit.log(user, 'VARIATION', id, 'CREATED', `${dto.title} (₹${claimed.toFixed(2)})`);
+    await this.audit.log(user, 'VARIATION', id, 'CREATED', `${dto.title} (${inr(claimed)})`);
     return this.get(user, id);
   }
 

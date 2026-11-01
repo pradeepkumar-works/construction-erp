@@ -1,5 +1,5 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
-import { isGuest, countBy, monthBounds, ncrAgeBand, passRate, reportRowHasWork, reportTotals, NCR_AGE_BAND_LABELS, type NcrAgeBand, type QaReportDto, type QaReportRowDto } from '@erp/shared';
+import { isGuest, countBy, reportingMonth, monthBounds, ncrAgeBand, passRate, reportRowHasWork, reportTotals, NCR_AGE_BAND_LABELS, type NcrAgeBand, type QaReportDto, type QaReportRowDto } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -30,7 +30,7 @@ export class QaReportService {
     if (isGuest(user.roleKey)) throw new ForbiddenException('The quality report is for the company’s own staff');
     if (q.projectId) await this.access.assertCanAccessProject(user, q.projectId);
     const today = todayIn();
-    const month = q.month ?? today.slice(0, 7);
+    const month = q.month ?? reportingMonth(today);
     const { from, to } = monthBounds(month);
     const inMonth = { gte: parseDate(from), lte: parseDate(to) };
     const scope = { ...this.access.submissionWhere(user), ...(q.projectId ? { projectId: q.projectId } : {}) };

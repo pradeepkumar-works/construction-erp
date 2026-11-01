@@ -26,6 +26,7 @@ import { ProjectAccessService } from '../common/project-access.service';
 import { nextDocNo } from '../common/doc-number';
 import { isUniqueViolation } from '../common/idempotency';
 import { dateOnly, dec, iso, money, parseDate } from '../common/serialize';
+import { inr } from '../common/submission-titles';
 import { dateRange, ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { todayIn } from '../notifications/time';
 import { StockService } from '../stock/stock.service';
@@ -754,7 +755,7 @@ export class RmcService {
       if (n.count !== challans.length) throw new ConflictException('Someone billed some of these challans just now. Open the order again.');
       return row;
     });
-    await this.audit.log(user, 'RMC_INVOICE', created.id, 'CREATED', `${created.invoiceNo}: ${challans.length} challans, ₹${a.total.toFixed(2)}`);
+    await this.audit.log(user, 'RMC_INVOICE', created.id, 'CREATED', `${created.invoiceNo}: ${challans.length} challans, ${inr(a.total)}`);
     return this.invoice(user, created.id);
   }
 
@@ -819,7 +820,7 @@ export class RmcService {
       data: { organizationId: user.organizationId, clientId: dto.clientId, invoiceId: dto.invoiceId || null, date: parseDate(dto.date), amount: dto.amount, mode: dto.mode, reference: dto.reference || null, createdById: user.id },
       include: { client: { select: { name: true } }, invoice: { select: { invoiceNo: true } } },
     });
-    await this.audit.log(user, 'RMC_RECEIPT', row.id, 'CREATED', `₹${dto.amount} from ${row.client.name}`);
+    await this.audit.log(user, 'RMC_RECEIPT', row.id, 'CREATED', `${inr(dto.amount)} from ${row.client.name}`);
     return this.receiptDto(row);
   }
 }

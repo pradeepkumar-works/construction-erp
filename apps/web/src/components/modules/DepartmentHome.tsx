@@ -3,7 +3,7 @@
 import React, { useId, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Button, Card, Flex, Result, Typography, theme } from 'antd';
+import { Button, Card, Flex, Typography, theme } from 'antd';
 import { CheckSquareOutlined } from '@/components/common/icons';
 import type { NavNode, SubmissionType } from '@erp/shared';
 import { SUBMISSION_TYPE_PLURAL_LABELS, mayApprove, navDestination, navNodeForPath, projectTabHref, submissionListHref } from '@erp/shared';
@@ -13,7 +13,6 @@ import { requestNew } from '@/lib/new-intent';
 import { formatINRCompact } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton } from '@/components/common/QueryState';
-import { ResultMark } from '@/components/common/ResultMark';
 import { newEntriesFor } from '@/components/shell/NewMenu';
 import { useNavMenu } from '@/components/shell/menu';
 import { ProjectPick, familyOf } from '@/components/launcher/TileGrid';
@@ -23,6 +22,7 @@ import { useProjectScope } from '@/lib/project-scope';
 import { TreeIcon } from '@/components/shell/nav-icons';
 import { ProjectProgressPanel } from './ProjectProgress';
 import { DepartmentPanel } from './DepartmentPanel';
+import { NotInYourMenu } from './ModuleHome';
 import s from './DepartmentHome.module.css';
 
 /** The department that holds the projects shows their progress above its pages. */
@@ -102,12 +102,7 @@ export function DepartmentHome({ moduleKey }: { moduleKey: string }) {
 
   if (!user) return <PageSkeleton shape="home" />;
   if (!mod)
-    return (
-      <div className="page-container">
-        <PageHeader title="Module" docTitle="Module not found" />
-        <Result icon={<ResultMark kind="not-found" />} title="This module is not in your menu" subTitle="Your role does not use it. Choose a module from Home." />
-      </div>
-    );
+    return <NotInYourMenu />;
 
   const paths = new Set(mod.subs.flatMap((sub) => sub.nodes.map(navDestination).flatMap((d) => (d?.kind === 'page' ? [d.href.split('?')[0]] : []))));
   const starts = newEntriesFor(user)

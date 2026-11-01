@@ -8,10 +8,10 @@ import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import { DownOutlined, UpOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
-import { LEAKAGE_SECTION_LABELS, canSeeLeakage, type LeakageFlagDto, type LeakageSection } from '@erp/shared';
+import { LEAKAGE_SECTION_LABELS, canSeeLeakage, reportingMonth, type LeakageFlagDto, type LeakageSection } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useLeakage } from '@/lib/queries';
-import { formatDate, formatINR, formatINRCompact, MONTH_PICKER_FORMAT } from '@/lib/format';
+import { formatDate, formatINR, formatINRCompact, MONTH_PICKER_FORMAT, todayDate } from '@/lib/format';
 import { useProjectScope } from '@/lib/project-scope';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
@@ -44,7 +44,7 @@ function Leakage() {
   const search = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
-  const month = /^\d{4}-\d{2}$/.test(search.get('month') ?? '') ? search.get('month')! : dayjs().format('YYYY-MM');
+  const month = /^\d{4}-\d{2}$/.test(search.get('month') ?? '') ? search.get('month')! : reportingMonth(todayDate());
   const allowed = !!user && canSeeLeakage(user.roleKey);
   const { data, isLoading, error, refetch } = useLeakage(month, allowed);
   const [projectId] = useProjectScope();
@@ -63,7 +63,7 @@ function Leakage() {
 
   const setMonth = (m: string) => {
     const q = new URLSearchParams(search.toString());
-    if (m === dayjs().format('YYYY-MM')) q.delete('month');
+    if (m === reportingMonth(todayDate())) q.delete('month');
     else q.set('month', m);
     router.replace(q.size ? `${pathname}?${q}` : pathname);
   };

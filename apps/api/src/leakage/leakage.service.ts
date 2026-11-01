@@ -1,6 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type { LeakageDto, LeakageFlagDto, LeakageSection } from '@erp/shared';
+import { reportingMonth } from '@erp/shared';
 import {
   FUEL_NO_LOG_MIN_LITRES,
   FUEL_TOLERANCE_DEFAULT_PCT,
@@ -70,7 +71,7 @@ export class LeakageService {
     const sections = leakageSections(user.roleKey);
     if (!sections.length) throw new ForbiddenException('Leakage checks are for the store, the QS, purchasers, whoever runs the machines, approvers and accounts');
     const today = todayIn();
-    const m = month ?? today.slice(0, 7);
+    const m = month ?? reportingMonth(today);
     if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(m)) throw new BadRequestException('Choose a month as YYYY-MM');
     if (`${m}-01` > today) throw new BadRequestException('That month has not started: choose this month or an earlier one');
     const { from, to } = monthSpan(m, today);

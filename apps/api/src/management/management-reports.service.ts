@@ -15,6 +15,7 @@ import {
   submissionHref,
   byVertical,
   NO_VERTICAL,
+  reportingMonth,
   type AgeingDto,
   type BillStage,
   type ManagementReportDto,
@@ -136,7 +137,7 @@ export class ManagementReportsService {
   private period(kind: 'month' | 'range' | 'asOf', q: ManagementReportQuery, today: string): Period {
     if (kind === 'asOf') return { from: null, to: today, label: `As of ${formatDay(today)}` };
     if (kind === 'month') {
-      const month = q.month ?? today.slice(0, 7);
+      const month = q.month ?? reportingMonth(today);
       const { from, to } = monthSpan(month);
       return { from, to: to > today ? today : to, label: monthName(month) };
     }

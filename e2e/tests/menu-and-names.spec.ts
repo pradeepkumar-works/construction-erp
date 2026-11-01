@@ -47,5 +47,5 @@ test('a site engineer sees only the modules their role opens, under the companyâ
   await expect(modules.getByRole('link', { name: /^Sites/ })).toBeVisible();
   await expect(modules.getByRole('link', { name: /^Administration/ })).toHaveCount(0);
   await page.goto('/modules/administration');
-  await expect(page.getByText('This module is not in your menu')).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Not in your menu' })).toBeVisible();
 });

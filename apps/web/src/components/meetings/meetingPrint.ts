@@ -1,7 +1,7 @@
 import { MEETING_KIND_LABELS, type MeetingDetailDto } from '@erp/shared';
 import { AUTO_PRINT_SCRIPT, brandFooter, PRINT_BRAND_CSS, PRINT_FONT_LINKS } from '@/components/print/printBrand';
 import { BRAND } from '@/lib/brand';
-import { formatDate, formatDateTime } from '@/lib/format';
+import { formatDate, formatDateTime, plural } from '@/lib/format';
 
 const esc = (v: unknown) =>
   String(v ?? '')
@@ -43,7 +43,7 @@ export function buildMinutesHtml(m: MeetingDetailDto, orgName: string): string {
     list
       .map(
         (a, i) =>
-          `<tr><td class="c">${i + 1}</td><td>${esc(a.text)}${a.link ? `<div class="muted">${esc(a.link.label)}</div>` : ''}${from ? `<div class="muted">${esc(`${a.meetingNo}, ${formatDate(a.heldOn)}`)}</div>` : ''}</td><td>${esc(a.ownerName)}</td><td class="d">${esc(a.dueOn ? formatDate(a.dueOn) : '-')}</td><td>${esc(a.status === 'OPEN' ? (a.daysOverdue ? `${a.daysOverdue} days late` : 'Open') : a.status === 'DONE' ? 'Done' : 'Dropped')}</td></tr>`,
+          `<tr><td class="c">${i + 1}</td><td>${esc(a.text)}${a.link ? `<div class="muted">${esc(a.link.label)}</div>` : ''}${from ? `<div class="muted">${esc(`${a.meetingNo}, ${formatDate(a.heldOn)}`)}</div>` : ''}</td><td>${esc(a.ownerName)}</td><td class="d">${esc(a.dueOn ? formatDate(a.dueOn) : '-')}</td><td>${esc(a.status === 'OPEN' ? (a.daysOverdue ? `${plural(a.daysOverdue, 'day')} late` : 'Open') : a.status === 'DONE' ? 'Done' : 'Dropped')}</td></tr>`,
       )
       .join('');
   const table = (rows: string) => `<table><thead><tr><th class="c">#</th><th>Action</th><th>Who</th><th>By</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>`;

@@ -423,6 +423,9 @@ and the pre-delivery checklist.
   only `penaltyAsOf` (`@erp/shared/contract-obligations.ts`); a bill deducts them only through `billTotals`'
   `obligationRecovery` (`billRecoveryLines` against what earlier bills took), and the security deposit stops at its cap only
   by `cappedSecurityDeposit`. Keep `src/scripts/contract-obligations-test.ts` passing.
+- Reporting period (ARCHITECTURE "Reporting period"): a month or period a screen opens on is `reportingMonth(today)` (web:
+  `defaultPeriod()` in `components/cost/PeriodPicker.tsx`), never the calendar month on its own, so the 1st never opens on zeros; a
+  history note's money is `inr` and its days `formatDay`. Keep `src/scripts/reporting-period-test.ts` passing.
 - Attendance first (ARCHITECTURE "Attendance"): a day's head count and roll call stay open after its DPR is approved and
   lock only with an approved or paid payroll run for the month (`isAttendanceLocked`, `AttendanceService.lockingRuns`);
   anything that writes attendance calls `assertUnlocked`.

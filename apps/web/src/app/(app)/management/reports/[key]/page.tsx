@@ -4,7 +4,7 @@ import React, { useMemo, useState } from 'react';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { App, Button, Flex, Result, Spin, Typography, theme } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
-import { MANAGEMENT_REPORTS, MANAGEMENT_REPORT_KEYS, canSeeManagement, type ManagementReportDto, type ManagementReportKey } from '@erp/shared';
+import { MANAGEMENT_REPORTS, MANAGEMENT_REPORT_KEYS, canSeeManagement, reportingMonth, type ManagementReportDto, type ManagementReportKey } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useManagementReport, useProjects } from '@/lib/queries';
 import { useProjectScope, useVerticalScope } from '@/lib/project-scope';
@@ -19,7 +19,7 @@ import { ReportSection } from '@/components/management/ReportSection';
 import { cellText } from '@/components/management/report-format';
 import { NoAccess } from '@/components/common/NoAccess';
 import { exportManagementReport, openManagementReportPrint } from '@/components/management/reportOutput';
-import { MONTH_PICKER_FORMAT } from '@/lib/format';
+import { MONTH_PICKER_FORMAT, todayDate } from '@/lib/format';
 
 const isKey = (k: string | undefined): k is ManagementReportKey => !!k && (MANAGEMENT_REPORT_KEYS as readonly string[]).includes(k);
 const crumbs = [{ title: 'Reports', href: '/modules/reports' }];
@@ -111,7 +111,7 @@ function Report({ reportKey }: { reportKey: ManagementReportKey }) {
         aria-label="Month"
         allowClear={false}
         format={MONTH_PICKER_FORMAT}
-        value={dayjs(month ? `${month}-01` : undefined)}
+        value={dayjs(`${month ?? reportingMonth(todayDate())}-01`)}
         disabledDate={(d: Dayjs) => d.isAfter(dayjs(), 'month')}
         onChange={(d) => setParams({ month: d ? d.format('YYYY-MM') : undefined })}
       />

@@ -3,8 +3,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 
 /**
- * Renders its children once they come near the screen. The home page's charts sit below the KPI tiles, so drawing them
- * only when scrolled to keeps the page quick to respond as it opens.
+ * Renders its children once they come near the screen, or once the browser is idle, or before the page prints. The
+ * charts below the figures then do not slow the page as it opens, yet a page printed or read without scrolling still has them.
  */
 export function WhenInView({ minHeight, children }: { minHeight: number; children: React.ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -16,9 +16,17 @@ export function WhenInView({ minHeight, children }: { minHeight: number; childre
       setSeen(true);
       return;
     }
-    const io = new IntersectionObserver((entries) => entries.some((e) => e.isIntersecting) && setSeen(true), { rootMargin: '200px 0px' });
+    const show = () => setSeen(true);
+    const io = new IntersectionObserver((entries) => entries.some((e) => e.isIntersecting) && show(), { rootMargin: '200px 0px' });
     io.observe(el);
-    return () => io.disconnect();
+    const idle = typeof requestIdleCallback === 'function' ? requestIdleCallback(show, { timeout: 3000 }) : window.setTimeout(show, 1500);
+    window.addEventListener('beforeprint', show);
+    return () => {
+      io.disconnect();
+      if (typeof cancelIdleCallback === 'function') cancelIdleCallback(idle);
+      else window.clearTimeout(idle);
+      window.removeEventListener('beforeprint', show);
+    };
   }, [seen]);
   return (
     <div ref={ref} style={seen ? undefined : { minHeight }}>

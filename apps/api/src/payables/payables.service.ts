@@ -21,7 +21,8 @@ import { RequestUser } from '../common/current-user';
 import { NotificationsService } from '../notifications/notifications.service';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
-import { dateOnly, iso, money, parseDate } from '../common/serialize';
+import { dateOnly, formatDay, iso, money, parseDate } from '../common/serialize';
+import { inr } from '../common/submission-titles';
 import { isUniqueViolation } from '../common/idempotency';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { CreatePaymentDto, ListPaymentsQuery, PayablesQuery, UpdatePaymentDto } from './payables.dto';
@@ -425,7 +426,7 @@ export class PayablesService {
       throw e;
     }
     const paidOn = `₹${a.amount.toFixed(2)} paid on ${dto.paymentDate}${dto.reference ? ` (${dto.reference})` : ''}`;
-    await this.audit.log(user, 'VENDOR_PAYMENT', id, 'CREATED', `₹${a.amount.toFixed(2)} paid against ${bill.label}${request ? ` (${request.requestNo})` : ''}`);
+    await this.audit.log(user, 'VENDOR_PAYMENT', id, 'CREATED', `${inr(a.amount)} paid against ${bill.label}${request ? ` (${request.requestNo})` : ''}`);
     if (isBill(bill)) await this.audit.log(user, bill.type, bill.id, 'PAYMENT_MADE', paidOn);
     if (request) await this.audit.log(user, 'PAYMENT_REQUEST', request.id, 'PAYMENT_MADE', paidOn);
     // The supplier's portal logins see it on their statement.
@@ -485,7 +486,7 @@ export class PayablesService {
       if (request) await syncRequestPaid(tx, request.id);
     });
     const takenOff = `₹${row.amount.toFixed(2)} of ${dateOnly(row.paymentDate)} taken off`;
-    await this.audit.log(user, 'VENDOR_PAYMENT', id, 'DELETED', `₹${row.amount.toFixed(2)} of ${dateOnly(row.paymentDate)}`);
+    await this.audit.log(user, 'VENDOR_PAYMENT', id, 'DELETED', `${inr(row.amount)} of ${formatDay(dateOnly(row.paymentDate))}`);
     if (isBill(bill)) await this.audit.log(user, bill.type, bill.id, 'PAYMENT_REMOVED', takenOff);
     if (request) await this.audit.log(user, 'PAYMENT_REQUEST', request.id, 'PAYMENT_REMOVED', takenOff);
     return { ok: true };

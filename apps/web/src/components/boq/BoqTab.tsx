@@ -197,6 +197,8 @@ export function BoqTab({ projectId }: { projectId: string }) {
         ]
       : []),
   ];
+  /** The total sits under Amount, wherever the columns put it. */
+  const amountAt = columns.findIndex((c) => 'dataIndex' in c && c.dataIndex === 'amount');
 
   return (
     <div>
@@ -333,13 +335,13 @@ export function BoqTab({ projectId }: { projectId: string }) {
           filtered.length > 0 ? (
             <Table.Summary fixed>
               <Table.Summary.Row>
-                <Table.Summary.Cell index={0} colSpan={8}>
+                <Table.Summary.Cell index={0} colSpan={amountAt}>
                   <strong>Total ({filtered.length} items)</strong>
                 </Table.Summary.Cell>
-                <Table.Summary.Cell index={8} align="right">
+                <Table.Summary.Cell index={amountAt} align="right">
                   <strong>{formatINR(filtered.reduce((s, i) => s + toNumber(i.amount), 0))}</strong>
                 </Table.Summary.Cell>
-                {(editor || analyst) && <Table.Summary.Cell index={9} />}
+                {(editor || analyst) && <Table.Summary.Cell index={amountAt + 1} />}
               </Table.Summary.Row>
             </Table.Summary>
           ) : null

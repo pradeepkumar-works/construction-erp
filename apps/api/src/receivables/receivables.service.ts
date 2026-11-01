@@ -21,7 +21,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
-import { dateOnly, fxRate, iso, money, parseDate } from '../common/serialize';
+import { dateOnly, formatDay, fxRate, iso, money, parseDate } from '../common/serialize';
+import { inr } from '../common/submission-titles';
 import { bankCredit } from '../epc/epc-rules';
 import { todayIn } from '../notifications/time';
 import { isUniqueViolation } from '../common/idempotency';
@@ -304,8 +305,8 @@ export class ReceivablesService {
       }
       throw e;
     }
-    await this.audit.log(user, 'RECEIPT', id, 'CREATED', billId ? `₹${a.amount.toFixed(2)} received` : null);
-    if (billId) await this.audit.log(user, 'BILL', billId, 'PAYMENT_RECEIVED', `₹${a.amount.toFixed(2)} received on ${dto.receiptDate}${dto.reference ? ` (${dto.reference})` : ''}`);
+    await this.audit.log(user, 'RECEIPT', id, 'CREATED', billId ? `${inr(a.amount)} received` : null);
+    if (billId) await this.audit.log(user, 'BILL', billId, 'PAYMENT_RECEIVED', `${inr(a.amount)} received on ${formatDay(dto.receiptDate)}${dto.reference ? ` (${dto.reference})` : ''}`);
     await this.notifications.onClientReceipt(user, id);
     return this.get(user, id);
   }
@@ -378,8 +379,8 @@ export class ReceivablesService {
         await syncBillStage(tx, row.billId);
       }
     });
-    await this.audit.log(user, 'RECEIPT', id, 'DELETED', `₹${row.amount.toFixed(2)} of ${dateOnly(row.receiptDate)}`);
-    if (row.billId) await this.audit.log(user, 'BILL', row.billId, 'PAYMENT_REMOVED', `₹${row.amount.toFixed(2)} of ${dateOnly(row.receiptDate)} taken off`);
+    await this.audit.log(user, 'RECEIPT', id, 'DELETED', `${inr(row.amount)} of ${formatDay(dateOnly(row.receiptDate))}`);
+    if (row.billId) await this.audit.log(user, 'BILL', row.billId, 'PAYMENT_REMOVED', `${inr(row.amount)} of ${formatDay(dateOnly(row.receiptDate))} taken off`);
     return { ok: true };
   }
 

@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable,
 import { Prisma } from '@prisma/client';
 import type { WarningDto, WarningKind, WarningOutcome, WarningRecordDto, WatchListDto } from '@erp/shared';
 import {
+  reportingMonth,
   RECALL_DAYS,
   copyLabel,
   DEFAULT_CLIENT_PAYMENT_DAYS,
@@ -490,12 +491,12 @@ export class WarningsService {
   /** Materials consumed beyond their norms' allowance at active projects with norms, largest overuse first. */
   /**
    * Leakage checks as warnings: rates above another site, fuel issued with no log and hired machines paid for
-   * idle time, from the month's flags in `LeakageService` so the watch list and the Leakage checks page agree. Fuel off
+   * idle time, from the flags of the month the Leakage checks page opens on (`reportingMonth`), so the two agree. Fuel off
    * its norm stays FUEL_NORM, and material over the norm MATERIAL_OVERUSE.
    */
   private async leaks(user: RequestUser, today: string, kinds: WarningKind[]): Promise<Draft[]> {
     const sections = [...new Set(kinds.filter((k) => k in LEAK_SECTION).map((k) => LEAK_SECTION[k as keyof typeof LEAK_SECTION]))];
-    const { from, to } = monthSpan(today.slice(0, 7), today);
+    const { from, to } = monthSpan(reportingMonth(today), today);
     const { flags } = await this.leakage.compute(user, from, to, sections);
     const kindOf = (f: (typeof flags)[number]): WarningKind | null =>
       f.section === 'rates' ? 'RATE_ABOVE' : f.section === 'idle' ? 'IDLE_HIRE' : f.key.startsWith('fuel-no-log:') ? 'FUEL_NO_LOG' : null;
