@@ -7,13 +7,8 @@
  */
 import { Prisma, PrismaClient } from '@prisma/client';
 import { POUR_CARD_CHECKLIST, STANDARD_QA_PLANS, planLineFor, type ProjectType } from '@erp/shared';
+import { day } from './seed-clock';
 
-const day = (offset: number) => {
-  const d = new Date();
-  d.setUTCHours(0, 0, 0, 0);
-  d.setUTCDate(d.getUTCDate() + offset);
-  return d;
-};
 const D = (v: number | string) => new Prisma.Decimal(v);
 const KIND_TYPE: Record<string, string> = { CONCRETE_CUBE: 'CUBE', FIELD_DENSITY: 'FDD', BRICK: 'BRICK' };
 

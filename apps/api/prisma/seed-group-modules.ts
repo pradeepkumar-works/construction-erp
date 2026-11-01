@@ -12,13 +12,8 @@
  */
 import { Prisma, PrismaClient, type DocumentDiscipline, type LetterAction, type LetterDirection, type LetterMode, type LetterStatus, type ProjectType, type RevisionStatus } from '@prisma/client';
 import { HEAD_OFFICE_PREFIX, LETTER_NUMBER_PATTERN, STANDARD_QA_PLANS, formatLetterNo, letterFy, letterPrefixOf, masterCode } from '@erp/shared';
+import { day } from './seed-clock';
 
-const day = (offset: number) => {
-  const d = new Date();
-  d.setUTCHours(0, 0, 0, 0);
-  d.setUTCDate(d.getUTCDate() + offset);
-  return d;
-};
 const plus = (d: Date, days: number) => new Date(d.getTime() + days * 86_400_000);
 const ymd = (d: Date) => d.toISOString().slice(0, 10);
 const year = new Date().getUTCFullYear();

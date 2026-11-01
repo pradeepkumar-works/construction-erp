@@ -23,7 +23,7 @@ test('export vouchers to Tally, lock them, and undo the export', async ({ page }
   expect(waiting.some((v) => v.kind === 'RECEIPT')).toBe(true);
 
   await signIn(page, 'accounts@demo.com');
-  await page.getByRole('link', { name: 'Tally export' }).click();
+  await page.getByRole('link', { name: 'Tally export', exact: true }).click();
   await page.getByRole('tab', { name: 'Ledgers' }).click();
   await page.getByPlaceholder('The company open in Tally').fill('E2E Infra Pvt Ltd');
   await page.getByLabel('Tally ledger for Work value of RA bills').fill('Contract Receipts');

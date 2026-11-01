@@ -5,13 +5,8 @@
  * per company (when it has no site order yet), after the guests and measurements.
  */
 import { PrismaClient } from '@prisma/client';
+import { day } from './seed-clock';
 
-const day = (offset: number) => {
-  const d = new Date();
-  d.setUTCHours(0, 0, 0, 0);
-  d.setUTCDate(d.getUTCDate() + offset);
-  return d;
-};
 
 export async function seedConsultantChecks(prisma: PrismaClient, organizationId: string) {
   if (await prisma.siteOrder.count({ where: { organizationId } })) return;
