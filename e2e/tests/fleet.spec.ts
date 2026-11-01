@@ -68,6 +68,8 @@ test('a machine off its fuel norm is on the watch list', async ({ page }) => {
 
   await signIn(page, 'md@demo.com');
   await page.goto('/watch-list');
+  // The list is ranked by what is at stake, so the fuel warning is found by its kind.
+  await page.locator('.ant-segmented-item').filter({ has: page.getByRole('radio', { name: /^Fuel use off the norm/ }) }).click();
   await expect(page.getByText(/EXC-01 .+ is using more fuel than its norm/)).toBeVisible();
   await page.goto('/machinery?tab=utilisation');
   await page.getByText('All time', { exact: true }).click();

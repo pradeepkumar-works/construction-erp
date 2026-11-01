@@ -49,6 +49,15 @@ test('with nothing pressing the brief says so; approvals under two days are stil
   assert.equal(fresh[0].text, '2 approvals waiting for you');
 });
 
+test("a long warning keeps the rules' own line within the brief's length, so the draft is never refused", () => {
+  const long = 'Bhubaneswar - Puri Highway Widening (Km 12 to Km 28): the BOQ adds up to ₹12.2 Cr, 35% below the contract value';
+  const c = morningCandidates(facts({ warnings: { count: 296, top: [{ title: long, projectName: null }] } }));
+  assert.equal(c[1].text, `${long}, and 295 more`);
+  const longer = morningCandidates(facts({ warnings: { count: 2, top: [{ title: 'x'.repeat(200), projectName: null }] } }));
+  assert.ok(longer[1].text.length <= 140 && longer[1].text.endsWith('…, and 1 more'));
+  for (const set of [c, longer]) assert.deepEqual(parsePicks(asPicks(set, morningDraft(set)), set), morningDraft(set));
+});
+
 test('rupees in lakh and crore, as the app writes them', () => {
   assert.equal(rupees('1843210.00'), '₹18.4 L');
   assert.equal(rupees(23500000), '₹2.4 Cr');
