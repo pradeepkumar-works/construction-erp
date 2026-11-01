@@ -40,3 +40,31 @@ export function progressRollup(activities: ProgressActivity[], elements: Progres
 export function physicalProgress(activities: ProgressActivity[], elements: ProgressElement[] = []): number {
   return progressRollup(activities, elements).projectPct;
 }
+
+/**
+ * Share of the work planned to be done by `today`, each activity weighted as physical progress weighs it
+ * (planned quantity × BOQ rate, or the quantity without a rate) and spread evenly over its planned dates, inclusive.
+ * Only activities with both dates count; null when none has them.
+ */
+export function plannedProgress(
+  activities: { plannedQty: string; boqItemId: string | null; plannedStart: string | null; plannedEnd: string | null }[],
+  rates: Map<string, Prisma.Decimal>,
+  today: string,
+): number | null {
+  const at = Date.parse(`${today}T00:00:00Z`) + 86_400_000;
+  let planned = new Prisma.Decimal(0);
+  let total = new Prisma.Decimal(0);
+  for (const a of activities) {
+    if (!a.plannedStart || !a.plannedEnd) continue;
+    const qty = new Prisma.Decimal(a.plannedQty);
+    const rate = a.boqItemId ? rates.get(a.boqItemId) : undefined;
+    const weight = rate ? rate.mul(qty) : qty;
+    const start = Date.parse(`${a.plannedStart}T00:00:00Z`);
+    const end = Date.parse(`${a.plannedEnd}T00:00:00Z`) + 86_400_000;
+    const share = end > start ? Math.min(1, Math.max(0, (at - start) / (end - start))) : at >= end ? 1 : 0;
+    planned = planned.add(weight.mul(share));
+    total = total.add(weight);
+  }
+  if (total.lte(0)) return null;
+  return Math.round(planned.div(total).mul(1000).toNumber()) / 10;
+}

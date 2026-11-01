@@ -111,7 +111,6 @@ export function MachineryList({ projectId: fixedProject }: { projectId?: string 
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={fixedProject ? 1100 : 1320}
         emptyText={<EmptyArt art="entries" title="No machinery logs here yet" />}
         emptyAction={newButton}
       />

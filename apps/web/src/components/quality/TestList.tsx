@@ -49,7 +49,7 @@ export function TestList({ projectId: fixedProject, initialOpenId, onOpenNcr }: 
       const sort = (key: QualityTestSortField) => ({ key, sorter: true, sortOrder: sortOrderFor(key), sortDirections: ['descend', 'ascend'] as ('descend' | 'ascend')[] });
       return [
         { title: 'Sampled', dataIndex: 'sampledOn', width: 110, render: (v) => formatDate(v), ...sort('sampledOn') },
-        { title: 'No.', dataIndex: 'testNo', width: 130, className: 'mono', ...sort('testNo') },
+        { title: 'No.', dataIndex: 'testNo', width: 140, className: 'mono', ...sort('testNo') },
         ...(fixedProject
           ? []
           : [{ title: 'Project', dataIndex: 'projectName', ...sort('project'), width: 180, ellipsis: true, render: (v: string, r: QualityTestDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> } satisfies ListColumn<QualityTestDto>]),
@@ -118,7 +118,6 @@ export function TestList({ projectId: fixedProject, initialOpenId, onOpenNcr }: 
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={fixedProject ? 1100 : 1280}
         emptyText={<EmptyArt art="entries" title={filtered ? 'No test matches these filters' : 'No test recorded yet'} />}
         emptyAction={newButton}
       />

@@ -104,6 +104,10 @@ and the pre-delivery checklist.
   menu, bulk bar, page totals). A list with saved views is a key in `SAVED_VIEW_LISTS` (`packages/shared/src/views.ts`).
   A register or master (projects, vendors…) uses it without `type` (All plus its own `moreViews`, `projectScoped: false` when
   company-wide); a list inside a page's tab uses `useListPage({ url: false })` + `useColumnChoice` + `DataTable`.
+  A figure column is a `kind` (`money`, `qty` with `unit`, `pct`; ARCHITECTURE "Tables that answer"), never a render of
+  `<Money>` with `align: 'right'`: money reads in one scale per column (`moneyScale`). The table fits its own width by leaving
+  out `defaultFrom` columns, so the column that answers the list has none; a `total` only where the sum means something;
+  a due date is `DueCell`. Keep `src/scripts/list-columns-test.ts` passing.
 - States: a page loading shows `PageSkeleton` (`components/common/QueryState.tsx`, shapes list/record/home/workspace), a failed
   query `QueryError` (403, 404 and offline get their own Result). `DataTable` draws its own first-load skeleton and empty state:
   pass `empty={frame.empty}` (Clear filters when filtered) and `emptyAction={newButton}`, the same button as the toolbar's.

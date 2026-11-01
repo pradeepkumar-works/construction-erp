@@ -143,7 +143,6 @@ export function ExpenseList({ projectId: fixedProject }: { projectId?: string })
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={fixedProject ? 1550 : 1750}
         emptyText={<EmptyArt art="entries" title="No site expenses here yet" />}
         emptyAction={newButton}
       />

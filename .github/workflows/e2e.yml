@@ -154,6 +154,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/status-tone-test.js
+      - name: A money column reads in one scale, and a narrow table leaves out its lower-priority columns first
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/list-columns-test.js
       - name: Screens open on a month with figures in it, and history notes read rupees and days as people write them
         if: matrix.suite == 'flows'
         working-directory: apps/api

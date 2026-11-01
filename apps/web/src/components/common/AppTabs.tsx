@@ -37,7 +37,8 @@ const MAX_SHOWN = 99;
 /** The visually hidden text after a count, so a screen reader says "Tests, 3 results overdue" rather than "Tests3". */
 const srOnly: React.CSSProperties = { position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 };
 
-function TabCount({ n, label, attention, active }: { n: number; label?: string; attention?: boolean; active: boolean }) {
+/** A count beside a tab's label; list views use it too. */
+export function TabCount({ n, label, attention, active }: { n: number; label?: string; attention?: boolean; active: boolean }) {
   const { token } = theme.useToken();
   // The red is the badge red in either theme (as `Badge` in lib/theme.ts): antd's night red carries white at only 4.2:1.
   const tone = attention

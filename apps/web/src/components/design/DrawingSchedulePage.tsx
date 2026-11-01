@@ -555,7 +555,6 @@ function ScheduleList() {
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={1380}
         emptyText={<EmptyArt art="entries" title={state || discipline || source || page.params.q ? 'No drawing matches these filters' : 'No drawing scheduled yet'} />}
         emptyAction={newButton}
       />

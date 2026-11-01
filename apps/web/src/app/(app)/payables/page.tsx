@@ -18,7 +18,7 @@ import { useListPage } from '@/lib/listPage';
 import { useUrlTab } from '@/lib/url-state';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { PAYABLE_BILL_EXPORT, PAYABLE_VENDOR_EXPORT, VENDOR_PAYMENT_EXPORT } from '@/lib/exportColumns';
-import { formatDate, formatDue, formatINR, formatINRCompact, toNumber, NO_VALUE } from '@/lib/format';
+import { formatDate, formatINR, formatINRCompact, toNumber, NO_VALUE } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
@@ -36,39 +36,34 @@ import { CardToolbar } from '@/components/common/CardToolbar';
 import { EmptyArt } from '@/components/common/EmptyArt';
 import { DataTable, useColumnChoice, type ListColumn } from '@/components/list/DataTable';
 import { LocalDataTable } from '@/components/list/LocalDataTable';
+import { DueCell } from '@/components/list/DueCell';
 import { exportSelected } from '@/components/list/bulk';
 import { RecordLink } from '@/components/record/RecordLink';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { VendorSelect } from '@/components/common/SearchSelect';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
 import { MoreActions } from '@/components/record/MoreActions';
-import { Money } from '@/components/common/Money';
 
-const late = (v: string) => (toNumber(v) > 0 ? <Money value={v} tone="danger" /> : <span className="mono text-muted" translate="no">{NO_VALUE}</span>);
+/** An overdue amount: shown in red, and the dash where nothing is late. */
+const lateOnly = (v: string) => (toNumber(v) > 0 ? v : null);
+const danger = () => 'danger' as const;
 const sumMoney = (values: string[]) => formatINR(values.reduce((n, v) => n + toNumber(v), 0));
 const isSmall = (m: string | null) => m === 'MICRO' || m === 'SMALL';
-
-/** When a bill falls due, in words: "in 5 days", "today", "12 days late". */
-function DueText({ days }: { days: number }) {
-  if (days < 0) return <Typography.Text type="danger">{formatDue(days)}</Typography.Text>;
-  if (days === 0) return <Typography.Text type="warning">{formatDue(days)}</Typography.Text>;
-  return <Typography.Text type={days <= 7 ? 'warning' : undefined}>{formatDue(days)}</Typography.Text>;
-}
 
 /** The ageing columns of the by-vendor and by-project tables (keys are stable: the column chooser keeps them). */
 function ageingColumns<T extends PayableTotalsDto>(): ListColumn<T>[] {
   return [
-    { key: 'billed', title: 'Billed', dataIndex: 'billed', defaultHidden: true, width: 130, align: 'right', render: (v) => <Money value={v} /> },
-    { key: 'paid', title: 'Paid', dataIndex: 'paid', defaultHidden: true, width: 130, align: 'right', render: (v) => <Money value={v} /> },
-    { key: 'outstanding', card: 'amount', title: 'Outstanding', dataIndex: 'outstanding', width: 130, align: 'right', render: (v) => <Money value={v} strong /> },
-    { key: 'a0', title: 'Not due', width: 110, align: 'right', render: (_, r) => <Money value={r.ageing.notDue} /> },
-    { key: 'a1', title: '1-30 late', width: 110, align: 'right', render: (_, r) => late(r.ageing.days1to30) },
-    { key: 'a2', title: '31-60', label: '31-60 days late', width: 110, align: 'right', render: (_, r) => late(r.ageing.days31to60) },
-    { key: 'a3', title: '61-90', label: '61-90 days late', width: 110, align: 'right', render: (_, r) => late(r.ageing.days61to90) },
-    { key: 'a4', title: 'Over 90', label: 'Over 90 days late', width: 110, align: 'right', render: (_, r) => late(r.ageing.over90) },
-    { key: 'msmeAtRisk', title: 'MSME at risk', dataIndex: 'msmeAtRisk', width: 120, align: 'right', render: (v) => late(v) },
-    { key: 'retentionHeld', title: 'Retention held', dataIndex: 'retentionHeld', width: 130, align: 'right', render: (v) => <Money value={v} /> },
-    { key: 'advanceOutstanding', title: 'Advance not adjusted', label: 'Advance paid, not yet adjusted on bills', dataIndex: 'advanceOutstanding', defaultHidden: true, width: 150, align: 'right', render: (v) => <Money value={v} /> },
+    { key: 'billed', title: 'Billed', dataIndex: 'billed', defaultHidden: true, width: 130, kind: 'money' },
+    { key: 'paid', title: 'Paid', dataIndex: 'paid', defaultHidden: true, width: 130, kind: 'money' },
+    { key: 'outstanding', card: 'amount', title: 'Outstanding', dataIndex: 'outstanding', width: 130, kind: 'money', strong: true },
+    { key: 'a0', title: 'Not due', defaultFrom: 1440, width: 110, kind: 'money', value: (r) => r.ageing.notDue },
+    { key: 'a1', title: '1-30 late', width: 110, kind: 'money', value: (r) => lateOnly(r.ageing.days1to30), tone: danger },
+    { key: 'a2', title: '31-60', label: '31-60 days late', width: 110, kind: 'money', value: (r) => lateOnly(r.ageing.days31to60), tone: danger },
+    { key: 'a3', title: '61-90', label: '61-90 days late', width: 110, kind: 'money', value: (r) => lateOnly(r.ageing.days61to90), tone: danger },
+    { key: 'a4', title: 'Over 90', label: 'Over 90 days late', width: 110, kind: 'money', value: (r) => lateOnly(r.ageing.over90), tone: danger },
+    { key: 'msmeAtRisk', title: 'MSME at risk', dataIndex: 'msmeAtRisk', width: 120, kind: 'money', value: (r) => lateOnly(r.msmeAtRisk), tone: danger },
+    { key: 'retentionHeld', title: 'Retention held', defaultFrom: 1600, dataIndex: 'retentionHeld', width: 130, kind: 'money' },
+    { key: 'advanceOutstanding', title: 'Advance not adjusted', label: 'Advance paid, not yet adjusted on bills', dataIndex: 'advanceOutstanding', defaultHidden: true, width: 150, kind: 'money' },
   ];
 }
 
@@ -131,13 +126,13 @@ function PaymentsTab({ projectId, vendorId, onBill }: { projectId?: string; vend
       ),
     },
     { title: 'Project', dataIndex: 'projectName', ...sort('project'), ellipsis: true, render: (v: string, r) => <Link href={`/projects/${r.projectId}`}>{v}</Link> },
-    { title: 'Paid', dataIndex: 'amount', width: 140, align: 'right', ...sort('amount'), render: (v) => <Money value={v} strong />, total: (all) => formatINR(all.reduce((n, r) => n + toNumber(r.amount), 0)) },
+    { title: 'Paid', dataIndex: 'amount', width: 140, kind: 'money', strong: true, ...sort('amount'), total: (all) => formatINR(all.reduce((n, r) => n + toNumber(r.amount), 0)) },
     {
       title: 'Deducted',
       key: 'ded',
       width: 120,
-      align: 'right',
-      render: (_, r) => <Money value={String(toNumber(r.tdsAmount) + toNumber(r.otherDeduction))} />,
+      kind: 'money',
+      value: (r) => toNumber(r.tdsAmount) + toNumber(r.otherDeduction),
       total: (all) => formatINR(all.reduce((n, r) => n + toNumber(r.tdsAmount) + toNumber(r.otherDeduction), 0)),
     },
     {
@@ -222,7 +217,6 @@ function PaymentsTab({ projectId, vendorId, onBill }: { projectId?: string; vend
           if (r) openBill(r);
         }}
         bulk={[exportSelected<VendorPaymentDto>('payments', 'Payments', VENDOR_PAYMENT_EXPORT)]}
-        scrollX={1100}
         emptyText={<EmptyArt art="entries" title={page.params.q ? 'No payment matches this search' : 'No payments recorded yet'} />}
         emptyAction={newButton}
       />
@@ -290,6 +284,7 @@ export default function PayablesPage() {
     {
       key: 'vendor',
       title: 'Vendor',
+      width: 260,
       card: 'meta',
       cardText: (r) => `${r.vendorName} · ${r.projectCode} · ${r.projectName}`,
       render: (_, r) => (
@@ -306,9 +301,7 @@ export default function PayablesPage() {
         </div>
       ),
     },
-    { key: 'payable', title: 'Payable', dataIndex: 'payable', width: 130, align: 'right', render: (v) => <Money value={v} />, total: (rows) => sumMoney(rows.map((r) => r.payable)) },
-    { key: 'paid', title: 'Paid', dataIndex: 'paid', width: 120, align: 'right', render: (v) => <Money value={v} />, total: (rows) => sumMoney(rows.map((r) => r.paid)) },
-    { key: 'outstanding', card: 'amount', title: 'Outstanding', dataIndex: 'outstanding', width: 140, align: 'right', render: (v) => <Money value={v} strong />, total: (rows) => sumMoney(rows.map((r) => r.outstanding)) },
+    { key: 'outstanding', card: 'amount', title: 'Outstanding', dataIndex: 'outstanding', width: 140, kind: 'money', strong: true, total: (rows) => sumMoney(rows.map((r) => r.outstanding)) },
     {
       key: 'dueDate',
       title: 'Due',
@@ -316,14 +309,7 @@ export default function PayablesPage() {
       cardText: (r) => (r.daysToDue < 0 ? `Due ${formatDate(r.dueDate)}, ${-r.daysToDue} days late` : r.daysToDue === 0 ? `Due today` : `Due ${formatDate(r.dueDate)}, in ${r.daysToDue} days`),
       dataIndex: 'dueDate',
       width: 140,
-      render: (v, r) => (
-        <div>
-          {formatDate(v)}
-          <div style={{ fontSize: themeFontSize('fontSizeSM') }}>
-            <DueText days={r.daysToDue} />
-          </div>
-        </div>
-      ),
+      render: (v) => <DueCell date={v} />,
     },
     {
       key: 'request',
@@ -342,6 +328,8 @@ export default function PayablesPage() {
           <span className="text-muted">{NO_VALUE}</span>
         ),
     },
+    { key: 'payable', title: 'Payable', dataIndex: 'payable', width: 130, defaultFrom: 1600, kind: 'money', total: (rows) => sumMoney(rows.map((r) => r.payable)) },
+    { key: 'paid', title: 'Paid', dataIndex: 'paid', width: 120, defaultFrom: 1600, kind: 'money', total: (rows) => sumMoney(rows.map((r) => r.paid)) },
     ...(accounts || requester
       ? [
           {
@@ -521,7 +509,6 @@ export default function PayablesPage() {
                       if (r) setBill(r);
                     }}
                     bulk={[exportSelected<Keyed<PayableBillDto>, PayableBillDto>('due-list', 'Due list', PAYABLE_BILL_EXPORT)]}
-                    scrollX={1250}
                     empty={{ filtered: !!page.params.q || !!vendorId, clear: () => page.clear() }}
                     emptyText={<EmptyArt art="entries" title={page.params.q || vendorId ? 'No open bill matches these filters' : 'Every approved bill is paid'} />}
                   />
@@ -545,7 +532,6 @@ export default function PayablesPage() {
                     loading={isLoading}
                     failed={failed}
                     bulk={[exportSelected<Keyed<VendorPayableDto>, VendorPayableDto>('payables-by-vendor', 'Payables by vendor', PAYABLE_VENDOR_EXPORT)]}
-                    scrollX={1800}
                     emptyText="Nothing owed to any vendor"
                   />
                 </>
@@ -554,7 +540,7 @@ export default function PayablesPage() {
             {
               key: 'projects',
               label: 'By project',
-              children: <LocalDataTable<Keyed<ProjectPayableDto>> list="payables-projects" columns={projectColumns} rows={projects} loading={isLoading} failed={failed} scrollX={1700} emptyText="Nothing owed on any project" />,
+              children: <LocalDataTable<Keyed<ProjectPayableDto>> list="payables-projects" columns={projectColumns} rows={projects} loading={isLoading} failed={failed} emptyText="Nothing owed on any project" />,
             },
             { key: 'payments', label: 'Payments', children: <PaymentsTab projectId={projectId} vendorId={vendorId} onBill={setBill} /> },
             { key: 'debit-notes', label: 'Debit notes', children: <DebitNotesTab projectId={projectId} vendorId={vendorId} /> },

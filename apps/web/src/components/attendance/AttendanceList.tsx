@@ -52,7 +52,7 @@ export function AttendanceList({ projectId: fixedProject }: { projectId?: string
         ...(fixedProject
           ? []
           : [{ title: 'Project', dataIndex: 'projectName', ...sort('project'), width: 240, ellipsis: true, render: (v: string, r: AttendanceSheetDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> } satisfies ListColumn<AttendanceSheetDto>]),
-        { title: 'Workers', dataIndex: 'totalWorkers', width: 110, align: 'center', ...sort('totalWorkers'), total: (rows) => rows.reduce((n, r) => n + r.totalWorkers, 0) },
+        { title: 'Workers', dataIndex: 'totalWorkers', width: 110, align: 'center', ...sort('totalWorkers') },
         {
           title: 'By trade',
           key: 'manpower',
@@ -141,7 +141,6 @@ export function AttendanceList({ projectId: fixedProject }: { projectId?: string
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={fixedProject ? 1000 : 1250}
         emptyText={<EmptyArt art="entries" title={page.filters.from || page.filters.to || page.params.q ? 'No sheet matches these filters' : canRecord ? 'No attendance yet. Record the day with Record attendance.' : 'No attendance yet'} />}
         emptyAction={newButton}
       />

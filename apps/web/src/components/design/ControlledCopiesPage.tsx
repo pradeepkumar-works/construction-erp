@@ -216,7 +216,6 @@ export function ControlledCopiesPage() {
           chips={frame.chips}
           empty={frame.empty}
           failed={!!error}
-          scrollX={1050}
           emptyText={<EmptyArt art="entries" title={state || page.params.q ? 'No copy matches these filters' : 'No controlled copy out'} />}
           emptyAction={newButton}
         />

@@ -52,7 +52,7 @@ import { BooksService } from '../books/books.service';
 import { StatementsService } from '../statements/statements.service';
 import { moduleOn } from '../common/module-switch.guard';
 import { ProjectsService } from '../projects/projects.service';
-import { plannedProgress } from './dashboard.service';
+import { plannedProgress } from '../common/progress';
 import { CorrespondenceService } from '../correspondence/correspondence.service';
 import { DesignControlService } from '../design/design-control.service';
 

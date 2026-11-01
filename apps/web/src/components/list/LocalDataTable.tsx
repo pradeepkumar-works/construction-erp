@@ -20,7 +20,6 @@ export function LocalDataTable<T extends { id: string }>({
   failed,
   bulk,
   onOpen,
-  scrollX,
   emptyText,
   expandable,
 }: {
@@ -32,7 +31,6 @@ export function LocalDataTable<T extends { id: string }>({
   failed: boolean;
   bulk?: BulkAction<T>[];
   onOpen?: (id: string) => void;
-  scrollX?: number;
   emptyText: React.ReactNode;
   expandable?: React.ComponentProps<typeof DataTable<T>>['expandable'];
 }) {
@@ -50,7 +48,6 @@ export function LocalDataTable<T extends { id: string }>({
       table={page.tableProps<T>(rows.length)}
       onOpen={onOpen}
       bulk={bulk}
-      scrollX={scrollX}
       emptyText={typeof emptyText === 'string' ? <EmptyArt art="entries" title={emptyText} /> : emptyText}
       expandable={expandable}
     />

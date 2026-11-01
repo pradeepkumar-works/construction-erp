@@ -19,7 +19,6 @@ import { DataTable, useColumnChoice, type ListColumn } from '@/components/list/D
 import { exportSelected } from '@/components/list/bulk';
 import { RecordLink } from '@/components/record/RecordLink';
 import { DebitNoteDrawer, DebitNoteTag, debitNoteBillHref } from './DebitNoteRecord';
-import { Money } from '@/components/common/Money';
 
 const NO_KEYS: string[] = [];
 
@@ -101,11 +100,9 @@ export function DebitNoteList({ projectId, vendorId }: { projectId?: string; ven
       title: 'Total',
       dataIndex: 'total',
       width: 140,
-      align: 'right',
+      kind: 'money',
+      strong: true,
       ...sort('total'),
-      render: (v) => (
-        <Money value={v} strong />
-      ),
       total: (all) => formatINR(all.filter((r) => !r.cancelledAt).reduce((n, r) => n + toNumber(r.total), 0)),
     },
     { key: 'state', title: 'Status', width: 160, render: (_, r) => <DebitNoteTag note={r} /> },
@@ -152,7 +149,6 @@ export function DebitNoteList({ projectId, vendorId }: { projectId?: string; ven
         table={page.tableProps<DebitNoteDto>(data?.total)}
         onOpen={(id) => setOpened(id)}
         bulk={[exportSelected<DebitNoteDto>('debit-notes', 'Debit notes', DEBIT_NOTE_EXPORT)]}
-        scrollX={1200}
         empty={{ filtered, clear }}
         emptyText={<EmptyArt art="entries" title={filtered ? 'No debit note matches these filters' : 'No debit notes yet. Raise one from an approved bill.'} />}
       />

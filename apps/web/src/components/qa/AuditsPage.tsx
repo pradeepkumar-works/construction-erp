@@ -528,7 +528,6 @@ export function AuditsPage() {
           chips={frame.chips}
           empty={frame.empty}
           failed={!!error}
-          scrollX={1040}
           emptyText={<EmptyArt art="entries" title={kind || openOnly || page.params.q ? 'No audit matches these filters' : 'No audit or visit recorded yet'} />}
           emptyAction={newButton}
         />

@@ -95,11 +95,8 @@ export function StockBalances({ projectId: fixedProject, initialLow = false, ini
   const { user } = useAuth();
   const mayManage = !!user && canManageStore(user.roleKey);
   const [ledger, setLedger] = useState<StockBalanceDto | null>(null);
-  const qty = (v: string, r: StockBalanceDto) => (
-    <span>
-      {formatQty(v)} <Typography.Text type="secondary">{r.unit}</Typography.Text>
-    </span>
-  );
+  const unit = (r: StockRow) => unitLabel(r.unit);
+  const moved = (v: string) => (Number(v) === 0 ? null : v);
   const nil = <Typography.Text type="secondary">{NO_VALUE}</Typography.Text>;
   const frame = useListFrame<StockBalanceSortField, StockRow>({
     list: 'stock-balances',
@@ -131,14 +128,10 @@ export function StockBalances({ projectId: fixedProject, initialLow = false, ini
         ...(fixedProject
           ? []
           : [{ title: 'Project', dataIndex: 'projectName', ...sort('project'), width: 240, ellipsis: true, render: (v: string, r: StockRow) => <Link href={`/projects/${r.projectId}?tab=stock`}>{v}</Link> } satisfies ListColumn<StockRow>]),
-        { title: 'Received', dataIndex: 'received', align: 'right', width: 120, ...sort('received'), render: qty },
-        { title: 'Issued', dataIndex: 'issued', align: 'right', width: 120, ...sort('issued'), render: qty },
-        { key: 'adjusted', title: 'Adjusted', dataIndex: 'adjusted', align: 'right', width: 110, render: (v: string, r) => (Number(v) === 0 ? nil : qty(v, r)) },
-        { key: 'transferred', title: 'Transferred', dataIndex: 'transferred', align: 'right', width: 120, render: (v: string, r) => (Number(v) === 0 ? nil : qty(v, r)) },
         {
           title: 'Balance',
           dataIndex: 'balance',
-          align: 'right',
+          kind: 'qty',
           width: 140,
           ...sort('balance'),
           card: 'amount',
@@ -153,7 +146,7 @@ export function StockBalances({ projectId: fixedProject, initialLow = false, ini
               <Typography.Text strong type={r.low ? 'danger' : undefined}>
                 {formatQty(v)}
               </Typography.Text>
-              <Typography.Text type="secondary">{r.unit}</Typography.Text>
+              <Typography.Text type="secondary">{unitLabel(r.unit)}</Typography.Text>
             </Space>
           ),
         },
@@ -161,7 +154,7 @@ export function StockBalances({ projectId: fixedProject, initialLow = false, ini
           key: 'minQty',
           title: 'Minimum',
           dataIndex: 'minQty',
-          align: 'right',
+          kind: 'qty',
           width: 130,
           render: (v: string | null, r) => (
             <Space size="small">
@@ -171,6 +164,10 @@ export function StockBalances({ projectId: fixedProject, initialLow = false, ini
           ),
         },
         { title: 'Last movement', dataIndex: 'lastMovement', width: 130, ...sort('lastMovement'), card: 'date', render: (v) => formatDate(v) },
+        { title: 'Received', dataIndex: 'received', defaultFrom: 1600, kind: 'qty', unit, width: 120, ...sort('received') },
+        { title: 'Issued', dataIndex: 'issued', defaultFrom: 1600, kind: 'qty', unit, width: 120, ...sort('issued') },
+        { key: 'adjusted', title: 'Adjusted', defaultFrom: 1800, kind: 'qty', value: (r) => moved(r.adjusted), unit, width: 110 },
+        { key: 'transferred', title: 'Transferred', defaultFrom: 1800, kind: 'qty', value: (r) => moved(r.transferred), unit, width: 120 },
       ];
     },
   });
@@ -220,7 +217,6 @@ export function StockBalances({ projectId: fixedProject, initialLow = false, ini
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={fixedProject ? 1150 : 1390}
         emptyText={<EmptyArt art="entries" title={lowOnly ? 'Nothing is below its minimum.' : 'No stock yet. Receive material against an approved request, or enter opening stock as an adjustment.'} />}
       />
       <ItemLedgerDrawer row={ledger} onClose={() => setLedger(null)} />

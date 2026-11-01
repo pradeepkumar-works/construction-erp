@@ -69,15 +69,14 @@ export function VariationsPanel({ projectId: fixedProject, openId }: { projectId
           ),
         },
         { key: 'status', title: 'Status', dataIndex: 'status', width: 150, render: (v: VariationStatus) => <VariationStatusTag status={v} /> },
-        { title: 'Claimed', dataIndex: 'claimedAmount', width: 130, align: 'right', className: 'mono', render: (v) => formatINR(v), ...sort('claimedAmount'), total: (rows) => formatINR(rows.reduce((n, r) => n + toNumber(r.claimedAmount), 0)) },
+        { title: 'Claimed', dataIndex: 'claimedAmount', width: 130, kind: 'money', ...sort('claimedAmount'), total: (rows) => formatINR(rows.reduce((n, r) => n + toNumber(r.claimedAmount), 0)) },
         {
           key: 'approvedAmount',
           title: 'Approved',
           dataIndex: 'approvedAmount',
           width: 130,
-          align: 'right',
-          className: 'mono',
-          render: (v) => (v ? formatINR(v) : <Sub>-</Sub>),
+          kind: 'money',
+          value: (r) => r.approvedAmount || null,
           total: (rows) => formatINR(rows.reduce((n, r) => n + toNumber(r.approvedAmount), 0)),
         },
         {
@@ -165,7 +164,6 @@ export function VariationsPanel({ projectId: fixedProject, openId }: { projectId
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={fixedProject ? 1000 : 1130}
         emptyText={<EmptyArt art="entries" title={status || page.params.q ? 'No variation matches these filters' : 'No variations yet'} />}
         emptyAction={newButton}
       />

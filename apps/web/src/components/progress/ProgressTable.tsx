@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { theme } from 'antd';
 import type { ProgressEntryDto, ProgressSortField } from '@erp/shared';
-import { formatDate, formatQty } from '@/lib/format';
+import { formatDate } from '@/lib/format';
 import { StatusTag } from '@/components/common/StatusTag';
 import { PhotoThumbs } from '@/components/common/AttachmentGallery';
 import type { ListColumn } from '@/components/list/DataTable';
@@ -49,8 +49,8 @@ export function progressColumns({
       ? [{ card: 'meta' as const, cardText: (r: ProgressEntryDto) => r.projectName, title: 'Project', dataIndex: 'projectName', ...sort('project'), width: 220, ellipsis: true, render: (v: string, r: ProgressEntryDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> }]
       : []),
     { card: 'title', cardText: (r) => r.activityName, title: 'Activity', locked: true, ...sort('activity'), render: (_, r) => <ActivityCell row={r} onOpen={onOpen} /> },
-    { card: 'amount', title: 'Quantity', ...sort('quantity'), width: 130, align: 'right', className: 'mono', render: (_, r) => `${formatQty(r.quantity)} ${unitLabel(r.unit)}` },
-    { defaultFrom: 1600, key: 'manpower', title: 'Labour', dataIndex: 'manpowerCount', width: 110, align: 'right', render: (v) => v ?? '-', total: (rows) => rows.reduce((n, r) => n + (r.manpowerCount ?? 0), 0) },
+    { card: 'amount', title: 'Quantity', ...sort('quantity'), width: 130, kind: 'qty', value: (r) => r.quantity, unit: (r) => unitLabel(r.unit) },
+    { defaultFrom: 1600, key: 'manpower', title: 'Labour', dataIndex: 'manpowerCount', width: 110, align: 'right', render: (v) => v ?? '-' },
     { defaultFrom: 1600, key: 'photos', title: 'Photos', dataIndex: 'attachments', width: 130, render: (a) => <PhotoThumbs attachments={a} /> },
     { defaultFrom: 1400, card: 'meta', title: 'Submitted by', dataIndex: 'submittedByName', width: 150, ellipsis: true, ...sort('submittedBy') },
     { title: 'Submitted on', dataIndex: 'submittedAt', width: 130, defaultHidden: true, render: (v) => (v ? formatDate(v) : '-'), ...sort('submittedAt') },

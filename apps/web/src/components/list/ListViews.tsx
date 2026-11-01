@@ -12,11 +12,16 @@ import { errorMessage } from '@/lib/api';
 import { sameFilters, type ListFilters } from '@/lib/listPage';
 import { useDeleteView, useSaveView, useSavedViews } from '@/lib/queries';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
+import { TabCount } from '@/components/common/AppTabs';
 
 export interface BuiltInView {
   key: string;
   label: string;
   filters: ListFilters;
+  /** How many rows the view holds, beside its label (AppTabs' count); `attention` when they wait on the reader. */
+  count?: number;
+  countLabel?: string;
+  attention?: boolean;
 }
 
 /**
@@ -117,7 +122,18 @@ export function ListViews({
   ];
 
   const items = [
-    ...builtIns.map((v) => ({ key: v.key, label: v.label })),
+    ...builtIns.map((v) => ({
+      key: v.key,
+      label:
+        typeof v.count === 'number' && !(v.attention && v.count === 0) ? (
+          <>
+            {v.label}
+            <TabCount n={v.count} label={v.countLabel} attention={v.attention} active={v.key === active} />
+          </>
+        ) : (
+          v.label
+        ),
+    })),
     ...(saved ?? []).map((v) => ({
       key: v.id,
       label: (

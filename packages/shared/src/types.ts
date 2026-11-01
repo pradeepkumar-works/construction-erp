@@ -207,6 +207,8 @@ export interface ProjectSummary {
   projectManagerId: string | null;
   projectManagerName: string | null;
   physicalProgressPct: number;
+  /** Share of the work planned to be done by today, weighed as physical progress is; null when no activity has dates */
+  plannedProgressPct: number | null;
   pendingApprovals: number;
 }
 

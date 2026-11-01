@@ -301,7 +301,6 @@ function MaterialApprovalsPage() {
             onOpen={open}
             empty={{ filtered, clear: () => page.clear(['q', 'status', 'kind']) }}
             failed={!!requests.error}
-            scrollX={1130}
             emptyText={<EmptyArt art="entries" title={page.params.q ? 'No request matches the search' : status === 'open' ? 'No request open' : 'No request here'} />}
             emptyAction={newButton}
           />
@@ -322,7 +321,6 @@ function MaterialApprovalsPage() {
               table={{ pagination: false }}
               empty={{ filtered, clear: () => page.clear(['q']) }}
               failed={!!makes.error}
-              scrollX={1140}
               emptyText={<EmptyArt art="entries" title={page.params.q ? 'No make matches the search' : 'No approved make listed yet'} />}
               emptyAction={addMakeButton}
             />

@@ -74,10 +74,10 @@ function MachineLoansPage() {
         </div>
       ),
     },
-    { key: 'amount', title: 'Amount', align: 'right', width: 130, render: (_, r) => <Money value={r.amount} /> },
+    { key: 'amount', title: 'Amount', kind: 'money', value: (r) => r.amount, width: 130 },
     { key: 'emi', title: 'EMI', align: 'right', width: 150, render: (_, r) => <span translate="no">{`${formatINR(r.emi)} at ${toNumber(r.ratePct)}%`}</span>, defaultFrom: 1280 },
     { key: 'paid', title: 'EMIs paid', align: 'right', width: 110, render: (_, r) => `${r.emisPaid} of ${r.emiCount}` },
-    { key: 'outstanding', title: 'Owed', align: 'right', width: 130, render: (_, r) => <Money value={r.outstanding} /> },
+    { key: 'outstanding', title: 'Owed', kind: 'money', value: (r) => r.outstanding, width: 130 },
     {
       key: 'next',
       title: 'Next EMI',
@@ -181,7 +181,6 @@ function MachineLoansPage() {
           onOpen={open}
           empty={{ filtered: !!page.params.q || status !== 'ACTIVE', clear: () => page.clear() }}
           failed={!!error}
-          scrollX={1000}
           emptyText={<EmptyArt art="entries" title={page.params.q ? 'No loan matches the search' : status === 'ACTIVE' ? 'No running machine loan' : 'No machine loan yet'} />}
           emptyAction={newButton}
         />

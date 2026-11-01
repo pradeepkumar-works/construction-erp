@@ -99,7 +99,6 @@ export function EmployeeList({ onOpen, onNew }: { onOpen: (id: string) => void; 
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={1150}
         emptyText={<EmptyArt art="entries" title={includeInactive || page.params.q ? 'No one matches these filters' : 'No staff yet'} />}
         emptyAction={newButton}
       />

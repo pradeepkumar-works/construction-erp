@@ -85,7 +85,7 @@ function TendersPage() {
       key: "tender",
       title: "Tender",
       locked: true,
-      width: 320,
+      width: 280,
       render: (_, r) => (
         <div>
           <RecordLink
@@ -154,14 +154,10 @@ function TendersPage() {
     {
       key: "estimate",
       title: "Estimate",
-      align: "right",
+      kind: "money",
+      value: (r) => r.estimatedValue || null,
       width: 140,
       defaultFrom: 1280,
-      render: (_, r) => (
-        <span translate="no">
-          {r.estimatedValue ? formatINR(r.estimatedValue) : NO_VALUE}
-        </span>
-      ),
     },
     {
       key: "quoted",
@@ -211,12 +207,10 @@ function TendersPage() {
     {
       key: "emd",
       title: "EMD",
-      align: "right",
+      kind: "money",
+      value: (r) => r.emdAmount || null,
       width: 130,
       defaultFrom: 1280,
-      render: (_, r) => (
-        <span translate="no">{r.emdAmount ? formatINR(r.emdAmount) : NO_VALUE}</span>
-      ),
     },
   ];
   const choice = useColumnChoice("tenders", columns);
@@ -327,7 +321,6 @@ function TendersPage() {
             clear: () => page.clear(),
           }}
           failed={!!error}
-          scrollX={1300}
           emptyText={
             <EmptyArt
               art="entries"

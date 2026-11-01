@@ -254,6 +254,30 @@ sent back, what is to come the track. The launcher's tiles draw every icon in on
 (`LauncherBadgesDto.words`, "53 to approve"), in full. The Gantt colours bars and milestones by `statusTone` (red only
 for late) and draws the critical path and today in the neutral ink.
 
+### Tables that answer
+
+A list's table puts the figure that answers its question where it is read, in a form that compares down the column.
+`ListColumn.kind` says what a column's figures are: `money`, `qty` or `pct`. A kind column is right-aligned on one line in
+the figures face, and without a `render` the table formats it: a quantity with its unit (`unit(row)`, through
+`unitLabel`), a percentage through `formatPct`, and money in one scale for the whole column, `moneyScale` over the rows
+shown (`@erp/shared/list-columns.ts`): crore when every figure is ₹ 10 lakh or more, lakh when every figure is ₹ 1,000 or
+more and one reaches a lakh, else whole rupees. So ₹ 63 lakh and ₹ 6.3 crore differ by their digits, and the exact figure
+is on hover, on the record and in the export. `tone(row)` reds a loss or an overdue amount; nothing on a list is green.
+
+The table measures its own box. Until someone chooses columns, it leaves out the `defaultFrom` columns, widest first
+(`columnsToDrop`), until the rest fit, so at 1440 px with the sidebar open (a box of about 1,114 px) nothing scrolls
+sideways. A column with no `defaultFrom` is never left out: the record's own column (240 px at least), the figure that
+answers the list (Balance, Net payable, Action by) and where it stands. A column someone turns on stays and the table
+scrolls; a pinned column is pinned only while it does. A record number (a `mono` column) stays on one line.
+
+The totals row draws only when every row of the filtered list is on screen, labelled Total, and only on money where adding
+up means something, never on head counts or days added across sites. A due date is `DueCell`: the date and how far off it
+is (`formatDue`), red once late, amber within three days. The projects list's progress is `ProgressAgainstPlan`
+(`components/modules/ProjectProgress.tsx`), physical against `ProjectSummary.plannedProgressPct`, planned by today from
+the same `plannedProgress` (`src/common/progress.ts`) as the Projects screen. A submission list's Waiting for me view
+says how many wait for the reader in the header's project (the approvals queue). `src/scripts/list-columns-test.ts` (CI)
+holds the scale and the fit.
+
 ### Launcher Home, pins and Recent (launcher phase 2)
 
 Home (`app/(app)/page.tsx`, `components/launcher/HomeLauncher.tsx`) is a launcher: a greeting (the page's `<h1>`), a search
