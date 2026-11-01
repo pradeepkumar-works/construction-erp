@@ -83,7 +83,7 @@ export function PermitList({ projectId: fixedProject, initialOpenId }: { project
       },
       { title: 'Valid', key: 'valid', width: 230, render: (_, r) => permitWindow(r) },
       { key: 'contractor', title: 'Contractor', dataIndex: 'contractor', width: 160, defaultHidden: true, render: (v: string | null) => v ?? <Sub>-</Sub> },
-      { key: 'workerCount', title: 'Workers', dataIndex: 'workerCount', width: 90, align: 'right', defaultHidden: true, render: (v: number | null) => v ?? <Sub>-</Sub>, total: (rows) => rows.reduce((n, r) => n + (r.workerCount ?? 0), 0) },
+      { key: 'workerCount', title: 'Workers', dataIndex: 'workerCount', width: 90, align: 'right', defaultHidden: true, render: (v: number | null) => v ?? <Sub>-</Sub> },
       { key: 'requestedByName', title: 'Asked by', dataIndex: 'requestedByName', width: 150 },
       { key: 'issuedByName', title: 'Issued by', dataIndex: 'issuedByName', width: 150, defaultHidden: true, render: (v: string | null) => v ?? <Sub>-</Sub> },
       { key: 'status', title: 'Status', dataIndex: 'status', width: 100, fixed: 'right' as const, render: (_, r) => <PermitStatusTag p={r} /> },

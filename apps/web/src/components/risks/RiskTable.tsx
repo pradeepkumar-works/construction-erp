@@ -69,7 +69,6 @@ export function riskColumns({
         ) : (
           <Sub>-</Sub>
         ),
-      total: (rows) => rows.reduce((n, r) => n + (r.kind === 'DELAY' ? (r.daysLost ?? 0) : 0), 0),
     },
     { title: 'Category', dataIndex: 'category', width: 170, defaultHidden: true, ...sort('category'), render: (v: RiskDto['category']) => RISK_CATEGORY_LABELS[v] },
     { title: 'Owner', dataIndex: 'ownerName', width: 150, ...sort('owner'), render: (v) => v ?? <Sub>-</Sub> },

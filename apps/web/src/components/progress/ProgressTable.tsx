@@ -50,7 +50,7 @@ export function progressColumns({
       : []),
     { card: 'title', cardText: (r) => r.activityName, title: 'Activity', locked: true, ...sort('activity'), render: (_, r) => <ActivityCell row={r} onOpen={onOpen} /> },
     { card: 'amount', title: 'Quantity', ...sort('quantity'), width: 130, kind: 'qty', value: (r) => r.quantity, unit: (r) => unitLabel(r.unit) },
-    { defaultFrom: 1600, key: 'manpower', title: 'Labour', dataIndex: 'manpowerCount', width: 110, align: 'right', render: (v) => v ?? '-', total: (rows) => rows.reduce((n, r) => n + (r.manpowerCount ?? 0), 0) },
+    { defaultFrom: 1600, key: 'manpower', title: 'Labour', dataIndex: 'manpowerCount', width: 110, align: 'right', render: (v) => v ?? '-' },
     { defaultFrom: 1600, key: 'photos', title: 'Photos', dataIndex: 'attachments', width: 130, render: (a) => <PhotoThumbs attachments={a} /> },
     { defaultFrom: 1400, card: 'meta', title: 'Submitted by', dataIndex: 'submittedByName', width: 150, ellipsis: true, ...sort('submittedBy') },
     { title: 'Submitted on', dataIndex: 'submittedAt', width: 130, defaultHidden: true, render: (v) => (v ? formatDate(v) : '-'), ...sort('submittedAt') },

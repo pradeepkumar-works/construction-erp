@@ -91,7 +91,7 @@ export function TalkList({ projectId: fixedProject }: { projectId?: string }) {
           </div>
         ),
       },
-      { key: 'attendeeCount', title: 'Attended', dataIndex: 'attendeeCount', width: 90, align: 'right', total: (rows) => rows.reduce((n, r) => n + r.attendeeCount, 0) },
+      { key: 'attendeeCount', title: 'Attended', dataIndex: 'attendeeCount', width: 90, align: 'right' },
       { key: 'recordedByName', title: 'Recorded by', dataIndex: 'recordedByName', width: 150, defaultHidden: true },
       {
         title: '',
