@@ -2,7 +2,7 @@
 
 import React, { useLayoutEffect, useState } from 'react';
 import { theme } from 'antd';
-import { BRAND } from '@/lib/brand';
+import { tk } from '@/ds';
 import { AppearanceProvider } from '@/lib/appearance';
 import { readPref } from '@/lib/prefs';
 import { PageSkeleton } from '@/components/common/QueryState';
@@ -31,7 +31,7 @@ export function ShellSkeleton() {
 function Frame({ rail, body }: { rail: boolean; body?: boolean }) {
   return (
     <div role="status" style={{ display: 'flex', minHeight: '100vh' }} aria-busy="true" aria-label="Loading">
-      <div className={`${s.aside} ${s.asideSkeleton} ${rail ? s.asideRail : ''}`} style={{ background: BRAND.colors.ink }} aria-hidden="true" />
+      <div className={`${s.aside} ${s.asideSkeleton} ${rail ? s.asideRail : ''}`} style={{ background: tk.color.chrome.bg }} aria-hidden="true" />
       {body ? <Body /> : null}
     </div>
   );

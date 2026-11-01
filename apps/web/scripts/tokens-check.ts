@@ -73,6 +73,7 @@ function checkContrast(mode: Mode) {
   }
   need('text.onAccent on accent.solid', color.text.onAccent, color.accent.solid, 4.5);
   need('chrome.caption on chrome.bg', color.chrome.caption, color.chrome.bg, 4.5);
+  need('text.onAccent on state.countFill', color.text.onAccent, color.state.countFill, 4.5);
 }
 
 const CSS_COLOUR = /#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})\b|\b(?:rgba?|hsla?)\(/i;

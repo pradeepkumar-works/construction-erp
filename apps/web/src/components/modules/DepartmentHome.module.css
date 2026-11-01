@@ -89,8 +89,8 @@
   height: 22px;
   padding: 0 7px;
   border-radius: 11px;
-  background: var(--brand-pending);
-  color: var(--brand-on-accent);
+  background: var(--c-state-count-fill);
+  color: var(--c-text-on-accent);
   font-size: var(--ant-font-size-sm);
   font-weight: 700;
   line-height: 22px;

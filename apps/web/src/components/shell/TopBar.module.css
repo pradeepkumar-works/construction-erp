@@ -16,10 +16,10 @@
 }
 
 .lookNavy {
-  --tb-bg: var(--brand-ink);
-  --tb-fg: var(--brand-on-accent);
-  --tb-muted: color-mix(in srgb, var(--ant-color-white) 66%, transparent);
-  --tb-hover: color-mix(in srgb, var(--ant-color-white) 10%, transparent);
+  --tb-bg: var(--c-chrome-bg);
+  --tb-fg: var(--c-chrome-ink);
+  --tb-muted: color-mix(in srgb, var(--c-chrome-ink) 66%, transparent);
+  --tb-hover: color-mix(in srgb, var(--c-chrome-ink) 10%, transparent);
   --tb-rule: transparent;
 }
 
@@ -74,7 +74,7 @@
 }
 
 .lookNavy .brand :global(.wordmark) {
-  color: var(--brand-on-accent);
+  color: var(--c-chrome-ink);
 }
 
 .org {
@@ -134,12 +134,8 @@
 }
 
 .lookBar .link.on {
-  background: var(--brand-accent-soft);
+  background: var(--c-accent-soft);
   color: var(--ant-color-link);
-}
-
-:global(html[data-theme='dark']) .lookBar .link.on {
-  background: var(--brand-night-accent-soft);
 }
 
 .count {
@@ -147,8 +143,8 @@
   height: 20px;
   padding: 0 6px;
   border-radius: 10px;
-  background: var(--brand-pending);
-  color: var(--brand-on-accent);
+  background: var(--c-state-count-fill);
+  color: var(--c-text-on-accent);
   font-size: var(--ant-font-size-sm);
   font-weight: 700;
   line-height: 20px;
@@ -303,12 +299,8 @@
 }
 
 .moduleInBar .sub.on {
-  background: var(--brand-accent-soft);
+  background: var(--c-accent-soft);
   color: var(--ant-color-link);
-}
-
-:global(html[data-theme='dark']) .moduleInBar .sub.on {
-  background: var(--brand-night-accent-soft);
 }
 
 .pin {
@@ -320,24 +312,24 @@
    bar: their menus and drawers open on the page's own surfaces. */
 .lookNavy .bar :global(.ant-btn-variant-text),
 .lookNavy .bar :global(.ant-btn-variant-filled) {
-  color: color-mix(in srgb, var(--ant-color-white) 88%, transparent);
+  color: color-mix(in srgb, var(--c-chrome-ink) 88%, transparent);
 }
 
 .lookNavy .bar :global(.ant-btn-variant-filled) {
-  background: color-mix(in srgb, var(--ant-color-white) 8%, transparent);
-  border-color: color-mix(in srgb, var(--ant-color-white) 16%, transparent);
+  background: color-mix(in srgb, var(--c-chrome-ink) 8%, transparent);
+  border-color: color-mix(in srgb, var(--c-chrome-ink) 16%, transparent);
 }
 
 .lookNavy .bar :global(.ant-btn-variant-text:not(:disabled):hover),
 .lookNavy .bar :global(.ant-btn-variant-filled:not(:disabled):hover) {
-  color: var(--brand-on-accent);
-  background: color-mix(in srgb, var(--ant-color-white) 12%, transparent);
+  color: var(--c-chrome-ink);
+  background: color-mix(in srgb, var(--c-chrome-ink) 12%, transparent);
 }
 
 .lookNavy .bar :global(.ant-btn-variant-filled .ant-typography),
 .lookNavy .bar :global(.ant-btn-variant-filled kbd),
 .lookNavy .bar :global(.text-muted) {
-  color: color-mix(in srgb, var(--ant-color-white) 70%, transparent);
+  color: color-mix(in srgb, var(--c-chrome-ink) 70%, transparent);
 }
 
 .lookNavy .bar :global(.ant-btn .ant-badge) {
@@ -346,7 +338,7 @@
 
 .lookNavy .bar :global(.ant-btn-variant-filled kbd) {
   background: transparent;
-  border-color: color-mix(in srgb, var(--ant-color-white) 22%, transparent);
+  border-color: color-mix(in srgb, var(--c-chrome-ink) 22%, transparent);
 }
 
 @media (pointer: coarse) {
