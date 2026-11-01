@@ -193,7 +193,7 @@ A screen that reads one month or a period opens on a month with figures in it. U
 the last full month, and from then on the month so far: `reportingMonth(today)` in `@erp/shared/reporting-period.ts`. The
 web's period pickers start from `defaultPeriod()` (`components/cost/PeriodPicker.tsx`, which offers Last month beside
 This month), and the API's month defaults (MIS, quality report, leakage) call the same function, so a page and its export
-agree. A history note writes money with `inr` and days with `formatDay`, never a raw number or an ISO date.
+agree. The watch list's leakage warnings read the same month, so they match the Leakage checks page. A history note writes money with `inr` and days with `formatDay`, never a raw number or an ISO date.
 `src/scripts/reporting-period-test.ts` (CI) holds both.
 
 ### Launcher Home, pins and Recent (launcher phase 2)
