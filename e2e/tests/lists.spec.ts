@@ -95,16 +95,19 @@ test('clicking a row opens it, and selected rows get the bulk bar', async ({ pag
   await expect(bar).toBeHidden();
 });
 
-test('figures add up in a total row for the page', async ({ page }) => {
-  await signIn(page, 'pm@demo.com');
-  await page.goto('/dpr');
-  await expect(rows(page).nth(1)).toBeVisible();
+test('a total row adds up the whole list, never one page of it', async ({ page }) => {
+  await signIn(page, 'md@demo.com');
+  await page.goto('/bills');
+  await expect(rows(page).nth(10)).toBeVisible();
+  // Every bill is on screen: the money columns add up, under the word Total.
   const summary = page.locator('.ant-table-summary');
-  await expect(summary).toContainText('Page total');
-  // The labour total is the sum of the rows' labour.
-  const index = await page.locator('.ant-table-thead th').allInnerTexts().then((h) => h.findIndex((t) => t.trim() === 'Labour'));
-  const cells = await rows(page).evaluateAll((trs, i) => trs.map((tr) => Number((tr.children[i] as HTMLElement).innerText.trim() || 0)), index);
-  await expect(summary.locator('td').nth(index)).toHaveText(String(cells.reduce((a, b) => a + b, 0)));
+  await expect(summary).toContainText('Total');
+  await expect(summary).not.toContainText('Page total');
+  // Ten a page leaves bills on other pages, so no total: a page's sum answers nothing.
+  await page.locator('.ant-pagination-options .ant-select').click();
+  await page.getByRole('option', { name: '10 / page' }).click();
+  await expect(rows(page)).toHaveCount(10);
+  await expect(summary).toBeHidden();
 });
 
 test('the other approval lists have the same views, chips, columns and totals', async ({ page }) => {
@@ -128,10 +131,9 @@ test('the other approval lists have the same views, chips, columns and totals', 
   await page.getByLabel('Remove From 01 Jan 2026').click();
   await expect(page).toHaveURL(/\/work-orders$/);
 
-  // Expenses add up on the page, and a row opens its entry.
+  // A row opens its entry.
   await page.goto('/expenses');
   await expect(rows(page).nth(1)).toBeVisible();
-  await expect(page.locator('.ant-table-summary')).toContainText('Page total');
   const expenseNo = (await rows(page).first().locator('td.mono').first().innerText()).trim();
   await rows(page).first().locator('td').nth(2).click();
   await expect(page.locator('.ant-drawer')).toContainText(expenseNo);
