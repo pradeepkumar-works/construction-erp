@@ -1,13 +1,14 @@
 import React from 'react';
 import { StyleSheet, Text, View, type AccessibilityActionEvent, type AccessibilityActionInfo, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import type { SubmissionStatus, SubmissionType } from '@erp/shared';
-import { colors, radius, spacing, typography } from '../theme';
+import type { SubmissionStatus } from '@erp/shared';
+import type { OutboxType } from '../offline/types';
+import { colors, maxFontScale, radius, spacing, typography } from '../theme';
 import { StatusBadge } from './StatusBadge';
 import { Touchable } from './Touchable';
 
-/** Submissions plus attendance sheets, register entries and safety records (which can also sit in the outbox). */
-export type EntryType = SubmissionType | 'ATTENDANCE' | 'RISK' | 'SAFETY_INCIDENT' | 'TOOLBOX_TALK' | 'WORK_PERMIT' | 'PPE_ISSUE' | 'RFI' | 'FUEL_ISSUE';
+/** Submissions plus the other entries that can sit in the outbox. */
+export type EntryType = OutboxType;
 
 export const TYPE_ICON: Record<EntryType, keyof typeof Ionicons.glyphMap> = {
   PROGRESS: 'trending-up',
@@ -32,31 +33,10 @@ export const TYPE_ICON: Record<EntryType, keyof typeof Ionicons.glyphMap> = {
   PPE_ISSUE: 'shield-half',
   RFI: 'help-circle',
   FUEL_ISSUE: 'water',
-};
-
-export const TYPE_SHORT: Record<EntryType, string> = {
-  PROGRESS: 'Progress',
-  DPR: 'DPR',
-  MATERIAL_REQUEST: 'Material',
-  MACHINERY: 'Machinery',
-  EXPENSE: 'Expense',
-  MEASUREMENT: 'Measurement',
-  BILL: 'RA bill',
-  PURCHASE_ORDER: 'PO',
-  VENDOR_BILL: 'Vendor bill',
-  WORK_ORDER: 'Work order',
-  SUBCONTRACT_BILL: 'Sub bill',
-  PAYMENT_REQUEST: 'Payment request',
-  SUPPLIER_CHOICE: 'Supplier choice',
-  INSPECTION: 'Inspection',
-  ATTENDANCE: 'Attendance',
-  RISK: 'Delay / risk',
-  SAFETY_INCIDENT: 'Incident',
-  TOOLBOX_TALK: 'Toolbox talk',
-  WORK_PERMIT: 'Permit',
-  PPE_ISSUE: 'PPE',
-  RFI: 'RFI',
-  FUEL_ISSUE: 'Fuel',
+  STOCK_RECEIPT: 'download',
+  STOCK_ISSUE: 'arrow-up-circle',
+  DEFECT: 'construct-outline',
+  BREAKDOWN: 'build',
 };
 
 interface Props {
@@ -65,7 +45,8 @@ interface Props {
   subtitle?: string;
   meta?: string;
   status?: SubmissionStatus;
-  onPress: () => void;
+  /** Left out for a row that opens nothing: no press state, no chevron. */
+  onPress?: () => void;
   style?: ViewStyle;
   /** Extra screen-reader actions (e.g. Approve on a row that also swipes). */
   accessibilityActions?: AccessibilityActionInfo[];
@@ -73,6 +54,34 @@ interface Props {
 }
 
 export function SubmissionRow({ type, title, subtitle, meta, status, onPress, style, accessibilityActions, onAccessibilityAction }: Props) {
+  const body = (
+    <>
+      <View style={styles.iconWrap}>
+        <Ionicons name={TYPE_ICON[type]} size={22} color={colors.primary} />
+      </View>
+      <View style={styles.body}>
+        <Text maxFontSizeMultiplier={maxFontScale} style={styles.title} numberOfLines={2}>
+          {title}
+        </Text>
+        {subtitle ? (
+          <Text maxFontSizeMultiplier={maxFontScale} style={styles.subtitle} numberOfLines={1}>
+            {subtitle}
+          </Text>
+        ) : null}
+        <View style={styles.metaRow}>
+          {status ? <StatusBadge status={status} /> : null}
+          {meta ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.meta}>{meta}</Text> : null}
+        </View>
+      </View>
+    </>
+  );
+  if (!onPress) {
+    return (
+      <View style={[styles.row, style]} accessible accessibilityActions={accessibilityActions} onAccessibilityAction={onAccessibilityAction}>
+        {body}
+      </View>
+    );
+  }
   return (
     <Touchable
       onPress={onPress}
@@ -82,23 +91,7 @@ export function SubmissionRow({ type, title, subtitle, meta, status, onPress, st
       accessibilityActions={accessibilityActions}
       onAccessibilityAction={onAccessibilityAction}
     >
-      <View style={styles.iconWrap}>
-        <Ionicons name={TYPE_ICON[type]} size={22} color={colors.primary} />
-      </View>
-      <View style={styles.body}>
-        <Text style={styles.title} numberOfLines={2}>
-          {title}
-        </Text>
-        {subtitle ? (
-          <Text style={styles.subtitle} numberOfLines={1}>
-            {subtitle}
-          </Text>
-        ) : null}
-        <View style={styles.metaRow}>
-          {status ? <StatusBadge status={status} /> : null}
-          {meta ? <Text style={styles.meta}>{meta}</Text> : null}
-        </View>
-      </View>
+      {body}
       <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
     </Touchable>
   );

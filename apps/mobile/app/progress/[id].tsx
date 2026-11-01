@@ -5,7 +5,7 @@ import type { ProgressEntryDto } from '@erp/shared';
 import { useFetch } from '../../src/api/hooks';
 import { AttachmentGallery, PhotoChecks, Card, ErrorState, KeyValue, Loading, ReviewActions, Screen, SubmissionHeader, SubmitterActions } from '../../src/components';
 import { useT } from '../../src/i18n/LanguageContext';
-import { colors, spacing, typography } from '../../src/theme';
+import { colors, maxFontScale, spacing, typography } from '../../src/theme';
 import { fmtQty, formatDate } from '../../src/utils/format';
 
 export default function ProgressDetailScreen() {
@@ -23,10 +23,10 @@ export default function ProgressDetailScreen() {
       <SubmissionHeader item={data} title={data.activityName} subtitle={`${t('Progress entry')} · ${formatDate(data.date)}`} />
       <Card>
         <View style={styles.qtyBox}>
-          <Text style={styles.qty}>
-            {fmtQty(data.quantity)} <Text style={styles.unit}>{data.unit}</Text>
+          <Text maxFontSizeMultiplier={maxFontScale} style={styles.qty}>
+            {fmtQty(data.quantity)} <Text maxFontSizeMultiplier={maxFontScale} style={styles.unit}>{data.unit}</Text>
           </Text>
-          <Text style={typography.caption}>{t('Quantity executed on {date}', { date: formatDate(data.date) })}</Text>
+          <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('Quantity executed on {date}', { date: formatDate(data.date) })}</Text>
         </View>
         <KeyValue label={t('Activity')} value={data.activityName} />
         <KeyValue label={t('Location')} value={data.location} />

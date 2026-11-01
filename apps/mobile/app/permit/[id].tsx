@@ -6,9 +6,9 @@ import { PERMIT_PRECAUTIONS, WORK_PERMIT_TYPE_LABELS, canEditSafetyRecord, canMa
 import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
 import { useAuth } from '../../src/auth/AuthContext';
-import { AttachmentGallery, Button, Card, ErrorBanner, ErrorState, Input, KeyValue, Loading, Pill, Screen } from '../../src/components';
+import { AttachmentGallery, Button, Card, ErrorBanner, ErrorState, Input, KeyValue, Loading, Pill, RecordHead, Screen } from '../../src/components';
 import { Checklist, permitStatus, permitWindow } from '../../src/components/safetyTone';
-import { colors, spacing, typography } from '../../src/theme';
+import { colors, maxFontScale, spacing, typography } from '../../src/theme';
 import { formatDateTime } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 
@@ -25,6 +25,7 @@ export default function PermitScreen() {
   const [mode, setMode] = useState<Mode>(null);
   const [ticked, setTicked] = useState<string[]>([]);
   const [note, setNote] = useState('');
+  const [noteError, setNoteError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -39,6 +40,7 @@ export default function PermitScreen() {
   const open = (m: Mode) => {
     setTicked(data.precautions.filter((p) => standard.includes(p)));
     setNote('');
+    setNoteError(null);
     setMode(m);
   };
   const act = async (path: string, body: Record<string, unknown>) => {
@@ -56,17 +58,15 @@ export default function PermitScreen() {
 
   return (
     <Screen refreshing={refreshing} onRefresh={refresh} keyboard>
-      <View style={styles.head}>
-        <Text style={typography.caption}>
-          {data.permitNo} · {data.projectName}
-        </Text>
-        <Text style={typography.h2}>
-          {t(WORK_PERMIT_TYPE_LABELS[data.type])} · {data.location}
-        </Text>
-        <View style={styles.pills}>
-          <Pill text={st.text} fg={st.fg} bg={st.bg} icon={st.icon} />
-        </View>
-      </View>
+      <RecordHead
+        caption={`${data.permitNo} · ${data.projectName}`}
+        title={`${t(WORK_PERMIT_TYPE_LABELS[data.type])} · ${data.location}`}
+        pills={<Pill text={st.text} fg={st.fg} bg={st.bg} icon={st.icon} />}
+        more={[
+          { label: t('Safety at this project'), icon: 'medkit-outline', onPress: () => router.push(`/safety?projectId=${data.projectId}&show=permits`) },
+          { label: t('Open project'), icon: 'business-outline', onPress: () => router.push(`/project/${data.projectId}`) },
+        ]}
+      />
       <ErrorBanner message={actionError} />
       <Card>
         <KeyValue label={t('The work')} value={data.description} multiline />
@@ -80,12 +80,12 @@ export default function PermitScreen() {
       <Card title={t('Precautions')}>
         {data.precautions.length ? (
           data.precautions.map((p) => (
-            <Text key={p} style={[typography.body, styles.precaution]}>
+            <Text maxFontSizeMultiplier={maxFontScale} key={p} style={[typography.body, styles.precaution]}>
               ✓ {t(p)}
             </Text>
           ))
         ) : (
-          <Text style={typography.caption}>{t('None ticked')}</Text>
+          <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('None ticked')}</Text>
         )}
       </Card>
       <AttachmentGallery attachments={data.attachments} />
@@ -98,8 +98,19 @@ export default function PermitScreen() {
         </Card>
       ) : mode === 'reject' ? (
         <Card title={t('Reject {no}', { no: data.permitNo })}>
-          <Input label={t('Why')} required value={note} onChangeText={setNote} multiline maxLength={1000} />
-          <Button title={t('Reject')} icon="close-circle" variant="danger" onPress={() => act('reject', { note: note.trim() })} loading={busy} disabled={!note.trim()} />
+          <Input
+            label={t('Why')}
+            required
+            value={note}
+            onChangeText={(v) => {
+              setNote(v);
+              setNoteError(null);
+            }}
+            error={noteError}
+            multiline
+            maxLength={1000}
+          />
+          <Button title={t('Reject')} icon="close-circle" variant="danger" onPress={() => (note.trim() ? act('reject', { note: note.trim() }) : setNoteError(t('Say why you are rejecting it')))} loading={busy} />
           <Button title={t('Cancel')} variant="ghost" onPress={() => setMode(null)} />
         </Card>
       ) : mode === 'close' ? (
@@ -116,14 +127,11 @@ export default function PermitScreen() {
       ) : data.status === 'ISSUED' && mayClose ? (
         <Button title={t('Close permit')} icon="lock-closed" onPress={() => open('close')} />
       ) : null}
-      <Button title={t('Safety at this project')} variant="ghost" icon="medkit-outline" onPress={() => router.push(`/safety?projectId=${data.projectId}&show=permits`)} />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  head: { marginBottom: spacing.md, gap: spacing.xs },
-  pills: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.xs },
   precaution: { paddingVertical: 4, color: colors.text },
   actions: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.md },
   flex: { flex: 1 },

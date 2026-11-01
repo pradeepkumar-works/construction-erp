@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { Card, Collapse, Empty, Flex, Result, Segmented, Skeleton, Statistic, Table, Typography, theme } from 'antd';
+import { Card, Collapse, Empty, Flex, Segmented, Skeleton, Statistic, Table, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { CASH_FLOW_KIND_LABELS, canSeeCashForecast, type CashFlowItemDto, type CashForecastDto, type CashWeekDto } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
@@ -12,7 +12,7 @@ import { formatDate, formatINR, formatINRCompact } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { ChartCard } from '@/components/home/ChartCard';
-import { ResultMark } from '@/components/common/ResultMark';
+import { NoAccess } from '@/components/common/NoAccess';
 
 const CashForecastChart = dynamic(() => import('@/components/home/charts').then((m) => m.CashForecastChart), {
   ssr: false,
@@ -36,7 +36,7 @@ export default function Page() {
     return (
       <div className="page-container">
         <PageHeader title="Cash forecast" />
-        <Result icon={<ResultMark kind="no-access" />} title="The cash forecast is for accounts and management" />
+        <NoAccess title="The cash forecast is for accounts and management" />
       </div>
     );
   if (!user || (isLoading && !data)) return <PageSkeleton shape="list" />;

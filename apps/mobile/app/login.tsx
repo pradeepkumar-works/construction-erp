@@ -7,7 +7,7 @@ import type { AuthOptionsDto } from '@erp/shared';
 import { PRODUCT_NAME } from '@erp/shared';
 import { useT } from '../src/i18n/LanguageContext';
 import { LanguageSwitch } from '../src/i18n/LanguageSwitch';
-import { colors, fonts, fontSize, radius, spacing, touch, typography } from '../src/theme';
+import { colors, fonts, fontSize, maxFontScale, radius, spacing, touch, typography } from '../src/theme';
 
 const DEMO_ACCOUNTS = [
   { email: 'engineer@demo.com', role: 'Site Engineer' },
@@ -88,18 +88,18 @@ export default function LoginScreen() {
       <Animated.View style={{ opacity: rise, transform: [{ translateY: rise.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) }] }}>
         <View style={styles.brand}>
           <Image source={require('../assets/splash-icon.png')} style={styles.logo} accessibilityIgnoresInvertColors />
-          <Text style={styles.wordmark}>{PRODUCT_NAME.toUpperCase()}</Text>
+          <Text maxFontSizeMultiplier={maxFontScale} style={styles.wordmark}>{PRODUCT_NAME.toUpperCase()}</Text>
           <View style={styles.flex} />
           <LanguageSwitch />
         </View>
 
-        <Text style={styles.title} accessibilityRole="header">
+        <Text maxFontSizeMultiplier={maxFontScale} style={styles.title} accessibilityRole="header">
           {t('Sign in')}
         </Text>
-        <Text style={styles.subtitle}>{t('Welcome back. Report progress, DPRs and material requests from site.')}</Text>
+        <Text maxFontSizeMultiplier={maxFontScale} style={styles.subtitle}>{t('Welcome back. Report progress, DPRs and material requests from site.')}</Text>
 
         <ErrorBanner message={error} />
-        <Text style={styles.label}>{t('Email')}</Text>
+        <Text maxFontSizeMultiplier={maxFontScale} style={styles.label}>{t('Email')}</Text>
         {/* Autofill hints so a password manager, or Android's own, fills both fields. */}
         <Input
           accessibilityLabel={t('Email')}
@@ -117,9 +117,9 @@ export default function LoginScreen() {
           onSubmitEditing={() => passwordRef.current?.focus()}
         />
         <View style={styles.labelRow}>
-          <Text style={styles.label}>{t('Password')}</Text>
+          <Text maxFontSizeMultiplier={maxFontScale} style={styles.label}>{t('Password')}</Text>
           <Touchable onPress={forgot} accessibilityRole="button" style={styles.linkBtn}>
-            <Text style={styles.link}>{t('Forgot password?')}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={styles.link}>{t('Forgot password?')}</Text>
           </Touchable>
         </View>
         <Input
@@ -140,14 +140,14 @@ export default function LoginScreen() {
             <IconButton icon={showPw ? 'eye-off-outline' : 'eye-outline'} size={22} color={colors.textMuted} onPress={() => setShowPw((s) => !s)} accessibilityLabel={showPw ? t('Hide password') : t('Show password')} />
           }
         />
-        {notice ? <Text style={styles.notice}>{notice}</Text> : null}
+        {notice ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.notice}>{notice}</Text> : null}
         <Button title={t('Sign in')} onPress={submit} loading={busy} style={styles.submit} />
 
         {demo ? (
           <>
             <View style={styles.divider}>
               <View style={styles.rule} />
-              <Text style={styles.dividerText}>{t('Try a demo account')}</Text>
+              <Text maxFontSizeMultiplier={maxFontScale} style={styles.dividerText}>{t('Try a demo account')}</Text>
               <View style={styles.rule} />
             </View>
             <View style={styles.chips}>
@@ -166,12 +166,12 @@ export default function LoginScreen() {
                     accessibilityHint={t('Fills in {email}', { email: a.email })}
                     style={[styles.chip, on && styles.chipOn]}
                   >
-                    <Text style={[styles.chipText, on && styles.chipTextOn]}>{t(a.role)}</Text>
+                    <Text maxFontSizeMultiplier={maxFontScale} style={[styles.chipText, on && styles.chipTextOn]}>{t(a.role)}</Text>
                   </Touchable>
                 );
               })}
             </View>
-            <Text style={styles.demoNote}>{t('Fills in the form. Every demo account uses the password {password}.', { password: DEMO_PASSWORD })}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={styles.demoNote}>{t('Fills in the form. Every demo account uses the password {password}.', { password: DEMO_PASSWORD })}</Text>
           </>
         ) : null}
       </Animated.View>

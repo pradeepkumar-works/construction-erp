@@ -8,7 +8,7 @@ import { useFetch } from '../src/api/hooks';
 import { Button, Card, Chips, EmptyState, ErrorBanner, Loading, Pill, Screen, SectionTitle, Select, Stat, Touchable } from '../src/components';
 import { LEVEL_TONE, RISK_STATUS_TONE } from '../src/components/riskTone';
 import { useProjectOptions } from '../src/forms/common';
-import { colors, radius, spacing, touch, typography } from '../src/theme';
+import { colors, maxFontScale, radius, spacing, touch, typography } from '../src/theme';
 import { formatDate } from '../src/utils/format';
 import { useT } from '../src/i18n/LanguageContext';
 
@@ -48,12 +48,12 @@ export default function RisksScreen() {
       <ErrorBanner message={projects.error ?? (list.data ? null : list.error)} />
       <Card>
         <Select label={t('Project')} value={projectId} options={[{ value: '', label: t('All my projects') }, ...projects.options]} onChange={(v) => setProjectId(v || null)} placeholder={t('All my projects')} />
-        <Chips value={show} clearable={false} onChange={(v) => v && setShow(v)} options={[{ value: 'active', label: t('Open + monitoring') }, { value: 'closed', label: t('Closed') }, { value: 'all', label: t('All') }]} />
+        <Chips value={show} clearable={false} onChange={(v) => v && setShow(v)} options={[{ value: 'active', label: t('Open and monitoring') }, { value: 'closed', label: t('Closed') }, { value: 'all', label: t('All') }]} />
         <Chips value={kind} onChange={setKind} options={[{ value: 'DELAY', label: t('Delays') }, { value: 'RISK', label: t('Risks') }]} />
         {mayRaise ? (
           <View style={styles.actions}>
             <Button title={t('Record delay')} icon="time-outline" onPress={() => router.push(newHref('DELAY'))} style={styles.flex} />
-            <Button title={t('Raise risk')} icon="alert-circle-outline" variant="secondary" onPress={() => router.push(newHref('RISK'))} style={styles.flex} />
+            <Button title={t('New risk')} icon="alert-circle-outline" variant="secondary" onPress={() => router.push(newHref('RISK'))} style={styles.flex} />
           </View>
         ) : null}
       </Card>
@@ -76,12 +76,12 @@ export default function RisksScreen() {
               onPress={() => router.push(`/risk/new?kind=DELAY&projectId=${x.projectId}&activityId=${x.activityId}&title=${encodeURIComponent(t('{activity} behind schedule', { activity: x.activityName }))}`)}
             >
               <View style={styles.flex}>
-                <Text style={typography.bodyStrong}>{x.activityName}</Text>
-                <Text style={typography.caption}>
+                <Text maxFontSizeMultiplier={maxFontScale} style={typography.bodyStrong}>{x.activityName}</Text>
+                <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
                   {t('{days} d past {date} · {pct}% done', { days: x.daysLate, date: formatDate(x.plannedEnd), pct: x.progressPct })}
                 </Text>
               </View>
-              <Text style={styles.link}>{t('Record')}</Text>
+              <Text maxFontSizeMultiplier={maxFontScale} style={styles.link}>{t('Record')}</Text>
             </Touchable>
           ))}
         </Card>
@@ -99,16 +99,16 @@ export default function RisksScreen() {
             return (
               <Touchable key={r.id} accessibilityRole="button" onPress={() => router.push(`/risk/${r.id}`)} style={styles.row}>
                 <View style={[styles.score, { backgroundColor: tone.bg }]}>
-                  <Text style={[styles.scoreText, { color: tone.fg }]}>{r.score}</Text>
+                  <Text maxFontSizeMultiplier={maxFontScale} style={[styles.scoreText, { color: tone.fg }]}>{r.score}</Text>
                 </View>
                 <View style={styles.flex}>
-                  <Text style={typography.bodyStrong} numberOfLines={2}>
+                  <Text maxFontSizeMultiplier={maxFontScale} style={typography.bodyStrong} numberOfLines={2}>
                     {r.title}
                   </Text>
-                  <Text style={typography.caption} numberOfLines={1}>
+                  <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption} numberOfLines={1}>
                     {r.riskNo} · {r.kind === 'DELAY' ? `${t('{n} d lost', { n: r.daysLost ?? 0 })}${r.responsibleParty ? ` · ${t(DELAY_PARTY_LABELS[r.responsibleParty])}` : ''}` : t(RISK_CATEGORY_LABELS[r.category])}
                   </Text>
-                  <Text style={[typography.caption, r.overdue && styles.overdue]} numberOfLines={1}>
+                  <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, r.overdue && styles.overdue]} numberOfLines={1}>
                     {projectId ? '' : `${r.projectName} · `}
                     {r.ownerName ?? t('No owner')}
                     {r.dueDate ? ` · ${t('due {date}', { date: formatDate(r.dueDate) })}` : ''}

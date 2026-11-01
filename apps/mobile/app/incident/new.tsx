@@ -8,11 +8,12 @@ import { errorMessage } from '../../src/api/client';
 import { Button, Card, DatePicker, ErrorBanner, Input, TimePicker, Loading, PhotoPicker, Screen, Select, type LocalPhoto } from '../../src/components';
 import { attachmentIds, photosFailed, photosQueued, photosUploading, QueuedSuccess, SubmitSuccess, toOutboxPhotos, useProjectOptions } from '../../src/forms/common';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
-import { colors, fontSize, spacing } from '../../src/theme';
+import { colors, fontSize, maxFontScale, spacing } from '../../src/theme';
 import { formatDate, isIsoDate, today } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
 import { useFieldChain } from '../../src/forms/keyboard';
+import { DraftNotice, restorePhotos, useFormDraft, useLeaveGuard } from '../../src/forms/draft';
 
 const nowTime = () => {
   const d = new Date();
@@ -50,9 +51,28 @@ export default function IncidentFormScreen() {
   const [saved, setSaved] = useState<SafetyIncidentDto | null>(null);
   const [queued, setQueued] = useState<OutboxItem | null>(null);
 
+  const draft = useFormDraft('incident', { projectId, type, date, time, location, description, injured, names, daysLost, contractor, action, photos }, (d) => {
+    setProjectId(d.projectId);
+    setType(d.type);
+    setDate(d.date);
+    setTime(d.time);
+    setLocation(d.location);
+    setDescription(d.description);
+    setInjured(d.injured);
+    setNames(d.names);
+    setDaysLost(d.daysLost);
+    setContractor(d.contractor);
+    setAction(d.action);
+    setPhotos(restorePhotos(d.photos));
+  });
+  useLeaveGuard(draft, { keepsDraft: true, busy });
+
   useEffect(() => {
-    if (!projectId && projects.options.length === 1) setProjectId(projects.options[0].value);
-  }, [projects.options, projectId]);
+    if (!projectId && projects.options.length === 1) {
+      setProjectId(projects.options[0].value);
+      if (!draft.restoredAt) draft.settle();
+    }
+  }, [projects.options, projectId, draft]);
 
   const hurt = !!type && INJURY_TYPES.includes(type);
 
@@ -60,7 +80,7 @@ export default function IncidentFormScreen() {
     const e: Record<string, string> = {};
     if (!projectId) e.projectId = t('Choose a project');
     if (!type) e.type = t('Choose what kind it was');
-    if (!isIsoDate(date) || date > today()) e.date = t('Enter a date up to today');
+    if (!isIsoDate(date) || date > today()) e.date = t('Choose a date up to today');
     if (time.trim() && !/^([01]\d|2[0-3]):[0-5]\d$/.test(time.trim())) e.time = t('Enter the time like 15:40');
     if (!location.trim()) e.location = t('Say where it happened');
     if (!description.trim()) e.description = t('Describe what happened');
@@ -94,6 +114,7 @@ export default function IncidentFormScreen() {
       const queueIt = async () => {
         const projectName = projects.options.find((o) => o.value === projectId)?.label ?? t('Project');
         setQueued(await enqueue({ id: clientId.current, type: 'SAFETY_INCIDENT', payload: body, photos: toOutboxPhotos(photos), title: `${t(SAFETY_INCIDENT_TYPE_LABELS[type])} · ${location.trim()}`, subtitle: `${projectName} · ${formatDate(date)}` }));
+        draft.clear();
       };
       if (!online || photosQueued(photos)) {
         await queueIt();
@@ -101,6 +122,7 @@ export default function IncidentFormScreen() {
       }
       try {
         setSaved(await api.post<SafetyIncidentDto>('/safety/incidents', { id: clientId.current, ...body, attachmentIds: attachmentIds(photos) }));
+        draft.clear();
       } catch (e) {
         if (!isOfflineError(e)) throw e;
         await queueIt();
@@ -124,6 +146,20 @@ export default function IncidentFormScreen() {
     setPhotos([]);
     setErrors({});
   };
+  const startOver = () => {
+    setType(params.nearMiss ? 'NEAR_MISS' : null);
+    setDate(today());
+    setTime(nowTime());
+    setLocation('');
+    setDescription('');
+    setInjured('1');
+    setNames('');
+    setDaysLost('');
+    setContractor('');
+    setAction('');
+    setPhotos([]);
+    setErrors({});
+  };
 
   if (queued) return <QueuedSuccess title={t('Saved on this phone')} subtitle={`${queued.title} · ${queued.subtitle}`} onAnother={reset} />;
   if (saved) {
@@ -140,12 +176,13 @@ export default function IncidentFormScreen() {
 
   return (
     <Screen keyboard scrollRef={errorSummary.scrollRef}>
-      <Stack.Screen options={{ title: t(type === 'NEAR_MISS' ? 'Report a Near Miss' : 'Report an Incident') }} />
+      <Stack.Screen options={{ title: t(type === 'NEAR_MISS' ? 'Report near miss' : 'Report incident') }} />
+      <DraftNotice draft={draft} onStartOver={startOver} />
       <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? projects.error} />
       <Card>
         <Select label={t('Project')} required value={projectId} options={projects.options} onChange={setProjectId} placeholder={t('Choose project')} error={errors.projectId} />
-        <Select label={t('What kind')} required value={type} options={SAFETY_INCIDENT_TYPES.map((k) => ({ value: k, label: t(SAFETY_INCIDENT_TYPE_LABELS[k]) }))} onChange={setType} placeholder={t('Near miss, first aid...')} error={errors.type} />
+        <Select label={t('What kind')} required value={type} options={SAFETY_INCIDENT_TYPES.map((k) => ({ value: k, label: t(SAFETY_INCIDENT_TYPE_LABELS[k]) }))} onChange={setType} placeholder={t('Near miss, first aid…')} error={errors.type} />
         <DatePicker label={t('Date')} required value={date} onChange={setDate} error={errors.date} />
         <TimePicker label={t('Time')} value={time} onChange={setTime} error={errors.time} />
         <Input {...field()} label={t('Where')} required value={location} onChangeText={setLocation} placeholder={t('Chainage, block and floor, yard')} maxLength={200} error={errors.location} />
@@ -164,9 +201,9 @@ export default function IncidentFormScreen() {
       </Card>
       <Card title={t('Photos of the spot')}>
         <PhotoPicker photos={photos} onChange={setPhotos} />
-        {errors.photos ? <Text style={styles.err}>{errors.photos}</Text> : null}
+        {errors.photos ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.err}>{errors.photos}</Text> : null}
       </Card>
-      <Button title={t('Report')} icon="send" onPress={submit} loading={busy} />
+      <Button title={t(type === 'NEAR_MISS' ? 'Report near miss' : 'Report incident')} icon="send" onPress={submit} loading={busy} />
     </Screen>
   );
 }

@@ -42,7 +42,7 @@ export function ErrorSummary({ errors }: { errors: Record<string, string | undef
         </Text>
       </View>
       {list.map((m, i) => (
-        <Text key={i} style={styles.item}>
+        <Text maxFontSizeMultiplier={maxFontScale} key={i} style={styles.item}>
           {'•  '}
           {m}
         </Text>

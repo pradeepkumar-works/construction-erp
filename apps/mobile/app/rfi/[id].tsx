@@ -5,7 +5,7 @@ import type { RfiDto } from '@erp/shared';
 import { useFetch } from '../../src/api/hooks';
 import { AttachmentGallery, Card, ErrorState, KeyValue, Loading, Pill, Screen } from '../../src/components';
 import { rfiStatus } from '../../src/components/rfiTone';
-import { colors, spacing, toneIcon, typography } from '../../src/theme';
+import { colors, maxFontScale, spacing, toneIcon, typography } from '../../src/theme';
 import { formatDate } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 
@@ -24,20 +24,20 @@ export default function RfiScreen() {
   return (
     <Screen refreshing={refreshing} onRefresh={refresh}>
       <View style={styles.head}>
-        <Text style={typography.caption}>
+        <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
           {data.rfiNo} · {data.projectName}
         </Text>
-        <Text style={typography.h2}>{data.subject}</Text>
+        <Text maxFontSizeMultiplier={maxFontScale} style={typography.h2}>{data.subject}</Text>
         <View style={styles.pills}>
           <Pill text={st.text} fg={st.fg} bg={st.bg} icon={st.icon} />
           {data.priority === 'URGENT' ? <Pill text={t('Urgent')} fg={colors.danger} bg={colors.dangerSoft} icon={toneIcon.warning} /> : null}
         </View>
       </View>
       <Card title={t('Question')}>
-        <Text style={typography.body}>{data.question}</Text>
+        <Text maxFontSizeMultiplier={maxFontScale} style={typography.body}>{data.question}</Text>
         {data.proposal ? (
-          <Text style={[typography.body, styles.gap]}>
-            <Text style={typography.bodyStrong}>{t('Our proposal')}: </Text>
+          <Text maxFontSizeMultiplier={maxFontScale} style={[typography.body, styles.gap]}>
+            <Text maxFontSizeMultiplier={maxFontScale} style={typography.bodyStrong}>{t('Our proposal')}: </Text>
             {data.proposal}
           </Text>
         ) : null}
@@ -53,17 +53,17 @@ export default function RfiScreen() {
       <Card title={t('Answer')}>
         {data.answer ? (
           <>
-            <Text style={typography.body}>{data.answer}</Text>
-            <Text style={[typography.caption, styles.gap]}>
+            <Text maxFontSizeMultiplier={maxFontScale} style={typography.body}>{data.answer}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, styles.gap]}>
               {data.answeredByName} · {formatDate(data.answeredOn)}
               {data.answerRef ? ` · ${data.answerRef}` : ''}
             </Text>
           </>
         ) : (
-          <Text style={typography.caption}>{data.status === 'WITHDRAWN' ? t('Withdrawn before an answer.') : t('Not answered yet. Waiting {days}.', { days: days(data.age.daysOpen) })}</Text>
+          <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{data.status === 'WITHDRAWN' ? t('Withdrawn before an answer.') : t('Not answered yet. Waiting {days}.', { days: days(data.age.daysOpen) })}</Text>
         )}
         {data.closedOn ? (
-          <Text style={[typography.caption, styles.gap]}>
+          <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, styles.gap]}>
             {t(data.status === 'WITHDRAWN' ? 'Withdrawn on {date}' : 'Closed on {date}', { date: formatDate(data.closedOn) })}
             {data.closeNote ? `: ${data.closeNote}` : ''}
           </Text>

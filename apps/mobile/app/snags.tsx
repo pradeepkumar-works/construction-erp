@@ -9,7 +9,7 @@ import { useFetch } from '../src/api/hooks';
 import { Button, Card, Chips, EmptyState, ErrorBanner, Loading, Pill, Screen, SectionTitle, Select, Touchable } from '../src/components';
 import { DEFECT_TONE } from '../src/components/defectTone';
 import { useProjectOptions } from '../src/forms/common';
-import { colors, radius, spacing, touch, typography, toneIcon } from '../src/theme';
+import { colors, maxFontScale, radius, spacing, toneIcon, touch, typography } from '../src/theme';
 import { formatDate } from '../src/utils/format';
 import { useT } from '../src/i18n/LanguageContext';
 
@@ -41,7 +41,7 @@ export default function SnagsScreen() {
       <ErrorBanner message={projects.error ?? (list.data ? null : list.error)} />
       <Card>
         <Select label={t('Project')} value={projectId} options={[{ value: '', label: t('All my projects') }, ...projects.options]} onChange={(v) => setProjectId(v || null)} placeholder={t('All my projects')} />
-        {mayReport ? <Button title={t('Report snag or defect')} icon="add-circle" onPress={() => router.push(`/snag/new${projectId ? `?projectId=${projectId}` : ''}`)} /> : null}
+        {mayReport ? <Button title={t('Report snag')} icon="add-circle" onPress={() => router.push(`/snag/new${projectId ? `?projectId=${projectId}` : ''}`)} /> : null}
       </Card>
       <Chips
         value={show}
@@ -66,13 +66,13 @@ export default function SnagsScreen() {
                 <Ionicons name="construct" size={20} color={colors.primary} />
               </View>
               <View style={styles.flex}>
-                <Text style={typography.bodyStrong} numberOfLines={2}>
+                <Text maxFontSizeMultiplier={maxFontScale} style={typography.bodyStrong} numberOfLines={2}>
                   {d.title}
                 </Text>
-                <Text style={typography.caption} numberOfLines={1}>
+                <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption} numberOfLines={1}>
                   {d.defectNo} · {d.location ?? t(DEFECT_PHASE_LABELS[d.phase])}
                 </Text>
-                <Text style={typography.caption} numberOfLines={1}>
+                <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption} numberOfLines={1}>
                   {projectId ? '' : `${d.projectName} · `}
                   {d.dueDate ? t('by {date}', { date: formatDate(d.dueDate) }) : t('found {date}', { date: formatDate(d.reportedOn) })}
                 </Text>

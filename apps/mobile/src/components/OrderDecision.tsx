@@ -32,8 +32,8 @@ export function OrderQuotes({ order }: { order: PurchaseOrderDto }) {
 
   return (
     <Card title={t('Quotations on the request')}>
-      {loading && !data ? <Text style={typography.caption}>{t('Reading the quotations…')}</Text> : null}
-      {data && !quotes.length ? <Text style={typography.caption}>{t('No quotation was recorded on this request.')}</Text> : null}
+      {loading && !data ? <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('Reading the quotations…')}</Text> : null}
+      {data && !quotes.length ? <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('No quotation was recorded on this request.')}</Text> : null}
       {quotes.map((q) => {
         const notes = [
           q.deliveryDays !== null ? t('Delivers in {n} days', { n: q.deliveryDays }) : t('Delivery not said'),
@@ -82,9 +82,9 @@ export function OrderBudget({ order }: { order: PurchaseOrderDto }) {
   const material = data?.heads.find((h) => h.head === 'material');
 
   let body: React.ReactNode;
-  if (loading && !data) body = <Text style={typography.caption}>{t('Reading the budget…')}</Text>;
+  if (loading && !data) body = <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('Reading the budget…')}</Text>;
   else if (!material || material.budget === null)
-    body = <Text style={typography.caption}>{t('No material budget is set for this project, so there is nothing to hold this order against.')}</Text>;
+    body = <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('No material budget is set for this project, so there is nothing to hold this order against.')}</Text>;
   else {
     const budget = Number(material.budget);
     const spent = Number(material.actual);

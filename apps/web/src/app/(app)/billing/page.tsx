@@ -13,6 +13,7 @@ import { useBilling, useBillingInvoices, useCreateBillingOrder, useUpdateBilling
 import { formatDate, formatINR } from '@/lib/format';
 import { openInvoicePrint } from '@/components/billing/invoicePrint';
 import { PageHeader } from '@/components/common/PageHeader';
+import { NoAccess } from '@/components/common/NoAccess';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 
 const STATUS_COLORS: Record<BillingStatus, string> = { TRIAL: 'blue', ACTIVE: 'green', READ_ONLY: 'red', EXEMPT: 'default' };
@@ -41,7 +42,7 @@ export default function BillingPage() {
     return (
       <div className="page-container" style={{ maxWidth: 948, marginLeft: 0 }}>
         <PageHeader title="Subscription" />
-        <Alert type="info" title="Only an admin can see and pay for the subscription." />
+        <NoAccess title="Only an admin can see and pay for the subscription" />
       </div>
     );
 

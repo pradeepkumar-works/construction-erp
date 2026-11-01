@@ -8,7 +8,7 @@ import { errorMessage } from '../../src/api/client';
 import { useAuth } from '../../src/auth/AuthContext';
 import { AttachmentGallery, Button, Card, ErrorBanner, ErrorState, Input, KeyValue, Loading, Pill, Screen } from '../../src/components';
 import { TEST_RESULT_TONE } from '../../src/components/qualityTone';
-import { colors, fontSize, spacing, toneIcon, typography } from '../../src/theme';
+import { colors, fontSize, maxFontScale, spacing, toneIcon, typography } from '../../src/theme';
 import { formatDate } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 
@@ -34,9 +34,9 @@ function ReadingRow({ test, r, onSaved }: { test: QualityTestDto; r: QualityTest
   };
   return (
     <View style={styles.reading}>
-      <Text style={styles.label}>
+      <Text maxFontSizeMultiplier={maxFontScale} style={styles.label}>
         {r.label}
-        {r.dueOn ? <Text style={[typography.caption, r.overdue && styles.overdue]}> · {t('due {date}', { date: formatDate(r.dueOn) })}</Text> : null}
+        {r.dueOn ? <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, r.overdue && styles.overdue]}> · {t('due {date}', { date: formatDate(r.dueOn) })}</Text> : null}
       </Text>
       <View style={styles.row}>
         <Input returnKeyType="done" onSubmitEditing={() => value.trim() !== (r.value ?? '') && void save()} value={value} onChangeText={setValue} placeholder={test.unit ?? t('Value')} accessibilityLabel={test.unit ? t('{reading} in {unit}', { reading: r.label, unit: test.unit }) : r.label} keyboardType="decimal-pad" error={error ?? undefined} style={styles.flex} />
@@ -63,10 +63,10 @@ export default function TestScreen() {
   return (
     <Screen refreshing={refreshing} onRefresh={refresh} keyboard>
       <View style={styles.head}>
-        <Text style={typography.caption}>
+        <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
           {data.testNo} · {t(TEST_KIND_LABELS[data.kind])} · {data.projectName}
         </Text>
-        <Text style={typography.h2}>{data.title}</Text>
+        <Text maxFontSizeMultiplier={maxFontScale} style={typography.h2}>{data.title}</Text>
         <View style={styles.pills}>
           <Pill text={t(TEST_RESULT_LABELS[data.result])} {...TEST_RESULT_TONE[data.result]} />
           {data.overdue ? <Pill text={t('Result overdue')} fg={colors.danger} bg={colors.dangerSoft} icon={toneIcon.alert} /> : null}
@@ -89,7 +89,7 @@ export default function TestScreen() {
             <KeyValue key={r.id} label={r.label} value={r.value !== null ? `${Number(r.value)}${data.unit ? ` ${data.unit}` : ''}` : r.dueOn ? t('due {date}', { date: formatDate(r.dueOn) }) : null} />
           ),
         )}
-        {spec && data.readings.length > 1 ? <Text style={typography.caption}>{t('The last reading decides the result.')}</Text> : null}
+        {spec && data.readings.length > 1 ? <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('The last reading decides the result.')}</Text> : null}
       </Card>
       <AttachmentGallery attachments={data.attachments} />
     </Screen>

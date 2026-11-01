@@ -1,7 +1,6 @@
 /** Hindi for the payslips screen. */
 export const HR: Record<string, string> = {
   'My payslips': 'मेरी सैलरी स्लिप',
-  'Your salary each month once it is approved: days paid, earnings, PF, tax and net pay.': 'हर महीने की सैलरी, मंज़ूर होने के बाद: कितने दिन का भुगतान, कमाई, PF, टैक्स और हाथ में आने वाली रकम।',
   'No payslips yet': 'अभी कोई सैलरी स्लिप नहीं',
   "Each month's payslip shows here once the salary is approved.": 'सैलरी मंज़ूर होते ही हर महीने की स्लिप यहाँ दिखेगी।',
   'Payslip for {month}, net pay {amount}': '{month} की सैलरी स्लिप, हाथ में {amount}',
@@ -16,7 +15,7 @@ export const HR: Record<string, string> = {
   Deductions: 'कटौती',
   None: 'कोई नहीं',
   'Total deductions': 'कुल कटौती',
-  'The company pays besides': 'इसके अलावा कंपनी देती है',
+  'Company share': 'कंपनी का हिस्सा',
   // Payslip lines (PAYSLIP_CODES in @erp/shared)
   Basic: 'मूल वेतन',
   'Dearness allowance': 'महँगाई भत्ता',

@@ -7,10 +7,11 @@ import { errorMessage } from '../../src/api/client';
 import { Button, Card, Chips, DatePicker, ErrorBanner, ErrorState, Input, Loading, Screen, Select, IconButton } from '../../src/components';
 import { QueuedSuccess, SubmitSuccess, useProjectOptions } from '../../src/forms/common';
 import { ReviewerNote } from '../../src/forms/edit';
+import { DraftNotice, useFormDraft, useLeaveGuard } from '../../src/forms/draft';
 import { useT } from '../../src/i18n/LanguageContext';
 import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
-import { colors, fontSize, spacing, typography } from '../../src/theme';
+import { colors, fontSize, maxFontScale, spacing, typography } from '../../src/theme';
 import { addDays, formatDate, isIsoDate, today } from '../../src/utils/format';
 import { useFieldChain } from '../../src/forms/keyboard';
 import { ItemNameField, useItemMaster } from '../../src/forms/ItemNameField';
@@ -54,9 +55,28 @@ export default function NewMaterialRequestScreen() {
   const [created, setCreated] = useState<MaterialRequestDto | null>(null);
   const [queued, setQueued] = useState<OutboxItem | null>(null);
 
+  const draft = useFormDraft(editId ? null : 'indent', { projectId, requiredDate, priority, items, remarks }, (d) => {
+    setProjectId(d.projectId);
+    setRequiredDate(d.requiredDate);
+    setPriority(d.priority);
+    setItems(d.items);
+    setRemarks(d.remarks);
+  });
+  useLeaveGuard(draft, { keepsDraft: !editId, busy });
+  const startOver = () => {
+    setRequiredDate(addDays(today(), 3));
+    setPriority('NORMAL');
+    setItems([emptyItem()]);
+    setRemarks('');
+    setErrors({});
+  };
+
   useEffect(() => {
-    if (!editId && !projectId && projects.options.length === 1) setProjectId(projects.options[0].value);
-  }, [editId, projects.options, projectId]);
+    if (!editId && !projectId && projects.options.length === 1) {
+      setProjectId(projects.options[0].value);
+      if (!draft.restoredAt) draft.settle();
+    }
+  }, [editId, projects.options, projectId, draft]);
 
   // Editing: prefill the form from the loaded request.
   useEffect(() => {
@@ -67,6 +87,8 @@ export default function NewMaterialRequestScreen() {
     setPriority(e.priority);
     setRemarks(e.remarks ?? '');
     setItems(e.items.length ? e.items.map((i) => ({ key: newKey(), itemName: i.itemName, specification: i.specification ?? '', unit: i.unit, quantity: i.quantity })) : [emptyItem()]);
+    draft.settle();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [existing.data]);
 
   const priorityChips = useMemo(() => MATERIAL_PRIORITIES.map((p) => ({ value: p, label: t(MATERIAL_PRIORITY_LABELS[p]) })), [t]);
@@ -75,7 +97,7 @@ export default function NewMaterialRequestScreen() {
   const validate = () => {
     const e: Record<string, string> = {};
     if (!projectId) e.projectId = t('Choose a project');
-    if (!isIsoDate(requiredDate)) e.requiredDate = t('Enter a valid date');
+    if (!isIsoDate(requiredDate)) e.requiredDate = t('Pick the date from the calendar');
     const filled = items.filter((r) => r.itemName.trim() || r.quantity.trim() || r.unit || r.specification.trim());
     if (!filled.length) e.items = t('Add at least one item');
     for (const r of filled) {
@@ -112,10 +134,11 @@ export default function NewMaterialRequestScreen() {
             type: 'MATERIAL_REQUEST',
             payload: { projectId, ...body },
             photos: [],
-            title: `${t('Material request')} · ${body.items.length === 1 ? t('{n} item', { n: 1 }) : t('{n} items', { n: body.items.length })}`,
+            title: `${t('Indent')} · ${body.items.length === 1 ? t('{n} item', { n: 1 }) : t('{n} items', { n: body.items.length })}`,
             subtitle: `${projectName} · ${t('needed {date}', { date: formatDate(requiredDate) })}`,
           }),
         );
+        draft.clear();
       };
       if (!online) {
         await queueIt();
@@ -123,6 +146,7 @@ export default function NewMaterialRequestScreen() {
       }
       try {
         setCreated(await api.post<MaterialRequestDto>('/material-requests', { id: clientId.current, projectId, ...body }));
+        draft.clear();
       } catch (e) {
         if (!isOfflineError(e)) throw e;
         await queueIt();
@@ -138,7 +162,7 @@ export default function NewMaterialRequestScreen() {
     return <QueuedSuccess title={t('Saved on this phone')} subtitle={`${queued.title} · ${queued.subtitle}`} />;
   }
   if (created) {
-    return <SubmitSuccess title={editId ? t('Request resubmitted') : t('Request submitted')} subtitle={`${created.requestNo} · ${created.items.length === 1 ? t('{n} item needed by {date}. Sent for approval.', { n: 1, date: formatDate(created.requiredDate) }) : t('{n} items needed by {date}. Sent for approval.', { n: created.items.length, date: formatDate(created.requiredDate) })}`} detailHref={`/material-request/${created.id}`} />;
+    return <SubmitSuccess title={editId ? t('Indent resubmitted') : t('Indent submitted')} subtitle={`${created.requestNo} · ${created.items.length === 1 ? t('{n} item needed by {date}. Sent for approval.', { n: 1, date: formatDate(created.requiredDate) }) : t('{n} items needed by {date}. Sent for approval.', { n: created.items.length, date: formatDate(created.requiredDate) })}`} detailHref={`/material-request/${created.id}`} />;
   }
   if (projects.loading && !projects.data) return <Loading />;
   if (editId && existing.loading && !existing.data) return <Loading />;
@@ -146,7 +170,8 @@ export default function NewMaterialRequestScreen() {
 
   return (
     <Screen keyboard scrollRef={errorSummary.scrollRef}>
-      <Stack.Screen options={{ title: editId ? t('Edit Material Request') : t('New Material Request') }} />
+      <Stack.Screen options={{ title: editId ? t('Edit indent') : t('New indent') }} />
+      <DraftNotice draft={draft} onStartOver={startOver} />
       <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? projects.error} />
       <ReviewerNote entry={existing.data} />
@@ -160,7 +185,7 @@ export default function NewMaterialRequestScreen() {
         {items.map((r, i) => (
           <View key={r.key} style={styles.item}>
             <View style={styles.itemHead}>
-              <Text style={typography.label}>{t('Item {n}', { n: i + 1 })}</Text>
+              <Text maxFontSizeMultiplier={maxFontScale} style={typography.label}>{t('Item {n}', { n: i + 1 })}</Text>
               {items.length > 1 ? (
                 <IconButton icon="trash-outline" size={20} color={colors.danger} onPress={() => setItems((rows) => rows.filter((x) => x.key !== r.key))} accessibilityLabel={t('Remove item {n}', { n: i + 1 })} style={styles.remove} />
               ) : null}
@@ -184,7 +209,7 @@ export default function NewMaterialRequestScreen() {
             </View>
           </View>
         ))}
-        {errors.items ? <Text style={styles.err}>{errors.items}</Text> : null}
+        {errors.items ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.err}>{errors.items}</Text> : null}
         <Button title={t('Add item')} variant="ghost" size="sm" icon="add" onPress={() => setItems((rows) => [...rows, emptyItem()])} />
       </Card>
 

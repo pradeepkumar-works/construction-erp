@@ -23,7 +23,7 @@ import {
 } from '@erp/shared';
 import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
-import { Button, Card, Chips, DatePicker, ErrorBanner, ErrorState, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto, IconButton } from '../../src/components';
+import { Button, Card, Chips, DatePicker, ErrorBanner, ErrorState, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto, IconButton, useSnackbar } from '../../src/components';
 import { attachmentIds, photosFailed, photosQueued, photosUploading, QueuedSuccess, SubmitSuccess, toOutboxPhotos, useProjectOptions } from '../../src/forms/common';
 import { attachmentsToPhotos, outboxToPhotos, OutboxRefusal, ReviewerNote, useOutboxEntry } from '../../src/forms/edit';
 import { DraftNotice, restorePhotos, useFormDraft, useLeaveGuard } from '../../src/forms/draft';
@@ -32,7 +32,7 @@ import { useLanguage, useT } from '../../src/i18n/LanguageContext';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
 import { draftFor } from '../../src/ai/ask';
 import { AskDraftNotice } from '../../src/ai/AskDraftNotice';
-import { colors, fontSize, spacing, touch, typography } from '../../src/theme';
+import { colors, fontSize, maxFontScale, spacing, touch, typography } from '../../src/theme';
 import { formatDate, isIsoDate, today } from '../../src/utils/format';
 import { useFieldChain } from '../../src/forms/keyboard';
 import { DprLinesEditor, copiedRow, lineRowFrom, linesPayload, linesProblem, type DprLineRow } from '../../src/forms/dprLines';
@@ -50,20 +50,7 @@ interface MachineryRow {
 }
 
 const newKey = () => Math.random().toString(36).slice(2, 9);
-/** The phone's names of the built-in fields, which a company's form may rename. */
-const PHONE_LABEL: Record<DprBuiltInKey, string> = {
-  weather: 'Weather',
-  siteCondition: 'Site condition',
-  lines: 'Work done',
-  manpower: 'Manpower',
-  machinery: 'Machinery',
-  materialReceived: 'Material received',
-  testsConducted: 'Tests conducted',
-  safetyObservations: 'Safety observations',
-  issues: 'Issues / hindrances',
-  nextDayPlan: 'Next-day plan',
-  photos: 'Site photos',
-};
+
 /** Keep a free-text value (e.g. a trade typed on the web) selectable even when it is not in the standard list. */
 const withValue = (options: { value: string; label: string }[], value: string | null) => (value && !options.some((o) => o.value === value) ? [...options, { value, label: value }] : options);
 
@@ -241,7 +228,8 @@ export default function NewDprScreen() {
   // A new report takes the type's latest form; an edit keeps the one it was made on.
   const def = (editId ? existing.data?.form : workOptions.data?.form)?.def ?? STANDARD_DPR_FORM;
   const shows = (key: DprBuiltInKey) => dprShows(def, key, { progressFromDpr: workOptions.data?.progressFromDpr });
-  const L = (key: DprBuiltInKey) => dprSetting(def, key).label ?? t(PHONE_LABEL[key]);
+  // A company's own name for a field stays as it typed it; the standard names are the web's, in the phone's language.
+  const L = (key: DprBuiltInKey) => dprSetting(def, key).label ?? t(DPR_BUILT_INS[key].label);
   const ownDay = ownFieldsOf(def, 'DAY');
   const allPhotos = useMemo(() => [...photos, ...lines.flatMap((l) => l.photos)], [photos, lines]);
 
@@ -282,20 +270,30 @@ export default function NewDprScreen() {
   const headCount = useMemo(() => manpower.filter((r) => r.category && /^\d+$/.test(r.count.trim())).map((r) => ({ category: r.category as string, count: Number(r.count) })), [manpower]);
   const hasLines = lines.some((l) => l.activityId);
   const [copying, setCopying] = useState(false);
-  const copyYesterday = async () => {
-    if (!projectId) return;
+  const snackbar = useSnackbar();
+  // The DPR before the report date, which may be days back after a holiday: the button names its date and lines.
+  const dayBefore = useMemo(() => {
+    if (!isIsoDate(date)) return null;
+    const prev = new Date(`${date}T00:00:00Z`);
+    prev.setUTCDate(prev.getUTCDate() - 1);
+    return prev.toISOString().slice(0, 10);
+  }, [date]);
+  const lastDpr = useFetch<Paginated<DailyReportDto>>((a) => a.get('/dpr', { projectId: projectId!, to: dayBefore!, pageSize: 1 }), [projectId, dayBefore], {
+    enabled: !editId && online && !!projectId && !!dayBefore,
+    refetchOnFocus: false,
+  });
+  const last = lastDpr.data?.items[0];
+  const copyLast = async () => {
+    if (!last) return;
     setCopying(true);
     try {
-      const prev = new Date(`${date}T00:00:00Z`);
-      prev.setUTCDate(prev.getUTCDate() - 1);
-      const list = await api.get<Paginated<DailyReportDto>>('/dpr', { projectId, to: prev.toISOString().slice(0, 10), pageSize: 1 });
-      const last = list.items[0];
-      const full = last?.lineCount ? await api.get<DailyReportDto>(`/dpr/${last.id}`) : null;
+      const full = last.lineCount ? await api.get<DailyReportDto>(`/dpr/${last.id}`) : null;
       if (!full?.lines?.length) {
-        setSubmitError(t('No work lines on the last DPR to copy'));
+        setSubmitError(t('The DPR of {date} has no work lines to copy', { date: formatDate(last.date) }));
         return;
       }
       setLines((rows) => [...rows.filter((r) => r.activityId), ...full.lines!.map((l) => copiedRow(l, newId()))]);
+      snackbar.show(t("Copied from the DPR of {date}: check today's quantities", { date: formatDate(last.date) }), { tone: 'info' });
     } catch (e) {
       setSubmitError(errorMessage(e));
     } finally {
@@ -312,7 +310,7 @@ export default function NewDprScreen() {
   const validate = () => {
     const e: Record<string, string> = {};
     if (!projectId) e.projectId = t('Choose a project');
-    if (!isIsoDate(date)) e.date = t('Enter a valid date');
+    if (!isIsoDate(date)) e.date = t('Pick the date from the calendar');
     if (!workExecuted.trim() && !hasLines) e.workExecuted = t('Describe the work executed today, or add a work line');
     const lineProblem = linesProblem(lines, t, workOptions.data ?? null, def, language);
     if (lineProblem) e.lines = lineProblem;
@@ -391,7 +389,7 @@ export default function NewDprScreen() {
             payload: { projectId, ...body },
             photos: [...toOutboxPhotos(photos), ...lines.filter((r) => r.activityId).flatMap((r) => toOutboxPhotos(r.photos, r.id))],
             title: `DPR · ${formatDate(date)}`,
-            subtitle: `${projectName} · ${t('{n} manpower', { n: totalManpower })}`,
+            subtitle: `${projectName} · ${t('{n} on site', { n: totalManpower })}`,
           }),
         );
       };
@@ -419,7 +417,7 @@ export default function NewDprScreen() {
     return <QueuedSuccess title={t('Saved on this phone')} subtitle={`${queued.title} · ${queued.subtitle}`} />;
   }
   if (created) {
-    return <SubmitSuccess title={editId ? t('DPR resubmitted') : t('DPR submitted')} subtitle={`${created.projectName} · ${formatDate(created.date)} · ${t('{n} manpower. Sent for approval.', { n: created.totalManpower })}`} detailHref={`/dpr/${created.id}`} />;
+    return <SubmitSuccess title={editId ? t('DPR resubmitted') : t('DPR submitted')} subtitle={`${created.projectName} · ${formatDate(created.date)} · ${t('{n} on site. Sent for approval.', { n: created.totalManpower })}`} detailHref={`/dpr/${created.id}`} />;
   }
   if (projects.loading && !projects.data) return <Loading />;
   if (editId && existing.loading && !existing.data) return <Loading />;
@@ -427,7 +425,7 @@ export default function NewDprScreen() {
 
   return (
     <Screen keyboard scrollRef={errorSummary.scrollRef}>
-      <Stack.Screen options={{ title: editId ? t('Edit Daily Report') : outboxId ? t('Fix Daily Report') : t('New Daily Report') }} />
+      <Stack.Screen options={{ title: editId ? t('Edit daily report') : outboxId ? t('Fix daily report') : t('New daily report') }} />
       {askDraft ? <AskDraftNotice draft={askDraft} /> : <DraftNotice draft={draft} onStartOver={startOver} />}
       <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? projects.error} />
@@ -435,21 +433,21 @@ export default function NewDprScreen() {
       <OutboxRefusal item={refused} />
       <Card>
         <Select label={t('Project')} required value={projectId} options={projects.options} onChange={setProjectId} placeholder={t('Choose project')} error={errors.projectId} disabled={!!editId} />
-        <DatePicker label={t('Report date')} required value={date} onChange={setDate} error={errors.date} />
+        <DatePicker label={t('Date')} required value={date} onChange={setDate} error={errors.date} />
         {shows('weather') ? <Chips label={L('weather')} required={dprRequires(def, 'weather')} value={weather} options={weatherChips} onChange={setWeather} /> : null}
-        {errors.weather ? <Text style={styles.err}>{errors.weather}</Text> : null}
+        {errors.weather ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.err}>{errors.weather}</Text> : null}
         {shows('siteCondition') ? (
           <Input {...field()} label={L('siteCondition')} required={dprRequires(def, 'siteCondition')} value={siteCondition} onChangeText={setSiteCondition} placeholder={t('e.g. Workable, waterlogged at Km 16')} error={errors.siteCondition} containerStyle={ownDay.length ? undefined : styles.last} />
         ) : null}
         <OwnFieldInputs fields={ownDay} values={extra} onChange={setExtra} />
-        {errors.extra ? <Text style={styles.err}>{errors.extra}</Text> : null}
+        {errors.extra ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.err}>{errors.extra}</Text> : null}
       </Card>
 
       {shows('manpower') ? (
-        <Card title={L('manpower')} right={<Text style={styles.total}>{t('Total {n}', { n: totalManpower })}</Text>}>
+        <Card title={L('manpower')} right={<Text maxFontSizeMultiplier={maxFontScale} style={styles.total}>{t('Total {n}', { n: totalManpower })}</Text>}>
           {attendance ? (
             filledFrom === attendance.id && !manpowerEdited ? (
-              <Text style={styles.fromAttendance}>{attendance.text}</Text>
+              <Text maxFontSizeMultiplier={maxFontScale} style={styles.fromAttendance}>{attendance.text}</Text>
             ) : (
               <Button title={t('Use attendance figures')} variant="ghost" size="sm" icon="people-outline" onPress={() => applyAttendance(attendance)} />
             )
@@ -475,7 +473,7 @@ export default function NewDprScreen() {
               />
             </View>
           ))}
-          {errors.manpower ? <Text style={styles.err}>{errors.manpower}</Text> : null}
+          {errors.manpower ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.err}>{errors.manpower}</Text> : null}
           <Button
             title={t('Add category')}
             variant="ghost"
@@ -511,7 +509,7 @@ export default function NewDprScreen() {
               <RemoveBtn onPress={() => setMachinery((rows) => rows.filter((x) => x.key !== r.key))} />
             </View>
           ))}
-          {errors.machinery ? <Text style={styles.err}>{errors.machinery}</Text> : null}
+          {errors.machinery ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.err}>{errors.machinery}</Text> : null}
           <Button title={t('Add machine')} variant="ghost" size="sm" icon="add" onPress={() => setMachinery((rows) => [...rows, { key: newKey(), name: '', hours: '' }])} />
         </Card>
       ) : null}
@@ -519,7 +517,11 @@ export default function NewDprScreen() {
       {shows('lines') ? (
         <Card
           title={L('lines')}
-          right={!editId && online && projectId ? <Button title={t('Copy yesterday')} variant="ghost" size="sm" icon="copy-outline" onPress={copyYesterday} loading={copying} /> : null}
+          right={
+            !editId && online && last?.lineCount ? (
+              <Button title={t(last.lineCount === 1 ? 'Copy 1 line from {date}' : 'Copy {n} lines from {date}', { n: last.lineCount, date: formatDate(last.date) })} variant="ghost" size="sm" icon="copy-outline" onPress={() => void copyLast()} loading={copying} />
+            ) : null
+          }
         >
           <DprLinesEditor rows={lines} onChange={setLines} options={workOptions.data} def={def} headCount={headCount} newId={newId} error={errors.lines} />
         </Card>
@@ -541,7 +543,7 @@ export default function NewDprScreen() {
           <Input {...field({ multiline: true })} label={L('nextDayPlan')} required={dprRequires(def, 'nextDayPlan')} value={nextDayPlan} onChangeText={setNextDayPlan} multiline placeholder={t('Planned activities for tomorrow')} error={errors.nextDayPlan} />
         ) : null}
         {shows('photos') ? <PhotoPicker label={def.minPhotos ? `${L('photos')} (${t('at least {n}', { n: def.minPhotos })})` : undefined} photos={photos} onChange={setPhotos} /> : null}
-        {errors.photos ? <Text style={styles.err}>{errors.photos}</Text> : null}
+        {errors.photos ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.err}>{errors.photos}</Text> : null}
       </Card>
       <Button title={editId ? t('Resubmit DPR for approval') : t('Submit DPR for approval')} icon="send" onPress={submit} loading={busy} />
     </Screen>

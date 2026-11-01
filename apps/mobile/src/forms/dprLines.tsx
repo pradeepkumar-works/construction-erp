@@ -349,7 +349,7 @@ export function DprLinesEditor({
                 placeholder={t('Choose the valve')}
               />
             ) : null}
-            {a?.holdPoint ? <Text style={styles.hold}>{t('Hold point: approved after a passed inspection here')}</Text> : null}
+            {a?.holdPoint ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.hold}>{t('Hold point: approved after a passed inspection here')}</Text> : null}
             {byPlace && places.includes('CHAINAGE') ? (
               <View style={styles.row}>
                 <Input label={t('Chainage from')} value={r.chainageFrom} onChangeText={(v) => update(r.key, { chainageFrom: v })} placeholder={sector?.chainageStart !== null && sector?.chainageStart !== undefined ? formatChainage(sector.chainageStart) : '14+200'} keyboardType="numbers-and-punctuation" containerStyle={styles.grow} />
@@ -384,7 +384,7 @@ export function DprLinesEditor({
 
             {shows('crew') ? (
               <>
-                <Text style={typography.label}>{t('Crew')}</Text>
+                <Text maxFontSizeMultiplier={maxFontScale} style={typography.label}>{t('Crew')}</Text>
                 {r.crew.map((c) => (
                   <View key={c.key} style={styles.row}>
                     <View style={styles.grow}>
@@ -407,7 +407,7 @@ export function DprLinesEditor({
 
             {shows('machines') ? (
               <>
-                <Text style={typography.label}>{t('Machines')}</Text>
+                <Text maxFontSizeMultiplier={maxFontScale} style={typography.label}>{t('Machines')}</Text>
                 {r.machines.map((m) => (
                   <View key={m.key} style={styles.row}>
                     <View style={styles.grow}>
@@ -434,8 +434,8 @@ export function DprLinesEditor({
 
             {shows('material') ? (
               <>
-                <Text style={typography.label}>{t('Material used')}</Text>
-                {a && !a.norms.length && !r.materials.length ? <Text style={styles.note}>{t('No norms for this activity; add what was used.')}</Text> : null}
+                <Text maxFontSizeMultiplier={maxFontScale} style={typography.label}>{t('Material used')}</Text>
+                {a && !a.norms.length && !r.materials.length ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.note}>{t('No norms for this activity; add what was used.')}</Text> : null}
                 {r.materials.map((m) => {
                   const unit = options?.items.find((x) => x.id === m.itemId)?.unit;
                   return (
@@ -482,10 +482,10 @@ export function DprLinesEditor({
           </View>
         );
       })}
-      {error ? <Text style={styles.err}>{error}</Text> : null}
+      {error ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.err}>{error}</Text> : null}
       <Button title={t('Add work line')} variant="ghost" icon="add" onPress={() => onChange([...rows, newLineRow(newId())])} />
       {shows('crew') && rows.some((r) => r.activityId) && check.headCount !== null ? (
-        <Text style={styles.note}>
+        <Text maxFontSizeMultiplier={maxFontScale} style={styles.note}>
           {check.difference === 0
             ? t('All {n} on site are on a work line', { n: check.headCount })
             : check.difference! > 0

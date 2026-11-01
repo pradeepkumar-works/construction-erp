@@ -6,7 +6,7 @@ import { canKeepStock, canRecordAttendance } from '@erp/shared';
 import { useAuth } from '../auth/AuthContext';
 import { Touchable } from '../components/Touchable';
 import { useT } from '../i18n/LanguageContext';
-import { colors, fontSize, radius, spacing } from '../theme';
+import { colors, fontSize, maxFontScale, radius, spacing } from '../theme';
 
 /**
  * New entry in My work: the forms a site fills in every day, four across. Site supervisors get Attendance, the store
@@ -20,7 +20,7 @@ export function NewEntries() {
     <View style={styles.row}>
       <Entry icon="trending-up" label={t('Progress')} onPress={() => router.push('/progress/new')} />
       <Entry icon="document-text-outline" label="DPR" onPress={() => router.push('/dpr/new')} />
-      <Entry icon="cube-outline" label={t('Material')} onPress={() => router.push('/material-request/new')} />
+      <Entry icon="cube-outline" label={t('Indent')} onPress={() => router.push('/material-request/new')} />
       {user && canRecordAttendance(user.roleKey) ? <Entry icon="people-outline" label={t('Attendance')} onPress={() => router.push('/attendance')} /> : null}
       {user && canKeepStock(user.roleKey) && !canRecordAttendance(user.roleKey) ? <Entry icon="file-tray-stacked-outline" label={t('Stock')} onPress={() => router.push('/stock')} /> : null}
     </View>
@@ -32,7 +32,7 @@ function Entry({ icon, label, onPress }: { icon: keyof typeof Ionicons.glyphMap;
   return (
     <Touchable onPress={onPress} accessibilityRole="button" accessibilityLabel={t('New {label}', { label })} style={styles.entry}>
       <Ionicons name={icon} size={24} color={colors.primary} />
-      <Text style={styles.label} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.86}>
+      <Text maxFontSizeMultiplier={maxFontScale} style={styles.label} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.86}>
         {label}
       </Text>
     </Touchable>

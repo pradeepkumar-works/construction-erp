@@ -26,7 +26,7 @@ export function Input({ label, error, hint, required, containerStyle, right, sty
       {label ? (
         <Text style={styles.label} maxFontSizeMultiplier={maxFontScale}>
           {label}
-          {required ? <Text style={styles.req}> *</Text> : null}
+          {required ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.req}> *</Text> : null}
         </Text>
       ) : null}
       <View style={[styles.inputWrap, !!error && styles.inputError, multiline && styles.multilineWrap]}>

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Alert, Platform, StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
   LEAVE_STATUS_LABELS,
@@ -22,8 +22,10 @@ import { useApi, useFetch } from '../src/api/hooks';
 import { errorMessage } from '../src/api/client';
 import { useT } from '../src/i18n/LanguageContext';
 import type { TranslateVars } from '../src/i18n/translate';
-import { Button, Card, Chips, DatePicker, EmptyState, ErrorBanner, ErrorState, Input, Loading, Pill, Screen, SectionTitle } from '../src/components';
-import { colors, fontSize, spacing, toneIcon, typography, type Tone } from '../src/theme';
+import { Button, Card, Chips, DatePicker, EmptyState, ErrorBanner, ErrorState, Input, Loading, Pill, ReasonSheet, Screen, SectionTitle, useSnackbar } from '../src/components';
+import { DraftNotice, useFormDraft, useLeaveGuard } from '../src/forms/draft';
+import { ErrorSummary, useErrorSummary } from '../src/forms/errors';
+import { colors, fontSize, maxFontScale, spacing, type Tone, toneIcon, typography } from '../src/theme';
 import { formatDate, formatTime, isIsoDate, today } from '../src/utils/format';
 import { metres } from '../src/utils/location';
 import { useFaceMark } from '../src/home/faceMark';
@@ -52,16 +54,16 @@ function LeaveRow({ l, mine, busy, onCancel, onApprove, onReject }: { l: LeaveRe
   return (
     <View style={styles.row}>
       <View style={styles.rowHead}>
-        <Text style={typography.bodyStrong}>{mine ? t(LEAVE_TYPE_LABELS[l.type]) : l.employeeName}</Text>
+        <Text maxFontSizeMultiplier={maxFontScale} style={typography.bodyStrong}>{mine ? t(LEAVE_TYPE_LABELS[l.type]) : l.employeeName}</Text>
         <Pill text={t(LEAVE_STATUS_LABELS[l.status])} {...STATUS_TONE[l.status]} />
       </View>
-      <Text style={typography.caption}>
+      <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
         {mine ? '' : `${t(LEAVE_TYPE_LABELS[l.type])} · `}
         {span(l, t)} · {days(l.days, t)}
       </Text>
-      <Text style={typography.caption}>{l.reason}</Text>
+      <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{l.reason}</Text>
       {l.decidedByName ? (
-        <Text style={typography.caption}>
+        <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
           {t('{status} by {name}', { status: t(LEAVE_STATUS_LABELS[l.status]), name: l.decidedByName })}
           {l.decisionNote ? `: ${l.decisionNote}` : ''}
         </Text>
@@ -96,13 +98,13 @@ function OvertimeRow({ a, busy, onApprove, onReject }: { a: StaffAttendanceDto; 
   return (
     <View style={styles.row}>
       <View style={styles.rowHead}>
-        <Text style={typography.bodyStrong}>{a.employeeName}</Text>
-        <Text style={typography.bodyStrong}>{t('{h} h', { h: a.overtimeHours ?? '0' })}</Text>
+        <Text maxFontSizeMultiplier={maxFontScale} style={typography.bodyStrong}>{a.employeeName}</Text>
+        <Text maxFontSizeMultiplier={maxFontScale} style={typography.bodyStrong}>{t('{h} h', { h: a.overtimeHours ?? '0' })}</Text>
       </View>
-      <Text style={typography.caption}>
+      <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
         {formatDate(a.date)} · {a.checkIn ? t('In {in} · Out {out}', { in: clock(a.checkIn), out: clock(a.checkOut) }) : t('In the register')}
       </Text>
-      {a.projectName ? <Text style={typography.caption}>{a.projectName}</Text> : null}
+      {a.projectName ? <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{a.projectName}</Text> : null}
       <View style={styles.pills}>
         <PlacePill place={a.checkInPlace} />
       </View>
@@ -137,6 +139,27 @@ export default function StaffScreen() {
   const [halfDay, setHalfDay] = useState(false);
   const [reason, setReason] = useState('');
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [rejecting, setRejecting] = useState<{ kind: 'leave'; l: LeaveRequestDto } | { kind: 'overtime'; a: StaffAttendanceDto } | null>(null);
+  const snackbar = useSnackbar();
+  const errorSummary = useErrorSummary();
+  const draft = useFormDraft('leave', { applying, type, from, to, halfDay, reason }, (d) => {
+    setApplying(d.applying);
+    setType(d.type);
+    setFrom(d.from);
+    setTo(d.to);
+    setHalfDay(d.halfDay);
+    setReason(d.reason);
+  });
+  useLeaveGuard(draft, { keepsDraft: true, busy });
+  const startOver = () => {
+    setApplying(false);
+    setType('CASUAL');
+    setFrom(today());
+    setTo(today());
+    setHalfDay(false);
+    setReason('');
+    setFormErrors({});
+  };
 
   const data = me.data;
   const holidays = useMemo(() => new Set((data?.holidays ?? []).map((h) => h.date)), [data]);
@@ -149,7 +172,7 @@ export default function StaffScreen() {
     try {
       await fn();
       await Promise.all([me.reload(), toDecide.reload(), overtime.reload()]);
-      Alert.alert(done);
+      snackbar.show(done);
       return true;
     } catch (e) {
       setError(errorMessage(e));
@@ -162,36 +185,31 @@ export default function StaffScreen() {
   const apply = async () => {
     const e: Record<string, string> = {};
     if (!type) e.type = t('Choose the leave');
-    if (!isIsoDate(from)) e.from = t('Enter a valid date');
-    if (!isIsoDate(to)) e.to = t('Enter a valid date');
+    if (!isIsoDate(from)) e.from = t('Pick the date from the calendar');
+    if (!isIsoDate(to)) e.to = t('Pick the date from the calendar');
     else if (isIsoDate(from) && to < from) e.to = t('The leave cannot end before it starts');
     if (!reason.trim()) e.reason = t('Enter a reason');
     setFormErrors(e);
+    errorSummary.report(e);
     if (Object.keys(e).length) return;
     const ok = await run(() => api.post('/staff/leave', { type, fromDate: from, toDate: to, halfDay: halfDay && from === to, reason: reason.trim() }), t('Leave applied. Your site manager and HR have been told.'));
     if (ok) {
+      draft.clear();
       setApplying(false);
       setReason('');
       setHalfDay(false);
     }
   };
 
-  const reject = (l: LeaveRequestDto) =>
-    Platform.OS === 'ios'
-      ? Alert.prompt(t('Reject leave'), t('Why, so they can plan again'), (note) => note?.trim() && void run(() => api.post(`/staff/leave/${l.id}/reject`, { note: note.trim() }), t('Leave rejected')))
-      : Alert.alert(t('Reject leave'), t("Reject {name}'s leave?", { name: l.employeeName }), [
-          { text: t('Keep'), style: 'cancel' },
-          { text: t('Reject'), style: 'destructive', onPress: () => void run(() => api.post(`/staff/leave/${l.id}/reject`, { note: 'Not possible on these dates; please speak to me' }), t('Leave rejected')) },
-        ]);
-
-  const rejectOvertime = (a: StaffAttendanceDto) => {
-    const send = (note: string) => void run(() => api.post(`/staff/attendance/${a.id}/overtime/reject`, { note }), t('Overtime rejected'));
-    return Platform.OS === 'ios'
-      ? Alert.prompt(t('Reject overtime'), t('Why, so they know what counts'), (note) => note?.trim() && send(note.trim()))
-      : Alert.alert(t('Reject overtime'), t("Reject {name}'s {h} h overtime on {date}?", { name: a.employeeName, h: a.overtimeHours ?? '0', date: formatDate(a.date) }), [
-          { text: t('Keep'), style: 'cancel' },
-          { text: t('Reject'), style: 'destructive', onPress: () => send('Not agreed in advance; please speak to me') },
-        ]);
+  // The reason is the approver's own words: the person reads it on their request.
+  const sendReject = async (note: string) => {
+    if (!rejecting) return;
+    const r = rejecting;
+    setError(null);
+    if (r.kind === 'leave') await api.post(`/staff/leave/${r.l.id}/reject`, { note });
+    else await api.post(`/staff/attendance/${r.a.id}/overtime/reject`, { note });
+    await Promise.all([me.reload(), toDecide.reload(), overtime.reload()]);
+    snackbar.show(r.kind === 'leave' ? t('Leave rejected for {name}', { name: r.l.employeeName }) : t('Overtime rejected for {name}', { name: r.a.employeeName }), { tone: 'info' });
   };
 
   const face = useFaceMark(me.reload);
@@ -204,27 +222,29 @@ export default function StaffScreen() {
   const waiting = toDecide.data?.items ?? [];
   const otWaiting = overtime.data ?? [];
   return (
-    <Screen keyboard refreshing={me.refreshing} onRefresh={() => void Promise.all([me.refresh(), toDecide.refresh(), overtime.refresh()])}>
+    <Screen keyboard scrollRef={errorSummary.scrollRef} refreshing={me.refreshing} onRefresh={() => void Promise.all([me.refresh(), toDecide.refresh(), overtime.refresh()])}>
+      <DraftNotice draft={draft} onStartOver={startOver} />
+      <ErrorSummary errors={formErrors} />
       <ErrorBanner message={error} />
       {!data.employee ? (
         <Card>
-          <Text style={typography.body}>{t('Your login is not linked to a staff record. Ask HR to link it, then you can mark in and apply for leave here.')}</Text>
+          <Text maxFontSizeMultiplier={maxFontScale} style={typography.body}>{t('Your login is not linked to a staff record. Ask HR to link it, then you can mark in and apply for leave here.')}</Text>
         </Card>
       ) : (
         <>
           <Card title={t('Today, {date}', { date: formatDate(today()) })}>
             {data.todayOff && !day ? (
-              <Text style={typography.caption}>
-                {data.todayOff === 'Sunday' ? t('Sunday, the weekly off.') : t('Holiday: {name}.', { name: data.todayOff })} {t('Working today earns a comp-off.')}
+              <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
+                {data.todayOff === 'Sunday' ? t('Weekly off.') : t('Holiday: {name}.', { name: data.todayOff })} {t('Working today earns a comp-off.')}
               </Text>
             ) : null}
             {day ? (
               <>
-                <Text style={typography.bodyStrong}>
+                <Text maxFontSizeMultiplier={maxFontScale} style={typography.bodyStrong}>
                   {t(STAFF_ATTENDANCE_LABELS[day.status])}
                   {day.projectName ? ` ${t('at {project}', { project: day.projectName })}` : ''}
                 </Text>
-                <Text style={typography.caption}>
+                <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
                   {t('In {in} · Out {out}', { in: clock(day.checkIn), out: clock(day.checkOut) })}
                   {day.overtimeHours && Number(day.overtimeHours) > 0 ? ` · ${t('Overtime {h} h', { h: day.overtimeHours })}` : ''}
                 </Text>
@@ -234,13 +254,13 @@ export default function StaffScreen() {
                     <Pill text={t('Overtime: {status}', { status: t(OVERTIME_STATUS_LABELS[day.overtimeStatus]).toLowerCase() })} {...OVERTIME_TONE[day.overtimeStatus]} />
                   ) : null}
                 </View>
-                {day.overtimeStatus === 'PENDING' ? <Text style={typography.caption}>{t('Overtime is paid once your manager approves it.')}</Text> : null}
+                {day.overtimeStatus === 'PENDING' ? <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('Overtime is paid once your manager approves it.')}</Text> : null}
               </>
             ) : (
-              <Text style={typography.caption}>{t('Not marked in yet.')}</Text>
+              <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('Not marked in yet.')}</Text>
             )}
             {!day?.checkIn && data.site ? (
-              <Text style={typography.caption}>
+              <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
                 {t(data.site.strict ? 'Mark in records your location: you must be within {distance} of {site}.' : 'Mark in records your location: it is flagged if you are more than {distance} from {site}.', {
                   distance: metres(data.site.radiusM),
                   site: data.site.projectName,
@@ -262,12 +282,12 @@ export default function StaffScreen() {
                 .filter((b) => b.entitled !== null)
                 .map((b) => (
                   <View key={b.type} style={styles.balance}>
-                    <Text style={typography.h2}>
+                    <Text maxFontSizeMultiplier={maxFontScale} style={typography.h2}>
                       {b.left}
-                      <Text style={typography.caption}> / {b.entitled}</Text>
+                      <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}> / {b.entitled}</Text>
                     </Text>
-                    <Text style={typography.caption}>{t(LEAVE_TYPE_LABELS[b.type])}</Text>
-                    {b.pending ? <Text style={typography.caption}>{t('{n} waiting', { n: b.pending })}</Text> : null}
+                    <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t(LEAVE_TYPE_LABELS[b.type])}</Text>
+                    {b.pending ? <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('{n} waiting', { n: b.pending })}</Text> : null}
                   </View>
                 ))}
             </View>
@@ -277,7 +297,7 @@ export default function StaffScreen() {
           {applying ? (
             <Card title={t('Apply for leave')}>
               <Chips label={t('Leave')} required value={type} clearable={false} onChange={setType} options={LEAVE_TYPES.map((x) => ({ value: x, label: t(LEAVE_TYPE_LABELS[x]) }))} />
-              {formErrors.type ? <Text style={styles.err}>{formErrors.type}</Text> : null}
+              {formErrors.type ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.err}>{formErrors.type}</Text> : null}
               <DatePicker
                 label={t('From')}
                 required
@@ -292,7 +312,7 @@ export default function StaffScreen() {
               {from === to ? <Chips value={halfDay ? 'HALF' : 'FULL'} clearable={false} onChange={(v) => setHalfDay(v === 'HALF')} options={[{ value: 'FULL', label: t('Full day') }, { value: 'HALF', label: t('Half day') }]} /> : null}
               <Input label={t('Reason')} required value={reason} onChangeText={setReason} error={formErrors.reason} maxLength={500} multiline />
               {taking !== null ? (
-                <Text style={[typography.caption, (taking === 0 || (balance?.left != null && balance.left < taking)) && styles.errText]}>
+                <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, (taking === 0 || (balance?.left != null && balance.left < taking)) && styles.errText]}>
                   {taking === 0 ? t('Those days are Sundays or holidays.') : t('Takes {days} (Sundays and holidays not counted).', { days: days(taking, t) })}
                   {balance && balance.left !== null ? ` ${t('{days} left.', { days: days(balance.left, t) })}` : ''}
                 </Text>
@@ -308,14 +328,14 @@ export default function StaffScreen() {
 
       {waiting.length ? (
         <>
-          <SectionTitle title={t('Leave waiting on you ({n})', { n: waiting.length })} />
+          <SectionTitle title={t('Leave waiting on you')} count={waiting.length} />
           {waiting.map((l) => (
             <LeaveRow
               key={l.id}
               l={l}
               busy={busy}
               onApprove={() => void run(() => api.post(`/staff/leave/${l.id}/approve`, {}), t('Leave approved for {name}', { name: l.employeeName }))}
-              onReject={() => reject(l)}
+              onReject={() => setRejecting({ kind: 'leave', l })}
             />
           ))}
         </>
@@ -323,14 +343,14 @@ export default function StaffScreen() {
 
       {otWaiting.length ? (
         <>
-          <SectionTitle title={t('Overtime waiting on you ({n})', { n: otWaiting.length })} />
+          <SectionTitle title={t('Overtime waiting on you')} count={otWaiting.length} />
           {otWaiting.map((a) => (
             <OvertimeRow
               key={a.id}
               a={a}
               busy={busy}
               onApprove={() => void run(() => api.post(`/staff/attendance/${a.id}/overtime/approve`, {}), t('Overtime approved for {name}', { name: a.employeeName }))}
-              onReject={() => rejectOvertime(a)}
+              onReject={() => setRejecting({ kind: 'overtime', a })}
             />
           ))}
         </>
@@ -364,12 +384,32 @@ export default function StaffScreen() {
         <Card title={t('Coming holidays')}>
           {data.holidays.map((h) => (
             <View key={h.id} style={styles.holiday}>
-              <Text style={typography.body}>{h.name}</Text>
-              <Text style={typography.caption}>{formatDate(h.date)}</Text>
+              <Text maxFontSizeMultiplier={maxFontScale} style={typography.body}>{h.name}</Text>
+              <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{formatDate(h.date)}</Text>
             </View>
           ))}
         </Card>
       ) : null}
+
+      <ReasonSheet
+        visible={!!rejecting}
+        onClose={() => setRejecting(null)}
+        title={rejecting?.kind === 'overtime' ? 'Reject overtime' : 'Reject leave'}
+        subtitle={
+          rejecting?.kind === 'leave'
+            ? `${rejecting.l.employeeName} · ${span(rejecting.l, t)}`
+            : rejecting?.kind === 'overtime'
+              ? `${rejecting.a.employeeName} · ${t('{h} h', { h: rejecting.a.overtimeHours ?? '0' })} · ${formatDate(rejecting.a.date)}`
+              : undefined
+        }
+        field="Reason for rejecting"
+        quick={rejecting?.kind === 'overtime' ? ['Not agreed in advance', 'Hours do not match the register'] : ['Too many people away on those dates', 'Work planned on those dates needs you']}
+        required
+        missing={rejecting?.kind === 'overtime' ? 'Say why, so they know what counts' : 'Say why, so they can plan again'}
+        confirm="Reject"
+        variant="danger"
+        onConfirm={sendReject}
+      />
 
       {user && canMarkStaff(user.roleKey) ? <Button title={t('Staff register')} icon="people-outline" variant="secondary" onPress={() => router.push('/staff-register')} /> : null}
     </Screen>

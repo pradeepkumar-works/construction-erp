@@ -13,7 +13,7 @@ import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
 import { useSectorInputs, type SectorDraft } from '../../src/forms/sector';
 import { useT } from '../../src/i18n/LanguageContext';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
-import { colors, fontSize, spacing, typography } from '../../src/theme';
+import { colors, fontSize, maxFontScale, spacing, typography } from '../../src/theme';
 import { fmtQty, formatDate, isIsoDate, today } from '../../src/utils/format';
 import { useFieldChain } from '../../src/forms/keyboard';
 
@@ -145,7 +145,7 @@ export default function NewProgressScreen() {
     const e: Record<string, string> = {};
     if (!projectId) e.projectId = t('Choose a project');
     if (!activityId) e.activityId = t('Choose an activity');
-    if (!isIsoDate(date)) e.date = t('Enter a valid date');
+    if (!isIsoDate(date)) e.date = t('Pick the date from the calendar');
     const q = Number(quantity);
     if (!quantity.trim() || Number.isNaN(q) || q <= 0) e.quantity = t('Enter a quantity greater than 0');
     sector.validate(e);
@@ -246,7 +246,7 @@ export default function NewProgressScreen() {
 
   return (
     <Screen keyboard scrollRef={errorSummary.scrollRef}>
-      <Stack.Screen options={{ title: editId ? t('Edit Progress Entry') : outboxId ? t('Fix Progress Entry') : t('New Progress Entry') }} />
+      <Stack.Screen options={{ title: editId ? t('Edit progress entry') : outboxId ? t('Fix progress entry') : t('New progress entry') }} />
       <DraftNotice draft={draft} onStartOver={startOver} />
       <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? projects.error} />
@@ -267,9 +267,9 @@ export default function NewProgressScreen() {
         />
         {activity ? (
           <View style={styles.activityInfo}>
-            <Text style={typography.caption}>
-              {t('Unit')} <Text style={styles.strong}>{activity.unit}</Text> · {t('Planned qty')} <Text style={styles.strong}>{fmtQty(activity.plannedQty)}</Text> · {t('Executed')} <Text style={styles.strong}>{fmtQty(activity.executedQty)}</Text> · {t('Balance')}{' '}
-              <Text style={styles.strong}>{fmtQty(Math.max(0, Number(activity.plannedQty) - Number(activity.executedQty)))}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
+              {t('Unit')} <Text maxFontSizeMultiplier={maxFontScale} style={styles.strong}>{activity.unit}</Text> · {t('Planned qty')} <Text maxFontSizeMultiplier={maxFontScale} style={styles.strong}>{fmtQty(activity.plannedQty)}</Text> · {t('Executed')} <Text maxFontSizeMultiplier={maxFontScale} style={styles.strong}>{fmtQty(activity.executedQty)}</Text> · {t('Balance')}{' '}
+              <Text maxFontSizeMultiplier={maxFontScale} style={styles.strong}>{fmtQty(Math.max(0, Number(activity.plannedQty) - Number(activity.executedQty)))}</Text>
             </Text>
           </View>
         ) : null}
@@ -288,11 +288,11 @@ export default function NewProgressScreen() {
       </Card>
       <Card title={t('Details (optional)')}>
         <Input {...field()} label={t('Location')} value={location} onChangeText={setLocation} placeholder={t('e.g. LHS, grid C4-D7')} />
-        <Input {...field()} label={t('Manpower count')} value={manpower} onChangeText={setManpower} keyboardType="number-pad" placeholder={t('e.g. 18')} error={errors.manpower} />
+        <Input {...field()} label={t('Manpower')} value={manpower} onChangeText={setManpower} keyboardType="number-pad" placeholder={t('e.g. 18')} error={errors.manpower} />
         <Input {...field()} label={t('Machinery used')} value={machinery} onChangeText={setMachinery} placeholder={t('e.g. Grader, Roller')} />
         <Input {...field({ multiline: true })} label={t('Remarks')} value={remarks} onChangeText={setRemarks} multiline placeholder={t('Anything the PM should know')} />
-        <PhotoPicker photos={photos} onChange={setPhotos} />
-        {errors.photos ? <Text style={styles.err}>{errors.photos}</Text> : null}
+        <PhotoPicker photos={photos} onChange={setPhotos} label={t('Site photos')} />
+        {errors.photos ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.err}>{errors.photos}</Text> : null}
       </Card>
       <Button title={editId ? t('Resubmit for approval') : t('Submit for approval')} icon="send" onPress={submit} loading={busy} />
     </Screen>

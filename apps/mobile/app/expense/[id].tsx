@@ -5,7 +5,7 @@ import type { ExpenseDto } from '@erp/shared';
 import { EXPENSE_CATEGORY_LABELS, PAYMENT_MODE_LABELS } from '@erp/shared';
 import { useFetch } from '../../src/api/hooks';
 import { AttachmentGallery, Card, ErrorState, KeyValue, Loading, ReviewActions, Screen, SubmissionHeader, SubmitterActions } from '../../src/components';
-import { colors, spacing, typography } from '../../src/theme';
+import { colors, maxFontScale, spacing, typography } from '../../src/theme';
 import { formatDate, formatMoney } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 
@@ -26,8 +26,8 @@ export default function ExpenseScreen() {
       <SubmissionHeader item={data} title={data.description} subtitle={`${data.expenseNo} · ${formatDate(data.date)}`} />
       <Card>
         <View style={styles.box}>
-          <Text style={styles.total}>{rupees(data.totalAmount)}</Text>
-          <Text style={typography.caption}>
+          <Text maxFontSizeMultiplier={maxFontScale} style={styles.total}>{rupees(data.totalAmount)}</Text>
+          <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
             {rupees(data.amount)} + GST {Number(data.gstRate)}% {rupees(data.gstAmount)}
           </Text>
         </View>
