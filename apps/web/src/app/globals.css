@@ -44,24 +44,6 @@ a {
   background-color: var(--brand-ink);
 }
 
-/* The blueprint grid, faded out towards the top so the headline sits on clean navy. */
-.auth-aside::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(color-mix(in srgb, var(--brand-accent-light) 8%, transparent) 1px, transparent 1px),
-    linear-gradient(90deg, color-mix(in srgb, var(--brand-accent-light) 8%, transparent) 1px, transparent 1px);
-  background-size: 32px 32px;
-  -webkit-mask-image: linear-gradient(to top, var(--ant-color-text-base) 0%, transparent 70%);
-  mask-image: linear-gradient(to top, var(--ant-color-text-base) 0%, transparent 70%);
-  pointer-events: none;
-}
-
-.auth-aside > * {
-  position: relative;
-}
-
 .auth-brand {
   display: inline-flex;
   align-items: center;
@@ -70,20 +52,10 @@ a {
 
 .auth-pitch {
   max-width: 440px;
-  animation: auth-rise 700ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
-}
-
-.auth-kicker {
-  margin: 0 0 16px;
-  font-size: var(--ant-font-size-sm);
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--brand-accent-light);
 }
 
 .auth-headline {
-  margin: 0;
+  margin: 0 0 28px;
   font-family: var(--font-display), 'Arial Narrow', Arial, sans-serif;
   font-stretch: 85%;
   font-weight: 800;
@@ -92,16 +64,6 @@ a {
   letter-spacing: -0.01em;
   text-wrap: balance;
   color: var(--ant-color-text-light-solid);
-}
-
-/* The datum line from the logo, under the headline. */
-.auth-datum {
-  display: block;
-  width: 56px;
-  height: 4px;
-  margin: 28px 0;
-  border-radius: 2px;
-  background: var(--brand-accent);
 }
 
 .auth-points {
@@ -147,7 +109,6 @@ a {
   width: 100%;
   margin: auto;
   padding: 48px 0;
-  animation: auth-rise 500ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 
 .auth-brand-compact {
@@ -304,24 +265,6 @@ a {
 @keyframes app-icon-spin {
   to {
     transform: rotate(360deg);
-  }
-}
-
-@keyframes auth-rise {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .auth-pitch,
-  .auth-form {
-    animation: none;
   }
 }
 

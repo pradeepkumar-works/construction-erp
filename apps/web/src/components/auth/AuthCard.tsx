@@ -24,9 +24,7 @@ export function AuthCard({ title, subtitle, children, width = 400 }: { title?: R
           <Wordmark color={themeColor('colorTextLightSolid')} size={20} />
         </Link>
         <div className="auth-pitch">
-          <p className="auth-kicker">Construction ERP</p>
           <h2 className="auth-headline">From site to Tally, in one place.</h2>
-          <span className="auth-datum" />
           <ul className="auth-points">
             {POINTS.map((p) => (
               <li key={p}>{p}</li>
