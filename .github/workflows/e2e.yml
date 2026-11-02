@@ -166,6 +166,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/list-views-test.js
+      - name: A project area's summary puts every warning and entry in its area, and orders what waits by money, then age
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/project-areas-test.js
       - name: Screens open on a month with figures in it, and history notes read rupees and days as people write them
         if: matrix.suite == 'flows'
         working-directory: apps/api

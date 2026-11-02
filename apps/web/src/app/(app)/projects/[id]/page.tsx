@@ -15,7 +15,8 @@ import { ProjectStatusTag, ProjectTypeTag } from '@/components/common/StatusTag'
 import { ProjectOverview } from '@/components/projects/ProjectOverview';
 import { ProjectFormModal } from '@/components/projects/ProjectFormModal';
 import { ProjectHealth, useProjectHealth } from '@/components/projects/ProjectHealth';
-import { CompactTitle, ProjectWorkspace, type WorkspaceTab } from '@/components/projects/ProjectWorkspace';
+import { CompactTitle, ProjectWorkspace, workspaceTabs, type WorkspaceTab } from '@/components/projects/ProjectWorkspace';
+import { AreaSummary } from '@/components/projects/summaries/AreaSummary';
 import { SectorPanel, sectorTabLabel } from '@/components/sector/SectorPanel';
 import { StructurePanel } from '@/components/structure/StructurePanel';
 import { PipeNetworkPanel } from '@/components/pipes/PipeNetworkPanel';
@@ -94,6 +95,7 @@ function ProjectPage({ project }: { project: ProjectDetail }) {
 
   const all: (WorkspaceTab | false)[] = [
     { key: 'overview', group: 'overview', label: 'Overview', children: <ProjectOverview project={project} /> },
+    { key: 'plan-summary', group: 'plan', label: 'Summary', children: <AreaSummary project={project} area="plan" /> },
     { key: 'structure', group: 'plan', label: 'Components', children: <StructurePanel project={project} /> },
     can(project.pipeNetwork) && { key: 'pipes', group: 'plan', label: 'Pipe network', children: <PipeNetworkPanel project={project} /> },
     can(project.contractModel === 'EPC' && !!user && canViewEpc(user.roleKey)) && { key: 'epc', group: 'plan', label: 'Engineering and packages', children: <EpcPanel project={project} /> },
@@ -103,6 +105,7 @@ function ProjectPage({ project }: { project: ProjectDetail }) {
     { key: 'lookahead', group: 'plan', label: 'Look-ahead', children: <LookaheadPanel projectId={project.id} /> },
     can(!!user && canViewProgramme(user.roleKey)) && { key: 'programme', group: 'plan', label: 'Programme and EOT', children: <ProgrammeTab projectId={project.id} initialOpenId={search.get('eot') ?? search.get('revision') ?? undefined} /> },
     project.locations.length > 0 && { key: 'sector', group: 'plan', label: sectorTabLabel(project), children: <SectorPanel project={project} editable={editor} /> },
+    { key: 'site-summary', group: 'site', label: 'Summary', children: <AreaSummary project={project} area="site" /> },
     { key: 'progress', group: 'site', label: 'Progress entries', children: <ProgressList projectId={project.id} newLabel="New progress entry" /> },
     { key: 'dpr', group: 'site', label: 'Daily reports', children: <DprList projectId={project.id} newLabel="New daily report" /> },
     { key: 'attendance', group: 'site', label: 'Attendance', children: <AttendancePanel projectId={project.id} /> },
@@ -112,11 +115,13 @@ function ProjectPage({ project }: { project: ProjectDetail }) {
     can(!user?.modulesOff?.includes('safety')) && { key: 'safety', group: 'site', label: 'Safety', children: <SafetyPanel projectId={project.id} /> },
     { key: 'risks', group: 'site', label: 'Delays and risks', children: <RiskList projectId={project.id} /> },
     { key: 'documents', group: 'site', label: 'Documents', children: <ProjectDocumentsTab projectId={project.id} /> },
+    { key: 'materials-summary', group: 'materials', label: 'Summary', children: <AreaSummary project={project} area="materials" /> },
     { key: 'material', group: 'materials', label: 'Indents', children: <MrList projectId={project.id} newLabel="New indent" /> },
     can(!!user && canViewPurchaseOrders(user.roleKey)) && { key: 'po', group: 'materials', label: 'Purchase orders', children: <PurchaseOrderList projectId={project.id} /> },
     { key: 'stock', group: 'materials', label: 'Stock', children: <StockPanel projectId={project.id} /> },
     can(!!user && canViewReconciliation(user.roleKey)) && { key: 'reconciliation', group: 'materials', label: 'Material reconciliation', children: <ReconciliationPanel projectId={project.id} network={project.pipeNetwork} /> },
     { key: 'machinery', group: 'materials', label: 'Machinery', children: <MachineryPanel projectId={project.id} /> },
+    { key: 'money-summary', group: 'money', label: 'Summary', children: <AreaSummary project={project} area="money" /> },
     can(!!user && canViewContract(user.roleKey)) && { key: 'contract', group: 'money', label: 'Contract', children: <ContractPanel projectId={project.id} /> },
     can(!!user && canViewContract(user.roleKey)) && { key: 'bills', group: 'money', label: 'RA bills', children: <BillList projectId={project.id} /> },
     can(!!user && canViewVariations(user.roleKey)) && { key: 'variations', group: 'money', label: 'Variations', children: <VariationsPanel projectId={project.id} /> },
@@ -128,7 +133,7 @@ function ProjectPage({ project }: { project: ProjectDetail }) {
     can(!!user && !isGuest(user.roleKey)) && { key: 'handover', group: 'handover', label: 'Handover and closure', children: <HandoverPanel projectId={project.id} members={project.members} initialDefectId={search.get('defect') ?? undefined} /> },
     can(!!project.handedOverOn && !!user && canViewOm(user.roleKey)) && { key: 'om', group: 'handover', label: 'O&M', children: <OmPanel project={project} /> },
   ];
-  const tabs = all.filter((t): t is WorkspaceTab => !!t);
+  const tabs = workspaceTabs(all);
 
   // ?tab= wins (links from elsewhere); without it, the tab last open on this project in this browser. The remembered
   // tab only places the page as it opens: once a tab is picked the URL alone says which, so Overview (no ?tab=) opens.
