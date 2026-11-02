@@ -81,6 +81,11 @@ test('a frozen baseline shows how far the plan has moved since', async ({ page }
   expect(g.activities[0].finishSlipDays).toBe(10);
   expect(g.summary.slipped).toBe(1);
   await page.reload();
-  await expect(page.locator('.gantt-activity').filter({ hasText: 'Raft foundation' })).toContainText('+10 d');
+  await expect(page.locator('.gantt-activity').filter({ hasText: 'Raft foundation' })).toContainText('10 days late');
   await expect(page.locator('.gantt-activity .gantt-baseline')).toHaveCount(1);
+  // The summary leads with the finish against the baseline and what slipped, never "on time" alone.
+  const summary = page.getByTestId('schedule-summary');
+  await expect(summary).toContainText(`Finish: `);
+  await expect(summary).toContainText('10 days later than the baseline · 1 of 1 activity slipped');
+  await expect(summary).toContainText('Completion date ');
 });
