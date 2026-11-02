@@ -4,8 +4,7 @@ import { findMasterItem, masterCandidates } from './item-master';
 import {
   LEGACY_STOCK_ENTRY_TYPES,
   STOCK_ENTRY_PREFIX,
-  canManageStore,
-  canViewCost,
+  canViewStockValue,
   stockAgeingBucket,
   type StockCountResultDto,
   type StockValuationDto,
@@ -1004,7 +1003,7 @@ export class StockService {
    * taken to be the latest that came in: GRNs, transfers in, returns from site and positive adjustments).
    */
   async valuation(user: RequestUser, q: StockValuationQuery): Promise<StockValuationDto> {
-    if (!canManageStore(user.roleKey) && !canViewCost(user.roleKey)) throw new ForbiddenException('Stock value is for store managers, approvers and accounts');
+    if (!canViewStockValue(user.roleKey)) throw new ForbiddenException('Stock value is for store managers, approvers and accounts');
     if (q.projectId) await this.access.assertCanAccessProject(user, q.projectId);
     const asOf = todayIn();
     const today = parseDate(asOf).getTime();
@@ -1425,7 +1424,7 @@ export class StockService {
     const stores = await this.prisma.project.findMany({ where, select: { id: true, code: true, name: true, location: true, status: true }, orderBy: { code: 'asc' } });
     if (!stores.length) return [];
     const ids = stores.map((s) => s.id);
-    const showValue = canManageStore(user.roleKey) || canViewCost(user.roleKey);
+    const showValue = canViewStockValue(user.roleKey);
     const [balances, open] = await Promise.all([
       this.buildBalances(user.organizationId, where),
       this.prisma.stockEntry.findMany({

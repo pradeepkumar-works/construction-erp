@@ -202,13 +202,14 @@ export class WarningsService {
     private eot: EotService,
   ) {}
 
-  async list(user: RequestUser): Promise<WatchListDto> {
+  /** The caller's watch list; `only` computes just those kinds (a project area's summary). */
+  async list(user: RequestUser, only?: WarningKind[]): Promise<WatchListDto> {
     const kinds = watchListKinds(user.roleKey);
     if (!kinds.length) throw new ForbiddenException('The watch list is for managers, stores, purchase and accounts');
     const today = todayIn();
     const records = await this.records(user.organizationId, kinds, today);
     const paused = new Set(records.filter((r) => r.paused).map((r) => r.kind));
-    const warnings = (await this.compute(user, today)).filter((w) => !paused.has(w.kind));
+    const warnings = (await this.compute(user, today, only)).filter((w) => !paused.has(w.kind));
     const keys = warnings.map((w) => w.key);
     const dismissals = keys.length
       ? await this.prisma.warningDismissal.findMany({
