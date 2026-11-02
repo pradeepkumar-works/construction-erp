@@ -54,6 +54,7 @@
 }
 
 .gridBox {
+  position: relative;
   overflow-x: auto;
 }
 
@@ -94,4 +95,13 @@
 .missing {
   min-width: 3.5rem;
   background: var(--c-surface-sunken);
+}
+
+/* On a phone the site column gives up room so a few days show beside it. */
+@media (max-width: 767px) {
+  .placeHead,
+  .placeCell {
+    min-width: 8rem;
+    max-width: 10rem;
+  }
 }

@@ -69,14 +69,16 @@ export function useListFrame<S extends string, T>(opts: ListFrameTarget & {
   const waiting = approver && pending ? pending.filter((p) => p.type === opts.type && (!projectId || p.projectId === projectId)).length : undefined;
   const builtIns = (opts.type ? standardViews(user, opts.type, waiting) : [{ key: 'all', label: 'All', filters: {} }]).map((v) => (v.key === 'all' && opts.allLabel ? { ...v, label: opts.allLabel } : v));
 
+  const { view: _shownAs, ...withoutView } = page.filters;
   const views = !inUrl ? null : (
     <ListViews
       list={opts.list as SavedViewList}
       builtIns={[...builtIns, ...(opts.moreViews ?? [])]}
-      filters={page.filters}
+      filters={withoutView}
       columns={choice.visible}
       onApply={(filters, columns) => {
-        page.setFilters(filters);
+        // A view sets the filters, not the way the list is shown: Table stays Table.
+        page.setFilters(page.filters.view ? { ...filters, view: page.filters.view } : filters);
         if (columns) choice.setChosen(columns);
       }}
     />

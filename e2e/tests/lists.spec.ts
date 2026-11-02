@@ -9,16 +9,17 @@ test('a view sets the filters, which go in the address bar and come back from a 
   await signIn(page, 'pm@demo.com');
   await page.goto('/dpr?view=table');
   await page.getByRole('tab', { name: 'Waiting for me' }).click();
-  await expect(page).toHaveURL(/\/dpr\?status=SUBMITTED$/);
+  // The view sets the filters and keeps the list a table.
+  await expect(page).toHaveURL(/\/dpr\?status=SUBMITTED&view=table$/);
   await expect(page.getByRole('tab', { name: 'Waiting for me' })).toHaveAttribute('aria-selected', 'true');
   await expect(page.locator('.ant-tag').filter({ hasText: 'Status: Waiting for approval' })).toBeVisible();
 
   // A link with filters opens the list filtered, with the chips to take them off.
-  await page.goto('/dpr?status=APPROVED&from=2026-01-01');
+  await page.goto('/dpr?status=APPROVED&from=2026-01-01&view=table');
   await expect(page.locator('.ant-tag').filter({ hasText: 'From 01 Jan 2026' })).toBeVisible();
   await expect(page.getByRole('tab', { name: 'All' })).toHaveAttribute('aria-selected', 'false');
   await page.getByRole('button', { name: 'Clear all' }).click();
-  await expect(page).toHaveURL(/\/dpr$/);
+  await expect(page).toHaveURL(/\/dpr\?view=table$/);
   await expect(page.getByRole('tab', { name: 'All' })).toHaveAttribute('aria-selected', 'true');
 });
 

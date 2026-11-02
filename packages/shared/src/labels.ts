@@ -93,7 +93,7 @@ export const SUBMISSION_STATUS_SHORT_LABELS: Record<SubmissionStatus, string> = 
   SUBMITTED: 'Waiting',
   APPROVED: 'Approved',
   REJECTED: 'Rejected',
-  CHANGES_REQUESTED: 'Changes',
+  CHANGES_REQUESTED: 'Sent back',
 };
 
 export const APPROVAL_STEP_ACTION_LABELS: Record<ApprovalStepAction, string> = { APPROVED: 'Approved', ESCALATED: 'Escalated', REMINDED: 'Reminded' };
