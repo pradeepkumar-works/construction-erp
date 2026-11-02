@@ -119,9 +119,9 @@ runs and is committed with the last PR.
     the progress tick and timeline bar take `xs` and `pill` corners. Thirteen files wait: the drawing viewer, markup and
     take-off layers and the progress meters draw feature colours (PR 14); the shell's two-line labels need a tight
     line height, the tab bars that tuck under a hairline need its width, and the root layout, icons and `/design`
-    page read the brand core (PR 15).
+    page read the brand core (PR 15 and PR 16).
 
-### Print, charts, and deleting the old surface (PR 14 and PR 15)
+### Print, charts, the shell, and deleting the old surface (PR 14 to PR 16)
 
 - [x] PR 14. Print and email templates read `resolveStatic('light')`. Charts and feature colours use `series`: the cost
   heads, progress meters and drawing compare, markup and take-off inks.
@@ -133,9 +133,21 @@ runs and is committed with the last PR.
     Inter in place of Archivo, a near-black rule under the head in place of navy with a blue line, and greys and flags
     from the text, line and tone roles. 29 files leave the legacy list (50 to 21). The PDF writer sizes in points, so
     the style rule skips it; its colours come from `PRINT` like the rest.
-- [ ] PR 15. Delete `BRAND.colors`, `familyColors`, `themeColor`, `themeFontSize`, `cssVariablesFor`, the `--brand-*` and
-  mirrored `--ant-*` variables and `legacy-files.json`, after a tight line height and a hairline width join the
-  scales for the shell and the tucked tab bars. Lint goes to error. Commit the decision trail.
+- [x] PR 15. The shell, the sign-in panel, the website and every CSS file read the tokens. This PR grew to take
+  the eleven CSS files, so the delete moved to PR 16.
+  - Two scales join: a tight line height (`tk.leading.tight`, 1.2) for the shell's two-line labels, and the hairline
+    width (`tk.hairline`, which `tk.line` now uses) for the tab bars that tuck under a hairline.
+  - CSS reads the same variables as `tk`: `--t-<type>` for a type size, and `--p-<colour>` for the raw palette, which
+    the website (`site.css`, `welcome.css`) uses because it is drawn on its own night stage in both themes. The app's
+    CSS moved from `--brand-*` and antd's `--ant-*` to the semantic roles. A size off the scale is a `rem`.
+  - The root layout's browser colour and the appearance script read `resolve()`; `BrandMark` reads `resolveStatic()`.
+    The icon mask is plain white and black, which only mean "show" and "hide".
+  - The website's hero gives its words seven twelfths of the row so the headline holds to two lines at 1440.
+  - 20 files leave the legacy list (21 to 1). The `/design` reference page describes the old names, so it is
+    rewritten in PR 16.
+- [ ] PR 16. Delete `BRAND.colors`, `familyColors`, `themeColor`, `themeFontSize`, `cssVariablesFor`, the `--brand-*` and
+  mirrored `--ant-*` variables and `legacy-files.json`; the `/design` page shows the new tokens. Lint goes to error
+  with no exceptions. Commit the decision trail.
 
 ## Appendix A. The shape (from a two-runner arena, synthesized)
 

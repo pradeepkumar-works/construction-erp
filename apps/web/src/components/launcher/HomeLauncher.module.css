@@ -1,13 +1,13 @@
 /* Home: the greeting, the search box, then Pinned, Recent and All modules. */
 .head {
-  margin-bottom: var(--ant-margin);
+  margin-bottom: var(--s-4);
 }
 
 .title {
-  margin: 0 0 var(--ant-margin-xxs);
-  font-size: var(--ant-font-size-heading-2);
-  line-height: var(--ant-line-height-heading-2);
-  font-weight: var(--ant-font-weight-strong);
+  margin: 0 0 var(--s-1);
+  font-size: var(--t-heading);
+  line-height: 1.333;
+  font-weight: 600;
 }
 
 .title:focus {
@@ -16,22 +16,22 @@
 
 /* A block around the field, so its margin and the next section's overlap instead of adding up. */
 .search {
-  max-width: 560px;
-  margin-bottom: var(--ant-margin-lg);
+  max-width: 35rem;
+  margin-bottom: var(--s-6);
 }
 
 .section {
-  margin-top: var(--ant-margin-lg);
+  margin-top: var(--s-6);
 }
 
 .sectionHead {
-  margin-bottom: var(--ant-margin-xs);
+  margin-bottom: var(--s-2);
 }
 
 .sectionTitle {
-  margin: 0 0 var(--ant-margin-sm);
-  font-size: var(--ant-font-size-lg);
-  font-weight: var(--ant-font-weight-strong);
+  margin: 0 0 var(--s-3);
+  font-size: var(--t-lead);
+  font-weight: 600;
 }
 
 .sectionHead .sectionTitle {
@@ -39,19 +39,19 @@
 }
 
 .empty {
-  padding: var(--ant-padding);
-  border: var(--ant-line-width) dashed var(--ant-color-border);
-  border-radius: var(--ant-border-radius-lg);
+  padding: var(--s-4);
+  border: 1px dashed var(--c-line-base);
+  border-radius: var(--r-lg);
 }
 
 .emptyText {
-  margin: 0 0 var(--ant-margin-sm);
-  color: var(--ant-color-text-secondary);
+  margin: 0 0 var(--s-3);
+  color: var(--c-text-muted);
 }
 
 .hint {
-  margin: var(--ant-margin-sm) 0 0;
-  color: var(--ant-color-text-secondary);
+  margin: var(--s-3) 0 0;
+  color: var(--c-text-muted);
 }
 
 .inlineLink {
@@ -64,39 +64,39 @@
   margin: 0;
   padding: 0;
   display: grid;
-  gap: var(--ant-margin-sm);
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--s-3);
+  grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr));
 }
 
 .recent {
   display: flex;
   align-items: center;
-  gap: var(--ant-margin-sm);
-  min-height: 52px;
+  gap: var(--s-3);
+  min-height: 3.25rem;
   box-sizing: border-box;
-  padding: var(--ant-padding-xs) var(--ant-padding-sm);
-  border: var(--ant-line-width) solid var(--ant-color-border-secondary);
-  border-radius: var(--ant-border-radius-lg);
-  background: var(--ant-color-bg-container);
-  color: var(--ant-color-text);
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--c-line-hairline);
+  border-radius: var(--r-lg);
+  background: var(--c-surface-base);
+  color: var(--c-text-base);
   text-decoration: none;
 }
 
 .recent:hover {
-  border-color: var(--ant-color-primary);
-  color: var(--ant-color-text);
+  border-color: var(--c-accent-solid);
+  color: var(--c-text-base);
 }
 
 .recent:focus-visible {
-  outline: 2px solid var(--ant-color-primary);
-  outline-offset: 2px;
+  outline: 0.125rem solid var(--c-accent-solid);
+  outline-offset: 0.125rem;
 }
 
 .recentIcon {
   display: inline-flex;
   flex: none;
-  font-size: 18px;
-  color: var(--ant-color-text-secondary);
+  font-size: 1.125rem;
+  color: var(--c-text-muted);
 }
 
 .recentText {
@@ -106,15 +106,15 @@
 }
 
 .recentLabel {
-  font-weight: var(--ant-font-weight-strong);
+  font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .recentKind {
-  font-size: var(--ant-font-size-sm);
-  color: var(--ant-color-text-secondary);
+  font-size: var(--t-caption);
+  color: var(--c-text-muted);
 }
 
 /* Waiting for you: My work's most pressing cards, as lines like Recent's with the count at the end. */
@@ -123,12 +123,12 @@
   margin: 0;
   padding: 0;
   display: grid;
-  gap: var(--ant-margin-sm);
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--s-3);
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
 }
 
 .wait {
-  min-height: 64px;
+  min-height: 4rem;
 }
 
 /* A line keeps to its height whatever the entry says (a letter's subject is long), so Home does not move once it loads. */
@@ -154,9 +154,9 @@
 
 /* Discover's drawer: the module's pages, each with its line. */
 .drawerTitle {
-  margin: var(--ant-margin) 0 var(--ant-margin-xs);
-  font-size: var(--ant-font-size);
-  font-weight: var(--ant-font-weight-strong);
+  margin: var(--s-4) 0 var(--s-2);
+  font-size: var(--t-body);
+  font-weight: 600;
 }
 
 .pageList {
@@ -168,12 +168,12 @@
 .pageItem {
   display: flex;
   align-items: flex-start;
-  gap: var(--ant-margin-sm);
-  padding-block: var(--ant-padding-xs);
+  gap: var(--s-3);
+  padding-block: var(--s-2);
 }
 
 .pageItem .recentIcon {
-  margin-top: 2px;
+  margin-top: var(--s-half);
 }
 
 .pageItem .recentLabel {

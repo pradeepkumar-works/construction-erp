@@ -80,7 +80,7 @@ export function Sidebar({ user, sections, pendingCount, rail = false, onToggleRa
       <div className={s.brand}>
         <BrandMark size={32} />
         {!rail && (
-          <div style={{ lineHeight: 1.15, minWidth: 0 }}>
+          <div style={{ lineHeight: tk.leading.tight, minWidth: 0 }}>
             <Wordmark color={tk.color.chrome.ink} size={18} />
             <div className={s.org} title={user.organizationName} translate="no">
               {user.organizationName}
@@ -241,7 +241,7 @@ function RailSection({ section, active, onNavigate }: { section: NavSection; act
       arrow={false}
       mouseEnterDelay={0.08}
       mouseLeaveDelay={0.15}
-      styles={{ container: { padding: 6, background: tk.color.chrome.bg, boxShadow: `0 12px 32px color-mix(in srgb, ${tk.color.chrome.deep} 35%, transparent)` } }}
+      styles={{ container: { padding: tk.space[2], background: tk.color.chrome.bg, boxShadow: `0 12px 32px color-mix(in srgb, ${tk.color.chrome.deep} 35%, transparent)` } }}
       afterOpenChange={(visible) => {
         if (visible && fromKeyboard.current) list.current?.querySelector('a')?.focus();
         fromKeyboard.current = false;

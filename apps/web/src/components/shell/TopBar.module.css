@@ -3,13 +3,13 @@
    sits on it as a sheet. Bar: one white bar holding the module and its menu. */
 
 .top {
-  --tb-bg: var(--ant-color-bg-container);
-  --tb-fg: var(--ant-color-text);
-  --tb-muted: var(--ant-color-text-secondary);
-  --tb-hover: color-mix(in srgb, var(--ant-color-text) 6%, transparent);
-  --tb-rule: var(--ant-color-border-secondary);
-  --row-bg: var(--ant-color-bg-container);
-  --sub-on: var(--ant-color-primary);
+  --tb-bg: var(--c-surface-base);
+  --tb-fg: var(--c-text-base);
+  --tb-muted: var(--c-text-muted);
+  --tb-hover: color-mix(in srgb, var(--c-text-base) 6%, transparent);
+  --tb-rule: var(--c-line-hairline);
+  --row-bg: var(--c-surface-base);
+  --sub-on: var(--c-accent-solid);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -24,38 +24,38 @@
 }
 
 .lookFrame {
-  --tb-bg: color-mix(in srgb, var(--ant-color-text) 6%, var(--ant-color-bg-layout));
+  --tb-bg: color-mix(in srgb, var(--c-text-base) 6%, var(--c-surface-canvas));
   --row-bg: var(--tb-bg);
   --tb-rule: transparent;
-  --sub-on: var(--ant-color-text);
+  --sub-on: var(--c-text-base);
 }
 
 .bar {
   display: flex;
   align-items: center;
-  gap: var(--ant-margin-xs);
-  height: 56px;
-  padding: 0 var(--ant-padding) 0 var(--ant-padding-lg);
+  gap: var(--s-2);
+  height: 3.5rem;
+  padding: 0 var(--s-4) 0 var(--s-6);
   background: var(--tb-bg);
   color: var(--tb-fg);
-  border-bottom: var(--ant-line-width) solid var(--tb-rule);
+  border-bottom: 1px solid var(--tb-rule);
 }
 
 .lookBar .bar {
-  height: 60px;
+  height: 3.75rem;
 }
 
 .mobile .bar {
-  height: 56px;
-  padding: 0 var(--ant-padding-xs);
+  height: 3.5rem;
+  padding: 0 var(--s-2);
 }
 
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 0.625rem;
   flex: none;
-  min-height: 32px;
+  min-height: 2rem;
   color: var(--tb-fg);
   text-decoration: none;
 }
@@ -68,9 +68,9 @@
 .link:focus-visible,
 .sub:focus-visible,
 .switch:focus-visible {
-  outline: 2px solid var(--ant-color-primary);
-  outline-offset: 2px;
-  border-radius: 6px;
+  outline: 0.125rem solid var(--c-accent-solid);
+  outline-offset: 0.125rem;
+  border-radius: var(--r-md);
 }
 
 .lookNavy .brand :global(.wordmark) {
@@ -78,15 +78,15 @@
 }
 
 .org {
-  max-width: 180px;
-  margin: 0 var(--ant-margin-xs) 0 var(--ant-margin-xxs);
-  padding-left: var(--ant-padding-sm);
-  border-left: var(--ant-line-width) solid color-mix(in srgb, currentColor 20%, transparent);
+  max-width: 11.25rem;
+  margin: 0 var(--s-2) 0 var(--s-1);
+  padding-left: var(--s-3);
+  border-left: 1px solid color-mix(in srgb, currentColor 20%, transparent);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--tb-muted);
-  font-size: var(--ant-font-size-sm);
+  font-size: var(--t-caption);
 }
 
 .spacer {
@@ -105,7 +105,7 @@
 
 .links ul {
   display: flex;
-  gap: 2px;
+  gap: var(--s-half);
   list-style: none;
   margin: 0;
   padding: 0;
@@ -114,10 +114,10 @@
 .link {
   display: inline-flex;
   align-items: center;
-  gap: var(--ant-margin-xs);
-  height: 36px;
-  padding: 0 var(--ant-padding-sm);
-  border-radius: 8px;
+  gap: var(--s-2);
+  height: 2.25rem;
+  padding: 0 var(--s-3);
+  border-radius: 0.5rem;
   color: var(--tb-fg);
   font-weight: 500;
   text-decoration: none;
@@ -135,19 +135,19 @@
 
 .lookBar .link.on {
   background: var(--c-accent-soft);
-  color: var(--ant-color-link);
+  color: var(--c-text-link);
 }
 
 .count {
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
-  border-radius: 10px;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.375rem;
+  border-radius: var(--r-lg);
   background: var(--c-state-count-fill);
   color: var(--c-text-on-accent);
-  font-size: var(--ant-font-size-sm);
+  font-size: var(--t-caption);
   font-weight: 700;
-  line-height: 20px;
+  line-height: 1.25rem;
   text-align: center;
 }
 
@@ -156,11 +156,11 @@
 .row {
   display: flex;
   align-items: stretch;
-  gap: var(--ant-margin-xs);
-  height: 48px;
-  padding: 0 var(--ant-padding) 0 var(--ant-padding-lg);
+  gap: var(--s-2);
+  height: 3rem;
+  padding: 0 var(--s-4) 0 var(--s-6);
   background: var(--row-bg);
-  border-bottom: var(--ant-line-width) solid var(--ant-color-border-secondary);
+  border-bottom: 1px solid var(--c-line-hairline);
 }
 
 .lookFrame .row {
@@ -168,7 +168,7 @@
 }
 
 .mobile .row {
-  height: 44px;
+  height: 2.75rem;
   padding: 0;
 }
 
@@ -185,41 +185,41 @@
 
 .moduleInBar {
   align-self: stretch;
-  margin-left: var(--ant-margin-xs);
+  margin-left: var(--s-2);
 }
 
 .switch {
   display: inline-flex;
   align-items: center;
-  gap: var(--ant-margin-xs);
+  gap: var(--s-2);
   flex: none;
-  padding: 0 var(--ant-padding-sm) 0 0;
-  margin-right: var(--ant-margin-xs);
+  padding: 0 var(--s-3) 0 0;
+  margin-right: var(--s-2);
   border: 0;
-  border-right: var(--ant-line-width) solid var(--ant-color-border-secondary);
+  border-right: 1px solid var(--c-line-hairline);
   background: none;
-  color: var(--ant-color-text);
+  color: var(--c-text-base);
   font: inherit;
-  font-size: var(--ant-font-size-lg);
+  font-size: var(--t-lead);
   cursor: pointer;
 }
 
 .lookFrame .switch {
-  border-right-color: color-mix(in srgb, var(--ant-color-text) 14%, transparent);
+  border-right-color: color-mix(in srgb, var(--c-text-base) 14%, transparent);
 }
 
 .moduleInBar .switch {
-  padding-left: var(--ant-padding-sm);
-  border-left: var(--ant-line-width) solid var(--ant-color-border-secondary);
+  padding-left: var(--s-3);
+  border-left: 1px solid var(--c-line-hairline);
 }
 
 .mobile .switch {
-  padding: 0 var(--ant-padding-sm);
+  padding: 0 var(--s-3);
   margin-right: 0;
 }
 
 .switch > :first-child {
-  color: var(--ant-color-primary);
+  color: var(--c-accent-solid);
 }
 
 .switchName {
@@ -230,8 +230,8 @@
 }
 
 .chevron {
-  font-size: var(--ant-font-size-sm);
-  color: var(--ant-color-text-tertiary);
+  font-size: var(--t-caption);
+  color: var(--c-text-faint);
 }
 
 .subs {
@@ -239,7 +239,7 @@
   flex: 1 1 auto;
   display: flex;
   align-items: stretch;
-  gap: 2px;
+  gap: var(--s-half);
   min-width: 0;
   margin: 0;
   padding: 0;
@@ -260,12 +260,12 @@
 .sub {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 0 var(--ant-padding-sm);
+  gap: var(--s-1);
+  padding: 0 var(--s-3);
   border: 0;
-  border-bottom: 2px solid transparent;
+  border-bottom: 0.125rem solid transparent;
   background: none;
-  color: var(--ant-color-text-secondary);
+  color: var(--c-text-muted);
   font: inherit;
   font-weight: 500;
   white-space: nowrap;
@@ -274,11 +274,11 @@
 }
 
 .sub:hover {
-  color: var(--ant-color-text);
+  color: var(--c-text-base);
 }
 
 .sub.on {
-  color: var(--ant-color-text);
+  color: var(--c-text-base);
   font-weight: 600;
   border-bottom-color: var(--sub-on);
 }
@@ -289,9 +289,9 @@
 }
 
 .moduleInBar .sub {
-  height: 38px;
+  height: 2.375rem;
   border-bottom: 0;
-  border-radius: 8px;
+  border-radius: 0.5rem;
 }
 
 .moduleInBar .sub:hover {
@@ -300,7 +300,7 @@
 
 .moduleInBar .sub.on {
   background: var(--c-accent-soft);
-  color: var(--ant-color-link);
+  color: var(--c-text-link);
 }
 
 .pin {
@@ -345,13 +345,13 @@
   .link,
   .sub,
   .switch {
-    min-height: 44px;
+    min-height: 2.75rem;
   }
 }
 
 /* Frame: the page sits on the frame's tint as a sheet, the bar and the module bar part of the frame */
 .frameBody {
-  background: color-mix(in srgb, var(--ant-color-text) 6%, var(--ant-color-bg-layout));
+  background: color-mix(in srgb, var(--c-text-base) 6%, var(--c-surface-canvas));
 }
 
 .sheet {
@@ -359,17 +359,17 @@
   flex-direction: column;
   flex: 1;
   min-width: 0;
-  margin: 0 var(--ant-margin-xs) var(--ant-margin-xs);
-  border: var(--ant-line-width) solid color-mix(in srgb, var(--ant-color-text) 10%, transparent);
-  border-radius: 16px;
-  background: var(--ant-color-bg-layout);
+  margin: 0 var(--s-2) var(--s-2);
+  border: 1px solid color-mix(in srgb, var(--c-text-base) 10%, transparent);
+  border-radius: 1rem;
+  background: var(--c-surface-canvas);
   overflow: clip;
 }
 
 @media (pointer: coarse) {
   .brand {
-    min-width: 44px;
-    min-height: 44px;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
     justify-content: center;
   }
 }

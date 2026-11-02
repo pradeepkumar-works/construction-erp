@@ -1,24 +1,24 @@
 /* A department module's screen: its sub-modules as cards, each listing its pages. */
 .subs {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
-  gap: var(--ant-margin);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 21.25rem), 1fr));
+  gap: var(--s-4);
   align-items: start;
 }
 
 .sub {
-  padding: var(--ant-padding-sm) var(--ant-padding-xs) var(--ant-padding-xs);
-  border: var(--ant-line-width) solid var(--ant-color-border-secondary);
-  border-radius: var(--ant-border-radius-lg);
-  background: var(--ant-color-bg-container);
+  padding: var(--s-3) var(--s-2) var(--s-2);
+  border: 1px solid var(--c-line-hairline);
+  border-radius: var(--r-lg);
+  background: var(--c-surface-base);
 }
 
 .subTitle {
-  margin: 0 0 var(--ant-margin-xxs);
-  padding: 0 var(--ant-padding-xs);
+  margin: 0 0 var(--s-1);
+  padding: 0 var(--s-2);
   font-family: var(--font-display), 'Arial Narrow', Arial, sans-serif;
   font-stretch: 88%;
-  font-size: var(--ant-font-size-lg);
+  font-size: var(--t-lead);
   font-weight: 700;
 }
 
@@ -31,14 +31,14 @@
 .page {
   display: flex;
   align-items: center;
-  gap: var(--ant-margin-sm);
+  gap: var(--s-3);
   width: 100%;
-  min-height: 56px;
-  padding: var(--ant-padding-xs);
+  min-height: 3.5rem;
+  padding: var(--s-2);
   border: 0;
-  border-radius: var(--ant-border-radius);
+  border-radius: var(--r-md);
   background: none;
-  color: var(--ant-color-text);
+  color: var(--c-text-base);
   font: inherit;
   text-align: start;
   text-decoration: none;
@@ -46,13 +46,13 @@
 }
 
 .page:hover {
-  background: var(--ant-control-item-bg-hover);
-  color: var(--ant-color-text);
+  background: var(--c-state-row-hover);
+  color: var(--c-text-base);
 }
 
 .page:focus-visible {
-  outline: 2px solid var(--ant-color-primary);
-  outline-offset: -2px;
+  outline: 0.125rem solid var(--c-accent-solid);
+  outline-offset: -0.125rem;
 }
 
 /* The page's icon in the one ink, as on the tiles. */
@@ -61,9 +61,9 @@
   align-items: center;
   justify-content: center;
   flex: none;
-  width: 24px;
-  height: 24px;
-  font-size: 19px;
+  width: 1.5rem;
+  height: 1.5rem;
+  font-size: 1.1875rem;
   color: var(--c-text-base);
 }
 
@@ -79,8 +79,8 @@
 }
 
 .desc {
-  color: var(--ant-color-text-secondary);
-  font-size: var(--ant-font-size-sm);
+  color: var(--c-text-muted);
+  font-size: var(--t-caption);
   line-height: 1.4;
 }
 
@@ -91,26 +91,26 @@
   border-radius: var(--r-pill);
   background: var(--c-tone-pending-bg);
   color: var(--c-tone-pending-fg);
-  font-size: var(--ant-font-size-sm);
+  font-size: var(--t-caption);
   font-weight: 700;
-  line-height: 22px;
+  line-height: 1.375rem;
   white-space: nowrap;
 }
 
 /* A count to read, not a decision (the watch list's warnings): plain text beside the name. */
 .count {
   flex: none;
-  color: var(--ant-color-text-secondary);
-  font-size: var(--ant-font-size-sm);
+  color: var(--c-text-muted);
+  font-size: var(--t-caption);
   white-space: nowrap;
 }
 
 /* A pipeline's stages: each stage's count in the display face, in the order the work moves. */
 .stages {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 130px), 1fr));
-  gap: var(--ant-margin-xs);
-  margin: 0 0 var(--ant-margin-sm);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 8.125rem), 1fr));
+  gap: var(--s-2);
+  margin: 0 0 var(--s-3);
   padding: 0;
   list-style: none;
 }
@@ -118,21 +118,21 @@
 .stage {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: var(--ant-padding-xs) var(--ant-padding-sm);
-  border-radius: var(--ant-border-radius);
-  background: var(--ant-color-fill-quaternary);
+  gap: var(--s-half);
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--r-md);
+  background: var(--c-surface-sunken);
 }
 
 .stageCount {
   font-family: var(--font-display), 'Arial Narrow', Arial, sans-serif;
   font-stretch: 88%;
-  font-size: var(--ant-font-size-heading-4);
+  font-size: var(--t-lead);
   font-weight: 700;
   line-height: 1.2;
 }
 
 .stageLabel {
-  color: var(--ant-color-text-secondary);
-  font-size: var(--ant-font-size-sm);
+  color: var(--c-text-muted);
+  font-size: var(--t-caption);
 }

@@ -20,6 +20,12 @@ export const SPACE = {
 export type SpaceStep = keyof typeof SPACE;
 
 export const RADIUS = { xs: 2, sm: 4, md: 6, lg: 10, pill: 999 } as const;
+
+/** Leading for two lines that read as one label (a name over its role in the top bar, the wordmark over the company). */
+export const LEADING = { tight: 1.2 } as const;
+
+/** The width of a hairline, for an edge that tucks under one (a tab bar over its card's border). */
+export const HAIRLINE = 1;
 export type RadiusName = keyof typeof RADIUS;
 
 export const CONTROL = { sm: [24, 24], md: [32, 28], lg: [40, 35] } as const;

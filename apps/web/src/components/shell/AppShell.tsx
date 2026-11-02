@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
-import { Avatar, Badge, Breadcrumb, Button, Drawer, Dropdown, Flex, Grid, Layout, Space, Tooltip, Typography, theme } from 'antd';
+import { Avatar, Badge, Breadcrumb, Button, Drawer, Dropdown, Flex, Grid, Layout, Space, Tooltip, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import type { MenuProps } from 'antd';
 import { BgColorsOutlined, CheckOutlined, ColumnHeightOutlined, LogoutOutlined, MenuOutlined, QuestionCircleOutlined, SearchOutlined, UserOutlined } from '@/components/common/icons';
@@ -92,7 +92,6 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
     return id ? projects?.find((p) => p.id === id) : undefined;
   }, [pathname, projects]);
   const [touring, setTouring] = useState(false);
-  const { token } = theme.useToken();
   const { prefs, setPrefs } = useAppearance();
   // Ask Nirmaan: shown when the company has it on, and to admins while it is off so they can find the switch.
   const mayAsk = canUseAi(user.roleKey) && !user.support;
@@ -271,7 +270,7 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
   const toolsRoomy = roomy && !compactTools;
   const toolsSpacious = spacious && !compactTools;
   const tools = (
-    <Space size={token.marginXXS} style={{ flexShrink: 0 }}>
+    <Flex gap={tk.space[1]} align="center" style={{ flexShrink: 0 }}>
       {openSearch &&
         (isMobile || !toolsRoomy ? (
           <Tooltip title={isMobile ? undefined : `Search  ${searchShortcut()}`}>
@@ -320,17 +319,17 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
           <Space>
             {isMobile && help.unseen ? (
               <Badge dot offset={[-2, 2]}>
-                <Avatar size="small" style={{ background: tk.color.accent.solid, color: tk.color.text.onAccent, fontWeight: 700 }}>
+                <Avatar size="small" style={{ background: tk.color.accent.solid, color: tk.color.text.onAccent, fontWeight: tk.type.title.fontWeight }}>
                   {initials}
                 </Avatar>
               </Badge>
             ) : (
-            <Avatar size="small" style={{ background: tk.color.accent.solid, color: tk.color.text.onAccent, fontWeight: 700 }}>
+            <Avatar size="small" style={{ background: tk.color.accent.solid, color: tk.color.text.onAccent, fontWeight: tk.type.title.fontWeight }}>
               {initials}
             </Avatar>
             )}
             {toolsRoomy && (
-              <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: 1.1 }}>
+              <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: tk.leading.tight }}>
                 <span style={{ fontWeight: tk.type.title.fontWeight, fontSize: tk.type.body.fontSize }} translate="no">
                   {user.fullName}
                 </span>
@@ -342,7 +341,7 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
           </Space>
         </Button>
       </Dropdown>
-    </Space>
+    </Flex>
   );
 
   const body = (
@@ -409,7 +408,7 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
             top: 0,
             zIndex: 10,
             height: 56,
-            lineHeight: '56px',
+            lineHeight: 'normal',
             background: tk.color.surface.base,
             gap: tk.space[3],
           }}

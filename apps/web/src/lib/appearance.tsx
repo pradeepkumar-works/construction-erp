@@ -4,7 +4,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import { App as AntApp, ConfigProvider } from 'antd';
 import { componentConfig, cssVariablesFor, makeTheme } from './theme';
 import { renderEmpty } from '@/components/common/renderEmpty';
-import { BRAND } from './brand';
+import { resolve } from '@/ds';
 
 export type ThemeMode = 'light' | 'dark' | 'system';
 export type Density = 'comfortable' | 'compact';
@@ -105,11 +105,11 @@ export function AppearanceProvider({ children }: { children: React.ReactNode }) 
     // The theme's own CSS variables take over from the head script's stand-in colours.
     root.style.removeProperty('background');
     root.style.removeProperty('color-scheme');
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? BRAND.colors.nightLayout : BRAND.colors.canvas);
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', resolve(dark ? 'dark' : 'light').color.surface.canvas);
     return () => {
       delete root.dataset.theme;
       delete root.dataset.density;
-      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', BRAND.colors.canvas);
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', resolve('light').color.surface.canvas);
     };
   }, [dark, compact]);
   const css = useMemo(() => `${cssVariablesFor(config)}:root{color-scheme:${dark ? 'dark' : 'light'}}`, [config, dark]);
