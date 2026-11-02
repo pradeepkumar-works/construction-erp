@@ -19,6 +19,8 @@ import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { AttendanceTag, LeaveStatusTag, clock, leaveSpan } from './staffUi';
 import { EmployeeFormModal } from './EmployeeFormModal';
 import { EmployeeService } from './EmployeeService';
+import { JoiningDocuments } from './JoiningDocuments';
+import { Section } from '@/components/common/Section';
 
 const none = <Typography.Text type="secondary">{NO_VALUE}</Typography.Text>;
 const val = (x: string | number | null | undefined) => (x === null || x === undefined || x === '' ? none : x);
@@ -93,17 +95,17 @@ function EmployeeDetails({ data }: { data: EmployeeDto }) {
   );
 }
 
-/** Copies of ID, certificates and signed letters. HR files them; the person and payroll see them. */
-function EmployeeDocuments({ employeeId, admin }: { employeeId: string; admin: boolean }) {
+/** Anything else HR keeps on the person (signed letters, forms). HR files them; the person and payroll see them. */
+function OtherDocuments({ employeeId, admin }: { employeeId: string; admin: boolean }) {
   const { message } = App.useApp();
   const { data } = useEmployeeDocuments(employeeId);
   const save = useSetEmployeeDocuments(employeeId);
   // What was just picked, until the saved list comes back.
   const [files, setFiles] = useState<AttachmentDto[] | null>(null);
-  if (!admin) return <AttachmentGallery attachments={data ?? []} />;
+  if (!admin) return data?.length ? <Section title="Other documents"><AttachmentGallery attachments={data} /></Section> : null;
   return (
-    <>
-      <Typography.Paragraph type="secondary">ID proof, certificates, the signed appointment letter: photos or PDFs, up to 20.</Typography.Paragraph>
+    <Section title="Other documents">
+      <Typography.Paragraph type="secondary">The signed appointment letter, forms and anything else: photos or PDFs, up to 20.</Typography.Paragraph>
       <PhotoUpload
         value={files ?? data ?? []}
         max={20}
@@ -112,6 +114,16 @@ function EmployeeDocuments({ employeeId, admin }: { employeeId: string; admin: b
           save.mutateAsync(next.map((a) => a.id)).catch((err) => message.error(errorMessage(err, 'Could not save the documents. Try again.')));
         }}
       />
+    </Section>
+  );
+}
+
+/** The joining papers with their checks, then anything else on file. */
+function EmployeeDocuments({ employeeId, admin, self }: { employeeId: string; admin: boolean; self: boolean }) {
+  return (
+    <>
+      <JoiningDocuments employeeId={employeeId} admin={admin} mayFile={admin || self} />
+      <OtherDocuments employeeId={employeeId} admin={admin} />
     </>
   );
 }
@@ -215,7 +227,7 @@ export function EmployeeDrawer({ id, open, onClose, onOpenLeave }: { id: string 
             ...(hr || data.userId === user?.id
               ? [
                   { key: 'service', label: 'Service and letters', children: <EmployeeService employee={data} /> },
-                  { key: 'documents', label: 'Documents', children: <EmployeeDocuments employeeId={data.id} admin={admin} /> },
+                  { key: 'documents', label: 'Documents', children: <EmployeeDocuments employeeId={data.id} admin={admin} self={data.userId === user?.id} /> },
                 ]
               : []),
           ]}

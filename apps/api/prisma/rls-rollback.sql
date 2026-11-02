@@ -677,5 +677,8 @@ DROP POLICY IF EXISTS tenant_isolation ON "ProgrammeSubmission";
 ALTER TABLE "EotApplication" NO FORCE ROW LEVEL SECURITY;
 ALTER TABLE "EotApplication" DISABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON "EotApplication";
+ALTER TABLE "EmployeeDocument" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "EmployeeDocument" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "EmployeeDocument";
 
 DROP FUNCTION IF EXISTS app_current_org();

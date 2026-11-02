@@ -62,6 +62,15 @@ export class ListEmployeeEventsQuery extends PageQuery {
   @ApiPropertyOptional({ example: '2026-10-31' }) @IsOptional() @IsDateString() to?: string;
 }
 
+export class FileEmployeeDocumentDto {
+  @ApiProperty({ description: 'The uploaded file (POST /uploads)' }) @IsUUID() attachmentId: string;
+}
+
+export class CheckEmployeeDocumentDto {
+  @ApiProperty({ enum: ['VERIFIED', 'REJECTED', 'WAIVED'] }) @IsIn(['VERIFIED', 'REJECTED', 'WAIVED']) decision: 'VERIFIED' | 'REJECTED' | 'WAIVED';
+  @ApiPropertyOptional({ description: 'What is wrong with it (sent back), or why it is not needed (set aside)' }) @IsOptional() @IsString() @MaxLength(500) note?: string;
+}
+
 export class EmployeeDocumentsDto {
   @ApiProperty({ type: [String], description: 'The complete list of the employee’s documents' }) @IsArray() @ArrayMaxSize(50) @IsUUID('4', { each: true }) attachmentIds: string[];
 }

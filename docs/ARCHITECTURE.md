@@ -948,18 +948,32 @@ notice days) that anyone who sees the person sees, and personal, statutory and b
 admins, payroll (`canViewEmployeePrivate`) and the person themselves get, as `EmployeeDto.private` (null otherwise;
 `StaffService.toEmployeeDto(e, user)` decides). Aadhaar is kept as its last four digits only.
 
-Each step of a person's service is an `EmployeeEvent` (`EMPLOYEE_EVENT_TYPES`: joined, confirmed, transferred, promoted,
+Each step of a person's service is an `EmployeeEvent` (`EMPLOYEE_EVENT_TYPES`: offered, joined, confirmed, transferred, promoted,
 increment, warning, resigned, terminated, retired) with a letter number `HR-<year>-0001` per organisation
 (`nextLetterNo`, under an advisory lock) and the before and after of posting, designation, department and CTC.
 `HrService.recordEvent` changes the staff record to match in the same transaction (an exit sets the last working day and
 marks them as left); `removeEvent` takes back only the latest event, never the joining, and puts the record back.
 Creating a staff record with a joining date writes its JOINED event. `GET /staff/events/:id/letter` returns what the
 letter needs; the web prints it from `components/staff/hrLetterPrint.ts` (an exit also prints the experience certificate).
-Documents are attachments on `Attachment.employeeId` (`PUT /staff/employees/:id/documents`).
+Other documents are attachments on `Attachment.employeeId` (`PUT /staff/employees/:id/documents`); the joining documents
+below keep theirs out of that list.
+
+**Joining documents and the offer letter.** The papers HR collects are `EMPLOYEE_DOCUMENT_KINDS`
+(`@erp/shared/hr-documents.ts`): photo, Aadhaar, PAN, Class 10, Class 12 or diploma, degree and the last employer's
+experience letter are required; a postgraduate degree and the bank proof are not. Each kind a person has is one
+`EmployeeDocument` row (its file, `UPLOADED` → `VERIFIED` / `REJECTED` / `WAIVED`, the note, who checked and when);
+a kind with no row reads as not received. HR or the person files a paper (`PUT /staff/employees/:id/checklist/:kind`, a
+fresh copy replaces the last and waits again); only HR checks one (`POST …/:kind/check`: verify needs a file, sending back
+and setting aside need a reason, by `documentCheckProblem`) or takes it back (`DELETE`). `EmployeeDocumentsService` does
+all of it. The offer letter (`OFFERED`, recorded by hand on or before the joining date, one per person, with the offered
+CTC) and the appointment letter (`JOINED`) go out only when `documentLetterProblem` is null: every required kind verified
+or set aside (a fresher's experience letter). Recording the offer and `GET /staff/events/:id/letter` both ask it, so a
+letter held for papers says which ones. An offer can be taken back while only the joining follows it. The HR dashboard
+lists active staff with papers outstanding (`documentsPending`). Keep `src/scripts/hr-documents-test.ts` passing.
 
 `GET /staff/hr-dashboard` (staff admins and payroll) gives head count by site, department and employment type, who joined
-and left this month, probation ending in 30 days or overdue, birthdays and work anniversaries to the end of next month, and
-active staff with no PAN, UAN or bank account; the People home shows it under the module's figures.
+and left this month, probation ending in 30 days or overdue, birthdays and work anniversaries to the end of next month,
+active staff with no PAN, UAN or bank account, and active staff with joining documents outstanding; the People home shows it under the module's figures.
 
 ### Management view on the phone (v5 item 96)
 
