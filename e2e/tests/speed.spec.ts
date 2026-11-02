@@ -107,12 +107,13 @@ test('home, a list, a record and Approvals keep to the Web Vitals budgets', asyn
   for (const p of pages) {
     await page.goto(p.path);
     await settle(page);
-    // One real use of the page: open the search palette and close it; on the list, open a row too.
+    // One real use of the page: open the search palette and close it; on the list, open a report too (from its Days
+    // grid, the view the list opens on).
     await page.keyboard.press('Control+k');
     await expect(page.getByRole('combobox', { name: 'Search', exact: true })).toBeFocused();
     await page.keyboard.press('Escape');
     if (p.row) {
-      await page.locator('.ant-table-tbody > tr[data-row-key]').first().click();
+      await page.getByRole('button', { name: /^Daily report, / }).first().click();
       await expect(page.locator('.ant-drawer-open')).toBeVisible();
       await page.keyboard.press('Escape');
     }

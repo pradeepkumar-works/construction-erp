@@ -15,7 +15,7 @@ test.describe('on a phone', () => {
 
   test('the DPR list is a list of cards, each opening its record', async ({ page }) => {
     await signIn(page, 'pm@demo.com');
-    await page.goto('/dpr');
+    await page.goto('/dpr?view=table');
     const cards = page.getByRole('list').filter({ has: page.locator('.list-card') });
     await expect(cards.getByRole('listitem').first()).toBeVisible();
     await expect(page.locator('.ant-table')).toHaveCount(0);
@@ -35,7 +35,7 @@ test.describe('on a phone', () => {
 
   test('the filters open from the bottom, count what is on and stay in the URL', async ({ page }) => {
     await signIn(page, 'pm@demo.com');
-    await page.goto('/dpr');
+    await page.goto('/dpr?view=table');
     await expect(page.locator('.list-card').first()).toBeVisible();
     // The status picker is in the drawer, not on the strip.
     await expect(page.getByRole('combobox', { name: 'Status' })).toBeHidden();
@@ -60,7 +60,7 @@ test.describe('on a phone', () => {
 
   test("a record's own page keeps its actions at the bottom of the screen", async ({ page }) => {
     await signIn(page, 'pm@demo.com');
-    await page.goto('/dpr');
+    await page.goto('/dpr?view=table');
     const href = await page.locator('.list-card a').first().getAttribute('href');
     expect(href).toMatch(/^\/dpr\//);
     await page.goto(href!);
@@ -98,7 +98,7 @@ test.describe('on a phone', () => {
 test('on a laptop the DPR list fits without sideways scroll', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await signIn(page, 'pm@demo.com');
-  await page.goto('/dpr');
+  await page.goto('/dpr?view=table');
   await expect(page.locator('.ant-table-tbody .ant-table-row').first()).toBeVisible();
   const table = page.locator('.ant-table-content, .ant-table-body').first();
   const { scroll, client } = await table.evaluate((e) => ({ scroll: e.scrollWidth, client: e.clientWidth }));
