@@ -193,9 +193,11 @@ export function antdTheme({ dark, compact }: Appearance): ThemeConfig {
 }
 
 const success = resolve('light').color.tone.success.solid;
+const onSuccess = resolve('light').color.text.onAccent;
 const successShades = theme.getDesignToken({ token: { colorPrimary: success } });
+/** The green Approve button: white on the green in both themes (the primary button's own text is near-white on the night). */
 export const approveTheme: ThemeConfig = {
-  components: { Button: { colorPrimary: success, colorPrimaryHover: successShades.colorPrimaryHover, colorPrimaryActive: successShades.colorPrimaryActive } },
+  components: { Button: { colorPrimary: success, colorPrimaryHover: successShades.colorPrimaryHover, colorPrimaryActive: successShades.colorPrimaryActive, primaryColor: onSuccess } },
 };
 
 const tabularNums = { fontVariantNumeric: 'tabular-nums' } as const;
