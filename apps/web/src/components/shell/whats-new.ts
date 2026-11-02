@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-views',
+    date: '2026-11-02',
+    title: 'Boards and day grids',
+    points: [
+      'Tenders open as a board: a column for each stage with how many and how much in it. Indents and RA bills offer the same board from the view switch beside the list.',
+      'Daily reports and head counts open as a grid of sites by days, so a site that did not file shows as empty days. Sites that missed the most come first.',
+      'Switch back to the table at any time; the page remembers the choice in its address.',
+    ],
+  },
+  {
     id: '2026-11-records',
     date: '2026-11-02',
     title: 'Records lead with the decision',

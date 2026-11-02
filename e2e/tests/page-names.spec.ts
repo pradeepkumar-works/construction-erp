@@ -38,7 +38,7 @@ test('moving to another page puts focus on its heading', async ({ page }) => {
 
 test('list rows open from the keyboard, and records without a page of their own can be reached by Tab', async ({ page }) => {
   await signIn(page, 'pm@demo.com');
-  await page.goto('/dpr');
+  await page.goto('/dpr?view=table');
   const rows = page.locator('.ant-table-tbody > tr[data-row-key]');
   await expect(rows.nth(1)).toBeVisible();
   // The rows are one Tab stop.
@@ -75,7 +75,7 @@ test('single-key shortcuts can be turned off, and Ask is on Alt J', async ({ pag
   // ? and J no longer do anything; arrows still move through a list.
   await page.keyboard.press('?');
   await expect(dialog).toBeHidden();
-  await page.goto('/dpr');
+  await page.goto('/dpr?view=table');
   const rows = page.locator('.ant-table-tbody > tr[data-row-key]');
   await expect(rows.nth(1)).toBeVisible();
   await rows.first().focus();

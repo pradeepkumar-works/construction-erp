@@ -1,0 +1,107 @@
+/*
+ * Views that fit the data (ARCHITECTURE "Views that fit the data"): a board's stages side by side, each a column of
+ * cards headed by its count and rupees; on a phone the stages stack. The grid of sites by days scrolls in its own box.
+ */
+.board {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(12.5rem, 1fr);
+  gap: var(--s-3);
+  overflow-x: auto;
+  padding-block-end: var(--s-2);
+}
+
+.stack {
+  display: grid;
+  gap: var(--s-4);
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  min-width: 0;
+  padding: var(--s-3);
+  border-radius: var(--r-lg);
+  background: var(--c-surface-sunken);
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--s-2);
+}
+
+.cards {
+  display: grid;
+  gap: var(--s-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  padding: var(--s-3);
+  border: thin solid var(--c-line-hairline);
+  border-radius: var(--r-md);
+  background: var(--c-surface-base);
+}
+
+.none {
+  margin: 0;
+  color: var(--c-text-muted);
+}
+
+.gridBox {
+  position: relative;
+  overflow-x: auto;
+}
+
+.grid {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.grid th,
+.grid td {
+  padding: var(--s-2);
+  border-block-end: thin solid var(--c-line-hairline);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.placeHead,
+.placeCell {
+  position: sticky;
+  inset-inline-start: 0;
+  z-index: 1;
+  min-width: 12.5rem;
+  max-width: 17.5rem;
+  text-align: start !important;
+  white-space: normal !important;
+  background: var(--c-surface-base);
+}
+
+.dayHead {
+  color: var(--c-text-muted);
+  font-weight: 600;
+}
+
+.dayCell {
+  min-width: 3.5rem;
+}
+
+.missing {
+  min-width: 3.5rem;
+  background: var(--c-surface-sunken);
+}
+
+/* On a phone the site column gives up room so a few days show beside it. */
+@media (max-width: 767px) {
+  .placeHead,
+  .placeCell {
+    min-width: 8rem;
+    max-width: 10rem;
+  }
+}
