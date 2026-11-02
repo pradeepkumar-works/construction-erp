@@ -2,9 +2,8 @@
 
 import React from 'react';
 import { Tooltip, Typography } from 'antd';
+import { tk } from '@/ds';
 import { formatChainage, type ChainageLayer, unitLabel } from '@erp/shared';
-import { BRAND } from '@/lib/brand';
-import { themeColor, themeFontSize } from '@/lib/theme';
 import { formatDate, formatQty } from '@/lib/format';
 
 const LABEL = 220;
@@ -34,31 +33,31 @@ export function ChainageStrip({ layers, start, end }: { layers: ChainageLayer[];
           <div style={{ width: LABEL, flex: 'none' }} />
           <div style={{ position: 'relative', flex: 1, height: 22 }}>
             {ticks.map((t) => (
-              <span key={t} className="text-muted" style={{ position: 'absolute', left: pct(t), transform: 'translateX(-50%)', fontSize: themeFontSize('fontSizeSM'), whiteSpace: 'nowrap' }}>
+              <span key={t} className="text-muted" style={{ position: 'absolute', left: pct(t), transform: 'translateX(-50%)', fontSize: tk.type.caption.fontSize, whiteSpace: 'nowrap' }}>
                 {formatChainage(t)}
               </span>
             ))}
           </div>
-          <div style={{ width: SIDE, flex: 'none', fontSize: themeFontSize('fontSizeSM'), textAlign: 'right' }} className="text-muted">
+          <div style={{ width: SIDE, flex: 'none', fontSize: tk.type.caption.fontSize, textAlign: 'right' }} className="text-muted">
             done
           </div>
         </div>
         {layers.map((l) => (
-          <div key={l.activityId} className="strip-row" data-activity={l.name} style={{ display: 'flex', alignItems: 'center', padding: '6px 0', borderTop: `1px solid ${themeColor('colorBorderSecondary')}` }}>
-            <div style={{ width: LABEL, flex: 'none', paddingRight: 12 }}>
-              <div style={{ fontWeight: 500 }}>{l.name}</div>
-              <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+          <div key={l.activityId} className="strip-row" data-activity={l.name} style={{ display: 'flex', alignItems: 'center', padding: `${tk.space[2]} 0`, borderTop: `1px solid ${tk.color.line.hairline}` }}>
+            <div style={{ width: LABEL, flex: 'none', paddingRight: tk.space[3] }}>
+              <div style={{ fontWeight: tk.type.strong.fontWeight }}>{l.name}</div>
+              <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                 {formatQty(l.executedQty)} of {formatQty(l.plannedQty)} {l.unit}
                 {Number(l.unplacedQty) ? ` · ${formatQty(l.unplacedQty)} with no chainage` : ''}
               </div>
             </div>
-            <div style={{ position: 'relative', flex: 1, height: 18, background: themeColor('colorFillSecondary'), borderRadius: 3 }}>
+            <div style={{ position: 'relative', flex: 1, height: 18, background: tk.color.tone.neutral.bg, borderRadius: tk.radius.sm }}>
               {ticks.map((t) => (
-                <span key={t} style={{ position: 'absolute', left: pct(t), top: 0, bottom: 0, width: 1, background: themeColor('colorBorder') }} />
+                <span key={t} style={{ position: 'absolute', left: pct(t), top: 0, bottom: 0, width: 1, background: tk.color.line.base }} />
               ))}
               {l.segments.map((s) => {
                 const point = s.to - s.from < length / 400;
-                const colour = s.status === 'APPROVED' ? BRAND.colors.success : BRAND.colors.pending;
+                const colour = s.status === 'APPROVED' ? tk.color.tone.success.solid : tk.color.tone.pending.solid;
                 return (
                   <Tooltip key={s.entryId} title={`${s.from === s.to ? `Ch ${formatChainage(s.from)}` : `Ch ${formatChainage(s.from)} to ${formatChainage(s.to)}`}: ${formatQty(s.quantity)} ${unitLabel(l.unit)}, ${formatDate(s.date)}${s.status === 'APPROVED' ? '' : ' (waiting for approval)'}`}>
                     <span
@@ -67,27 +66,27 @@ export function ChainageStrip({ layers, start, end }: { layers: ChainageLayer[];
                         position: 'absolute',
                         left: pct(s.from),
                         width: point ? 4 : `calc(${pct(s.to)} - ${pct(s.from)})`,
-                        marginLeft: point ? -2 : 0,
+                        marginLeft: point ? tk.neg('half') : 0,
                         top: point ? -2 : 2,
                         bottom: point ? -2 : 2,
                         background: colour,
                         opacity: s.status === 'APPROVED' ? 0.9 : 0.55,
-                        borderRadius: 2,
+                        borderRadius: tk.radius.xs,
                       }}
                     />
                   </Tooltip>
                 );
               })}
             </div>
-            <div style={{ width: SIDE, flex: 'none', textAlign: 'right', fontSize: themeFontSize('fontSizeSM') }}>
+            <div style={{ width: SIDE, flex: 'none', textAlign: 'right', fontSize: tk.type.caption.fontSize }}>
               {!l.coveredM && !l.pendingM && l.segments.length ? (
                 // Work at points (culverts): count the places, a length means nothing.
-                <div style={{ fontWeight: 600 }}>
+                <div style={{ fontWeight: tk.type.title.fontWeight }}>
                   {l.segments.length} place{l.segments.length === 1 ? '' : 's'}
                 </div>
               ) : (
                 <>
-                  <div style={{ fontWeight: 600 }}>{start !== null && end !== null ? `${Math.round((l.coveredM / length) * 100)}%` : `${formatQty(l.coveredM)} m`}</div>
+                  <div style={{ fontWeight: tk.type.title.fontWeight }}>{start !== null && end !== null ? `${Math.round((l.coveredM / length) * 100)}%` : `${formatQty(l.coveredM)} m`}</div>
                   <div className="text-muted">
                     {formatQty(l.coveredM / 1000)} km{l.pendingM ? ` + ${formatQty(l.pendingM / 1000)} waiting` : ''}
                   </div>
@@ -96,10 +95,10 @@ export function ChainageStrip({ layers, start, end }: { layers: ChainageLayer[];
             </div>
           </div>
         ))}
-        <Typography.Paragraph type="secondary" style={{ fontSize: themeFontSize('fontSizeSM'), marginTop: 8, marginBottom: 0 }}>
-          <span style={{ display: 'inline-block', width: 10, height: 10, background: BRAND.colors.success, marginRight: 4, verticalAlign: 'middle' }} />
+        <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[2], marginBottom: 0 }}>
+          <span style={{ display: 'inline-block', width: 10, height: 10, background: tk.color.tone.success.solid, marginRight: tk.space[1], verticalAlign: 'middle' }} />
           approved
-          <span style={{ display: 'inline-block', width: 10, height: 10, background: BRAND.colors.pending, opacity: 0.55, margin: '0 4px 0 12px', verticalAlign: 'middle' }} />
+          <span style={{ display: 'inline-block', width: 10, height: 10, background: tk.color.tone.pending.solid, opacity: 0.55, margin: `0 ${tk.space[1]} 0 ${tk.space[3]}`, verticalAlign: 'middle' }} />
           waiting for approval. Overlapping entries count once.
         </Typography.Paragraph>
       </div>

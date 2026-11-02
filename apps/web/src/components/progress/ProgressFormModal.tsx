@@ -3,6 +3,7 @@
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import React, { useEffect } from 'react';
 import { Alert, Form, Input, InputNumber, Select } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import type { AiDraftDto, AttachmentDto, ProgressEntryDto } from '@erp/shared';
@@ -119,7 +120,7 @@ export function ProgressFormModal({ open, onClose, projectId, defaultProjectId, 
           <Alert
             type="info"
             showIcon
-            style={{ marginBottom: 16 }}
+            style={{ marginBottom: tk.space[4] }}
             title="Your company records progress in the DPR"
             description="Add this work as a line of the day's DPR; it is approved with the DPR."
             action={
@@ -130,7 +131,7 @@ export function ProgressFormModal({ open, onClose, projectId, defaultProjectId, 
           />
         ) : null}
         {entry?.reviewNote && (
-          <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Reviewer note from ${entry.reviewedByName ?? 'approver'}`} description={entry.reviewNote} />
+          <Alert type="warning" showIcon style={{ marginBottom: tk.space[4] }} title={`Reviewer note from ${entry.reviewedByName ?? 'approver'}`} description={entry.reviewNote} />
         )}
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
           <ProjectSelect allowClear={false} placeholder="Choose a project" style={{ width: '100%' }} onChange={() => form.setFieldValue('activityId', undefined)} />

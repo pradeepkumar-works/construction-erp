@@ -2,7 +2,8 @@
 
 import React, { Suspense, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Card, Col, Row, Segmented, Select, Statistic, Typography, theme } from 'antd';
+import { Button, Card, Col, Row, Segmented, Select, Statistic, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTabs } from '@/components/common/AppTabs';
 import { PlusOutlined } from '@/components/common/icons';
 import { MEETING_KIND_LABELS, canRecordMeetings, type MeetingActionDto, type MeetingDto } from '@erp/shared';
@@ -38,7 +39,6 @@ const ACTION_STATUS = [
  * gave out, open ones by due date, so nothing agreed at a meeting is lost before the next one.
  */
 function MeetingsPage() {
-  const { token } = theme.useToken();
   const { user } = useAuth();
   const router = useRouter();
   const canRecord = !!user && canRecordMeetings(user.roleKey);
@@ -54,7 +54,7 @@ function MeetingsPage() {
   const q = view === 'meetings' ? meetings : actions;
   const open = (id: string) => router.push(`/meetings/${id}`);
   const sub = (text: React.ReactNode) => (
-    <Typography.Text type="secondary" style={{ display: 'block', fontSize: token.fontSizeSM }}>
+    <Typography.Text type="secondary" style={{ display: 'block', fontSize: tk.type.caption.fontSize }}>
       {text}
     </Typography.Text>
   );
@@ -173,8 +173,8 @@ function MeetingsPage() {
   const stat = (title: string, value: React.ReactNode, note?: React.ReactNode, tone?: 'danger') => (
     <Col xs={12} lg={6}>
       <Card size="small" style={{ height: '100%' }}>
-        <Statistic title={title} value={0} formatter={() => value} styles={{ content: { fontSize: token.fontSizeHeading4, color: tone === 'danger' ? token.colorErrorText : undefined } }} />
-        {note ? <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{note}</div> : null}
+        <Statistic title={title} value={0} formatter={() => value} styles={{ content: { fontSize: tk.type.lead.fontSize, color: tone === 'danger' ? tk.color.tone.danger.fg : undefined } }} />
+        {note ? <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{note}</div> : null}
       </Card>
     </Col>
   );
@@ -188,7 +188,7 @@ function MeetingsPage() {
       {q.error && <QueryError error={q.error} onRetry={() => q.refetch()} />}
       {q.isLoading ? <PageSkeleton header={false} shape="list" /> : null}
       {view === 'meetings' && ms ? (
-        <Row gutter={[12, 12]} style={{ marginBottom: token.marginMD }}>
+        <Row gutter={[12, 12]} style={{ marginBottom: tk.space[5] }}>
           {stat('This month', ms.thisMonth, 'Meetings held since the 1st')}
           {stat('Drafts', ms.drafts, 'Minutes not issued yet')}
           {stat('Open actions', ms.openActions, 'From every meeting')}
@@ -196,7 +196,7 @@ function MeetingsPage() {
         </Row>
       ) : null}
       {view === 'actions' && as ? (
-        <Row gutter={[12, 12]} style={{ marginBottom: token.marginMD }}>
+        <Row gutter={[12, 12]} style={{ marginBottom: tk.space[5] }}>
           {stat('Open', as.open, mine ? 'Yours, from every meeting' : 'From every meeting')}
           {stat('Overdue', as.overdue, as.overdue ? 'Past their due date' : 'None past its due date', as.overdue ? 'danger' : undefined)}
           {stat('Due this week', as.dueThisWeek, 'Today and the next 7 days')}

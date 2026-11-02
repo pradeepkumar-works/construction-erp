@@ -2,6 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { Alert, Form, Input, InputNumber, Segmented, Select } from 'antd';
+import { tk } from '@/ds';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { POUR_SOURCES, POUR_SOURCE_LABELS, cubeSetsFor, type PourDto, type PourSource } from '@erp/shared';
@@ -120,7 +121,7 @@ export function PouredModal({ pour, onClose }: { pour: PourDto | null; onClose: 
     <FormShell open={!!pour} onClose={onClose} form={form} layout="modal" width={480} projectDefault={false} title={pour ? `Record pour ${pour.pourNo}` : 'Record pour'} okText="Record pour" onSubmit={(v) => save.mutateAsync(v)}>
       <Form form={form} layout="vertical">
         {pour && !pour.cardPassed ? (
-          <Alert type="warning" showIcon style={{ marginBottom: 12 }} title="The pour card has not passed. The pour is recorded and flagged in the register." />
+          <Alert type="warning" showIcon style={{ marginBottom: tk.space[3] }} title="The pour card has not passed. The pour is recorded and flagged in the register." />
         ) : null}
         <FormGrid cols={2}>
           <Form.Item name="volume" label="Volume poured (m³)" rules={[{ required: true, message: 'Give the volume poured' }]}>

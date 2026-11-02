@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Button, Flex, Space, Typography, theme } from 'antd';
+import { Button, Flex, Space, Typography } from 'antd';
+import { tk } from '@/ds';
 import { PlusOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ToolboxTalkDraftDto, ToolboxTalkDto } from '@erp/shared';
@@ -40,8 +41,7 @@ const EXPORT: ExportColumn<ToolboxTalkDto>[] = [
 ];
 
 function Sub({ children }: { children: React.ReactNode }) {
-  const { token } = theme.useToken();
-  return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
+  return <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{children}</div>;
 }
 
 const NO_KEYS: string[] = [];

@@ -2,6 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { Alert, Form, Input, Select, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import type { AiDraftDto, AttachmentDto, ExpenseCategory, ExpenseDto, PaymentMode } from '@erp/shared';
@@ -18,7 +19,6 @@ import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
 import { VendorPicker } from '@/components/vendors/VendorPicker';
 import { aiFlagItem, draftDate } from '@/components/ai/drafts';
-import { themeFontSize } from '@/lib/theme';
 import { recordPage } from '@/components/approvals/queue';
 
 interface FormValues {
@@ -129,7 +129,7 @@ export function ExpenseFormModal({ open, onClose, projectId, defaultProjectId, e
       aiDraft={draft}
     >
       <Form form={form} layout="vertical">
-        {expense?.reviewNote && <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Reviewer note from ${expense.reviewedByName ?? 'approver'}`} description={expense.reviewNote} />}
+        {expense?.reviewNote && <Alert type="warning" showIcon style={{ marginBottom: tk.space[4] }} title={`Reviewer note from ${expense.reviewedByName ?? 'approver'}`} description={expense.reviewNote} />}
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
           <ProjectSelect allowClear={false} placeholder="Choose a project" onChange={() => form.setFieldValue('activityId', undefined)} />
         </Form.Item>
@@ -171,7 +171,7 @@ export function ExpenseFormModal({ open, onClose, projectId, defaultProjectId, e
             <MoneyInput placeholder={computedGst.toFixed(2)} />
           </Form.Item>
           <Form.Item label="Total">
-            <Typography.Text strong style={{ fontSize: themeFontSize('fontSizeLG'), lineHeight: '32px' }}>
+            <Typography.Text strong style={{ fontSize: tk.type.lead.fontSize, lineHeight: tk.control.md }}>
               {formatINR((Number(amount) || 0) + (Number(gst) || 0), true)}
             </Typography.Text>
           </Form.Item>

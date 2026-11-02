@@ -3,7 +3,8 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Card, Checkbox, Flex, Segmented, Select, Statistic, Table, Typography, theme } from 'antd';
+import { Card, Checkbox, Flex, Segmented, Select, Statistic, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { LAB_REPORT_DAYS, type LabSampleDto, type TestResult } from '@erp/shared';
 import { useLabSamples, useQaLabs } from '@/lib/queries';
 import { useProjectScope } from '@/lib/project-scope';
@@ -19,7 +20,6 @@ type StateFilter = 'ALL' | 'AT_LAB' | 'REPORTED';
 
 /** Samples at the labs: what went to which lab, how long it has waited for its report, and the charges. */
 export function SamplesPage() {
-  const { token } = theme.useToken();
   const params = useSearchParams();
   const router = useRouter();
   const [projectId, setProjectId] = useProjectScope();
@@ -48,13 +48,13 @@ export function SamplesPage() {
         subtitle={`Samples sent to the labs, the oldest wait first. A report is late after ${LAB_REPORT_DAYS} days, counted from the last test day.`}
       />
       {error ? <QueryError error={error} onRetry={() => refetch()} /> : null}
-      <Flex gap={token.marginLG} wrap style={{ marginBottom: token.margin }}>
+      <Flex gap={tk.space[6]} wrap style={{ marginBottom: tk.space[4] }}>
         <Statistic title="At the labs" value={data?.atLab ?? 0} loading={isLoading} />
-        <Statistic title="Report late" value={data?.late ?? 0} loading={isLoading} styles={{ content: data?.late ? { color: token.colorErrorText } : undefined }} />
+        <Statistic title="Report late" value={data?.late ?? 0} loading={isLoading} styles={{ content: data?.late ? { color: tk.color.tone.danger.fg } : undefined }} />
         <Statistic title="Lab charges" value={formatINR(data?.charges ?? 0)} loading={isLoading} />
       </Flex>
       <Card>
-        <Flex gap={token.marginSM} wrap align="center" style={{ marginBottom: token.margin }}>
+        <Flex gap={tk.space[3]} wrap align="center" style={{ marginBottom: tk.space[4] }}>
           <ProjectSelect allowClear placeholder="All projects" aria-label="Project" value={projectId} onChange={reset(setProjectId)} style={{ width: 220 }} />
           <Select
             allowClear
@@ -127,7 +127,7 @@ export function SamplesPage() {
                     ) : null}
                   </Flex>
                 ) : (
-                  <Flex gap={token.marginXS} align="center" wrap>
+                  <Flex gap={tk.space[2]} align="center" wrap>
                     <span translate="no">{s.waitDays === 1 ? '1 day' : `${s.waitDays ?? 0} days`}</span>
                     {s.late ? <AppTag meaning="failed">Late</AppTag> : <AppTag meaning="waiting">At the lab</AppTag>}
                   </Flex>

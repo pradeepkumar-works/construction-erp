@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Button, Segmented, Select, theme } from 'antd';
+import { Button, Segmented, Select } from 'antd';
+import { tk } from '@/ds';
 import { PlusOutlined } from '@/components/common/icons';
 import type { WorkPermitDto, WorkPermitStatus, WorkPermitType } from '@erp/shared';
 import { WORK_PERMIT_STATUS_LABELS, WORK_PERMIT_TYPES, WORK_PERMIT_TYPE_LABELS, canReportSafety } from '@erp/shared';
@@ -42,8 +43,7 @@ const VIEWS: View[] = ['ACTIVE', 'REQUESTED', 'ISSUED', 'CLOSED', 'ALL'];
 const VIEW_LABELS: Record<string, string> = { ACTIVE: `${WORK_PERMIT_STATUS_LABELS.REQUESTED} and ${WORK_PERMIT_STATUS_LABELS.ISSUED.toLowerCase()}`, ...WORK_PERMIT_STATUS_LABELS, ALL: 'All' };
 
 function Sub({ children }: { children: React.ReactNode }) {
-  const { token } = theme.useToken();
-  return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
+  return <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{children}</div>;
 }
 
 /** Permits to work: what is waiting to be issued, live at site, and the record of past ones. */

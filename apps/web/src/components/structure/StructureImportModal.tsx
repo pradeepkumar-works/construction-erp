@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { Alert, App, Button, Modal, Space, Table, Typography, Upload } from 'antd';
+import { tk } from '@/ds';
 import type { UploadProps } from 'antd';
 import { DownloadOutlined, InboxOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -129,7 +130,7 @@ export function StructureImportModal({ open, onClose, projectId }: { open: boole
         </Space>
       }
     >
-      {problem ? <Alert type="error" showIcon title={problem} style={{ marginBottom: 12 }} /> : null}
+      {problem ? <Alert type="error" showIcon title={problem} style={{ marginBottom: tk.space[3] }} /> : null}
       {!rows.length ? (
         <Upload.Dragger accept=".xlsx,.xls,.csv" beforeUpload={beforeUpload} showUploadList={false} maxCount={1}>
           <p className="ant-upload-drag-icon">
@@ -155,7 +156,7 @@ export function StructureImportModal({ open, onClose, projectId }: { open: boole
             ]}
           />
           {parsed.length !== valid.length ? (
-            <Typography.Paragraph type="warning" style={{ marginTop: 8 }}>
+            <Typography.Paragraph type="warning" style={{ marginTop: tk.space[2] }}>
               {parsed.length - valid.length} row{parsed.length - valid.length === 1 ? '' : 's'} with problems will be left out.
             </Typography.Paragraph>
           ) : null}

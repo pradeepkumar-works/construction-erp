@@ -3,6 +3,7 @@
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, AutoComplete, Button, Form, Input, InputNumber, Select, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import type { AiDraftDto, AttachmentDto, DailyReportDto, DprBuiltInKey, DprFormDef, Weather } from '@erp/shared';
@@ -17,7 +18,6 @@ import { editActionLabel } from '@/components/common/EditResubmitButton';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { LineTable } from '@/components/form/LineTable';
 import { aiFlagItem, draftDate } from '@/components/ai/drafts';
-import { themeFontSize } from '@/lib/theme';
 import { recordPage } from '@/components/approvals/queue';
 import { DprLinesField, copiedLine, followNorms, lineValues, linesBody, type DprLineValues } from './DprLinesField';
 import { OwnFieldItems, extraBody } from './OwnFields';
@@ -245,7 +245,7 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
         }}
       >
         {entry?.reviewNote && (
-          <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Reviewer note from ${entry.reviewedByName ?? 'approver'}`} description={entry.reviewNote} />
+          <Alert type="warning" showIcon style={{ marginBottom: tk.space[4] }} title={`Reviewer note from ${entry.reviewedByName ?? 'approver'}`} description={entry.reviewNote} />
         )}
         <FormSection title="The day">
           <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
@@ -274,7 +274,7 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
           title="Work done"
           extra={
             !editing && shows('lines') && previousFull?.lines?.length ? (
-              <Button type="link" size="small" onClick={copyLines} style={{ padding: 0, fontSize: themeFontSize('fontSizeSM') }}>
+              <Button type="link" size="small" onClick={copyLines} style={{ padding: 0, fontSize: tk.type.caption.fontSize }}>
                 Copy {previousFull.lines.length} lines from {formatDate(previousFull.date)}
               </Button>
             ) : null
@@ -290,7 +290,7 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
             name="workExecuted"
             label={watchedLines?.some((l) => l?.activityId) ? 'Other work and notes' : 'Work done today'}
             extra={watchedLines?.some((l) => l?.activityId) ? 'Left empty, it is written from the lines.' : undefined}
-            style={{ marginTop: 16 }}
+            style={{ marginTop: tk.space[4] }}
             dependencies={['lines']}
             rules={[
               ({ getFieldValue }) => ({
@@ -310,16 +310,16 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
             extra={
               !editing && attendanceSheet ? (
                 filledFrom === attendanceSheet.id && !manpowerEdited ? (
-                  <Typography.Text type="success" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                  <Typography.Text type="success" style={{ fontSize: tk.type.caption.fontSize }}>
                     From attendance: {attendanceSheet.totalWorkers} workers recorded by {attendanceSheet.recordedByName}
                   </Typography.Text>
                 ) : (
-                  <Button type="link" size="small" onClick={applyAttendance} style={{ padding: 0, fontSize: themeFontSize('fontSizeSM') }}>
+                  <Button type="link" size="small" onClick={applyAttendance} style={{ padding: 0, fontSize: tk.type.caption.fontSize }}>
                     Use attendance ({attendanceSheet.totalWorkers} workers)
                   </Button>
                 )
               ) : !editing && attendance.data && !attendanceSheet ? (
-                <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
                   No attendance recorded for this day yet
                 </Typography.Text>
               ) : null
@@ -329,10 +329,10 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
               <Alert
                 type="info"
                 showIcon
-                style={{ marginBottom: 12 }}
+                style={{ marginBottom: tk.space[3] }}
                 title={`Copied from the DPR of ${formatDate(copiedFrom.date)}: check the numbers for today`}
                 action={
-                  <Button type="link" size="small" onClick={clearCopied} style={{ padding: 0, fontSize: themeFontSize('fontSizeSM') }}>
+                  <Button type="link" size="small" onClick={clearCopied} style={{ padding: 0, fontSize: tk.type.caption.fontSize }}>
                     Clear
                   </Button>
                 }

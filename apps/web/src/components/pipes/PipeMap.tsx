@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { Flex, theme } from 'antd';
+import { Flex } from 'antd';
+import { tk } from '@/ds';
 import { SOURCE_NODE_KINDS, VALVE_NODE_KINDS, type PipeNodeDto, type PipeSegmentDto } from '@erp/shared';
 import { formatQty } from '@/lib/format';
+import { useResolved } from '@/ds/react';
 
 /** How far along a segment is, as the map draws it. */
 export type SegmentState = 'existing' | 'notStarted' | 'inProgress' | 'laid' | 'tested';
@@ -83,14 +85,15 @@ function layout(nodes: PipeNodeDto[], segments: PipeSegmentDto[]): { at: Map<str
  * the same in words, so the drawing is a picture, not a control.
  */
 export function PipeMap({ nodes, segments, selected, label }: { nodes: PipeNodeDto[]; segments: PipeSegmentDto[]; selected?: string | null; label: string }) {
-  const { token } = theme.useToken();
+  // SVG attributes take colour values, not CSS variables, so the map reads the resolved roles.
+  const { color } = useResolved();
   const { at, height } = useMemo(() => layout(nodes, segments), [nodes, segments]);
   const stroke: Record<SegmentState, { color: string; dash?: string }> = {
-    existing: { color: token.colorBorder, dash: '2 6' },
-    notStarted: { color: token.colorTextTertiary, dash: '10 6' },
-    inProgress: { color: token.colorWarning },
-    laid: { color: token.colorPrimary },
-    tested: { color: token.colorSuccess },
+    existing: { color: color.line.base, dash: '2 6' },
+    notStarted: { color: color.text.faint, dash: '10 6' },
+    inProgress: { color: color.tone.pending.solid },
+    laid: { color: color.accent.solid },
+    tested: { color: color.tone.success.solid },
   };
   const dias = segments.map((s) => s.diameterMm);
   const [dMin, dMax] = [Math.min(...dias), Math.max(...dias)];
@@ -102,7 +105,7 @@ export function PipeMap({ nodes, segments, selected, label }: { nodes: PipeNodeD
 
   return (
     <div>
-      <div data-scroll-region style={{ overflowX: 'auto', border: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}`, borderRadius: token.borderRadius, background: token.colorBgContainer }}>
+      <div data-scroll-region style={{ overflowX: 'auto', border: tk.line('hairline'), borderRadius: tk.radius.md, background: tk.color.surface.base }}>
         <svg viewBox={`0 0 ${W} ${height}`} role="img" aria-label={label} style={{ display: 'block', width: '100%', minWidth: 560, height: 'auto' }}>
           {segments.map((s) => {
             const a = at.get(s.fromNodeId);
@@ -112,12 +115,12 @@ export function PipeMap({ nodes, segments, selected, label }: { nodes: PipeNodeD
             const on = selected === s.id;
             return (
               <g key={s.id}>
-                {on ? <line x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} stroke={token.colorPrimaryBorder} strokeWidth={width(s.diameterMm) + 10} strokeLinecap="round" /> : null}
+                {on ? <line x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} stroke={color.accent.chosen} strokeWidth={width(s.diameterMm) + 10} strokeLinecap="round" /> : null}
                 <line x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} stroke={st.color} strokeWidth={width(s.diameterMm)} strokeDasharray={st.dash} strokeLinecap="round">
                   <title>{`${s.code}, ${s.fromCode} to ${s.toCode}: ${formatQty(s.lengthM)} m, ${s.diameterMm} mm, ${SEGMENT_STATE_LABELS[segmentState(s)].toLowerCase()}`}</title>
                 </line>
                 {labels ? (
-                  <text x={(a[0] + b[0]) / 2} y={(a[1] + b[1]) / 2 - 8} textAnchor="middle" fontSize={13} fill={token.colorTextSecondary} paintOrder="stroke" stroke={token.colorBgContainer} strokeWidth={4}>
+                  <text x={(a[0] + b[0]) / 2} y={(a[1] + b[1]) / 2 - 8} textAnchor="middle" fontSize={13} fill={color.text.muted} paintOrder="stroke" stroke={color.surface.base} strokeWidth={4}>
                     {s.code}
                   </text>
                 ) : null}
@@ -130,18 +133,18 @@ export function PipeMap({ nodes, segments, selected, label }: { nodes: PipeNodeD
             const source = SOURCE_NODE_KINDS.includes(n.kind);
             const valve = VALVE_NODE_KINDS.includes(n.kind);
             const shape = source ? (
-              <rect x={p[0] - 9} y={p[1] - 9} width={18} height={18} fill={token.colorPrimary} stroke={token.colorBgContainer} strokeWidth={2} />
+              <rect x={p[0] - 9} y={p[1] - 9} width={18} height={18} fill={color.accent.solid} stroke={color.surface.base} strokeWidth={2} />
             ) : valve ? (
-              <path d={`M ${p[0]} ${p[1] - 8} L ${p[0] + 8} ${p[1]} L ${p[0]} ${p[1] + 8} L ${p[0] - 8} ${p[1]} Z`} fill={n.fixed ? token.colorText : token.colorBgContainer} stroke={token.colorText} strokeWidth={2} />
+              <path d={`M ${p[0]} ${p[1] - 8} L ${p[0] + 8} ${p[1]} L ${p[0]} ${p[1] + 8} L ${p[0] - 8} ${p[1]} Z`} fill={n.fixed ? color.text.base : color.surface.base} stroke={color.text.base} strokeWidth={2} />
             ) : (
-              <circle cx={p[0]} cy={p[1]} r={4.5} fill={token.colorText} stroke={token.colorBgContainer} strokeWidth={1.5} />
+              <circle cx={p[0]} cy={p[1]} r={4.5} fill={color.text.base} stroke={color.surface.base} strokeWidth={1.5} />
             );
             return (
               <g key={n.id}>
                 {shape}
                 <title>{n.code}</title>
                 {nodeLabels || source ? (
-                  <text x={p[0] + 10} y={p[1] + 16} fontSize={13} fill={token.colorText} paintOrder="stroke" stroke={token.colorBgContainer} strokeWidth={4}>
+                  <text x={p[0] + 10} y={p[1] + 16} fontSize={13} fill={color.text.base} paintOrder="stroke" stroke={color.surface.base} strokeWidth={4}>
                     {n.code}
                   </text>
                 ) : null}
@@ -150,7 +153,7 @@ export function PipeMap({ nodes, segments, selected, label }: { nodes: PipeNodeD
           })}
         </svg>
       </div>
-      <Flex wrap gap="small" style={{ marginTop: token.marginXS, columnGap: token.marginMD }} aria-label="Map key" role="list">
+      <Flex wrap gap="small" style={{ marginTop: tk.space[2], columnGap: tk.space[5] }} aria-label="Map key" role="list">
         {states.map((k) => (
           <Flex key={k} align="center" gap={6} role="listitem">
             <svg width={28} height={10} aria-hidden="true">
@@ -163,14 +166,14 @@ export function PipeMap({ nodes, segments, selected, label }: { nodes: PipeNodeD
         ))}
         <Flex align="center" gap={6} role="listitem">
           <svg width={14} height={14} aria-hidden="true">
-            <rect x={1} y={1} width={12} height={12} fill={token.colorPrimary} />
+            <rect x={1} y={1} width={12} height={12} fill={color.accent.solid} />
           </svg>
           <span>Tank or source</span>
         </Flex>
         {nodes.some((n) => VALVE_NODE_KINDS.includes(n.kind)) ? (
           <Flex align="center" gap={6} role="listitem">
             <svg width={16} height={16} aria-hidden="true">
-              <path d="M 8 1 L 15 8 L 8 15 L 1 8 Z" fill={token.colorText} />
+              <path d="M 8 1 L 15 8 L 8 15 L 1 8 Z" fill={color.text.base} />
             </svg>
             <span>Valve fixed (hollow: not yet)</span>
           </Flex>

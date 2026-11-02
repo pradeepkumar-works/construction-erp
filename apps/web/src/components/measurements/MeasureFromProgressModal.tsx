@@ -2,12 +2,12 @@
 
 import React from 'react';
 import { Button, Grid, Modal, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { ToMeasureItemDto } from '@erp/shared';
 import { useToMeasure } from '@/lib/queries';
 import { formatDate, formatQty } from '@/lib/format';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { EmptyArt } from '@/components/common/EmptyArt';
-import { themeFontSize } from '@/lib/theme';
 import type { MeasurementPrefill } from './MeasurementFormModal';
 import { Money } from '@/components/common/Money';
 
@@ -37,7 +37,7 @@ function itemCell(r: ToMeasureItemDto) {
   return (
     <div>
       <span translate="no">{r.itemNo}</span> {r.description}
-      <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+      <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
         {r.entries.length} approved {r.entries.length === 1 ? 'day' : 'days'}, {formatDate(r.entries[0].date)} onwards
         {r.otherUnitActivities.length ? ` · ${r.otherUnitActivities.join(', ')} ${r.otherUnitActivities.length === 1 ? 'records' : 'record'} another unit, so ${r.otherUnitActivities.length === 1 ? 'its' : 'their'} days are not here` : ''}
       </div>
@@ -52,7 +52,7 @@ function leftCell(r: ToMeasureItemDto) {
       <span className="mono" translate="no">
         {formatQty(r.toMeasureQty)} {r.unit}
       </span>
-      <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+      <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
         <Money value={r.toMeasureAmount} />
       </div>
     </>

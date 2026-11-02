@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Button, Select, theme } from 'antd';
+import { Button, Select } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { PlusOutlined } from '@/components/common/icons';
 import type { InspectionDto, InspectionSortField, SubmissionStatus } from '@erp/shared';
@@ -26,8 +27,7 @@ import { InspectionFormModal } from './InspectionFormModal';
 const KEYS = ['status', 'mine', 'from', 'to', 'activityId'] as const;
 
 function Sub({ children }: { children: React.ReactNode }) {
-  const { token } = theme.useToken();
-  return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
+  return <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{children}</div>;
 }
 
 function inspectionColumns({ showProject, onOpen, onEdit, sortOrderFor }: { showProject: boolean; onOpen: (id: string) => void; onEdit: (row: InspectionDto) => void; sortOrderFor: (key: InspectionSortField) => 'ascend' | 'descend' | null }): ListColumn<InspectionDto>[] {
@@ -47,7 +47,7 @@ function inspectionColumns({ showProject, onOpen, onEdit, sortOrderFor }: { show
         <div>
           <RecordLink href={`/inspections/${r.id}`} onOpen={() => onOpen(r.id)}>{r.activityName}</RecordLink>
           {r.holdPoint && (
-            <AppTag meaning="waiting" style={{ marginLeft: 6 }}>
+            <AppTag meaning="waiting" style={{ marginInlineStart: tk.space[2] }}>
               Hold point
             </AppTag>
           )}

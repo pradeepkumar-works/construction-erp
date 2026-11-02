@@ -3,7 +3,8 @@
 import React, { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Button, Card, Empty, Flex, Segmented, Statistic, Table, Typography, theme } from 'antd';
+import { Button, Card, Empty, Flex, Segmented, Statistic, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import { DownOutlined, UpOutlined } from '@/components/common/icons';
@@ -42,7 +43,6 @@ export default function Page() {
 
 function AttendanceCheck() {
   const { user } = useAuth();
-  const { token } = theme.useToken();
   const search = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -84,7 +84,7 @@ function AttendanceCheck() {
   const flaggedBills = data.bills.filter((b) => b.lines.some((l) => l.flagged)).length;
   const dayFlags = data.flags.filter((f) => f.kind !== 'BILL_ABOVE').length;
   const running = data.month === dayjs().format('YYYY-MM');
-  const big = { content: { fontSize: token.fontSizeHeading4 } };
+  const big = { content: { fontSize: tk.type.lead.fontSize } };
   const rows: BillRow[] = data.bills.flatMap((b) => b.lines.map((l, i) => ({ ...l, bill: b, first: i === 0 })));
   const figure = (v: number | null, missing = 'Not kept') => (v === null ? <Typography.Text type="secondary">{missing}</Typography.Text> : <span className="mono" translate="no">{formatQty(v)}</span>);
 
@@ -93,17 +93,17 @@ function AttendanceCheck() {
     const id = `working-${f.key.replace(/[^a-zA-Z0-9-]/g, '-')}`;
     return (
       <Card key={f.key} data-flag-key={f.key} size="small">
-        <Flex gap={token.marginXS} wrap align="center" style={{ marginBottom: token.marginXS }}>
+        <Flex gap={tk.space[2]} wrap align="center" style={{ marginBottom: tk.space[2] }}>
           <AppTag variant="kind">{ATTENDANCE_FLAG_LABELS[f.kind]}</AppTag>
           <Typography.Text type="secondary" translate="no">
             {f.projectName}
           </Typography.Text>
           <Typography.Text type="secondary">{f.from === f.to ? formatDate(f.from) : `${formatDate(f.from)} to ${formatDate(f.to)}`}</Typography.Text>
         </Flex>
-        <Typography.Title level={3} style={{ fontSize: token.fontSizeHeading5, marginTop: 0, marginBottom: token.marginXS }}>
+        <Typography.Title level={3} style={{ fontSize: tk.type.body.fontSize, marginTop: 0, marginBottom: tk.space[2] }}>
           {f.title}
         </Typography.Title>
-        <Flex gap={token.marginXS} wrap align="baseline" style={{ marginBottom: token.marginXS }}>
+        <Flex gap={tk.space[2]} wrap align="baseline" style={{ marginBottom: tk.space[2] }}>
           <Typography.Text strong>To check:</Typography.Text>
           <Typography.Text translate="no">{f.quantity}</Typography.Text>
           {f.valueInr ? (
@@ -112,11 +112,11 @@ function AttendanceCheck() {
             </AppTag>
           ) : null}
         </Flex>
-        <Typography.Paragraph type="secondary" style={{ marginBottom: token.marginXS }}>
+        <Typography.Paragraph type="secondary" style={{ marginBottom: tk.space[2] }}>
           {f.detail}
         </Typography.Paragraph>
         {f.workers?.length ? (
-          <Typography.Paragraph style={{ marginBottom: token.marginXS }}>
+          <Typography.Paragraph style={{ marginBottom: tk.space[2] }}>
             <Typography.Text strong>Workers: </Typography.Text>
             <span translate="no">{f.workers.map((w) => `${w.name} (${w.workerNo})`).join(', ')}</span>
           </Typography.Paragraph>
@@ -125,7 +125,7 @@ function AttendanceCheck() {
           Show how this was worked out
         </Button>
         {open ? (
-          <ol id={id} style={{ margin: `${token.marginXS}px 0 0`, paddingInlineStart: token.paddingLG }} translate="no">
+          <ol id={id} style={{ margin: `${tk.space[2]} 0 0`, paddingInlineStart: tk.space[6] }} translate="no">
             {f.working.map((line, i) => (
               <li key={i}>
                 <Typography.Text>{line}</Typography.Text>
@@ -133,7 +133,7 @@ function AttendanceCheck() {
             ))}
           </ol>
         ) : null}
-        <Flex gap={token.margin} wrap className="link-row" style={{ marginTop: token.marginSM }}>
+        <Flex gap={tk.space[4]} wrap className="link-row" style={{ marginTop: tk.space[3] }}>
           {f.links.map((l) => (
             <Link key={l.href + l.label} href={l.href}>
               {l.label}
@@ -145,12 +145,12 @@ function AttendanceCheck() {
   };
 
   const section = (title: string, children: React.ReactNode, note?: string) => (
-    <section style={{ marginTop: token.marginLG }}>
-      <Typography.Title level={2} style={{ fontSize: token.fontSizeHeading4, marginBottom: note ? token.marginXXS : token.marginSM }}>
+    <section style={{ marginTop: tk.space[6] }}>
+      <Typography.Title level={2} style={{ fontSize: tk.type.lead.fontSize, marginBottom: note ? tk.space[1] : tk.space[3] }}>
         {title}
       </Typography.Title>
       {note ? (
-        <Typography.Paragraph type="secondary" style={{ marginBottom: token.marginSM }}>
+        <Typography.Paragraph type="secondary" style={{ marginBottom: tk.space[3] }}>
           {note}
         </Typography.Paragraph>
       ) : null}
@@ -164,7 +164,7 @@ function AttendanceCheck() {
         title="Attendance cross-check"
         subtitle={`What labour contractors bill in man-days against the head count, the roll call and the biometric punches, ${formatDate(data.from)} to ${formatDate(data.to)}${running ? ' (so far)' : ''}. A flag is a reason to check the muster; nobody's wage is held or cut by it.`}
       />
-      <Flex wrap gap={token.marginSM} align="center" style={{ marginBottom: token.margin }}>
+      <Flex wrap gap={tk.space[3]} align="center" style={{ marginBottom: tk.space[4] }}>
         <DatePicker
           picker="month"
           format={MONTH_PICKER_FORMAT}
@@ -185,7 +185,7 @@ function AttendanceCheck() {
         ) : null}
       </Flex>
 
-      <Flex wrap gap={token.marginSM} style={{ marginBottom: token.margin }}>
+      <Flex wrap gap={tk.space[3]} style={{ marginBottom: tk.space[4] }}>
         <Card size="small" style={{ flex: '1 1 180px' }}>
           <Statistic title="Billed above the records" value={0} formatter={() => <span translate="no">{formatINRCompact(above)}</span>} styles={big} />
           <Typography.Text type="secondary">
@@ -205,7 +205,7 @@ function AttendanceCheck() {
       {section(
         data.flags.length === 1 ? '1 thing to check' : `${data.flags.length} things to check`,
         shown.length ? (
-          <Flex vertical gap={token.marginSM}>
+          <Flex vertical gap={tk.space[3]}>
             {shown.map(card)}
           </Flex>
         ) : (

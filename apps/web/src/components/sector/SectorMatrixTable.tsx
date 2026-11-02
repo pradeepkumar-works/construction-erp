@@ -2,11 +2,10 @@
 
 import React from 'react';
 import { Table, Tooltip } from 'antd';
+import { tk } from '@/ds';
 import type { TableProps } from 'antd';
 import type { SectorCell, SectorMatrix } from '@erp/shared';
-import { BRAND } from '@/lib/brand';
 import { formatDate, formatQty } from '@/lib/format';
-import { themeFontSize } from '@/lib/theme';
 import { unitLabel } from '@erp/shared';
 
 type Row = { key: string; label: string; none?: boolean };
@@ -26,7 +25,7 @@ export function SectorMatrixTable({ matrix }: { matrix: SectorMatrix }) {
         <Tooltip title={`${formatQty(a.executedQty)} of ${formatQty(a.plannedQty)} ${unitLabel(a.unit)} done in all`}>
           <span>
             {a.name}
-            <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM'), fontWeight: 400 }}>
+            <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize, fontWeight: tk.type.body.fontWeight }}>
               {a.unit}
             </div>
           </span>
@@ -36,7 +35,7 @@ export function SectorMatrixTable({ matrix }: { matrix: SectorMatrix }) {
       align: 'right' as const,
       onCell: (r: Row) => {
         const c = cell.get(`${r.key}|${a.id}`);
-        return { style: { background: c && Number(c.approvedQty) > 0 ? `${BRAND.colors.success}22` : c && Number(c.pendingQty) > 0 ? `${BRAND.colors.pending}1F` : undefined } };
+        return { style: { background: c && Number(c.approvedQty) > 0 ? tk.color.tone.success.bg : c && Number(c.pendingQty) > 0 ? tk.color.tone.pending.bg : undefined } };
       },
       render: (_: unknown, r: Row) => {
         if (r.none) {
@@ -48,8 +47,8 @@ export function SectorMatrixTable({ matrix }: { matrix: SectorMatrix }) {
         return (
           <Tooltip title={c.lastDate ? `Last entry ${formatDate(c.lastDate)}` : undefined}>
             <div>
-              {Number(c.approvedQty) ? <div style={{ fontWeight: 600, color: BRAND.colors.success }}>{formatQty(c.approvedQty)}</div> : null}
-              {Number(c.pendingQty) ? <div style={{ fontSize: themeFontSize('fontSizeSM'), color: BRAND.colors.pending }}>+{formatQty(c.pendingQty)} waiting</div> : null}
+              {Number(c.approvedQty) ? <div style={{ fontWeight: tk.type.title.fontWeight, color: tk.color.tone.success.fg }}>{formatQty(c.approvedQty)}</div> : null}
+              {Number(c.pendingQty) ? <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.tone.pending.fg }}>+{formatQty(c.pendingQty)} waiting</div> : null}
             </div>
           </Tooltip>
         );

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, App, Button, Checkbox, Descriptions, Divider, Drawer, Flex, Form, Input, InputNumber, Radio, Select, Space, Typography } from 'antd';
+import { tk } from '@/ds';
 import dayjs from 'dayjs';
 import {
   EOT_BASES,
@@ -35,7 +36,6 @@ import {
   useSubmitProgramme,
 } from '@/lib/queries';
 import { formatDate, formatINR } from '@/lib/format';
-import { themeFontSize } from '@/lib/theme';
 import { AppTag } from '@/components/common/AppTag';
 import { DatePicker } from '@/components/common/DatePicker';
 import { QueryError } from '@/components/common/QueryState';
@@ -48,7 +48,7 @@ import { RecordLink } from '@/components/record/RecordLink';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 
 const days = (n: number) => `${n} day${n === 1 ? '' : 's'}`;
-const small = { fontSize: themeFontSize('fontSizeSM') };
+const small = { fontSize: tk.type.caption.fontSize };
 
 const RevisionTag = ({ r }: { r: ProgrammeSubmissionDto }) => (
   <AppTag kind="programme" status={r.status}>
@@ -175,7 +175,7 @@ export function ProgrammeAndEot({
         >
           {programme ? (
             <>
-              <Flex gap={8} align="center" wrap style={{ marginBottom: 8 }}>
+              <Flex gap={8} align="center" wrap style={{ marginBottom: tk.space[2] }}>
                 <AppTag kind="programmeWatch" status={programme.watch.state}>
                   {PROGRAMME_WATCH_LABELS[programme.watch.state]}
                 </AppTag>
@@ -260,7 +260,7 @@ const forText = (a: EotApplicationDto) => (a.variation ? `${a.variation.label}: 
 
 /** Shows a problem from the server above a form's buttons. */
 function Problem({ text }: { text: string | null }) {
-  return text ? <Alert type="error" showIcon role="alert" style={{ marginBottom: 8 }} title={text} /> : null;
+  return text ? <Alert type="error" showIcon role="alert" style={{ marginBottom: tk.space[2] }} title={text} /> : null;
 }
 
 function NewRevisionForm({ projectId, register, open, onClose }: { projectId: string; register: ProgrammeRegisterDto; open: boolean; onClose: () => void }) {
@@ -406,7 +406,7 @@ function RequestEotForm({ projectId, open, onClose }: { projectId: string; open:
         {basis === 'DELAY' ? (
           <Form.Item name="delayIds" label="Delays" rules={[{ validator: (_, v?: string[]) => (v?.length ? Promise.resolve() : Promise.reject(new Error('Choose the delays the extension is claimed for'))) }]} extra={options.data && !options.data.delays.length ? 'No delay in the register is free to claim. Record the delay first.' : undefined}>
             {/* A validator rather than `required`: antd would put aria-required on the group, which a group may not carry. */}
-            <Checkbox.Group role="group" aria-label="Delays" style={{ display: 'grid', gap: 8 }}>
+            <Checkbox.Group role="group" aria-label="Delays" style={{ display: 'grid', gap: tk.space[2] }}>
               {(options.data?.delays ?? []).map((d) => (
                 <Checkbox key={d.id} value={d.id}>
                   <span translate="no">{d.riskNo}</span> {d.title}
@@ -521,7 +521,7 @@ function RevisionDrawer({ data, portal, onClose }: { data: ProgrammeSubmissionDt
             ]}
           />
           {mayAnswer ? <AnswerRevision key={data.id} revision={data} portal={portal} /> : null}
-          {data.status === 'SUBMITTED' && !mayAnswer ? <Typography.Paragraph type="secondary" style={{ marginTop: 12 }}>With the Engineer for their answer.</Typography.Paragraph> : null}
+          {data.status === 'SUBMITTED' && !mayAnswer ? <Typography.Paragraph type="secondary" style={{ marginTop: tk.space[3] }}>With the Engineer for their answer.</Typography.Paragraph> : null}
         </>
       ) : null}
       {deleteDialog}
@@ -664,9 +664,9 @@ function EotDrawer({ data, portal, onClose }: { data: EotApplicationDto | null; 
               <Divider titlePlacement="start" plain>
                 {data.variation ? 'In the delay register' : 'Delays claimed'}
               </Divider>
-              <ul style={{ paddingInlineStart: 18, margin: 0 }}>
+              <ul style={{ paddingInlineStart: tk.space[5], margin: 0 }}>
                 {data.delays.map((d) => (
-                  <li key={d.id} style={{ marginBottom: 4 }}>
+                  <li key={d.id} style={{ marginBottom: tk.space[1] }}>
                     <span translate="no">{d.riskNo}</span> {d.title}
                     <span className="text-muted" style={small}>
                       {' '}

@@ -2,7 +2,8 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Flex, Typography, theme } from 'antd';
+import { Flex, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DPR_CHECK_LABELS, type DprCheckDto } from '@erp/shared';
 import { AppTag } from '@/components/common/AppTag';
 import type { RecordSection } from '@/components/record/RecordFrame';
@@ -12,16 +13,15 @@ import type { RecordSection } from '@/components/record/RecordFrame';
  * material was not issued, figures the same as on the reports before, a photo sent before. Advice; it stops nothing.
  */
 function DprChecks({ checks }: { checks: DprCheckDto[] }) {
-  const { token } = theme.useToken();
   return (
     <>
-      <Typography.Paragraph type="secondary" style={{ marginBottom: token.marginSM }}>
+      <Typography.Paragraph type="secondary" style={{ marginBottom: tk.space[3] }}>
         Worth a second look before approving. These are checks over the records, not findings; nothing here stops the approval.
       </Typography.Paragraph>
-      <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: token.marginSM }}>
+      <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: tk.space[3] }}>
         {checks.map((c, i) => (
           <li key={`${c.kind}-${c.lineId ?? 'day'}-${i}`}>
-            <Flex gap={token.marginXS} wrap align="baseline">
+            <Flex gap={tk.space[2]} wrap align="baseline">
               <AppTag meaning="waiting">{DPR_CHECK_LABELS[c.kind]}</AppTag>
               <Typography.Text>{c.text}</Typography.Text>
               {c.refs.map((r) => (

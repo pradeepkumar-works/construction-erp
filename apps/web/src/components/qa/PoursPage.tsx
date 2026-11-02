@@ -3,7 +3,8 @@
 import { MoreActions } from '@/components/record/MoreActions';
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Button, Card, Checkbox, Descriptions, Drawer, Empty, Flex, Form, Input, Select, Table, Typography, theme } from 'antd';
+import { Button, Card, Checkbox, Descriptions, Drawer, Empty, Flex, Form, Input, Select, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   POUR_FLAG_LABELS,
@@ -94,7 +95,6 @@ function CancelModal({ pour, onClose }: { pour: PourDto | null; onClose: () => v
 
 /** A pour: its facts, the card, the cube sets IS 456 asks for against those taken, and what can be done next. */
 export function PourDrawer({ id, onClose }: { id: string | null; onClose: () => void }) {
-  const { token } = theme.useToken();
   const { user } = useAuth();
   const qc = useQueryClient();
   const notify = useNotify();
@@ -124,7 +124,7 @@ export function PourDrawer({ id, onClose }: { id: string | null; onClose: () => 
       size={720}
       title={
         pour ? (
-          <Flex gap={token.marginXS} align="center" wrap>
+          <Flex gap={tk.space[2]} align="center" wrap>
             <span translate="no">{pour.pourNo}</span>
             <PourStatusTag status={pour.status} />
           </Flex>
@@ -134,7 +134,7 @@ export function PourDrawer({ id, onClose }: { id: string | null; onClose: () => 
       }
       extra={
         pour && mayPour && pour.status === 'PLANNED' ? (
-          <Flex gap={token.marginXS} wrap>
+          <Flex gap={tk.space[2]} wrap>
             {!pour.card || cardBad ? (
               <Button loading={card.isPending} onClick={() => card.mutate()}>
                 Request pour card
@@ -152,9 +152,9 @@ export function PourDrawer({ id, onClose }: { id: string | null; onClose: () => 
       ) : error || !pour ? (
         <QueryError error={error} onRetry={() => refetch()} />
       ) : (
-        <Flex vertical gap={token.marginLG}>
+        <Flex vertical gap={tk.space[6]}>
           {pour.flags.length ? (
-            <Flex gap={token.marginXS} wrap>
+            <Flex gap={tk.space[2]} wrap>
               <Flags pour={pour} />
             </Flex>
           ) : null}
@@ -188,8 +188,8 @@ export function PourDrawer({ id, onClose }: { id: string | null; onClose: () => 
             ]}
           />
           <div>
-            <Flex justify="space-between" align="center" wrap gap={token.marginXS} style={{ marginBottom: token.marginXS }}>
-              <Typography.Title level={3} style={{ margin: 0, fontSize: token.fontSizeLG }}>
+            <Flex justify="space-between" align="center" wrap gap={tk.space[2]} style={{ marginBottom: tk.space[2] }}>
+              <Typography.Title level={3} style={{ margin: 0, fontSize: tk.type.lead.fontSize }}>
                 Cube sets: {pour.tests.length} of {pour.cubeSetsDue}
               </Typography.Title>
               {mayTest && pour.status !== 'CANCELLED' ? (
@@ -228,7 +228,7 @@ export function PourDrawer({ id, onClose }: { id: string | null; onClose: () => 
             />
           </div>
           {mayPour && pour.status === 'PLANNED' ? (
-            <Flex gap={token.marginXS} wrap>
+            <Flex gap={tk.space[2]} wrap>
               <Button onClick={() => setEditing(true)}>Edit</Button>
               <Button onClick={() => setCancelling(pour)}>Cancel pour</Button>
               {!pour.tests.length ? (
@@ -339,14 +339,13 @@ function PourList() {
 
 /** IS 456 Table 11 for each project and grade: the means of four and each result against their figures. */
 function CubeAcceptancePanel() {
-  const { token } = theme.useToken();
   const [projectId, setProjectId] = useProjectScope();
   const { data, isLoading, error, refetch } = useCubeAcceptance(projectId);
   const verdictTag = (g: CubeAcceptanceDto) =>
     g.acceptance.verdict === 'PASS' ? <AppTag meaning="done">Accepted</AppTag> : g.acceptance.verdict === 'FAIL' ? <AppTag meaning="failed">Not accepted</AppTag> : <AppTag meaning="waiting">Waiting for four results</AppTag>;
   return (
-    <Flex vertical gap={token.margin}>
-      <Flex gap={token.marginSM} wrap align="center">
+    <Flex vertical gap={tk.space[4]}>
+      <Flex gap={tk.space[3]} wrap align="center">
         <ProjectSelect value={projectId} onChange={(v) => setProjectId(v)} style={{ minWidth: 240, maxWidth: '100%' }} />
       </Flex>
       <Typography.Paragraph type="secondary" style={{ margin: 0 }}>
@@ -386,7 +385,7 @@ function CubeAcceptancePanel() {
               ]}
             />
             {g.acceptance.lowIds.length ? (
-              <Typography.Paragraph style={{ marginTop: token.marginSM, marginBottom: 0, color: token.colorErrorText }}>
+              <Typography.Paragraph style={{ marginTop: tk.space[3], marginBottom: 0, color: tk.color.tone.danger.fg }}>
                 Below {g.acceptance.individualMin} N/mm²:{' '}
                 {g.results
                   .filter((r) => g.acceptance.lowIds.includes(r.id))

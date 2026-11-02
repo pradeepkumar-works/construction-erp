@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { App, Button, Flex, Typography, theme } from 'antd';
+import { App, Button, Flex, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { DELAY_PARTY_LABELS, RISK_CATEGORY_LABELS, type HindranceSuggestionDto, type RiskDto } from '@erp/shared';
 import { useDecideHindrance, useDprHindrance, useHindranceSuggestions } from '@/lib/queries';
@@ -12,7 +13,6 @@ const SHOWN = 4;
 
 /** One DPR remark read as a hindrance: what it says, what was read from it, and Record / Add to / Dismiss. */
 export function HindranceRow({ s, onRecorded, showProject = true, showDpr = true }: { s: HindranceSuggestionDto; onRecorded?: (r: RiskDto) => void; showProject?: boolean; showDpr?: boolean }) {
-  const { token } = theme.useToken();
   const { message } = App.useApp();
   const decide = useDecideHindrance();
   const busy = decide.isPending ? (decide.variables?.dismiss ? 'dismiss' : decide.variables?.riskId ? 'add' : 'record') : null;
@@ -22,8 +22,8 @@ export function HindranceRow({ s, onRecorded, showProject = true, showDpr = true
     onRecorded?.(r);
   };
   return (
-    <Flex data-hindrance={s.id} vertical gap={token.marginXXS} style={{ paddingBlock: token.paddingXS, borderTop: `1px solid ${token.colorSplit}` }}>
-      <Flex wrap align="center" gap={token.marginXS}>
+    <Flex data-hindrance={s.id} vertical gap={tk.space[1]} style={{ paddingBlock: tk.space[2], borderTop: `1px solid ${tk.color.line.hairline}` }}>
+      <Flex wrap align="center" gap={tk.space[2]}>
         <Typography.Text strong>{s.title}</Typography.Text>
         <AppTag variant="kind">{RISK_CATEGORY_LABELS[s.category]}</AppTag>
         {s.party ? <Typography.Text type="secondary">{DELAY_PARTY_LABELS[s.party]}</Typography.Text> : <Typography.Text type="secondary">Cause not clear</Typography.Text>}
@@ -47,7 +47,7 @@ export function HindranceRow({ s, onRecorded, showProject = true, showDpr = true
           {s.source === 'MODEL' ? '. Read by Ask Nirmaan' : ''}
         </Typography.Text>
       </p>
-      <Flex wrap gap={token.marginXS}>
+      <Flex wrap gap={tk.space[2]}>
         {s.openDelay ? (
           <Button size="small" type="primary" loading={busy === 'add'} disabled={!!busy} onClick={() => void record(s.openDelay!.id)}>
             Add to {s.openDelay.riskNo}
@@ -69,17 +69,16 @@ export function HindranceRow({ s, onRecorded, showProject = true, showDpr = true
  * a delay (which then runs its notice clock), added to the open delay it belongs to, or dismissed.
  */
 export function HindranceSuggestions({ projectId, onRecorded }: { projectId?: string; onRecorded: (r: RiskDto) => void }) {
-  const { token } = theme.useToken();
   const { data } = useHindranceSuggestions(projectId);
   const [all, setAll] = useState(false);
   if (!data?.length) return null;
   const shown = all ? data : data.slice(0, SHOWN);
   return (
-    <section aria-labelledby="hindrances-title" style={{ margin: `${token.marginSM}px ${token.margin}px 0`, padding: `${token.paddingSM}px ${token.padding}px`, border: `1px solid ${token.colorBorderSecondary}`, borderRadius: token.borderRadiusLG, background: token.colorFillQuaternary }}>
-      <Typography.Title level={2} id="hindrances-title" style={{ fontSize: token.fontSize, margin: `0 0 ${token.marginXXS}px` }}>
+    <section aria-labelledby="hindrances-title" style={{ margin: `${tk.space[3]} ${tk.space[4]} 0`, padding: `${tk.space[3]} ${tk.space[4]}`, border: `1px solid ${tk.color.line.hairline}`, borderRadius: tk.radius.lg, background: tk.color.surface.sunken }}>
+      <Typography.Title level={2} id="hindrances-title" style={{ fontSize: tk.type.body.fontSize, margin: `0 0 ${tk.space[1]}` }}>
         {data.length === 1 ? '1 hindrance from the DPRs to record' : `${data.length} hindrances from the DPRs to record`}
       </Typography.Title>
-      <Typography.Paragraph type="secondary" style={{ marginBottom: token.marginXS }}>
+      <Typography.Paragraph type="secondary" style={{ marginBottom: tk.space[2] }}>
         Read from what the site wrote under issues. Recording one starts its notice clock when the client or a third party is answerable.
       </Typography.Paragraph>
       {shown.map((s) => (
@@ -96,11 +95,10 @@ export function HindranceSuggestions({ projectId, onRecorded }: { projectId?: st
 
 /** Under a DPR's issues: the hindrance its remark reads as, to record from the report itself. */
 export function DprHindrance({ dprId }: { dprId: string }) {
-  const { token } = theme.useToken();
   const { data } = useDprHindrance(dprId);
   if (!data) return null;
   return (
-    <div style={{ marginBottom: token.marginSM }}>
+    <div style={{ marginBottom: tk.space[3] }}>
       <Typography.Text type="secondary">This reads as a hindrance to record in the delay register:</Typography.Text>
       <HindranceRow s={data} showProject={false} showDpr={false} />
     </div>

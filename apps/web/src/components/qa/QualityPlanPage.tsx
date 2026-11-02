@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Button, Card, Empty, Flex, Form, Input, InputNumber, Segmented, Select, Switch, Table, Typography, theme } from 'antd';
+import { Button, Card, Empty, Flex, Form, Input, InputNumber, Segmented, Select, Switch, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   QA_FREQUENCY_LABELS,
@@ -30,7 +31,6 @@ import { MasterInput } from '@/components/masters/MasterInput';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { IS456_SAMPLING, WitnessTag, lineCovers, lineFrequency } from './qaUi';
 
-const srOnly: React.CSSProperties = { position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 };
 
 interface LineForm {
   testType: string;
@@ -185,7 +185,7 @@ function PlanTable({ plan, onEdit }: { plan: QaPlanDto; onEdit: (l: QaPlanLineDt
         ...(plan.canEdit
           ? [
               {
-                title: <span style={srOnly}>Actions</span>,
+                title: <span className="visually-hidden">Actions</span>,
                 key: 'actions',
                 width: 96,
                 render: (_: unknown, l: QaPlanLineDto) => (
@@ -206,7 +206,6 @@ function PlanTable({ plan, onEdit }: { plan: QaPlanDto; onEdit: (l: QaPlanLineDt
 
 /** The quality plan: a project's tests, what each is counted against, how often and who witnesses. */
 export function QualityPlanPage() {
-  const { token } = theme.useToken();
   const [projectId, setProjectId] = useProjectScope();
   const { data: plan, isLoading, error, refetch } = useQaPlan(projectId);
   const [editing, setEditing] = useState<QaPlanLineDto | 'new' | null>(null);
@@ -239,7 +238,7 @@ export function QualityPlanPage() {
         }
       />
       <Card>
-        <Flex gap={token.marginSM} wrap align="center" style={{ marginBottom: token.margin }}>
+        <Flex gap={tk.space[3]} wrap align="center" style={{ marginBottom: tk.space[4] }}>
           <ProjectSelect value={projectId} onChange={(v) => setProjectId(v)} placeholder="Choose a project" allowClear={false} style={{ minWidth: 260, maxWidth: '100%' }} />
         </Flex>
         {!projectId ? (

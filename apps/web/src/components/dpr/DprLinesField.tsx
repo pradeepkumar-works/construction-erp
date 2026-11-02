@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { AutoComplete, Button, Flex, Form, Input, InputNumber, Modal, Select, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import type { FormInstance, FormListFieldData } from 'antd';
 import {
@@ -222,12 +223,12 @@ export function DprLinesField({ options, headCount, def }: { options: DprWorkOpt
                     placeholder="Choose the activity"
                     aria-label={`Activity of work line ${f.name + 1}`}
                     options={cascade ? cascadeOptions(options!, line) : activityOptions}
-                    style={{ width: '100%', ...(cascade ? { marginTop: 4 } : {}) }}
+                    style={{ width: '100%', ...(cascade ? { marginTop: tk.space[1] } : {}) }}
                     popupMatchSelectWidth={420}
                   />
                 </Form.Item>
                 {a ? (
-                  <Typography.Text type="secondary" style={{ display: 'block', marginTop: 2 }}>
+                  <Typography.Text type="secondary" style={{ display: 'block', marginTop: tk.space.half }}>
                     {cascade ? null : (
                       <>
                         <span translate="no">{componentLabel(a)}</span> ·{' '}
@@ -235,7 +236,7 @@ export function DprLinesField({ options, headCount, def }: { options: DprWorkOpt
                     )}
                     <span translate="no">{`${formatQty(a.doneQty)} of ${formatQty(a.plannedQty)} ${unitLabel(a.unit)}`}</span> done
                     {a.holdPoint ? (
-                      <AppTag meaning="waiting" style={{ marginInlineStart: 6 }}>
+                      <AppTag meaning="waiting" style={{ marginInlineStart: tk.space[2] }}>
                         Hold point
                       </AppTag>
                     ) : null}
@@ -388,7 +389,7 @@ function WhereField({ field: f, activity: a, options }: { field: FormListFieldDa
       <Input
         placeholder={pipe ? 'Chainage or note' : placed ? 'Note (optional)' : 'Lift 4, P-27 J-12 to J-13'}
         aria-label={placed ? `Note on where work line ${n} was done` : `Where work line ${n} was done`}
-        style={pipe || placed ? { marginTop: 4 } : undefined}
+        style={pipe || placed ? { marginTop: tk.space[1] } : undefined}
       />
     </Form.Item>
   );
@@ -610,7 +611,7 @@ function LineDetails({
             extra={norms.length ? (line?.materialsEdited ? 'Changed by hand.' : 'Filled from the norms for the quantity; change it to what was used.') : 'No norms for this activity; add what was used.'}
           >
             {norms.length && line?.materialsEdited ? (
-              <Button size="small" onClick={fillFromNorms} style={{ marginBottom: 8 }}>
+              <Button size="small" onClick={fillFromNorms} style={{ marginBottom: tk.space[2] }}>
                 Fill from the norms
               </Button>
             ) : null}

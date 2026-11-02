@@ -2,7 +2,8 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { theme } from 'antd';
+import {  } from 'antd';
+import { tk } from '@/ds';
 import { unitLabel, type MeasurementSheetDto, type MeasurementSortField } from '@erp/shared';
 import { formatDate, formatINR, toNumber } from '@/lib/format';
 import { StatusTag } from '@/components/common/StatusTag';
@@ -11,8 +12,7 @@ import { RowActions } from '@/components/list/RowActions';
 import { RecordLink } from '@/components/record/RecordLink';
 
 function Sub({ children }: { children: React.ReactNode }) {
-  const { token } = theme.useToken();
-  return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
+  return <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{children}</div>;
 }
 
 /** The measurement book's columns; keys of sortable ones are the API's sort fields. */

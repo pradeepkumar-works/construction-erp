@@ -3,7 +3,8 @@
 import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { theme } from 'antd';
+import {  } from 'antd';
+import { tk } from '@/ds';
 import type { ProgressEntryDto, ProgressSortField } from '@erp/shared';
 import { formatDate } from '@/lib/format';
 import { StatusTag } from '@/components/common/StatusTag';
@@ -14,11 +15,10 @@ import { RecordLink } from '@/components/record/RecordLink';
 import { unitLabel } from '@erp/shared';
 
 function ActivityCell({ row, onOpen }: { row: ProgressEntryDto; onOpen: (id: string) => void }) {
-  const { token } = theme.useToken();
   return (
     <div>
       <RecordLink href={`/progress/${row.id}`} onOpen={() => onOpen(row.id)}>{row.activityName}</RecordLink>
-      {row.location && <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{row.location}</div>}
+      {row.location && <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{row.location}</div>}
     </div>
   );
 }

@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Button, Card, Flex, Form, Input, InputNumber, Select, Switch, Table, Typography, theme } from 'antd';
+import { Button, Card, Flex, Form, Input, InputNumber, Select, Switch, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { TEST_KINDS, TEST_KIND_LABELS, TEST_TYPE_CODE, specRange, testTypeProblem, type TestKind, type TestTypeDto } from '@erp/shared';
 import { api } from '@/lib/api';
@@ -18,7 +19,6 @@ import { CODE_INPUT } from '@/components/form/inputs';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { LineTable } from '@/components/form/LineTable';
 
-const srOnly: React.CSSProperties = { position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 };
 
 interface TypeForm {
   code: string;
@@ -158,7 +158,6 @@ function TypeDialog({ editing, onClose, codes }: { editing: TestTypeDto | 'new' 
 
 /** Test types: the standard tests with the company's changes, then its own; the test form and plans pick from them. */
 export function TestTypesPage() {
-  const { token } = theme.useToken();
   const { user } = useAuth();
   const manage = !!user && canManageQaPlan(user.roleKey);
   const { data, isLoading, error, refetch } = useTestTypes(true);
@@ -192,7 +191,7 @@ export function TestTypesPage() {
         }
       />
       <Card>
-        <Flex gap={token.marginSM} wrap align="center" style={{ marginBottom: token.margin }}>
+        <Flex gap={tk.space[3]} wrap align="center" style={{ marginBottom: tk.space[4] }}>
           <Input.Search allowClear placeholder="Find a test" aria-label="Find a test" value={q} onChange={(e) => setQ(e.target.value)} style={{ maxWidth: 320 }} />
           <Typography.Text type="secondary">
             {data.filter((t) => t.active).length} of {data.length} in use.
@@ -210,7 +209,7 @@ export function TestTypesPage() {
               key: 'name',
               render: (_, t) => (
                 <Flex vertical gap={2}>
-                  <Flex gap={token.marginXS} align="center" wrap>
+                  <Flex gap={tk.space[2]} align="center" wrap>
                     <Typography.Text strong>{t.name}</Typography.Text>
                     {!t.standard ? <AppTag variant="kind">Company's own</AppTag> : t.changed ? <AppTag variant="kind">Changed from standard</AppTag> : null}
                     {!t.active ? <AppTag meaning="closed">Not in use</AppTag> : null}
@@ -234,7 +233,7 @@ export function TestTypesPage() {
             ...(manage
               ? [
                   {
-                    title: <span style={srOnly}>Actions</span>,
+                    title: <span className="visually-hidden">Actions</span>,
                     key: 'actions',
                     width: 96,
                     render: (_: unknown, t: TestTypeDto) => (
@@ -257,7 +256,7 @@ export function TestTypesPage() {
           ]}
         />
         {!manage ? (
-          <Typography.Paragraph type="secondary" style={{ marginTop: token.margin, marginBottom: 0 }}>
+          <Typography.Paragraph type="secondary" style={{ marginTop: tk.space[4], marginBottom: 0 }}>
             Ask QA/QC or your project manager to add or change test types.
           </Typography.Paragraph>
         ) : null}

@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Button, Card, Checkbox, Flex, Statistic, Table, Typography, theme } from 'antd';
+import { Button, Card, Checkbox, Flex, Statistic, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { canRecordTest, type TestsDueRowDto } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useTestsDue } from '@/lib/queries';
@@ -16,7 +17,6 @@ import { LinkButton } from '@/components/common/LinkButton';
 import { TestFormModal, type TestPrefill } from '@/components/quality/TestFormModal';
 import { WitnessTag, lineCovers, lineFrequency } from './qaUi';
 
-const srOnly: React.CSSProperties = { position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 };
 
 const unitOf = (r: TestsDueRowDto) => (r.line.source === 'RECEIPT' ? `in ${r.occasions} lot${r.occasions === 1 ? '' : 's'}` : r.unit ?? '');
 
@@ -25,7 +25,6 @@ const unitOf = (r: TestsDueRowDto) => (r.line.source === 'RECEIPT' ? `in ${r.occ
  * against the tests taken under it; a short line records its test from here.
  */
 export function TestsDuePage() {
-  const { token } = theme.useToken();
   const { user } = useAuth();
   const [projectId, setProjectId] = useProjectScope();
   const [short, setShort] = useState(false);
@@ -41,7 +40,7 @@ export function TestsDuePage() {
         extra={<LinkButton href="/quality-plan">Quality plan</LinkButton>}
       />
       <Card>
-        <Flex gap={token.marginSM} wrap align="center" style={{ marginBottom: token.margin }}>
+        <Flex gap={tk.space[3]} wrap align="center" style={{ marginBottom: tk.space[4] }}>
           <ProjectSelect value={projectId} onChange={(v) => setProjectId(v)} style={{ minWidth: 240, maxWidth: '100%' }} />
           <Checkbox checked={short} onChange={(e) => setShort(e.target.checked)}>
             Only tests still owed
@@ -53,10 +52,10 @@ export function TestsDuePage() {
           <QueryError error={error} onRetry={() => refetch()} />
         ) : (
           <>
-            <Flex gap={token.marginXL} wrap style={{ marginBottom: token.margin }}>
+            <Flex gap={tk.space[8]} wrap style={{ marginBottom: tk.space[4] }}>
               <Statistic title="Owed" value={data.required} />
               <Statistic title="Sampled" value={data.taken} />
-              <Statistic title="Short" value={data.short} styles={{ content: data.short ? { color: token.colorErrorText } : undefined }} />
+              <Statistic title="Short" value={data.short} styles={{ content: data.short ? { color: tk.color.tone.danger.fg } : undefined }} />
             </Flex>
             <Table<TestsDueRowDto>
               rowKey={(r) => r.line.id}
@@ -100,7 +99,7 @@ export function TestsDuePage() {
                 ...(canRecord
                   ? [
                       {
-                        title: <span style={srOnly}>Record</span>,
+                        title: <span className="visually-hidden">Record</span>,
                         key: 'record',
                         width: 130,
                         render: (_: unknown, r: TestsDueRowDto) => (
@@ -118,7 +117,7 @@ export function TestsDuePage() {
               ]}
             />
             {data.withoutPlan.length ? (
-              <Typography.Paragraph type="secondary" style={{ marginTop: token.margin, marginBottom: 0 }}>
+              <Typography.Paragraph type="secondary" style={{ marginTop: tk.space[4], marginBottom: 0 }}>
                 {data.withoutPlan.length === 1 ? `${data.withoutPlan[0].name} has` : `${data.withoutPlan.length} projects have`} no quality plan yet, so nothing is counted for{' '}
                 {data.withoutPlan.length === 1 ? 'it' : 'them'}. <Link href="/quality-plan" className="text-link">Set up a quality plan</Link>
               </Typography.Paragraph>

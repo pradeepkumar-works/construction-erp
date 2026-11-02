@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Alert, App, Button, Descriptions, Drawer, Flex, Form, InputNumber, Segmented, Select, Space, Table, Typography, Upload, theme } from 'antd';
+import { Alert, App, Button, Descriptions, Drawer, Flex, Form, InputNumber, Segmented, Select, Space, Table, Typography, Upload } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { DeleteOutlined, EditOutlined, PlusOutlined, UploadOutlined } from '@/components/common/icons';
 import {
@@ -31,7 +32,6 @@ const floatText = (a: GanttActivityDto) =>
  * its float. Project editors add, change and remove its links here.
  */
 export function LinksDrawer({ projectId, data, activity, editor, onClose }: { projectId: string; data: GanttDto; activity: GanttActivityDto | null; editor: boolean; onClose: () => void }) {
-  const { token } = theme.useToken();
   const act = useScheduleAction(projectId);
   const notify = useNotify();
   const [form, setForm] = useState<{ link: ActivityLinkDto | null; side: 'pred' | 'succ' } | null>(null);
@@ -39,10 +39,10 @@ export function LinksDrawer({ projectId, data, activity, editor, onClose }: { pr
   const preds = a ? data.links.filter((l) => l.successorId === a.id) : [];
   const succs = a ? data.links.filter((l) => l.predecessorId === a.id) : [];
   const row = (l: ActivityLinkDto, other: string) => (
-    <Flex key={l.id} justify="space-between" align="center" gap={8} style={{ minHeight: 44, borderTop: `1px solid ${token.colorSplit}` }}>
+    <Flex key={l.id} justify="space-between" align="center" gap={8} style={{ minHeight: 44, borderTop: `1px solid ${tk.color.line.hairline}` }}>
       <div style={{ minWidth: 0 }}>
         <Typography.Text>{other}</Typography.Text>
-        <Typography.Text type="secondary" style={{ display: 'block', fontSize: token.fontSizeSM }} translate="no">
+        <Typography.Text type="secondary" style={{ display: 'block', fontSize: tk.type.caption.fontSize }} translate="no">
           {`${linkLabel(l.type, l.lagDays)} · ${ACTIVITY_LINK_TYPE_LABELS[l.type]}${l.lagDays ? `, ${Math.abs(l.lagDays)} day${Math.abs(l.lagDays) === 1 ? '' : 's'} ${l.lagDays > 0 ? 'after' : 'before'}` : ''}`}
         </Typography.Text>
       </div>
@@ -74,12 +74,12 @@ export function LinksDrawer({ projectId, data, activity, editor, onClose }: { pr
               { key: 'plan', label: 'Planned', children: a.plannedStart ? <span translate="no">{`${formatDate(a.plannedStart)} to ${formatDate(a.plannedEnd)}`}</span> : 'No dates' },
               ...(a.earlyStart ? [{ key: 'early', label: 'Earliest', children: <span translate="no">{`${formatDate(a.earlyStart)} to ${formatDate(a.earlyFinish)}`}</span> }] : []),
               ...(a.lateStart ? [{ key: 'late', label: 'Latest', children: <span translate="no">{`${formatDate(a.lateStart)} to ${formatDate(a.lateFinish)}`}</span> }] : []),
-              { key: 'float', label: 'Float', children: <span>{floatText(a)}{a.critical ? <AppTag meaning="failed" style={{ marginLeft: 8 }}>Critical</AppTag> : null}</span> },
+              { key: 'float', label: 'Float', children: <span>{floatText(a)}{a.critical ? <AppTag meaning="failed" style={{ marginLeft: tk.space[2] }}>Critical</AppTag> : null}</span> },
             ]}
           />
           <div>
             <Flex justify="space-between" align="center">
-              <Typography.Title level={3} style={{ fontSize: token.fontSize, margin: 0 }}>Waits on{' '}
+              <Typography.Title level={3} style={{ fontSize: tk.type.body.fontSize, margin: 0 }}>Waits on{' '}
                 <Typography.Text type="secondary" translate="no">
                   {preds.length}
                 </Typography.Text></Typography.Title>
@@ -93,7 +93,7 @@ export function LinksDrawer({ projectId, data, activity, editor, onClose }: { pr
           </div>
           <div>
             <Flex justify="space-between" align="center">
-              <Typography.Title level={3} style={{ fontSize: token.fontSize, margin: 0 }}>Followed by{' '}
+              <Typography.Title level={3} style={{ fontSize: tk.type.body.fontSize, margin: 0 }}>Followed by{' '}
                 <Typography.Text type="secondary" translate="no">
                   {succs.length}
                 </Typography.Text></Typography.Title>

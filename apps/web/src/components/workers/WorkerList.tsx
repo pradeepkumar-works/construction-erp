@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, Segmented, Space, theme } from 'antd';
+import { Button, Segmented, Space } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -44,8 +45,7 @@ const EXPORT: ExportColumn<WorkerDto>[] = [
 const KEYS = ['left'] as const;
 
 function Sub({ children, as = 'div' }: { children: React.ReactNode; as?: 'div' | 'span' }) {
-  const { token } = theme.useToken();
-  return React.createElement(as, { style: { fontSize: as === 'div' ? token.fontSizeSM : undefined, color: token.colorTextSecondary } }, children);
+  return React.createElement(as, { style: { fontSize: as === 'div' ? tk.type.caption.fontSize : undefined, color: tk.color.text.muted } }, children);
 }
 
 /** The named worker register: contractor labour by name with trade, skill, ID and wage. */
@@ -93,7 +93,7 @@ export function WorkerList({ projectId: fixedProject }: { projectId?: string }) 
         ),
       },
       { key: 'contractor', title: 'Contractor', dataIndex: 'contractor', width: 200 },
-      { key: 'trade', title: 'Trade', dataIndex: 'trade', width: 140, render: (v: string, w) => <span>{v} <AppTag variant="kind" style={{ marginLeft: 4 }}>{WORKER_SKILL_LABELS[w.skill]}</AppTag></span> },
+      { key: 'trade', title: 'Trade', dataIndex: 'trade', width: 140, render: (v: string, w) => <span>{v} <AppTag variant="kind" style={{ marginLeft: tk.space[1] }}>{WORKER_SKILL_LABELS[w.skill]}</AppTag></span> },
       { key: 'dailyWage', title: 'Wage / day', dataIndex: 'dailyWage', width: 110, kind: 'money' },
       { key: 'effectiveOtRate', title: 'OT / hour', dataIndex: 'effectiveOtRate', width: 100, kind: 'money', render: (v: string, w) => (w.otRate ? formatINR(v, true) : <Sub as="span">{formatINR(v, true)}</Sub>) },
       ...(!fixedProject ? [{ key: 'projectName', title: 'Project', dataIndex: 'projectName', width: 220, render: (v: string | null) => v ?? <Sub as="span">Not posted</Sub> } satisfies ListColumn<WorkerDto>] : []),
