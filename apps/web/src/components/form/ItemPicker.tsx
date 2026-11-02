@@ -7,7 +7,7 @@ import type { ItemDto } from '@erp/shared';
 import { itemKey, masterItemFor, similarItems } from '@erp/shared';
 import { useStockItems } from '@/lib/queries';
 import { useDebounced } from '@/lib/debounce';
-import { themeColor, themeFontSize } from '@/lib/theme';
+import { tk } from '@/ds';
 
 /** The word of a name the item master is searched by: its longest word of letters ("cement" of "OPC 53 cement"). */
 const mainWord = (name: string) => {
@@ -69,7 +69,7 @@ export function ItemPicker({ value, onChange, unit, onPick, ...rest }: ItemPicke
     <div>
       <AutoComplete value={value} onChange={onChange} options={options} onSelect={(_, o) => pick((o as { item: ItemDto }).item)} popupMatchSelectWidth={320} {...rest} />
       {similar.length > 0 && (
-        <Typography.Text style={{ display: 'block', fontSize: themeFontSize('fontSizeSM'), color: themeColor('colorWarningText') }}>
+        <Typography.Text style={{ display: 'block', ...tk.type.caption, color: tk.color.tone.pending.fg }}>
           Not in the item master. Did you mean{' '}
           {similar.map((i, n) => (
             <React.Fragment key={i.id}>

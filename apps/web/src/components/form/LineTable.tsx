@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useRef } from 'react';
-import { Button, Form, Table, Typography, theme } from 'antd';
+import { Button, Form, Table, Typography } from 'antd';
 import type { FormListFieldData, FormListOperation, TableColumnType } from 'antd';
 import { DeleteOutlined, PlusOutlined } from '@/components/common/icons';
+import { tk } from '@/ds';
 import { inSentence } from '@/lib/format';
 
 export interface LineColumn {
@@ -45,7 +46,6 @@ export function LineTable({
   /** Lines come from elsewhere (e.g. the order): no adding or removing */
   locked?: boolean;
 }) {
-  const { token } = theme.useToken();
   const wrap = useRef<HTMLDivElement>(null);
   const addRef = useRef<FormListOperation['add'] | null>(null);
 
@@ -106,7 +106,7 @@ export function LineTable({
               summary={footer ? () => footer(fields) : undefined}
             />
             {!locked && (
-              <Button type="dashed" size="small" block icon={<PlusOutlined />} style={{ marginTop: token.marginXS }} onClick={() => {
+              <Button type="dashed" size="small" block icon={<PlusOutlined />} style={{ marginTop: tk.space[2] }} onClick={() => {
                 ops.add(newLine?.());
                 window.setTimeout(() => focusCell(fields.length, 1), 0);
               }}>

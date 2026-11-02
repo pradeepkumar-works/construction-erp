@@ -74,7 +74,12 @@ runs and is committed with the last PR.
   only on the sorted column and under the pointer or the keyboard; the table's own tools (wrap, Columns) at its right end.
   Left open: the list toolbar on one line, which needs a More filters design for lists with five filters (RA bills),
   and an `ai` tone, which waits for the Ask panel in PR 7 (no AI mark uses a tag today).
-- [ ] PR 7. Entry and records: `FormShell`, fields, `RecordFrame`, drawers and dialogs, the Ask panel's AI surface.
+- [x] PR 7. Entry and records: `FormShell` (and `FormSection`, `FormGrid`), `LineTable`, `ItemPicker`, `RecordFrame` and
+  `ApprovalLevels` on `tk`; fields, dialogs and drawers set once in `ds/antd.ts` (`Form`, `Modal`, `Drawer`: label in body
+  text and medium weight, the raised surface, the drawer footer padded like its body on the sunken surface). An `ai` role
+  group (`mark`, `soft`, `line`, contrast held in tokens-check) for what Ask made or read: the Ask panel, a drafted form's
+  card, a document reading's preview and its boxes. In place of an `ai` tag tone, which nothing needs yet. An answer's
+  sources stay inside the Ask panel.
 
 ### Move every screen onto `tk` (PR 8 to PR 13)
 

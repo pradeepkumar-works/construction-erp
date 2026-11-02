@@ -1,6 +1,7 @@
 'use client';
 
 import { theme, type ConfigProviderProps, type ThemeConfig } from 'antd';
+import { colorVar } from './css';
 import { lineHeightOf, resolve, type Resolved } from './engine';
 import { FACES, TYPE, TYPE_SCALE, lineHeightPx, type Density } from './source/scales';
 
@@ -116,7 +117,12 @@ function components(r: Resolved, base: ReturnType<typeof theme.getDesignToken>):
     },
     Segmented: { controlHeightSM: 28 },
     Statistic: { contentFontSize: TYPE.heading.size },
-    Modal: { titleFontSize: TYPE.lead.size },
+    // Dialogs and drawers: one raised surface with the title in the page's title style; a drawer's footer sits below it
+    // on the sunken surface (componentConfig), padded like the body so its buttons line up with the fields.
+    Modal: { titleFontSize: TYPE.title.size, titleColor: text.strong, contentBg: surface.raised, headerBg: surface.raised, footerBg: surface.raised },
+    Drawer: { footerPaddingBlock: r.space[3], footerPaddingInline: r.space[6] },
+    // Fields: the label in body text over the field, closer to it than to the field above.
+    Form: { labelColor: text.base, verticalLabelPadding: `0 0 ${r.space[1]}px`, itemMarginBottom: r.space[5] },
     // Initials avatars: antd fills them with the placeholder grey, which white initials fail AA on in dark mode.
     Avatar: { colorTextPlaceholder: state.avatarFill },
     Tabs: {
@@ -205,11 +211,14 @@ const titleStyle = { fontFamily: FACES[TYPE.title.face], fontWeight: TYPE.title.
 const figureStyle = { fontFamily: FACES[TYPE.figure.face], fontWeight: TYPE.figure.weight, letterSpacing: TYPE.figure.track } as const;
 
 export const componentConfig: Pick<ConfigProviderProps, 'table' | 'statistic' | 'form' | 'tabs' | 'card' | 'modal' | 'drawer'> = {
-  form: { validateMessages: { required: 'Enter the ${label}', types: { email: 'Enter an email address, e.g. name@company.com', number: '${label} must be a number' } } },
+  form: {
+    styles: { label: { fontWeight: TYPE.strong.weight } },
+    validateMessages: { required: 'Enter the ${label}', types: { email: 'Enter an email address, e.g. name@company.com', number: '${label} must be a number' } },
+  },
   table: { styles: { title: tabularNums, section: tabularNums, footer: tabularNums, header: { cell: { whiteSpace: 'nowrap', fontSize: 'var(--ant-font-size-sm)', fontWeight: 500 } } } },
   statistic: { styles: { content: { ...tabularNums, ...figureStyle } } },
   card: { styles: { title: titleStyle } },
   modal: { styles: { title: titleStyle } },
-  drawer: { styles: { title: titleStyle, footer: { background: 'var(--ant-color-bg-layout)' } } },
+  drawer: { styles: { title: titleStyle, footer: { background: `var(${colorVar(['surface', 'sunken'])})` } } },
   tabs: { styles: { indicator: { borderRadius: '3px 3px 0 0' } } },
 };

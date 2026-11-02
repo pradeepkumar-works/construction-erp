@@ -63,7 +63,8 @@ and the pre-delivery checklist.
   tokens in `antdTheme` and `componentConfig` (`src/ds/antd.ts`, both modes), never CSS of a page's own. The look is the
   Quiet one (direction A, picked by Pradeep; `docs/design/REDESIGN.md` "Land the new look"): the shell (sidebar, top bar,
   sign-in panel) is a light grey rail in the light theme and a near-black one in the dark (the `chrome` roles), the primary
-  button is near-black (the `action` roles), blue is kept for focus, links, the chosen item, data and AI, Inter is the one
+  button is near-black (the `action` roles), blue is kept for focus, links, the chosen item, data and AI (what Ask made or
+  read is drawn in the `ai` roles), Inter is the one
   face (titles Semibold, page titles 24 px), fields have the blue ring, tables the canvas header.
   Check antd 6 typings in node_modules before using a prop you are unsure of.
 - Taste: `.claude/skills/design-taste-frontend` (tasteskill, from leonxlnx/taste-skill) is the design guideline for the website

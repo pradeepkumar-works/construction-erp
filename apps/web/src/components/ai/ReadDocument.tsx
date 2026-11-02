@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { themeFontSize } from '@/lib/theme';
-import { App, Button, Flex, Pagination, Segmented, Tooltip, Typography, theme } from 'antd';
+import { App, Button, Flex, Pagination, Segmented, Tooltip, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { AttachmentDto } from '@erp/shared';
 import type { FormInstance, FormItemProps } from 'antd';
 import type { DocReadField, DocReadKind, DocReadResultDto } from '@erp/shared';
@@ -141,7 +141,6 @@ export function ReadPreview({
   kept?: string | null;
   children?: React.ReactNode;
 }) {
-  const { token } = theme.useToken();
   const boxes = readBoxes(state.result);
   const activeBox = boxes.find((b) => b.key === active);
   const [pageNo, setPageNo] = useState(1);
@@ -151,15 +150,15 @@ export function ReadPreview({
   const noun = NOUN[state.result.kind];
 
   return (
-    <div className="doc-read-preview" style={{ border: `1px solid ${token.colorBorderSecondary}`, borderRadius: token.borderRadiusLG, padding: 12, marginBottom: 16 }}>
-      <Flex justify="space-between" align="flex-start" gap={12} wrap>
+    <div className="doc-read-preview" style={{ border: `1px solid ${tk.color.ai.line}`, borderRadius: tk.radius.lg, padding: tk.space[3], marginBottom: tk.space[4] }}>
+      <Flex justify="space-between" align="flex-start" gap={tk.space[3]} wrap>
         <div style={{ minWidth: 0, flex: 1 }}>
           <Typography.Text strong>
-            <SparkleIcon /> Filled from {state.file.name}
+            <SparkleIcon style={{ color: tk.color.ai.mark }} /> Filled from {state.file.name}
           </Typography.Text>
           {/* A BOQ's rows are checked in the import's table, which says what each needs; a form's fields say it here. */}
           {state.result.kind === 'boq' ? null : (
-            <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+            <div className="text-muted" style={tk.type.caption}>
               {toCheck.length
                 ? `${toCheck.length} value${toCheck.length === 1 ? '' : 's'} to check, marked in amber: ${toCheck.map((b) => b.label.toLowerCase().replace(/\.$/, '')).join(', ')}.`
                 : `Check the values against the ${noun} before saving.`}{' '}
@@ -169,7 +168,7 @@ export function ReadPreview({
           )}
           {children}
         </div>
-        <Flex gap={8} align="center">
+        <Flex gap={tk.space[2]} align="center">
           {pagesHidden ? null : state.pages.length > 4 ? (
             <Pagination simple size="small" current={shown} total={state.pages.length} pageSize={1} onChange={setPageNo} aria-label="Page" />
           ) : state.pages.length > 1 ? (
@@ -183,7 +182,7 @@ export function ReadPreview({
         </Flex>
       </Flex>
       {pagesHidden ? null : (
-        <div style={{ maxHeight: 420, overflow: 'auto', marginTop: 8, background: token.colorFillQuaternary, borderRadius: token.borderRadius }}>
+        <div style={{ maxHeight: 420, overflow: 'auto', marginTop: tk.space[2], background: tk.color.surface.sunken, borderRadius: tk.radius.md }}>
           <div style={{ position: 'relative', width: '100%' }}>
             {/* eslint-disable-next-line @next/next/no-img-element -- a local object URL */}
             <img src={page.url} alt={`Page ${shown} of the ${noun}`} style={{ width: '100%', display: 'block' }} />
@@ -192,7 +191,7 @@ export function ReadPreview({
               .map((b) => {
                 const [l, t, r, btm] = b.field.box!;
                 const on = b.key === active;
-                const color = on ? token.colorPrimary : b.field.confidence === 'low' ? token.colorWarning : token.colorSuccess;
+                const color = on ? tk.color.ai.mark : b.field.confidence === 'low' ? tk.color.tone.pending.solid : tk.color.tone.success.solid;
                 return (
                   <div
                     key={b.key}
@@ -206,8 +205,8 @@ export function ReadPreview({
                       width: `${(r - l) / 10}%`,
                       height: `${(btm - t) / 10}%`,
                       border: `${on ? 3 : 1.5}px solid ${color}`,
-                      background: on ? `${token.colorPrimary}22` : undefined,
-                      borderRadius: 2,
+                      background: on ? `color-mix(in srgb, ${tk.color.ai.mark} 14%, transparent)` : undefined,
+                      borderRadius: tk.radius.xs,
                       pointerEvents: 'none',
                     }}
                   />
@@ -276,7 +275,7 @@ export function ReadSource({ kind, page, onActive }: { kind: DocReadKind; page: 
       type="link"
       size="small"
       icon={<SparkleIcon />}
-      style={{ padding: 0, fontSize: themeFontSize('fontSizeSM') }}
+      style={{ padding: 0, ...tk.type.caption }}
       onMouseEnter={() => onActive(true)}
       onMouseLeave={() => onActive(false)}
       onFocus={() => onActive(true)}

@@ -3,7 +3,8 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { App, Button, Drawer, Empty, Flex, Result, Spin, Tooltip, Typography, theme } from 'antd';
+import { App, Button, Drawer, Empty, Flex, Result, Spin, Tooltip, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { ArrowLeftOutlined, ClockCircleOutlined, CloseOutlined, CopyOutlined, DeleteOutlined, DislikeFilled, DislikeOutlined, HistoryOutlined, LikeFilled, LikeOutlined, LockOutlined, PlusOutlined, ReloadOutlined } from '@/components/common/icons';
 import { ResultMark } from '@/components/common/ResultMark';
@@ -85,7 +86,6 @@ export default function AskPanel({
   onQuestionTaken: () => void;
 }) {
   const { message } = App.useApp();
-  const { token } = theme.useToken();
   const qc = useQueryClient();
   const pathname = usePathname();
   const [projectId] = useProjectScope();
@@ -228,7 +228,7 @@ export default function AskPanel({
           content: m.text,
           loading: !!m.pending && !m.text,
           loadingRender: () => (
-            <Flex align="center" gap={token.marginXS} role="status">
+            <Flex align="center" gap={tk.space[2]} role="status">
               <Spin size="small" />
               <Typography.Text type="secondary">{m.status}</Typography.Text>
             </Flex>
@@ -245,8 +245,8 @@ export default function AskPanel({
 
   // The title names the dialog, so it stays the same in every view.
   const title = (
-    <Flex align="center" gap={token.marginXS}>
-      <SparkleIcon style={{ color: token.colorPrimary }} />
+    <Flex align="center" gap={tk.space[2]}>
+      <SparkleIcon style={{ color: tk.color.ai.mark }} />
       <span>
         Ask <span translate="no">{PRODUCT_NAME}</span>
       </span>
@@ -254,7 +254,7 @@ export default function AskPanel({
   );
 
   const extra = !off && (
-    <Flex gap={token.marginXXS}>
+    <Flex gap={tk.space[1]}>
       <Tooltip title="Past conversations">
         <Button type="text" icon={<HistoryOutlined />} aria-label="Past conversations" aria-pressed={view === 'history'} onClick={() => setView(view === 'history' ? 'chat' : 'history')} />
       </Tooltip>
@@ -269,20 +269,20 @@ export default function AskPanel({
     body = <OffState status={status} onNavigate={onClose} />;
   } else if (view === 'history') {
     const list = threads.isLoading ? (
-      <Flex justify="center" style={{ padding: token.paddingLG }}>
+      <Flex justify="center" style={{ padding: tk.space[6] }}>
         <Spin description="Loading" />
       </Flex>
     ) : threads.data?.length ? (
-      <Flex vertical gap={token.marginSM}>
+      <Flex vertical gap={tk.space[3]}>
         {groupThreads(threads.data).map(([group, rows]) => (
           <section key={group} aria-label={group}>
-            <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+            <Typography.Text type="secondary" style={tk.type.caption}>
               {group}
             </Typography.Text>
-            <ul style={{ listStyle: 'none', margin: `${token.marginXXS}px 0 0`, padding: 0 }}>
+            <ul style={{ listStyle: 'none', margin: `${tk.space[1]} 0 0`, padding: 0 }}>
               {rows.map((t) => (
                 <li key={t.id}>
-                  <Flex align="center" gap={token.marginXXS}>
+                  <Flex align="center" gap={tk.space[1]}>
                     <Button
                       type={t.id === threadId ? 'link' : 'text'}
                       block
@@ -314,7 +314,7 @@ export default function AskPanel({
     );
     body = (
       <>
-        <Flex align="center" gap={token.marginXS} style={{ marginBottom: token.marginXS }}>
+        <Flex align="center" gap={tk.space[2]} style={{ marginBottom: tk.space[2] }}>
           <Button type="text" size="small" icon={<ArrowLeftOutlined />} aria-label="Back to the conversation" onClick={() => setView('chat')} />
           <Typography.Text strong>Past conversations</Typography.Text>
         </Flex>
@@ -323,10 +323,10 @@ export default function AskPanel({
     );
   } else if (!items.length) {
     body = (
-      <Flex vertical gap={token.marginLG} style={{ padding: `${token.paddingSM}px 0` }}>
+      <Flex vertical gap={tk.space[6]} style={{ padding: `${tk.space[3]} 0` }}>
         <Welcome
           variant="borderless"
-          icon={<SparkleIcon style={{ fontSize: 28, color: token.colorPrimary }} />}
+          icon={<SparkleIcon style={{ fontSize: tk.space[6], color: tk.color.ai.mark }} />}
           title={`Hi ${user.fullName.split(' ')[0]}, what would you like to know?`}
           description="Ask about your projects, bills, orders, stock, progress or approvals. Answers come from the records you can see, with a link to each one. It can also fill in an indent, site expense, progress entry, daily report or letter for you to check and save; it never saves or approves anything itself."
         />
@@ -353,7 +353,7 @@ export default function AskPanel({
             autoSize={{ minRows: 1, maxRows: 6 }}
             suffix={(_, { components: { SendButton, LoadingButton } }) => (busy ? <LoadingButton aria-label="Stop the answer" /> : <SendButton aria-label="Ask" />)}
           />
-          <Typography.Paragraph type="secondary" style={{ fontSize: token.fontSizeSM, margin: `${token.marginXXS}px 0 0` }}>
+          <Typography.Paragraph type="secondary" style={{ ...tk.type.caption, margin: `${tk.space[1]} 0 0` }}>
             Answers can be wrong; open the linked records before you act. Your company&apos;s admins can read conversations.
             {status && status.questionsLeftToday <= 10 ? ` ${status.questionsLeftToday} question${status.questionsLeftToday === 1 ? '' : 's'} left today.` : ''}
           </Typography.Paragraph>
@@ -361,7 +361,7 @@ export default function AskPanel({
       )}
     </>
   );
-  const bodyStyle: React.CSSProperties = { display: 'flex', flexDirection: 'column', padding: `${token.paddingSM}px ${token.padding}px`, gap: token.marginSM };
+  const bodyStyle: React.CSSProperties = { display: 'flex', flexDirection: 'column', padding: `${tk.space[3]} ${tk.space[4]}`, gap: tk.space[3] };
 
   if (mobile) {
     return (
@@ -394,16 +394,16 @@ export default function AskPanel({
           position: 'sticky',
           top: headerTop,
           height: `calc(100vh - ${headerTop}px)`,
-          background: token.colorBgContainer,
-          borderLeft: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}`,
+          background: tk.color.surface.base,
+          borderLeft: tk.line('hairline'),
         }}
       >
-        <Flex align="center" justify="space-between" gap={token.marginXS} style={{ padding: `${token.paddingSM}px ${token.padding}px`, borderBottom: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}` }}>
-          <Typography.Title level={2} style={{ fontSize: token.fontSizeLG, margin: 0, display: 'flex', alignItems: 'center', gap: token.marginXS }}>
-            <SparkleIcon style={{ color: token.colorPrimary }} />
+        <Flex align="center" justify="space-between" gap={tk.space[2]} style={{ padding: `${tk.space[3]} ${tk.space[4]}`, borderBottom: tk.line('hairline') }}>
+          <Typography.Title level={2} style={{ ...tk.type.title, color: tk.color.text.strong, margin: 0, display: 'flex', alignItems: 'center', gap: tk.space[2] }}>
+            <SparkleIcon style={{ color: tk.color.ai.mark }} />
             Ask <span translate="no">{PRODUCT_NAME}</span>
           </Typography.Title>
-          <Flex gap={token.marginXXS}>
+          <Flex gap={tk.space[1]}>
             {extra}
             <Tooltip title={`Close (${askShortcutLabel()})`}>
               <Button type="text" icon={<CloseOutlined />} aria-label={`Close Ask ${PRODUCT_NAME}`} onClick={closeDock} />
@@ -437,10 +437,9 @@ function groupOf(iso: string): string {
 }
 
 function AnswerFooter({ item, onRate, onCopy, onRetry }: { item: ChatItem; onRate: (m: ChatItem, v: 1 | -1) => void; onCopy: (text: string) => void; onRetry: (m: ChatItem) => void }) {
-  const { token } = theme.useToken();
   if (item.pending) {
     return item.text && item.status ? (
-      <Flex align="center" gap={token.marginXS} role="status">
+      <Flex align="center" gap={tk.space[2]} role="status">
         <Spin size="small" />
         <Typography.Text type="secondary">{item.status}</Typography.Text>
       </Flex>
@@ -448,9 +447,9 @@ function AnswerFooter({ item, onRate, onCopy, onRetry }: { item: ChatItem; onRat
   }
   const saved = !item.id.startsWith('local-');
   return (
-    <Flex vertical gap={token.marginXS} style={{ marginTop: token.marginXXS }}>
+    <Flex vertical gap={tk.space[2]} style={{ marginTop: tk.space[1] }}>
       {item.error && (
-        <Flex align="center" gap={token.marginXS} wrap>
+        <Flex align="center" gap={tk.space[2]} wrap>
           <Typography.Text type="danger">{item.error}</Typography.Text>
           {item.question && (
             <Button size="small" icon={<ReloadOutlined />} onClick={() => onRetry(item)}>
@@ -463,25 +462,25 @@ function AnswerFooter({ item, onRate, onCopy, onRetry }: { item: ChatItem; onRat
         <DraftOpen key={d.kind} draft={d} />
       ))}
       {item.citations.length > 0 && (
-        <Flex wrap gap={token.marginXXS} align="center" aria-label="Records used">
-          <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+        <Flex wrap gap={tk.space[1]} align="center" aria-label="Records used">
+          <Typography.Text type="secondary" style={tk.type.caption}>
             Sources
           </Typography.Text>
           {item.citations.map((c) => (
-            <AppTag key={c.href} variant="kind" style={{ marginInlineEnd: 0 }}>
+            <AppTag key={c.href} variant="kind" title={c.label} style={{ marginInlineEnd: 0, maxWidth: '100%' }}>
               <CitationLink href={c.href}>{c.label}</CitationLink>
             </AppTag>
           ))}
         </Flex>
       )}
       {item.unverified.length > 0 && (
-        <Typography.Text type="warning" style={{ fontSize: token.fontSizeSM }}>
+        <Typography.Text style={{ ...tk.type.caption, color: tk.color.tone.pending.fg }}>
           Check {item.unverified.length === 1 ? 'this' : 'these'} {item.unverified.some((u) => u.startsWith('“')) ? '' : item.unverified.length === 1 ? 'figure ' : 'figures '}in the records: {item.unverified.join(', ')}. {item.unverified.length === 1 ? 'It was' : 'They were'} not in what Ask{' '}
           {PRODUCT_NAME} read.
         </Typography.Text>
       )}
       {saved && item.text && (
-        <Flex gap={token.marginXXS}>
+        <Flex gap={tk.space[1]}>
           <Tooltip title="Copy">
             <Button type="text" size="small" icon={<CopyOutlined />} aria-label="Copy answer" onClick={() => onCopy(item.text)} />
           </Tooltip>
@@ -505,7 +504,7 @@ function DraftOpen({ draft }: { draft: NonNullable<AiMessageDto['drafts']>[numbe
 function CitationLink({ href, children }: { href: string; children: React.ReactNode }) {
   const onNavigate = useContext(NavigateCtx);
   return (
-    <Link href={href} onClick={onNavigate}>
+    <Link href={href} onClick={onNavigate} style={{ display: 'block', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>
       {children}
     </Link>
   );
