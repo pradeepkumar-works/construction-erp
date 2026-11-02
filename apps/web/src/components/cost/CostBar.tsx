@@ -8,7 +8,7 @@ import { formatINR, toNumber } from '@/lib/format';
 import { BRAND } from '@/lib/brand';
 
 export const HEAD_COLORS: Record<CostHead, string> = {
-  material: tk.color.accent.solid,
+  material: BRAND.colors.primary,
   subcontract: BRAND.colors.costSubcontract,
   labour: BRAND.colors.costLabour,
   machinery: BRAND.colors.costMachinery,
