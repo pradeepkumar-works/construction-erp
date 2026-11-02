@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button, Select, theme } from 'antd';
 import { PlusOutlined } from '@/components/common/icons';
 import type { BillSortField, BillStage, RaBillDto } from '@erp/shared';
-import { BILL_STAGES, BILL_STAGE_LABELS, LIST_SORT_FIELDS, canPrepareBill } from '@erp/shared';
+import { BILL_STAGES, BILL_STAGE_LABELS, LIST_SORT_FIELDS, MAX_PAGE_SIZE, canPrepareBill } from '@erp/shared';
 import { useNewIntent } from '@/lib/new-intent';
 import { useAuth } from '@/lib/auth';
 import { useBills, LIST_START } from '@/lib/queries';
@@ -24,6 +24,7 @@ import { RecordLink } from '@/components/record/RecordLink';
 import { exportSelected, useBulkApprove } from '@/components/list/bulk';
 import { useListFrame } from '@/components/list/useListFrame';
 import { BillStageTag } from './billUi';
+import { BillBoard } from './BillBoard';
 import { BillDrawer } from './BillDrawer';
 import { BillFormModal } from './BillFormModal';
 
@@ -94,10 +95,13 @@ export function BillList({ projectId: fixedProject, openId: initialOpen }: { pro
     fixedProject,
     columns: (sortOrderFor) => billColumns({ showProject: !fixedProject, onOpen: setOpenId, sortOrderFor }),
     chipLabels: { stage: (v) => `Client stage: ${BILL_STAGE_LABELS[v as BillStage] ?? v}` },
+    viewKinds: ['table', 'board'],
   });
   const { page } = frame;
   const filters = { ...page.params, projectId: frame.projectId, status: frame.status, stage: page.filters.stage as BillStage | undefined };
-  const { data, isLoading, isFetching, error, refetch } = useBills(filters);
+  // The board lays out every approved bill the filters leave, not one page of them.
+  const board = frame.view === 'board';
+  const { data, isLoading, isFetching, error, refetch } = useBills(board ? { ...filters, status: filters.status ?? 'APPROVED', page: 1, pageSize: MAX_PAGE_SIZE } : filters);
   const approve = useBulkApprove<RaBillDto>('bill', (r) => r.grossAmount);
   const preparer = !!user && canPrepareBill(user.roleKey);
 
@@ -109,6 +113,7 @@ export function BillList({ projectId: fixedProject, openId: initialOpen }: { pro
 
   useNewIntent('ra-bill', preparer, () => setFormOpen(true));
 
+  const emptyText = <EmptyArt art="entries" title={preparer ? 'No RA bills yet. Bill the approved measurements with New RA bill.' : 'No bills yet'} />;
   const newButton = preparer ? (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
       New RA bill
@@ -131,6 +136,7 @@ export function BillList({ projectId: fixedProject, openId: initialOpen }: { pro
         searchLabel="Search bills"
         extra={
           <>
+            {frame.viewToggle}
             <ExportButton onExport={exportRows} />
             {newButton}
           </>
@@ -147,22 +153,37 @@ export function BillList({ projectId: fixedProject, openId: initialOpen }: { pro
         />
         <DateRangeFilter {...frame.dateRange} placeholder={['Billed from', 'To']} />
       </ListToolbar>
-      <DataTable<RaBillDto>
-        columns={frame.columns}
-        visible={frame.choice.visible}
-        onChooseColumns={frame.choice.setChosen}
-        chosenIsDefault={frame.choice.isDefault}
-        rows={data?.items ?? []}
-        loading={isLoading || isFetching}
-        table={page.tableProps<RaBillDto>(data?.total)}
-        onOpen={setOpenId}
-        bulk={[...(approve ? [approve] : []), exportSelected<RaBillDto>('ra-bills', 'RA bills', BILL_EXPORT)]}
-        chips={frame.chips}
-        empty={frame.empty}
-        failed={!!error}
-        emptyText={<EmptyArt art="entries" title={preparer ? 'No RA bills yet. Bill the approved measurements with New RA bill.' : 'No bills yet'} />}
-        emptyAction={newButton}
-      />
+      {board ? (
+        <BillBoard
+          rows={data?.items ?? []}
+          total={data?.total}
+          showProject={!fixedProject}
+          loading={isLoading}
+          failed={!!error}
+          onOpen={setOpenId}
+          empty={frame.empty}
+          emptyText={emptyText}
+          emptyAction={newButton}
+          chips={frame.chips}
+        />
+      ) : (
+        <DataTable<RaBillDto>
+          columns={frame.columns}
+          visible={frame.choice.visible}
+          onChooseColumns={frame.choice.setChosen}
+          chosenIsDefault={frame.choice.isDefault}
+          rows={data?.items ?? []}
+          loading={isLoading || isFetching}
+          table={page.tableProps<RaBillDto>(data?.total)}
+          onOpen={setOpenId}
+          bulk={[...(approve ? [approve] : []), exportSelected<RaBillDto>('ra-bills', 'RA bills', BILL_EXPORT)]}
+          chips={frame.chips}
+          empty={frame.empty}
+          failed={!!error}
+          emptyText={emptyText}
+          emptyAction={newButton}
+        />
+      )}
       <BillDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
       <BillFormModal
         open={formOpen || !!editing}

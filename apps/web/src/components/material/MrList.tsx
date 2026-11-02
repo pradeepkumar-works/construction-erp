@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Button } from 'antd';
 import { PlusOutlined } from '@/components/common/icons';
 import type { AiDraftDto, MaterialRequestDto } from '@erp/shared';
-import { LIST_SORT_FIELDS } from '@erp/shared';
+import { LIST_SORT_FIELDS, MAX_PAGE_SIZE } from '@erp/shared';
 import { useNewIntent } from '@/lib/new-intent';
 import { useMaterialRequests, LIST_START } from '@/lib/queries';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
@@ -18,6 +18,7 @@ import { DateRangeFilter } from '@/components/list/DateRangeFilter';
 import { exportSelected, useBulkApprove } from '@/components/list/bulk';
 import { useListFrame } from '@/components/list/useListFrame';
 import { mrColumns } from './MrTable';
+import { MrBoard } from './MrBoard';
 import { MrDrawer } from './MrDrawer';
 import { MrFormModal } from './MrFormModal';
 
@@ -46,10 +47,13 @@ export function MrList({ projectId: fixedProject, newLabel, openId: initialOpen 
     sortFields: LIST_SORT_FIELDS.materialRequests,
     fixedProject,
     columns: (sortOrderFor) => mrColumns({ showProject: !fixedProject, onOpen: setOpenId, onEdit: setEditing, sortOrderFor }),
+    viewKinds: ['table', 'board'],
   });
   const { page } = frame;
   const filters = { ...page.params, projectId: frame.projectId, status: frame.status };
-  const { data, isLoading, isFetching, error, refetch } = useMaterialRequests(filters);
+  // The board lays out the whole filtered list, not one page of it.
+  const board = frame.view === 'board';
+  const { data, isLoading, isFetching, error, refetch } = useMaterialRequests(board ? { ...filters, page: 1, pageSize: MAX_PAGE_SIZE } : filters);
   const approve = useBulkApprove<MaterialRequestDto>('material_request');
 
   const exportRows = async () => {
@@ -63,6 +67,7 @@ export function MrList({ projectId: fixedProject, newLabel, openId: initialOpen 
     setFormOpen(true);
   });
 
+  const emptyText = <EmptyArt art="entries" title="No indents here yet" />;
   const newButton = newLabel ? (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
       {newLabel}
@@ -85,6 +90,7 @@ export function MrList({ projectId: fixedProject, newLabel, openId: initialOpen 
         searchLabel="Search indents"
         extra={
           <>
+            {frame.viewToggle}
             <ExportButton onExport={exportRows} />
             {newButton}
           </>
@@ -92,22 +98,37 @@ export function MrList({ projectId: fixedProject, newLabel, openId: initialOpen 
       >
         <DateRangeFilter {...frame.dateRange} />
       </ListToolbar>
-      <DataTable<MaterialRequestDto>
-        columns={frame.columns}
-        visible={frame.choice.visible}
-        onChooseColumns={frame.choice.setChosen}
-        chosenIsDefault={frame.choice.isDefault}
-        rows={data?.items ?? []}
-        loading={isLoading || isFetching}
-        table={page.tableProps<MaterialRequestDto>(data?.total)}
-        onOpen={setOpenId}
-        bulk={[...(approve ? [approve] : []), exportSelected<MaterialRequestDto, MrExportRow>('material-requests', 'material-requests', MR_EXPORT, mrExportRows)]}
-        chips={frame.chips}
-        empty={frame.empty}
-        failed={!!error}
-        emptyText={<EmptyArt art="entries" title="No indents here yet" />}
-        emptyAction={newButton}
-      />
+      {board ? (
+        <MrBoard
+          rows={data?.items ?? []}
+          total={data?.total}
+          showProject={!fixedProject}
+          loading={isLoading}
+          failed={!!error}
+          onOpen={setOpenId}
+          empty={frame.empty}
+          emptyText={emptyText}
+          emptyAction={newButton}
+          chips={frame.chips}
+        />
+      ) : (
+        <DataTable<MaterialRequestDto>
+          columns={frame.columns}
+          visible={frame.choice.visible}
+          onChooseColumns={frame.choice.setChosen}
+          chosenIsDefault={frame.choice.isDefault}
+          rows={data?.items ?? []}
+          loading={isLoading || isFetching}
+          table={page.tableProps<MaterialRequestDto>(data?.total)}
+          onOpen={setOpenId}
+          bulk={[...(approve ? [approve] : []), exportSelected<MaterialRequestDto, MrExportRow>('material-requests', 'material-requests', MR_EXPORT, mrExportRows)]}
+          chips={frame.chips}
+          empty={frame.empty}
+          failed={!!error}
+          emptyText={emptyText}
+          emptyAction={newButton}
+        />
+      )}
       <MrDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
       <MrFormModal open={formOpen || !!editing} entry={editing} onClose={() => { setFormOpen(false); setEditing(null); setPrefill(null); }} prefill={prefill} projectId={fixedProject} defaultProjectId={frame.projectId} />
     </>
