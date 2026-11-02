@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Button, Select, theme } from 'antd';
+import { Button, Select } from 'antd';
+import { tk } from '@/ds';
 import { PlusOutlined } from '@/components/common/icons';
 import type { BillSortField, BillStage, RaBillDto } from '@erp/shared';
 import { BILL_STAGES, BILL_STAGE_LABELS, LIST_SORT_FIELDS, MAX_PAGE_SIZE, canPrepareBill } from '@erp/shared';
@@ -32,11 +33,10 @@ const KEYS = ['status', 'mine', 'from', 'to', 'stage'] as const;
 const sumMoney = (values: string[]) => formatINR(values.reduce((n, v) => n + Number(v || 0), 0));
 
 function TwoLine({ top, sub }: { top: React.ReactNode; sub: React.ReactNode }) {
-  const { token } = theme.useToken();
   return (
     <div>
       {top}
-      <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{sub}</div>
+      <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{sub}</div>
     </div>
   );
 }

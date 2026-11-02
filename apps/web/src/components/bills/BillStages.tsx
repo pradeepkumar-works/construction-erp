@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { App, Button, Form, Input, InputNumber, Table, Tooltip, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ContractCurrency, RaBillDto, RaBillStageLineDto, SlippageLineDto } from '@erp/shared';
@@ -9,7 +10,6 @@ import { STAGE_TRIGGER_LABELS } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { formatDate, formatMoney, formatPct, toNumber, NO_VALUE } from '@/lib/format';
-import { themeColor, themeFontSize } from '@/lib/theme';
 import { FormShell } from '@/components/form/FormShell';
 
 const pct = (v: string | number | null) => (v === null ? NO_VALUE : <span className="mono" translate="no">{formatPct(v, { digits: toNumber(v) % 1 ? 2 : 0 })}</span>);
@@ -52,7 +52,7 @@ export function BillStages({ bill, editable }: { bill: RaBillDto; editable: bool
                   {l.componentCode}
                 </span>{' '}
                 {l.componentName}: <strong>{l.stageName}</strong>
-                <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                   {formatPct(l.stagePct)} of the component, {STAGE_TRIGGER_LABELS[l.trigger].toLowerCase()}. {l.evidenceText}
                 </div>
               </div>
@@ -75,7 +75,7 @@ export function BillStages({ bill, editable }: { bill: RaBillDto; editable: bool
                         Claimed over the evidence
                       </AppTag>
                     </Tooltip>
-                    <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                    <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                       Evidence gives {formatPct(l.suggestedPct, { digits: 2 })}
                     </div>
                   </div>
@@ -90,7 +90,7 @@ export function BillStages({ bill, editable }: { bill: RaBillDto; editable: bool
                   dataIndex: 'certifiedPct',
                   width: 100,
                   align: 'right' as const,
-                  render: (v: string | null, l: RaBillStageLineDto) => <span style={v !== null && toNumber(v) !== toNumber(l.thisPct) ? { color: themeColor('colorErrorText') } : undefined}>{pct(v)}</span>,
+                  render: (v: string | null, l: RaBillStageLineDto) => <span style={v !== null && toNumber(v) !== toNumber(l.thisPct) ? { color: tk.color.tone.danger.fg } : undefined}>{pct(v)}</span>,
                 },
               ]
             : []),

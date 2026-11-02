@@ -83,7 +83,13 @@ runs and is committed with the last PR.
 
 ### Move every screen onto `tk` (PR 8 to PR 13)
 
-- [ ] PR 8. The codemod (`scripts/codemods/to-tk.ts`): bills moved by hand first, then the codemod rerun on them and diffed.
+- [x] PR 8. The codemod (`scripts/codemods/to-tk.ts`, tested by `to-tk-test.ts` in CI). Proved against the files moved by
+  hand in PR 7: run on their old versions, it gives the same lines except the design changes made by hand, and lists
+  exactly the places a person had to settle (antd's `Space size`, `Row gutter`, arithmetic). Run on the bills screens:
+  four files move whole; `BillDrawer`'s off-grid values (3 and 6 px) were settled by hand onto the 4 and 8 steps; the
+  bill's print stays for PR 14. A `subhead` type (20 px) names the size antd's `fontSizeXL` and fourth heading had.
+  How to run it: `npx tsx --tsconfig tsconfig.json scripts/codemods/to-tk.ts --write --prune <folders>`, then settle
+  what it lists, lint, and take the screenshots.
 - [ ] PR 9 to PR 13. One department per PR: site work, materials and buying, money, people, insight and admin. Off-grid
   values (3, 5, 6, 7, 14, 18 px) are decided by hand with a before and after screenshot.
 
