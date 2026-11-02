@@ -2,11 +2,11 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Button, Table, Typography } from 'antd';
+import { Button, Table } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { PaymentRequestDto, VendorPaymentDto } from '@erp/shared';
-import { FUND_PURPOSE_LABELS, MSME_CATEGORY_LABELS, PAID_STATE_LABELS, PAYMENT_REQUEST_KIND_LABELS, RELEASE_STATE_LABELS, RECEIPT_MODE_LABELS, canEditSubmission, canRecordPayment, canReleaseFunds, canRequestFunds, canRequestPayment } from '@erp/shared';
+import { FUND_PURPOSE_LABELS, MSME_CATEGORY_LABELS, PAID_STATE_LABELS, PAYMENT_REQUEST_KIND_LABELS, RELEASE_STATE_LABELS, RECEIPT_MODE_LABELS, canEditSubmission, figure, canRecordPayment, canReleaseFunds, canRequestFunds, canRequestPayment } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
@@ -19,6 +19,7 @@ import { EditResubmitButton } from '@/components/common/EditResubmitButton';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
 import { submissionMetaItems } from '@/components/common/SubmitterInfo';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
+import { projectContext } from '@/components/record/RecordParts';
 import { submissionLifecycle } from '@/components/record/lifecycle';
 import { PaymentFormModal, requestPayTarget } from './PaymentFormModal';
 import { ReleaseFundsModal } from './FundRequestFormModal';
@@ -124,6 +125,8 @@ export function PaymentRequestRecord({ id, mode, open, onClose, onEdit }: Record
           data && {
             href: `/payment-requests/${data.id}`,
             title: `${data.requestNo} · ${requestPayee(data)}`,
+            context: projectContext(data),
+            headline: [figure('amountClaimed', data.amount)],
             tags: (
               <>
                 <StatusTag status={data.status} /> <RequestPaidTag request={data} />
@@ -179,19 +182,9 @@ export function PaymentRequestRecord({ id, mode, open, onClose, onEdit }: Record
                 ),
               },
               {
-                key: 'amount',
-                label: 'Amount',
-                children: <Money value={data.amount} paise strong />,
-              },
-              {
                 key: 'neededBy',
                 label: 'Needed by',
                 children: data.neededBy ? formatDate(data.neededBy) : NO_VALUE,
-              },
-              {
-                key: 'mode',
-                label: 'Pay by',
-                children: RECEIPT_MODE_LABELS[data.mode],
               },
               ...(data.targetOpen !== null && data.status !== 'APPROVED'
                 ? [
@@ -225,8 +218,9 @@ export function PaymentRequestRecord({ id, mode, open, onClose, onEdit }: Record
                     },
                   ]
                 : []),
-              ...submissionMetaItems(data).filter((i) => i.key !== 'status'),
+              ...submissionMetaItems(data),
             ],
+            details: [{ key: 'mode', label: 'Pay by', children: RECEIPT_MODE_LABELS[data.mode] }],
             lifecycle: submissionLifecycle(data, [
               {
                 title: releases ? 'Released' : 'Paid',
@@ -241,6 +235,7 @@ export function PaymentRequestRecord({ id, mode, open, onClose, onEdit }: Record
                       key: 'payments',
                       title: 'Payments',
                       count: payments?.total ?? 0,
+                      empty: payments?.total === 0,
                       children: (
                         <Table<VendorPaymentDto>
                           rowKey="id"
@@ -257,20 +252,6 @@ export function PaymentRequestRecord({ id, mode, open, onClose, onEdit }: Record
                               render: (v) => formatDate(v),
                             },
                             {
-                              title: 'Paid',
-                              dataIndex: 'amount',
-                              width: 130,
-                              align: 'right',
-                              render: (v) => <Money value={v} paise strong />,
-                            },
-                            {
-                              title: 'Deducted',
-                              key: 'ded',
-                              width: 120,
-                              align: 'right',
-                              render: (_, p) => <Money value={toNumber(p.tdsAmount) + toNumber(p.otherDeduction)} paise />,
-                            },
-                            {
                               title: 'Mode / reference',
                               key: 'ref',
                               render: (_, p) => (
@@ -285,6 +266,20 @@ export function PaymentRequestRecord({ id, mode, open, onClose, onEdit }: Record
                                 </span>
                               ),
                             },
+                            {
+                              title: 'Deducted',
+                              key: 'ded',
+                              width: 120,
+                              align: 'right',
+                              render: (_, p) => <Money value={toNumber(p.tdsAmount) + toNumber(p.otherDeduction)} paise />,
+                            },
+                            {
+                              title: 'Paid',
+                              dataIndex: 'amount',
+                              width: 130,
+                              align: 'right',
+                              render: (v) => <Money value={v} paise strong />,
+                            },
                           ]}
                         />
                       ),
@@ -295,7 +290,8 @@ export function PaymentRequestRecord({ id, mode, open, onClose, onEdit }: Record
                 key: 'files',
                 title: fund ? 'Wage sheet, quotation or letter' : 'Proforma or letter',
                 count: data.attachments.length,
-                children: data.attachments.length > 0 ? <AttachmentGallery attachments={data.attachments} /> : <Typography.Text type="secondary">Nothing attached.</Typography.Text>,
+                empty: data.attachments.length === 0,
+                children: <AttachmentGallery attachments={data.attachments} emptyText="Nothing attached" />,
               },
             ],
             activity: {

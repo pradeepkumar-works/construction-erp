@@ -16,6 +16,20 @@ import { Money } from '@/components/common/Money';
 /** Requests still holding part of the bill or order: waiting for approval, or approved and not yet paid. */
 const holding = (r: PaymentRequestDto) => (r.status === 'SUBMITTED' ? toNumber(r.amount) : r.status === 'APPROVED' ? toNumber(r.outstanding) : 0);
 
+/** The requests on one bill or order, for those who may see them; `loaded` once the list has come back. */
+export function useTargetRequests(target: Pick<RequestFor, 'vendorBillId' | 'subcontractBillId' | 'purchaseOrderId' | 'workOrderId'>, approved: boolean) {
+  const { user } = useAuth();
+  const visible = approved && !!user && canViewPaymentRequests(user.roleKey);
+  const filter = {
+    vendorBillId: target.vendorBillId,
+    subcontractBillId: target.subcontractBillId,
+    purchaseOrderId: target.purchaseOrderId,
+    workOrderId: target.workOrderId,
+  };
+  const { data } = usePaymentRequests({ ...filter, pageSize: 50, sortBy: 'requestNo', sortOrder: 'asc' }, visible);
+  return { visible, rows: data?.items ?? [], loaded: !!data };
+}
+
 /**
  * The payment requests on one approved bill or order, with "Request payment" (a bill) or "Request
  * advance" (an order) for those who may ask, and Pay for accounts on an approved one. `base` is what is left before
@@ -26,16 +40,8 @@ export function TargetRequests({ target, base, approved }: { target: Omit<Reques
   const [asking, setAsking] = useState(false);
   const [opened, setOpened] = useState<string | null>(null);
   const [paying, setPaying] = useState<PaymentRequestDto | null>(null);
-  const visible = approved && !!user && canViewPaymentRequests(user.roleKey);
-  const filter = {
-    vendorBillId: target.vendorBillId,
-    subcontractBillId: target.subcontractBillId,
-    purchaseOrderId: target.purchaseOrderId,
-    workOrderId: target.workOrderId,
-  };
-  const { data } = usePaymentRequests({ ...filter, pageSize: 50, sortBy: 'requestNo', sortOrder: 'asc' }, visible);
-  if (!visible) return null;
-  const rows = data?.items ?? [];
+  const { visible, rows } = useTargetRequests(target, approved);
+  if (!visible || !user) return null;
   const bill = target.kind === 'BILL';
   // An advance's base already leaves out what was asked for; a bill's outstanding does not leave out open requests.
   const open = Math.max(toNumber(base) - (bill ? rows.reduce((n, r) => n + holding(r), 0) : 0), 0);

@@ -68,5 +68,7 @@ test('a field of the company’s own on the road’s DPR form, and a report keep
   expect(after.versions.find((v) => v.version === 1)?.reports).toBe(1);
   await settle(page, `/dpr/${report.id}`);
   await expect(page.getByText('2.4 m', { exact: true })).toBeVisible();
+  // The form it was made on is a reference fact, folded under Details.
+  await page.getByRole('button', { name: /^Details/ }).click();
   await expect(page.getByRole('link', { name: 'Version 1' })).toBeVisible();
 });

@@ -14,6 +14,7 @@ import { useDebitNote } from '@/lib/queries';
 import { formatDate, formatDateTime, formatINR, formatPct, formatQty, NO_VALUE } from '@/lib/format';
 import { FormShell } from '@/components/form/FormShell';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
+import { projectContext } from '@/components/record/RecordParts';
 import { Money } from '@/components/common/Money';
 
 
@@ -87,6 +88,7 @@ export function DebitNoteRecord({ id, mode, open, onClose }: RecordProps & { mod
           data && {
             href: `/debit-notes/${data.id}`,
             title: `${data.noteNo} · ${data.vendorName}`,
+            context: projectContext(data),
             tags: <DebitNoteTag note={data} />,
             facts: [
               { key: 'reason', label: 'Reason', children: DEBIT_NOTE_REASON_LABELS[data.reason] },
@@ -116,10 +118,11 @@ export function DebitNoteRecord({ id, mode, open, onClose }: RecordProps & { mod
                   </span>
                 ),
               },
-              { key: 'project', label: 'Project', children: <Link href={`/projects/${data.projectId}`}>{data.projectName}</Link> },
-              ...(data.stockEntryNo ? [{ key: 'grn', label: 'From', children: <span className="mono">{data.stockEntryNo}</span> }] : []),
               { key: 'by', label: 'Raised by', children: `${data.createdByName}, ${formatDateTime(data.createdAt)}` },
               ...(data.cancelledAt ? [{ key: 'cancelled', label: 'Cancelled', span: 2, children: `${data.cancelledByName ?? ''}, ${formatDateTime(data.cancelledAt)}: ${data.cancelNote ?? ''}` }] : []),
+            ],
+            details: [
+              ...(data.stockEntryNo ? [{ key: 'grn', label: 'From', children: <span className="mono">{data.stockEntryNo}</span> }] : []),
               ...(data.remarks ? [{ key: 'remarks', label: 'Remarks', span: 2, children: <span style={{ whiteSpace: 'pre-wrap' }}>{data.remarks}</span> }] : []),
             ],
             sections: [

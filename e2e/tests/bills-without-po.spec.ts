@@ -78,6 +78,8 @@ test('record a hire bill from the logs, then raise a debit note on it', async ({
 
   // A rate difference of 1,000 plus GST, raised from the bill's own page.
   await page.goto(`/vendor-bills/${bill.id}`);
+  // The bill has no debit note yet, so the section is folded into the "Nothing yet" line until opened.
+  await page.getByRole('button', { name: 'Open Debit notes' }).click();
   await page.getByRole('button', { name: 'New debit note' }).click();
   const note = formPanel(page, `New debit note · ${bill.billNo}`);
   await chooseOption(note.getByLabel('Reason'), 'Rate difference');
