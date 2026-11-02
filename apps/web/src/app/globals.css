@@ -3,7 +3,7 @@ body {
   margin: 0;
   padding: 0;
   min-height: 100%;
-  background: var(--ant-color-bg-layout);
+  background: var(--c-surface-canvas);
 }
 
 /* One face (Inter, loaded in app/layout.tsx as --font-body) for titles and text: the display face is the same. */
@@ -28,7 +28,7 @@ a {
 
 .page-container {
   padding: var(--s-6) var(--s-8) var(--s-8);
-  max-width: 1440px;
+  max-width: 90rem;
   margin: 0 auto;
 }
 
@@ -36,8 +36,8 @@ a {
 .auth {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: minmax(380px, 5fr) 7fr;
-  background: var(--ant-color-bg-container);
+  grid-template-columns: minmax(23.75rem, 5fr) 7fr;
+  background: var(--c-surface-base);
 }
 
 .auth-aside {
@@ -49,8 +49,8 @@ a {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 48px;
-  padding: 40px 56px;
+  gap: var(--s-12);
+  padding: 2.5rem 3.5rem;
   color: var(--c-chrome-ink);
   background-color: var(--c-chrome-bg);
 }
@@ -58,18 +58,18 @@ a {
 .auth-brand {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 0.625rem;
 }
 
 .auth-pitch {
-  max-width: 440px;
+  max-width: 27.5rem;
 }
 
 .auth-headline {
-  margin: 0 0 28px;
+  margin: 0 0 1.75rem;
   font-family: var(--font-display), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
   font-weight: 600;
-  font-size: clamp(36px, 3.6vw, 52px);
+  font-size: clamp(2.25rem, 3.6vw, 3.25rem);
   line-height: 1.04;
   letter-spacing: -0.01em;
   text-wrap: balance;
@@ -81,30 +81,30 @@ a {
   padding: 0;
   list-style: none;
   display: grid;
-  gap: 14px;
-  font-size: var(--ant-font-size-lg);
+  gap: 0.875rem;
+  font-size: var(--t-lead);
   line-height: 1.45;
   color: color-mix(in srgb, var(--c-chrome-ink) 72%, transparent);
 }
 
 .auth-points li {
   display: flex;
-  gap: 12px;
+  gap: var(--s-3);
 }
 
 .auth-points li::before {
   content: '';
   flex: 0 0 auto;
-  width: 6px;
-  height: 6px;
-  margin-top: 8px;
+  width: 0.375rem;
+  height: 0.375rem;
+  margin-top: var(--s-2);
   border-radius: 1px;
   background: var(--c-chrome-accent);
 }
 
 .auth-aside-foot {
   margin: 0;
-  font-size: var(--ant-font-size-sm);
+  font-size: var(--t-caption);
   color: color-mix(in srgb, var(--c-chrome-ink) 62%, transparent);
 }
 
@@ -112,35 +112,35 @@ a {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  padding: 40px 48px 28px;
+  padding: 2.5rem var(--s-12) 1.75rem;
 }
 
 .auth-form {
   width: 100%;
   margin: auto;
-  padding: 48px 0;
+  padding: var(--s-12) 0;
 }
 
 .auth-brand-compact {
   display: none;
-  margin-bottom: 40px;
+  margin-bottom: 2.5rem;
 }
 
 .auth-title {
-  margin: 0 0 8px;
+  margin: 0 0 var(--s-2);
   font-family: var(--font-display), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
   font-weight: 700;
-  font-size: var(--ant-font-size-heading-1);
+  font-size: var(--t-display);
   line-height: 1.1;
   letter-spacing: -0.01em;
   color: var(--c-text-strong);
 }
 
 .auth-subtitle {
-  margin: 0 0 32px;
-  font-size: var(--ant-font-size-lg);
+  margin: 0 0 var(--s-8);
+  font-size: var(--t-lead);
   line-height: 1.5;
-  color: var(--brand-muted);
+  color: var(--c-text-muted);
 }
 
 .auth-form .ant-form-item-label > label {
@@ -150,14 +150,14 @@ a {
 
 .auth-form .ant-input-affix-wrapper-lg,
 .auth-form .ant-input-lg {
-  border-radius: 8px;
-  padding-top: 10px;
-  padding-bottom: 10px;
+  border-radius: 0.5rem;
+  padding-top: 0.625rem;
+  padding-bottom: 0.625rem;
 }
 
 .auth-form .ant-btn-lg {
-  height: 48px;
-  border-radius: 8px;
+  height: 3rem;
+  border-radius: 0.5rem;
 }
 
 /* "Forgot password?" sits on the label row, outside the <label> so the field's name stays "Password". */
@@ -170,12 +170,12 @@ a {
   top: 0;
   right: 0;
   z-index: 1;
-  font-size: var(--ant-font-size);
-  line-height: 22px;
+  font-size: var(--t-body);
+  line-height: 1.375rem;
 }
 
 .auth-link {
-  color: var(--brand-link);
+  color: var(--c-text-link);
   font-weight: 500;
 }
 
@@ -184,21 +184,21 @@ a {
 }
 
 .auth-alt {
-  margin: 24px 0 0;
+  margin: var(--s-6) 0 0;
   text-align: center;
-  color: var(--brand-muted);
+  color: var(--c-text-muted);
 }
 
 .auth-divider {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin: 40px 0 16px;
-  font-size: var(--ant-font-size-sm);
+  gap: var(--s-3);
+  margin: 2.5rem 0 var(--s-4);
+  font-size: var(--t-caption);
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--brand-subtle);
+  color: var(--p-subtle);
 }
 
 .auth-divider::before,
@@ -206,56 +206,56 @@ a {
   content: '';
   flex: 1;
   height: 1px;
-  background: var(--brand-border);
+  background: var(--c-line-base);
 }
 
 .auth-demo {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--s-2);
 }
 
 .auth-demo button {
-  padding: 6px 12px;
-  border: 1px solid var(--brand-border);
-  border-radius: 999px;
-  background: var(--ant-color-bg-container);
+  padding: 0.375rem var(--s-3);
+  border: 1px solid var(--c-line-base);
+  border-radius: var(--r-pill);
+  background: var(--c-surface-base);
   font: inherit;
-  font-size: var(--ant-font-size-sm);
-  color: var(--brand-muted);
+  font-size: var(--t-caption);
+  color: var(--c-text-muted);
   cursor: pointer;
   transition: border-color 150ms, color 150ms, background-color 150ms;
 }
 
 .auth-demo button:hover {
-  border-color: var(--brand-accent);
-  color: var(--brand-accent);
+  border-color: var(--c-accent-solid);
+  color: var(--c-accent-solid);
 }
 
 .auth-demo button[aria-pressed='true'] {
-  border-color: var(--brand-accent);
-  background: var(--brand-accent-soft);
-  color: var(--brand-accent-deep);
+  border-color: var(--c-accent-solid);
+  background: var(--c-accent-soft);
+  color: var(--c-accent-hover);
   font-weight: 600;
 }
 
 .auth-demo-note {
-  margin: 12px 0 0;
-  font-size: var(--ant-font-size-sm);
-  color: var(--brand-subtle);
+  margin: var(--s-3) 0 0;
+  font-size: var(--t-caption);
+  color: var(--p-subtle);
 }
 
 .auth-foot {
   display: flex;
   justify-content: space-between;
-  gap: 16px;
-  font-size: var(--ant-font-size-sm);
-  color: var(--brand-subtle);
+  gap: var(--s-4);
+  font-size: var(--t-caption);
+  color: var(--p-subtle);
 }
 
 .auth-foot nav {
   display: flex;
-  gap: 20px;
+  gap: var(--s-5);
 }
 
 .auth-foot a {
@@ -291,13 +291,13 @@ a {
 
 @media (max-width: 575px) {
   .auth-main {
-    padding: 24px 20px 20px;
+    padding: var(--s-6) var(--s-5) var(--s-5);
   }
   .auth-form {
-    padding: 16px 0 32px;
+    padding: var(--s-4) 0 var(--s-8);
   }
   .auth-subtitle {
-    margin-bottom: 28px;
+    margin-bottom: 1.75rem;
   }
 }
 
@@ -324,7 +324,7 @@ h4.ant-typography,
 
 /* A page's title (PageHeader): 24 px on a wider screen, a step down on a phone. */
 :root h1.ant-typography.page-title {
-  font-size: var(--ant-font-size-heading-2);
+  font-size: var(--t-heading);
   line-height: 1.25;
 }
 
@@ -337,7 +337,7 @@ h4.ant-typography,
 
 @media (max-width: 768px) {
   :root h1.ant-typography.page-title {
-    font-size: var(--ant-font-size-heading-3);
+    font-size: var(--t-subhead);
   }
 }
 
@@ -345,12 +345,12 @@ h4.ant-typography,
 .eyebrow {
   font-family: var(--font-body), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
   font-stretch: 100%;
-  font-size: var(--ant-font-size-sm);
+  font-size: var(--t-caption);
   font-weight: 700;
   line-height: 1.3;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--ant-color-primary-text);
+  color: var(--c-accent-text);
 }
 
 /* Field labels are semibold, so a long form scans by its labels (brand guide: Semibold for emphasis). Sign-in sets its own. */
@@ -360,15 +360,15 @@ h4.ant-typography,
 
 /* Today in a date picker is underlined with the datum line rather than boxed (white on the chosen day). */
 :root .ant-picker-cell-in-view.ant-picker-cell-today .ant-picker-cell-inner::before {
-  inset: auto 25% 3px;
-  height: 2px;
+  inset: auto 25% 0.1875rem;
+  height: 0.125rem;
   border: 0;
   border-radius: 1px;
-  background: var(--ant-color-primary);
+  background: var(--c-accent-solid);
 }
 
 :root .ant-picker-cell-in-view.ant-picker-cell-today.ant-picker-cell-selected .ant-picker-cell-inner::before {
-  background: var(--ant-color-text-light-solid);
+  background: var(--c-text-on-accent);
 }
 
 .wordmark {
@@ -379,7 +379,7 @@ h4.ant-typography,
 
 /* Primary links inside tables and cards (Next <Link> inherits colour from the reset above). */
 .link-strong {
-  color: var(--ant-color-link);
+  color: var(--c-text-link);
   font-weight: 600;
 }
 
@@ -388,7 +388,7 @@ h4.ant-typography,
 }
 
 .text-muted {
-  color: var(--ant-color-text-tertiary);
+  color: var(--c-text-faint);
 }
 
 /* Read by a screen reader, not shown: a figure's spoken words beside its shown ones ("crore" for "Cr"). */
@@ -396,7 +396,7 @@ h4.ant-typography,
   position: absolute;
   width: 1px;
   height: 1px;
-  margin: -1px;
+  margin: -0.0625rem;
   padding: 0;
   overflow: hidden;
   clip-path: inset(50%);
@@ -407,11 +407,11 @@ h4.ant-typography,
 /* Keeps the unticked choices in the account menu lined up with the ticked one. */
 .menu-check-gap {
   display: inline-block;
-  width: 14px;
+  width: 0.875rem;
 }
 
 .text-danger {
-  color: var(--ant-color-error-text);
+  color: var(--c-tone-danger-fg);
 }
 
 .mono {
@@ -424,7 +424,7 @@ h4.ant-typography,
   }
   /* KPI tiles sit two to a row on phones; keep "₹ 59.27 Cr" on one line. */
   .ant-card .ant-statistic .ant-statistic-content {
-    font-size: var(--ant-font-size-xl);
+    font-size: var(--t-subhead);
   }
 }
 
@@ -459,7 +459,7 @@ h4.ant-typography,
  * covers the card, so a tap anywhere on it opens the record (the tick box sits above that layer).
  */
 .list-cards-wrap {
-  padding: var(--ant-padding-xs) var(--ant-padding-sm) var(--ant-padding-sm);
+  padding: var(--s-2) var(--s-3) var(--s-3);
 }
 .list-cards {
   list-style: none;
@@ -467,26 +467,26 @@ h4.ant-typography,
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--ant-margin-xs);
+  gap: var(--s-2);
 }
 .list-card {
   position: relative;
   display: flex;
   align-items: flex-start;
-  gap: var(--ant-margin-xs);
-  min-height: 44px;
-  padding: var(--ant-padding-sm);
-  background: var(--ant-color-bg-container);
-  border: var(--ant-line-width) solid var(--ant-color-border-secondary);
-  border-radius: var(--ant-border-radius-lg);
+  gap: var(--s-2);
+  min-height: 2.75rem;
+  padding: var(--s-3);
+  background: var(--c-surface-base);
+  border: 1px solid var(--c-line-hairline);
+  border-radius: var(--r-lg);
   overflow-wrap: anywhere;
 }
 .list-card-link:hover {
-  border-color: var(--ant-color-primary-border-hover);
+  border-color: var(--c-accent-hover);
 }
 .list-card-selected {
-  background: var(--ant-control-item-bg-active);
-  border-color: var(--ant-color-primary-border);
+  background: var(--c-state-row-chosen);
+  border-color: var(--c-accent-chosen);
 }
 .list-card-body {
   flex: 1;
@@ -497,18 +497,18 @@ h4.ant-typography,
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--ant-margin-xs);
+  gap: var(--s-2);
 }
 .list-card-title {
   min-width: 0;
-  font-weight: var(--ant-font-weight-strong);
+  font-weight: 600;
 }
 .list-card-status {
   flex-shrink: 0;
 }
 .list-card-meta {
-  margin-top: var(--ant-margin-xxs);
-  color: var(--ant-color-text-secondary);
+  margin-top: var(--s-1);
+  color: var(--c-text-muted);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
@@ -516,15 +516,15 @@ h4.ant-typography,
   overflow: hidden;
 }
 .list-card-foot {
-  margin-top: var(--ant-margin-xxs);
+  margin-top: var(--s-1);
   align-items: baseline;
-  color: var(--ant-color-text-secondary);
-  font-size: var(--ant-font-size-sm);
+  color: var(--c-text-muted);
+  font-size: var(--t-caption);
 }
 .list-card-amount {
-  color: var(--ant-color-text);
-  font-size: var(--ant-font-size);
-  font-weight: var(--ant-font-weight-strong);
+  color: var(--c-text-base);
+  font-size: var(--t-body);
+  font-weight: 600;
   white-space: nowrap;
 }
 .list-card-open {
@@ -532,8 +532,8 @@ h4.ant-typography,
   border: 0;
   background: none;
   font: inherit;
-  font-weight: var(--ant-font-weight-strong);
-  color: var(--ant-color-link);
+  font-weight: 600;
+  color: var(--c-text-link);
   text-align: left;
   cursor: pointer;
 }
@@ -547,48 +547,48 @@ h4.ant-typography,
   outline: none;
 }
 .list-card-open:focus-visible::after {
-  outline: 2px solid var(--ant-color-primary);
-  outline-offset: 2px;
+  outline: 0.125rem solid var(--c-accent-solid);
+  outline-offset: 0.125rem;
 }
 .list-card-check {
   position: relative;
   z-index: 1;
-  min-width: 44px;
-  min-height: 44px;
-  margin: calc(-1 * var(--ant-padding-sm)) 0 calc(-1 * var(--ant-padding-sm)) calc(-1 * var(--ant-padding-sm));
-  padding-left: var(--ant-padding-sm);
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  margin: calc(-1 * var(--s-3)) 0 calc(-1 * var(--s-3)) calc(-1 * var(--s-3));
+  padding-left: var(--s-3);
   display: flex;
   align-items: center;
 }
 .list-card-totals {
-  margin-top: var(--ant-margin-sm);
-  padding: var(--ant-padding-sm);
-  border: var(--ant-line-width) dashed var(--ant-color-border);
-  border-radius: var(--ant-border-radius-lg);
+  margin-top: var(--s-3);
+  padding: var(--s-3);
+  border: 1px dashed var(--c-line-base);
+  border-radius: var(--r-lg);
 }
 .list-card-totals dl {
-  margin: var(--ant-margin-xxs) 0 0;
+  margin: var(--s-1) 0 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: var(--ant-margin-xxs) var(--ant-margin-sm);
+  grid-template-columns: repeat(auto-fill, minmax(8.75rem, 1fr));
+  gap: var(--s-1) var(--s-3);
 }
 .list-card-totals dt {
-  color: var(--ant-color-text-secondary);
-  font-size: var(--ant-font-size-sm);
+  color: var(--c-text-muted);
+  font-size: var(--t-caption);
 }
 .list-card-totals dd {
   margin: 0;
-  font-weight: var(--ant-font-weight-strong);
+  font-weight: 600;
 }
 .list-cards-pager {
-  margin-top: var(--ant-margin-sm);
+  margin-top: var(--s-3);
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  row-gap: var(--ant-margin-xs);
+  row-gap: var(--s-2);
 }
 .list-cards-empty {
-  padding: var(--ant-padding) var(--ant-padding-sm);
+  padding: var(--s-4) var(--s-3);
   text-align: center;
 }
 
@@ -604,7 +604,7 @@ h4.ant-typography,
 
 /* Superseded revisions and other rows that are on record but not in force */
 .row-muted td {
-  color: var(--ant-color-text-tertiary);
+  color: var(--c-text-faint);
 }
 
 /* A record page printed from the browser: the record only, without the app around it. */
@@ -626,17 +626,17 @@ h4.ant-typography,
 
 /* Accessibility (WCAG 2.2 AA). Tags take their AA text and fill from their tone (`AppTag`). */
 /* The anchor bar's current section takes the AA primary text shade (the plain primary is too faint on the dark page). */
-:root .ant-anchor-wrapper .ant-anchor .ant-anchor-link .ant-anchor-link-title.ant-anchor-link-title-active { color: var(--ant-color-primary-text); }
+:root .ant-anchor-wrapper .ant-anchor .ant-anchor-link .ant-anchor-link-title.ant-anchor-link-title-active { color: var(--c-accent-text); }
 
 /*
  * One type scale, 12 px the floor. antd sets <kbd> and <code> at 90% and 85% of the text around them, which
  * in a 12 px caption falls under the floor; a lone `monospace` face would also shrink them to 13/16 of the text.
  */
 :root .ant-typography kbd {
-  font-size: max(var(--ant-font-size-sm), 90%);
+  font-size: max(var(--t-caption), 90%);
 }
 :root .ant-typography code {
-  font-size: max(var(--ant-font-size-sm), 85%);
+  font-size: max(var(--t-caption), 85%);
 }
 code,
 kbd {
@@ -649,15 +649,15 @@ kbd {
  */
 @media (pointer: coarse) {
   :root .ant-btn {
-    min-height: 44px;
-    min-width: 44px;
+    min-height: 2.75rem;
+    min-width: 2.75rem;
   }
   :root .ant-select {
-    --ant-select-height: 44px;
+    --ant-select-height: 2.75rem;
   }
   :root :is(.ant-input-affix-wrapper, .ant-picker, .ant-input-number),
   :root .ant-input:not(:is(.ant-input-affix-wrapper, .ant-input-number, .ant-input-group, .ant-picker) .ant-input) {
-    min-height: 44px;
+    min-height: 2.75rem;
   }
   :root .ant-input-number {
     display: inline-flex;
@@ -668,47 +668,47 @@ kbd {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 44px;
-    min-width: 44px;
+    min-height: 2.75rem;
+    min-width: 2.75rem;
   }
   :root .ant-tabs .ant-tabs-tab {
-    min-height: 44px;
-    min-width: 44px;
+    min-height: 2.75rem;
+    min-width: 2.75rem;
     justify-content: center;
   }
   /* A record's section links (RecordFrame's Anchor). */
   :root .ant-anchor .ant-anchor-link-title {
     display: inline-flex;
     align-items: center;
-    min-height: 44px;
+    min-height: 2.75rem;
   }
   /* A clickable filter tag (Tag.CheckableTag: the category chips on expenses and risks). */
   :root .ant-tag.ant-tag-checkable {
     display: inline-flex;
     align-items: center;
-    min-height: 44px;
+    min-height: 2.75rem;
   }
   /* antd sizes the pager from this variable, and a small pager's own value outranks the rule below. */
   :root .ant-pagination.ant-pagination {
-    --ant-pagination-item-size-actual: 44px;
+    --ant-pagination-item-size-actual: 2.75rem;
   }
   :root :is(.ant-pagination-item, .ant-pagination-prev, .ant-pagination-next, .ant-pagination-jump-prev, .ant-pagination-jump-next) {
-    min-width: 44px;
-    height: 44px;
-    line-height: 42px;
+    min-width: 2.75rem;
+    height: 2.75rem;
+    line-height: 2.625rem;
   }
   /* A list card's title is the control that opens the record, and the whole card already takes the tap (the title's
      ::after covers it). Its own box grows to 44 px around the same text, half above and half below the 22 px line, so
      a check that measures the control rather than its hit area agrees too. The
      padding is cancelled by the margin, so nothing in the card moves. */
   :root .list-card-open {
-    padding-block: 11px;
-    margin-block: -11px;
+    padding-block: 0.6875rem;
+    margin-block: -0.6875rem;
   }
   /* A checkbox on its own (no label text) still takes a 44 px square, and a table's selection column widens to hold it. */
   :root :is(.ant-checkbox-wrapper, .ant-radio-wrapper) {
-    min-height: 44px;
-    min-width: 44px;
+    min-height: 2.75rem;
+    min-width: 2.75rem;
     align-items: center;
     justify-content: center;
   }
@@ -717,29 +717,29 @@ kbd {
     justify-content: flex-start;
   }
   :root .ant-table-wrapper col.ant-table-selection-col {
-    width: 60px;
+    width: 3.75rem;
   }
   :root :is(.ant-dropdown-menu-item, .ant-select-item-option) {
-    min-height: 44px;
+    min-height: 2.75rem;
   }
   /* A drawer's or dialog's close (X) is a 44 px square on a phone. */
   :root :is(.ant-drawer-close, .ant-modal-close) {
-    min-width: 44px;
-    min-height: 44px;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
   }
   /* A row of links under a card (watch list, leakage checks): each a 44 px target, as they wrap onto lines of their own. */
   :root .link-row > a {
     display: inline-flex;
     align-items: center;
-    min-height: 44px;
+    min-height: 2.75rem;
   }
   /* A statement's rows open and close their accounts, so each is a 44 px row and the small expand buttons sit a row apart. */
   :root .statement-table .ant-table-tbody > tr > td {
-    height: 44px;
+    height: 2.75rem;
   }
   /* Any other row that opens its detail is a 44 px row too, for the same reason. */
   :root .ant-table-tbody > tr.ant-table-row:has(> td > .ant-table-row-expand-icon:not(.ant-table-row-expand-icon-spaced)) > td {
-    height: 44px;
+    height: 2.75rem;
   }
 }
 
@@ -774,38 +774,38 @@ kbd {
    tabs beside it never shift. A bar with more tabs than fit fades out at the side that has more, in either theme (antd's
    own edge shadow is near-black, which the night surfaces swallow), so a phone shows there is more to swipe to. */
 :root .ant-tabs .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn {
-  text-shadow: 0 0 0.3px currentColor;
+  text-shadow: 0 0 0.0187rem currentColor;
 }
 :root .ant-tabs-top > .ant-tabs-nav .ant-tabs-nav-wrap:is(.ant-tabs-nav-wrap-ping-left, .ant-tabs-nav-wrap-ping-right)::before,
 :root .ant-tabs-top > .ant-tabs-nav .ant-tabs-nav-wrap:is(.ant-tabs-nav-wrap-ping-left, .ant-tabs-nav-wrap-ping-right)::after {
   box-shadow: none;
 }
 :root .ant-tabs .ant-tabs-nav-wrap.ant-tabs-nav-wrap-ping-right {
-  mask-image: linear-gradient(to right, var(--ant-color-text-base) calc(100% - 40px), transparent);
+  mask-image: linear-gradient(to right, var(--c-text-strong) calc(100% - 2.5rem), transparent);
 }
 :root .ant-tabs .ant-tabs-nav-wrap.ant-tabs-nav-wrap-ping-left {
-  mask-image: linear-gradient(to left, var(--ant-color-text-base) calc(100% - 40px), transparent);
+  mask-image: linear-gradient(to left, var(--c-text-strong) calc(100% - 2.5rem), transparent);
 }
 :root .ant-tabs .ant-tabs-nav-wrap.ant-tabs-nav-wrap-ping-left.ant-tabs-nav-wrap-ping-right {
-  mask-image: linear-gradient(to right, transparent, var(--ant-color-text-base) 40px, var(--ant-color-text-base) calc(100% - 40px), transparent);
+  mask-image: linear-gradient(to right, transparent, var(--c-text-strong) 2.5rem, var(--c-text-strong) calc(100% - 2.5rem), transparent);
 }
 
 /* Keyboard focus is always visible: a two-pixel ring in the primary colour on anything focused from the keyboard. */
 :where(a, button, [role='button'], [role='tab'], [role='menuitem'], [role='option'], [tabindex]):focus-visible {
-  outline: 2px solid var(--ant-color-primary);
-  outline-offset: 2px;
+  outline: 0.125rem solid var(--c-accent-solid);
+  outline-offset: 0.125rem;
 }
 
 /* "Skip to content": the first stop for the Tab key on every signed-in page, shown only while focused. */
 .skip-link {
   position: fixed;
-  top: 8px;
-  left: 8px;
+  top: var(--s-2);
+  left: var(--s-2);
   z-index: 2000;
-  padding: 8px 16px;
-  border-radius: 6px;
-  background: var(--ant-color-primary);
-  color: var(--ant-color-white);
+  padding: var(--s-2) var(--s-4);
+  border-radius: var(--r-md);
+  background: var(--c-accent-solid);
+  color: var(--p-white);
   font-weight: 600;
   transform: translateY(-200%);
 }
@@ -830,8 +830,8 @@ kbd {
 /* A crumb's link is a 24 px target (WCAG 2.5.8) even where the header is narrow and its neighbours sit close. */
 .ant-breadcrumb.header-crumbs ol a {
   display: inline-block;
-  height: 24px;
-  line-height: 24px;
+  height: 1.5rem;
+  line-height: 1.5rem;
   vertical-align: top;
 }
 
@@ -840,8 +840,8 @@ kbd {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 24px;
-  min-height: 24px;
+  min-width: 1.5rem;
+  min-height: 1.5rem;
 }
 
 /*
@@ -854,12 +854,12 @@ kbd {
 .ant-card-extra a:not(.ant-btn):not(.ant-tag):not(.ant-typography),
 .ant-alert a:not(.ant-btn):not(.ant-typography),
 a.text-link {
-  color: var(--ant-color-link);
+  color: var(--c-text-link);
 }
 /* In running text the colour alone does not set a link apart from grey text (WCAG 1.4.1): it is underlined too. */
 a.text-link {
   text-decoration: underline;
-  text-underline-offset: 2px;
+  text-underline-offset: 0.125rem;
 }
 /* Inside an alert the link takes the alert's own text colour, which holds AA on every alert's tint; the underline marks it. */
 .ant-alert a.text-link:not(.ant-btn):not(.ant-typography) {
@@ -870,7 +870,7 @@ a.text-link {
 .ant-card-extra a:not(.ant-btn):not(.ant-tag):not(.ant-typography):hover,
 .ant-alert a:not(.ant-btn):not(.ant-typography):hover,
 a.text-link:hover {
-  color: var(--ant-color-link-hover);
+  color: var(--c-text-link-hover);
   text-decoration: underline;
 }
 
@@ -883,7 +883,7 @@ a.text-link:hover {
 
 /* A table's plain-text empty message: antd draws it in the disabled grey (1.8:1); it is content, so secondary text. */
 .ant-table-placeholder :is(.ant-table-cell, .ant-table-expanded-row-fixed) {
-  color: var(--ant-color-text-secondary);
+  color: var(--c-text-muted);
 }
 
 /* A notice with its action (View, Undo, Retry) beside the text (lib/notify.tsx). */
@@ -891,28 +891,28 @@ a.text-link:hover {
   display: inline-flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0 4px;
+  gap: 0 var(--s-1);
 }
 .notice-line .ant-btn-link {
-  padding-inline: 4px;
+  padding-inline: var(--s-1);
   height: auto;
-  min-height: 24px;
+  min-height: 1.5rem;
   font-weight: 600;
 }
 
 /* Drawing viewer: the sheet beside its marks, the marks under it on a phone. */
 .drawing-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
-  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) 21.25rem;
+  gap: var(--s-4);
   align-items: start;
 }
 .drawing-viewport {
   position: relative;
   overflow: hidden;
   touch-action: none;
-  height: clamp(360px, calc(100vh - 290px), 1100px);
-  outline-offset: 2px;
+  height: clamp(22.5rem, calc(100vh - 18.125rem), 68.75rem);
+  outline-offset: 0.125rem;
 }
 @media (max-width: 991px) {
   .drawing-layout {

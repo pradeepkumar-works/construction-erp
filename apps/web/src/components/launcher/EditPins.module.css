@@ -1,27 +1,27 @@
 /* Pinned while it is arranged: one row per pin, in order. */
 .help {
-  margin: 0 0 var(--ant-margin-sm);
-  color: var(--ant-color-text-secondary);
+  margin: 0 0 var(--s-3);
+  color: var(--c-text-muted);
 }
 
 .list {
   list-style: none;
-  margin: 0 0 var(--ant-margin);
+  margin: 0 0 var(--s-4);
   padding: 0;
   display: grid;
-  gap: var(--ant-margin-xs);
-  max-width: 560px;
+  gap: var(--s-2);
+  max-width: 35rem;
 }
 
 .item {
   display: flex;
   align-items: center;
-  gap: var(--ant-margin-sm);
-  min-height: 52px;
-  padding: var(--ant-padding-xxs) var(--ant-padding-xs);
-  border: var(--ant-line-width) solid var(--ant-color-border-secondary);
-  border-radius: var(--ant-border-radius-lg);
-  background: var(--ant-color-bg-container);
+  gap: var(--s-3);
+  min-height: 3.25rem;
+  padding: var(--s-1) var(--s-2);
+  border: 1px solid var(--c-line-hairline);
+  border-radius: var(--r-lg);
+  background: var(--c-surface-base);
 }
 
 .dragging {
@@ -29,25 +29,25 @@
 }
 
 .over {
-  border: 2px dashed var(--ant-color-primary);
+  border: 0.125rem dashed var(--c-accent-solid);
 }
 
 .grip {
   display: inline-flex;
-  font-size: 18px;
-  color: var(--ant-color-text-secondary);
+  font-size: 1.125rem;
+  color: var(--c-text-muted);
   cursor: grab;
 }
 
 .icon {
   display: inline-flex;
-  font-size: 18px;
+  font-size: 1.125rem;
 }
 
 .label {
   flex: 1;
   min-width: 0;
-  font-weight: var(--ant-font-weight-strong);
+  font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

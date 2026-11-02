@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 import { mapRoles, type RoleTree } from './engine';
-import { colorVar, controlVar, motionVar, radiusVar, spaceVar } from './css';
-import { CONTROL, FACES, MOTION, RADIUS, SPACE, TYPE, lineHeightPx, type RadiusName, type SpaceStep, type TypeName } from './source/scales';
+import { HAIRLINE_VAR, colorVar, controlVar, leadingVar, motionVar, radiusVar, spaceVar } from './css';
+import { CONTROL, FACES, LEADING, MOTION, RADIUS, SPACE, TYPE, lineHeightPx, type RadiusName, type SpaceStep, type TypeName } from './source/scales';
 import type { Roles } from './source/roles';
 
 export type { Tone } from './source/roles';
@@ -45,6 +45,9 @@ export const tk = {
   motion: mapKeys(Object.keys(MOTION) as (keyof typeof MOTION)[], (k) => v(motionVar(k))),
   type: mapKeys(Object.keys(TYPE) as TypeName[], typeStyle),
   face: FACES,
-  line: (role: keyof Roles['line']) => `1px solid ${v(colorVar(['line', role]))}`,
+  leading: mapKeys(Object.keys(LEADING) as (keyof typeof LEADING)[], (k) => v(leadingVar(k))),
+  /** A hairline's width: `tk.line` draws one; this is for an edge that tucks under one (`calc(-1 * ${tk.hairline})`). */
+  hairline: v(HAIRLINE_VAR),
+  line: (role: keyof Roles['line']) => `${v(HAIRLINE_VAR)} solid ${v(colorVar(['line', role]))}`,
   neg: (step: SpaceStep) => `calc(-1 * ${v(spaceVar(String(step)))})`,
 } as const;

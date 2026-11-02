@@ -4,16 +4,16 @@
   position: sticky;
   top: 0;
   flex: 0 0 auto;
-  width: 252px;
+  width: 15.75rem;
   height: 100vh;
   background: var(--c-chrome-bg);
   border-inline-end: 1px solid var(--c-line-hairline);
-  transition: width var(--ant-motion-duration-mid) var(--ant-motion-ease-in-out);
+  transition: width var(--m-mid) var(--m-ease-in-out);
   z-index: 11;
 }
 
 .asideRail {
-  width: 64px;
+  width: 4rem;
 }
 
 /* The loading shell (ShellSkeleton): phones have no sidebar, only the header's menu button. */
@@ -29,7 +29,7 @@
   height: 100%;
   color: color-mix(in srgb, var(--c-chrome-ink) 72%, transparent);
   background: var(--c-chrome-bg);
-  font-size: var(--ant-font-size);
+  font-size: var(--t-body);
   overflow: hidden;
 }
 
@@ -38,32 +38,32 @@
 .brand {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 16px 16px 12px;
-  min-height: 64px;
+  gap: 0.625rem;
+  padding: var(--s-4) var(--s-4) var(--s-3);
+  min-height: 4rem;
   white-space: nowrap;
 }
 
 .rail .brand {
   justify-content: center;
-  padding: 16px 0 12px;
+  padding: var(--s-4) 0 var(--s-3);
 }
 
 .org {
-  margin-top: 4px;
-  max-width: 172px;
+  margin-top: var(--s-1);
+  max-width: 10.75rem;
   overflow: hidden;
   text-overflow: ellipsis;
   color: color-mix(in srgb, var(--c-chrome-ink) 62%, transparent);
-  font-size: var(--ant-font-size-sm);
+  font-size: var(--t-caption);
 }
 
 .kbd {
-  padding: 1px 6px;
+  padding: 1px 0.375rem;
   border: 1px solid color-mix(in srgb, var(--c-chrome-ink) 14%, transparent);
-  border-radius: 4px;
-  font-size: var(--ant-font-size-sm);
-  line-height: 16px;
+  border-radius: var(--r-sm);
+  font-size: var(--t-caption);
+  line-height: 1rem;
   color: color-mix(in srgb, var(--c-chrome-ink) 62%, transparent);
   font-family: inherit;
 }
@@ -75,7 +75,7 @@
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 4px 8px 12px;
+  padding: var(--s-1) var(--s-2) var(--s-3);
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, var(--c-chrome-ink) 16%, transparent) transparent;
 }
@@ -90,13 +90,13 @@
   position: relative;
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: 0.6875rem;
   width: 100%;
-  height: 34px;
+  height: 2.125rem;
   margin: 1px 0;
-  padding: 0 10px;
+  padding: 0 0.625rem;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--r-md);
   background: transparent;
   color: color-mix(in srgb, var(--c-chrome-ink) 72%, transparent);
   font: inherit;
@@ -105,7 +105,7 @@
   white-space: nowrap;
   text-decoration: none;
   cursor: pointer;
-  transition: background-color var(--ant-motion-duration-fast) var(--ant-motion-ease-out), color var(--ant-motion-duration-fast) var(--ant-motion-ease-out);
+  transition: background-color var(--m-fast) var(--m-ease-out), color var(--m-fast) var(--m-ease-out);
 }
 
 .item:hover {
@@ -115,9 +115,9 @@
 
 .icon {
   flex: 0 0 auto;
-  font-size: var(--ant-font-size-lg);
+  font-size: var(--t-lead);
   color: color-mix(in srgb, var(--c-chrome-ink) 62%, transparent);
-  transition: color var(--ant-motion-duration-fast) var(--ant-motion-ease-out);
+  transition: color var(--m-fast) var(--m-ease-out);
 }
 
 .item:hover .icon {
@@ -146,15 +146,15 @@
 
 .count {
   flex: 0 0 auto;
-  min-width: 20px;
-  height: 18px;
-  padding: 0 6px;
-  border-radius: 9px;
+  min-width: 1.25rem;
+  height: 1.125rem;
+  padding: 0 0.375rem;
+  border-radius: 0.5625rem;
   background: var(--c-state-count-fill);
   color: var(--c-text-on-accent);
-  font-size: var(--ant-font-size-sm);
+  font-size: var(--t-caption);
   font-weight: 600;
-  line-height: 18px;
+  line-height: 1.125rem;
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
@@ -162,7 +162,7 @@
 /* Sections */
 
 .group {
-  margin-top: 10px;
+  margin-top: 0.625rem;
 }
 
 .groupHead {
@@ -170,19 +170,19 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  height: 26px;
-  padding: 0 10px;
+  height: 1.625rem;
+  padding: 0 0.625rem;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--r-md);
   background: transparent;
   color: color-mix(in srgb, var(--c-chrome-ink) 60%, transparent);
   font: inherit;
-  font-size: var(--ant-font-size-sm);
+  font-size: var(--t-caption);
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: color var(--ant-motion-duration-fast) var(--ant-motion-ease-out), background-color var(--ant-motion-duration-fast) var(--ant-motion-ease-out);
+  transition: color var(--m-fast) var(--m-ease-out), background-color var(--m-fast) var(--m-ease-out);
 }
 
 .groupHead:hover {
@@ -195,10 +195,10 @@
 }
 
 .chevron {
-  font-size: var(--ant-font-size-sm);
+  font-size: var(--t-caption);
   opacity: 0;
   transform: rotate(-90deg);
-  transition: transform var(--ant-motion-duration-mid) var(--ant-motion-ease-out), opacity var(--ant-motion-duration-fast) var(--ant-motion-ease-out);
+  transition: transform var(--m-mid) var(--m-ease-out), opacity var(--m-fast) var(--m-ease-out);
 }
 
 .groupHead:hover .chevron,
@@ -215,7 +215,7 @@
 .fold {
   display: grid;
   grid-template-rows: 1fr;
-  transition: grid-template-rows var(--ant-motion-duration-mid) var(--ant-motion-ease-in-out);
+  transition: grid-template-rows var(--m-mid) var(--m-ease-in-out);
 }
 
 .foldClosed {
@@ -230,19 +230,19 @@
 /* Hidden once folded, so the links leave the tab order and the accessibility tree after the animation. */
 .foldClosed > * {
   visibility: hidden;
-  transition: visibility 0s var(--ant-motion-duration-mid);
+  transition: visibility 0s var(--m-mid);
 }
 
 /* The rail: icons only, sections open as a flyout */
 
 .rail .scroll {
-  padding: 4px 12px 12px;
+  padding: var(--s-1) var(--s-3) var(--s-3);
 }
 
 .rail .item {
   justify-content: center;
   padding: 0;
-  height: 38px;
+  height: 2.375rem;
 }
 
 .rail .label {
@@ -251,34 +251,34 @@
 
 .rail .count {
   position: absolute;
-  top: 3px;
+  top: 0.1875rem;
   right: 1px;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
-  font-size: var(--ant-font-size-sm);
-  line-height: 16px;
+  min-width: 1rem;
+  height: 1rem;
+  padding: 0 var(--s-1);
+  font-size: var(--t-caption);
+  line-height: 1rem;
 }
 
 .rail .icon {
-  font-size: 17px;
+  font-size: 1.0625rem;
 }
 
 .rule {
   height: 1px;
-  margin: 8px 6px;
+  margin: var(--s-2) 0.375rem;
   background: color-mix(in srgb, var(--c-chrome-ink) 10%, transparent);
 }
 
 .flyout {
-  min-width: 200px;
-  font-size: var(--ant-font-size);
+  min-width: 12.5rem;
+  font-size: var(--t-body);
 }
 
 .flyoutTitle {
-  padding: 6px 10px 6px;
+  padding: 0.375rem 0.625rem 0.375rem;
   color: color-mix(in srgb, var(--c-chrome-ink) 60%, transparent);
-  font-size: var(--ant-font-size-sm);
+  font-size: var(--t-caption);
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -287,24 +287,24 @@
 /* Footer */
 
 .foot {
-  padding: 8px;
+  padding: var(--s-2);
   border-top: 1px solid color-mix(in srgb, var(--c-chrome-ink) 8%, transparent);
 }
 
 .foot .item {
   color: color-mix(in srgb, var(--c-chrome-ink) 62%, transparent);
-  font-size: var(--ant-font-size-sm);
+  font-size: var(--t-caption);
 }
 
 .rail .foot {
-  padding: 8px 12px;
+  padding: var(--s-2) var(--s-3);
 }
 
 /* Keyboard focus is always visible on the navy. */
 .item:focus-visible,
 .groupHead:focus-visible {
-  outline: 2px solid var(--c-chrome-accent);
-  outline-offset: -2px;
+  outline: 0.125rem solid var(--c-chrome-accent);
+  outline-offset: -0.125rem;
 }
 
 /* Touch screens: each link and section head is a 44 px target; the sidebar keeps its width. */
@@ -312,7 +312,7 @@
   .item,
   .rail .item,
   .groupHead {
-    height: 44px;
+    height: 2.75rem;
   }
 }
 
@@ -339,16 +339,16 @@
 .palette {
   display: flex;
   flex-direction: column;
-  max-height: min(560px, 70vh);
+  max-height: min(35rem, 70vh);
 }
 
 .paletteInput {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 0 16px;
-  height: 52px;
-  border-bottom: 1px solid var(--ant-color-border-secondary);
+  gap: 0.625rem;
+  padding: 0 var(--s-4);
+  height: 3.25rem;
+  border-bottom: 1px solid var(--c-line-hairline);
 }
 
 .paletteInput input {
@@ -358,28 +358,28 @@
   outline: 0;
   background: transparent;
   font: inherit;
-  font-size: var(--ant-font-size-lg);
+  font-size: var(--t-lead);
   color: inherit;
 }
 
 .paletteInput > :first-child {
-  color: var(--ant-color-text-tertiary);
-  font-size: var(--ant-font-size-lg);
+  color: var(--c-text-faint);
+  font-size: var(--t-lead);
 }
 
 .paletteList {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 6px;
+  padding: 0.375rem;
   margin: 0;
   list-style: none;
 }
 
 .paletteHeading {
-  padding: 10px 10px 4px;
-  color: var(--ant-color-text-tertiary);
-  font-size: var(--ant-font-size-sm);
+  padding: 0.625rem 0.625rem var(--s-1);
+  color: var(--c-text-faint);
+  font-size: var(--t-caption);
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -388,25 +388,25 @@
 .option {
   display: flex;
   align-items: center;
-  gap: 12px;
-  height: 40px;
-  padding: 0 10px;
-  border-radius: 6px;
+  gap: var(--s-3);
+  height: 2.5rem;
+  padding: 0 0.625rem;
+  border-radius: var(--r-md);
   cursor: pointer;
-  color: color-mix(in srgb, var(--ant-color-text-base) 85%, transparent);
+  color: color-mix(in srgb, var(--c-text-strong) 85%, transparent);
 }
 
 .option > :first-child {
-  color: var(--ant-color-text-secondary);
-  font-size: var(--ant-font-size-lg);
+  color: var(--c-text-muted);
+  font-size: var(--t-lead);
 }
 
 .optionActive {
-  background: var(--ant-color-primary-bg);
+  background: var(--c-accent-soft);
 }
 
 .optionActive > :first-child {
-  color: var(--ant-color-primary);
+  color: var(--c-accent-solid);
 }
 
 .optionLabel {
@@ -420,37 +420,37 @@
 
 .optionHint {
   flex: 0 0 auto;
-  color: var(--ant-color-text-tertiary);
-  font-size: var(--ant-font-size-sm);
+  color: var(--c-text-faint);
+  font-size: var(--t-caption);
 }
 
 .paletteEmpty {
-  padding: 28px 16px;
-  color: var(--ant-color-text-secondary);
+  padding: 1.75rem var(--s-4);
+  color: var(--c-text-muted);
   text-align: center;
 }
 
 .paletteFoot {
   display: flex;
-  gap: 16px;
-  padding: 8px 16px;
-  border-top: 1px solid var(--ant-color-border-secondary);
-  color: var(--ant-color-text-tertiary);
-  font-size: var(--ant-font-size-sm);
+  gap: var(--s-4);
+  padding: var(--s-2) var(--s-4);
+  border-top: 1px solid var(--c-line-hairline);
+  color: var(--c-text-faint);
+  font-size: var(--t-caption);
 }
 
 .paletteFoot kbd {
-  padding: 0 5px;
-  margin-right: 4px;
-  border: 1px solid var(--ant-color-border-secondary);
-  border-radius: 4px;
+  padding: 0 0.3125rem;
+  margin-right: var(--s-1);
+  border: 1px solid var(--c-line-hairline);
+  border-radius: var(--r-sm);
   font-family: inherit;
-  font-size: var(--ant-font-size-sm);
+  font-size: var(--t-caption);
 }
 
 .optionSub {
-  margin-left: 8px;
-  color: var(--ant-color-text-tertiary);
+  margin-left: var(--s-2);
+  color: var(--c-text-faint);
   font-weight: 400;
-  font-size: var(--ant-font-size-sm);
+  font-size: var(--t-caption);
 }

@@ -5,21 +5,21 @@
   padding: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  border-top: var(--ant-line-width) solid var(--ant-color-border-secondary);
+  border-top: 1px solid var(--c-line-hairline);
 }
 
 @media (min-width: 992px) {
   .directory {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    column-gap: var(--ant-margin-xl);
+    column-gap: var(--s-8);
   }
 }
 
 .entry {
   display: flex;
-  gap: var(--ant-margin-sm);
-  padding: var(--ant-padding) 0;
-  border-bottom: var(--ant-line-width) solid var(--ant-color-border-secondary);
+  gap: var(--s-3);
+  padding: var(--s-4) 0;
+  border-bottom: 1px solid var(--c-line-hairline);
 }
 
 /* The module's icon in the one ink, as on the tiles. */
@@ -28,9 +28,9 @@
   align-items: center;
   justify-content: center;
   flex: none;
-  width: 24px;
-  height: 24px;
-  font-size: 20px;
+  width: 1.5rem;
+  height: 1.5rem;
+  font-size: var(--t-subhead);
   color: var(--c-text-base);
 }
 
@@ -41,24 +41,24 @@
 .nameRow {
   display: flex;
   align-items: center;
-  gap: var(--ant-margin-xs);
+  gap: var(--s-2);
   flex-wrap: wrap;
 }
 
 .name {
   display: inline-flex;
   align-items: center;
-  min-height: 24px;
+  min-height: 1.5rem;
   font-family: var(--font-display), 'Arial Narrow', Arial, sans-serif;
   font-stretch: 88%;
-  font-size: var(--ant-font-size-lg);
+  font-size: var(--t-lead);
   font-weight: 700;
-  color: var(--ant-color-text);
+  color: var(--c-text-base);
   text-decoration: none;
 }
 
 .name:hover {
-  color: var(--ant-color-link);
+  color: var(--c-text-link);
 }
 
 .waiting {
@@ -66,27 +66,27 @@
   border-radius: var(--r-pill);
   background: var(--c-tone-pending-bg);
   color: var(--c-tone-pending-fg);
-  font-size: var(--ant-font-size-sm);
+  font-size: var(--t-caption);
   font-weight: 600;
-  line-height: 20px;
+  line-height: 1.25rem;
 }
 
 /* A dot before each sub-module; the first of each line has its dot in the clipped margin, so no line starts with one. */
 .subs {
   display: flex;
   flex-wrap: wrap;
-  margin: 2px 0 0 -14px;
+  margin: var(--s-half) 0 0 -0.875rem;
   padding: 0;
   list-style: none;
-  clip-path: inset(-4px -4px -4px 10px);
+  clip-path: inset(-0.25rem -0.25rem -0.25rem 0.625rem);
 }
 
 .subs li::before {
   content: '·';
   display: inline-block;
-  width: 14px;
+  width: 0.875rem;
   text-align: center;
-  color: var(--ant-color-text-tertiary);
+  color: var(--c-text-faint);
 }
 
 .subs li {
@@ -97,26 +97,26 @@
 .sub {
   display: inline-flex;
   align-items: center;
-  min-height: 24px;
-  color: var(--ant-color-text-secondary);
+  min-height: 1.5rem;
+  color: var(--c-text-muted);
   text-decoration: none;
 }
 
 .sub:hover {
-  color: var(--ant-color-link);
+  color: var(--c-text-link);
   text-decoration: underline;
 }
 
 .name:focus-visible,
 .sub:focus-visible {
-  outline: 2px solid var(--ant-color-primary);
-  outline-offset: 2px;
-  border-radius: 4px;
+  outline: 0.125rem solid var(--c-accent-solid);
+  outline-offset: 0.125rem;
+  border-radius: var(--r-sm);
 }
 
 @media (pointer: coarse) {
   .name,
   .sub {
-    min-height: 44px;
+    min-height: 2.75rem;
   }
 }

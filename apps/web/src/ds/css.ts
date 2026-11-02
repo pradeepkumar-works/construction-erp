@@ -1,6 +1,6 @@
 import { mapRoles, resolve, type Mode } from './engine';
 import { PALETTE } from './source/palette';
-import { CONTROL, MOTION, RADIUS, SPACE, type Density } from './source/scales';
+import { CONTROL, HAIRLINE, LEADING, MOTION, RADIUS, SPACE, TYPE, type Density } from './source/scales';
 
 const kebab = (s: string) => s.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
 
@@ -9,6 +9,10 @@ export const spaceVar = (step: string) => `--s-${step}`;
 export const radiusVar = (name: string) => `--r-${kebab(name)}`;
 export const controlVar = (size: string) => `--h-${size}`;
 export const motionVar = (name: string) => `--m-${kebab(name)}`;
+export const typeVar = (name: string) => `--t-${kebab(name)}`;
+export const leadingVar = (name: string) => `--lh-${kebab(name)}`;
+export const HAIRLINE_VAR = '--w-hairline';
+export const paletteVar = (key: string) => `--p-${kebab(key)}`;
 
 function colorDecls(mode: Mode): string[] {
   const out: string[] = [];
@@ -27,6 +31,13 @@ const sizeDecls = (density: Density) => {
 const fixedDecls = () => [
   ...Object.entries(RADIUS).map(([k, v]) => `${radiusVar(k)}:${v}px`),
   ...Object.entries(MOTION).map(([k, v]) => `${motionVar(k)}:${v}`),
+  ...Object.entries(LEADING).map(([k, v]) => `${leadingVar(k)}:${v}`),
+  `${HAIRLINE_VAR}:${HAIRLINE}px`,
+  // A text style's size, for CSS files (`font-size: var(--t-caption)`); weight and line come with `tk.type` in code.
+  ...Object.entries(TYPE).map(([k, t]) => `${typeVar(k)}:${t.size}px`),
+  // The raw palette, the same in both themes: only for pages that pick light or night themselves (the website follows
+  // the system's scheme with a media query). Screens use the --c-* roles, which follow `data-theme`.
+  ...Object.entries(PALETTE).map(([k, v]) => `${paletteVar(k)}:${v}`),
 ];
 
 /**

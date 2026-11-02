@@ -189,10 +189,11 @@ function SolidCircle({ marks }: { marks: string[] }) {
   const id = `app-icon-${React.useId().replace(/:/g, '')}`;
   return (
     <svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden focusable="false">
+      {/* A mask reads luminance, not colour: white shows the circle, black cuts the marks out of it. */}
       <mask id={id}>
-        <rect width="24" height="24" fill="#fff" />
+        <rect width="24" height="24" fill="white" />
         {marks.map((d) => (
-          <path key={d} d={d} fill="none" stroke="#000" strokeWidth={2.25} strokeLinecap="round" strokeLinejoin="round" />
+          <path key={d} d={d} fill="none" stroke="black" strokeWidth={2.25} strokeLinecap="round" strokeLinejoin="round" />
         ))}
       </mask>
       <circle cx="12" cy="12" r="10.5" fill="currentColor" mask={`url(#${id})`} />

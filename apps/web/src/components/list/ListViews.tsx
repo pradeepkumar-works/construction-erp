@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Checkbox, Dropdown, Flex, Form, Input, Modal, Select, Tabs, Tooltip, theme } from 'antd';
+import { App, Button, Checkbox, Dropdown, Flex, Form, Input, Modal, Select, Tabs, Tooltip } from 'antd';
 import { tk } from '@/ds';
 import type { MenuProps } from 'antd';
 import { DeleteOutlined, EditOutlined, EllipsisOutlined, SaveOutlined, TeamOutlined } from '@/components/common/icons';
@@ -44,7 +44,6 @@ export function ListViews({
   columns: string[];
   onApply: (filters: ListFilters, columns?: string[]) => void;
 }) {
-  const { token } = theme.useToken();
   const { user } = useAuth();
   // A phone has no room for a row of tabs: the views are a drop-down.
   const phone = useIsPhone();
@@ -178,7 +177,7 @@ export function ListViews({
             options={[...builtIns.map((v) => ({ value: v.key, label: v.label })), ...(saved ?? []).map((v) => ({ value: v.id, label: v.shared ? `${v.name} (shared)` : v.name }))]}
           />
         ) : (
-          <Tabs size="small" activeKey={active ?? '__none'} onChange={pick} items={items} tabBarStyle={{ marginBottom: -token.lineWidth }} style={{ flex: 1, minWidth: 0 }} />
+          <Tabs size="small" activeKey={active ?? '__none'} onChange={pick} items={items} tabBarStyle={{ marginBottom: `calc(-1 * ${tk.hairline})` }} style={{ flex: 1, minWidth: 0 }} />
         )}
         {phone && savedMatch && mayEdit(savedMatch) ? (
           <Dropdown menu={{ items: menuFor(savedMatch) }} trigger={['click']}>

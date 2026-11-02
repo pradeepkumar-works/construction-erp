@@ -7,32 +7,32 @@
  */
 
 .lp {
-  --lp-max: 1280px;
-  --lp-gutter: 32px;
-  --lp-bg: var(--brand-on-accent);
-  --lp-surface: var(--brand-canvas);
-  --lp-surface-2: var(--brand-hairline);
-  --lp-line: var(--brand-border);
-  --lp-ink: var(--brand-ink);
-  --lp-text: var(--brand-site-text);
-  --lp-muted: var(--brand-site-muted);
-  --lp-link: var(--brand-link);
-  --lp-accent: var(--brand-accent);
-  --lp-accent-deep: var(--brand-accent-deep);
-  --lp-on-accent: var(--brand-on-accent);
+  --lp-max: 80rem;
+  --lp-gutter: 2rem;
+  --lp-bg: var(--p-on-accent);
+  --lp-surface: var(--p-canvas);
+  --lp-surface-2: var(--p-hairline);
+  --lp-line: var(--p-border);
+  --lp-ink: var(--p-ink);
+  --lp-text: var(--p-site-text);
+  --lp-muted: var(--p-site-muted);
+  --lp-link: var(--p-link);
+  --lp-accent: var(--p-accent);
+  --lp-accent-deep: var(--p-accent-deep);
+  --lp-on-accent: var(--p-on-accent);
   /* The navy fields (the hero, the bill) and the text on them. */
-  --lp-stage: var(--brand-ink);
-  --lp-stage-2: var(--brand-primary-deep);
-  --lp-on-stage: var(--brand-on-accent);
-  --lp-on-stage-soft: color-mix(in srgb, var(--brand-on-accent) 78%, var(--brand-ink));
-  --lp-ring: var(--brand-accent-light);
+  --lp-stage: var(--p-ink);
+  --lp-stage-2: var(--p-primary-deep);
+  --lp-on-stage: var(--p-on-accent);
+  --lp-on-stage-soft: color-mix(in srgb, var(--p-on-accent) 78%, var(--p-ink));
+  --lp-ring: var(--p-accent-light);
   --lp-ease: cubic-bezier(0.16, 1, 0.3, 1);
-  --lp-small: 15px;
-  --lp-body: 18px;
-  --lp-lead: 22px;
-  --lp-h2: clamp(32px, 3.6vw, 52px);
-  --lp-display: clamp(44px, 5.6vw, 88px);
-  --lp-gap: 136px;
+  --lp-small: 0.9375rem;
+  --lp-body: 1.125rem;
+  --lp-lead: 1.375rem;
+  --lp-h2: clamp(2rem, 3.6vw, 3.25rem);
+  --lp-display: clamp(2.75rem, 5.6vw, 5.5rem);
+  --lp-gap: 8.5rem;
   color-scheme: light;
   background: var(--lp-bg);
   color: var(--lp-ink);
@@ -44,17 +44,17 @@
 }
 @media (prefers-color-scheme: dark) {
   .lp {
-    --lp-bg: var(--brand-night-layout);
-    --lp-surface: var(--brand-night-surface);
-    --lp-surface-2: var(--brand-night-elevated);
-    --lp-line: var(--brand-night-border);
-    --lp-ink: var(--brand-night-text);
-    --lp-text: color-mix(in srgb, var(--brand-night-text) 86%, var(--brand-night-layout));
-    --lp-muted: var(--brand-night-text-tertiary);
-    --lp-link: var(--brand-night-link);
-    --lp-stage: var(--brand-ink-deep);
-    --lp-stage-2: var(--brand-night-elevated);
-    --lp-on-stage-soft: color-mix(in srgb, var(--brand-night-text) 80%, var(--brand-ink-deep));
+    --lp-bg: var(--p-night-layout);
+    --lp-surface: var(--p-night-surface);
+    --lp-surface-2: var(--p-night-elevated);
+    --lp-line: var(--p-night-border);
+    --lp-ink: var(--p-night-text);
+    --lp-text: color-mix(in srgb, var(--p-night-text) 86%, var(--p-night-layout));
+    --lp-muted: var(--p-night-text-tertiary);
+    --lp-link: var(--p-night-link);
+    --lp-stage: var(--p-ink-deep);
+    --lp-stage-2: var(--p-night-elevated);
+    --lp-on-stage-soft: color-mix(in srgb, var(--p-night-text) 80%, var(--p-ink-deep));
     color-scheme: dark;
   }
 }
@@ -119,11 +119,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  min-height: 52px;
-  padding: 0 24px;
-  border-radius: 4px;
-  border: 2px solid transparent;
+  gap: 0.625rem;
+  min-height: 3.25rem;
+  padding: 0 var(--s-6);
+  border-radius: var(--r-sm);
+  border: 0.125rem solid transparent;
   font-size: var(--lp-body);
   font-weight: 600;
   line-height: 1;
@@ -139,11 +139,11 @@
   transition: transform 200ms var(--lp-ease);
 }
 .lp-btn:hover .anticon {
-  transform: translateX(4px);
+  transform: translateX(0.25rem);
 }
 .lp :focus-visible {
-  outline: 3px solid var(--lp-ring);
-  outline-offset: 3px;
+  outline: 0.1875rem solid var(--lp-ring);
+  outline-offset: 0.1875rem;
 }
 .lp .lp-btn-primary {
   background: var(--lp-accent);
@@ -159,17 +159,17 @@
 }
 .lp .lp-btn-ghost-dark:hover {
   background: var(--lp-on-stage);
-  color: var(--brand-ink);
+  color: var(--p-ink);
 }
 .lp-btn-sm {
-  min-height: 40px;
-  padding: 0 16px;
+  min-height: 2.5rem;
+  padding: 0 var(--s-4);
   font-size: var(--lp-small);
 }
 .lp-cta {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: var(--s-3);
 }
 
 /* Top bar: a plain navy bar on the other pages; on the product page it sits in the hero's field. */
@@ -183,10 +183,10 @@
   max-width: var(--lp-max);
   margin: 0 auto;
   padding: 0 var(--lp-gutter);
-  height: 72px;
+  height: 4.5rem;
   display: flex;
   align-items: center;
-  gap: 32px;
+  gap: var(--s-8);
 }
 .lp-nav-field {
   position: relative;
@@ -195,11 +195,11 @@
 .lp-brand {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 0.625rem;
 }
 .lp-nav-links {
   display: flex;
-  gap: 28px;
+  gap: 1.75rem;
   margin: 0 auto;
 }
 .lp .lp-nav-links a,
@@ -218,12 +218,12 @@
 .lp .lp-nav-signin:hover {
   color: var(--lp-on-stage);
   text-decoration: underline;
-  text-underline-offset: 6px;
+  text-underline-offset: 0.375rem;
 }
 .lp-nav-actions {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: var(--s-5);
   margin-left: auto;
 }
 .lp-nav-links + .lp-nav-actions {
@@ -232,14 +232,14 @@
 
 /* Footer of the other public pages: the name first, then the ways in. */
 .lp-foot {
-  background: var(--brand-ink-deep);
+  background: var(--p-ink-deep);
   color: var(--lp-on-stage-soft);
   font-size: var(--lp-small);
 }
 .lp .lp-foot-name {
-  padding-top: 72px;
+  padding-top: 4.5rem;
   font-family: var(--font-display), Arial, sans-serif;
-  font-size: clamp(64px, 15vw, 232px);
+  font-size: clamp(4rem, 15vw, 14.5rem);
   font-weight: 800;
   font-stretch: 85%;
   line-height: 0.85;
@@ -249,23 +249,23 @@
 .lp-foot-top {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
-  gap: 48px;
-  padding: 72px 0 64px;
+  gap: var(--s-12);
+  padding: 4.5rem 0 4rem;
 }
 .lp-foot-brand p {
-  max-width: 340px;
+  max-width: 21.25rem;
 }
 .lp-foot-col {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--s-3);
 }
 .lp .lp-foot-col h2 {
   font-family: var(--font-body), system-ui, sans-serif;
   font-size: var(--lp-small);
   font-weight: 700;
   color: var(--lp-on-stage);
-  margin-bottom: 4px;
+  margin-bottom: var(--s-1);
 }
 .lp .lp-foot a {
   color: var(--lp-on-stage-soft);
@@ -274,21 +274,21 @@
 .lp .lp-foot a:hover {
   color: var(--lp-on-stage);
   text-decoration: underline;
-  text-underline-offset: 4px;
+  text-underline-offset: 0.25rem;
 }
 .lp-foot-bottom {
   display: flex;
   justify-content: space-between;
-  gap: 16px;
+  gap: var(--s-4);
   flex-wrap: wrap;
-  padding: 24px 0 32px;
+  padding: var(--s-6) 0 var(--s-8);
 }
 
 /* Text pages (privacy) */
 .lp-doc {
-  max-width: 760px;
-  padding-top: 64px;
-  padding-bottom: 96px;
+  max-width: 47.5rem;
+  padding-top: 4rem;
+  padding-bottom: 6rem;
   font-size: var(--lp-body);
   line-height: 1.7;
   color: var(--lp-text);
@@ -299,22 +299,22 @@
   font-stretch: 85%;
   line-height: 1;
   color: var(--lp-ink);
-  margin-bottom: 12px;
+  margin-bottom: var(--s-3);
 }
 .lp .lp-doc h2 {
   color: var(--lp-ink);
-  margin: 40px 0 12px;
+  margin: 2.5rem 0 var(--s-3);
 }
 .lp-doc p {
-  margin: 0 0 14px !important;
+  margin: 0 0 0.875rem !important;
 }
 .lp .lp-doc ul {
   list-style: disc;
-  padding-left: 20px;
-  margin: 0 0 14px;
+  padding-left: var(--s-5);
+  margin: 0 0 0.875rem;
 }
 .lp-doc li {
-  margin-bottom: 6px;
+  margin-bottom: 0.375rem;
 }
 .lp .lp-doc a {
   color: var(--lp-link);
@@ -322,13 +322,13 @@
 .lp-doc-meta {
   color: var(--lp-muted);
   font-size: var(--lp-small);
-  margin-bottom: 32px !important;
+  margin-bottom: var(--s-8) !important;
 }
 
 /* Scroll reveal: only once the script has marked the page, so nothing stays hidden without it. */
 .lp-js .rv {
   opacity: 0;
-  transform: translateY(24px);
+  transform: translateY(1.5rem);
   transition: opacity 800ms var(--lp-ease), transform 800ms var(--lp-ease);
 }
 .lp-js .rv.in {
@@ -349,7 +349,7 @@
 
 @media (max-width: 1080px) {
   .lp {
-    --lp-gap: 120px;
+    --lp-gap: 7.5rem;
   }
   .lp-nav-links {
     display: none;
@@ -360,7 +360,7 @@
 }
 @media (max-width: 860px) {
   .lp {
-    --lp-gap: 96px;
+    --lp-gap: 6rem;
   }
   .lp-foot-top {
     grid-template-columns: 1fr 1fr;
@@ -371,10 +371,10 @@
 }
 @media (max-width: 560px) {
   .lp {
-    --lp-gutter: 20px;
-    --lp-gap: 80px;
-    --lp-body: 17px;
-    --lp-lead: 20px;
+    --lp-gutter: 1.25rem;
+    --lp-gap: 5rem;
+    --lp-body: 1.0625rem;
+    --lp-lead: 1.25rem;
   }
   .lp-cta .lp-btn {
     flex: 1 1 auto;

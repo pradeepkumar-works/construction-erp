@@ -59,7 +59,9 @@ and the pre-delivery checklist.
   `packages/shared/src/brand.ts`; web colours and sizes live only in `src/ds/source/` (the design tokens, read through
   `tk` from `@/ds`; `docs/design/REDESIGN.md`), plus `BrandMark` and `app/icon.svg`, mobile ones in `src/theme.ts`. New code
   uses `tk` instead of hex or px literals (ESLint's `ds/no-raw-style` refuses them, `theme.useToken()`, `themeColor` and
-  `BRAND.colors` outside the files in `src/ds/legacy-files.json`; a file you move onto `tk` leaves that list). A component's look is its
+  `BRAND.colors` outside the files in `src/ds/legacy-files.json`; a file you move onto `tk` leaves that list). A CSS file reads
+  the same variables (the colour roles, `--s-<n>`, `--t-<type>`; the website's own stage the raw palette, `--p-<colour>`), a size
+  off the scale in `rem`. A component's look is its
   tokens in `antdTheme` and `componentConfig` (`src/ds/antd.ts`, both modes), never CSS of a page's own. Data drawn by kind (cost
   heads, trend lines, progress) is the `series` roles, a drawing sheet's inks the `sheet` roles; a canvas chart reads them
   through `useResolved()` (`useChartTheme`), and print, PDF, Word and email through `PRINT` (`components/print/printBrand.ts`). The look is the

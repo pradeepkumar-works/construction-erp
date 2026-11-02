@@ -36,7 +36,7 @@ export function useCompanyMenu(user: AuthUser): { items: MenuProps['items']; bus
       icon: c.current ? <CheckOutlined /> : <span className="menu-check-gap" />,
       disabled: busy,
       label: (
-        <span style={{ display: 'inline-flex', flexDirection: 'column', lineHeight: 1.3, paddingBlock: tk.space[1] }}>
+        <span style={{ display: 'inline-flex', flexDirection: 'column', lineHeight: tk.leading.tight, paddingBlock: tk.space[1] }}>
           <span translate="no">{c.name}</span>
           <span className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
             {COMPANY_KIND_LABELS[c.kind]} · {c.roleName}
@@ -106,7 +106,7 @@ export function CompanyName({ user, className }: { user: AuthUser; className: st
         <span translate="no" style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {user.organizationName}
         </span>
-        <DownOutlined aria-hidden style={{ fontSize: 10, flexShrink: 0 }} />
+        <DownOutlined aria-hidden style={{ fontSize: tk.type.caption.fontSize, flexShrink: 0 }} />
       </button>
     </Dropdown>
   );

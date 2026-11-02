@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Flex, Segmented, Tabs, Typography, theme } from 'antd';
+import { Flex, Segmented, Tabs, Typography } from 'antd';
 import { tk } from '@/ds';
 import { areaSummaryTab, isProjectArea } from '@erp/shared';
 import { AppstoreOutlined, CheckSquareOutlined, InboxOutlined, ScheduleOutlined, ToolOutlined, WalletOutlined } from '@/components/common/icons';
@@ -58,7 +58,6 @@ export function ProjectWorkspace({
   /** The page header; when it is out of view the bar shows `compactTitle`. */
   headerRef: React.RefObject<HTMLElement | null>;
 }) {
-  const { token } = theme.useToken();
   const barRef = useRef<HTMLDivElement>(null);
   const [bar, setBar] = useState({ height: 0, width: 0 });
   const headerTop = useStickyTop();
@@ -115,7 +114,7 @@ export function ProjectWorkspace({
               {compactTitle}
             </Flex>
           ) : null}
-          <Tabs activeKey={current.group} onChange={openGroup} items={groups.map((g) => ({ key: g.key, label: g.label, icon: g.icon }))} tabBarStyle={{ marginBottom: -token.lineWidth }} style={{ flex: 1, minWidth: 0 }} />
+          <Tabs activeKey={current.group} onChange={openGroup} items={groups.map((g) => ({ key: g.key, label: g.label, icon: g.icon }))} tabBarStyle={{ marginBottom: `calc(-1 * ${tk.hairline})` }} style={{ flex: 1, minWidth: 0 }} />
         </Flex>
         {inGroup.length > 1 && (
           <div style={{ padding: `${tk.space[2]} 0`, overflowX: 'auto' }}>
