@@ -70,7 +70,10 @@ runs and is committed with the last PR.
 - [x] PR 5. Page frame: `PageHeader`, the page's padding, `Section`, `CardToolbar` and `ListToolbar` on `tk`; no card inside
   a card (the six places measured across 159 pages are a `Section` or bare `Figures` now, and the route walk refuses one).
   The list toolbar's one line moves to PR 6 with `DataTable`.
-- [ ] PR 6. Data: the list toolbar on one line, `DataTable` rows and header, `Figures` (the one headline block), `AppTag` tones plus an `ai` tone, `AppTabs`, `StageBar`.
+- [x] PR 6. Data: `DataTable` and `AppTabs` on `tk` (`Figures`, `AppTag` and `StageBar` already were); a header's sort arrows
+  only on the sorted column and under the pointer or the keyboard; the table's own tools (wrap, Columns) at its right end.
+  Left open: the list toolbar on one line, which needs a More filters design for lists with five filters (RA bills),
+  and an `ai` tone, which waits for the Ask panel in PR 7 (no AI mark uses a tag today).
 - [ ] PR 7. Entry and records: `FormShell`, fields, `RecordFrame`, drawers and dialogs, the Ask panel's AI surface.
 
 ### Move every screen onto `tk` (PR 8 to PR 13)

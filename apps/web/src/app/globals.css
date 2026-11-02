@@ -429,6 +429,21 @@ h4.ant-typography,
 }
 
 
+/* A table's sort arrows show on the sorted column and on the header under the pointer or the keyboard, so a header row
+   reads as words. A touch screen has no hover, so it keeps them. */
+@media (hover: hover) {
+  .ant-table-thead th .ant-table-column-sorter {
+    opacity: 0;
+    transition: opacity var(--m-fast);
+  }
+  .ant-table-thead th:hover .ant-table-column-sorter,
+  .ant-table-thead th:focus-within .ant-table-column-sorter,
+  .ant-table-thead th.ant-table-column-sort .ant-table-column-sorter,
+  .ant-table-thead th[aria-sort] .ant-table-column-sorter {
+    opacity: 1;
+  }
+}
+
 /* List rows open on click (DataTable). */
 .row-click > td {
   cursor: pointer;

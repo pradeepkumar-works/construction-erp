@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useLayoutEffect, useRef, useState } from 'react';
-import { Tabs, theme } from 'antd';
+import { Tabs } from 'antd';
 import type { TabsProps } from 'antd';
 import { StickyTopContext, useStickyTop } from '@/lib/sticky';
 import { useIsPhone } from '@/lib/screen';
-import { BRAND } from '@/lib/brand';
+import { tk } from '@/ds';
 
 type AntTab = NonNullable<TabsProps['items']>[number];
 
@@ -34,18 +34,14 @@ export interface AppTabsProps extends Omit<TabsProps, 'items' | 'tabBarExtraCont
 
 const MAX_SHOWN = 99;
 
-/** The visually hidden text after a count, so a screen reader says "Tests, 3 results overdue" rather than "Tests3". */
-const srOnly: React.CSSProperties = { position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 };
-
 /** A count beside a tab's label; list views use it too. */
 export function TabCount({ n, label, attention, active }: { n: number; label?: string; attention?: boolean; active: boolean }) {
-  const { token } = theme.useToken();
-  // The red is the badge red in either theme (as `Badge` in lib/theme.ts): antd's night red carries white at only 4.2:1.
+  // The red is the badge red in either theme (`state.badgeFill`): the night's own red carries white at only 4.2:1.
   const tone = attention
-    ? { background: BRAND.colors.danger, color: BRAND.colors.onAccent }
+    ? { background: tk.color.state.badgeFill, color: tk.color.text.onAccent }
     : active
-      ? { background: token.colorPrimaryBg, color: token.colorPrimaryText }
-      : { background: token.colorFillSecondary, color: token.colorTextSecondary };
+      ? { background: tk.color.accent.soft, color: tk.color.accent.text }
+      : { background: tk.color.tone.neutral.bg, color: tk.color.text.muted };
   const said = label ? `${n} ${label}` : String(n);
   return (
     <>
@@ -55,25 +51,23 @@ export function TabCount({ n, label, attention, active }: { n: number; label?: s
         title={label ? said : undefined}
         style={{
           ...tone,
+          ...tk.type.label,
           display: 'inline-flex',
           alignItems: 'center',
           justifyContent: 'center',
           minWidth: 20,
           height: 20,
-          padding: `0 ${token.paddingXS - 2}px`,
-          marginInlineStart: token.marginXS,
-          borderRadius: 10,
-          fontSize: token.fontSizeSM,
-          lineHeight: 1,
-          fontWeight: token.fontWeightStrong,
+          paddingInline: tk.space[1],
+          marginInlineStart: tk.space[2],
+          borderRadius: tk.radius.pill,
           fontVariantNumeric: 'tabular-nums',
           textShadow: 'none',
-          transition: `background ${token.motionDurationMid}, color ${token.motionDurationMid}`,
+          transition: `background ${tk.motion.mid}, color ${tk.motion.mid}`,
         }}
       >
         {n > MAX_SHOWN ? `${MAX_SHOWN}+` : n}
       </span>
-      <span style={srOnly}>, {said}</span>
+      <span className="visually-hidden">, {said}</span>
     </>
   );
 }
@@ -84,7 +78,6 @@ export function TabCount({ n, label, attention, active }: { n: number; label?: s
  * the bar, the bar's place in a Card, and a bar that stays in view. On a phone the bar scrolls by swipe (globals.css).
  */
 export function AppTabs({ items, variant = 'section', extra, sticky = variant === 'page', activeKey, defaultActiveKey, onChange, ...rest }: AppTabsProps) {
-  const { token } = theme.useToken();
   const top = useStickyTop();
   const phone = useIsPhone();
   const sticks = sticky && !phone;
@@ -130,11 +123,11 @@ export function AppTabs({ items, variant = 'section', extra, sticky = variant ==
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: token.marginXS,
-        marginBottom: page ? 0 : token.marginSM,
+        gap: tk.space[2],
+        marginBottom: page ? 0 : tk.space[3],
         ...(wraps ? { flexWrap: 'wrap' } : {}),
-        ...(page && extra ? { paddingInlineEnd: token.paddingSM } : {}),
-        ...(sticks ? { position: 'sticky', top, zIndex: 4, background: token.colorBgContainer } : {}),
+        ...(page && extra ? { paddingInlineEnd: tk.space[3] } : {}),
+        ...(sticks ? { position: 'sticky', top, zIndex: 4, background: tk.color.surface.base } : {}),
       }}
     >
       <DefaultTabBar
@@ -143,7 +136,7 @@ export function AppTabs({ items, variant = 'section', extra, sticky = variant ==
           ...(props.style as React.CSSProperties),
           ...(wraps ? { flex: '1 0 auto', maxWidth: '100%' } : { flex: 1, minWidth: 0 }),
           marginBottom: 0,
-          ...(page ? { paddingInline: token.paddingSM } : {}),
+          ...(page ? { paddingInline: tk.space[3] } : {}),
         }}
       />
       {wraps ? <div style={{ marginInlineStart: 'auto' }}>{extra}</div> : extra}
