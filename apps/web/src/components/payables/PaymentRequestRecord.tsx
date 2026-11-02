@@ -221,7 +221,7 @@ export function PaymentRequestRecord({ id, mode, open, onClose, onEdit }: Record
                 : []),
               ...submissionMetaItems(data),
             ],
-            details: [{ key: 'mode', label: 'Pay by', children: RECEIPT_MODE_LABELS[data.mode] }],
+            details: [{ key: 'mode', label: 'Payment mode', children: RECEIPT_MODE_LABELS[data.mode] }],
             lifecycle: submissionLifecycle(data, [
               {
                 title: releases ? 'Released' : 'Paid',

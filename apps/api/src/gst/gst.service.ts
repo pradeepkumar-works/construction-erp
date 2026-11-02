@@ -83,7 +83,7 @@ export class GstService {
     ]);
     const ours = config?.stateCode ?? null;
     const warnings: string[] = [];
-    if (!ours) warnings.push('Set the GST state code the company bills from (Tally Export → Ledgers) so purchases from other states show as IGST.');
+    if (!ours) warnings.push('Set the GST state code the company bills from (Accounts › Tally export › Ledgers) so purchases from other states show as IGST.');
 
     const outward: GstOutwardRowDto[] = raBills.map((b) => {
       const c = b.project.client;

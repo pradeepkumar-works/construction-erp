@@ -2,13 +2,13 @@
 
 import React, { useState } from 'react';
 import { App, Alert, Button, Descriptions, Drawer, Form, Input, Modal, Space, Table, Typography } from 'antd';
-import { CheckOutlined, DeleteOutlined, EditOutlined, RollbackOutlined, SendOutlined, StopOutlined } from '@/components/common/icons';
+import { CheckOutlined, EditOutlined, RollbackOutlined, SendOutlined, StopOutlined } from '@/components/common/icons';
 import type { BookLineDto, BookVoucherDto } from '@erp/shared';
 import { useBookVoucher, useBooksAction } from '@/lib/queries';
 import { errorMessage } from '@/lib/api';
 import { formatDate, formatDateTime, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
-import { ConfirmDelete } from '@/components/common/ConfirmDelete';
+import { DeleteInMenu } from '@/components/record/MoreActions';
 import { LinkButton } from '@/components/common/LinkButton';
 import { VoucherStatusTag, VoucherTypeTag, sourceHref, sourceLabel } from './booksUi';
 import { VoucherForm } from './VoucherForm';
@@ -102,13 +102,7 @@ export function VoucherDrawer({ id, onClose }: { id: string | null; onClose: () 
                 Cancel voucher
               </Button>
             )}
-            {v.canEdit && (
-              <ConfirmDelete what={`voucher ${v.voucherNo}`} onConfirm={() => act.mutateAsync({ method: 'delete', path: `/books/vouchers/${v.id}` })} onDone={onClose}>
-                <Button size="small" danger icon={<DeleteOutlined />}>
-                  Delete
-                </Button>
-              </ConfirmDelete>
-            )}
+            {v.canEdit && <DeleteInMenu what={`voucher ${v.voucherNo}`} onConfirm={() => act.mutateAsync({ method: 'delete', path: `/books/vouchers/${v.id}` })} onDone={onClose} />}
           </Space>
         ) : null
       }
