@@ -75,6 +75,25 @@ export const ROLES = {
     soft: p('accentSoft', 'nightAccentSoft'),
     line: p('accentChosen', 'nightAccentChosen'),
   },
+  /** Data drawn by kind, the same name in every chart, bar and legend: canvas charts read them through `useResolved()`. */
+  series: {
+    /** One colour per cost head (bars, legends, the cost donut). */
+    cost: { material: p('primary'), subcontract: p('costSubcontract'), labour: p('costLabour'), machinery: p('costMachinery'), expenses: p('costExpenses') },
+    /** The management trend's lines, checked for colour-blind readers on each surface. */
+    trend: { billed: p('trendBilled', 'trendBilledNight'), received: p('trendReceived', 'trendReceivedNight'), cost: p('trendCost', 'trendCostNight') },
+    /** Progress by project: physical and financial (the trend's billed and received pair). */
+    progress: { physical: p('progressPhysical', 'progressPhysicalNight'), financial: p('progressFinancial', 'progressFinancialNight') },
+  },
+  /** On a drawing sheet, which stays white in either theme: markup inks, take-off and the revision compare. */
+  sheet: {
+    paper: p('white'),
+    /** A drawing's own lines where the file gives none, or gives one too pale for the white sheet. */
+    ink: p('black'),
+    markup: { red: p('markupRed'), blue: p('markupBlue'), green: p('markupGreen'), orange: p('markupOrange') },
+    takeoff: p('takeoff'),
+    scale: p('takeoffScale'),
+    compare: { old: p('compareOld'), new: p('compareNew'), both: p('compareBoth') },
+  },
   /** The primary button: near-black (near-white on the night), the one strong fill on a page. */
   action: {
     solid: p('action', 'nightAction'),

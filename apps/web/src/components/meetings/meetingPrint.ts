@@ -1,5 +1,5 @@
 import { MEETING_KIND_LABELS, type MeetingDetailDto } from '@erp/shared';
-import { AUTO_PRINT_SCRIPT, brandFooter, PRINT_BRAND_CSS, PRINT_FONT_LINKS } from '@/components/print/printBrand';
+import { AUTO_PRINT_SCRIPT, brandFooter, PRINT_BRAND_CSS, PRINT_FONT_LINKS, PRINT, PRINT_FACE } from '@/components/print/printBrand';
 import { BRAND } from '@/lib/brand';
 import { formatDate, formatDateTime, plural } from '@/lib/format';
 
@@ -12,21 +12,21 @@ const esc = (v: unknown) =>
 const STYLE = `
   @page { size: A4; margin: 14mm; }
   * { box-sizing: border-box; }
-  body { font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #111; font-size: 11px; margin: 0; padding: 24px; }
+  body { font-family: ${PRINT_FACE}; color: ${PRINT.text}; font-size: 11px; margin: 0; padding: 24px; }
   .head { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 10px; margin-bottom: 12px; }
-  .brand { font-size: 18px; color: ${BRAND.colors.ink}; }
-  .org { color: #555; font-size: 12px; }
+  .brand { font-size: 18px; color: ${PRINT.ink}; }
+  .org { color: ${PRINT.muted}; font-size: 12px; }
   h1 { font-size: 16px; margin: 0 0 2px; }
-  h2 { font-size: 11px; text-transform: uppercase; color: ${BRAND.colors.ink}; border-bottom: 1px solid #ddd; margin: 14px 0 6px; padding-bottom: 3px; }
+  h2 { font-size: 11px; text-transform: uppercase; color: ${PRINT.ink}; border-bottom: 1px solid ${PRINT.hairline}; margin: 14px 0 6px; padding-bottom: 3px; }
   .meta { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 6px 16px; margin-bottom: 12px; }
-  .meta div b { display: block; font-size: 9px; color: #666; text-transform: uppercase; letter-spacing: .04em; }
+  .meta div b { display: block; font-size: 9px; color: ${PRINT.muted}; text-transform: uppercase; letter-spacing: .04em; }
   table { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
-  th, td { border: 1px solid #bbb; padding: 4px 6px; text-align: left; vertical-align: top; }
-  th { background: #f1f4f8; font-size: 10px; }
+  th, td { border: 1px solid ${PRINT.border}; padding: 4px 6px; text-align: left; vertical-align: top; }
+  th { background: ${PRINT.canvas}; font-size: 10px; }
   td.c, th.c { text-align: center; }
   td.d { white-space: nowrap; }
-  .muted { color: ${BRAND.colors.muted}; }
-  .draft { display: inline-block; padding: 2px 8px; border: 1px solid #c77; color: #a33; border-radius: 10px; font-size: 10px; text-transform: uppercase; }
+  .muted { color: ${PRINT.muted}; }
+  .draft { display: inline-block; padding: 2px 8px; border: 1px solid ${PRINT.danger}; color: ${PRINT.danger}; border-radius: 10px; font-size: 10px; text-transform: uppercase; }
   ol { margin: 0; padding-left: 16px; }
   ol li { margin-bottom: 4px; }
   @media print { body { padding: 0; } }

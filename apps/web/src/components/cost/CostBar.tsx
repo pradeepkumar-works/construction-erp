@@ -5,15 +5,9 @@ import { Tooltip } from 'antd';
 import { tk } from '@/ds';
 import { COST_HEADS, COST_HEAD_LABELS, type CostHead, type CostHeadsDto } from '@erp/shared';
 import { formatINR, toNumber } from '@/lib/format';
-import { BRAND } from '@/lib/brand';
 
-export const HEAD_COLORS: Record<CostHead, string> = {
-  material: tk.color.accent.solid,
-  subcontract: BRAND.colors.costSubcontract,
-  labour: BRAND.colors.costLabour,
-  machinery: BRAND.colors.costMachinery,
-  expenses: BRAND.colors.costExpenses,
-};
+/** A cost head's colour for the page (CSS); a canvas chart reads the same `series.cost` through `useResolved()`. */
+export const HEAD_COLORS: Record<CostHead, string> = tk.color.series.cost;
 
 /** Horizontal stacked bar of the cost heads; `scale` is the value of a full-width bar. */
 export function CostBar({ cost, scale, height = 14 }: { cost: CostHeadsDto; scale: number; height?: number }) {

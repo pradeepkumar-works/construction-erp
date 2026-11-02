@@ -3,6 +3,7 @@
 import type { AttachmentDto } from '@erp/shared';
 import { drawingFileKind } from '@erp/shared';
 import { fileUrl } from '@/lib/api';
+import { resolveStatic } from '@/ds';
 import type { DxfLayer } from './dxf';
 
 /**
@@ -27,7 +28,7 @@ export interface Sheet {
 const whiten = (canvas: HTMLCanvasElement) => {
   const ctx = canvas.getContext('2d')!;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.fillStyle = '#fff';
+  ctx.fillStyle = resolveStatic().color.sheet.paper;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   return ctx;
 };

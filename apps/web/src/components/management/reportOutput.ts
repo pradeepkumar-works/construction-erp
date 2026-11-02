@@ -1,8 +1,7 @@
 import { presentFigures, type FiguresView, type FigureView, type ManagementReportDto, type ReportSectionDto } from '@erp/shared';
-import { BRAND } from '@/lib/brand';
 import { formatDateTime } from '@/lib/format';
 import { exportFileName, downloadWorkbook, workbookSheet, type ExportColumn } from '@/lib/exportExcel';
-import { AUTO_PRINT_SCRIPT, PRINT_BRAND_CSS, PRINT_FONT_LINKS, brandFooter } from '@/components/print/printBrand';
+import { AUTO_PRINT_SCRIPT, PRINT_BRAND_CSS, PRINT_FONT_LINKS, brandFooter, PRINT, PRINT_FACE } from '@/components/print/printBrand';
 import { cellExcel, cellText, isNegative, isNumeric } from './report-format';
 
 /**
@@ -49,36 +48,36 @@ export function buildManagementReportHtml(r: ManagementReportDto, organizationNa
 <style>
   @page { size: A4 ${wide ? 'landscape' : 'portrait'}; margin: 12mm; }
   * { box-sizing: border-box; }
-  body { font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #111; font-size: 10.5px; margin: 0; padding: 20px; background: #fff; }
+  body { font-family: ${PRINT_FACE}; color: ${PRINT.text}; font-size: 10.5px; margin: 0; padding: 20px; background: ${PRINT.paper}; }
   .head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; padding-bottom: 8px; margin-bottom: 12px; }
-  .brand { font-size: 15px; color: ${BRAND.colors.ink}; }
-  .org { color: ${BRAND.colors.muted}; }
-  h1 { font-size: 18px; margin: 0; color: ${BRAND.colors.ink}; }
-  .period { text-align: right; color: ${BRAND.colors.muted}; }
-  .period b { display: block; color: ${BRAND.colors.ink}; font-size: 12px; }
-  h2 { font-size: 11px; text-transform: uppercase; color: ${BRAND.colors.ink}; margin: 16px 0 4px; page-break-after: avoid; }
-  .note { margin: 0 0 6px; color: ${BRAND.colors.muted}; }
-  .figs { display: flex; flex-wrap: wrap; border-top: 1px solid ${BRAND.colors.border}; border-bottom: 1px solid ${BRAND.colors.border}; margin-bottom: 6px; }
-  .fig { flex: 1 1 120px; padding: 6px 10px; border-left: 1px solid ${BRAND.colors.border}; }
+  .brand { font-size: 15px; color: ${PRINT.ink}; }
+  .org { color: ${PRINT.muted}; }
+  h1 { font-size: 18px; margin: 0; color: ${PRINT.ink}; }
+  .period { text-align: right; color: ${PRINT.muted}; }
+  .period b { display: block; color: ${PRINT.ink}; font-size: 12px; }
+  h2 { font-size: 11px; text-transform: uppercase; color: ${PRINT.ink}; margin: 16px 0 4px; page-break-after: avoid; }
+  .note { margin: 0 0 6px; color: ${PRINT.muted}; }
+  .figs { display: flex; flex-wrap: wrap; border-top: 1px solid ${PRINT.border}; border-bottom: 1px solid ${PRINT.border}; margin-bottom: 6px; }
+  .fig { flex: 1 1 120px; padding: 6px 10px; border-left: 1px solid ${PRINT.border}; }
   .fig:first-child { border-left: 0; padding-left: 0; }
-  .fig b { display: block; font-weight: 400; color: ${BRAND.colors.muted}; font-size: 9.5px; }
-  .fig span { display: block; font-size: 14px; font-weight: 700; color: ${BRAND.colors.ink}; white-space: nowrap; font-variant-numeric: tabular-nums; }
-  .fig small { display: block; color: ${BRAND.colors.muted}; font-size: 9px; }
+  .fig b { display: block; font-weight: 400; color: ${PRINT.muted}; font-size: 9.5px; }
+  .fig span { display: block; font-size: 14px; font-weight: 700; color: ${PRINT.ink}; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .fig small { display: block; color: ${PRINT.muted}; font-size: 9px; }
   .fig.lead span { font-size: 17px; }
-  .fig .act { color: ${BRAND.colors.danger}; }
-  .fig .watch { color: ${BRAND.colors.pending}; }
-  .fig span.quiet { color: ${BRAND.colors.muted}; }
+  .fig .act { color: ${PRINT.danger}; }
+  .fig .watch { color: ${PRINT.pending}; }
+  .fig span.quiet { color: ${PRINT.muted}; }
   table { width: 100%; border-collapse: collapse; margin-bottom: 4px; page-break-inside: auto; }
   thead { display: table-header-group; }
   tr { page-break-inside: avoid; }
-  th, td { border-bottom: 1px solid ${BRAND.colors.hairline}; padding: 3px 5px; text-align: left; vertical-align: top; }
-  th { background: ${BRAND.colors.canvas}; font-size: 9.5px; font-weight: 600; color: ${BRAND.colors.ink}; border-bottom: 1px solid ${BRAND.colors.border}; }
+  th, td { border-bottom: 1px solid ${PRINT.hairline}; padding: 3px 5px; text-align: left; vertical-align: top; }
+  th { background: ${PRINT.canvas}; font-size: 9.5px; font-weight: 600; color: ${PRINT.ink}; border-bottom: 1px solid ${PRINT.border}; }
   td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
-  tr.total td { font-weight: 700; border-top: 1px solid ${BRAND.colors.ink}; border-bottom: 0; }
-  .neg { color: ${BRAND.colors.danger}; }
-  .muted { color: ${BRAND.colors.muted}; }
-  .commentary { font-size: 12px; line-height: 1.5; margin: 0 0 10px; color: ${BRAND.colors.ink}; }
-  .notes { margin-top: 14px; color: ${BRAND.colors.muted}; }
+  tr.total td { font-weight: 700; border-top: 1px solid ${PRINT.ink}; border-bottom: 0; }
+  .neg { color: ${PRINT.danger}; }
+  .muted { color: ${PRINT.muted}; }
+  .commentary { font-size: 12px; line-height: 1.5; margin: 0 0 10px; color: ${PRINT.ink}; }
+  .notes { margin-top: 14px; color: ${PRINT.muted}; }
   .notes p { margin: 0 0 3px; }
   @media screen { body { max-width: ${wide ? 1180 : 860}px; margin: 0 auto; } }
   ${PRINT_BRAND_CSS}

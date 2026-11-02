@@ -49,7 +49,6 @@ import {
   unitLabel,
 } from '@erp/shared';
 import { fileUrl } from '@/lib/api';
-import { BRAND } from '@/lib/brand';
 import { singleKeysOn } from '@/lib/shortcuts';
 import { useAuth } from '@/lib/auth';
 import { formatQty } from '@/lib/format';
@@ -73,7 +72,7 @@ import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { RfiFormModal } from '@/components/documents/RfiFormModal';
 import { RevisionStatusTag, revLabel } from '@/components/documents/docUi';
 import { MeasurementFormModal, type MeasurementPrefill } from '@/components/measurements/MeasurementFormModal';
-import { MarkShape, MARKUP_INK, VB_W, type ShownMark } from './MarkupLayer';
+import { MarkShape, MARKUP_INK, SHEET, VB_W, type ShownMark } from './MarkupLayer';
 import { MarkupList, MarkupNoteForm, ResolveMarkupForm, type ListScope } from './MarkupList';
 import { canvasSize, compareInto, openSheet, type Sheet } from './sheet';
 import { TakeoffShape } from './TakeoffLayer';
@@ -317,7 +316,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
         if (!live) return;
         canvas.width = size.width;
         canvas.height = size.height;
-        compareInto(canvas, compareIsOlder ? b : a, compareIsOlder ? a : b, { old: BRAND.colors.compareOld, new: BRAND.colors.compareNew, both: BRAND.colors.compareBoth });
+        compareInto(canvas, compareIsOlder ? b : a, compareIsOlder ? a : b, SHEET.compare);
       } else {
         // Draw off screen and swap in, so the old picture stays up while the sharper one is made.
         const off = Object.assign(document.createElement('canvas'), size);
@@ -714,7 +713,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
               aria-label={`${MARKUP_COLOR_LABELS[c]} ink`}
               aria-pressed={color === c}
               onClick={() => setColor(c)}
-              icon={<span aria-hidden style={{ display: 'inline-block', width: 14, height: 14, borderRadius: 7, background: MARKUP_INK[c], outline: color === c ? `2px solid ${tk.color.text.base}` : 'none', outlineOffset: 2 }} />}
+              icon={<span aria-hidden style={{ display: 'inline-block', width: 14, height: 14, borderRadius: tk.radius.pill, background: MARKUP_INK[c], outline: color === c ? `2px solid ${tk.color.text.base}` : 'none', outlineOffset: 2 }} />}
             />
           </Tooltip>
         ))}
@@ -856,15 +855,15 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
             {compareRev ? (
               <Flex gap={tk.space[3]} wrap align="center" style={{ fontSize: tk.type.caption.fontSize }}>
                 <span>
-                  <span aria-hidden style={{ display: 'inline-block', width: 12, height: 3, background: BRAND.colors.compareOld, verticalAlign: 'middle', marginRight: tk.space[1] }} />
+                  <span aria-hidden style={{ display: 'inline-block', width: 12, height: 3, background: SHEET.compare.old, verticalAlign: 'middle', marginRight: tk.space[1] }} />
                   Only on {revLabel(compareIsOlder ? compareRev.revision : revision.revision)} (older)
                 </span>
                 <span>
-                  <span aria-hidden style={{ display: 'inline-block', width: 12, height: 3, background: BRAND.colors.compareNew, verticalAlign: 'middle', marginRight: tk.space[1] }} />
+                  <span aria-hidden style={{ display: 'inline-block', width: 12, height: 3, background: SHEET.compare.new, verticalAlign: 'middle', marginRight: tk.space[1] }} />
                   Only on {revLabel(compareIsOlder ? revision.revision : compareRev.revision)} (newer)
                 </span>
                 <span>
-                  <span aria-hidden style={{ display: 'inline-block', width: 12, height: 3, background: BRAND.colors.compareBoth, verticalAlign: 'middle', marginRight: tk.space[1] }} />
+                  <span aria-hidden style={{ display: 'inline-block', width: 12, height: 3, background: SHEET.compare.both, verticalAlign: 'middle', marginRight: tk.space[1] }} />
                   On both
                 </span>
               </Flex>
@@ -899,7 +898,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
                 </Flex>
               ) : (
                 <div style={{ position: 'absolute', left: 0, top: 0, width: baseW, height: baseH, transform: `translate(${view.x}px, ${view.y}px) scale(${view.zoom})`, transformOrigin: '0 0', boxShadow: tk.shadow.float }}>
-                  <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', background: '#fff' }} aria-hidden />
+                  <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', background: tk.color.sheet.paper }} aria-hidden />
                   <svg ref={svgRef} viewBox={`0 0 ${VB_W} ${vbH}`} preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'visible' }} aria-hidden>
                     {shown.map((m) => (
                       <MarkShape key={m.id} mark={m} vbH={vbH} px={px} selected={m.id === selectedId} />

@@ -60,7 +60,9 @@ and the pre-delivery checklist.
   `tk` from `@/ds`; `docs/design/REDESIGN.md`), plus `BrandMark` and `app/icon.svg`, mobile ones in `src/theme.ts`. New code
   uses `tk` instead of hex or px literals (ESLint's `ds/no-raw-style` refuses them, `theme.useToken()`, `themeColor` and
   `BRAND.colors` outside the files in `src/ds/legacy-files.json`; a file you move onto `tk` leaves that list). A component's look is its
-  tokens in `antdTheme` and `componentConfig` (`src/ds/antd.ts`, both modes), never CSS of a page's own. The look is the
+  tokens in `antdTheme` and `componentConfig` (`src/ds/antd.ts`, both modes), never CSS of a page's own. Data drawn by kind (cost
+  heads, trend lines, progress) is the `series` roles, a drawing sheet's inks the `sheet` roles; a canvas chart reads them
+  through `useResolved()` (`useChartTheme`), and print, PDF, Word and email through `PRINT` (`components/print/printBrand.ts`). The look is the
   Quiet one (direction A, picked by Pradeep; `docs/design/REDESIGN.md` "Land the new look"): the shell (sidebar, top bar,
   sign-in panel) is a light grey rail in the light theme and a near-black one in the dark (the `chrome` roles), the primary
   button is near-black (the `action` roles), blue is kept for focus, links, the chosen item, data and AI (what Ask made or

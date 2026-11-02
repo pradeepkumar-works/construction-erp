@@ -2,13 +2,16 @@
 
 import React from 'react';
 import type { MarkupColor, MarkupKind, MarkupPoint } from '@erp/shared';
-import { BRAND } from '@/lib/brand';
+import { resolveStatic } from '@/ds';
+
+/** The sheet stays white in either theme, so its inks are fixed values (SVG attributes and the canvas take no CSS variables). */
+export const SHEET = resolveStatic().color.sheet;
 
 export const MARKUP_INK: Record<MarkupColor, string> = {
-  RED: BRAND.colors.markupRed,
-  BLUE: BRAND.colors.markupBlue,
-  GREEN: BRAND.colors.markupGreen,
-  ORANGE: BRAND.colors.markupOrange,
+  RED: SHEET.markup.red,
+  BLUE: SHEET.markup.blue,
+  GREEN: SHEET.markup.green,
+  ORANGE: SHEET.markup.orange,
 };
 
 /** Width of the overlay's coordinate space; its height follows the page's shape. */
@@ -63,7 +66,7 @@ export function MarkShape({ mark, vbH, px, selected }: { mark: ShownMark; vbH: n
   const dash = mark.carried ? `${6 * px} ${4 * px}` : undefined;
   const common = { stroke: ink, strokeWidth: sw, fill: 'none', strokeDasharray: dash, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
   const tag = (x: number, y: number) => (
-    <text x={x + 6 * px} y={y - 6 * px} fontSize={12 * px} fontWeight={600} fill={ink} stroke="#fff" strokeWidth={3 * px} paintOrder="stroke" style={{ userSelect: 'none' }}>
+    <text x={x + 6 * px} y={y - 6 * px} fontSize={12 * px} fontWeight={600} fill={ink} stroke={SHEET.paper} strokeWidth={3 * px} paintOrder="stroke" style={{ userSelect: 'none' }}>
       {mark.label}
     </text>
   );
@@ -74,8 +77,8 @@ export function MarkShape({ mark, vbH, px, selected }: { mark: ShownMark; vbH: n
       const r = (selected ? 14 : 12) * px;
       shape = (
         <>
-          <circle cx={a[0]} cy={a[1]} r={r} fill={ink} stroke="#fff" strokeWidth={2 * px} strokeDasharray={dash} />
-          <text x={a[0]} y={a[1]} fontSize={11 * px} fontWeight={700} fill="#fff" textAnchor="middle" dominantBaseline="central" style={{ userSelect: 'none' }}>
+          <circle cx={a[0]} cy={a[1]} r={r} fill={ink} stroke={SHEET.paper} strokeWidth={2 * px} strokeDasharray={dash} />
+          <text x={a[0]} y={a[1]} fontSize={11 * px} fontWeight={700} fill={SHEET.paper} textAnchor="middle" dominantBaseline="central" style={{ userSelect: 'none' }}>
             {mark.label.replace(/^M/, '')}
           </text>
         </>
@@ -115,7 +118,7 @@ export function MarkShape({ mark, vbH, px, selected }: { mark: ShownMark; vbH: n
       // Text keeps its size on the sheet, like writing on the paper.
       const size = VB_W * 0.016;
       shape = (
-        <text x={a[0]} y={a[1]} fontSize={size} fontWeight={600} fill={ink} stroke="#fff" strokeWidth={size * 0.25} paintOrder="stroke" dominantBaseline="hanging" style={{ userSelect: 'none', whiteSpace: 'pre' }}>
+        <text x={a[0]} y={a[1]} fontSize={size} fontWeight={600} fill={ink} stroke={SHEET.paper} strokeWidth={size * 0.25} paintOrder="stroke" dominantBaseline="hanging" style={{ userSelect: 'none', whiteSpace: 'pre' }}>
           {(mark.note ?? '').split('\n').map((line, i) => (
             <tspan key={i} x={a[0]} dy={i ? size * 1.25 : 0}>
               {line}

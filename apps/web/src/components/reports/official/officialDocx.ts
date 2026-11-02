@@ -3,6 +3,7 @@ import { officialFileName, type OfficialBlockDto, type OfficialFactDto, type Off
 import { cellText, isNegative, isNumeric } from '@/components/management/report-format';
 import { controlFacts, factText, footNote, issueLine, WIDE_COLUMNS } from './official-format';
 import { loadPhotos, type PhotoData } from './photoData';
+import { PRINT } from '@/components/print/printBrand';
 
 /**
  * An official progress report as a Word file, for a client who wants to add their own lines before it is
@@ -12,7 +13,7 @@ import { loadPhotos, type PhotoData } from './photoData';
 
 type Docx = typeof import('docx');
 const hex = (c: string) => c.replace('#', '');
-const C = BRAND.colors;
+const C = PRINT;
 
 export async function buildOfficialReportDocx(r: OfficialReportDto): Promise<Blob> {
   const d: Docx = await import('docx');

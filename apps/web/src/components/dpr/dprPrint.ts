@@ -1,7 +1,7 @@
 import type { DailyReportDto, DprBuiltInKey, DprFormDef, DprLineDto } from '@erp/shared';
 import { PIPE_STAGE_LABELS, SEGMENT_STAGES, SUBMISSION_STATUS_LABELS, STANDARD_DPR_FORM, WEATHER_LABELS, crewCheck, dprActivityLabel, dprLabel, dprShows, filledExtra, lineLocation, materialUsed, linesSummary, ownFieldsOf, pipelineSummary, unitLabel } from '@erp/shared';
 import { fileUrl } from '@/lib/api';
-import { AUTO_PRINT_SCRIPT, brandFooter, PRINT_BRAND_CSS, PRINT_FONT_LINKS } from '@/components/print/printBrand';
+import { AUTO_PRINT_SCRIPT, brandFooter, PRINT_BRAND_CSS, PRINT_FONT_LINKS, PRINT, PRINT_FACE } from '@/components/print/printBrand';
 import { BRAND } from '@/lib/brand';
 import { formatDate, formatDateTime, formatPct, formatQty } from '@/lib/format';
 
@@ -78,27 +78,27 @@ ${PRINT_FONT_LINKS}
   table.lines { font-size: 10px; }
   table.lines td.num, table.lines th.num { width: auto; white-space: nowrap; }
   * { box-sizing: border-box; }
-  body { font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #111; font-size: 12px; margin: 0; padding: 24px; }
-  .head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid ${BRAND.colors.ink}; padding-bottom: 10px; margin-bottom: 14px; }
-  .brand { font-size: 18px; font-weight: 700; color: ${BRAND.colors.ink}; }
-  .org { color: #555; font-size: 12px; }
+  body { font-family: ${PRINT_FACE}; color: ${PRINT.text}; font-size: 12px; margin: 0; padding: 24px; }
+  .head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid ${PRINT.ink}; padding-bottom: 10px; margin-bottom: 14px; }
+  .brand { font-size: 18px; font-weight: 700; color: ${PRINT.ink}; }
+  .org { color: ${PRINT.muted}; font-size: 12px; }
   h1 { font-size: 16px; margin: 0 0 2px; }
-  .status { display: inline-block; padding: 2px 8px; border: 1px solid #999; border-radius: 10px; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+  .status { display: inline-block; padding: 2px 8px; border: 1px solid ${PRINT.faint}; border-radius: 10px; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
   .meta { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px 16px; margin-bottom: 14px; }
-  .meta div b { display: block; font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: .04em; }
-  h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: ${BRAND.colors.ink}; border-bottom: 1px solid #ddd; margin: 14px 0 6px; padding-bottom: 3px; }
+  .meta div b { display: block; font-size: 10px; color: ${PRINT.muted}; text-transform: uppercase; letter-spacing: .04em; }
+  h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: ${PRINT.ink}; border-bottom: 1px solid ${PRINT.hairline}; margin: 14px 0 6px; padding-bottom: 3px; }
   table { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
-  th, td { border: 1px solid #ccc; padding: 4px 6px; text-align: left; vertical-align: top; }
-  th { background: #f1f4f8; font-size: 11px; }
+  th, td { border: 1px solid ${PRINT.border}; padding: 4px 6px; text-align: left; vertical-align: top; }
+  th { background: ${PRINT.canvas}; font-size: 11px; }
   td.num, th.num { text-align: right; width: 90px; }
   .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  .muted { color: ${BRAND.colors.muted}; }
+  .muted { color: ${PRINT.muted}; }
   .photos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
   figure { margin: 0; }
-  figure img { width: 100%; height: 150px; object-fit: cover; border: 1px solid #ccc; }
-  figcaption { font-size: 10px; color: #666; margin-top: 2px; }
+  figure img { width: 100%; height: 150px; object-fit: cover; border: 1px solid ${PRINT.border}; }
+  figcaption { font-size: 10px; color: ${PRINT.muted}; margin-top: 2px; }
   .sign { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 32px; }
-  .sign div { border-top: 1px solid #333; padding-top: 4px; font-size: 11px; }
+  .sign div { border-top: 1px solid ${PRINT.text}; padding-top: 4px; font-size: 11px; }
   @media print { body { padding: 0; } .noprint { display: none; } }
   ${PRINT_BRAND_CSS}
 </style></head>

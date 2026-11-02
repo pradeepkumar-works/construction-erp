@@ -3,15 +3,13 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Button, Card, Flex, Grid, Segmented, Table, Typography, theme } from 'antd';
+import { Button, Card, Flex, Grid, Segmented, Table, Typography } from 'antd';
 import { tk } from '@/ds';
 import type { TableColumnsType } from 'antd';
 import { PROJECT_STATUS_LABELS, canSeeNav, navNode, progressNotes, type ModuleProgressDto, type ProjectProgressDto } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useModuleHome } from '@/lib/queries';
 import { useProjectScope } from '@/lib/project-scope';
-import { BRAND } from '@/lib/brand';
-import { useAppearance } from '@/lib/appearance';
 import { formatDate, formatINRCompact, formatPct, toNumber } from '@/lib/format';
 import { ProjectStatusTag } from '@/components/common/StatusTag';
 import { QueryError } from '@/components/common/QueryState';
@@ -21,12 +19,6 @@ type View = 'chart' | 'table';
 /** Rows shown before Show all */
 const FIRST = 12;
 
-function useProgressColors() {
-  const { dark } = useAppearance();
-  const c = BRAND.colors;
-  return dark ? { physical: c.progressPhysicalNight, financial: c.progressFinancialNight } : { physical: c.progressPhysical, financial: c.progressFinancial };
-}
-
 /** One percentage against 100 (a meter): the track is the whole job, the bar what is done; the tick, where the plan stands today. */
 function Meter({ pct, color, planned }: { pct: number; color: string; planned?: number | null }) {
   const d = Math.max(0, Math.min(100, pct));
@@ -35,7 +27,7 @@ function Meter({ pct, color, planned }: { pct: number; color: string; planned?: 
     <span aria-hidden style={{ position: 'relative', display: 'block', height: 14, minWidth: 64 }}>
       <span style={{ position: 'absolute', insetInline: 0, top: 3, height: 8, borderRadius: tk.radius.sm, background: tk.color.tone.neutral.bg }} />
       <span style={{ position: 'absolute', insetInlineStart: 0, top: 3, height: 8, width: `${d}%`, minWidth: d > 0 ? 4 : 0, borderRadius: tk.radius.sm, background: color }} />
-      {p !== null && <span style={{ position: 'absolute', top: 0, height: 14, width: 2, insetInlineStart: `calc(${p}% - 1px)`, background: tk.color.text.base, borderRadius: 1 }} />}
+      {p !== null && <span style={{ position: 'absolute', top: 0, height: 14, width: 2, insetInlineStart: `calc(${p}% - 1px)`, background: tk.color.text.base, borderRadius: tk.radius.xs }} />}
     </span>
   );
 }
@@ -59,7 +51,7 @@ function MeterLine({ label, pct, color, planned }: { label: string; pct: number 
 
 /** Physical progress in a list's cell: the meter with the tick where the plan stands today, and the figure. */
 export function ProgressAgainstPlan({ pct, planned }: { pct: number; planned: number | null }) {
-  const colors = useProgressColors();
+  const colors = tk.color.series.progress;
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 44px', alignItems: 'center', gap: tk.space[2] }}>
       <Meter pct={pct} color={colors.physical} planned={planned} />
@@ -73,14 +65,14 @@ export function ProgressAgainstPlan({ pct, planned }: { pct: number; planned: nu
 
 /** What the two bars stand for, said once above them. */
 function Legend({ seesFinancial }: { seesFinancial: boolean }) {
-  const colors = useProgressColors();
+  const colors = tk.color.series.progress;
   const swatch = (color: string) => <span aria-hidden style={{ display: 'inline-block', width: 12, height: 8, borderRadius: tk.radius.sm, background: color, marginInlineEnd: tk.space[1] }} />;
   const item: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', fontSize: tk.type.caption.fontSize, color: tk.color.text.muted };
   return (
     <Flex wrap gap={`${tk.space[1]} ${tk.space[5]}`} style={{ marginBottom: tk.space[3] }}>
       <span style={item}>{swatch(colors.physical)}Physical: work done, by value</span>
       <span style={item}>
-        <span aria-hidden style={{ display: 'inline-block', width: 2, height: 12, borderRadius: 1, background: tk.color.text.base, marginInlineEnd: tk.space[1] }} />
+        <span aria-hidden style={{ display: 'inline-block', width: 2, height: 12, borderRadius: tk.radius.xs, background: tk.color.text.base, marginInlineEnd: tk.space[1] }} />
         Planned by today
       </span>
       {seesFinancial && <span style={item}>{swatch(colors.financial)}Financial: approved RA bills against contract</span>}
@@ -90,7 +82,7 @@ function Legend({ seesFinancial }: { seesFinancial: boolean }) {
 
 /** One project: its name, its two bars and what they say together. The whole row opens the project. */
 function ProjectRow({ p, seesFinancial }: { p: ProjectProgressDto; seesFinancial: boolean }) {
-  const colors = useProgressColors();
+  const colors = tk.color.series.progress;
   const notes = progressNotes(p);
   return (
     <li style={{ borderTop: tk.line('hairline') }}>
@@ -134,7 +126,6 @@ const planLate = (p: ProjectProgressDto) =>
  * extensions of time granted in the delay register, the revised completion, the schedule's planned finish and the time left.
  */
 function ProgressTable({ data }: { data: ModuleProgressDto }) {
-  const { token } = theme.useToken();
   const router = useRouter();
   // The project stays in view while the dates scroll by, where there is room for it to
   const wide = Grid.useBreakpoint().md;
@@ -154,7 +145,7 @@ function ProgressTable({ data }: { data: ModuleProgressDto }) {
       {v === null ? '–' : formatINRCompact(v)}
     </span>
   );
-  const sub = (children: React.ReactNode, color: string = token.colorTextSecondary) => (
+  const sub = (children: React.ReactNode, color: string = tk.color.text.muted) => (
     <div style={{ fontSize: tk.type.caption.fontSize, color, whiteSpace: 'nowrap' }}>{children}</div>
   );
   const columns: TableColumnsType<ProjectProgressDto> = [
@@ -227,7 +218,7 @@ function ProgressTable({ data }: { data: ModuleProgressDto }) {
             return (
               <>
                 {date(p.planFinish)}
-                {late > 0 && sub(`${days(late)} after completion`, token.colorWarningText)}
+                {late > 0 && sub(`${days(late)} after completion`, tk.color.tone.pending.fg)}
               </>
             );
           },

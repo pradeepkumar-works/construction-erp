@@ -2,7 +2,7 @@
 
 import type { BillingOrderDto } from '@erp/shared';
 import { PRODUCT_NAME } from '@erp/shared';
-import { BRAND } from './brand';
+import { resolveStatic } from '@/ds';
 
 const CHECKOUT_SRC = 'https://checkout.razorpay.com/v1/checkout.js';
 
@@ -48,7 +48,7 @@ export async function payWithRazorpay(order: BillingOrderDto): Promise<PaidResul
       name: PRODUCT_NAME,
       description: order.description,
       prefill: order.prefill,
-      theme: { color: BRAND.colors.accent },
+      theme: { color: resolveStatic().color.accent.solid },
       handler: (r: CheckoutResponse) => resolve({ orderId: r.razorpay_order_id, paymentId: r.razorpay_payment_id, signature: r.razorpay_signature }),
       modal: { ondismiss: () => resolve(null) },
     });
