@@ -7,6 +7,7 @@ import {
   canResubmit,
   machineryLogCost,
   type ApprovalStageDto,
+  type AreaWaitingEntry,
   type ReviewResultDto,
   type PendingApprovalDto,
   type ReviewDecision,
@@ -226,6 +227,32 @@ export class SubmissionLifecycleService {
   async submitted(user: RequestUser): Promise<PendingApprovalDto[]> {
     const where = { ...this.access.submissionWhere(user), status: 'SUBMITTED' as const };
     return (await this.describe(() => where)).sort((a, b) => a.submittedAt.localeCompare(b.submittedAt));
+  }
+
+  /**
+   * Everything of these types waiting for approval in one project the caller sees, whoever decides it: in whose queue,
+   * since when, and whether the caller may decide it now (a project area's summary).
+   */
+  async inProject(user: RequestUser, projectId: string, types: SubmissionType[]): Promise<AreaWaitingEntry[]> {
+    if (!types.length) return [];
+    const only = new Set(types);
+    const where = { ...this.access.submissionWhere(user), projectId, status: 'SUBMITTED' as const };
+    const out = await this.describe((t) => (only.has(t) ? where : null));
+    if (!out.length) return [];
+    const { rules, stages } = await this.rights.stages(
+      user.organizationId,
+      out.map((p) => ({ type: p.type, id: p.id, amount: p.amount, round: new Date(p.submittedAt) })),
+    );
+    return out.map((p) => {
+      const stage = stages.get(`${p.type}:${p.id}`)!;
+      return {
+        type: p.type,
+        amount: p.amount,
+        waitingSince: stage.since.toISOString(),
+        waitingWith: queueRoles(p.type, rules, p.amount, stage).map((r) => ROLE_LABELS[r] ?? r),
+        yours: mayDecide(user, p.type, rules, p.amount, stage).ok,
+      };
+    });
   }
 
   /** Types with an entry escalated in the last 90 days (management's queue looks at these too). */

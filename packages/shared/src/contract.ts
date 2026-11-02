@@ -1,4 +1,5 @@
 /** Clients and contract terms shared by the API and the clients. */
+import { plural } from './numbers';
 
 /** 10-character PAN: five letters, four digits, a letter. */
 export const PAN_PATTERN = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
@@ -53,6 +54,26 @@ export function revisedCompletion(endDate: string | null, extensionDays: number)
   const d = new Date(`${endDate}T00:00:00Z`);
   d.setUTCDate(d.getUTCDate() + extensionDays);
   return d.toISOString().slice(0, 10);
+}
+
+/** Days of extension of time granted on a project: the sum over its delays. Every completion date after extensions counts them here. */
+export const grantedExtensionDays = (delays: readonly { eotGrantedDays: number | null }[]): number => delays.reduce((s, d) => s + (d.eotGrantedDays ?? 0), 0);
+
+/** The completion date a project is held to, with what it is made of: the contract's date and the days granted on top. */
+export interface CompletionBasis {
+  contractEnd: string | null;
+  extensionDays: number;
+  /** `contractEnd` plus the extensions (`revisedCompletion`) */
+  date: string | null;
+}
+
+export const completionBasis = (contractEnd: string | null, extensionDays: number): CompletionBasis => ({ contractEnd, extensionDays, date: revisedCompletion(contractEnd, extensionDays) });
+
+/** The completion date with its basis, the same wherever it shows: "04 Sep 2027 (28 Aug 2027 + 7 days extension)", or the date alone. */
+export function completionWords(c: CompletionBasis, day: (d: string) => string): string | null {
+  if (!c.date || !c.contractEnd) return null;
+  if (!c.extensionDays) return day(c.date);
+  return `${day(c.date)} (${day(c.contractEnd)} + ${plural(c.extensionDays, 'day')} extension)`;
 }
 
 /** "RA bill 3", "RA bill 7 (final)", or "O&M bill 9" for an instalment of the O&M contract. */

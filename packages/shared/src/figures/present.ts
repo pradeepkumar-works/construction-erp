@@ -22,6 +22,8 @@ export interface FigureView {
   readonly state: FigureState;
   /** Whether the note is bad news on its own (a move the wrong way, a flagged part) */
   readonly noteState: Attention | 'calm';
+  /** A fault in the records that makes the value wrong, drawn as a mark under it; the value keeps its own state */
+  readonly caveat: Words | null;
   /** The measure's list with the strip's filters; null when it has none */
   readonly href: string | null;
   /** The measure's definition, for the label's help */
@@ -286,6 +288,7 @@ export function presentFigures(input: readonly FigureInput[], opts: PresentOptio
       note,
       state,
       noteState,
+      caveat: f.caveat ? words(f.caveat) : null,
       href: m.list ? withScope(m.list, opts.scope) : null,
       define: m.define,
     };

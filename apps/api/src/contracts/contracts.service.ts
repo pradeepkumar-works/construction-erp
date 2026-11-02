@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { CONTRACT_PERCENT_FIELDS, LD_PERIOD_DAYS, MAX_GST_RATE, canEditContract, canViewContract, delayDays, revisedCompletion, type DelayParty, type LdExposureDto, type ProjectContractDto } from '@erp/shared';
+import { CONTRACT_PERCENT_FIELDS, LD_PERIOD_DAYS, MAX_GST_RATE, canEditContract, canViewContract, delayDays, grantedExtensionDays, revisedCompletion, type DelayParty, type LdExposureDto, type ProjectContractDto } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -54,7 +54,7 @@ export class ContractsService {
       eotClaimed: r.eotClaimed,
       eotGrantedDays: r.eotGrantedDays,
     }));
-    const extensionDays = extensions.reduce((s, e) => s + (e.eotGrantedDays ?? 0), 0);
+    const extensionDays = grantedExtensionDays(extensions);
     const endDate = dateOnly(p.endDate);
     const approvedVariations = p.variations.reduce((s, v) => s.add(v.approvedAmount ?? 0), new Prisma.Decimal(0));
     return {

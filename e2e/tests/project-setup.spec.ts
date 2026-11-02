@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { API_URL, api, apiToken, PASSWORD, signIn } from './helpers';
 
 type Contract = { retentionPct: string; securityDepositPct: string; tdsPct: string; gstTdsPct: string; labourCessPct: string; defectLiabilityMonths: number | null };
-type Setup = { show: boolean; done: number; total: number; steps: { key: string; done: boolean; count: number | null }[]; boqGap: { gapPct: number } | null };
+type Setup = { show: boolean; done: number; total: number; steps: { key: string; done: boolean; count: number | null }[]; boqGap: { gapPct: number } | null; problems: { key: string }[] };
 type Project = { id: string; members: { userId: string }[] };
 
 /**
@@ -71,7 +71,19 @@ test('a new project starts with terms, copies a team, and its checklist ticks it
   const watch = await api<{ open: { kind: string; projectId: string | null }[] }>(owner, '/warnings');
   expect(watch.open.some((w) => w.kind === 'BOQ_OFF_CONTRACT' && w.projectId === copy.id)).toBe(true);
 
-  // Hidden for everyone.
+  // The Overview keeps the problem standing as a check, and marks the figures it makes wrong.
+  expect(setup.problems.map((p) => p.key)).toContain('boqOffContract');
+  await page.goto(`/projects/${copy.id}?tab=overview`);
+  const checks = page.getByTestId('project-checks');
+  await expect(checks).toContainText('47% below');
+  await expect(page.locator('.figure-cell').filter({ hasText: 'Work done to date' }).locator('.figure-caveat')).toContainText('BOQ 47% below the contract value');
+
+  // Hidden for everyone: the checklist goes, the problem stays until the BOQ is put right.
   await api(owner, `/projects/${copy.id}/setup`, { method: 'PUT', body: { hidden: true } });
-  expect((await api<Setup>(owner, `/projects/${copy.id}/setup`)).show).toBe(false);
+  const hidden = await api<Setup>(owner, `/projects/${copy.id}/setup`);
+  expect(hidden.show).toBe(false);
+  expect(hidden.problems.map((p) => p.key)).toContain('boqOffContract');
+  await page.reload();
+  await expect(page.locator('section').filter({ has: page.getByRole('heading', { name: 'Set up this project' }) })).toHaveCount(0);
+  await expect(page.getByTestId('project-checks')).toContainText('47% below');
 });

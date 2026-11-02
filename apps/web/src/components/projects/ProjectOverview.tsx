@@ -4,20 +4,22 @@ import React from 'react';
 import Link from 'next/link';
 import { useProjectScope } from '@/lib/project-scope';
 import dayjs from 'dayjs';
-import { Col, Descriptions, Flex, Progress, Row, Statistic, Table, Typography, theme } from 'antd';
+import { Col, Descriptions, Flex, Progress, Row, Table } from 'antd';
 import { CheckCircleOutlined, ExclamationCircleOutlined } from '@/components/common/icons';
-import type { ProjectDashboard, ProjectDetail } from '@erp/shared';
-import { canViewCost } from '@erp/shared';
+import type { BillCheckDto, BoqContractGap, DataProblemDto, FigureId, FigureInput, ProjectDashboard, ProjectDetail } from '@erp/shared';
+import { canViewCost, completionBasis, completionWords, figure } from '@erp/shared';
+import { tk } from '@/ds';
 import { useAuth } from '@/lib/auth';
-import { useProjectCost, useProjectDashboard } from '@/lib/queries';
-import { formatDate, formatINR, formatINRCompact, formatPct, formatQty, toNumber, plural } from '@/lib/format';
+import { useProjectCost, useProjectDashboard, useProjectSetup } from '@/lib/queries';
+import { formatDate, formatINRCompact, formatPct, formatQty, toNumber, plural } from '@/lib/format';
 import { ProjectStatusTag, ProjectTypeTag } from '@/components/common/StatusTag';
 import { QueryError } from '@/components/common/QueryState';
-import { FigureBlock, Section } from '@/components/common/Section';
+import { Section } from '@/components/common/Section';
+import { Figures } from '@/components/figures';
+import { CheckRows } from '@/components/checks/ChecksSection';
 import { MembersCard } from './MembersCard';
 import { ProjectSetup } from './ProjectSetup';
-import { scheduleStatus, type ScheduleStatus } from './ProjectHealth';
-
+import { projectHeadline, scheduleStatus, useProjectHealth, type HealthSignal } from './ProjectHealth';
 
 /** "8 months left", "12 days left", "ended 3 days ago" */
 function timeLeft(end: string | null): string | null {
@@ -29,147 +31,157 @@ function timeLeft(end: string | null): string | null {
   return `${plural(days, 'day')} left`;
 }
 
-/** The overview's first line, in words: on track or behind, and why. */
-function headline(project: ProjectDetail, s: ScheduleStatus): string {
-  if (project.status === 'COMPLETED' || project.status === 'CLOSED') return 'Completed';
-  if (project.status === 'ON_HOLD') return 'On hold';
-  if (s.state === 'OVERRUN') return 'Past its completion date';
-  if (s.state === 'FINISH_LATE') return `Plan ends ${plural(s.finishLateDays!, 'day')} after the completion date`;
-  if (s.behind) return 'Behind plan';
-  if (s.state === 'NO_PLAN') return 'No dated plan yet';
-  if (s.late > 0) return `On track overall, ${plural(s.late, 'activity', 'activities')} late`;
-  return 'On track';
-}
-
-function StatusLead({ project, dash }: { project: ProjectDetail; dash: ProjectDashboard }) {
-  const { token } = theme.useToken();
-  const s = scheduleStatus(project, dash);
-  const against = s.planned !== null ? `${formatPct(s.planned)} planned by today` : s.elapsed !== null ? `${formatPct(s.elapsed)} of the time gone` : null;
-  const left = timeLeft(project.endDate);
-  const facts = [
-    `${formatPct(s.done)} done${against ? `, ${against}` : ''}.`,
-    dash.activitiesTotal ? `${s.late} of ${plural(dash.activitiesTotal, 'activity', 'activities')} past their finish.` : null,
-    s.completionDate ? `Completion ${formatDate(s.completionDate)}${s.completionDate === project.endDate && left ? `, ${left}` : ''}.` : null,
-    s.plannedFinish && s.finishLateDays !== null ? `The plan ends ${formatDate(s.plannedFinish)}.` : null,
-    s.state === 'NO_PLAN' ? 'Give the activities dates, or import the schedule, on the Schedule tab.' : null,
-  ].filter(Boolean);
-  // Colour marks the exception only: behind is in the error text shade; on track stays neutral.
-  const bad = s.behind;
-  return (
-    <div style={{ marginBottom: token.marginSM }} data-testid="project-status">
-      <Flex align="center" gap={token.marginXS}>
-        {bad ? <ExclamationCircleOutlined aria-hidden style={{ color: token.colorErrorText }} /> : <CheckCircleOutlined aria-hidden style={{ color: token.colorTextSecondary }} />}
-        <Typography.Text strong style={{ fontSize: token.fontSizeLG, color: bad ? token.colorErrorText : undefined }}>
-          {headline(project, s)}
-        </Typography.Text>
-      </Flex>
-      <Typography.Text type="secondary" style={{ display: 'block' }}>
-        {facts.join(' ')}
-      </Typography.Text>
-    </div>
-  );
-}
-
 /** "today", "yesterday", "5 days ago" */
 const ago = (date: string) => {
   const days = dayjs().startOf('day').diff(dayjs(date).startOf('day'), 'day');
   return days <= 0 ? 'today' : days === 1 ? 'yesterday' : `${days} days ago`;
 };
 
+/** The completion date a project is held to, with its basis; the Schedule tab says it the same way. */
+const completionOf = (project: ProjectDetail, dash: ProjectDashboard | undefined) => completionBasis(project.endDate, dash?.extensionDays ?? 0);
+
+const LEAD_INK: Record<HealthSignal['level'], string> = {
+  error: tk.color.tone.danger.fg,
+  warning: tk.color.tone.pending.fg,
+  success: tk.color.text.strong,
+  default: tk.color.text.strong,
+};
+
+/** The overview's first line, from the same signals as the header's chips, then the dates it rests on. */
+function StatusLead({ project, dash, signals }: { project: ProjectDetail; dash: ProjectDashboard; signals: HealthSignal[] }) {
+  const s = scheduleStatus(project, dash);
+  const head = projectHeadline(project.status, signals);
+  const completion = completionOf(project, dash);
+  const when = completionWords(completion, formatDate);
+  const left = timeLeft(completion.date);
+  const facts = [
+    when ? `Completion date ${when}${left ? `, ${left}` : ''}.` : null,
+    s.plannedFinish && s.finishLateDays !== null ? `The plan ends ${formatDate(s.plannedFinish)}.` : null,
+    s.state === 'NO_PLAN' ? 'Give the activities dates, or import the schedule, on the Schedule tab.' : null,
+    dash.lastDprDate ? `Last daily report ${ago(dash.lastDprDate)}.` : 'No daily report yet.',
+  ].filter(Boolean);
+  // Colour marks the exception only: red for what is late, amber for what to watch; on track stays in ink.
+  const ink = LEAD_INK[head.level];
+  return (
+    <div style={{ marginBottom: tk.space[3] }} data-testid="project-status">
+      <Flex align="center" gap={tk.space[2]}>
+        {head.level === 'success' ? <CheckCircleOutlined aria-hidden style={{ color: tk.color.text.muted }} /> : <ExclamationCircleOutlined aria-hidden style={{ color: head.level === 'default' ? tk.color.text.muted : ink }} />}
+        <span style={{ ...tk.type.lead, fontWeight: tk.type.strong.fontWeight, color: ink }}>{head.text}</span>
+      </Flex>
+      <p style={{ ...tk.type.body, color: tk.color.text.muted, margin: 0 }}>{facts.join(' ')}</p>
+    </div>
+  );
+}
+
+/** What a data problem means for the figures, in the few words a figure carries under it. */
+function caveatOf(p: DataProblemDto, gap: BoqContractGap | null): string {
+  switch (p.key) {
+    case 'boqOffContract':
+      return gap ? `BOQ ${Math.abs(gap.gapPct)}% ${gap.gapPct < 0 ? 'below' : 'above'} the contract value` : 'BOQ off the contract value';
+    case 'boqItemsWithoutActivity':
+      return `${plural(p.count ?? 0, 'BOQ item')} with no activity, not counted`;
+    case 'activitiesUndated':
+      return `${plural(p.count ?? 0, 'activity', 'activities')} with no dates left out of the plan`;
+  }
+}
+
+/** A data problem as a record's check: what is wrong, what it does to the figures, and where to put it right. */
+function checkOf(p: DataProblemDto, gap: BoqContractGap | null, projectId: string): BillCheckDto {
+  const href = `/projects/${projectId}?tab=${p.tab}`;
+  const base = { key: p.key, ok: false, accepted: null };
+  switch (p.key) {
+    case 'boqOffContract':
+      return {
+        ...base,
+        title: gap
+          ? `The BOQ adds up to ${formatINRCompact(gap.boqTotal)}, ${Math.abs(gap.gapPct)}% ${gap.gapPct < 0 ? 'below' : 'above'} the ${formatINRCompact(gap.contractValue)} contract value`
+          : 'The BOQ does not add up to the contract value',
+        detail: 'Work done is counted at BOQ rates, so work done, billed and cost against it are off until the two agree.',
+        links: [{ label: 'Open the BOQ', href }],
+      };
+    case 'boqItemsWithoutActivity':
+      return {
+        ...base,
+        title: `${plural(p.count ?? 0, 'BOQ item has', 'BOQ items have')} no activity`,
+        detail: 'Work on them is never recorded, so progress and work done read low.',
+        links: [{ label: 'Link them on Activities', href }],
+      };
+    case 'activitiesUndated':
+      return {
+        ...base,
+        title: `${plural(p.count ?? 0, 'activity has', 'activities have')} no planned start or finish`,
+        detail: 'What is planned by today leaves them out, so progress against the plan is off.',
+        links: [{ label: 'Give them dates on the Schedule tab', href }],
+      };
+  }
+}
+
 /**
- * The project's Overview tab: where it stands in words first, then the few figures that matter, each against
- * its plan (done against planned, work against the BOQ, billed against the contract, cost against the work), then
- * progress by activity, details and team.
+ * The project's Overview tab: where it stands in words first, then the few figures that matter, each against what it
+ * should be (done against planned, work against the BOQ, billed and cost against the work), then what is wrong with the
+ * records behind them, which stands until it is fixed, then progress by activity, details and team.
  */
 export function ProjectOverview({ project }: { project: ProjectDetail }) {
-  const { token } = theme.useToken();
   const [, setScope] = useProjectScope();
   const { user } = useAuth();
   const seesCost = !!user && canViewCost(user.roleKey);
+  const signals = useProjectHealth(project);
   const { data: dash, isLoading, error, refetch } = useProjectDashboard(project.id);
-  // The same request as the header's health chips, so it costs nothing more here.
+  // The same requests as the header's health chips and the BOQ tab, so they cost nothing more here.
   const { data: cost, isLoading: costLoading } = useProjectCost(seesCost ? project.id : undefined, {});
-  const boqTotal = toNumber(dash?.boqTotalAmount);
-  const boqExec = toNumber(dash?.boqExecutedAmount);
-  const contract = toNumber(project.revisedContractValue ?? project.contractValue);
-  const small = { fontSize: token.fontSizeSM } as const;
-  const done = dash?.physicalProgressPct ?? project.physicalProgressPct;
-  const planned = dash?.plannedProgressPct ?? null;
-  const behind = !!dash && scheduleStatus(project, dash).behind;
-  const costPct = cost?.costPct ?? null;
+  const { data: setup } = useProjectSetup(project.id);
+  const problems = setup?.problems ?? [];
+  const gap = setup?.boqGap ?? null;
+  const caveat = (id: FigureId) => {
+    const words = problems.filter((p) => p.affects.includes(id)).map((p) => caveatOf(p, gap));
+    return words.length ? words.join('; ') : undefined;
+  };
+  const verdict = (key: HealthSignal['key']) => {
+    const level = signals.find((s) => s.key === key)?.level;
+    return level === 'error' ? ('act' as const) : level === 'warning' ? ('watch' as const) : undefined;
+  };
+
+  const figures = ((): FigureInput[] | undefined => {
+    if (!dash || (seesCost && costLoading)) return undefined;
+    const done = dash.physicalProgressPct;
+    const planned = dash.plannedProgressPct ?? null;
+    const boqTotal = toNumber(dash.boqTotalAmount);
+    const executed = toNumber(cost?.executedValue);
+    const contract = toNumber(project.revisedContractValue ?? project.contractValue);
+    return [
+      planned !== null ? figure('physicalProgress', done, { versus: { plan: planned }, caveat: caveat('physicalProgress') }) : figure('physicalProgress', done, { caveat: caveat('physicalProgress') }),
+      boqTotal > 0
+        ? figure('workDone', dash.boqExecutedAmount, { when: 'toDate', versus: { of: figure('boqValue', boqTotal) }, caveat: caveat('workDone') })
+        : figure('workDone', { none: 'No BOQ yet' }, { when: 'toDate' }),
+      cost
+        ? executed > 0
+          ? figure('billed', cost.billedValue, { when: 'toDate', versus: { of: figure('workDone', executed) }, attention: verdict('billing'), caveat: caveat('billed') })
+          : figure('billed', cost.billedValue, { when: 'toDate' })
+        : figure('contractValue', contract > 0 ? contract : { none: 'Not set yet' }),
+      cost &&
+        (executed > 0
+          ? figure('cost', cost.cost.total, { when: 'toDate', versus: { of: figure('workDone', executed) }, attention: verdict('cost'), caveat: caveat('cost') })
+          : figure('cost', cost.cost.total, { when: 'toDate' })),
+      dash.activitiesTotal > 0 && figure('delayedActivities', dash.activitiesDelayed, { versus: { of: dash.activitiesTotal } }),
+    ];
+  })();
 
   return (
-    <Row gutter={[token.margin, token.margin]} style={{ padding: `0 ${token.paddingSM}px ${token.paddingSM}px` }}>
+    <Row gutter={[16, 16]} style={{ padding: `0 ${tk.space[3]} ${tk.space[3]}` }}>
       <Col xs={24} xl={16}>
         {error && <QueryError error={error} onRetry={() => refetch()} />}
+        {dash && <StatusLead project={project} dash={dash} signals={signals} />}
+        {!error && <Figures bare label="Project figures" figures={figures} scope={{ projectId: project.id }} />}
+        {problems.length > 0 && (
+          <Section title="Checks" style={{ marginTop: tk.space[4] }}>
+            <div data-testid="project-checks">
+              <CheckRows checks={problems.map((p) => checkOf(p, gap, project.id))} />
+            </div>
+          </Section>
+        )}
         <ProjectSetup project={project} />
-        {dash && <StatusLead project={project} dash={dash} />}
-        <Row gutter={[token.marginSM, token.marginSM]}>
-          <Col xs={12} md={8}>
-            <FigureBlock loading={isLoading}>
-              <Statistic title="Progress" value={`${formatPct(done)} done`} />
-              <Progress percent={done} size="small" showInfo={false} aria-label={`Physical progress ${formatPct(done)}`} />
-              <Typography.Text type={behind ? 'danger' : 'secondary'} style={small}>
-                {planned !== null ? `${formatPct(planned)} planned by today` : 'No planned dates to compare with'}
-              </Typography.Text>
-            </FigureBlock>
-          </Col>
-          <Col xs={12} md={8}>
-            <FigureBlock loading={isLoading}>
-              <Statistic title="Work done" value={formatINRCompact(boqExec)} />
-              <Typography.Text type="secondary" style={small}>
-                {boqTotal > 0 ? `of ${formatINRCompact(boqTotal)} BOQ, ${formatPct((boqExec / boqTotal) * 100)}` : 'No BOQ yet'}
-              </Typography.Text>
-            </FigureBlock>
-          </Col>
-          <Col xs={12} md={8}>
-            {seesCost && contract > 0 ? (
-              <FigureBlock loading={costLoading}>
-                <Statistic title="Billed" value={formatINRCompact(cost?.billedValue)} />
-                <Typography.Text type="secondary" style={small}>
-                  of {formatINRCompact(contract)} contract, {formatPct((toNumber(cost?.billedValue) / contract) * 100)}
-                </Typography.Text>
-              </FigureBlock>
-            ) : (
-              <FigureBlock>
-                <Statistic title="Contract value" value={formatINRCompact(project.revisedContractValue ?? project.contractValue)} />
-                <Typography.Text type="secondary" style={small}>
-                  {contract > 0 ? formatINR(project.revisedContractValue ?? project.contractValue) : 'Not set'}
-                </Typography.Text>
-              </FigureBlock>
-            )}
-          </Col>
-          {seesCost && (
-            <Col xs={12} md={8}>
-              <FigureBlock loading={costLoading}>
-                <Statistic title="Cost to date" value={formatINRCompact(cost?.cost.total)} />
-                <Typography.Text type={costPct !== null && costPct > 100 ? 'danger' : 'secondary'} style={small}>
-                  {costPct !== null ? `${formatPct(costPct)} of the work done` : 'No work done to compare with'}
-                </Typography.Text>
-              </FigureBlock>
-            </Col>
-          )}
-          <Col xs={12} md={8}>
-            <FigureBlock loading={isLoading}>
-              <Statistic title="Activities" value={dash?.activitiesCompleted ?? 0} suffix={`/ ${dash?.activitiesTotal ?? 0} done`} />
-              <Typography.Text type={dash?.activitiesDelayed ? 'danger' : 'secondary'} style={small}>
-                {dash?.activitiesDelayed ? `${dash.activitiesDelayed} late` : 'None late'}
-              </Typography.Text>
-            </FigureBlock>
-          </Col>
-          <Col xs={12} md={8}>
-            <FigureBlock loading={isLoading}>
-              <Statistic title="Last DPR" value={dash?.lastDprDate ? formatDate(dash.lastDprDate) : 'None yet'} styles={{ content: { fontSize: token.fontSizeXL } }} />
-              {dash?.lastDprDate && (
-                <Typography.Text type="secondary" style={small}>
-                  {ago(dash.lastDprDate)}
-                </Typography.Text>
-              )}
-            </FigureBlock>
-          </Col>
-        </Row>
         {dash && (dash.pendingApprovals > 0 || dash.openMaterialRequests > 0) && (
-          <p style={{ ...small, color: token.colorTextSecondary, marginTop: token.marginSM, marginBottom: 0 }}>
+          <p style={{ ...tk.type.caption, color: tk.color.text.muted, marginTop: tk.space[3], marginBottom: 0 }}>
             Waiting on this project:{' '}
             {[
               dash.pendingApprovals > 0 ? (
@@ -188,7 +200,7 @@ export function ProjectOverview({ project }: { project: ProjectDetail }) {
           </p>
         )}
 
-        <Section title="Planned and done by activity" style={{ marginTop: token.margin }} loading={isLoading}>
+        <Section title="Planned and done by activity" style={{ marginTop: tk.space[4] }} loading={isLoading}>
           <Table
             size="small"
             rowKey="activityId"
@@ -210,7 +222,7 @@ export function ProjectOverview({ project }: { project: ProjectDetail }) {
         </Section>
       </Col>
       <Col xs={24} xl={8}>
-        <Section title="Project details" style={{ marginBottom: token.margin }}>
+        <Section title="Project details" style={{ marginBottom: tk.space[4] }}>
           <Descriptions
             size="small"
             column={1}
@@ -224,7 +236,7 @@ export function ProjectOverview({ project }: { project: ProjectDetail }) {
               { key: 'location', label: 'Location', children: project.location ?? '-' },
               ...(project.siteAddress ? [{ key: 'siteAddress', label: 'Delivery address', children: project.siteAddress }] : []),
               { key: 'start', label: 'Start date', children: formatDate(project.startDate) },
-              { key: 'end', label: 'Completion date', children: formatDate(project.endDate) },
+              { key: 'end', label: 'Completion date', children: completionWords(completionOf(project, dash), formatDate) ?? formatDate(project.endDate) },
               { key: 'pm', label: 'Project manager', children: project.projectManagerName ?? '-' },
               ...(project.description ? [{ key: 'desc', label: 'Description', children: project.description }] : []),
             ]}

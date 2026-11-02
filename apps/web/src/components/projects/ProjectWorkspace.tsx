@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { createContext, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Flex, Segmented, Tabs, Typography, theme } from 'antd';
+import { areaSummaryTab, isProjectArea } from '@erp/shared';
 import { AppstoreOutlined, CheckSquareOutlined, InboxOutlined, ScheduleOutlined, ToolOutlined, WalletOutlined } from '@/components/common/icons';
-import { readPref, writePref } from '@/lib/prefs';
 import { StickyTopContext, useStickyTop } from '@/lib/sticky';
 import { EmptyInline } from '@/components/common/EmptyArt';
 
@@ -26,7 +26,17 @@ export interface WorkspaceTab {
   children: React.ReactNode;
 }
 
-const lastInGroupKey = (group: WorkspaceGroup) => `nirmaan.project.group.${group}`;
+const isSummary = (t: Pick<WorkspaceTab, 'key' | 'group'>) => isProjectArea(t.group) && t.key === areaSummaryTab(t.group);
+
+/** The tabs the role may open, without a group's summary when nothing else in its group is left to sum up. */
+export function workspaceTabs(all: (WorkspaceTab | false)[]): WorkspaceTab[] {
+  const tabs = all.filter((t): t is WorkspaceTab => !!t);
+  return tabs.filter((t) => !isSummary(t) || tabs.some((o) => o.group === t.group && !isSummary(o)));
+}
+
+/** The other tabs of the open group, for its summary's links. */
+const GroupTabsContext = createContext<Pick<WorkspaceTab, 'key' | 'label'>[]>([]);
+export const useGroupTabs = () => useContext(GroupTabsContext);
 
 /**
  * The tabs of a project, grouped: a sticky bar with the groups and, below them, the tabs of the open group. When the
@@ -55,8 +65,8 @@ export function ProjectWorkspace({
   const current = tabs.find((t) => t.key === active) ?? tabs[0];
   const groups = WORKSPACE_GROUPS.filter((g) => tabs.some((t) => t.group === g.key));
   const inGroup = tabs.filter((t) => t.group === current.group);
-
-  useEffect(() => writePref(lastInGroupKey(current.group), current.key), [current.group, current.key]);
+  const groupLabel = groups.find((g) => g.key === current.group)?.label;
+  const others = inGroup.filter((t) => !isSummary(t)).map((t) => ({ key: t.key, label: t.label }));
 
   useLayoutEffect(() => {
     const el = barRef.current;
@@ -76,9 +86,9 @@ export function ProjectWorkspace({
     return () => io.disconnect();
   }, [headerRef, headerTop]);
 
+  // A group opens on its first tab: the summary where it has one.
   const openGroup = (group: string) => {
-    const remembered = readPref<string | null>(lastInGroupKey(group as WorkspaceGroup), null);
-    const target = tabs.find((t) => t.group === group && t.key === remembered) ?? tabs.find((t) => t.group === group);
+    const target = tabs.find((t) => t.group === group);
     if (target) onChange(target.key);
   };
 
@@ -108,12 +118,14 @@ export function ProjectWorkspace({
         </Flex>
         {inGroup.length > 1 && (
           <div style={{ padding: `${token.paddingXS}px 0`, overflowX: 'auto' }}>
-            <Segmented size="small" value={current.key} onChange={(v) => onChange(String(v))} options={inGroup.map((t) => ({ value: t.key, label: t.label }))} aria-label={`${groups.find((g) => g.key === current.group)?.label} tabs`} />
+            <Segmented size="small" value={current.key} onChange={(v) => onChange(String(v))} options={inGroup.map((t) => ({ value: t.key, label: t.label }))} aria-label={`${groupLabel} tabs`} />
           </div>
         )}
       </div>
-      <div role="tabpanel" aria-label={current.label} style={{ paddingTop: token.paddingSM }}>
-        <EmptyInline value>{current.children}</EmptyInline>
+      <div role="tabpanel" aria-label={isSummary(current) ? `${groupLabel} summary` : current.label} style={{ paddingTop: token.paddingSM }}>
+        <GroupTabsContext.Provider value={others}>
+          <EmptyInline value>{current.children}</EmptyInline>
+        </GroupTabsContext.Provider>
       </div>
     </StickyTopContext.Provider>
   );

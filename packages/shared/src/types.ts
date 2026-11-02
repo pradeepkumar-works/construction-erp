@@ -604,6 +604,8 @@ export interface ProjectDashboard {
   plannedFinish?: string | null;
   /** Contract completion date after the extensions of time granted */
   completionDate?: string | null;
+  /** Days of extension of time granted (`grantedExtensionDays`), which `completionDate` adds to the project's end date */
+  extensionDays?: number;
   boqTotalAmount: string;
   boqExecutedAmount: string;
   activitiesTotal: number;

@@ -132,3 +132,4 @@ export * from './status-tone';
 export * from './list-columns';
 export * from './waiting-rank';
 export * from './list-views';
+export * from './project-areas';

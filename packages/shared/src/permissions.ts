@@ -212,6 +212,8 @@ export const canKeepStock = (role: RoleKey) => STOCK_KEEPER_ROLES.includes(role)
 export const canSeeStores = (role: RoleKey) => role === 'STORE_MANAGER' || role === 'PROCUREMENT_MANAGER' || role === 'ACCOUNTS_MANAGER' || canApprove(role);
 /** Store master data (item master, minimum stock levels): the store manager and approvers. */
 export const canManageStore = (role: RoleKey) => role === 'STORE_MANAGER' || canApprove(role);
+/** Stock value and its ageing: the store, approvers and those who see cost. */
+export const canViewStockValue = (role: RoleKey) => canManageStore(role) || canViewCost(role);
 /** Adjust stock (opening balance, count correction), delete stock entries and edit the item master: approvers only. */
 export const canAdjustStock = (role: RoleKey) => canApprove(role);
 

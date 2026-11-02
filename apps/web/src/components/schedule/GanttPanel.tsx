@@ -1,30 +1,97 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Alert, App, Button, Checkbox, Dropdown, Form, Input, Modal, Segmented, Space, Statistic, Table } from 'antd';
+import { Alert, App, Button, Checkbox, Dropdown, Form, Input, Modal, Segmented, Space, Table } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import { CheckOutlined, DeleteOutlined, DownloadOutlined, EditOutlined, FlagOutlined, LockOutlined, PlusOutlined, UploadOutlined } from '@/components/common/icons';
-import type { GanttActivityDto, MilestoneDto, MilestoneState, ScheduleFileFormat } from '@erp/shared';
-import { MILESTONE_STATE_LABELS, SCHEDULE_FILE_FORMAT_LABELS, SCHEDULE_FILE_FORMATS, canEditProjects, canFreezeBaseline, daysBetween } from '@erp/shared';
+import type { GanttActivityDto, GanttDto, MilestoneDto, MilestoneState, ScheduleFileFormat } from '@erp/shared';
+import { MILESTONE_STATE_LABELS, SCHEDULE_FILE_FORMAT_LABELS, SCHEDULE_FILE_FORMATS, canEditProjects, canFreezeBaseline, completionBasis, completionWords, daysBetween } from '@erp/shared';
+import { tk } from '@/ds';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useGantt, useScheduleAction } from '@/lib/queries';
-import { formatDate, formatDateTime } from '@/lib/format';
+import { formatDate, formatDateTime, plural } from '@/lib/format';
 import { Loading, QueryError } from '@/components/common/QueryState';
-import { themeColor, themeFontSize } from '@/lib/theme';
+import { themeFontSize } from '@/lib/theme';
 import { GanttChart, GanttLegend, type GanttScale } from './GanttChart';
 import { MilestoneFormModal } from './MilestoneFormModal';
 import { ImportScheduleModal, LinksDrawer, exportSchedule } from './ScheduleLinks';
 import { AskButton } from '@/components/ai/AskButton';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
-const big = { content: { fontSize: themeFontSize('fontSizeXL') } };
+/** A piece of the summary's line, in the tone of what it means: red only for late, amber for what has moved. */
+interface Part {
+  text: string;
+  tone?: 'danger' | 'pending';
+}
 
+const PART_INK = { danger: tk.color.tone.danger.fg, pending: tk.color.tone.pending.fg } as const;
+
+function Parts({ parts }: { parts: Part[] }) {
+  return (
+    <>
+      {parts.map((p, i) => (
+        <React.Fragment key={p.text}>
+          {i ? ' · ' : ''}
+          <span style={p.tone ? { color: PART_INK[p.tone] } : undefined}>{p.text}</span>
+        </React.Fragment>
+      ))}
+    </>
+  );
+}
+
+/** A date moved against its baseline: later is worth a look (amber), not late; red is kept for what is past its date. */
 const moved = (days: number | null) =>
-  days === null ? <span className="text-muted">-</span> : days === 0 ? <span className="text-muted">none</span> : <span className={days > 0 ? 'text-danger' : undefined}>{days > 0 ? `${days} days later` : `${-days} days earlier`}</span>;
+  days === null ? (
+    <span className="text-muted">-</span>
+  ) : days === 0 ? (
+    <span className="text-muted">none</span>
+  ) : (
+    <span style={days > 0 ? { color: PART_INK.pending } : undefined}>{`${plural(Math.abs(days), 'day')} ${days > 0 ? 'later' : 'earlier'}`}</span>
+  );
+
+/**
+ * The finish against the completion date (or, within it, the baseline), then what slipped and what was missed, so a
+ * finish on time never stands alone: "Finish: 28 Aug 2027, on time · 5 of 8 activities slipped · 1 milestone missed".
+ */
+function finishLine(data: GanttDto): Part[] {
+  const s = data.summary;
+  const parts: Part[] = [];
+  if (!s.plannedFinish) parts.push({ text: 'No planned finish yet' });
+  else {
+    const pastCompletion = data.completionDate && s.plannedFinish > data.completionDate ? daysBetween(data.completionDate, s.plannedFinish) : null;
+    const verdict: Part | null =
+      pastCompletion !== null
+        ? { text: `${plural(pastCompletion, 'day')} after the completion date`, tone: 'danger' }
+        : data.baselineAt && s.finishSlipDays
+          ? s.finishSlipDays > 0
+            ? { text: `${plural(s.finishSlipDays, 'day')} later than the baseline`, tone: 'pending' }
+            : { text: `${plural(-s.finishSlipDays, 'day')} earlier than the baseline` }
+          : data.completionDate || data.baselineAt
+            ? { text: 'on time' }
+            : null;
+    parts.push({ text: `Finish: ${formatDate(s.plannedFinish)}${verdict ? `, ${verdict.text}` : ''}`, tone: verdict?.tone });
+  }
+  if (data.baselineAt) parts.push({ text: `${s.slipped} of ${plural(s.scheduled, 'activity', 'activities')} slipped`, tone: s.slipped ? 'pending' : undefined });
+  if (s.milestonesMissed) parts.push({ text: `${plural(s.milestonesMissed, 'milestone')} missed`, tone: 'danger' });
+  return parts;
+}
+
+/** The completion date with its basis, as the Overview says it, then where the activities and milestones stand. */
+function factsLine(data: GanttDto): Part[] {
+  const s = data.summary;
+  const completion = completionWords(completionBasis(data.projectEnd, data.extensionDays), formatDate);
+  return [
+    completion ? { text: `Completion date ${completion}` } : null,
+    s.activities ? { text: `${s.behind} behind plan`, tone: s.behind ? ('pending' as const) : undefined } : null,
+    s.activities ? { text: `${s.late} past their planned finish`, tone: s.late ? ('danger' as const) : undefined } : null,
+    s.links ? { text: `${s.critical} of ${s.scheduled} on the critical path, ${plural(s.links, 'link')}` } : null,
+    s.milestones ? { text: `${s.milestonesAchieved} of ${plural(s.milestones, 'milestone')} achieved` } : null,
+  ].filter((p): p is Part => !!p);
+}
 
 /**
  * Schedule tab of a project: the Gantt of milestones and activities against the frozen baseline, the
@@ -111,24 +178,19 @@ export function GanttPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="gantt-panel">
-      <div className="schedule-summary" style={{ display: 'flex', gap: 28, flexWrap: 'wrap', marginBottom: 12 }}>
-        <Statistic title="Planned finish" value={formatDate(s.plannedFinish)} styles={big} />
-        {data.baselineAt ? (
-          <Statistic
-            title="Against the baseline"
-            value={s.finishSlipDays === null ? '-' : s.finishSlipDays === 0 ? 'On time' : s.finishSlipDays > 0 ? `${s.finishSlipDays} days late` : `${-s.finishSlipDays} days early`}
-            styles={{ content: { fontSize: themeFontSize('fontSizeXL'), color: (s.finishSlipDays ?? 0) > 0 ? themeColor('colorErrorText') : undefined } }}
-          />
-        ) : null}
-        <div>
-          <Statistic title="Behind plan / past end" value={`${s.behind} / ${s.late}`} styles={big} />
-          {s.behind + s.late > 0 ? <AskButton size="small" type="link" style={{ paddingInline: 0 }} label="Explain" aria-label="Explain why activities are behind" question="Why are activities behind plan on this project?" /> : null}
-        </div>
-        {data.baselineAt ? <Statistic title="Activities slipped" value={s.slipped} suffix={<span style={{ fontSize: themeFontSize('fontSizeSM') }}>of {s.scheduled}</span>} styles={big} /> : null}
-        {s.links ? (
-          <Statistic title="Critical activities" value={s.critical} suffix={<span style={{ fontSize: themeFontSize('fontSizeSM') }}>of {s.scheduled}, {s.links} links</span>} styles={big} />
-        ) : null}
-        <Statistic title="Milestones achieved" value={s.milestonesAchieved} suffix={<span style={{ fontSize: themeFontSize('fontSizeSM') }}>of {s.milestones}{s.milestonesMissed ? `, ${s.milestonesMissed} missed` : ''}</span>} styles={big} />
+      <div className="schedule-summary" data-testid="schedule-summary" style={{ marginBottom: tk.space[3] }}>
+        <p style={{ ...tk.type.lead, fontWeight: tk.type.strong.fontWeight, margin: 0 }}>
+          <Parts parts={finishLine(data)} />
+        </p>
+        <p style={{ ...tk.type.body, color: tk.color.text.muted, margin: 0 }}>
+          <Parts parts={factsLine(data)} />
+          {s.behind + s.late > 0 ? (
+            <>
+              {' '}
+              <AskButton size="small" type="link" style={{ paddingInline: 0 }} label="Explain" aria-label="Explain why activities are behind" question="Why are activities behind plan on this project?" />
+            </>
+          ) : null}
+        </p>
       </div>
 
       {data.completionDate && s.plannedFinish && s.plannedFinish > data.completionDate ? (
