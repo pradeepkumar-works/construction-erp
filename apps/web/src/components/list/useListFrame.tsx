@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import type { SavedViewList, SortOrder, SubmissionStatus, SubmissionType } from '@erp/shared';
+import type { ListViewKind, SavedViewList, SortOrder, SubmissionStatus, SubmissionType } from '@erp/shared';
 import { SUBMISSION_STATUS_LABELS, mayApproveTypeAtAll } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useListPage } from '@/lib/listPage';
@@ -11,6 +11,7 @@ import { useColumnChoice, type ListColumn } from './DataTable';
 import { FilterChips, type ChipLabels } from './FilterChips';
 import { ListViews, type BuiltInView } from './ListViews';
 import { standardViews } from './views';
+import { ViewToggle } from './ListViewsOfData';
 
 /** Where the list lives: a page of its own keeps saved views under a `SavedViewList`; a list in a tab of a page (`url: false`) only names where its columns are kept. */
 type ListFrameTarget = { list: SavedViewList; url?: true } | { list: string; url: false };
@@ -45,13 +46,20 @@ export function useListFrame<S extends string, T>(opts: ListFrameTarget & {
   /** Chip wording for this list's own filters. */
   chipLabels?: ChipLabels;
   statusLabels?: Record<string, string>;
+  /**
+   * The views this list's data fits (ARCHITECTURE "Views that fit the data"), the first one the default: a pipeline offers
+   * a board, a record filed each day by each site a grid of days. Left out, the list is a table alone.
+   */
+  viewKinds?: readonly ListViewKind[];
 }) {
   const { user } = useAuth();
   const [projectFilter, setProjectFilter] = useProjectScope(opts.initialProject);
   const scoped = opts.projectScoped !== false;
   const projectId = opts.fixedProject ?? (scoped ? projectFilter : undefined);
   const inUrl = !opts.fixedProject && opts.url !== false;
-  const page = useListPage<S>({ keys: opts.keys, sortBy: opts.sortBy, sortOrder: opts.sortOrder, sortFields: opts.sortFields, url: inUrl, scope: projectId, initial: opts.initialFilters });
+  const viewKinds = opts.viewKinds ?? [];
+  const keys = viewKinds.length > 1 ? [...opts.keys, 'view'] : opts.keys;
+  const page = useListPage<S>({ keys, sortBy: opts.sortBy, sortOrder: opts.sortOrder, sortFields: opts.sortFields, url: inUrl, scope: projectId, initial: opts.initialFilters });
   const columns = opts.columns(page.sortOrderFor);
   const choice = useColumnChoice(opts.list, columns);
   const statusLabels: Record<string, string> = opts.statusLabels ?? SUBMISSION_STATUS_LABELS;
@@ -88,16 +96,20 @@ export function useListFrame<S extends string, T>(opts: ListFrameTarget & {
   );
 
   // The phone's "Filters (N)": each filter on counts once (a date range is one), and so does the project unless it is fixed.
-  const filterKeys = Object.entries(page.filters).filter(([k, v]) => !!v && k !== 'q' && k !== 'sortBy' && k !== 'sortOrder' && k !== 'to').map(([k]) => k);
+  const filterKeys = Object.entries(page.filters).filter(([k, v]) => !!v && k !== 'q' && k !== 'sortBy' && k !== 'sortOrder' && k !== 'to' && k !== 'view').map(([k]) => k);
   const ownCount = filterKeys.length + (page.filters.to && !page.filters.from ? 1 : 0);
   const projectCounts = !opts.fixedProject && scoped && !!projectFilter;
+  // Clearing the filters keeps the view: Board stays Board.
+  const clearFilters = () => (page.filters.view ? page.setFilters({ view: page.filters.view }) : page.clear());
   const filterState = {
     count: ownCount + (projectCounts ? 1 : 0),
     clear: () => {
-      page.clear();
+      clearFilters();
       if (projectCounts) setProjectFilter(undefined);
     },
   };
+  const view: ListViewKind = viewKinds.includes(page.filters.view as ListViewKind) ? (page.filters.view as ListViewKind) : (viewKinds[0] ?? 'table');
+  const setView = (v: ListViewKind) => page.setFilter('view', v === viewKinds[0] ? undefined : v);
 
   return {
     page,
@@ -111,7 +123,11 @@ export function useListFrame<S extends string, T>(opts: ListFrameTarget & {
     views,
     chips,
     /** For the table's empty state: filters narrowed it to nothing, so it offers Clear filters rather than the New button. */
-    empty: { filtered: Object.entries(page.filters).some(([k, v]) => !!v && k !== 'sortBy' && k !== 'sortOrder'), clear: () => page.clear() },
+    empty: { filtered: Object.entries(page.filters).some(([k, v]) => !!v && k !== 'sortBy' && k !== 'sortOrder' && k !== 'view'), clear: clearFilters },
+    /** The view on (the first of `viewKinds` unless the address says another), and the toggle for the toolbar's `extra`. */
+    view,
+    setView,
+    viewToggle: viewKinds.length > 1 ? <ViewToggle kinds={viewKinds} value={view} onChange={setView} /> : null,
     status: page.filters.status as SubmissionStatus | undefined,
     setStatus: (v?: SubmissionStatus) => page.setFilter('status', v),
     dateRange: {
