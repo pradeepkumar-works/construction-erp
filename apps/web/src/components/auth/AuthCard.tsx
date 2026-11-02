@@ -4,8 +4,8 @@ import React from 'react';
 import Link from 'next/link';
 import { BRAND } from '@/lib/brand';
 import { BrandMark, Wordmark } from '@/components/shell/BrandMark';
-import { themeColor } from '@/lib/theme';
 import { textOf, usePageTitle } from '@/lib/page-title';
+import { tk } from '@/ds';
 
 const POINTS = ['Progress, DPRs and photos from site, even offline', 'RA bills, purchases and payments with GST', 'Approvals on the phone, exports to Tally'];
 
@@ -21,7 +21,7 @@ export function AuthCard({ title, subtitle, children, width = 400 }: { title?: R
       <aside className="auth-aside" aria-hidden>
         <Link href="/welcome" className="auth-brand" tabIndex={-1}>
           <BrandMark size={34} />
-          <Wordmark color={themeColor('colorTextLightSolid')} size={20} />
+          <Wordmark color={tk.color.chrome.ink} size={20} />
         </Link>
         <div className="auth-pitch">
           <h2 className="auth-headline">From site to Tally, in one place.</h2>
@@ -38,7 +38,7 @@ export function AuthCard({ title, subtitle, children, width = 400 }: { title?: R
         <div className="auth-form" style={{ maxWidth: width }}>
           <Link href="/welcome" className="auth-brand auth-brand-compact" aria-label={BRAND.name}>
             <BrandMark size={32} />
-            <Wordmark color={BRAND.colors.ink} size={19} />
+            <Wordmark color={tk.color.text.strong} size={19} />
           </Link>
           {title ? <h1 className="auth-title">{title}</h1> : null}
           <p className="auth-subtitle">{subtitle}</p>

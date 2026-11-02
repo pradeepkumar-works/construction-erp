@@ -36,7 +36,7 @@ export const ROLES = {
     faint: p('textTertiary', 'nightTextTertiary'),
     placeholder: p('textPlaceholder', 'nightTextPlaceholder'),
     link: p('link', 'nightLink'),
-    linkHover: p('pending', 'accentLight'),
+    linkHover: p('accentDeep', 'accentLight'),
     onAccent: p('onAccent'),
   },
   line: {
@@ -61,16 +61,22 @@ export const ROLES = {
     violet: { fg: p('violet', 'nightViolet'), bg: p('violetBg', 'nightToneVioletBg'), notice: p('violetBg', 'nightToneVioletBg'), solid: p('violet', 'nightViolet'), line: p('violetBg', 'nightToneVioletBg') },
   } satisfies Record<Tone, ToneRoles>,
   chrome: {
-    bg: p('ink'),
+    bg: p('chromeBg', 'nightChromeBg'),
     /** What the chrome's text, lines and fills are drawn in: CSS mixes it at a share over `bg`, so one value turns a dark rail light. */
-    ink: p('onAccent'),
-    deep: p('inkDeep'),
-    hover: p('primaryDeep'),
-    caption: p('inkCaption'),
-    accent: p('accentLight'),
+    ink: p('chromeInk', 'nightChromeInk'),
+    deep: p('chromeDeep', 'nightChromeDeep'),
+    hover: p('chromeDeep', 'nightChromeDeep'),
+    caption: p('chromeCaption', 'nightChromeCaption'),
+    accent: p('chromeAccent', 'nightLink'),
+  },
+  /** The primary button: near-black (near-white on the night), the one strong fill on a page. */
+  action: {
+    solid: p('action', 'nightAction'),
+    hover: p('actionHover', 'nightActionHover'),
+    text: p('onAction', 'nightOnAction'),
   },
   state: {
-    rowHover: p('accentSoft', 'nightRowHover'),
+    rowHover: p('rowHover', 'nightRowHover'),
     rowChosen: p('accentChosen', 'nightRowChosen'),
     headerHover: p('hairline', 'nightBorderSoft'),
     track: p('border', 'nightBorder'),

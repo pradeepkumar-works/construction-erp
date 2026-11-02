@@ -1,4 +1,4 @@
-/* The navy sidebar: brand, quick-jump, sections that fold, and a 64px icon rail. Colours are the theme's CSS variables (lib/theme.ts). */
+/* The sidebar (the Quiet look: a light grey rail beside the page, near-black on the night): brand, quick-jump, sections that fold, and a 64px icon rail. Colours are the chrome roles (ds/source/roles.ts). */
 
 .aside {
   position: sticky;
@@ -7,6 +7,7 @@
   width: 252px;
   height: 100vh;
   background: var(--c-chrome-bg);
+  border-inline-end: 1px solid var(--c-line-hairline);
   transition: width var(--ant-motion-duration-mid) var(--ant-motion-ease-in-out);
   z-index: 11;
 }
@@ -130,7 +131,7 @@
   text-overflow: ellipsis;
 }
 
-/* The page you are on: one brightness step on the navy (a lighter pill, white label and icon), no colour on the chrome. */
+/* The page you are on: one step of the chrome's ink on the rail (a pill, its label and icon in full ink). */
 .active,
 .active:hover {
   background: color-mix(in srgb, var(--c-chrome-ink) 14%, transparent);

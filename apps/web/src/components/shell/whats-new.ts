@@ -9,6 +9,15 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-quiet-look',
+    date: '2026-11-02',
+    title: 'A quieter look',
+    points: [
+      'The sidebar is now a light grey rail beside the page (near-black in the dark theme), and the main button on each page is near-black, so blue is kept for links, focus and what you have chosen.',
+      'Inter is now the one typeface, with calmer 24 px page titles and softer greys in both themes.',
+    ],
+  },
+  {
     id: '2026-11-views',
     date: '2026-11-02',
     title: 'Boards and day grids',

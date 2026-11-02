@@ -241,6 +241,13 @@ export function projectTabKeys(): string[] {
 /** The product name tab titles end with (`packages/shared/src/brand.ts`). */
 export const PRODUCT_NAME = /PRODUCT_NAME\s*=\s*'([^']+)'/.exec(fs.readFileSync(path.resolve(__dirname, '../../packages/shared/src/brand.ts'), 'utf8'))![1];
 
+/** A colour from the design palette (`apps/web/src/ds/source/palette.ts`), so a check follows the palette when it moves. */
+export function paletteColour(name: string): string {
+  const m = new RegExp(`\\b${name}:\\s*'(#[0-9A-Fa-f]{3,8})'`).exec(webSource('ds/source/palette.ts'));
+  if (!m) throw new Error(`The palette has no ${name}`);
+  return m[1];
+}
+
 /** `WEB_VITAL_BUDGETS` from `apps/web/src/lib/vitals.ts`: LCP and INP in ms, CLS unitless. */
 export function webVitalBudgets(): { LCP: number; CLS: number; INP: number } {
   const body = /WEB_VITAL_BUDGETS\s*=\s*\{([^}]*)\}/.exec(webSource('lib/vitals.ts'))![1];

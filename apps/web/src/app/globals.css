@@ -6,6 +6,17 @@ body {
   background: var(--ant-color-bg-layout);
 }
 
+/* One face (Inter, loaded in app/layout.tsx as --font-body) for titles and text: the display face is the same. */
+:root {
+  --font-display: var(--font-body);
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'cv11';
+}
+
 * {
   box-sizing: border-box;
 }
@@ -21,7 +32,7 @@ a {
   margin: 0 auto;
 }
 
-/* Sign-in, sign-up and password pages: a navy brand panel beside the form on white. */
+/* Sign-in, sign-up and password pages: the shell's quiet panel beside the form on white. */
 .auth {
   min-height: 100vh;
   display: grid;
@@ -56,9 +67,8 @@ a {
 
 .auth-headline {
   margin: 0 0 28px;
-  font-family: var(--font-display), 'Arial Narrow', Arial, sans-serif;
-  font-stretch: 85%;
-  font-weight: 800;
+  font-family: var(--font-display), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  font-weight: 600;
   font-size: clamp(36px, 3.6vw, 52px);
   line-height: 1.04;
   letter-spacing: -0.01em;
@@ -118,13 +128,12 @@ a {
 
 .auth-title {
   margin: 0 0 8px;
-  font-family: var(--font-display), 'Arial Narrow', Arial, sans-serif;
-  font-stretch: 88%;
+  font-family: var(--font-display), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
   font-weight: 700;
   font-size: var(--ant-font-size-heading-1);
   line-height: 1.1;
   letter-spacing: -0.01em;
-  color: var(--brand-ink);
+  color: var(--c-text-strong);
 }
 
 .auth-subtitle {
@@ -136,7 +145,7 @@ a {
 
 .auth-form .ant-form-item-label > label {
   font-weight: 500;
-  color: var(--brand-ink);
+  color: var(--c-text-strong);
 }
 
 .auth-form .ant-input-affix-wrapper-lg,
@@ -254,7 +263,7 @@ a {
 }
 
 .auth-foot a:hover {
-  color: var(--brand-ink);
+  color: var(--c-text-strong);
 }
 
 /* A loading icon (`LoadingOutlined`, or any icon from components/common/icons with `spin`) turns on its own. */
@@ -293,31 +302,30 @@ a {
 }
 
 /*
- * Headings and the wordmark use the condensed display face (antd has no heading font token): ExtraBold for the page and
- * section titles, Bold for the smaller ones, tracked slightly tight (brand guide, type).
+ * Headings and the wordmark (the Quiet look): Inter, Semibold, tracked a little tight; one face for titles and text, so a
+ * page reads by size and weight rather than by a second typeface.
  */
 h1.ant-typography,
 h2.ant-typography,
 h3.ant-typography,
 h4.ant-typography,
 .wordmark {
-  font-family: var(--font-display), 'Arial Narrow', Arial, sans-serif;
-  font-stretch: 88%;
+  font-family: var(--font-display), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
 }
 
 :root :is(h1, h2).ant-typography {
-  font-weight: 800;
-  letter-spacing: -0.01em;
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
 :root :is(h3, h4).ant-typography {
-  font-weight: 700;
+  font-weight: 600;
 }
 
-/* A page's title (PageHeader): the top of the type scale on a wider screen, a step down on a phone. */
+/* A page's title (PageHeader): 24 px on a wider screen, a step down on a phone. */
 :root h1.ant-typography.page-title {
-  font-size: var(--ant-font-size-heading-1);
-  line-height: 1.1;
+  font-size: var(--ant-font-size-heading-2);
+  line-height: 1.25;
 }
 
 /* After moving to another page, focus is put on its title for screen readers (AppShell); the title is not a control, so it
@@ -329,7 +337,7 @@ h4.ant-typography,
 
 @media (max-width: 768px) {
   :root h1.ant-typography.page-title {
-    font-size: var(--ant-font-size-heading-2);
+    font-size: var(--ant-font-size-heading-3);
   }
 }
 
@@ -347,7 +355,7 @@ h4.ant-typography,
 
 /* Field labels are semibold, so a long form scans by its labels (brand guide: Semibold for emphasis). Sign-in sets its own. */
 .ant-form-item-label > label {
-  font-weight: 600;
+  font-weight: 500;
 }
 
 /* Today in a date picker is underlined with the datum line rather than boxed (white on the chosen day). */
@@ -364,9 +372,8 @@ h4.ant-typography,
 }
 
 .wordmark {
-  font-stretch: 80%;
-  font-weight: 800;
-  letter-spacing: 0.06em;
+  font-weight: 700;
+  letter-spacing: 0.04em;
   line-height: 1;
 }
 
