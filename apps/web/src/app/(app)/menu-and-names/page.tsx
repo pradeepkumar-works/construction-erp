@@ -1,16 +1,33 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
-import { Alert, App, Button, Card, Checkbox, Flex, Input, Table, Typography } from 'antd';
-import { tk } from '@/ds';
-import type { NavLayout, NavLook, NavModuleSet, NavSettingsDto } from '@erp/shared';
-import { DEFAULT_NAV_SETTINGS, NAV_LAYOUT_LABELS, NAV_LOOK_LABELS, NAV_MODULE_SET_LABELS, NAV_NAME_MAX, canManageModules, navModuleDefs, type NavModuleDef } from '@erp/shared';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Alert, App, Button, Card, Checkbox, ColorPicker, Flex, Input, Segmented, Table, Typography } from 'antd';
+import { CHROME_START_FILL, chromeStyle, tk } from '@/ds';
+import type { NavFill, NavGradientAngle, NavLayout, NavLook, NavModuleSet, NavPalette, NavSettingsDto, NavSidebarLook } from '@erp/shared';
+import {
+  DEFAULT_NAV_SETTINGS,
+  GRADIENT_PALETTES,
+  NAV_LAYOUT_LABELS,
+  NAV_LOOK_LABELS,
+  NAV_MODULE_SET_LABELS,
+  NAV_NAME_MAX,
+  NAV_PALETTES,
+  NAV_PALETTE_LABELS,
+  NAV_SIDEBAR_LOOK_LABELS,
+  canManageModules,
+  navFillProblem,
+  navModuleDefs,
+  readableFill,
+  type NavModuleDef,
+} from '@erp/shared';
+import { useAppearance } from '@/lib/appearance';
 import { useAuth } from '@/lib/auth';
 import { useNotify } from '@/lib/notify';
 import { useNavSettings, useSaveNavSettings } from '@/lib/queries';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
-import { ChoiceCards, MenuPicture, type Choice } from '@/components/menu/ChoiceCards';
+import { ChoiceCards, ColourPicture, MenuPicture, type Choice } from '@/components/menu/ChoiceCards';
+import { setChromePreview } from '@/components/shell/ShellColours';
 import { NoAccess } from '@/components/common/NoAccess';
 import { TreeIcon } from '@/components/shell/nav-icons';
 
@@ -19,8 +36,14 @@ const LAYOUTS: Choice<NavLayout>[] = [
   { value: 'SIDEBAR', label: NAV_LAYOUT_LABELS.SIDEBAR, description: 'Every module and page in a menu down the left, folded to icons when you need the room.', picture: <MenuPicture kind="SIDEBAR" /> },
 ];
 
+const SIDEBAR_LOOKS: Choice<NavSidebarLook>[] = [
+  { value: 'RAIL', label: NAV_SIDEBAR_LOOK_LABELS.RAIL, description: 'The menu down the left in its colour, a white header over the page.', picture: <MenuPicture kind="SIDEBAR" /> },
+  { value: 'HEADER', label: NAV_SIDEBAR_LOOK_LABELS.HEADER, description: 'The menu and the header in one colour, framing the page on two sides.', picture: <MenuPicture kind="HEADER" /> },
+  { value: 'FLOATING', label: NAV_SIDEBAR_LOOK_LABELS.FLOATING, description: 'The menu as a rounded panel standing on the page, with room round it.', picture: <MenuPicture kind="FLOATING" /> },
+];
+
 const LOOKS: Choice<NavLook>[] = [
-  { value: 'NAVY', label: NAV_LOOK_LABELS.NAVY, description: 'A navy bar with the module’s menu in a white bar under it. The most familiar.', picture: <MenuPicture kind="NAVY" /> },
+  { value: 'NAVY', label: NAV_LOOK_LABELS.NAVY, description: 'A bar in the menu’s colour with the module’s menu in a white bar under it. The most familiar.', picture: <MenuPicture kind="NAVY" /> },
   { value: 'FRAME', label: NAV_LOOK_LABELS.FRAME, description: 'A light frame round the page; Home lists each module with its sub-modules.', picture: <MenuPicture kind="FRAME" /> },
   { value: 'BAR', label: NAV_LOOK_LABELS.BAR, description: 'One white bar holding the module and its menu; Home groups the modules in three.', picture: <MenuPicture kind="BAR" /> },
 ];
@@ -30,11 +53,47 @@ const SETS: Choice<NavModuleSet>[] = [
   { value: 'AREAS', label: NAV_MODULE_SET_LABELS.AREAS, description: 'The modules as Nirmaan has them: site, materials, purchases, subcontracts, client billing and so on.' },
 ];
 
+/** What each palette is, in a line. The colours are design tokens (`ds/source/chrome.ts`). */
+const PALETTE_WORDS: Record<NavPalette, string> = {
+  QUIET: 'Light grey with near-black words. Nirmaan’s own.',
+  NAVY: 'Blueprint navy with white words.',
+  GRAPHITE: 'Near-black, calm beside any page.',
+  FOREST: 'A deep green, for the outdoors trades.',
+  PLUM: 'A dark violet with white words.',
+  SAND: 'Warm paper with near-black words.',
+  SKY: 'A pale blue with near-black words.',
+  DUSK: 'Navy into violet, down the menu.',
+  OCEAN: 'Deep blue into teal.',
+  EMBER: 'Dark rust into brick.',
+  MIDNIGHT: 'Graphite into a deep navy.',
+  DAWN: 'Light grey into a pale blue.',
+  CUSTOM: 'Your company’s own colour.',
+};
+
+type ColourKind = NavFill['kind'];
+const kindOf = (v: Pick<NavSettingsDto, 'palette' | 'fill'>): ColourKind =>
+  v.palette === 'CUSTOM' ? (v.fill?.kind ?? 'SOLID') : GRADIENT_PALETTES.includes(v.palette) ? 'GRADIENT' : 'SOLID';
+
+const ANGLES: { value: NavGradientAngle; label: string }[] = [
+  { value: 180, label: 'Down' },
+  { value: 90, label: 'Across' },
+  { value: 135, label: 'Corner to corner' },
+];
+
+
+const sameFill = (a: NavFill | null, b: NavFill | null) => JSON.stringify(a) === JSON.stringify(b);
 const sameNames = (a: Record<string, string>, b: Record<string, string>) => Object.keys(a).length === Object.keys(b).length && Object.keys(a).every((k) => a[k] === b[k]);
 const same = (a: NavSettingsDto, b: NavSettingsDto) =>
-  a.layout === b.layout && a.look === b.look && a.moduleSet === b.moduleSet && a.personalLook === b.personalLook && sameNames(a.names, b.names);
+  a.layout === b.layout &&
+  a.look === b.look &&
+  a.sidebarLook === b.sidebarLook &&
+  a.palette === b.palette &&
+  sameFill(a.fill, b.fill) &&
+  a.moduleSet === b.moduleSet &&
+  a.personalLook === b.personalLook &&
+  sameNames(a.names, b.names);
 
-/** Drops empty names and names the same as the module's own, as the server keeps them. */
+/** Drops empty names and names the same as the module's own, and a fill with no palette of its own, as the server keeps them. */
 function tidy(v: NavSettingsDto): NavSettingsDto {
   const own = new Map([...navModuleDefs('AREAS'), ...navModuleDefs('DEPARTMENTS')].map((m) => [m.key, m.label]));
   const names = Object.fromEntries(
@@ -42,7 +101,103 @@ function tidy(v: NavSettingsDto): NavSettingsDto {
       .map(([k, n]) => [k, n.replace(/\s+/g, ' ').trim()] as const)
       .filter(([k, n]) => n && n !== own.get(k)),
   );
-  return { ...v, names };
+  return { ...v, names, fill: v.palette === 'CUSTOM' ? v.fill : null };
+}
+
+const hexOf = (c: { toHexString: () => string }) => c.toHexString().slice(0, 7).toUpperCase();
+
+/** A colour box with its name over it (antd's picker is a button, so the name is its label). */
+function ColourField({ label, value, onChange }: { label: string; value: string; onChange: (hex: string) => void }) {
+  return (
+    <Flex vertical gap={tk.space[1]}>
+      <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
+        {label}
+      </Typography.Text>
+      <ColorPicker value={value} disabledAlpha format="hex" showText aria-label={label} onChangeComplete={(c) => onChange(hexOf(c))} />
+    </Flex>
+  );
+}
+
+/**
+ * The menu's colours: the curated plain colours or gradients, and the company's own. Each card is drawn in its own colours
+ * for the theme on screen, and the menu itself shows the choice while it is open here (`setChromePreview`).
+ */
+function ColoursCard({ v, set }: { v: NavSettingsDto; set: (patch: Partial<NavSettingsDto>) => void }) {
+  const { dark } = useAppearance();
+  const mode = dark ? 'dark' : 'light';
+  const [kind, setKind] = useState<ColourKind>(() => kindOf(v));
+  // What the company's own colour was in each kind, so moving between plain and gradient keeps both.
+  const [own, setOwn] = useState<Record<ColourKind, NavFill>>(() => ({ ...CHROME_START_FILL, ...(v.fill ? { [v.fill.kind]: v.fill } : {}) }));
+  const shownKind = kind;
+
+  const choices: Choice<NavPalette>[] = NAV_PALETTES.filter((p) => (p === 'CUSTOM' ? true : (GRADIENT_PALETTES.includes(p) ? 'GRADIENT' : 'SOLID') === shownKind)).map((p) => ({
+    value: p,
+    label: p === 'CUSTOM' ? (shownKind === 'GRADIENT' ? 'Your own gradient' : 'Your own colour') : NAV_PALETTE_LABELS[p],
+    description: p === 'CUSTOM' ? (shownKind === 'GRADIENT' ? 'Two colours of your company’s, from one to the other.' : PALETTE_WORDS.CUSTOM) : PALETTE_WORDS[p],
+    picture: <ColourPicture style={chromeStyle(p === 'CUSTOM' ? { palette: p, fill: own[shownKind] } : { palette: p, fill: null }, mode)} />,
+  }));
+  const chosen = v.palette === 'CUSTOM' ? (v.fill?.kind === shownKind ? 'CUSTOM' : undefined) : v.palette;
+
+  const setOwnFill = (fill: NavFill) => {
+    setOwn((o) => ({ ...o, [fill.kind]: fill }));
+    set({ palette: 'CUSTOM', fill });
+  };
+  const pick = (p: NavPalette) => (p === 'CUSTOM' ? setOwnFill(own[shownKind]) : set({ palette: p, fill: null }));
+  const fill = v.palette === 'CUSTOM' ? v.fill : null;
+  const problem = fill ? navFillProblem(fill) : null;
+
+  return (
+    <Card size="small" title="Colours of the menu">
+      <Flex vertical gap={tk.space[3]}>
+        <Typography.Paragraph type="secondary" style={{ margin: 0 }}>
+          The sidebar, the header in Sidebar and header, and the coloured top bar take these colours, in the light and the dark theme. The menu on this screen shows your choice as you pick; no one else sees it until you save.
+        </Typography.Paragraph>
+        <Segmented<ColourKind>
+          aria-label="Plain colours or gradients"
+          value={shownKind}
+          onChange={setKind}
+          options={[
+            { value: 'SOLID', label: 'Plain colours' },
+            { value: 'GRADIENT', label: 'Gradients' },
+          ]}
+          style={{ alignSelf: 'flex-start' }}
+        />
+        <ChoiceCards label="Colours of the menu" value={chosen as NavPalette} onChange={pick} choices={choices} compact />
+        {fill && fill.kind === shownKind && (
+          <Flex vertical gap={tk.space[3]}>
+            <Flex gap={tk.space[4]} wrap align="flex-end">
+              {fill.kind === 'SOLID' ? (
+                <ColourField label="Colour" value={fill.color} onChange={(color) => setOwnFill({ ...fill, color })} />
+              ) : (
+                <>
+                  <ColourField label="From" value={fill.from} onChange={(from) => setOwnFill({ ...fill, from })} />
+                  <ColourField label="To" value={fill.to} onChange={(to) => setOwnFill({ ...fill, to })} />
+                  <Flex vertical gap={tk.space[1]}>
+                    <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
+                      Direction
+                    </Typography.Text>
+                    <Segmented<NavGradientAngle> aria-label="Direction of the gradient" value={fill.angle} onChange={(angle) => setOwnFill({ ...fill, angle })} options={ANGLES} />
+                  </Flex>
+                </>
+              )}
+            </Flex>
+            {problem && (
+              <Alert
+                type="warning"
+                showIcon
+                title={problem}
+                action={
+                  <Button size="small" onClick={() => setOwnFill(readableFill(fill))}>
+                    Use a readable shade
+                  </Button>
+                }
+              />
+            )}
+          </Flex>
+        )}
+      </Flex>
+    </Card>
+  );
 }
 
 function MenuForm({ saved }: { saved: NavSettingsDto }) {
@@ -53,6 +208,11 @@ function MenuForm({ saved }: { saved: NavSettingsDto }) {
   const [v, setV] = useState<NavSettingsDto>(saved);
   const changed = !same(tidy(v), tidy(saved));
   const set = <K extends keyof NavSettingsDto>(k: K, value: NavSettingsDto[K]) => setV((x) => ({ ...x, [k]: value }));
+  const patch = (p: Partial<NavSettingsDto>) => setV((x) => ({ ...x, ...p }));
+  const colourProblem = v.palette === 'CUSTOM' ? navFillProblem(v.fill) : null;
+  // The menu shows the colours being tried; leaving the screen puts the company's back.
+  useEffect(() => setChromePreview({ palette: v.palette, fill: v.fill }), [v.palette, v.fill]);
+  useEffect(() => () => setChromePreview(null), []);
   const modules = useMemo(() => navModuleDefs(v.moduleSet), [v.moduleSet]);
   const long = Object.values(v.names).some((n) => n.trim().length > NAV_NAME_MAX);
 
@@ -109,15 +269,22 @@ function MenuForm({ saved }: { saved: NavSettingsDto }) {
       <Card size="small" title="Where the menu sits">
         <ChoiceCards label="Where the menu sits" value={v.layout} onChange={(x) => set('layout', x)} choices={LAYOUTS} />
       </Card>
-      <Card size="small" title="Look of the top bar">
-        <Flex vertical gap={tk.space[3]}>
-          {v.layout === 'SIDEBAR' && <Typography.Text type="secondary">Used when the menu is in the top bar.</Typography.Text>}
-          <ChoiceCards label="Look of the top bar" value={v.look} onChange={(x) => set('look', x)} choices={LOOKS} />
-          <Checkbox checked={v.personalLook} onChange={(e) => set('personalLook', e.target.checked)}>
-            Let each person choose their own look, from their account menu
-          </Checkbox>
-        </Flex>
-      </Card>
+      {v.layout === 'SIDEBAR' ? (
+        <Card size="small" title="Look of the sidebar">
+          <ChoiceCards label="Look of the sidebar" value={v.sidebarLook} onChange={(x) => set('sidebarLook', x)} choices={SIDEBAR_LOOKS} />
+        </Card>
+      ) : (
+        <Card size="small" title="Look of the top bar">
+          <Flex vertical gap={tk.space[3]}>
+            <ChoiceCards label="Look of the top bar" value={v.look} onChange={(x) => set('look', x)} choices={LOOKS} />
+            {v.look !== 'NAVY' && <Typography.Text type="secondary">The light frame and the one bar keep a light top bar; the menu’s colours show in the menu on a phone.</Typography.Text>}
+            <Checkbox checked={v.personalLook} onChange={(e) => set('personalLook', e.target.checked)}>
+              Let each person choose their own look, from their account menu
+            </Checkbox>
+          </Flex>
+        </Card>
+      )}
+      <ColoursCard v={v} set={patch} />
       <Card size="small" title="Modules and their names">
         <Flex vertical gap={tk.space[3]}>
           <ChoiceCards label="How pages are grouped into modules" value={v.moduleSet} onChange={(x) => set('moduleSet', x)} choices={SETS} />
@@ -129,7 +296,7 @@ function MenuForm({ saved }: { saved: NavSettingsDto }) {
       </Card>
       {long && <Alert type="error" showIcon title={`Shorten the names in red to ${NAV_NAME_MAX} characters or fewer.`} />}
       <Flex gap={tk.space[3]} wrap>
-        <Button type="primary" onClick={submit} disabled={!changed || long} loading={save.isPending}>
+        <Button type="primary" onClick={submit} disabled={!changed || long || !!colourProblem} loading={save.isPending}>
           Save menu
         </Button>
         <Button onClick={() => setV(saved)} disabled={!changed}>
@@ -154,7 +321,7 @@ export default function MenuAndNamesPage() {
   if (!user) return null;
   return (
     <div className="page-container" style={{ maxWidth: 1080, marginLeft: 0 }}>
-      <PageHeader title="Menu and names" subtitle="Where the menu sits, how it looks and what each module is called, for everyone in your company." />
+      <PageHeader title="Menu and names" subtitle="Where the menu sits, how it looks, its colours and what each module is called, for everyone in your company." />
       {!allowed ? (
         <NoAccess title="Only an admin can change the menu" />
       ) : isLoading ? (

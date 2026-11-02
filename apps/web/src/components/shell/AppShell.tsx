@@ -36,6 +36,7 @@ import { PREF_RAIL, Sidebar, searchShortcut } from './Sidebar';
 import { ProductTour, shouldAutoStartTour } from './ProductTour';
 import { PinButton, TopBar, topBarHeight } from './TopBar';
 import { useMenuPlace, useNavMenu } from './menu';
+import { ShellColours } from './ShellColours';
 import { StickyTopContext } from '@/lib/sticky';
 import t from './TopBar.module.css';
 import s from './Sidebar.module.css';
@@ -79,8 +80,11 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
   const look = navSettings.look;
   const compactTools = topBar && look === 'BAR' && !!menuPlace;
   const ownLook = useSaveOwnLook();
-  // On the navy bar the search box and Ask's mark take the bar's own colours (TopBar.module.css).
-  const navyBar = topBar && look === 'NAVY';
+  // Sidebar and header: the header is painted in the menu's colours too, an L round the page; Floating stands the rail on the canvas.
+  const sidebarLook = navSettings.sidebarLook;
+  const colouredHeader = !topBar && sidebarLook === 'HEADER';
+  // On a bar in the menu's colours the search box and Ask's mark take the bar's own colours (TopBar.module.css).
+  const navyBar = (topBar && look === 'NAVY') || colouredHeader;
   const trail = useMemo(() => navTrail(sections, pathname), [sections, pathname]);
   const guest = isGuest(user.roleKey);
   const { data: projects } = useProjects(!guest);
@@ -362,11 +366,12 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
     return (
       <StickyTopContext.Provider value={topBarHeight(look, isMobile, !!menuPlace)}>
         <Layout style={{ minHeight: '100vh' }} className={look === 'FRAME' ? t.frameBody : undefined}>
+          <ShellColours choice={navSettings} />
           <a href="#main-content" className="skip-link">
             Skip to content
           </a>
           {isMobile && (
-            <Drawer open={mobileOpen} onClose={() => setMobileOpen(false)} placement="left" size={288} closable={false} styles={{ body: { padding: 0, background: tk.color.chrome.bg } }}>
+            <Drawer open={mobileOpen} onClose={() => setMobileOpen(false)} placement="left" size={288} closable={false} styles={{ body: { padding: 0, background: tk.color.chrome.fill, backgroundAttachment: 'fixed' } }}>
               <Sidebar user={user} sections={sidebarSections} pendingCount={pendingCount} onNavigate={() => setMobileOpen(false)} />
             </Drawer>
           )}
@@ -381,16 +386,17 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
 
   return (
     <Layout hasSider style={{ minHeight: '100vh' }}>
+      <ShellColours choice={navSettings} />
       <a href="#main-content" className="skip-link">
         Skip to content
       </a>
       {!isMobile && (
-        <aside className={`${s.aside} ${rail ? s.asideRail : ''}`} data-tour="sidebar">
+        <aside className={[s.aside, rail && s.asideRail, sidebarLook === 'HEADER' && s.asideHeader, sidebarLook === 'FLOATING' && s.asideFloating].filter(Boolean).join(' ')} data-tour="sidebar">
           <Sidebar user={user} sections={sidebarSections} pendingCount={pendingCount} rail={rail} onToggleRail={toggleRail} />
         </aside>
       )}
       {isMobile && (
-        <Drawer open={mobileOpen} onClose={() => setMobileOpen(false)} placement="left" size={288} closable={false} styles={{ body: { padding: 0, background: tk.color.chrome.bg } }}>
+        <Drawer open={mobileOpen} onClose={() => setMobileOpen(false)} placement="left" size={288} closable={false} styles={{ body: { padding: 0, background: tk.color.chrome.fill, backgroundAttachment: 'fixed' } }}>
           <Sidebar user={user} sections={sidebarSections} pendingCount={pendingCount} onNavigate={() => setMobileOpen(false)} />
         </Drawer>
       )}
@@ -398,18 +404,21 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
       <ProductTour user={user} mobile={isMobile} open={touring} onClose={() => setTouring(false)} />
       <Layout>
         <Header
+          className={colouredHeader ? t.onChrome : undefined}
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: isMobile ? `0 ${tk.space[3]}` : `0 ${tk.space[6]}`,
-            borderBottom: tk.line('hairline'),
+            borderBottom: colouredHeader || sidebarLook === 'FLOATING' ? 'none' : tk.line('hairline'),
             position: 'sticky',
             top: 0,
             zIndex: 10,
             height: 56,
             lineHeight: 'normal',
-            background: tk.color.surface.base,
+            ...(colouredHeader
+              ? { background: tk.color.chrome.fill, backgroundAttachment: 'fixed', color: tk.color.chrome.ink }
+              : { background: sidebarLook === 'FLOATING' ? tk.color.surface.canvas : tk.color.surface.base }),
             gap: tk.space[3],
           }}
         >
@@ -460,7 +469,7 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
                       icon={<TreeIcon name={isPinned ? 'pin-off' : 'pin'} />}
                       onClick={togglePin}
                       // A long breadcrumb gives way first; the pin keeps its 24 px target.
-                      style={{ flexShrink: 0, color: isPinned ? tk.color.accent.solid : undefined }}
+                      style={{ flexShrink: 0, color: isPinned ? (colouredHeader ? tk.color.chrome.accent : tk.color.accent.solid) : undefined }}
                     />
                   </Tooltip>
                 )}

@@ -7,7 +7,7 @@ import { api, apiToken, homeHeading, signIn } from './helpers';
  * shipped menu (the sidebar) back.
  */
 
-const DEFAULT = { layout: 'SIDEBAR', look: 'NAVY', moduleSet: 'AREAS', names: {}, personalLook: false };
+const DEFAULT = { layout: 'SIDEBAR', look: 'NAVY', sidebarLook: 'RAIL', palette: 'QUIET', fill: null, moduleSet: 'AREAS', names: {}, personalLook: false };
 
 test.afterEach(async () => {
   await api(await apiToken('admin@demo.com'), '/nav-settings', { method: 'PUT', body: DEFAULT });
@@ -48,4 +48,25 @@ test('a site engineer sees only the modules their role opens, under the companyâ
   await expect(modules.getByRole('link', { name: /^Administration/ })).toHaveCount(0);
   await page.goto('/modules/administration');
   await expect(page.getByRole('heading', { level: 1, name: 'Not in your menu' })).toBeVisible();
+});
+
+test('an admin colours the menu and its header, and a colour too bright for its words is refused', async ({ page }) => {
+  await api(await apiToken('admin@demo.com'), '/nav-settings', { method: 'PUT', body: DEFAULT });
+  await signIn(page, 'admin@demo.com');
+  await page.goto('/menu-and-names');
+  await page.getByRole('radio', { name: /^Sidebar and header/ }).check();
+  await page.getByRole('radio', { name: /^Forest/ }).check();
+  // The menu shows the colour before it is saved.
+  const rail = page.locator('aside[data-tour="sidebar"]');
+  await expect(rail).toHaveCSS('background-color', 'rgb(18, 58, 46)');
+  await page.getByRole('button', { name: 'Save menu' }).click();
+  await expect(page.getByText('Menu saved')).toBeVisible();
+  await page.goto('/my-work');
+  await expect(rail).toHaveCSS('background-color', 'rgb(18, 58, 46)');
+  await expect(page.locator('header.ant-layout-header')).toHaveCSS('background-color', 'rgb(18, 58, 46)');
+
+  const token = await apiToken('admin@demo.com');
+  await expect(api(token, '/nav-settings', { method: 'PUT', body: { ...DEFAULT, palette: 'CUSTOM', fill: { kind: 'SOLID', color: '#1E63D6' } } })).rejects.toThrow(/hard to read/);
+  const saved = await api<{ palette: string; fill: unknown }>(token, '/nav-settings', { method: 'PUT', body: { ...DEFAULT, palette: 'CUSTOM', fill: { kind: 'GRADIENT', from: '#0b1f3a', to: '#3B2566', angle: 135 } } });
+  expect(saved.fill).toEqual({ kind: 'GRADIENT', from: '#0B1F3A', to: '#3B2566', angle: 135 });
 });

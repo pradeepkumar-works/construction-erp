@@ -442,7 +442,10 @@ A company chooses its menu in Admin › Menu and names (`/menu-and-names`, `GET`
   first section is the company's modules; a module's screen and every page in it carry the module's bar under the top bar:
   the module's name (a menu of every module), Overview, then its sub-modules, a sub-module of several pages opening as a
   menu of them. Sub-modules that do not fit go under More on a wide screen; a phone's bar scrolls sideways.
-- **The look** (`navLook`): `NAVY` (a navy bar over a white module bar, the default), `FRAME` (a light frame round the page,
+- **The sidebar's look** (`navSidebarLook`): `RAIL` (the rail beside the page, a white header; the default), `HEADER` (the
+  rail and the header in the menu's colours, one frame round the page; the header's controls take the chrome ink through
+  `TopBar.module.css`'s `onChrome`) or `FLOATING` (the rail inset and rounded on the page's canvas, the header on the canvas).
+- **The top bar's look** (`navLook`): `NAVY` (a bar in the menu's colours over a white module bar, the default), `FRAME` (a light frame round the page,
   Home listing each module with its sub-modules) or `BAR` (one white bar holding the module and its menu, Home grouping the
   modules by `navMenuGroup`). `navPersonalLook` lets each person pick their own (`User.navLook`, the account menu's Top bar
   look, `PUT /nav-settings/own-look`); `navSettingsOf(user)` decides which applies.
@@ -454,6 +457,7 @@ A company chooses its menu in Admin › Menu and names (`/menu-and-names`, `GET`
   `/modules/<key>` (keys are kept forever, names hang on them). Item 135 took QA/QC, Design and drawings and
   Correspondence out of Project management, which keeps Safety; in the tree, Safety (`safety`) and Correspondence
   (`correspondence`) are modules of their own and the moved nodes keep their ids (`quality.incidents`, `documents.letters`).
+- **The colours** (`navPalette`, `navFill`; Menu colours below).
 - **The names** (`navNames`, by module key, at most `NAV_NAME_MAX` characters, checked by `navNamesProblem` and tidied by
   `cleanNavNames`): the sidebar, the top bar, Home and the module's screen show the company's name.
 
@@ -464,6 +468,25 @@ carries `navigation` (left out while it is the default) and `ownLook`, so the sh
 reads it through `components/shell/menu.ts` (`useNavMenu`, `useMenuPlace`, `moduleWaiting` for a module's count) and draws
 it in `TopBar.tsx`; the sidebar's sections follow the same set and names in `navFor`. A page added to the tree needs a place
 in `DEPARTMENT_MODULES`: `src/scripts/nav-menu-test.ts` (CI) fails on a live page with none. The phone keeps its launcher.
+
+### Menu colours
+
+The sidebar, the header in `HEADER` and the `NAVY` top bar are painted in one fill: a plain colour or a two-stop gradient
+(`NavFill`, `@erp/shared/nav-colours.ts`). A company picks one of the curated palettes (`NAV_PALETTES`: `QUIET`, the chrome
+roles as they are and the default, six plain colours and five gradients, each with its own fill for the night, kept as design
+tokens in `ds/source/chrome.ts`) or `CUSTOM` with its own `navFill`. A palette is only its fill: the words, captions, hovers
+and edges are mixed from the ink that reads on it (`inkFor`, near-black or white), so every palette draws the same menu.
+
+One rule holds a fill: the menu's captions (its ink at `QUIET_SHARE`) keep 4.5:1 against every part of it, in both themes
+(`navFillProblem`, which the API checks on save; `tokens-check` holds the curated ones to it). A company colour on the night
+is `nightFillOf` (a light one mixed into the night's near-black, a dark one a step deeper), and "Use a readable shade" is
+`readableFill`, the nearest fill that passes. `readNavFill` reads a stored fill; one that does not read back is Quiet again.
+
+The web writes the choice over the chrome roles (`--c-chrome-fill`, `-bg` its average, `-ink`, `-caption`, `-hover`,
+`-accent`) for both themes as one style sheet (`chromeCss` in `ds/chrome.ts`, rendered by `ShellColours` in the shell). A
+gradient is laid over the window (`background-attachment: fixed`), so the rail and the header show one sweep. Menu and
+names draws each card in its palette (`chromeStyle`) and shows the choice in the real menu while the screen is open
+(`setChromePreview`), so no one else sees it until it is saved.
 
 ### Masters (item 135)
 

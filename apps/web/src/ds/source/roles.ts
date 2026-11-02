@@ -61,7 +61,10 @@ export const ROLES = {
     violet: { fg: p('violet', 'nightViolet'), bg: p('violetBg', 'nightToneVioletBg'), notice: p('violetBg', 'nightToneVioletBg'), solid: p('violet', 'nightViolet'), line: p('violetBg', 'nightToneVioletBg') },
   } satisfies Record<Tone, ToneRoles>,
   chrome: {
+    /** A solid colour: what edges and hovers are mixed from, and the background where a gradient cannot go. */
     bg: p('chromeBg', 'nightChromeBg'),
+    /** What the rail and the coloured bars paint (a `background`): the bg, or a company's gradient (`ds/chrome.ts`). */
+    fill: p('chromeBg', 'nightChromeBg'),
     /** What the chrome's text, lines and fills are drawn in: CSS mixes it at a share over `bg`, so one value turns a dark rail light. */
     ink: p('chromeInk', 'nightChromeInk'),
     deep: p('chromeDeep', 'nightChromeDeep'),

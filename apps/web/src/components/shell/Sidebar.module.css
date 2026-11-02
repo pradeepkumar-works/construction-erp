@@ -6,10 +6,26 @@
   flex: 0 0 auto;
   width: 15.75rem;
   height: 100vh;
-  background: var(--c-chrome-bg);
+  background: var(--c-chrome-fill);
+  background-attachment: fixed;
   border-inline-end: 1px solid var(--c-line-hairline);
   transition: width var(--m-mid) var(--m-ease-in-out);
   z-index: 11;
+}
+
+/* Sidebar and header: the rail and the header are one coloured frame round the page. */
+.asideHeader {
+  border-inline-end-color: transparent;
+}
+
+/* Floating: the rail stands on the page's canvas, inset and rounded. */
+.asideFloating {
+  top: var(--s-3);
+  height: calc(100vh - 2 * var(--s-3));
+  margin: var(--s-3) 0 var(--s-3) var(--s-3);
+  border: 1px solid var(--c-line-hairline);
+  border-radius: var(--r-lg);
+  overflow: hidden;
 }
 
 .asideRail {
@@ -28,7 +44,8 @@
   flex-direction: column;
   height: 100%;
   color: color-mix(in srgb, var(--c-chrome-ink) 72%, transparent);
-  background: var(--c-chrome-bg);
+  background: var(--c-chrome-fill);
+  background-attachment: fixed;
   font-size: var(--t-body);
   overflow: hidden;
 }

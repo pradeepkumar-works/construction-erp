@@ -12,6 +12,8 @@ import { ESLint } from 'eslint';
 import tseslint from 'typescript-eslint';
 import { resolve, type Mode } from '../src/ds/engine';
 import { TONES } from '../src/ds/source/roles';
+import { CHROME_PALETTES, CHROME_START_FILL } from '../src/ds/source/chrome';
+import { MENU_CONTRAST, inkFor, weakestContrast } from '@erp/shared';
 import ds from '../eslint-rules/ds.mjs';
 
 const WEB = path.resolve(__dirname, '..');
@@ -131,9 +133,19 @@ async function checkLegacy() {
   }
 }
 
+/** Each of the menu's palettes keeps its captions at 4.5:1 over all of its fill, in both themes (Menu and names). */
+function checkPalettes() {
+  const fills = [...Object.entries(CHROME_PALETTES).flatMap(([key, p]) => [[`${key} light`, p.light], [`${key} dark`, p.dark]] as const), ...Object.entries(CHROME_START_FILL).map(([k, f]) => [`own ${k}`, f] as const)];
+  for (const [label, fill] of fills) {
+    const ink = inkFor(fill);
+    if (!ink) problems.push(`menu palette ${label}: no ink keeps the captions at ${MENU_CONTRAST}:1 (best ${Math.max(weakestContrast(fill, 'light'), weakestContrast(fill, 'dark')).toFixed(2)}:1)`);
+  }
+}
+
 async function main() {
   checkContrast('light');
   checkContrast('dark');
+  checkPalettes();
   await checkLegacy();
   if (problems.length) {
     console.error(problems.map((p) => `- ${p}`).join('\n'));
