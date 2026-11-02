@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Alert, Button, Table, Tooltip, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { TableProps } from 'antd';
 import { DownloadOutlined } from '@/components/common/icons';
 import type { LeaveType, PayrollRowDto } from '@erp/shared';
@@ -10,7 +11,6 @@ import { usePayroll } from '@/lib/queries';
 import { downloadXlsx, type ExportColumn } from '@/lib/exportExcel';
 import { formatDate } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
-import { themeFontSize } from '@/lib/theme';
 
 const SHORT: Record<LeaveType, string> = { CASUAL: 'CL', SICK: 'SL', EARNED: 'EL', COMP_OFF: 'Comp-off', UNPAID: 'LWP', ON_DUTY: 'OD', TOUR: 'Tour' };
 const n = (v: number) => (v ? v : '');
@@ -53,7 +53,7 @@ export function StaffPayroll({ month, projectId }: { month: string; projectId?: 
       render: (v: string, r) => (
         <div>
           <div>{v}</div>
-          <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+          <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
             {r.designation}
           </Typography.Text>
         </div>
@@ -77,7 +77,7 @@ export function StaffPayroll({ month, projectId }: { month: string; projectId?: 
   return (
     <>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      <div style={{ padding: 12, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+      <div style={{ padding: tk.space[3], display: 'flex', gap: tk.space[2], alignItems: 'center', flexWrap: 'wrap' }}>
         <Typography.Text type="secondary">Days present, leave and overtime for each person this month. Salary runs use these figures; export them if an outside firm runs your payroll.</Typography.Text>
         <div style={{ flex: 1 }} />
         <Button icon={<DownloadOutlined />} disabled={!rows.length} onClick={() => downloadXlsx(`payroll-inputs-${month}`, `Staff ${month}`, exportColumns, rows)}>
@@ -85,7 +85,7 @@ export function StaffPayroll({ month, projectId }: { month: string; projectId?: 
         </Button>
       </div>
       {unmarked > 0 && (
-        <Alert type="warning" showIcon style={{ margin: '0 12px 12px' }} title={`${unmarked} ${unmarked === 1 ? 'person has' : 'people have'} working days with no attendance or leave. Those days are not deducted; check them before sending.`} />
+        <Alert type="warning" showIcon style={{ margin: `0 ${tk.space[3]} ${tk.space[3]}` }} title={`${unmarked} ${unmarked === 1 ? 'person has' : 'people have'} working days with no attendance or leave. Those days are not deducted; check them before sending.`} />
       )}
       <Table<PayrollRowDto>
         rowKey="employeeId"

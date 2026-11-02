@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { App, Button, Descriptions, Divider, Drawer, Form, Input, Modal, Popconfirm, Space, Table, Timeline, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { LeaveRequestDto } from '@erp/shared';
 import { LEAVE_ACTION_LABELS, LEAVE_TYPE_LABELS, auditActionLabel } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -11,7 +12,6 @@ import { useLeaveBalances, useLeaveHistory, useLeaveRequest } from '@/lib/querie
 import { formatDateTime, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { LeaveStatusTag, days, leaveSpan } from './staffUi';
-import { themeFontSize } from '@/lib/theme';
 
 /** One leave request: details, the employee's balance for the year, approve / reject / cancel, and its history. */
 export function LeaveDrawer({ id, open, onClose }: { id: string | null; open: boolean; onClose: () => void }) {
@@ -114,7 +114,7 @@ export function LeaveDrawer({ id, open, onClose }: { id: string | null; open: bo
                 <div>
                   <Typography.Text strong>{auditActionLabel(h.action, LEAVE_ACTION_LABELS)}</Typography.Text> <Typography.Text type="secondary">by {h.actorName}</Typography.Text>
                   {h.note ? <span> · {h.note}</span> : null}
-                  <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                  <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                     {formatDateTime(h.createdAt)}
                   </div>
                 </div>

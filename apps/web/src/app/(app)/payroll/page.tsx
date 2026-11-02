@@ -3,6 +3,7 @@
 import React, { Suspense, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Card } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { AppTabs } from '@/components/common/AppTabs';
 import dayjs from 'dayjs';
@@ -30,7 +31,7 @@ function MonthInputs({ kind }: { kind: 'staff' | 'contractors' }) {
   const m = month.format('YYYY-MM');
   return (
     <>
-      <div style={{ padding: '12px 12px 0', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      <div style={{ padding: `${tk.space[3]} ${tk.space[3]} 0`, display: 'flex', gap: tk.space[2], flexWrap: 'wrap' }}>
         <DatePicker picker="month" format={MONTH_PICKER_FORMAT} allowClear={false} value={month} onChange={(d) => d && setMonth(d.startOf('month'))} disabledDate={(d) => d.isAfter(dayjs(), 'month')} aria-label="Month" />
         <ProjectSelect value={projectId} onChange={(v) => setProjectId(v)} />
       </div>

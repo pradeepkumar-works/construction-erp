@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { App, Button, Descriptions, Form, Input, Modal, Select, Space, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { PrinterOutlined } from '@/components/common/icons';
 import type { ManualPayslipCode, PayslipDto, PayslipLineDto } from '@erp/shared';
 import { MANUAL_PAYSLIP_CODES, PAYSLIP_CODES } from '@erp/shared';
@@ -119,7 +120,7 @@ export function PayslipModal({ slip, open, onClose, editable }: { slip: PayslipD
         </Space>
       }
     >
-      <Descriptions size="small" column={{ xs: 1, sm: 2 }} bordered style={{ marginBottom: 12 }}>
+      <Descriptions size="small" column={{ xs: 1, sm: 2 }} bordered style={{ marginBottom: tk.space[3] }}>
         <Descriptions.Item label="Employee">
           <span translate="no">
             {shown.employeeName} ({shown.employeeCode})
@@ -140,12 +141,12 @@ export function PayslipModal({ slip, open, onClose, editable }: { slip: PayslipD
           </strong>
         </Descriptions.Item>
       </Descriptions>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: tk.space[3] }}>
         <Table<PayslipLineDto> rowKey="id" size="small" pagination={false} dataSource={of('EARNING')} columns={[{ ...lineCols[0], title: 'Earnings' }, lineCols[1]]} />
         <Table<PayslipLineDto> rowKey="id" size="small" pagination={false} dataSource={of('DEDUCTION')} columns={[{ ...lineCols[0], title: 'Deductions' }, lineCols[1]]} locale={{ emptyText: 'None' }} />
       </div>
       {of('EMPLOYER').length > 0 && (
-        <Typography.Paragraph type="secondary" style={{ marginTop: 12, marginBottom: 0 }}>
+        <Typography.Paragraph type="secondary" style={{ marginTop: tk.space[3], marginBottom: 0 }}>
           The company pays besides:{' '}
           {of('EMPLOYER')
             .map((l) => `${l.label} ${formatINR(l.amount)}`)

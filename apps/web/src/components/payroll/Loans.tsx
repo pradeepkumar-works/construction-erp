@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { App, Button, Form, Input, Popconfirm, Select, Switch, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import type { TableProps } from 'antd';
 import { PlusOutlined } from '@/components/common/icons';
@@ -121,9 +122,9 @@ export function Loans() {
   ];
 
   return (
-    <div style={{ padding: 16 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 12, alignItems: 'center' }}>
-        <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+    <div style={{ padding: tk.space[4] }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: tk.space[3], flexWrap: 'wrap', marginBottom: tk.space[3], alignItems: 'center' }}>
+        <span style={{ display: 'inline-flex', gap: tk.space[2], alignItems: 'center' }}>
           <Switch checked={open} onChange={setOpen} aria-labelledby="loans-open-only" />
           <Typography.Text id="loans-open-only">Only those with something left</Typography.Text>
         </span>

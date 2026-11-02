@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { App, Button, Form, Input, Select, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { TableProps } from 'antd';
 import type { BiometricCommandDto, BiometricUserDto } from '@erp/shared';
 import { BIOMETRIC_COMMAND_KIND_LABELS, BIOMETRIC_COMMAND_STATUS_LABELS, DEVICE_NAME_MAX } from '@erp/shared';
@@ -131,7 +132,7 @@ export function DeviceCommands() {
     },
   ];
   return (
-    <Section style={{ marginTop: 16 }} title="Commands to the devices">
+    <Section style={{ marginTop: tk.space[4] }} title="Commands to the devices">
       {error ? (
         <QueryError error={error} onRetry={() => refetch()} />
       ) : (

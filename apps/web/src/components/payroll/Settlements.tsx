@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Alert, App, Button, Descriptions, Form, Input, Modal, Popconfirm, Space, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import type { TableProps } from 'antd';
 import { PrinterOutlined } from '@/components/common/icons';
@@ -238,17 +239,17 @@ export function Settlements() {
   ];
 
   return (
-    <div style={{ padding: 16 }}>
+    <div style={{ padding: tk.space[4] }}>
       {hr && (due?.length ?? 0) > 0 && (
         <Alert
           type="warning"
           showIcon
-          style={{ marginBottom: 12 }}
+          style={{ marginBottom: tk.space[3] }}
           title={`${due!.length} ${due!.length === 1 ? 'person has' : 'people have'} left with no settlement yet`}
           description={
             <Space orientation="vertical" size={4} style={{ width: '100%' }}>
               {due!.map((d) => (
-                <div key={d.employeeId} style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', minHeight: 32 }}>
+                <div key={d.employeeId} style={{ display: 'flex', gap: tk.space[3], alignItems: 'center', flexWrap: 'wrap', minHeight: 32 }}>
                   <span translate="no">
                     {d.fullName} ({d.employeeCode})
                   </span>

@@ -2,12 +2,12 @@
 
 import React from 'react';
 import { Image, Space } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import type { LeaveRequestDto, LeaveStatus, OvertimeStatus, StaffAttendanceDto, StaffAttendanceStatus } from '@erp/shared';
 import { LEAVE_STATUS_LABELS, OVERTIME_STATUS_LABELS, STAFF_ATTENDANCE_LABELS } from '@erp/shared';
 import { formatDate, formatDayMonth, formatTime } from '@/lib/format';
 import { fileUrl } from '@/lib/api';
-import { themeColor } from '@/lib/theme';
 
 
 export const LeaveStatusTag = ({ status }: { status: LeaveStatus }) => <AppTag kind="leave" status={status}>{LEAVE_STATUS_LABELS[status]}</AppTag>;
@@ -50,7 +50,7 @@ export function FacePhotos({ attendance, size = 36 }: { attendance: Pick<StaffAt
     <Image.PreviewGroup>
       <Space size={4}>
         {shots.map(({ photo, alt }) => (
-          <Image key={photo!.id} src={fileUrl(photo!.url)} alt={alt} width={size} height={size} style={{ objectFit: 'cover', borderRadius: 6, border: `1px solid ${themeColor('colorBorderSecondary')}` }} />
+          <Image key={photo!.id} src={fileUrl(photo!.url)} alt={alt} width={size} height={size} style={{ objectFit: 'cover', borderRadius: tk.radius.md, border: `1px solid ${tk.color.line.hairline}` }} />
         ))}
       </Space>
     </Image.PreviewGroup>

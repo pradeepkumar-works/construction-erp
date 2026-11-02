@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, App, Button, Input, InputNumber, Segmented, Space, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import { formatDayMonth } from '@/lib/format';
@@ -18,7 +19,6 @@ import { QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { CheckInPlaceTag, FacePhotos, OvertimeTag, clock } from './staffUi';
 import { CardToolbar } from '@/components/common/CardToolbar';
-import { themeFontSize } from '@/lib/theme';
 
 type Mark = { status: StaffAttendanceStatus | null; overtimeHours: number | null; note: string };
 const NONE = 'NONE';
@@ -84,7 +84,7 @@ export function StaffRegister() {
       render: (_, r) => (
         <div>
           <div>{r.employee.fullName}</div>
-          <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+          <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
             {r.employee.employeeCode} · {r.employee.designation}
           </Typography.Text>
         </div>
@@ -178,7 +178,7 @@ export function StaffRegister() {
       </CardToolbar>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {data && (data.holiday || data.weeklyOff) && (
-        <Alert type="info" showIcon style={{ margin: 12 }} title={`${data.holiday ? `Holiday: ${data.holiday}` : 'Sunday, the weekly off'}. Anyone marked present earns a comp-off.`} />
+        <Alert type="info" showIcon style={{ margin: tk.space[3] }} title={`${data.holiday ? `Holiday: ${data.holiday}` : 'Sunday, the weekly off'}. Anyone marked present earns a comp-off.`} />
       )}
       <Table<StaffRegisterRowDto>
         rowKey={(r) => r.employee.id}

@@ -2,6 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { Button, Table, Tooltip, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import { DownloadOutlined } from '@/components/common/icons';
@@ -10,7 +11,6 @@ import { useContractorMonth } from '@/lib/queries';
 import { downloadXlsx, type ExportColumn } from '@/lib/exportExcel';
 import { formatINR, toNumber } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
-import { themeFontSize } from '@/lib/theme';
 
 /** Labour contractors' month from the attendance register: man-days by project and trade, at the daily rates. */
 export function ContractorMonth({ month, projectId }: { month: string; projectId?: string }) {
@@ -46,7 +46,7 @@ export function ContractorMonth({ month, projectId }: { month: string; projectId
         i === 0 || rows[i - 1].contractor !== v ? (
           <div>
             <div>{v}</div>
-            <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+            <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
               {totals.get(v)!.manDays} man-days{totals.get(v)!.amount ? `, ${formatINR(totals.get(v)!.amount)}` : ''}
             </Typography.Text>
           </div>
@@ -64,7 +64,7 @@ export function ContractorMonth({ month, projectId }: { month: string; projectId
   return (
     <>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      <div style={{ padding: 12, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+      <div style={{ padding: tk.space[3], display: 'flex', gap: tk.space[2], alignItems: 'center', flexWrap: 'wrap' }}>
         <Typography.Text type="secondary">
           From the attendance register, at the daily rates under Project cost.{unpriced ? ` ${unpriced} line${unpriced === 1 ? ' has' : 's have'} no rate.` : ''}
         </Typography.Text>

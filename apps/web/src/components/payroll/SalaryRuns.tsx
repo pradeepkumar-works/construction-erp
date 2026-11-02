@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { App, Button, Form, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import type { TableProps } from 'antd';
 import { PlusOutlined } from '@/components/common/icons';
@@ -75,8 +76,8 @@ export function SalaryRuns() {
   ) : null;
 
   return (
-    <div style={{ padding: 16 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
+    <div style={{ padding: tk.space[4] }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: tk.space[3], flexWrap: 'wrap', marginBottom: tk.space[3] }}>
         <Typography.Paragraph type="secondary" style={{ margin: 0, maxWidth: 640 }}>
           Each month&apos;s salary from approved attendance and each person&apos;s salary structure. HR prepares and submits it, management approves it, accounts pays it with the bank file.
         </Typography.Paragraph>

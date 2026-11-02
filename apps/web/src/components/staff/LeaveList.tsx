@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Button, Checkbox, Select, theme } from 'antd';
+import { Button, Checkbox, Select } from 'antd';
+import { tk } from '@/ds';
 import { PlusOutlined } from '@/components/common/icons';
 import type { LeaveRequestDto, LeaveSortField, LeaveStatus, LeaveType } from '@erp/shared';
 import { LEAVE_STATUSES, LEAVE_STATUS_LABELS, LEAVE_TYPES, LEAVE_TYPE_LABELS, LIST_SORT_FIELDS, canManageStaff } from '@erp/shared';
@@ -18,8 +19,7 @@ import { LeaveStatusTag, leaveSpan } from './staffUi';
 const KEYS = ['status', 'type', 'toDecide'] as const;
 
 function Sub({ children }: { children: React.ReactNode }) {
-  const { token } = theme.useToken();
-  return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
+  return <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{children}</div>;
 }
 
 /** Leave of the staff the user can see; "Waiting on me" shows what they can approve. */

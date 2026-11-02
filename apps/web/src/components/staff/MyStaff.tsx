@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Alert, App, Button, Col, Empty, Flex, Listy, Popconfirm, Row, Space, Statistic, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { TableProps } from 'antd';
 import { LoginOutlined, LogoutOutlined, PlusOutlined } from '@/components/common/icons';
 import type { LeaveRequestDto } from '@erp/shared';
@@ -14,7 +15,6 @@ import { formatDate, NO_VALUE } from '@/lib/format';
 import { Loading, QueryError } from '@/components/common/QueryState';
 import { AttendanceTag, CheckInPlaceTag, FacePhotos, LeaveStatusTag, OvertimeTag, clock, currentPosition, leaveSpan, metres } from './staffUi';
 import { LeaveFormModal } from './LeaveFormModal';
-import { themeFontSize } from '@/lib/theme';
 import { Section } from '@/components/common/Section';
 
 /** The signed-in person's own record: mark in and out (the phone adds their photo, face attendance), leave balances, their requests and coming holidays. */
@@ -42,7 +42,7 @@ export function MyStaff() {
   if (error || !data) return <QueryError error={error} onRetry={() => refetch()} />;
   if (!data.employee)
     return (
-      <div style={{ padding: 16 }}>
+      <div style={{ padding: tk.space[4] }}>
         <Alert type="info" showIcon title="Your login is not linked to a staff record" description="HR links logins to staff records under Staff. Once linked you can mark in and apply for leave here." />
       </div>
     );
@@ -69,7 +69,7 @@ export function MyStaff() {
   ];
 
   return (
-    <div style={{ padding: 16 }}>
+    <div style={{ padding: tk.space[4] }}>
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={8}>
           <Section title={`Today, ${formatDate(new Date().toISOString())}`}>
@@ -100,11 +100,11 @@ export function MyStaff() {
               <Typography.Text type="secondary">Not marked in yet.</Typography.Text>
             )}
             {!t?.checkIn && data.site ? (
-              <Typography.Paragraph type="secondary" style={{ marginTop: 8, marginBottom: 0 }}>
+              <Typography.Paragraph type="secondary" style={{ marginTop: tk.space[2], marginBottom: 0 }}>
                 Mark in records your location: {data.site.strict ? 'it must be' : 'it is flagged unless'} within {metres(data.site.radiusM)} of {data.site.projectName}.
               </Typography.Paragraph>
             ) : null}
-            <div style={{ marginTop: 12 }}>
+            <div style={{ marginTop: tk.space[3] }}>
               {!t?.checkIn ? (
                 <Button type="primary" icon={<LoginOutlined />} loading={act.isPending} onClick={() => act.mutate('check-in')}>
                   Mark in
@@ -132,7 +132,7 @@ export function MyStaff() {
                 .map((b) => (
                   <Col key={b.type} xs={12} md={6}>
                     <Statistic title={LEAVE_TYPE_LABELS[b.type]} value={b.left ?? 0} suffix={`/ ${b.entitled}`} />
-                    <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                    <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
                       {b.taken} taken{b.pending ? `, ${b.pending} waiting` : ''}
                     </Typography.Text>
                   </Col>
@@ -151,7 +151,7 @@ export function MyStaff() {
               <Listy
                 items={data.holidays}
                 rowKey="id"
-                styles={{ item: { padding: '8px 0', background: 'transparent' } }}
+                styles={{ item: { padding: `${tk.space[2]} 0`, background: 'transparent' } }}
                 itemRender={(h) => (
                   <Flex justify="space-between" align="center" gap="small">
                     <span>

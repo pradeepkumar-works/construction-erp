@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { App, Button, Checkbox, Descriptions, Form, Input, InputNumber, Select, Typography } from 'antd';
+import { tk } from '@/ds';
 import { EditOutlined } from '@/components/common/icons';
 import type { PaidDaysBasis, PayrollSettingsDto } from '@erp/shared';
 import { GST_STATES, PAID_DAYS_BASES, PAID_DAYS_BASIS_LABELS, PT_RULES, canRunPayroll } from '@erp/shared';
@@ -134,8 +135,8 @@ export function PayrollSettings() {
   if (isLoading) return <PageSkeleton shape="record" />;
   if (error || !s) return <QueryError error={error} onRetry={() => refetch()} />;
   return (
-    <div style={{ padding: 16, maxWidth: 960 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
+    <div style={{ padding: tk.space[4], maxWidth: 960 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: tk.space[3], flexWrap: 'wrap', marginBottom: tk.space[3] }}>
         <Typography.Paragraph type="secondary" style={{ margin: 0, maxWidth: 640 }}>
           Every run uses these when it is prepared or worked out again. Runs already approved keep what they paid.
         </Typography.Paragraph>
