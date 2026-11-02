@@ -293,6 +293,20 @@ rupees and says its count in words ("3 bills"); one past its mark says Overdue. 
 `figuresFirst` (`homeLayout`), so My work opens on the figures. A count that is information, not a decision (the watch
 list's), is plain text on a tile, never a red badge. `src/scripts/waiting-rank-test.ts` (CI) holds the order.
 
+### Views that fit the data
+
+A list is a table unless its data has a shape a table hides. A pipeline (tenders, indents, RA bills with the client) has a
+board: one column per stage in the pipeline's order, every stage shown even when empty, each headed by its count and the
+rupees in it in one money scale (`boardColumns` in `@erp/shared/list-views.ts`, drawn by `BoardView` and the boards'
+`PipelineBoard`); a row whose stage is not on the board (a draft, a cancelled tender) stays in the table. A record each
+site files each day (daily reports, head counts) has a grid of sites by days (`dayGrid`, `DayGridView`, `SiteDayGrid`):
+every filing site gets a row whether it filed or not, the latest day on the right, and a day with nothing filed is a
+shaded empty cell read out as such, so "who did not file yesterday" is answered at a glance; the sites that missed the
+most days lead. `useListFrame({ viewKinds })` names the views, the first being the default (Tenders, Daily reports and Head
+count open on theirs; indents and bills open on the table); another choice is kept in the address as `?view=`, and
+clearing filters or picking a saved view keeps it. On a phone a board's stages stack. `src/scripts/list-views-test.ts`
+(CI) holds the layouts.
+
 ### Records lead with the decision
 
 A record (`RecordFrame`, every submission and document: DPR, RA bill, order, indent…) reads top down in the order a
