@@ -121,7 +121,7 @@ and the pre-delivery checklist.
 - Pages: every page has one `<h1>` and a tab title of its own. `PageHeader` is the page's one `<h1>` and sets the tab
   title ("Bills · Nirmaan"; pass `docTitle` when the title is not plain text); a page without it calls `usePageTitle`
   (`src/lib/page-title.ts`) and draws its own `<h1>`. Its `crumbs` join
-  the header's breadcrumb, so a page never draws a second one. A link styled as a button is `LinkButton`
+  the header's breadcrumb, so a page never draws a second one. A titled part of a surface (a tab, a card, a record) is a `Section` (`components/common/Section.tsx`: a hairline and its title), never a `Card` inside a `Card` (the route walk checks). A link styled as a button is `LinkButton`
   (`components/common/LinkButton.tsx`), never a `Button` inside a `Link`. Single-key shortcuts check `singleKeysOn()`
   (`src/lib/shortcuts.ts`, off from Help > Keyboard shortcuts); Ask is Alt J (⌘J on a Mac), never Ctrl J.
 - Words: follow `docs/WRITING.md` (sentence case, one name per module in nav, page title and Search, New / Record / Report /

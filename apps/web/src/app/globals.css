@@ -27,7 +27,7 @@ a {
 }
 
 .page-container {
-  padding: 24px;
+  padding: var(--s-6) var(--s-8) var(--s-8);
   max-width: 1440px;
   margin: 0 auto;
 }
@@ -420,7 +420,7 @@ h4.ant-typography,
 
 @media (max-width: 768px) {
   .page-container {
-    padding: 16px;
+    padding: var(--s-4);
   }
   /* KPI tiles sit two to a row on phones; keep "₹ 59.27 Cr" on one line. */
   .ant-card .ant-statistic .ant-statistic-content {

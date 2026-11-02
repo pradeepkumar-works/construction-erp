@@ -121,6 +121,7 @@ export function EarnedValuePanel({ projectId }: { projectId: string }) {
 
           <div style={{ marginTop: 16 }}>
             <ChartCard
+              inSurface
               title="Planned value, earned value and actual cost"
               summary={summaryOf(data)}
               chart={<EarnedValueChart data={data.curve} />}

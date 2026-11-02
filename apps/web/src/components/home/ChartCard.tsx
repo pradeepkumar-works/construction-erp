@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Card, Flex, Segmented, Table, Typography, theme } from 'antd';
 import type { CostHeadsDto, HomeTrendsDto } from '@erp/shared';
 import { formatINR, formatPct, toNumber, inSentence } from '@/lib/format';
+import { Section } from '@/components/common/Section';
 import { WhenInView } from './WhenInView';
 import { costHeadRows, monthLabel } from './chartData';
 
@@ -12,31 +13,42 @@ type View = 'chart' | 'table';
 /**
  * A home chart in a card: the summary in words above it, the drawing named by that summary, and Chart / Table
  * to read the same figures as a table instead. The chart itself comes from `charts.tsx`, loaded on its own.
+ * Inside something that is already a card (a project tab), `inSurface` draws it as a Section, so no card sits in a card.
  */
-export function ChartCard({ title, note, summary, chart, table }: { title: string; note?: React.ReactNode; summary: string; chart: React.ReactNode; table: React.ReactNode }) {
+export function ChartCard({
+  title,
+  note,
+  summary,
+  chart,
+  table,
+  inSurface,
+}: {
+  title: string;
+  note?: React.ReactNode;
+  summary: string;
+  chart: React.ReactNode;
+  table: React.ReactNode;
+  inSurface?: boolean;
+}) {
   const { token } = theme.useToken();
   const [view, setView] = useState<View>('chart');
-  return (
-    <Card
-      size="small"
-      title={title}
-      extra={
-        <Flex align="center" gap={token.marginSM}>
-          {note}
-          <Segmented<View>
-            size="small"
-            value={view}
-            onChange={setView}
-            options={[
-              { value: 'chart', label: 'Chart' },
-              { value: 'table', label: 'Table' },
-            ]}
-            aria-label={`Show ${inSentence(title)} as`}
-          />
-        </Flex>
-      }
-      style={{ height: '100%' }}
-    >
+  const extra = (
+    <Flex align="center" gap={token.marginSM}>
+      {note}
+      <Segmented<View>
+        size="small"
+        value={view}
+        onChange={setView}
+        options={[
+          { value: 'chart', label: 'Chart' },
+          { value: 'table', label: 'Table' },
+        ]}
+        aria-label={`Show ${inSentence(title)} as`}
+      />
+    </Flex>
+  );
+  const body = (
+    <>
       <Typography.Paragraph type="secondary" style={{ fontSize: token.fontSizeSM, marginBottom: token.marginXS }}>
         {summary}
       </Typography.Paragraph>
@@ -47,6 +59,17 @@ export function ChartCard({ title, note, summary, chart, table }: { title: strin
       ) : (
         table
       )}
+    </>
+  );
+  if (inSurface)
+    return (
+      <Section title={title} extra={extra}>
+        {body}
+      </Section>
+    );
+  return (
+    <Card size="small" title={title} extra={extra} style={{ height: '100%' }}>
+      {body}
     </Card>
   );
 }

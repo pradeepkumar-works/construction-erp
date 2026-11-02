@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, Card, Col, Row, Space, Statistic, Table, Typography } from 'antd';
+import { Button, Space, Table, Typography } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import { CarOutlined } from '@/components/common/icons';
@@ -13,7 +13,9 @@ import { QueryError, PageSkeleton } from '@/components/common/QueryState';
 import { BatchStatusTag, M3, PlantFilter, m3, usePlantScope } from './rmcUi';
 import { DispatchForm } from './BatchForms';
 import { useRmcDrawers } from './Drawers';
-import { unitLabel } from '@erp/shared';
+import { figure, unitLabel } from '@erp/shared';
+import { Figures } from '@/components/figures';
+import { tk } from '@/ds';
 
 /** The plant's day: the orders to pour and what each has had, the trucks sent, by grade, and the store against what is left to pour. */
 export function DayView() {
@@ -28,8 +30,8 @@ export function DayView() {
   const onTheWay = (data?.batches ?? []).filter((b) => b.status === 'DISPATCHED').length;
   const short = (data?.materials ?? []).filter((m) => m.short).length;
   return (
-    <div style={{ padding: 16 }}>
-      <Space wrap style={{ marginBottom: 12 }}>
+    <div style={{ padding: tk.space[4] }}>
+      <Space wrap style={{ marginBottom: tk.space[3] }}>
         <DatePicker aria-label="Day" allowClear={false} value={date} onChange={(d) => d && setDate(d)} disabledDate={(d) => d.isAfter(dayjs().add(7, 'day'))} />
         <PlantFilter />
       </Space>
@@ -39,36 +41,25 @@ export function DayView() {
         <PageSkeleton shape="list" header={false} />
       ) : (
         <>
-          <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
-            <Col xs={12} md={6}>
-              <Card size="small">
-                <Statistic title={today ? 'Sent today' : `Sent on ${formatDate(data.date)}`} value={m3(sent)} />
-              </Card>
-            </Col>
-            <Col xs={12} md={6}>
-              <Card size="small">
-                <Statistic title="Trucks" value={trucks} suffix={onTheWay ? <Typography.Text type="secondary" style={{ fontSize: 14 }}>{`${onTheWay} in transit`}</Typography.Text> : null} />
-              </Card>
-            </Col>
-            <Col xs={12} md={6}>
-              <Card size="small">
-                <Statistic title="Orders to pour" value={data.orders.filter((o) => o.status === 'CONFIRMED').length} />
-              </Card>
-            </Col>
-            <Col xs={12} md={6}>
-              <Card size="small">
-                <Statistic title="Materials short" value={short} styles={{ content: short ? { color: 'var(--ant-color-error-text)' } : undefined }} />
-              </Card>
-            </Col>
-          </Row>
+          <div style={{ marginBottom: tk.space[4] }}>
+            <Figures
+              bare
+              label={today ? 'The plant today' : `The plant on ${formatDate(data.date)}`}
+              figures={[
+                figure('cubicMetresSent', sent, { ...(today ? { when: 'today' as const } : {}), count: trucks, versus: { part: figure('trucksInTransit', onTheWay) } }),
+                figure('concreteOrdersOpen', data.orders.filter((o) => o.status === 'CONFIRMED').length),
+                figure('rmcMaterialsShort', short),
+              ]}
+            />
+          </div>
           {data.byGrade.length > 0 && (
-            <Space wrap style={{ marginBottom: 16 }}>
+            <Space wrap style={{ marginBottom: tk.space[4] }}>
               {data.byGrade.map((g) => (
                 <AppTag variant="kind" key={g.grade} translate="no">{`${g.grade}: ${m3(g.m3)} in ${g.trucks} ${g.trucks === 1 ? 'truck' : 'trucks'}`}</AppTag>
               ))}
             </Space>
           )}
-          <Typography.Title level={2} style={{ fontSize: 16 }}>
+          <Typography.Title level={2} style={{ ...tk.type.title }}>
             Orders to pour
           </Typography.Title>
           <Table<RmcOrderDto>
@@ -105,7 +96,7 @@ export function DayView() {
               },
             ]}
           />
-          <Typography.Title level={2} style={{ fontSize: 16, marginTop: 20 }}>
+          <Typography.Title level={2} style={{ ...tk.type.title, marginTop: tk.space[5] }}>
             Trucks
           </Typography.Title>
           <Table<RmcBatchDto>
@@ -126,7 +117,7 @@ export function DayView() {
               { title: 'Status', dataIndex: 'status', width: 120, render: (s: RmcBatchDto['status']) => <BatchStatusTag status={s} /> },
             ]}
           />
-          <Typography.Title level={2} style={{ fontSize: 16, marginTop: 20 }}>
+          <Typography.Title level={2} style={{ ...tk.type.title, marginTop: tk.space[5] }}>
             Store against what is left to pour
           </Typography.Title>
           <Table
