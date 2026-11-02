@@ -33,6 +33,7 @@ export function ListToolbar({
   hideProject,
   children,
   extra,
+  view,
   statusLabels = SUBMISSION_STATUS_LABELS,
   filters,
 }: {
@@ -51,6 +52,8 @@ export function ListToolbar({
   children?: React.ReactNode;
   /** Right-aligned actions such as Export. */
   extra?: React.ReactNode;
+  /** The list's view toggle (`frame.viewToggle`): first of the right-hand tools, and on a phone beside Filters. */
+  view?: React.ReactNode;
   /** Status wording for this kind of entry. */
   statusLabels?: Record<SubmissionStatus, string>;
   /** The filters on, for the phone's Filters button; left out, it counts the project and status. */
@@ -72,7 +75,12 @@ export function ListToolbar({
         {projectFilter}
         {statusFilter}
         {children}
-        {extra ? <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>{extra}</div> : null}
+        {extra || view ? (
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+            {view}
+            {extra}
+          </div>
+        ) : null}
       </CardToolbar>
     );
 
@@ -91,10 +99,11 @@ export function ListToolbar({
   ) : null;
   return (
     <CardToolbar vertical gap={token.marginXS}>
-      {searchBox || filtersButton ? (
-        <Flex gap={token.marginXS} align="center">
+      {searchBox || filtersButton || view ? (
+        <Flex gap={token.marginXS} align="center" justify="space-between">
           {searchBox ? <div style={{ flex: 1, minWidth: 0 }}>{searchBox}</div> : null}
           {filtersButton}
+          {view}
         </Flex>
       ) : null}
       {extra ? (

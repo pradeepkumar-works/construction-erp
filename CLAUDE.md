@@ -110,7 +110,7 @@ and the pre-delivery checklist.
   a due date is `DueCell`. Keep `src/scripts/list-columns-test.ts` passing. A list's view fits its data (ARCHITECTURE
   "Views that fit the data"): a pipeline offers a board (`viewKinds`, `BoardView` over `boardColumns`, a count and rupees
   per stage), a record each site files each day a grid of sites by days (`DayGridView` over `dayGrid`, `SiteDayGrid`), where
-  a day with nothing filed is an empty cell; the toggle is `frame.viewToggle`, and `?view=` keeps a choice other than the
+  a day with nothing filed is an empty cell and a state is one `DayMark` with a key; the toggle is `frame.viewToggle`, passed as `ListToolbar`'s `view`, and `?view=` keeps a choice other than the
   first. Keep `src/scripts/list-views-test.ts` passing.
 - States: a page loading shows `PageSkeleton` (`components/common/QueryState.tsx`, shapes list/record/home/workspace), a failed
   query `QueryError` (403, 404 and offline get their own Result). `DataTable` draws its own first-load skeleton and empty state:

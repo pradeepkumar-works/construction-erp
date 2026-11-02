@@ -54,18 +54,25 @@
 }
 
 .gridBox {
+  --grid-place: 15rem;
+  --grid-day: 2.75rem;
   position: relative;
   overflow-x: auto;
 }
 
 .grid {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
+}
+
+.placeCol {
+  width: var(--grid-place);
 }
 
 .grid th,
 .grid td {
-  padding: var(--s-2);
+  padding: var(--s-2) var(--s-1);
   border-block-end: thin solid var(--c-line-hairline);
   text-align: center;
   white-space: nowrap;
@@ -76,32 +83,72 @@
   position: sticky;
   inset-inline-start: 0;
   z-index: 1;
-  min-width: 12.5rem;
-  max-width: 17.5rem;
+  padding-inline: var(--s-2) !important;
+  border-inline-end: thin solid var(--c-line-hairline);
   text-align: start !important;
   white-space: normal !important;
   background: var(--c-surface-base);
 }
 
 .dayHead {
-  color: var(--c-text-muted);
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
-.dayCell {
-  min-width: 3.5rem;
+.weekday,
+.span {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--c-text-muted);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-1) var(--s-4);
+  margin: 0 0 var(--s-2);
+  padding: 0;
+  list-style: none;
+  font-size: 0.75rem;
+  color: var(--c-text-muted);
+}
+
+.legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+}
+
+.dot,
+.ring,
+.swatch {
+  display: inline-block;
+  flex: none;
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 50%;
+}
+
+.ring {
+  border: 0.125rem solid;
+}
+
+.swatch {
+  width: 0.875rem;
+  height: 0.875rem;
+  border-radius: var(--r-sm);
+  background: var(--c-surface-sunken);
+  border: thin solid var(--c-line-hairline);
 }
 
 .missing {
-  min-width: 3.5rem;
   background: var(--c-surface-sunken);
 }
 
 /* On a phone the site column gives up room so a few days show beside it. */
 @media (max-width: 767px) {
-  .placeHead,
-  .placeCell {
-    min-width: 8rem;
-    max-width: 10rem;
+  .gridBox {
+    --grid-place: 8.5rem;
   }
 }

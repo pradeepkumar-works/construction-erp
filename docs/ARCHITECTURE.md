@@ -302,7 +302,10 @@ rupees in it in one money scale (`boardColumns` in `@erp/shared/list-views.ts`, 
 site files each day (daily reports, head counts) has a grid of sites by days (`dayGrid`, `DayGridView`, `SiteDayGrid`):
 every filing site gets a row whether it filed or not, the latest day on the right, and a day with nothing filed is a
 shaded empty cell read out as such, so "who did not file yesterday" is answered at a glance; the sites that missed the
-most days lead. `useListFrame({ viewKinds })` names the views, the first being the default (Tenders, Daily reports and Head
+most days lead. The grid reads like a calendar: each day a narrow column of the same width headed by its weekday and
+date, and each cell one mark told apart by shape as well as colour (`DayMark`: a tick done, a dot waiting, a ring in hand,
+a cross sent back), with a key above that ends on the empty cell; a count (a head count) is the number itself. Under the
+toolbar the toggle is `ListToolbar`'s `view`, which a phone draws as icons beside Filters. `useListFrame({ viewKinds })` names the views, the first being the default (Tenders, Daily reports and Head
 count open on theirs; indents and bills open on the table); another choice is kept in the address as `?view=`, and
 clearing filters or picking a saved view keeps it. On a phone a board's stages stack. `src/scripts/list-views-test.ts`
 (CI) holds the layouts.

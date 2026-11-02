@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Button, Tooltip } from 'antd';
 import { PlusOutlined } from '@/components/common/icons';
 import type { AiDraftDto, DailyReportDto } from '@erp/shared';
-import { LIST_SORT_FIELDS, MAX_PAGE_SIZE, SUBMISSION_STATUS_LABELS, SUBMISSION_STATUS_SHORT_LABELS } from '@erp/shared';
+import { LIST_SORT_FIELDS, MAX_PAGE_SIZE, SUBMISSION_STATUS_LABELS, statusTone } from '@erp/shared';
 import { useNewIntent } from '@/lib/new-intent';
 import { useDprList, LIST_START } from '@/lib/queries';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
@@ -12,9 +12,9 @@ import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
 import { ExportButton } from '@/components/common/ExportButton';
 import { EmptyArt } from '@/components/common/EmptyArt';
-import { AppTag } from '@/components/common/AppTag';
 import { formatDayMonth, todayDate } from '@/lib/format';
-import { SiteDayGrid, gridDays, useFilingSites } from '@/components/site-days/SiteDayGrid';
+import { SUBMISSION_DAY_LEGEND, SiteDayGrid, gridDays, useFilingSites } from '@/components/site-days/SiteDayGrid';
+import { DayMark } from '@/components/list/ListViewsOfData';
 import { DataTable } from '@/components/list/DataTable';
 import { DateRangeFilter } from '@/components/list/DateRangeFilter';
 import { useBulkApprove } from '@/components/list/bulk';
@@ -92,9 +92,9 @@ export function DprList({ projectId: fixedProject, newLabel }: { projectId?: str
         onSearch={onDays ? undefined : page.setSearch}
         searchPlaceholder="Search work, issues, people"
         searchLabel="Search DPRs"
+        view={frame.viewToggle}
         extra={
           <>
-            {frame.viewToggle}
             <ExportButton onExport={exportRows} />
             {newButton}
           </>
@@ -112,15 +112,14 @@ export function DprList({ projectId: fixedProject, newLabel }: { projectId?: str
           shown={grid.data?.items.length ?? 0}
           total={grid.data?.total ?? 0}
           missingWord="No daily report"
+          legend={SUBMISSION_DAY_LEGEND}
           cell={(reports, day, site) => {
             const r = reports[0];
             const status = SUBMISSION_STATUS_LABELS[r.status];
             return (
               <Tooltip title={status}>
                 <Button type="text" size="small" onClick={() => setOpenId(r.id)} aria-label={`Daily report, ${site.name}, ${formatDayMonth(day)}, ${status.toLowerCase()}`}>
-                  <AppTag kind="submission" status={r.status}>
-                    {SUBMISSION_STATUS_SHORT_LABELS[r.status]}
-                  </AppTag>
+                  <DayMark meaning={statusTone('submission', r.status)} />
                 </Button>
               </Tooltip>
             );

@@ -325,9 +325,7 @@ function TendersPage() {
           onSearch={page.setSearch}
           searchPlaceholder="Search name of work, number, NIT or client"
           searchLabel="Search tenders"
-          extra={
-            <ViewToggle kinds={VIEW_KINDS} value={view} onChange={setView} />
-          }
+          view={<ViewToggle kinds={VIEW_KINDS} value={view} onChange={setView} />}
         >
           <Select
             aria-label="Tenders to show"

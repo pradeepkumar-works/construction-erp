@@ -88,9 +88,9 @@ export function MrList({ projectId: fixedProject, newLabel, openId: initialOpen 
         onSearch={page.setSearch}
         searchPlaceholder="Search indent no., items, people"
         searchLabel="Search indents"
+        view={frame.viewToggle}
         extra={
           <>
-            {frame.viewToggle}
             <ExportButton onExport={exportRows} />
             {newButton}
           </>

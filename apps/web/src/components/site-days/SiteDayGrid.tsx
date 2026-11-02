@@ -6,9 +6,17 @@ import { tk } from '@/ds';
 import { useProjects } from '@/lib/queries';
 import { EmptyArt } from '@/components/common/EmptyArt';
 import { PageSkeleton } from '@/components/common/QueryState';
-import { DayGridView } from '@/components/list/ListViewsOfData';
+import { DayGridView, DayMark, type DayLegendItem } from '@/components/list/ListViewsOfData';
 
 const DEFAULT_DAYS = 14;
+
+/** The key for a grid of submissions (daily reports): one line per mark, in the order a day moves through. */
+export const SUBMISSION_DAY_LEGEND: readonly DayLegendItem[] = [
+  { key: 'done', mark: <DayMark meaning="done" />, label: 'Approved' },
+  { key: 'waiting', mark: <DayMark meaning="waiting" />, label: 'Waiting for approval' },
+  { key: 'inHand', mark: <DayMark meaning="inHand" />, label: 'Draft' },
+  { key: 'failed', mark: <DayMark meaning="failed" />, label: 'Sent back or rejected' },
+];
 const MAX_DAYS = 31;
 const DAY_MS = 86_400_000;
 
@@ -46,6 +54,7 @@ export function SiteDayGrid<T extends { projectId: string; date: string }>({
   shown,
   total,
   missingWord,
+  legend,
 }: {
   label: string;
   sites: ProjectSummary[];
@@ -57,6 +66,8 @@ export function SiteDayGrid<T extends { projectId: string; date: string }>({
   shown: number;
   total: number;
   missingWord: string;
+  /** The marks the cells use (`SUBMISSION_DAY_LEGEND`); a grid of counts has none. */
+  legend?: readonly DayLegendItem[];
 }) {
   const box = React.useRef<HTMLDivElement>(null);
   const ready = !loading && sites.length > 0;
@@ -84,6 +95,7 @@ export function SiteDayGrid<T extends { projectId: string; date: string }>({
         placeKey={(p) => p.id}
         cell={cell}
         missingWord={missingWord}
+        legend={legend}
         place={(site, missing) => (
           <>
             <span translate="no">

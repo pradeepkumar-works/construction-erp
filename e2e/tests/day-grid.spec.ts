@@ -30,6 +30,10 @@ test('Daily reports opens on sites by days, a cell opens its report, and Table i
   await expect(rows.first().getByRole('rowheader')).toContainText(/\d+ days? missing/);
   await expect(rows.first().locator('td').filter({ hasText: 'No daily report' }).first()).toBeAttached();
 
+  // Each cell is one mark, told apart by shape and colour, and the key above says what each mark and the empty cell mean.
+  const key = page.getByRole('list', { name: 'Key' });
+  for (const word of ['Approved', 'Waiting for approval', 'Sent back or rejected', 'No daily report']) await expect(key).toContainText(word);
+
   // A cell is a button named for its site, day and state, and opens that report in the drawer.
   const cell = grid.getByRole('button', { name: /^Daily report, .+, \d{2} \w{3}, / }).first();
   await expect(cell).toBeVisible();

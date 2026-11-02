@@ -14,7 +14,7 @@ export const WHATS_NEW: WhatsNew[] = [
     title: 'Boards and day grids',
     points: [
       'Tenders open as a board: a column for each stage with how many and how much in it. Indents and RA bills offer the same board from the view switch beside the list.',
-      'Daily reports and head counts open as a grid of sites by days, so a site that did not file shows as empty days. Sites that missed the most come first.',
+      'Daily reports and head counts open as a calendar of sites by days, one mark a day with a key above it, so a site that did not file shows as empty days. Sites that missed the most come first.',
       'Switch back to the table at any time; the page remembers the choice in its address.',
     ],
   },
