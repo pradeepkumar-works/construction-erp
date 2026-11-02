@@ -2,6 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { Alert, Checkbox, Form, Input, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import type { AttachmentDto, RaBillDto } from '@erp/shared';
@@ -93,7 +94,7 @@ export function BillFormModal({ open, onClose, projectId, defaultProjectId, bill
       draftKey={bill ? undefined : `ra-bill:${projectId ?? 'any'}`}
     >
       <Form form={form} layout="vertical">
-        {bill?.reviewNote && <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Reviewer note from ${bill.reviewedByName ?? 'approver'}`} description={bill.reviewNote} />}
+        {bill?.reviewNote && <Alert type="warning" showIcon style={{ marginBottom: tk.space[4] }} title={`Reviewer note from ${bill.reviewedByName ?? 'approver'}`} description={bill.reviewNote} />}
         <Typography.Paragraph type="secondary">
           The bill takes the approved measurements dated up to the date you give that no earlier bill took, prices them at the BOQ rates and applies the
           project&apos;s contract terms (GST, retention, advance recovery, TDS and cess). Measurements approved later are picked up when the bill is submitted.

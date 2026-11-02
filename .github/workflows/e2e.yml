@@ -95,6 +95,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/web
         run: npx tsx --tsconfig tsconfig.json scripts/tokens-check.ts
+      - name: The codemod onto the design tokens rewrites what it should and leaves the rest (docs/design/REDESIGN.md)
+        if: matrix.suite == 'flows'
+        working-directory: apps/web
+        run: npx tsx --tsconfig tsconfig.json scripts/codemods/to-tk-test.ts
       - name: Start the API as erp_runtime
         working-directory: apps/api
         run: |

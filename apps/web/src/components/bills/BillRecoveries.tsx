@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { ContractCurrency, ObligationBillLineDto } from '@erp/shared';
 import { formatMoney, toNumber } from '@/lib/format';
 
@@ -32,7 +33,7 @@ export function ObligationRecoveryNotes({ lines, total, c, projectId }: { lines:
           { title: 'This bill', dataIndex: 'amount', align: 'right', render: (v: string) => <strong translate="no">{formatMoney(v, c, true)}</strong> },
         ]}
       />
-      <p style={{ marginTop: 8, marginBottom: 0 }}>
+      <p style={{ marginTop: tk.space[2], marginBottom: 0 }}>
         <Link href={`/projects/${projectId}?tab=contract`}>Obligations on the contract</Link>
       </p>
     </>

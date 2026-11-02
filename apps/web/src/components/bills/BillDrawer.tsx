@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Alert, App, Button, Divider, Form, Input, InputNumber, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import dayjs from 'dayjs';
@@ -26,7 +27,6 @@ import { InTallyTag } from '@/components/tally/InTallyTag';
 import { BillPriceVariation } from './BillPriceVariation';
 import { BillStages, SlippageNotes } from './BillStages';
 import { ObligationRecoveryNotes } from './BillRecoveries';
-import { themeColor, themeFontSize } from '@/lib/theme';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
 import { checksSection, useChecksFigure } from '@/components/checks/ChecksSection';
 import { projectContext } from '@/components/record/RecordParts';
@@ -46,7 +46,7 @@ const money = (v: string, c: ContractCurrency) => <span className="mono" transla
 
 function Row({ label, value, strong, muted, c }: { label: React.ReactNode; value: string; strong?: boolean; muted?: boolean; c: ContractCurrency }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '3px 0', fontWeight: strong ? 600 : undefined, color: muted ? themeColor('colorTextDescription') : undefined }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', gap: tk.space[3], padding: `${tk.space[1]} 0`, fontWeight: strong ? tk.type.title.fontWeight : undefined, color: muted ? tk.color.text.faint : undefined }}>
       <span>{label}</span>
       {money(value, c)}
     </div>
@@ -170,7 +170,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                 <Alert
                   type="info"
                   showIcon
-                  style={{ marginBottom: 12 }}
+                  style={{ marginBottom: tk.space[3] }}
                   title={
                     data.om
                       ? 'Draft: check the period’s staff and penalties, then submit it for approval.'
@@ -182,7 +182,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                 <Alert
                   type="warning"
                   showIcon
-                  style={{ marginBottom: 12 }}
+                  style={{ marginBottom: tk.space[3] }}
                   title={`Left out until the client approves a variation: ${data.heldExtraItems.map((i) => `${i.itemNo} ${i.description} (${formatQty(i.qty)} ${unitLabel(i.unit)} measured)`).join('; ')}`}
                   description={<Link href={`/projects/${data.projectId}?tab=variations`}>Open the project&apos;s variations</Link>}
                 />
@@ -251,7 +251,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                         render: (_, i) => (
                           <div>
                             <span className="mono" translate="no">{i.itemNo}</span> {i.description}
-                            {i.extraItem ? <AppTag meaning="waiting" style={{ marginLeft: 6 }}>Extra item</AppTag> : toNumber(i.excessQty) > 0 ? <AppTag meaning="failed" style={{ marginLeft: 6 }}>Excess {formatQty(i.excessQty)} {i.unit}</AppTag> : null}
+                            {i.extraItem ? <AppTag meaning="waiting" style={{ marginInlineStart: tk.space[2] }}>Extra item</AppTag> : toNumber(i.excessQty) > 0 ? <AppTag meaning="failed" style={{ marginInlineStart: tk.space[2] }}>Excess {formatQty(i.excessQty)} {i.unit}</AppTag> : null}
                           </div>
                         ),
                       },
@@ -260,7 +260,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                       { title: 'Previous', dataIndex: 'prevQty', width: 100, align: 'right', render: (v, i) => <span className="mono" translate="no">{formatQty(v)} {i.unit}</span> },
                       { title: 'This bill', dataIndex: 'thisQty', width: 100, align: 'right', render: (v, i) => <span className="mono" translate="no">{formatQty(v)} {i.unit}</span> },
                       ...(certified
-                        ? [{ title: 'Certified', dataIndex: 'certifiedQty', width: 100, align: 'right' as const, render: (v: string | null, i: RaBillItemDto) => <span className="mono" translate="no" style={v !== null && v !== i.thisQty ? { color: themeColor('colorErrorText') } : undefined}>{v === null ? formatQty(v) : `${formatQty(v)} ${i.unit}`}</span> }]
+                        ? [{ title: 'Certified', dataIndex: 'certifiedQty', width: 100, align: 'right' as const, render: (v: string | null, i: RaBillItemDto) => <span className="mono" translate="no" style={v !== null && v !== i.thisQty ? { color: tk.color.tone.danger.fg } : undefined}>{v === null ? formatQty(v) : `${formatQty(v)} ${i.unit}`}</span> }]
                         : []),
                       { title: 'Up to date', dataIndex: 'uptoQty', width: 110, align: 'right', render: (v, i) => <span className="mono" translate="no">{formatQty(v)} {i.unit}</span> },
                       { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong className="mono" translate="no">{formatMoney(v, data, true)}</strong> },
@@ -274,28 +274,28 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
               key: 'amounts',
               title: 'Amount and deductions',
               children: (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12, marginTop: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: tk.space[3], marginTop: tk.space[3] }}>
                   <Section title="Bill amount">
                     <Row c={data} label="Work done up to the previous bill" value={data.grossPrevious} muted />
                     <Row c={data} label="Work done this bill" value={data.grossAmount} strong />
                     <Row c={data} label="Work done up to date" value={data.grossUpto} muted />
                     {data.pvLines.length ? <Row c={data} label="Price variation" value={data.pvAmount} strong /> : null}
-                    <Divider style={{ margin: '6px 0' }} />
+                    <Divider style={{ margin: `${tk.space[2]} 0` }} />
                     <Row c={data} label={`GST @ ${formatPct(data.gstRate)}`} value={data.gstAmount} />
                     <Row c={data} label="Bill amount with GST" value={data.invoiceAmount} strong />
                     <Row c={data} label="Less deductions" value={data.totalDeductions} />
-                    <Divider style={{ margin: '6px 0' }} />
-                    <Row c={data} label={<span style={{ fontSize: themeFontSize('fontSizeLG') }}>Net payable</span>} value={data.netPayable} strong />
+                    <Divider style={{ margin: `${tk.space[2]} 0` }} />
+                    <Row c={data} label={<span style={{ fontSize: tk.type.lead.fontSize }}>Net payable</span>} value={data.netPayable} strong />
                     {approved && data.stage !== 'NOT_SENT' && (
                       <>
-                        <Divider style={{ margin: '6px 0' }} />
+                        <Divider style={{ margin: `${tk.space[2]} 0` }} />
                         <Row c={data} label="Money received" value={data.receivedAmount} />
                         <Row c={data} label="Settled (received and deducted)" value={data.settledAmount} muted />
                         <Row c={data} label="Outstanding" value={data.outstanding} strong />
                       </>
                     )}
                     {data.claimedNet !== null && (
-                      <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                      <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
                         Claimed {formatMoney(data.claimedGross, data, true)} of work, {formatMoney(data.claimedNet, data, true)} net. The client certified {formatMoney(toNumber(data.claimedNet) - toNumber(data.netPayable), data, true)} less; the quantities it cut come back in the next bill.
                       </Typography.Text>
                     )}
@@ -307,7 +307,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                     ))}
                     {data.deductions.length > 0 && (
                       <>
-                        <Divider style={{ margin: '6px 0' }} />
+                        <Divider style={{ margin: `${tk.space[2]} 0` }} />
                         <Row c={data} label="Total" value={data.totalDeductions} strong />
                       </>
                     )}
@@ -447,7 +447,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                   rowKey="stageId"
                   size="small"
                   pagination={false}
-                  style={{ marginTop: 12 }}
+                  style={{ marginTop: tk.space[3] }}
                   dataSource={stageClaims}
                   columns={[
                     { title: 'Stage', render: (_, l) => <span><span className="mono" translate="no">{l.componentCode}</span> {l.stageName}</span> },

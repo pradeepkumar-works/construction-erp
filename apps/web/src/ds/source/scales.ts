@@ -47,6 +47,8 @@ export const TYPE = {
   strong: { size: 14, weight: 500, face: 'body' },
   lead: { size: 16, weight: 400, face: 'body' },
   title: { size: 16, weight: 600, face: 'display', track: '-0.01em' },
+  /** A card's figure or a panel's lead line: the 20 on the scale between a title and a page heading. */
+  subhead: { size: 20, weight: 600, face: 'display', track: '-0.01em' },
   heading: { size: 24, weight: 600, face: 'display', track: '-0.02em' },
   display: { size: 30, weight: 600, face: 'display', track: '-0.02em' },
   figure: { size: 24, weight: 600, face: 'display', track: '-0.02em', tabular: true },
