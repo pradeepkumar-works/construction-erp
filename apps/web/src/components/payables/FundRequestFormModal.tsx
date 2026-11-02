@@ -2,6 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { Alert, Form, Input, Segmented, Select, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -121,7 +122,7 @@ export function FundRequestFormModal({ open, onClose, request, projectId: fixedP
       draftKey={editing ? undefined : 'fund-request'}
     >
       <Form form={form} layout="vertical">
-        {request?.reviewNote && <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Reviewer note from ${request.reviewedByName ?? 'approver'}`} description={request.reviewNote} />}
+        {request?.reviewNote && <Alert type="warning" showIcon style={{ marginBottom: tk.space[4] }} title={`Reviewer note from ${request.reviewedByName ?? 'approver'}`} description={request.reviewNote} />}
         {editing ? (
           <Typography.Paragraph type="secondary">
             {request.projectName}: {request.targetLabel}

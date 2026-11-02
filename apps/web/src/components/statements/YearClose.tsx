@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { tk } from '@/ds';
 import { Alert, App, Button, Card, Form, Select, Space, Table, Typography } from "antd";
 import { DatePicker } from "@/components/common/DatePicker";
 import { AppTag } from "@/components/common/AppTag";
@@ -294,7 +295,7 @@ export function YearClose() {
     Math.round((Number(data.openingDebit) - Number(data.openingCredit)) * 100) /
     100;
   return (
-    <div style={{ padding: 16, display: "grid", gap: 16 }}>
+    <div style={{ padding: tk.space[4], display: "grid", gap: tk.space[4] }}>
       <Card
         size="small"
         title="Opening balances"
@@ -470,7 +471,7 @@ export function YearClose() {
         <Alert
           type="info"
           showIcon
-          style={{ marginTop: 12 }}
+          style={{ marginTop: tk.space[3] }}
           title="Closing a year"
           description="Closing empties the year's income and expenses into the Profit & Loss A/c under reserves and locks the books up to 31 March. The statements still show the year's own figures; balances carry forward on their own."
         />

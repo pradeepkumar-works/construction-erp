@@ -3,7 +3,8 @@
 import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { App, Button, Card, Empty, Flex, Statistic, Typography, theme } from 'antd';
+import { App, Button, Card, Empty, Flex, Statistic, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { MailOutlined } from '@/components/common/icons';
 import { PACE_DAYS, canViewContract, canViewLetters, type BillingReadinessRowDto, type NextBillDto } from '@erp/shared';
@@ -58,7 +59,6 @@ function NextBill({ next, projectId }: { next: NextBillDto; projectId: string })
  */
 export default function Page() {
   const { user } = useAuth();
-  const { token } = theme.useToken();
   const { message } = App.useApp();
   const router = useRouter();
   const [projectId] = useProjectScope();
@@ -86,7 +86,7 @@ export default function Page() {
     }
   };
   const late = data.rows.reduce((n, r) => n + r.unpaid.filter((b) => b.late).length, 0);
-  const big = { content: { fontSize: token.fontSizeHeading4 } };
+  const big = { content: { fontSize: tk.type.lead.fontSize } };
 
   const row = (r: BillingReadinessRowDto) => (
     <Card
@@ -100,11 +100,11 @@ export default function Page() {
       }
     >
       {r.clientName ? (
-        <Typography.Paragraph type="secondary" translate="no" style={{ marginTop: -token.marginXXS }}>
+        <Typography.Paragraph type="secondary" translate="no" style={{ marginTop: -tk.space[1] }}>
           {r.clientName}
         </Typography.Paragraph>
       ) : null}
-      <Flex vertical gap={token.marginSM}>
+      <Flex vertical gap={tk.space[3]}>
         <NextBill next={r.next} projectId={r.projectId} />
         {r.unbilledSheets ? (
           <p style={{ margin: 0 }}>
@@ -119,7 +119,7 @@ export default function Page() {
         {r.notSent.length ? (
           <div>
             <Typography.Text strong>Approved, not sent to the client:</Typography.Text>
-            <ul style={{ margin: `${token.marginXXS}px 0 0`, paddingInlineStart: token.paddingLG }}>
+            <ul style={{ margin: `${tk.space[1]} 0 0`, paddingInlineStart: tk.space[6] }}>
               {r.notSent.map((b) => (
                 <li key={b.billId}>
                   <Link href={`/bills/${b.billId}`} className="text-link">
@@ -134,9 +134,9 @@ export default function Page() {
         {r.unpaid.length ? (
           <div>
             <Typography.Text strong>Sent, not paid:</Typography.Text>
-            <Flex vertical gap={token.marginXS} style={{ marginTop: token.marginXXS }}>
+            <Flex vertical gap={tk.space[2]} style={{ marginTop: tk.space[1] }}>
               {r.unpaid.map((b) => (
-                <Flex key={b.billId} data-bill={b.billId} wrap align="center" justify="space-between" gap={token.marginSM}>
+                <Flex key={b.billId} data-bill={b.billId} wrap align="center" justify="space-between" gap={tk.space[3]}>
                   <p style={{ margin: 0 }}>
                     <Link href={`/bills/${b.billId}`} className="text-link">
                       {b.label}
@@ -160,7 +160,7 @@ export default function Page() {
   return (
     <div className="page-container">
       <PageHeader title="Billing readiness" subtitle={`What the next bills will be worth, money earned and not yet asked for, and money asked for and not yet paid, as of ${formatDate(data.asOf)}.`} />
-      <Flex wrap gap={token.marginSM} style={{ marginBottom: token.margin }}>
+      <Flex wrap gap={tk.space[3]} style={{ marginBottom: tk.space[4] }}>
         <Card size="small" style={{ flex: '1 1 180px' }}>
           <Statistic title={`Next bills by ${formatDate(data.billBy)}`} value={0} formatter={() => <span translate="no">{formatINRCompact(data.totals.nextAtBillBy)}</span>} styles={big} />
           <Typography.Text type="secondary">
@@ -189,7 +189,7 @@ export default function Page() {
         </Card>
       </Flex>
       {data.rows.length ? (
-        <Flex vertical gap={token.marginSM}>
+        <Flex vertical gap={tk.space[3]}>
           {data.rows.map(row)}
         </Flex>
       ) : (

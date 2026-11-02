@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo } from 'react';
 import { Alert, App, Form, Input, Select, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import dayjs from 'dayjs';
@@ -175,7 +176,7 @@ export function PaymentFormModal({ open, onClose, bill, payment }: { open: boole
               </>
             )}
             {chosenBill?.vendorMsme && (chosenBill.vendorMsme === 'MICRO' || chosenBill.vendorMsme === 'SMALL') ? (
-              <AppTag meaning="waiting" style={{ marginLeft: 8 }}>
+              <AppTag meaning="waiting" style={{ marginLeft: tk.space[2] }}>
                 {MSME_CATEGORY_LABELS[chosenBill.vendorMsme]}: 45 days at most
               </AppTag>
             ) : null}
@@ -212,7 +213,7 @@ export function PaymentFormModal({ open, onClose, bill, payment }: { open: boole
         <Typography.Paragraph>
           This settles <strong>{formatINR(settles, true)}</strong> of the {billType === null ? 'advance' : 'bill'} (paid plus deducted).
         </Typography.Paragraph>
-        {over > 1 && <Alert type="warning" showIcon style={{ marginBottom: 12 }} title={`That is ${formatINR(over, true)} more than ${target?.paymentRequestId ? 'the request has left to pay' : 'the bill has outstanding'}.`} />}
+        {over > 1 && <Alert type="warning" showIcon style={{ marginBottom: tk.space[3] }} title={`That is ${formatINR(over, true)} more than ${target?.paymentRequestId ? 'the request has left to pay' : 'the bill has outstanding'}.`} />}
         <Form.Item name="remarks" label="Remarks">
           <Input.TextArea rows={2} maxLength={1000} />
         </Form.Item>

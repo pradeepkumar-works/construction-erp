@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo } from 'react';
 import { Alert, App, Form, Input, InputNumber, Segmented, Select, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -207,7 +208,7 @@ export function ReceiptFormModal({ open, onClose, bill, receipt }: { open: boole
             <Typography.Paragraph>
               This settles <strong>{fm(outOfContract(settles, cur)!)}</strong> of the bill (received plus deducted).
             </Typography.Paragraph>
-            {over > 1 && <Alert type="warning" showIcon style={{ marginBottom: 12 }} title={`That is ${fm(over)} more than the bill has outstanding.`} />}
+            {over > 1 && <Alert type="warning" showIcon style={{ marginBottom: tk.space[3] }} title={`That is ${fm(over)} more than the bill has outstanding.`} />}
           </FormSection>
         )}
         <Form.Item name="remarks" label="Remarks">

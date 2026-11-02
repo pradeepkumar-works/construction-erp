@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Alert, Segmented, Statistic, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import type { CashFlowGranularity, CashFlowPeriodDto } from '@erp/shared';
@@ -12,11 +13,10 @@ import { useCashFlow } from '@/lib/queries';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { formatINR, toNumber, formatMonth, formatDayMonth } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
-import { themeColor, themeFontSize } from '@/lib/theme';
 import { Money } from '@/components/common/Money';
 
-const RED = themeColor('colorErrorText');
-const GREEN = themeColor('colorSuccessText');
+const RED = tk.color.tone.danger.fg;
+const GREEN = tk.color.tone.success.fg;
 const signed = (v: string) => (
   <span className="mono" translate="no" style={{ color: toNumber(v) < 0 ? RED : undefined }}>
     {formatINR(v)}
@@ -48,7 +48,7 @@ export function CashFlowPanel({ projectId: fixedProject }: { projectId?: string 
           {periodLabel(p, granularity)}
           {i === 0 && overdue ? (
             <div>
-              <AppTag meaning="waiting" style={{ marginTop: 2 }}>
+              <AppTag meaning="waiting" style={{ marginTop: tk.space.half }}>
                 includes overdue
               </AppTag>
             </div>
@@ -70,9 +70,9 @@ export function CashFlowPanel({ projectId: fixedProject }: { projectId?: string 
       key: 'bars',
       width: 160,
       render: (_, p) => (
-        <div style={{ display: 'grid', gap: 3 }} aria-hidden>
-          <div style={{ height: 7, width: `${(toNumber(p.inTotal) / scale) * 100}%`, background: GREEN, borderRadius: 2 }} />
-          <div style={{ height: 7, width: `${(toNumber(p.outTotal) / scale) * 100}%`, background: RED, borderRadius: 2 }} />
+        <div style={{ display: 'grid', gap: tk.space[1] }} aria-hidden>
+          <div style={{ height: 7, width: `${(toNumber(p.inTotal) / scale) * 100}%`, background: tk.color.tone.success.solid, borderRadius: tk.radius.xs }} />
+          <div style={{ height: 7, width: `${(toNumber(p.outTotal) / scale) * 100}%`, background: tk.color.tone.danger.solid, borderRadius: tk.radius.xs }} />
         </div>
       ),
     },
@@ -80,7 +80,7 @@ export function CashFlowPanel({ projectId: fixedProject }: { projectId?: string 
 
   return (
     <div className="cash-flow">
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginBottom: 12 }}>
+      <div style={{ display: 'flex', gap: tk.space[3], flexWrap: 'wrap', alignItems: 'center', marginBottom: tk.space[3] }}>
         <Segmented<CashFlowGranularity>
           value={granularity}
           onChange={setGranularity}
@@ -96,15 +96,15 @@ export function CashFlowPanel({ projectId: fixedProject }: { projectId?: string 
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {data && (
         <>
-          <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', marginBottom: 12 }}>
-            <Statistic title="Money in" value={formatINR(sum('inTotal'))} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
-            <Statistic title="Money out" value={formatINR(sum('outTotal'))} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
-            <Statistic title="Net over the period" value={formatINR(sum('net'))} styles={{ content: { fontSize: themeFontSize('fontSizeXL'), color: sum('net') < 0 ? RED : GREEN } }} />
+          <div style={{ display: 'flex', gap: tk.space[8], flexWrap: 'wrap', marginBottom: tk.space[3] }}>
+            <Statistic title="Money in" value={formatINR(sum('inTotal'))} styles={{ content: { fontSize: tk.type.subhead.fontSize } }} />
+            <Statistic title="Money out" value={formatINR(sum('outTotal'))} styles={{ content: { fontSize: tk.type.subhead.fontSize } }} />
+            <Statistic title="Net over the period" value={formatINR(sum('net'))} styles={{ content: { fontSize: tk.type.subhead.fontSize, color: sum('net') < 0 ? RED : GREEN } }} />
             {overdue ? (
               <Statistic
                 title="Overdue today (in the first row)"
                 value={`${formatINR(data.overdueIn)} in · ${formatINR(data.overdueOut)} out`}
-                styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }}
+                styles={{ content: { fontSize: tk.type.subhead.fontSize } }}
               />
             ) : null}
           </div>
@@ -112,7 +112,7 @@ export function CashFlowPanel({ projectId: fixedProject }: { projectId?: string 
             <Alert
               type="warning"
               showIcon
-              style={{ marginBottom: 12 }}
+              style={{ marginBottom: tk.space[3] }}
               title="Part of the forecast rests on assumptions"
               description={
                 <>
@@ -147,7 +147,7 @@ export function CashFlowPanel({ projectId: fixedProject }: { projectId?: string 
         </>
       )}
       <Table<CashFlowPeriodDto> rowKey="start" size="small" loading={isLoading || isFetching} columns={columns} dataSource={periods} pagination={false} scroll={{ x: 1530 }} />
-      <Typography.Paragraph type="secondary" style={{ fontSize: themeFontSize('fontSizeSM'), marginTop: 8 }}>
+      <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[2] }}>
         Client bills are approved RA bills not yet paid, expected the client&apos;s payment days after they were sent (set on the Contract tab;{' '}
         {DEFAULT_CLIENT_PAYMENT_DAYS} days when not set). Retention and security deposit come back at the end of the defect liability period. Work still to
         bill is the revised contract value less what has been billed, billed evenly up to the completion date and received after the payment days, with GST

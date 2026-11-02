@@ -2,28 +2,27 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Alert, Descriptions, Flex, Statistic, Table, Typography, theme } from 'antd';
+import { Alert, Descriptions, Flex, Statistic, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import type { LdExposureDto } from '@erp/shared';
 import { LD_PERIOD_LABELS, PROJECT_STATUS_LABELS } from '@erp/shared';
 import { useLdExposure } from '@/lib/queries';
 import { formatDate, formatINR, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
-import { themeFontSize } from '@/lib/theme';
 
 const rateLine = (ld: LdExposureDto) => (Number(ld.ldRatePct) > 0 ? `${ld.ldRatePct}% ${LD_PERIOD_LABELS[ld.ldPeriod]}, capped at ${ld.ldCapPct}%` : 'No LD rate in the contract');
 
 /** One project's liquidated damages exposure, on its Contract tab. */
 export function LdExposureCard({ ld }: { ld: LdExposureDto }) {
-  const { token } = theme.useToken();
   const noRate = Number(ld.ldRatePct) === 0;
   return (
     <Flex vertical gap={12} className="ld-exposure">
       {noRate ? <Alert type="info" showIcon title="Add the LD rate and cap from the contract to see what late completion would cost." /> : null}
       <Flex gap={32} wrap>
-        <Statistic title="Days late" value={ld.daysLate} suffix={ld.completedOn ? 'at completion' : 'today'} styles={{ content: ld.daysLate ? { color: token.colorErrorText } : undefined }} />
-        <Statistic title="LD to date" value={formatINR(ld.ldToDate)} styles={{ content: Number(ld.ldToDate) ? { color: token.colorErrorText } : undefined }} />
-        <Statistic title="Forecast LD" value={formatINR(ld.ldForecast)} styles={{ content: Number(ld.ldForecast) ? { color: token.colorWarningText } : undefined }} />
+        <Statistic title="Days late" value={ld.daysLate} suffix={ld.completedOn ? 'at completion' : 'today'} styles={{ content: ld.daysLate ? { color: tk.color.tone.danger.fg } : undefined }} />
+        <Statistic title="LD to date" value={formatINR(ld.ldToDate)} styles={{ content: Number(ld.ldToDate) ? { color: tk.color.tone.danger.fg } : undefined }} />
+        <Statistic title="Forecast LD" value={formatINR(ld.ldForecast)} styles={{ content: Number(ld.ldForecast) ? { color: tk.color.tone.pending.fg } : undefined }} />
         <Statistic title="If pending extensions are granted" value={formatINR(ld.ldForecastWithEot)} />
       </Flex>
       <Descriptions size="small" column={{ xs: 1, sm: 2, lg: 3 }} bordered>
@@ -62,7 +61,7 @@ export function LdExposureTable() {
   return (
     <Flex vertical gap={12} className="ld-exposure-table">
       {error ? <QueryError error={error} onRetry={() => refetch()} /> : null}
-      <Flex gap={32} wrap style={{ padding: '8px 12px 0' }}>
+      <Flex gap={32} wrap style={{ padding: `${tk.space[2]} ${tk.space[3]} 0` }}>
         <Statistic title="Projects late" value={rows.filter((r) => r.daysLate > 0).length} />
         <Statistic title="LD to date" value={formatINR(String(total('ldToDate')))} />
         <Statistic title="Forecast LD" value={formatINR(String(total('ldForecast')))} />
@@ -84,7 +83,7 @@ export function LdExposureTable() {
               <div>
                 <Link href={`/projects/${r.projectId}?tab=contract`}>{r.projectName}</Link>
                 <div>
-                  <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                  <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
                     {r.projectCode} · {PROJECT_STATUS_LABELS[r.projectStatus]} · {rateLine(r)}
                   </Typography.Text>
                 </div>

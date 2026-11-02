@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Alert, App, Button, Card, Col, Descriptions, Form, Input, Radio, Row, Select, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { CreditCardOutlined, PrinterOutlined } from '@/components/common/icons';
 import type { BillingDetailsDto, BillingInvoiceDto } from '@erp/shared';
@@ -72,7 +73,7 @@ export default function BillingPage() {
         error ? null : <PageSkeleton shape="record" header={false} />
       ) : (
         <>
-          <Card style={{ marginBottom: 16 }}>
+          <Card style={{ marginBottom: tk.space[4] }}>
             <Descriptions
               size="small"
               column={{ xs: 1, sm: 2 }}
@@ -99,7 +100,7 @@ export default function BillingPage() {
             />
             {data.status === 'READ_ONLY' && (
               <Alert
-                style={{ marginTop: 12 }}
+                style={{ marginTop: tk.space[3] }}
                 type="error"
                 showIcon
                 title="The company is read-only"
@@ -110,12 +111,12 @@ export default function BillingPage() {
           {data.status !== 'EXEMPT' && (
             <Row gutter={16}>
               <Col xs={24} md={12}>
-                <Card title={data.status === 'ACTIVE' ? 'Renew' : 'Subscribe'} style={{ marginBottom: 16 }}>
+                <Card title={data.status === 'ACTIVE' ? 'Renew' : 'Subscribe'} style={{ marginBottom: tk.space[4] }}>
                   <Typography.Paragraph>
                     {data.units} {data.units === 1 ? unit.one : unit.many} at {formatINR(data.unitPrice)} a month.{' '}
                     {data.status === 'TRIAL' && data.trialEndsAt ? `Paying now starts after the trial, on the day after ${formatDate(data.trialEndsAt)}.` : ''}
                   </Typography.Paragraph>
-                  <Radio.Group value={months} onChange={(e) => setMonths(e.target.value)} style={{ marginBottom: 12 }}>
+                  <Radio.Group value={months} onChange={(e) => setMonths(e.target.value)} style={{ marginBottom: tk.space[3] }}>
                     <Radio.Button value={1}>Monthly</Radio.Button>
                     <Radio.Button value={12}>Yearly ({12 - BILLING_YEAR_CHARGED_MONTHS} months free)</Radio.Button>
                   </Radio.Group>
@@ -131,11 +132,11 @@ export default function BillingPage() {
                       { key: 'total', label: 'Total', children: <b>{formatINR(amount.total, true)}</b> },
                     ]}
                   />
-                  {!data.detailsComplete && <Alert style={{ marginTop: 12 }} type="warning" showIcon title="Fill in who the invoice is made out to before paying." />}
-                  <Button type="primary" icon={<CreditCardOutlined />} style={{ marginTop: 12 }} disabled={!data.detailsComplete} loading={paying} onClick={pay}>
+                  {!data.detailsComplete && <Alert style={{ marginTop: tk.space[3] }} type="warning" showIcon title="Fill in who the invoice is made out to before paying." />}
+                  <Button type="primary" icon={<CreditCardOutlined />} style={{ marginTop: tk.space[3] }} disabled={!data.detailsComplete} loading={paying} onClick={pay}>
                     Pay {formatINR(amount.total, true)}
                   </Button>
-                  <Typography.Paragraph type="secondary" style={{ marginTop: 8, marginBottom: 0 }}>
+                  <Typography.Paragraph type="secondary" style={{ marginTop: tk.space[2], marginBottom: 0 }}>
                     UPI, cards and net banking through Razorpay. The GST invoice appears below once paid.
                   </Typography.Paragraph>
                 </Card>
@@ -145,7 +146,7 @@ export default function BillingPage() {
               </Col>
             </Row>
           )}
-          <Card title="Invoices" style={{ marginBottom: 16 }}>
+          <Card title="Invoices" style={{ marginBottom: tk.space[4] }}>
             <Table<BillingInvoiceDto>
               rowKey="id"
               size="small"
@@ -195,7 +196,7 @@ function DetailsCard({ details }: { details: BillingDetailsDto }) {
   };
 
   return (
-    <Card title="Invoice to" style={{ marginBottom: 16 }}>
+    <Card title="Invoice to" style={{ marginBottom: tk.space[4] }}>
       <Form form={form} layout="vertical" onFinish={submit} initialValues={details} requiredMark={false}>
         <Form.Item name="name" label="Legal name" rules={[{ required: true, message: 'Enter the legal name' }]}>
           <Input maxLength={200} />

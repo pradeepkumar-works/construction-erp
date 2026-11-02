@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Button, Space, Statistic, Typography } from 'antd';
+import { tk } from '@/ds';
 import { TeamOutlined } from '@/components/common/icons';
 import type { ProjectCostSummaryDto } from '@erp/shared';
 import { PROJECT_TYPE_LABELS } from '@erp/shared';
@@ -16,7 +17,6 @@ import { defaultPeriod, PeriodPicker, periodLabel, periodParams, type PeriodStat
 import { LabourRatesModal } from './LabourRatesModal';
 import { UnpricedNote, unpricedText } from './UnpricedNote';
 import { CardToolbar } from '@/components/common/CardToolbar';
-import { themeColor, themeFontSize } from '@/lib/theme';
 import { Money } from '@/components/common/Money';
 import { LocalDataTable } from '@/components/list/LocalDataTable';
 import type { ListColumn } from '@/components/list/DataTable';
@@ -68,7 +68,7 @@ export function CostOverview() {
       render: (v, r) => (
         <div>
           <Link href={`/projects/${r.projectId}?tab=cost`}>{v}</Link>
-          <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+          <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
             {r.projectCode} · {PROJECT_TYPE_LABELS[r.projectType]}
           </div>
         </div>
@@ -82,7 +82,7 @@ export function CostOverview() {
       sorter: (a, b) => toNumber(a.cost.total) - toNumber(b.cost.total),
       render: (_, r) => (
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: tk.space[2] }}>
             <Money value={r.cost.total} />
             <UnpricedNote unpriced={r.unpriced} />
           </div>
@@ -126,19 +126,19 @@ export function CostOverview() {
         </Space>
       </CardToolbar>
       <CardToolbar variant="summary" wrap gap={32}>
-        <Statistic title="Work done" value={formatINR(totals.executed)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
-        <Statistic title="Measured (approved MB)" value={formatINR(totals.measured)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
-        <Statistic title="Cost" value={formatINR(totals.cost)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
-        <Statistic title="Margin" value={formatINR(totals.margin)} styles={{ content: { fontSize: themeFontSize('fontSizeXL'), color: totals.margin < 0 ? themeColor('colorErrorText') : themeColor('colorSuccessText') } }} />
-        <Statistic title="Billed (RA bills)" value={formatINR(totals.billed)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
-        <Statistic title="Cash in" value={formatINR(totals.cashIn)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
-        <Statistic title="Cash out" value={formatINR(totals.cashOut)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
+        <Statistic title="Work done" value={formatINR(totals.executed)} styles={{ content: { fontSize: tk.type.subhead.fontSize } }} />
+        <Statistic title="Measured (approved MB)" value={formatINR(totals.measured)} styles={{ content: { fontSize: tk.type.subhead.fontSize } }} />
+        <Statistic title="Cost" value={formatINR(totals.cost)} styles={{ content: { fontSize: tk.type.subhead.fontSize } }} />
+        <Statistic title="Margin" value={formatINR(totals.margin)} styles={{ content: { fontSize: tk.type.subhead.fontSize, color: totals.margin < 0 ? tk.color.tone.danger.fg : tk.color.tone.success.fg } }} />
+        <Statistic title="Billed (RA bills)" value={formatINR(totals.billed)} styles={{ content: { fontSize: tk.type.subhead.fontSize } }} />
+        <Statistic title="Cash in" value={formatINR(totals.cashIn)} styles={{ content: { fontSize: tk.type.subhead.fontSize } }} />
+        <Statistic title="Cash out" value={formatINR(totals.cashOut)} styles={{ content: { fontSize: tk.type.subhead.fontSize } }} />
         <div style={{ alignSelf: 'flex-end', marginLeft: 'auto' }}>
           <CostLegend />
         </div>
       </CardToolbar>
       <LocalDataTable<CostRow> list="cost-overview" columns={columns} rows={rows} loading={isLoading || isFetching} failed={!!error} emptyText="No project has cost in this period" />
-      <Typography.Paragraph type="secondary" style={{ fontSize: themeFontSize('fontSizeSM'), padding: '8px 16px 0' }}>
+      <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, padding: `${tk.space[2]} ${tk.space[4]} 0` }}>
         {periodLabel(period)}. Cost is approved site expenses, material issued at the item master rate, approved machinery logs at the hire rate, attendance at the
         trade&apos;s daily rate and the work value of approved subcontractor bills (their gangs and the material they were charged for are not counted
         again). Work done is approved progress at BOQ rates. Billed is the work done on approved RA bills dated in the period; money in is what

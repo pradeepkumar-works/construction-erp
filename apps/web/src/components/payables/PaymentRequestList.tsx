@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Button, Select, Space } from 'antd';
+import { tk } from '@/ds';
 import { PlusOutlined } from '@/components/common/icons';
 import type { PaymentRequestDto, PaymentRequestKind, PaymentRequestSortField, SubmissionStatus } from '@erp/shared';
 import { FUND_PURPOSE_LABELS, LIST_SORT_FIELDS, PAYMENT_REQUEST_KINDS, PAYMENT_REQUEST_KIND_LABELS, canRecordPayment, canReleaseFunds, canRequestFunds, canRequestPayment } from '@erp/shared';
@@ -14,7 +15,6 @@ import { useProjectScope } from '@/lib/project-scope';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { PAYMENT_REQUEST_EXPORT } from '@/lib/exportColumns';
 import { formatDate, formatINR, toNumber, NO_VALUE } from '@/lib/format';
-import { themeFontSize } from '@/lib/theme';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
 import { ExportButton } from '@/components/common/ExportButton';
@@ -101,7 +101,7 @@ export function PaymentRequestList({ projectId: given, vendorId, fund }: { proje
           <RecordLink href={`/payment-requests/${r.id}`} onOpen={() => setOpened(r.id)} strong className="mono">
             {r.requestNo}
           </RecordLink>
-          <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+          <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
             {formatDate(r.createdAt.slice(0, 10))}
           </div>
         </div>
@@ -124,7 +124,7 @@ export function PaymentRequestList({ projectId: given, vendorId, fund }: { proje
             ) : (
               forLabel(r)
             )}
-            <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+            <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
               {PAYMENT_REQUEST_KIND_LABELS[r.kind]}
             </div>
           </div>
@@ -139,7 +139,7 @@ export function PaymentRequestList({ projectId: given, vendorId, fund }: { proje
         <div>
           {requestPayee(r)}
           {r.kind === 'FUND_REQUEST' && r.vendorId ? <span className="text-muted"> · on account</span> : null}
-          <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+          <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
             {r.projectCode} · {r.projectName}
             {r.raisedAtProjectName ? `, asked from ${r.raisedAtProjectName}` : ''}
           </div>

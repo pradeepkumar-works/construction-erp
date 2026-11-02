@@ -2,7 +2,8 @@
 
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Button, Card, Col, Row, Select, Statistic, Typography, theme } from 'antd';
+import { Button, Card, Col, Row, Select, Statistic, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTabs } from '@/components/common/AppTabs';
 import { PlusOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -33,13 +34,11 @@ import { DataTable, useColumnChoice, type ListColumn } from '@/components/list/D
 import { LocalDataTable } from '@/components/list/LocalDataTable';
 import { exportSelected } from '@/components/list/bulk';
 import { RecordLink } from '@/components/record/RecordLink';
-import { themeColor, themeFontSize } from '@/lib/theme';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
 import { MoreActions } from '@/components/record/MoreActions';
 
 function Sub({ children }: { children: React.ReactNode }) {
-  const { token } = theme.useToken();
-  return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
+  return <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{children}</div>;
 }
 /** An overdue amount: shown in red, and the dash where nothing is late. */
 const lateOnly = (v: string) => (toNumber(v) > 0 ? v : null);
@@ -301,7 +300,7 @@ export default function ReceivablesPage() {
       render: (v: string, r) => (
         <div>
           <Link href={`/projects/${r.projectId}?tab=bills`}>{v}</Link>
-          <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+          <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
             {r.clientName ?? ''}
           </div>
         </div>
@@ -318,7 +317,7 @@ export default function ReceivablesPage() {
       sorter: true,
       sortOrder: page.sortOrderFor('daysOutstanding'),
       sortDirections: ['descend', 'ascend'],
-      render: (v: number) => <span style={{ color: v > 90 ? themeColor('colorErrorText') : v > 60 ? themeColor('colorWarningText') : undefined }}>{v}</span>,
+      render: (v: number) => <span style={{ color: v > 90 ? tk.color.tone.danger.fg : v > 60 ? tk.color.tone.pending.fg : undefined }}>{v}</span>,
     },
     { key: 'sentDate', title: 'Sent', dataIndex: 'sentDate', width: 110, card: 'date', render: (v) => formatDate(v) },
     { key: 'stage', title: 'With client', dataIndex: 'stage', width: 120, card: 'status', render: (s) => <BillStageTag stage={s} /> },
@@ -340,7 +339,7 @@ export default function ReceivablesPage() {
       render: (v: string, r) => (
         <div>
           <Link href={`/projects/${r.projectId}?tab=bills`}>{v}</Link>
-          <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+          <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
             {r.clientName ?? ''}
           </div>
         </div>
@@ -375,19 +374,19 @@ export default function ReceivablesPage() {
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {isLoading && <PageSkeleton shape="workspace" header={false} />}
       {t && (
-        <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
+        <Row gutter={[12, 12]} style={{ marginBottom: tk.space[4] }}>
           <Col flex="1 1 180px">
             <Card style={{ height: '100%' }}>
               <Statistic title="Outstanding" value={formatINRCompact(t.outstanding)} />
-              <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+              <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
                 {data.openBills.length} open bill{data.openBills.length === 1 ? '' : 's'} · {formatINR(t.notSent)} approved, not sent
               </Typography.Text>
             </Card>
           </Col>
           <Col flex="1 1 180px">
             <Card style={{ height: '100%' }}>
-              <Statistic title="Over 90 days" value={formatINRCompact(t.ageing.over90)} styles={{ content: { color: toNumber(t.ageing.over90) > 0 ? themeColor('colorErrorText') : undefined } }} />
-              <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+              <Statistic title="Over 90 days" value={formatINRCompact(t.ageing.over90)} styles={{ content: { color: toNumber(t.ageing.over90) > 0 ? tk.color.tone.danger.fg : undefined } }} />
+              <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
                 61-90 days: {formatINR(t.ageing.days61to90)}
               </Typography.Text>
             </Card>
@@ -395,7 +394,7 @@ export default function ReceivablesPage() {
           <Col flex="1 1 180px">
             <Card style={{ height: '100%' }}>
               <Statistic title="Retention and security deposit held" value={formatINRCompact(toNumber(t.retentionHeld) + toNumber(t.depositHeld))} />
-              <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+              <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
                 Retention {formatINR(t.retentionHeld)} · security deposit {formatINR(t.depositHeld)}
               </Typography.Text>
             </Card>
@@ -403,7 +402,7 @@ export default function ReceivablesPage() {
           <Col flex="1 1 180px">
             <Card style={{ height: '100%' }}>
               <Statistic title="TDS deducted" value={formatINRCompact(toNumber(t.tdsDeducted) + toNumber(t.gstTdsDeducted))} />
-              <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+              <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
                 Income tax {formatINR(t.tdsDeducted)} · GST {formatINR(t.gstTdsDeducted)}
               </Typography.Text>
             </Card>

@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { AutoComplete, Button, Form, Input, InputNumber, Select, Space, Typography, theme } from 'antd';
+import { AutoComplete, Button, Form, Input, InputNumber, Select, Space, Typography } from 'antd';
+import { tk } from '@/ds';
 import { ThunderboltOutlined } from '@/components/common/icons';
 import type { ItemDto, SorItemDto, TenderDetailDto, TenderItemDto, TenderLineKind } from '@erp/shared';
 import { TENDER_LINE_KINDS, TENDER_LINE_KIND_LABELS, sorPctLabel } from '@erp/shared';
@@ -58,7 +59,6 @@ function costOf(lines: Line[] | undefined) {
  */
 export function TenderItemDrawer({ open, onClose, tender, item }: { open: boolean; onClose: () => void; tender: TenderDetailDto; item: TenderItemDto | null }) {
   const [form] = Form.useForm<Values>();
-  const { token } = theme.useToken();
   const notify = useNotify();
   const save = useTenderAction();
   const library = useTenderAction();
@@ -326,7 +326,7 @@ export function TenderItemDrawer({ open, onClose, tender, item }: { open: boolea
                       const l = form.getFieldValue(['lines', field.name]) as Line | undefined;
                       const a = costOf(l ? [l] : []);
                       return (
-                        <Typography.Text translate="no" type={l?.rate === null || l?.rate === undefined ? 'secondary' : undefined} style={{ fontSize: token.fontSizeSM }}>
+                        <Typography.Text translate="no" type={l?.rate === null || l?.rate === undefined ? 'secondary' : undefined} style={{ fontSize: tk.type.caption.fontSize }}>
                           {l?.rate === null || l?.rate === undefined ? 'On saving' : formatINR(a, true)}
                         </Typography.Text>
                       );

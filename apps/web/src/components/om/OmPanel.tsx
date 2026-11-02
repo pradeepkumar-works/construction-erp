@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { App, Button, Flex, Form, Input, InputNumber, Segmented, Select, Space, Statistic, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import { DeleteOutlined, EditOutlined, LeftOutlined, PlusOutlined, RightOutlined } from '@/components/common/icons';
@@ -31,7 +32,6 @@ import { FAIL_NOTICE, useNotify } from '@/lib/notify';
 import { useOm, WATCH_LIST_KEY } from '@/lib/queries';
 import { useUrlParam, useUrlTab } from '@/lib/url-state';
 import { formatDate, formatDayMonth, formatINR, formatMonth, formatPct, formatQty, formatCount } from '@/lib/format';
-import { themeFontSize } from '@/lib/theme';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { Section } from '@/components/common/Section';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
@@ -53,8 +53,8 @@ const counted = (label: string, n: number) => (
 
 const VIEWS = ['service', 'periods', 'staff', 'chemicals', 'terms'] as const;
 type View = (typeof VIEWS)[number];
-const figure = { content: { fontSize: themeFontSize('fontSizeXL') } };
-const small = { fontSize: themeFontSize('fontSizeSM') };
+const figure = { content: { fontSize: tk.type.subhead.fontSize } };
+const small = { fontSize: tk.type.caption.fontSize };
 const num = (v: string | number | null) => (v === null || v === '' ? '-' : <span translate="no">{formatQty(v)}</span>);
 const shiftMonth = (m: string, n: number) => dayjs(`${m}-01`).add(n, 'month').format('YYYY-MM');
 const toStr = (v: number | null | undefined) => (v === null || v === undefined ? null : String(v));
@@ -78,7 +78,7 @@ export function OmPanel({ project }: { project: ProjectDetail }) {
 
   if (!data.contract)
     return (
-      <div style={{ padding: 24 }}>
+      <div style={{ padding: tk.space[6] }}>
         <p>
           {data.handedOverOn
             ? `Handed over on ${formatDate(data.handedOverOn)}. Set out the O&M terms (years, % of the contract each year, instalments, service level benchmarks, minimum staff and chemical norms) to log service levels and bill each period.`
@@ -99,7 +99,7 @@ export function OmPanel({ project }: { project: ProjectDetail }) {
   const shown = data.months.find((m) => m.month === data.month);
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 16 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: tk.space[4] }}>
       <Space size={32} wrap>
         <Statistic title="Now in" value={data.current?.label ?? (data.today < c.startOn ? `Starts ${formatDate(c.startOn)}` : 'Ended')} styles={figure} />
         <Statistic title="This period so far" value={running ? formatINR(running.net) : '-'} styles={figure} />

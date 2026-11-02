@@ -2,6 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { App, Form, Input, Segmented, Select, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import type { FormInstance } from 'antd';
 import dayjs from 'dayjs';
@@ -166,7 +167,7 @@ export function VoucherForm({
             },
           ]}
         />
-        <Form.Item name="narration" label="Narration" rules={[{ required: true, whitespace: true, message: 'Say what the voucher is for' }]} style={{ marginTop: 16 }}>
+        <Form.Item name="narration" label="Narration" rules={[{ required: true, whitespace: true, message: 'Say what the voucher is for' }]} style={{ marginTop: tk.space[4] }}>
           <Input.TextArea rows={2} maxLength={1000} />
         </Form.Item>
       </Form>

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo } from 'react';
 import { Alert, Form, Input, Select, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -198,7 +199,7 @@ function BillRequestFormModal({ open, onClose, target, request }: { open: boolea
       draftKey={editing || target ? undefined : 'payment-request'}
     >
       <Form form={form} layout="vertical">
-        {request?.reviewNote && <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Reviewer note from ${request.reviewedByName ?? 'approver'}`} description={request.reviewNote} />}
+        {request?.reviewNote && <Alert type="warning" showIcon style={{ marginBottom: tk.space[4] }} title={`Reviewer note from ${request.reviewedByName ?? 'approver'}`} description={request.reviewNote} />}
         {!target && !editing && (
           <FormGrid cols={2}>
             <Form.Item name="kind" label="For" rules={[{ required: true, message: 'Choose what the payment is for' }]}>
@@ -254,7 +255,7 @@ function BillRequestFormModal({ open, onClose, target, request }: { open: boolea
             />
           </Form.Item>
         </FormGrid>
-        {over > 1 && <Alert type="warning" showIcon style={{ marginBottom: 12 }} title={`That is ${formatINR(over, true)} more than can be asked for.`} />}
+        {over > 1 && <Alert type="warning" showIcon style={{ marginBottom: tk.space[3] }} title={`That is ${formatINR(over, true)} more than can be asked for.`} />}
         <Form.Item
           name="reason"
           label="Reason"

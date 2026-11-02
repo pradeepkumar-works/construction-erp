@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { tk } from '@/ds';
 import { Alert, Button, Space, Table, Typography } from "antd";
 import { DatePicker } from "@/components/common/DatePicker";
 import { DownloadOutlined } from "@/components/common/icons";
@@ -86,14 +87,14 @@ export function BalanceSheet() {
       ]),
     );
   return (
-    <div style={{ padding: 16 }}>
+    <div style={{ padding: tk.space[4] }}>
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
-          gap: 8,
+          gap: tk.space[2],
           flexWrap: "wrap",
-          marginBottom: 12,
+          marginBottom: tk.space[3],
         }}
       >
         <Space wrap>
@@ -123,7 +124,7 @@ export function BalanceSheet() {
             <Alert
               type="error"
               showIcon
-              style={{ marginBottom: 12 }}
+              style={{ marginBottom: tk.space[3] }}
               title={`Assets and liabilities differ by ${formatINR(Math.abs(Number(data.difference)), true)}`}
               description="Every voucher balances, so this should not happen. Post the books again from Books, Day book, and tell your administrator if it stays."
             />
@@ -148,7 +149,7 @@ export function BalanceSheet() {
             )}
           />
           {data && (
-            <Typography.Paragraph type="secondary" style={{ marginTop: 12 }}>
+            <Typography.Paragraph type="secondary" style={{ marginTop: tk.space[3] }}>
               {`Reserves and surplus include ${Number(data.profitNotClosed.amount) < 0 ? "a loss" : "profit"} of ${formatINR(Math.abs(Number(data.profitNotClosed.amount)), true)} from years not yet closed. Balances on the other side of their group move across, as accountants show them: an overdrawn bank under borrowings, advances to suppliers under loans and advances, GST credit under other current assets.`}
             </Typography.Paragraph>
           )}

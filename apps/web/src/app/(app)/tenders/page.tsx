@@ -1,6 +1,7 @@
 "use client";
 
 import React, { Suspense, useState } from "react";
+import { tk } from '@/ds';
 import { useRouter } from "next/navigation";
 import {
   Button,
@@ -10,7 +11,6 @@ import {
   Select,
   Statistic,
   Typography,
-  theme,
 } from "antd";
 import { PlusOutlined } from "@/components/common/icons";
 import {
@@ -66,7 +66,6 @@ const STATUS_OPTIONS = [
  * project and accounts managers look on.
  */
 function TendersPage() {
-  const { token } = theme.useToken();
   const { user } = useAuth();
   const router = useRouter();
   const canView = !!user && canViewTenders(user.roleKey);
@@ -114,7 +113,7 @@ function TendersPage() {
           </RecordLink>
           <Typography.Text
             type="secondary"
-            style={{ display: "block", fontSize: token.fontSizeSM }}
+            style={{ display: "block", fontSize: tk.type.caption.fontSize }}
             translate="no"
           >
             {[r.tenderNo, r.nitNo].filter(Boolean).join(" · ")}
@@ -132,7 +131,7 @@ function TendersPage() {
           {r.location ? (
             <Typography.Text
               type="secondary"
-              style={{ display: "block", fontSize: token.fontSizeSM }}
+              style={{ display: "block", fontSize: tk.type.caption.fontSize }}
             >
               {r.location}
             </Typography.Text>
@@ -154,7 +153,7 @@ function TendersPage() {
           ) : r.submittedOn ? (
             <Typography.Text
               type="secondary"
-              style={{ display: "block", fontSize: token.fontSizeSM }}
+              style={{ display: "block", fontSize: tk.type.caption.fontSize }}
             >
               Submitted
             </Typography.Text>
@@ -188,7 +187,7 @@ function TendersPage() {
             {r.quotedPct !== null ? (
               <Typography.Text
                 type="secondary"
-                style={{ display: "block", fontSize: token.fontSizeSM }}
+                style={{ display: "block", fontSize: tk.type.caption.fontSize }}
               >
                 {sorPctLabel(r.quotedPct)}
               </Typography.Text>
@@ -210,7 +209,7 @@ function TendersPage() {
             {r.rank > 1 && r.l1Amount ? (
               <Typography.Text
                 type="secondary"
-                style={{ display: "block", fontSize: token.fontSizeSM }}
+                style={{ display: "block", fontSize: tk.type.caption.fontSize }}
                 translate="no"
               >
                 {`${rankLabel(1)} ${r.l1Name ?? ""} ${formatINR(r.l1Amount)}`}
@@ -266,13 +265,13 @@ function TendersPage() {
           title={title}
           value={0}
           formatter={() => value}
-          styles={{ content: { fontSize: token.fontSizeHeading4 } }}
+          styles={{ content: { fontSize: tk.type.lead.fontSize } }}
         />
         {note ? (
           <div
             style={{
-              fontSize: token.fontSizeSM,
-              color: token.colorTextSecondary,
+              fontSize: tk.type.caption.fontSize,
+              color: tk.color.text.muted,
             }}
           >
             {note}
@@ -292,7 +291,7 @@ function TendersPage() {
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {isLoading ? <PageSkeleton header={false} shape="list" /> : null}
       {s ? (
-        <Row gutter={[12, 12]} style={{ marginBottom: token.marginMD }}>
+        <Row gutter={[12, 12]} style={{ marginBottom: tk.space[5] }}>
           {stat(
             "Being prepared",
             s.preparing,

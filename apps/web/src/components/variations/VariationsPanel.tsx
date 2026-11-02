@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Alert, Button, Col, Row, Select, Statistic, theme } from 'antd';
+import { Alert, Button, Col, Row, Select, Statistic } from 'antd';
+import { tk } from '@/ds';
 import { PlusOutlined } from '@/components/common/icons';
 import type { VariationDto, VariationStatus } from '@erp/shared';
 import { VARIATION_CAUSE_LABELS, VARIATION_STATUSES, VARIATION_STATUS_LABELS, canManageVariations } from '@erp/shared';
@@ -24,8 +25,7 @@ const KEYS = ['status'] as const;
 const SORT_FIELDS: SortField[] = ['varNo', 'createdAt', 'claimedAmount'];
 
 function Sub({ children }: { children: React.ReactNode }) {
-  const { token } = theme.useToken();
-  return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
+  return <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{children}</div>;
 }
 
 /** Contract value, approved and pending variations and the revised contract value; the register below. */
@@ -111,12 +111,12 @@ export function VariationsPanel({ projectId: fixedProject, openId }: { projectId
         <Alert
           type="warning"
           showIcon
-          style={{ margin: fixedProject ? '0 12px 12px' : 12 }}
+          style={{ margin: fixedProject ? '0 12px 12px' : tk.space[3] }}
           title={`${extras} extra item${extras === 1 ? '' : 's'} in the BOQ without a quantity`}
           description="RA bills leave out extra items until the client approves a variation that gives them a quantity and rate."
         />
       ) : null}
-      <Row gutter={[12, 12]} style={{ padding: fixedProject ? '0 12px 12px' : 12 }}>
+      <Row gutter={[12, 12]} style={{ padding: fixedProject ? '0 12px 12px' : tk.space[3] }}>
         <Col xs={12} md={6}>
           <FigureBlock>
             <Statistic title="Contract value" value={formatINRCompact(sum('contractValue'))} />

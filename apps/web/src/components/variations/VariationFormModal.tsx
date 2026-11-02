@@ -3,6 +3,7 @@
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import React, { useEffect, useMemo } from 'react';
 import { App, Button, Form, Input, Select, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DeleteOutlined, PlusOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, BoqItemDto, VariationCause, VariationDto } from '@erp/shared';
@@ -13,7 +14,6 @@ import { useBoq } from '@/lib/queries';
 import { formatINR, formatQty, toNumber } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { UnitInput } from '@/components/common/UnitInput';
-import { themeColor, themeFontSize } from '@/lib/theme';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
 import { Money } from '@/components/common/Money';
@@ -39,7 +39,7 @@ interface FormValues {
   files?: AttachmentDto[];
 }
 
-const grid = (cols: string) => ({ display: 'grid', gridTemplateColumns: cols, gap: '0 12px', alignItems: 'start' }) as const;
+const grid = (cols: string) => ({ display: 'grid', gridTemplateColumns: cols, gap: `0 ${tk.space[3]}`, alignItems: 'start' }) as const;
 
 /** Rate of a line: the BOQ rate for an item with a quantity, else the rate typed in. */
 const lineRate = (l: LineValues | undefined, boq: Map<string, BoqItemDto>) => {
@@ -150,7 +150,7 @@ export function VariationFormModal({ open, onClose, projectId, variation, prefil
         </FormSection>
 
         <FormSection title="Items">
-          <Typography.Paragraph type="secondary" style={{ fontSize: themeFontSize('fontSizeSM'), marginBottom: 8 }}>
+          <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginBottom: tk.space[2] }}>
             A BOQ item with a quantity change (negative to omit), or a new item with its proposed rate. Nothing changes in the BOQ until the client approves.
           </Typography.Paragraph>
           <Form.List name="lines" rules={[{ validator: async (_, v) => (v?.length ? undefined : Promise.reject(new Error('Add at least one item'))) }]}>
@@ -163,12 +163,12 @@ export function VariationFormModal({ open, onClose, projectId, variation, prefil
                   const extra = !!b && isUnapprovedExtra(b.originalQty, b.revisedQty);
                   const amount = (l?.qty ?? 0) * lineRate(l, boq);
                   return (
-                    <div key={f.key} className="variation-line" style={{ border: `1px solid ${themeColor('colorBorderSecondary')}`, borderRadius: 8, padding: '12px 12px 0', marginBottom: 8 }}>
+                    <div key={f.key} className="variation-line" style={{ border: `1px solid ${tk.color.line.hairline}`, borderRadius: tk.radius.md, padding: `${tk.space[3]} ${tk.space[3]} 0`, marginBottom: tk.space[2] }}>
                       <div style={grid('minmax(0, 1fr) 32px')}>
                         <Form.Item name={[f.name, 'boqItemId']} label="BOQ item" rules={[{ required: true, message: 'Pick an item or "New item"' }]}>
                           <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Pick a BOQ item" options={itemOptions} disabled={!selectedProject} popupMatchSelectWidth={false} />
                         </Form.Item>
-                        <Button type="text" danger icon={<DeleteOutlined />} onClick={() => remove(f.name)} aria-label="Remove item" style={{ marginTop: 30 }} />
+                        <Button type="text" danger icon={<DeleteOutlined />} onClick={() => remove(f.name)} aria-label="Remove item" style={{ marginTop: `calc(${tk.type.body.lineHeight} + ${tk.space[1]})` }} />
                       </div>
                       {isNew && (
                         <FormGrid cols={3}>
@@ -210,7 +210,7 @@ export function VariationFormModal({ open, onClose, projectId, variation, prefil
                   );
                 })}
                 <Form.ErrorList errors={errors} />
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '4px 0 0' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: `${tk.space[1]} 0 0` }}>
                   <Button icon={<PlusOutlined />} onClick={() => add({})} disabled={!selectedProject}>
                     Add item
                   </Button>

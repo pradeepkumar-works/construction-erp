@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Alert, Col, Descriptions, Flex, Row, Segmented, Skeleton, Statistic, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { EarnedValueActivityDto, EarnedValueDto, EarnedValuePointDto, EvBasis } from '@erp/shared';
 import { EV_BAC_SOURCE_LABELS, EV_BASIS_LABELS, EV_BASES } from '@erp/shared';
 import { useEarnedValue } from '@/lib/queries';
@@ -11,7 +12,6 @@ import { QueryError } from '@/components/common/QueryState';
 import { Section, SectionStack } from '@/components/common/Section';
 import { ChartCard } from '@/components/home/ChartCard';
 import { monthLabel } from '@/components/home/chartData';
-import { themeColor, themeFontSize } from '@/lib/theme';
 import { AskButton } from '@/components/ai/AskButton';
 import { Money } from '@/components/common/Money';
 
@@ -20,10 +20,10 @@ const EarnedValueChart = dynamic(() => import('@/components/home/charts').then((
   loading: () => <Skeleton.Node active style={{ width: '100%', height: 300 }} />,
 });
 
-const RED = themeColor('colorErrorText');
-const GREEN = themeColor('colorSuccessText');
-const big = (color?: string) => ({ content: { fontSize: themeFontSize('fontSizeXL'), color } });
-const small = { fontSize: themeFontSize('fontSizeSM') };
+const RED = tk.color.tone.danger.fg;
+const GREEN = tk.color.tone.success.fg;
+const big = (color?: string) => ({ content: { fontSize: tk.type.subhead.fontSize, color } });
+const small = { fontSize: tk.type.caption.fontSize };
 const signed = (v: string | null) => (v === null ? <span className="text-muted">{NO_VALUE}</span> : <span className="mono" translate="no" style={{ color: toNumber(v) < 0 ? RED : toNumber(v) > 0 ? GREEN : undefined }}>{formatINR(v)}</span>);
 /** An index read in words, with 0.95 to 1.05 counted as on plan. */
 const indexColor = (v: number | null) => (v === null ? undefined : v < 0.95 ? RED : v > 1.05 ? GREEN : undefined);
@@ -63,7 +63,7 @@ export function EarnedValuePanel({ projectId }: { projectId: string }) {
 
   return (
     <SectionStack gap={0}>
-      <Flex gap={12} wrap align="center" style={{ marginBottom: 12 }}>
+      <Flex gap={12} wrap align="center" style={{ marginBottom: tk.space[3] }}>
         <Typography.Text type="secondary" style={small}>
           Earned from
         </Typography.Text>
@@ -78,7 +78,7 @@ export function EarnedValuePanel({ projectId }: { projectId: string }) {
               className="ev-notes"
               type={data.bacSource === 'BOQ_VALUE' ? 'warning' : 'info'}
               showIcon
-              style={{ marginBottom: 12 }}
+              style={{ marginBottom: tk.space[3] }}
               title={data.bacSource === 'BOQ_VALUE' ? 'No budget is set, so values are at contract rates and the cost index includes the margin' : 'How these figures are made'}
               description={[
                 data.bacSource === 'BOQ_VALUE' ? 'Set a budget on the Budget and cash flow tab to measure cost against it.' : null,
@@ -119,7 +119,7 @@ export function EarnedValuePanel({ projectId }: { projectId: string }) {
             <AskButton size="small" type="link" style={{ paddingInline: 0, alignSelf: 'flex-start' }} label="Explain" aria-label="Explain the earned value" question="Why is this project behind its planned value or over its cost, and which activities are the cause?" />
           ) : null}
 
-          <div style={{ marginTop: 16 }}>
+          <div style={{ marginTop: tk.space[4] }}>
             <ChartCard
               inSurface
               title="Planned value, earned value and actual cost"
@@ -129,7 +129,7 @@ export function EarnedValuePanel({ projectId }: { projectId: string }) {
             />
           </div>
 
-          <Section style={{ marginTop: 16 }} title="To date">
+          <Section style={{ marginTop: tk.space[4] }} title="To date">
             <Descriptions
               size="small"
               bordered
@@ -153,7 +153,7 @@ export function EarnedValuePanel({ projectId }: { projectId: string }) {
             />
           </Section>
 
-          <Section style={{ marginTop: 16 }} title="By activity, furthest behind first">
+          <Section style={{ marginTop: tk.space[4] }} title="By activity, furthest behind first">
             <Table<EarnedValueActivityDto>
               className="ev-activities"
               size="small"

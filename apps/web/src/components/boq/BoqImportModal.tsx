@@ -3,13 +3,13 @@
 import React, { useMemo, useState } from 'react';
 import { boqRowsFromRead, readNumber, type ReadBoqRow } from '@erp/shared';
 import { Alert, App, Button, Flex, Modal, Select, Space, Table, Typography, Upload } from 'antd';
+import { tk } from '@/ds';
 import { StageBar } from '@/components/record/StageBar';
 import type { UploadProps } from 'antd';
 import { DownloadOutlined, InboxOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
-import { themeColor, themeFontSize } from '@/lib/theme';
 import { loadXlsx } from '@/lib/exportExcel';
 
 import { ReadDocumentButton, ReadPreview, type ReadState } from '@/components/ai/ReadDocument';
@@ -230,8 +230,8 @@ export function BoqImportModal({ open, onClose, projectId, onImported }: { open:
       }
       destroyOnHidden
     >
-      <StageBar current={readState ? 2 : step} label="Import steps" items={readState ? [{ title: 'Read file' }, { title: 'Check the rows' }, { title: 'Import' }] : [{ title: 'Upload file' }, { title: 'Map columns' }, { title: 'Preview and import' }]} style={{ marginBottom: 16 }} />
-      {parseError && <Alert type="error" showIcon title={parseError} style={{ marginBottom: 12 }} />}
+      <StageBar current={readState ? 2 : step} label="Import steps" items={readState ? [{ title: 'Read file' }, { title: 'Check the rows' }, { title: 'Import' }] : [{ title: 'Upload file' }, { title: 'Map columns' }, { title: 'Preview and import' }]} style={{ marginBottom: tk.space[4] }} />
+      {parseError && <Alert type="error" showIcon title={parseError} style={{ marginBottom: tk.space[3] }} />}
 
       {rows.length === 0 ? (
         <Upload.Dragger accept=".xlsx,.xls,.csv" beforeUpload={beforeUpload} showUploadList={false} maxCount={1}>
@@ -243,14 +243,14 @@ export function BoqImportModal({ open, onClose, projectId, onImported }: { open:
         </Upload.Dragger>
       ) : null}
       {rows.length === 0 ? (
-        <Flex align="center" gap={8} wrap style={{ marginTop: 12 }}>
+        <Flex align="center" gap={8} wrap style={{ marginTop: tk.space[3] }}>
           <Typography.Text type="secondary">Only have the BOQ as a PDF or a scan?</Typography.Text>
           <ReadDocumentButton kind="boq" label="Read a BOQ PDF or scan" onRead={applyRead} />
         </Flex>
       ) : readState ? (
         <>
           <ReadPreview state={readState} active={activeRead} onClear={() => setPagesHidden(true)} pagesHidden={pagesHidden}>
-            <Typography.Paragraph style={{ margin: '4px 0 0' }}>
+            <Typography.Paragraph style={{ margin: `${tk.space[1]} 0 0` }}>
               {readRows.length} item{readRows.length === 1 ? '' : 's'} read from {readState.pages.length} page{readState.pages.length === 1 ? '' : 's'}
               {toCheck ? `, ${toCheck} to check (amber)` : ''}. Untick a row to leave it out; correct the rest in the BOQ after importing.
               {readTotal !== null ? (
@@ -304,11 +304,11 @@ export function BoqImportModal({ open, onClose, projectId, onImported }: { open:
           <Typography.Text type="secondary">
             File: <strong>{fileName}</strong> · {rows.length} row{rows.length === 1 ? '' : 's'} found. Map each BOQ field to a column from your sheet.
           </Typography.Text>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '8px 16px', margin: '12px 0 16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: `${tk.space[2]} ${tk.space[4]}`, margin: `${tk.space[3]} 0 ${tk.space[4]}` }}>
             {FIELDS.map((f) => (
               <div key={f.key}>
-                <div style={{ fontSize: themeFontSize('fontSizeSM'), marginBottom: 2 }}>
-                  {f.label} {f.required && <span style={{ color: themeColor('colorErrorText') }}>*</span>}
+                <div style={{ fontSize: tk.type.caption.fontSize, marginBottom: tk.space.half }}>
+                  {f.label} {f.required && <span style={{ color: tk.color.tone.danger.fg }}>*</span>}
                 </div>
                 <Select
                   allowClear
@@ -323,7 +323,7 @@ export function BoqImportModal({ open, onClose, projectId, onImported }: { open:
               </div>
             ))}
           </div>
-          {missingRequired.length > 0 && <Alert type="warning" showIcon title={`Map the required columns: ${missingRequired.map((f) => f.label).join(', ')}`} style={{ marginBottom: 12 }} />}
+          {missingRequired.length > 0 && <Alert type="warning" showIcon title={`Map the required columns: ${missingRequired.map((f) => f.label).join(', ')}`} style={{ marginBottom: tk.space[3] }} />}
           <Table<ParsedRow>
             size="small"
             rowKey="key"
@@ -344,7 +344,7 @@ export function BoqImportModal({ open, onClose, projectId, onImported }: { open:
             ]}
           />
           {parsed.length !== valid.length && (
-            <Typography.Text type="warning" style={{ display: 'block', marginTop: 8 }}>
+            <Typography.Text type="warning" style={{ display: 'block', marginTop: tk.space[2] }}>
               {parsed.length - valid.length} row{parsed.length - valid.length === 1 ? '' : 's'} with problems will be skipped.
             </Typography.Text>
           )}

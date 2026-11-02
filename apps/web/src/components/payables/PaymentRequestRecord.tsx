@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Button, Table } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { PaymentRequestDto, VendorPaymentDto } from '@erp/shared';
@@ -174,7 +175,7 @@ export function PaymentRequestRecord({ id, mode, open, onClose, onEdit }: Record
                     {releases && targetHref ? <Link href={targetHref}>{requestPayee(data)}</Link> : requestPayee(data)}
                     {fund && !releases ? <span className="text-muted"> · on account</span> : null}
                     {data.vendorMsme && data.vendorMsme !== 'MEDIUM' ? (
-                      <AppTag meaning="waiting" style={{ marginLeft: 8 }}>
+                      <AppTag meaning="waiting" style={{ marginLeft: tk.space[2] }}>
                         {MSME_CATEGORY_LABELS[data.vendorMsme]}
                       </AppTag>
                     ) : null}

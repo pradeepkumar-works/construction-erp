@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { Button, Input, Progress, Segmented, Select, Space, Statistic, Table, Tooltip, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { TableProps } from 'antd';
 import { CalculatorOutlined, DeleteOutlined, ExclamationCircleOutlined, DownloadOutlined, EditOutlined, FileExcelOutlined, PlusOutlined } from '@/components/common/icons';
 import type { BoqItemDto } from '@erp/shared';
@@ -16,8 +17,6 @@ import { QueryError } from '@/components/common/QueryState';
 import { BoqFormModal } from './BoqFormModal';
 import { BoqImportModal, downloadBoqTemplate } from './BoqImportModal';
 import { LinkBoqModal } from '@/components/activities/LinkBoqModal';
-import { BRAND } from '@/lib/brand';
-import { themeColor, themeFontSize } from '@/lib/theme';
 import { loadXlsx } from '@/lib/exportExcel';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 import { RateAnalysisDrawer } from '@/components/reconciliation/RateAnalysisDrawer';
@@ -114,7 +113,7 @@ export function BoqTab({ projectId }: { projectId: string }) {
         <>
           <Tooltip title={v}>{v}</Tooltip>
           {r.section || r.workElementName || r.sorRef ? (
-            <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM'), overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize, overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {[r.section, r.workElementName, r.sorRef && `SOR ${r.sorRef}`].filter(Boolean).join(' · ')}
             </div>
           ) : null}
@@ -136,7 +135,7 @@ export function BoqTab({ projectId }: { projectId: string }) {
         return (
           <div>
             <div style={{ textAlign: 'right' }}>{formatQty(v)}</div>
-            <Progress percent={pct} size="small" showInfo={false} strokeColor={pct >= 100 ? themeColor('colorSuccess') : BRAND.colors.primary} aria-label={`${pct}% done`} />
+            <Progress percent={pct} size="small" showInfo={false} strokeColor={pct >= 100 ? tk.color.tone.success.solid : tk.color.accent.solid} aria-label={`${pct}% done`} />
           </div>
         );
       },
@@ -151,7 +150,7 @@ export function BoqTab({ projectId }: { projectId: string }) {
         <div>
           <div>{toNumber(v) ? formatQty(v) : <span className="text-muted">-</span>}</div>
           {toNumber(r.pendingMeasuredQty) ? (
-            <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+            <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
               +{formatQty(r.pendingMeasuredQty)} waiting
             </div>
           ) : null}
@@ -202,15 +201,15 @@ export function BoqTab({ projectId }: { projectId: string }) {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: tk.space[3], flexWrap: 'wrap', marginBottom: tk.space[3] }}>
         <Space size={24} wrap>
-          <Statistic title="BOQ items" value={totals.count} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
-          <Statistic title="BOQ amount" value={formatINR(totals.amount)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
-          <Statistic title="Value of work done" value={formatINR(totals.executed)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
-          <Statistic title="Measured value (approved measurements)" value={formatINR(totals.measured)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
+          <Statistic title="BOQ items" value={totals.count} styles={{ content: { fontSize: tk.type.subhead.fontSize } }} />
+          <Statistic title="BOQ amount" value={formatINR(totals.amount)} styles={{ content: { fontSize: tk.type.subhead.fontSize } }} />
+          <Statistic title="Value of work done" value={formatINR(totals.executed)} styles={{ content: { fontSize: tk.type.subhead.fontSize } }} />
+          <Statistic title="Measured value (approved measurements)" value={formatINR(totals.measured)} styles={{ content: { fontSize: tk.type.subhead.fontSize } }} />
           {gap ? (
-            <p data-testid="boq-gap" style={{ margin: 0, maxWidth: 420, color: themeColor('colorWarningText'), fontSize: themeFontSize('fontSizeSM') }}>
-              <ExclamationCircleOutlined aria-hidden style={{ marginRight: 6 }} />
+            <p data-testid="boq-gap" style={{ margin: 0, maxWidth: 420, color: tk.color.tone.pending.fg, fontSize: tk.type.caption.fontSize }}>
+              <ExclamationCircleOutlined aria-hidden style={{ marginInlineEnd: tk.space[2] }} />
               The BOQ adds up to {formatINRCompact(gap.boqTotal)}, {Math.abs(gap.gapPct)}% {gap.gapPct < 0 ? 'below' : 'above'} the {formatINRCompact(gap.contractValue)} contract value. Work done, earned value and the budget are off until the two agree.
             </p>
           ) : null}
@@ -318,10 +317,10 @@ export function BoqTab({ projectId }: { projectId: string }) {
         scroll={{ x: 1210 }}
         locale={{
           emptyText: (
-            <div style={{ padding: 24 }}>
+            <div style={{ padding: tk.space[6] }}>
               <Typography.Text type="secondary">No BOQ items yet.</Typography.Text>
               {editor && (
-                <div style={{ marginTop: 8 }}>
+                <div style={{ marginTop: tk.space[2] }}>
                   <Button type="link" onClick={downloadBoqTemplate}>
                     Download the Excel template
                   </Button>

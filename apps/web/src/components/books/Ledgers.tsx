@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Select, Space } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { ACCOUNT_GROUP_LABELS, isMoneyGroup } from '@erp/shared';
@@ -36,8 +37,8 @@ export function Ledgers({ money = false }: { money?: boolean }) {
   const accountId = picked ?? (money ? (choices.find((a) => a.group === 'CASH_IN_HAND') ?? choices[0])?.id : undefined);
   const ledger = useLedger({ accountId, from: range[0].format('YYYY-MM-DD'), to: range[1].format('YYYY-MM-DD'), projectId: money ? undefined : projectId });
   return (
-    <div style={{ padding: 16 }}>
-      <Space wrap style={{ marginBottom: 12 }}>
+    <div style={{ padding: tk.space[4] }}>
+      <Space wrap style={{ marginBottom: tk.space[3] }}>
         <Select
           aria-label={money ? 'Cash or bank account' : 'Account'}
           placeholder={money ? 'Cash or bank account' : 'Choose an account'}
