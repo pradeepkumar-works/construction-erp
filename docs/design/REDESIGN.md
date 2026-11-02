@@ -54,11 +54,16 @@ runs and is committed with the last PR.
 
 ### Land the new look (PR 4)
 
-- [ ] The direction Pradeep picks (A quiet or B blueprint) as an edit to `ds/source/` and the font in `app/layout.tsx` only.
-  Colours move onto 12-step ramps per hue with fixed step meanings, which replace the light and dark pairs.
-- [ ] Inter for body and titles, page titles at 24 px, one radius set (4, 6, 10, pill), links in text colour.
-- [ ] CLAUDE.md's look rules (navy sidebar, display face, canvas table header) are rewritten to match.
-- [ ] Verify. The PR diff touches nothing outside `ds/source/`, `layout.tsx` and the docs. Screenshots before and after.
+- [x] Direction A (Quiet), Pradeep's pick, as values in `ds/source/`: a neutral grey palette in both themes, the `chrome`
+  roles turned into a light grey rail (near-black on the night), a new `action` role group for the near-black primary
+  button, a neutral row hover, link hover in a deeper blue. The 12-step ramps are left for later: the light and dark pairs
+  carry the look and the contrast check holds in both themes.
+- [x] Inter for body and titles (Semibold, tracked tight), page titles at 24 px, radius 4, 6, 10 and pill. Links stay blue:
+  a link in running text must stand apart from the words around it (axe's link-in-text-block), so blue is their mark.
+- [x] CLAUDE.md's look rules are rewritten to match.
+- [x] Verify. Outside `ds/` and `layout.tsx` the diff is the heading rules in `globals.css` (weights, the 24 px title, the
+  one face), the sidebar's edge, the sign-in wordmark and titles, and the docs. Screenshots before and after. The website
+  (`/welcome`, `site.css`) keeps its own look.
 
 ### Redo the shared components (PR 5 to PR 7)
 

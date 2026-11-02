@@ -5,12 +5,11 @@ import { Providers } from './providers';
 import { WebVitals } from '@/components/shell/WebVitals';
 import { BRAND } from '@/lib/brand';
 import { tokenCss } from '@/ds/css';
-import { Archivo, Public_Sans } from 'next/font/google';
+import { Inter } from 'next/font/google';
 import './globals.css';
 
-/** Archivo (condensed, heavy) for headings and the wordmark; Public Sans for everything else. */
-const display = Archivo({ subsets: ['latin'], axes: ['wdth'], variable: '--font-display', display: 'swap' });
-const body = Public_Sans({ subsets: ['latin'], variable: '--font-body', display: 'swap' });
+/** Inter for everything (the Quiet look): titles and text in one face, set apart by size and weight. */
+const inter = Inter({ subsets: ['latin'], variable: '--font-body', display: 'swap' });
 
 export const metadata: Metadata = {
   title: BRAND.name,
@@ -31,7 +30,7 @@ const TOKEN_CSS = tokenCss();
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en-IN" className={`${display.variable} ${body.variable}`} suppressHydrationWarning>
+    <html lang="en-IN" className={inter.variable} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: APPEARANCE_SCRIPT }} />
         <style>{TOKEN_CSS}</style>

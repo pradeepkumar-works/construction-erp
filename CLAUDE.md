@@ -60,13 +60,16 @@ and the pre-delivery checklist.
   `tk` from `@/ds`; `docs/design/REDESIGN.md`), plus `BrandMark` and `app/icon.svg`, mobile ones in `src/theme.ts`. New code
   uses `tk` instead of hex or px literals (ESLint's `ds/no-raw-style` refuses them, `theme.useToken()`, `themeColor` and
   `BRAND.colors` outside the files in `src/ds/legacy-files.json`; a file you move onto `tk` leaves that list). A component's look is its
-  tokens in `antdTheme` and `componentConfig` (`src/ds/antd.ts`, both modes), never CSS of a page's own: titles and big
-  figures are the display face (`DISPLAY_FONT`), fields have the blue ring, tables the canvas header.
+  tokens in `antdTheme` and `componentConfig` (`src/ds/antd.ts`, both modes), never CSS of a page's own. The look is the
+  Quiet one (direction A, picked by Pradeep; `docs/design/REDESIGN.md` "Land the new look"): the shell (sidebar, top bar,
+  sign-in panel) is a light grey rail in the light theme and a near-black one in the dark (the `chrome` roles), the primary
+  button is near-black (the `action` roles), blue is kept for focus, links, the chosen item, data and AI, Inter is the one
+  face (titles Semibold, page titles 24 px), fields have the blue ring, tables the canvas header.
   Check antd 6 typings in node_modules before using a prop you are unsure of.
 - Taste: `.claude/skills/design-taste-frontend` (tasteskill, from leonxlnx/taste-skill) is the design guideline for the website
   (`/welcome`, the page run) and app screens (`references/app-screens.md`); its inspector checks the website
   (`node .claude/skills/design-taste-frontend/scripts/inspect.mjs http://localhost:3000/welcome`, 0 FAIL). The rules in this
-  file win where they differ (the navy sidebar, the canvas table header, the Nirmaan blue primary, the launcher's tiles).
+  file win where they differ (the Quiet shell and near-black primary, the canvas table header, the launcher's tiles).
   On the website: no eyebrows, index numbers, rules, boxes, shadows or gradients; screens shown as they are, no browser frame.
 - pstack (Lauren Tan's engineering skills from `cursor/plugins/pstack`, installed from its harness-neutral mirror
   `backnotprop/pstack`, tracked in `skills-lock.json`; everything but `make-bot-ui`): `.claude/skills/poteto-mode` is the
