@@ -5,6 +5,7 @@ import {
   COST_HEAD_LABELS,
   canSeeCashForecast,
   canSeeManagement,
+  grantedExtensionDays,
   revisedCompletion,
   type AttentionItemDto,
   type PendingApprovalDto,
@@ -287,7 +288,7 @@ export class ManagementService {
           const e = dateOnly(a.plannedEnd)!;
           return !max || e > max ? e : max;
         }, null);
-        const completionDate = revisedCompletion(p.endDate, e?.risks.reduce((s, r) => s + (r.eotGrantedDays ?? 0), 0) ?? 0);
+        const completionDate = revisedCompletion(p.endDate, grantedExtensionDays(e?.risks ?? []));
         const schedule = scheduleOf({ status: p.status, done: p.physicalProgressPct, planned, startDate: p.startDate, completionDate, plannedFinish, late, scheduled: dated.length, today: today });
 
         // Cost, commitments and the forecast.

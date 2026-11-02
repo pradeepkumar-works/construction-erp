@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { boqContractGap, canEditProjects, sectorStepOf, setupShown, setupSteps, type ContractModel, type ProjectSetupDto, type ProjectSetupFacts, type ProjectType } from '@erp/shared';
+import { boqContractGap, canEditProjects, dataProblems, sectorStepOf, setupShown, setupSteps, type ContractModel, type ProjectSetupDto, type ProjectSetupFacts, type ProjectType } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -11,8 +11,9 @@ import { ProjectsService } from './projects.service';
 
 /**
  * A new project's setup checklist on its Overview: each step ticked from the project's
- * own records by `setupSteps` in @erp/shared, and the BOQ against the contract value (`boqContractGap`), which the watch
- * list's BOQ_OFF_CONTRACT reads too.
+ * own records by `setupSteps` in @erp/shared, the BOQ against the contract value (`boqContractGap`), which the watch
+ * list's BOQ_OFF_CONTRACT reads too, and the problems that keep its figures wrong (`dataProblems`), which stand on the
+ * Overview for everyone until they are fixed.
  */
 @Injectable()
 export class ProjectSetupService {
@@ -101,6 +102,7 @@ export class ProjectSetupService {
       done,
       total: steps.length,
       boqGap: boqContractGap(f),
+      problems: dataProblems(f),
     };
   }
 

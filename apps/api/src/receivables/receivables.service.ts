@@ -5,6 +5,7 @@ import {
   billLabel,
   canRecordReceipt,
   canViewContract,
+  grantedExtensionDays,
   revisedCompletion,
   type AgeingDto,
   type ClientReceivableDto,
@@ -465,7 +466,7 @@ export class ReceivablesService {
 
     const projectRows: ProjectReceivableDto[] = projects.map((p) => {
       const t = byProject.get(p.id)!;
-      const completion = revisedCompletion(dateOnly(p.endDate), p.risks.reduce((s, r) => s + (r.eotGrantedDays ?? 0), 0));
+      const completion = revisedCompletion(dateOnly(p.endDate), grantedExtensionDays(p.risks));
       return {
         projectId: p.id,
         projectCode: p.code,

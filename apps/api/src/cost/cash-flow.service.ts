@@ -1,7 +1,7 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type { CashFlowDto, CashFlowGranularity } from '@erp/shared';
-import { DEFAULT_CLIENT_PAYMENT_DAYS, canViewCost, revisedCompletion } from '@erp/shared';
+import { DEFAULT_CLIENT_PAYMENT_DAYS, canViewCost, grantedExtensionDays, revisedCompletion } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -162,7 +162,7 @@ export class CashFlowService {
     for (const p of projects) {
       if (p.status === 'COMPLETED' || p.status === 'CLOSED') continue;
       const f = forecasts.get(p.id)!;
-      const completion = revisedCompletion(dateOnly(p.endDate), p.risks.reduce((s, r) => s + (r.eotGrantedDays ?? 0), 0));
+      const completion = revisedCompletion(dateOnly(p.endDate), grantedExtensionDays(p.risks));
       let to = completion ? parseDate(completion) : null;
       if (!to || to < today) {
         to = addDays(today, OVERRUN_DAYS - 1);

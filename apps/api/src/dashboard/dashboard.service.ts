@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { canViewContract, canViewCost, canViewPayables, revisedCompletion, seesGettingStarted, type CompanyDashboard, type GettingStartedDto, type GettingStartedStep, type ProjectDashboard, type ProjectType } from '@erp/shared';
+import { canViewContract, canViewCost, canViewPayables, grantedExtensionDays, revisedCompletion, seesGettingStarted, type CompanyDashboard, type GettingStartedDto, type GettingStartedStep, type ProjectDashboard, type ProjectType } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -137,7 +137,7 @@ export class DashboardService {
       this.dpr.list(user, { projectId, pageSize: 5 }).then((p) => p.items),
       this.prisma.materialRequest.count({ where: { projectId, status: { in: ['SUBMITTED', 'APPROVED'] } } }),
       this.prisma.dailyReport.findFirst({ where: { projectId }, orderBy: { date: 'desc' }, select: { date: true } }),
-      this.prisma.risk.aggregate({ where: { projectId, kind: 'DELAY' }, _sum: { eotGrantedDays: true } }),
+      this.prisma.risk.findMany({ where: { projectId, kind: 'DELAY', eotGrantedDays: { not: null } }, select: { eotGrantedDays: true } }),
       this.prisma.milestone.aggregate({ where: { projectId }, _max: { dueDate: true } }),
     ]);
     const scheduled = activities.filter((a) => a.plannedStart && a.plannedEnd);
@@ -146,13 +146,15 @@ export class DashboardService {
     const boqTotal = boq.reduce((s, i) => s.add(i.amount), new Prisma.Decimal(0));
     const boqExecuted = boq.reduce((s, i) => s.add(new Prisma.Decimal(i.rate).mul(i.executedQty)), new Prisma.Decimal(0));
     const rates = new Map(boq.map((i) => [i.id, new Prisma.Decimal(i.rate)]));
+    const extensionDays = grantedExtensionDays(eot);
     return {
       project,
       physicalProgressPct: project.physicalProgressPct,
       plannedProgressPct: plannedProgress(activities, rates, todayIn()),
       activitiesScheduled: scheduled.length,
       plannedFinish,
-      completionDate: revisedCompletion(project.endDate, eot._sum.eotGrantedDays ?? 0),
+      completionDate: revisedCompletion(project.endDate, extensionDays),
+      extensionDays,
       boqTotalAmount: money(boqTotal),
       boqExecutedAmount: money(boqExecuted),
       activitiesTotal: activities.length,

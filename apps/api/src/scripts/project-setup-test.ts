@@ -1,12 +1,12 @@
 /**
  * Project setup tests: the checklist ticks itself from the records, each role sees
  * the steps it can do, a new project starts with its client's terms or the standard ones, and a BOQ far from the
- * contract value is flagged.
+ * contract value is flagged, and the problems that keep the figures wrong stand on the Overview until they are fixed.
  *
  *   node dist/scripts/project-setup-test.js
  */
 import assert from 'node:assert/strict';
-import { BOQ_GAP_PCT, boqContractGap, setupApplies, setupShown, setupSteps, STANDARD_TERMS, termsFor, type ProjectSetupFacts } from '@erp/shared';
+import { BOQ_GAP_PCT, boqContractGap, completionBasis, completionWords, dataProblems, grantedExtensionDays, setupApplies, setupShown, setupSteps, STANDARD_TERMS, termsFor, type ProjectSetupFacts } from '@erp/shared';
 
 const tests: [string, () => void][] = [];
 const test = (name: string, fn: () => void) => tests.push([name, fn]);
@@ -100,6 +100,36 @@ test('a usual tender premium, a lump sum contract or a missing figure is not fla
   assert.equal(boqContractGap({ boqTotal: 0, contractValue: 100, contractModel: 'ITEM_RATE' }), null);
   assert.equal(boqContractGap({ boqTotal: 50, contractValue: null, contractModel: 'ITEM_RATE' }), null);
   assert.equal(boqContractGap({ boqTotal: 130, contractValue: 100, contractModel: 'ITEM_RATE' })!.gapPct, 30);
+});
+
+test('problems that keep the figures wrong stand whatever the progress, each naming the figures it affects', () => {
+  assert.deepEqual(dataProblems(ready), []);
+  const f = { ...ready, boqTotal: 129_600_000, boqItemsWithoutActivity: 9, activitiesUndated: 3 };
+  const problems = dataProblems(f);
+  assert.deepEqual(problems.map((p) => [p.key, p.count, p.tab]), [['boqOffContract', null, 'boq'], ['boqItemsWithoutActivity', 9, 'activities'], ['activitiesUndated', 3, 'schedule']]);
+  assert.deepEqual(problems.find((p) => p.key === 'boqOffContract')!.affects, ['workDone', 'billed', 'cost']);
+  assert.ok(problems.find((p) => p.key === 'activitiesUndated')!.affects.includes('physicalProgress'));
+  // The checklist hides from a tenth of the work on; the problems do not, as they read only the records.
+  assert.ok(!setupShown({ type: 'ROAD', status: 'ACTIVE', physicalProgressPct: 64, hidden: true, done: 8, total: 11 }));
+  assert.equal(dataProblems({ ...f, type: 'ROAD' }).length, 3);
+});
+
+test('a project with no activities yet has no problem of links or dates, only its setup steps; a store has none', () => {
+  const noPlan = { ...ready, activities: 0, boqItemsWithoutActivity: 120, activitiesUndated: 0 };
+  assert.deepEqual(dataProblems(noPlan), []);
+  assert.deepEqual(dataProblems({ ...ready, type: 'STORE', boqTotal: 1, activitiesUndated: 5 }), []);
+});
+
+test('the completion date is the contract date plus the extensions granted, and says so', () => {
+  const days = grantedExtensionDays([{ eotGrantedDays: 4 }, { eotGrantedDays: null }, { eotGrantedDays: 3 }]);
+  assert.equal(days, 7);
+  const day = (d: string) => d.split('-').reverse().join('/');
+  const c = completionBasis('2027-08-28', days);
+  assert.equal(c.date, '2027-09-04');
+  assert.equal(completionWords(c, day), '04/09/2027 (28/08/2027 + 7 days extension)');
+  assert.equal(completionWords(completionBasis('2027-08-28', 1), day), '29/08/2027 (28/08/2027 + 1 day extension)');
+  assert.equal(completionWords(completionBasis('2027-08-28', 0), day), '28/08/2027');
+  assert.equal(completionWords(completionBasis(null, 7), day), null);
 });
 
 test('a new project starts with the standard deductions, or its client\'s own', () => {
