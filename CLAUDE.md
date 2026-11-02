@@ -307,7 +307,11 @@ and the pre-delivery checklist.
   no words falls back to `renderEmpty` (both root `ConfigProvider`s), and `EmptyArt` picks its `-night` art in the dark theme.
 - Project page: a new project tab is one entry in `app/(app)/projects/[id]/page.tsx` with a `group` from `WORKSPACE_GROUPS`
   (`components/projects/ProjectWorkspace.tsx`); its `key` is the `?tab=` value, so never rename one. Anything sticky
-  inside a page reads its top offset from `useStickyTop()` (`src/lib/sticky.tsx`), not a fixed 56.
+  inside a page reads its top offset from `useStickyTop()` (`src/lib/sticky.tsx`), not a fixed 56. Plan, Site, Materials and Money open on
+  a Summary tab (ARCHITECTURE "Project page summaries") from `GET /dashboard/projects/:id/areas/:area` (`ProjectAreasService`,
+  read through the modules' services); a new warning or submission kind gets its area in `WARNING_AREA` / `SUBMISSION_AREA`
+  (`@erp/shared/project-areas.ts`, keep `src/scripts/project-areas-test.ts` passing). A completion date is `completionWords`
+  over `grantedExtensionDays`, never an extension sum of its own; data problems that stand on the Overview are `dataProblems`.
 - Ask Nirmaan (AI, `apps/api/src/ai`, ARCHITECTURE "Ask Nirmaan"): the model reads only through `AiToolsService`, whose tools call
   the list services with the user, never Prisma directly; a new tool or record kind must pass `src/scripts/ai-access-check.ts`
   (CI runs it). Tools never write. Local work and CI use `AI_PROVIDER=fake`; don't call the real model from tests.

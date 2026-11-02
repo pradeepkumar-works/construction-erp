@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-project-summaries',
+    date: '2026-11-02',
+    title: 'A summary for each part of a project',
+    points: [
+      'Plan, Site, Materials and Money on a project now open on a summary: the figures that matter, what waits and on whom, the warnings, and links to every page.',
+      'The Overview gives one completion date with its extension, reads billed and cost against work done, and keeps problems with the BOQ or the activities in view until they are fixed.',
+      'Schedule leads with the finish and how many activities slipped, and says "6 days late" instead of "+6 d". On a phone the project header folds into a menu.',
+    ],
+  },
+  {
     id: '2026-11-views',
     date: '2026-11-02',
     title: 'Boards and day grids',
