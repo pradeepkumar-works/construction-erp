@@ -5,7 +5,7 @@
 .board {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(240px, 1fr);
+  grid-auto-columns: minmax(12.5rem, 1fr);
   gap: var(--s-3);
   overflow-x: auto;
   padding-block-end: var(--s-2);
@@ -75,8 +75,8 @@
   position: sticky;
   inset-inline-start: 0;
   z-index: 1;
-  min-width: 200px;
-  max-width: 280px;
+  min-width: 12.5rem;
+  max-width: 17.5rem;
   text-align: start !important;
   white-space: normal !important;
   background: var(--c-surface-base);
@@ -88,10 +88,10 @@
 }
 
 .dayCell {
-  min-width: 56px;
+  min-width: 3.5rem;
 }
 
 .missing {
-  min-width: 56px;
+  min-width: 3.5rem;
   background: var(--c-surface-sunken);
 }

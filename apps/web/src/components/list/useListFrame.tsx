@@ -82,6 +82,9 @@ export function useListFrame<S extends string, T>(opts: ListFrameTarget & {
     />
   );
 
+  // Clearing the filters keeps the view: Board stays Board.
+  const clearFilters = () => (page.filters.view ? page.setFilters({ view: page.filters.view }) : page.clear());
+
   const chips = (
     <FilterChips
       filters={page.filters}
@@ -91,7 +94,7 @@ export function useListFrame<S extends string, T>(opts: ListFrameTarget & {
         ...opts.chipLabels,
       }}
       onClear={page.clear}
-      onClearAll={() => page.clear()}
+      onClearAll={() => clearFilters()}
     />
   );
 
@@ -99,8 +102,6 @@ export function useListFrame<S extends string, T>(opts: ListFrameTarget & {
   const filterKeys = Object.entries(page.filters).filter(([k, v]) => !!v && k !== 'q' && k !== 'sortBy' && k !== 'sortOrder' && k !== 'to' && k !== 'view').map(([k]) => k);
   const ownCount = filterKeys.length + (page.filters.to && !page.filters.from ? 1 : 0);
   const projectCounts = !opts.fixedProject && scoped && !!projectFilter;
-  // Clearing the filters keeps the view: Board stays Board.
-  const clearFilters = () => (page.filters.view ? page.setFilters({ view: page.filters.view }) : page.clear());
   const filterState = {
     count: ownCount + (projectCounts ? 1 : 0),
     clear: () => {
