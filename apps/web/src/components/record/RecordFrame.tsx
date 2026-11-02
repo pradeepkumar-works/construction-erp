@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Anchor, App, Button, Card, Col, Descriptions, Divider, Drawer, Flex, Row, Skeleton, Space, Tooltip, theme } from 'antd';
+import { Anchor, App, Button, Card, Col, Descriptions, Divider, Drawer, Flex, Row, Skeleton, Space, Tooltip } from 'antd';
+import { tk } from '@/ds';
 import type { DescriptionsProps } from 'antd';
 import { ArrowLeftOutlined, ExpandOutlined, LinkOutlined, PrinterOutlined } from '@/components/common/icons';
 import { useComments, type ApprovalTypeParam } from '@/lib/queries';
@@ -146,7 +147,7 @@ function useHeight<E extends HTMLElement>(): [React.RefObject<E | null>, number]
 }
 
 /** On a phone the actions sit in a bar fixed to the bottom of the screen, above the home indicator. */
-const safeBottom = (padding: number) => `calc(${padding}px + env(safe-area-inset-bottom))`;
+const safeBottom = (padding: string) => `calc(${padding} + env(safe-area-inset-bottom))`;
 const sectionTitle = (s: RecordSection) => (s.count === undefined ? s.title : `${s.title} (${s.count})`);
 
 /**
@@ -172,26 +173,25 @@ export function RecordFrame(props: RecordFrameProps) {
 /** The record without a frame of its own and without its actions, which the host page supplies. */
 function RecordPane({ loading, error, onRetry, record, children }: RecordFrameProps) {
   const { shown, folded, open, facts, context } = useRecordParts(record);
-  const { token } = theme.useToken();
   return (
     <div className="record-pane">
       {loading && <Skeleton active paragraph={{ rows: 8 }} />}
       {!!error && <QueryError error={error} onRetry={onRetry} />}
       {record && (
         <>
-          <Flex justify="space-between" align="flex-start" gap={token.marginSM} style={{ marginBottom: token.marginSM }}>
+          <Flex justify="space-between" align="flex-start" gap={tk.space[3]} style={{ marginBottom: tk.space[3] }}>
             <div>
-              <Space wrap size={token.marginXS} align="center">
-                <span style={{ fontSize: token.fontSizeLG, fontWeight: token.fontWeightStrong }} role="heading" aria-level={2} translate="no">
+              <Flex wrap gap={tk.space[2]} align="center">
+                <span style={{ ...tk.type.title, color: tk.color.text.strong }} role="heading" aria-level={2} translate="no">
                   {record.title}
                 </span>
                 {record.tags}
-              </Space>
+              </Flex>
               <div>
                 <ContextLine context={context} />
               </div>
             </div>
-            <Space size={token.marginXXS}>
+            <Flex gap={tk.space[1]}>
               {record.print && (
                 <Tooltip title="Print">
                   <Button size="small" type="text" icon={<PrinterOutlined />} onClick={record.print} aria-label="Print" />
@@ -200,15 +200,15 @@ function RecordPane({ loading, error, onRetry, record, children }: RecordFramePr
               <Tooltip title="Open full page">
                 <LinkButton href={record.href} size="small" type="text" icon={<ExpandOutlined />} aria-label="Open full page" />
               </Tooltip>
-            </Space>
+            </Flex>
           </Flex>
           {record.notices}
           <RecordHeadline figures={record.headline} />
-          {facts.length ? <Descriptions size="small" column={{ xs: 1, sm: 2, xxl: 3 }} bordered items={facts} style={{ marginBottom: token.margin }} /> : null}
+          {facts.length ? <Descriptions size="small" column={{ xs: 1, sm: 2, xxl: 3 }} bordered items={facts} style={{ marginBottom: tk.space[4] }} /> : null}
           <RecordDetails items={record.details} column={{ xs: 1, sm: 2, xxl: 3 }} />
           {record.lifecycle && (
             <div role="group" aria-label="Stage">
-              <StageBar {...record.lifecycle} label="Where it stands" style={{ marginBottom: token.marginSM }} />
+              <StageBar {...record.lifecycle} label="Where it stands" style={{ marginBottom: tk.space[3] }} />
               {levelsOf(record)}
             </div>
           )}
@@ -238,7 +238,6 @@ function RecordPane({ loading, error, onRetry, record, children }: RecordFramePr
 
 function RecordDrawer({ open: isOpen, onClose, drawerSize = 820, kind, loading, error, onRetry, record, children }: RecordFrameProps) {
   const { shown, folded, open, facts, context } = useRecordParts(record);
-  const { token } = theme.useToken();
   // On a phone Approve, Submit and the rest are in the drawer's footer, always in reach of a thumb, not at its top.
   const phone = useIsPhone();
   const more = record?.more ?? [];
@@ -251,12 +250,12 @@ function RecordDrawer({ open: isOpen, onClose, drawerSize = 820, kind, loading, 
       title={
         record ? (
           <div>
-            <Space wrap size={token.marginXS}>
+            <Flex wrap gap={tk.space[2]} align="center">
               <span translate="no">{record.title}</span>
               {record.tags}
-            </Space>
+            </Flex>
             {context ? (
-              <div style={{ fontWeight: 'normal' }}>
+              <div style={{ ...tk.type.body, marginTop: tk.space.half }}>
                 <ContextLine context={context} />
               </div>
             ) : null}
@@ -283,13 +282,13 @@ function RecordDrawer({ open: isOpen, onClose, drawerSize = 820, kind, loading, 
       }
       footer={
         hasContent(footerActions) || (phone && more.length) ? (
-          <Flex wrap gap={token.marginXS} justify="flex-end" role="toolbar" aria-label="Record actions">
+          <Flex wrap gap={tk.space[2]} justify="flex-end" role="toolbar" aria-label="Record actions">
             {footerActions}
             {phone ? <MoreActions items={more} size="middle" /> : null}
           </Flex>
         ) : undefined
       }
-      styles={phone ? { footer: { paddingBottom: safeBottom(token.paddingSM) } } : undefined}
+      styles={phone ? { footer: { paddingBottom: safeBottom(tk.space[3]) } } : undefined}
       destroyOnHidden
     >
       {loading && <Skeleton active />}
@@ -298,11 +297,11 @@ function RecordDrawer({ open: isOpen, onClose, drawerSize = 820, kind, loading, 
         <>
           {record.notices}
           <RecordHeadline figures={record.headline} />
-          {facts.length ? <Descriptions size="small" column={drawerSize >= 960 ? { xs: 1, sm: 2, lg: 3 } : { xs: 1, sm: 2 }} bordered items={facts} style={{ marginBottom: token.margin }} /> : null}
+          {facts.length ? <Descriptions size="small" column={drawerSize >= 960 ? { xs: 1, sm: 2, lg: 3 } : { xs: 1, sm: 2 }} bordered items={facts} style={{ marginBottom: tk.space[4] }} /> : null}
           <RecordDetails items={record.details} column={drawerSize >= 960 ? { xs: 1, sm: 2, lg: 3 } : { xs: 1, sm: 2 }} />
           {record.lifecycle && (
             <div role="group" aria-label="Stage">
-              <StageBar {...record.lifecycle} label="Where it stands" style={{ marginBottom: token.marginSM }} />
+              <StageBar {...record.lifecycle} label="Where it stands" style={{ marginBottom: tk.space[3] }} />
               {levelsOf(record)}
             </div>
           )}
@@ -332,7 +331,6 @@ function RecordDrawer({ open: isOpen, onClose, drawerSize = 820, kind, loading, 
 
 function RecordPage({ kind, list, loading, error, onRetry, record, children }: RecordFrameProps) {
   const { shown: sections, folded, open, facts, context } = useRecordParts(record);
-  const { token } = theme.useToken();
   const { message } = App.useApp();
   const top = useStickyTop();
   const anchorHeight = 46;
@@ -356,11 +354,11 @@ function RecordPage({ kind, list, loading, error, onRetry, record, children }: R
         docTitle={typeof record?.title === 'string' ? record.title : kind}
         title={
           record ? (
-            <Space wrap size={token.marginSM} align="center">
+            <Flex wrap gap={tk.space[3]} align="center" component="span">
               {/* Numbers and names stay as they are under a browser's translation (docs/WRITING.md). */}
               <span translate="no">{record.title}</span>
               {record.tags}
-            </Space>
+            </Flex>
           ) : (
             kind
           )
@@ -386,21 +384,21 @@ function RecordPage({ kind, list, loading, error, onRetry, record, children }: R
       {record && (
         <>
           <RecordHeadline figures={record.headline} />
-          <Card style={{ marginBottom: token.margin }}>
+          <Card style={{ marginBottom: tk.space[4] }}>
             {facts.length ? <Descriptions size="small" column={{ xs: 1, sm: 2, lg: 3, xxl: 4 }} items={facts} /> : null}
             <RecordDetails items={record.details} column={{ xs: 1, sm: 2, lg: 3, xxl: 4 }} />
             {record.lifecycle && (
-              <div role="group" aria-label="Stage" style={{ marginTop: facts.length || record.details?.length ? token.margin : 0, paddingTop: facts.length || record.details?.length ? token.padding : 0, borderTop: facts.length || record.details?.length ? `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}` : undefined }}>
+              <div role="group" aria-label="Stage" style={facts.length || record.details?.length ? { marginTop: tk.space[4], paddingTop: tk.space[4], borderTop: tk.line('hairline') } : undefined}>
                 <StageBar {...record.lifecycle} label="Where it stands" />
                 {levelsOf(record)}
               </div>
             )}
           </Card>
           {record.notices}
-          <Row gutter={[token.margin, token.margin]}>
+          <Row gutter={[16, 16]}>
             <Col xs={24} xl={17}>
               {sections.length > 1 && (
-                <div data-record-chrome style={{ position: 'sticky', top, zIndex: 4, background: token.colorBgLayout, marginBottom: token.marginSM }}>
+                <div data-record-chrome style={{ position: 'sticky', top, zIndex: 4, background: tk.color.surface.canvas, marginBottom: tk.space[3] }}>
                   <Anchor
                     direction="horizontal"
                     affix={false}
@@ -411,7 +409,7 @@ function RecordPage({ kind, list, loading, error, onRetry, record, children }: R
                 </div>
               )}
               {sections.map((s) => (
-                <Card key={s.key} id={sectionId(s.key)} title={sectionTitle(s)} size="small" style={{ marginBottom: token.margin, scrollMarginTop: top + anchorHeight }}>
+                <Card key={s.key} id={sectionId(s.key)} title={sectionTitle(s)} size="small" style={{ marginBottom: tk.space[4], scrollMarginTop: top + anchorHeight }}>
                   {s.children}
                 </Card>
               ))}
@@ -422,7 +420,7 @@ function RecordPage({ kind, list, loading, error, onRetry, record, children }: R
                 <Card
                   title="History"
                   size="small"
-                  style={{ position: 'sticky', top: top + token.marginSM }}
+                  style={{ position: 'sticky', top: `calc(${top}px + ${tk.space[3]})` }}
                   styles={{ body: { maxHeight: `calc(100vh - ${top + 160}px)`, overflowY: 'auto' } }}
                 >
                   <AuditTrail type={record.activity.type} id={record.activity.id} submission={record.activity.submission} />
@@ -435,7 +433,7 @@ function RecordPage({ kind, list, loading, error, onRetry, record, children }: R
             data-record-chrome
             justify="space-between"
             align="center"
-            gap={phone ? token.marginXS : token.marginSM}
+            gap={phone ? tk.space[2] : tk.space[3]}
             wrap
             role="toolbar"
             aria-label="Record actions"
@@ -447,22 +445,22 @@ function RecordPage({ kind, list, loading, error, onRetry, record, children }: R
                     right: 0,
                     bottom: 0,
                     zIndex: 20,
-                    padding: `${token.paddingXS}px ${token.paddingSM}px`,
-                    paddingBottom: safeBottom(token.paddingXS),
-                    background: token.colorBgContainer,
-                    borderTop: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}`,
-                    boxShadow: token.boxShadowTertiary,
+                    padding: `${tk.space[2]} ${tk.space[3]}`,
+                    paddingBottom: safeBottom(tk.space[2]),
+                    background: tk.color.surface.base,
+                    borderTop: tk.line('hairline'),
+                    boxShadow: tk.shadow.float,
                   }
                 : {
                     position: 'sticky',
                     bottom: 0,
                     zIndex: 5,
-                    marginTop: token.margin,
-                    padding: `${token.paddingSM}px ${token.padding}px`,
-                    background: token.colorBgContainer,
-                    border: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}`,
-                    borderRadius: token.borderRadiusLG,
-                    boxShadow: token.boxShadowTertiary,
+                    marginTop: tk.space[4],
+                    padding: `${tk.space[3]} ${tk.space[4]}`,
+                    background: tk.color.surface.base,
+                    border: tk.line('hairline'),
+                    borderRadius: tk.radius.lg,
+                    boxShadow: tk.shadow.float,
                   }
             }
           >
@@ -470,7 +468,7 @@ function RecordPage({ kind, list, loading, error, onRetry, record, children }: R
               {phone ? null : list.label}
             </LinkButton>
             {phone ? (
-              <Flex wrap gap={token.marginXS} justify="flex-end" style={{ flex: 1 }}>
+              <Flex wrap gap={tk.space[2]} justify="flex-end" style={{ flex: 1 }}>
                 {record.actions?.('middle')}
                 <MoreActions items={record.more ?? []} size="middle" />
               </Flex>
@@ -482,7 +480,7 @@ function RecordPage({ kind, list, loading, error, onRetry, record, children }: R
             )}
           </Flex>
           {/* Room under the content for the fixed bar, so nothing hides behind it. */}
-          {phone ? <div aria-hidden style={{ height: barHeight + token.margin }} /> : null}
+          {phone ? <div aria-hidden style={{ height: `calc(${barHeight}px + ${tk.space[4]})` }} /> : null}
         </>
       )}
       {children}

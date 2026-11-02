@@ -74,6 +74,10 @@ function checkContrast(mode: Mode) {
   need('text.onAccent on accent.solid', color.text.onAccent, color.accent.solid, 4.5);
   need('chrome.caption on chrome.bg', color.chrome.caption, color.chrome.bg, 4.5);
   need('text.onAccent on state.countFill', color.text.onAccent, color.state.countFill, 4.5);
+  // The AI mark is an icon and an edge, so 3:1; text on the AI wash is the page's own text, held above.
+  need('ai.mark on surface.base', color.ai.mark, color.surface.base, 3);
+  need('ai.mark on ai.soft', color.ai.mark, color.ai.soft, 3);
+  need('text.muted on ai.soft', color.text.muted, color.ai.soft, 4.5);
 }
 
 const CSS_COLOUR = /#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})\b|\b(?:rgba?|hsla?)\(/i;

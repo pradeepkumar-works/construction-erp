@@ -444,6 +444,11 @@ h4.ant-typography,
   }
 }
 
+/* Ask: an answer's footer (sources, drafts) stays inside the panel, a long source cut short, instead of widening the answer. */
+.ask-panel .ant-bubble-body,
+.ask-panel .ant-bubble-footer,
+.ask-panel .ant-bubble-footer > * { min-width: 0; max-width: 100%; }
+
 /* List rows open on click (DataTable). */
 .row-click > td {
   cursor: pointer;

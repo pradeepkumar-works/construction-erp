@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
-import { Alert, App, Button, Drawer, Flex, Form, Grid, Modal, Typography, theme } from 'antd';
+import { Alert, App, Button, Drawer, Flex, Form, Grid, Modal, Typography } from 'antd';
 import type { FormInstance } from 'antd';
 import { isAxiosError } from 'axios';
 import { usePathname, useRouter } from 'next/navigation';
 import type { AiDraftDto } from '@erp/shared';
 import { PRODUCT_NAME, navNode, navNodeAt } from '@erp/shared';
+import { tk } from '@/ds';
 import { useAuth } from '@/lib/auth';
 import { SparkleIcon } from '@/components/ai/SparkleIcon';
 import { api, describeError } from '@/lib/api';
@@ -127,7 +128,6 @@ const focusIn = (el: HTMLElement) => {
  * of the Form's `onFinish`.
  */
 export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, secondaryText, allValues, layout = 'drawer', width, draftKey, footerExtra, okDisabled, cancelText = 'Cancel', projectDefault = true, aiDraft, children }: FormShellProps<T>) {
-  const { token } = theme.useToken();
   const { modal, message } = App.useApp();
   const { user } = useAuth();
   const router = useRouter();
@@ -371,8 +371,8 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
   };
 
   const footer = (
-    <Flex justify="space-between" align="center" gap={token.marginSM} wrap>
-      <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+    <Flex justify="space-between" align="center" gap={tk.space[3]} wrap>
+      <Typography.Text type="secondary" style={tk.type.caption}>
         {screens.md ? (
           <>
             <Typography.Text keyboard>{mac ? '⌘' : 'Ctrl'}</Typography.Text> <Typography.Text keyboard>Enter</Typography.Text> to submit
@@ -380,7 +380,7 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
         ) : null}
         {storageKey && savedAt ? `${screens.md ? ' · ' : ''}Draft kept on this device` : null}
       </Typography.Text>
-      <Flex gap={token.marginXS} align="center" wrap>
+      <Flex gap={tk.space[2]} align="center" wrap>
         {footerExtra}
         <Button onClick={requestClose} disabled={!!submitting}>
           {cancelText}
@@ -405,13 +405,13 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
           showIcon
           icon={<SparkleIcon />}
           className="ai-draft-note"
-          style={{ marginBottom: token.margin }}
+          style={{ marginBottom: tk.space[4] }}
           title={aiDraft.note ?? `Filled in by Ask ${PRODUCT_NAME} from what you wrote`}
           description={
             <>
               Check each field before you {inSentence(okText)}. Nothing is saved until you do.
               {aiDraft.flags.length > 0 && (
-                <ul aria-label="To check" style={{ margin: `${token.marginXXS}px 0 0`, paddingInlineStart: token.paddingMD }}>
+                <ul aria-label="To check" style={{ margin: `${tk.space[1]} 0 0`, paddingInlineStart: tk.space[5] }}>
                   {aiDraft.flags.map((f, i) => (
                     <li key={i}>{f.note}</li>
                   ))}
@@ -425,7 +425,7 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
         <Alert
           type="info"
           showIcon
-          style={{ marginBottom: token.margin }}
+          style={{ marginBottom: tk.space[4] }}
           title={`Brought back what you typed on ${formatDateTime(new Date(restored.at).toISOString())}`}
           action={
             <Button size="small" onClick={startOver}>
@@ -440,7 +440,7 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
             type="error"
             showIcon
             role="alert"
-            style={{ marginBottom: token.margin }}
+            style={{ marginBottom: tk.space[4] }}
             title={failure.retry ? 'Not saved yet' : 'Not saved'}
             description={failure.text}
             action={
@@ -458,10 +458,10 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
           <Alert
             type="error"
             showIcon
-            style={{ marginBottom: token.margin }}
+            style={{ marginBottom: tk.space[4] }}
             title={problems.length === 1 ? 'One field needs attention' : `${problems.length} fields need attention`}
             description={
-              <ul style={{ margin: 0, paddingInlineStart: token.paddingMD }}>
+              <ul style={{ margin: 0, paddingInlineStart: tk.space[5] }}>
                 {problems.map((p, i) => {
                   // "Project is required" says no more than the field's name and "Required".
                   const whole = !!p.message && p.message.startsWith(p.label) && /is required$/.test(p.message);
@@ -492,7 +492,7 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
   // The drawer's title carries the module it belongs to above it (brand look: an eyebrow), from the page it opened on. The
   // drawer is named by the title alone (`aria-labelledby` below), so the module is never read as part of its name.
   const heading = moduleLabel ? (
-    <span style={{ display: 'grid', gap: 2 }}>
+    <span style={{ display: 'grid', gap: tk.space.half }}>
       <span aria-hidden className="eyebrow">
         {moduleLabel}
       </span>
@@ -504,13 +504,13 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
 
   if (layout === 'modal') {
     return (
-      <Modal open={open} title={title} onCancel={requestClose} footer={footer} width={width ?? 640} destroyOnHidden styles={{ body: { maxHeight: '70vh', overflowY: 'auto', paddingRight: token.paddingXS } }}>
+      <Modal open={open} title={title} onCancel={requestClose} footer={footer} width={width ?? 640} destroyOnHidden styles={{ body: { maxHeight: '70vh', overflowY: 'auto', paddingRight: tk.space[2] } }}>
         {body}
       </Modal>
     );
   }
   return (
-    <Drawer open={open} title={heading} aria-labelledby={moduleLabel ? titleId : undefined} onClose={requestClose} footer={footer} size={screens.md ? (width ?? 760) : '100%'} destroyOnHidden styles={{ footer: { padding: `${token.paddingSM}px ${token.paddingLG}px` } }}>
+    <Drawer open={open} title={heading} aria-labelledby={moduleLabel ? titleId : undefined} onClose={requestClose} footer={footer} size={screens.md ? (width ?? 760) : '100%'} destroyOnHidden>
       {body}
     </Drawer>
   );
@@ -530,19 +530,17 @@ export function afterFormLeaves(go: () => void) {
 }
 
 export function FormGrid({ cols = 2, children }: { cols?: 2 | 3 | 4; children: React.ReactNode }) {
-  const { token } = theme.useToken();
   const screens = Grid.useBreakpoint();
   const n = screens.md ? cols : screens.sm && cols > 2 ? 2 : 1;
-  return <div style={{ display: 'grid', gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))`, columnGap: token.margin }}>{children}</div>;
+  return <div style={{ display: 'grid', gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))`, columnGap: tk.space[4] }}>{children}</div>;
 }
 
 /** A titled group of fields in a long form. */
 export function FormSection({ title, extra, children }: { title: string; extra?: React.ReactNode; children: React.ReactNode }) {
-  const { token } = theme.useToken();
   return (
-    <section aria-label={title} style={{ marginBottom: token.marginLG }}>
-      <Flex justify="space-between" align="baseline" style={{ marginBottom: token.marginSM, paddingBottom: token.paddingXXS, borderBottom: `${token.lineWidth}px ${token.lineType} ${token.colorSplit}` }}>
-        <Typography.Title level={5} style={{ margin: 0 }}>
+    <section aria-label={title} style={{ marginBottom: tk.space[6] }}>
+      <Flex justify="space-between" align="center" gap={tk.space[2]} style={{ minHeight: tk.control.md, marginBottom: tk.space[3], borderBottom: tk.line('hairline') }}>
+        <Typography.Title level={5} style={{ margin: 0, ...tk.type.title, color: tk.color.text.strong }}>
           {title}
         </Typography.Title>
         {extra}

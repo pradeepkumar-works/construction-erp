@@ -2,12 +2,13 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Card, Flex, Typography, theme } from 'antd';
+import { Button, Flex, Typography } from 'antd';
 import type { FormItemProps } from 'antd';
 import { EditOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import type { AiDraftDto, AiDraftKind } from '@erp/shared';
 import { AI_DRAFT_LABELS, draftValueAt } from '@erp/shared';
+import { tk } from '@/ds';
 import { requestNew } from '@/lib/new-intent';
 
 /** The list page whose form each draft opens in. */
@@ -24,21 +25,25 @@ export const DRAFT_PAGES: Record<AiDraftKind, string> = {
  * the list's own form with the values in. Nothing is saved until the user saves the form.
  */
 export function DraftCard({ draft, onNavigate }: { draft: AiDraftDto; onNavigate: () => void }) {
-  const { token } = theme.useToken();
   const router = useRouter();
   const open = () => {
     onNavigate();
     requestNew(draft.kind, () => router.push(DRAFT_PAGES[draft.kind]), draft);
   };
   return (
-    <Card size="small" className="ai-draft" role="group" aria-label={`Drafted ${AI_DRAFT_LABELS[draft.kind].toLowerCase()}`} styles={{ body: { padding: `${token.paddingXS}px ${token.paddingSM}px` } }}>
-      <Flex vertical gap={token.marginXXS}>
+    <div
+      className="ai-draft"
+      role="group"
+      aria-label={`Drafted ${AI_DRAFT_LABELS[draft.kind].toLowerCase()}`}
+      style={{ padding: `${tk.space[2]} ${tk.space[3]}`, background: tk.color.ai.soft, border: `1px solid ${tk.color.ai.line}`, borderRadius: tk.radius.md }}
+    >
+      <Flex vertical gap={tk.space[1]}>
         <Typography.Text strong>{AI_DRAFT_LABELS[draft.kind]}, not saved</Typography.Text>
-        <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+        <Typography.Text type="secondary" style={tk.type.caption}>
           {draft.title}
         </Typography.Text>
         {draft.flags.length > 0 && (
-          <Typography.Text type="warning" style={{ fontSize: token.fontSizeSM }}>
+          <Typography.Text style={{ ...tk.type.caption, color: tk.color.tone.pending.fg }}>
             {draft.flags.length === 1 ? '1 thing to check' : `${draft.flags.length} things to check`} when you open it
           </Typography.Text>
         )}
@@ -48,7 +53,7 @@ export function DraftCard({ draft, onNavigate }: { draft: AiDraftDto; onNavigate
           </Button>
         </Flex>
       </Flex>
-    </Card>
+    </div>
   );
 }
 

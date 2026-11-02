@@ -69,6 +69,12 @@ export const ROLES = {
     caption: p('chromeCaption', 'nightChromeCaption'),
     accent: p('chromeAccent', 'nightLink'),
   },
+  /** What Ask Nirmaan made or read (a drafted form, a reading, an answer): the blue that means AI, kept apart from links. */
+  ai: {
+    mark: p('accent', 'nightLink'),
+    soft: p('accentSoft', 'nightAccentSoft'),
+    line: p('accentChosen', 'nightAccentChosen'),
+  },
   /** The primary button: near-black (near-white on the night), the one strong fill on a page. */
   action: {
     solid: p('action', 'nightAction'),
