@@ -12,6 +12,7 @@ import {
   eotLabel,
   eotState,
   isClientGuest,
+  grantedExtensionDays,
   revisedCompletion,
   variationEotDays,
   variationLabel,
@@ -145,7 +146,7 @@ export class EotService {
       this.prisma.eotApplication.findMany({ where: { projectId }, include, orderBy: { appNo: 'desc' } }),
     ]);
     if (!project) throw new NotFoundException('Project not found');
-    const granted = project.risks.reduce((s, r) => s + (r.eotGrantedDays ?? 0), 0);
+    const granted = grantedExtensionDays(project.risks);
     const end = dateOnly(project.endDate);
     return {
       projectId,

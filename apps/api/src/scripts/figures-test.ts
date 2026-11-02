@@ -151,6 +151,14 @@ test('screen readers hear the words in full', () => {
   assert.equal(pct.value.spoken, '31 percent');
 });
 
+test('a fault in the records marks the figure in words and leaves its own state alone', () => {
+  const marked = only(figure('workDone', 38700000, { when: 'toDate', versus: { of: figure('boqValue', 94200000) }, caveat: 'BOQ 47% below the contract value' }));
+  assert.equal(marked.caveat?.text, 'BOQ 47% below the contract value');
+  assert.equal(marked.state, 'calm');
+  assert.equal(marked.note?.text, `of ₹${nb}9.42${nb}Cr BOQ value`);
+  assert.equal(only(figure('workDone', 38700000)).caveat, null);
+});
+
 test('a month of another year carries its year', () => {
   const v = only(figure('billed', 100, { when: { month: '2025-12' } }));
   assert.equal(v.label.text, 'Billed in Dec 2025');

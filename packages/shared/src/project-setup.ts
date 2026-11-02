@@ -1,6 +1,7 @@
 import type { ContractModel, ProjectType, RoleKey, WorkLocation } from './enums';
 import { sectorKinds } from './sector';
 import { canFreezeBaseline, canViewContract, canViewCost, canViewReconciliation } from './permissions';
+import type { FigureId } from './figures/measures';
 
 /**
  * Setting up a new project: the steps a project needs before the site starts
@@ -147,6 +148,47 @@ export interface ProjectSetupDto {
   done: number;
   total: number;
   boqGap: BoqContractGap | null;
+  /** What in the records makes the figures wrong, for everyone on the project, until it is fixed (`dataProblems`) */
+  problems: DataProblemDto[];
+}
+
+/** Problems with a project's records that make its figures wrong: the BOQ against the contract, work no activity counts, a plan with holes. */
+export const DATA_PROBLEMS = ['boqOffContract', 'boqItemsWithoutActivity', 'activitiesUndated'] as const;
+export type DataProblemKey = (typeof DATA_PROBLEMS)[number];
+
+/** The headline figures each problem makes wrong; the Overview marks them. */
+export const DATA_PROBLEM_AFFECTS: Record<DataProblemKey, readonly FigureId[]> = {
+  // Work done is counted at BOQ rates; billed and cost are right, and read against it in its words.
+  boqOffContract: ['workDone'],
+  // Progress on an item no activity carries is never recorded.
+  boqItemsWithoutActivity: ['physicalProgress', 'workDone'],
+  // What is planned by today leaves out an activity with no dates.
+  activitiesUndated: ['physicalProgress'],
+};
+
+/** The project tab each problem is fixed on (`?tab=`). */
+export const DATA_PROBLEM_TAB: Record<DataProblemKey, string> = { boqOffContract: 'boq', boqItemsWithoutActivity: 'activities', activitiesUndated: 'schedule' };
+
+export interface DataProblemDto {
+  key: DataProblemKey;
+  tab: string;
+  /** How many records it is about: BOQ items, activities; null for the BOQ against the contract (`boqGap` has its figures) */
+  count: number | null;
+  affects: readonly FigureId[];
+}
+
+/**
+ * The problems that stand on a project's Overview, whatever its progress, until the records are fixed. Unlike the setup
+ * checklist they never hide: each one keeps a headline figure wrong. Stores and plants have none.
+ */
+export function dataProblems(f: ProjectSetupFacts): DataProblemDto[] {
+  if (!setupApplies(f.type)) return [];
+  const found: Record<DataProblemKey, [boolean, number | null]> = {
+    boqOffContract: [!!boqContractGap(f), null],
+    boqItemsWithoutActivity: [f.activities > 0 && f.boqItemsWithoutActivity > 0, f.boqItemsWithoutActivity],
+    activitiesUndated: [f.activities > 0 && f.activitiesUndated > 0, f.activitiesUndated],
+  };
+  return DATA_PROBLEMS.filter((k) => found[k][0]).map((key) => ({ key, tab: DATA_PROBLEM_TAB[key], count: found[key][1], affects: DATA_PROBLEM_AFFECTS[key] }));
 }
 
 /** A store or an RMC plant is set up differently; it has no setup checklist. */

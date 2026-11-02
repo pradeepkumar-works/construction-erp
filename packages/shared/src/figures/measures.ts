@@ -60,6 +60,7 @@ export const MEASURES = {
   cashLowest: { label: 'Lowest cash in 13 weeks', asPart: 'lowest in 13 weeks', kind: 'money', better: 'up', limit: { below: 0, level: 'act' }, list: '/cash-forecast', define: 'The lowest closing balance the 13-week cash forecast expects.' },
   // Work, billing and collection (a flow's period is its `when`: "Work done in Oct")
   workDone: { label: 'Work done', kind: 'money', better: 'up', list: '/progress', define: 'Approved progress at BOQ rates; a lump-sum or EPC contract counts by its stages.' },
+  boqValue: { label: 'BOQ value', kind: 'money', better: 'either', define: 'The BOQ’s quantities at its rates, revised quantities where there are any.' },
   billed: { label: 'Billed', kind: 'money', better: 'up', list: '/bills', define: 'Approved RA bills: work value plus price variation, before GST.' },
   moneyReceived: { label: 'Money received', kind: 'money', better: 'up', list: '/receivables', define: 'Received in the bank from clients.' },
   cost: { label: 'Cost', kind: 'money', better: 'down', list: '/cost', define: 'Site expenses, material issued, machinery, labour and subcontractor bills, approved.' },
@@ -89,6 +90,8 @@ export const MEASURES = {
   financialProgress: { label: 'Financial progress', kind: 'pct', better: 'up', list: '/bills', define: 'Approved RA bills against the revised contract value.' },
   projectsBehindPlan: { label: 'Projects behind plan', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'No project behind plan' }, items: ['project', 'projects'], list: '/projects', define: `Projects more than ${BEHIND_TOLERANCE_PCT} points behind the share planned by today.` },
   projectsBillingBehind: { label: 'Projects with billing behind', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'Billing keeps up on every project' }, items: ['project', 'projects'], list: '/bills', define: `Projects whose billing is ${BILLING_GAP_PCT} or more points behind the work done.` },
+  planPastCompletion: { label: 'Plan past completion', kind: 'days', better: 'down', flag: { level: 'act', clear: 'The plan finishes by the completion date' }, define: 'Days the schedule’s planned finish runs past the completion date, after the extensions of time granted.' },
+  daysWithoutDpr: { label: 'Days without a daily report', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'A daily report for each of the last 7 days' }, items: ['day', 'days'], list: '/dpr', define: 'Of the 7 days before today, the days no daily report was sent for the project.' },
   delayedActivities: { label: 'Delayed activities', kind: 'count', better: 'down', flag: { level: 'act', clear: 'No activity delayed' }, items: ['activity', 'activities'], define: 'Activities past their planned finish and not complete.' },
   activitiesDue: { label: 'Activities due by today', kind: 'count', better: 'either', items: ['activity due to finish by today', 'activities due to finish by today'], define: 'Activities planned to finish by today.' },
   dailyReports: { label: 'Daily reports', kind: 'count', better: 'up', items: ['daily report', 'daily reports'], list: '/dpr', define: 'Daily reports filed for the day.' },

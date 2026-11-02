@@ -6,7 +6,7 @@ import dayjs from 'dayjs';
 import type { GanttActivityDto, GanttDto, MilestoneDto, StatusMeaning } from '@erp/shared';
 import { ACTIVITY_LINK_TYPE_LABELS, MILESTONE_STATE_LABELS, SCHEDULE_STATE_LABELS, daysBetween, linkLabel, statusTone } from '@erp/shared';
 import { tk } from '@/ds';
-import { formatDate, formatPct } from '@/lib/format';
+import { formatDate, formatPct, plural } from '@/lib/format';
 
 export type GanttScale = 'week' | 'month';
 
@@ -206,7 +206,7 @@ export function GanttChart({
     );
     return row(
       a.id,
-      label(a.name, [a.critical ? 'Critical' : null, SCHEDULE_STATE_LABELS[a.state], formatPct(a.progressPct), a.finishSlipDays ? `${a.finishSlipDays > 0 ? '+' : ''}${a.finishSlipDays} d` : null].filter(Boolean).join(' · ')),
+      label(a.name, [a.critical ? 'Critical' : null, SCHEDULE_STATE_LABELS[a.state], formatPct(a.progressPct), a.finishSlipDays ? `${plural(Math.abs(a.finishSlipDays), 'day')} ${a.finishSlipDays > 0 ? 'late' : 'early'}` : null].filter(Boolean).join(' · ')),
       <Tooltip title={tip}>
         <div style={{ position: 'absolute', inset: 0 }}>
           {showBaseline && a.baselineStart && a.baselineEnd ? (

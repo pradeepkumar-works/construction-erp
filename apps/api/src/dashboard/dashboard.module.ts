@@ -23,9 +23,11 @@ import { CorrespondenceModule } from '../correspondence/correspondence.module';
 import { HomeService } from './home.service';
 import { ModuleHomeService } from './module-home.service';
 import { DepartmentHomeService } from './department-home.service';
+import { ProjectAreasService } from './project-areas.service';
+import { ManagementModule } from '../management/management.module';
 import { MaterialRequestsModule } from '../material-requests/material-requests.module';
 
 import { DesignModule } from '../design/design.module';
 
-@Module({ imports: [ProjectsModule, PlanningModule, ProgressModule, DprModule, ReceivablesModule, PayablesModule, CostModule, PurchasingModule, ComplianceModule, StockModule, WarningsModule, MachineryModule, StaffModule, PayrollModule, BooksModule, StatementsModule, MeetingsModule, CorrespondenceModule, QaModule, DesignModule, MaterialRequestsModule], controllers: [DashboardController], providers: [DashboardService, HomeService, ModuleHomeService, DepartmentHomeService], exports: [DashboardService, HomeService] })
+@Module({ imports: [ProjectsModule, PlanningModule, ProgressModule, DprModule, ReceivablesModule, PayablesModule, CostModule, PurchasingModule, ComplianceModule, StockModule, WarningsModule, MachineryModule, StaffModule, PayrollModule, BooksModule, StatementsModule, MeetingsModule, CorrespondenceModule, QaModule, DesignModule, MaterialRequestsModule, ManagementModule], controllers: [DashboardController], providers: [DashboardService, HomeService, ModuleHomeService, DepartmentHomeService, ProjectAreasService], exports: [DashboardService, HomeService] })
 export class DashboardModule {}

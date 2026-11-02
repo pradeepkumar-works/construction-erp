@@ -1,16 +1,17 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Param, ParseUUIDPipe, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { DashboardService } from './dashboard.service';
 import { HomeService } from './home.service';
 import { ModuleHomeService } from './module-home.service';
 import { DepartmentHomeService } from './department-home.service';
+import { ProjectAreasService } from './project-areas.service';
 import { CurrentUser, RequestUser } from '../common/current-user';
 
 @ApiTags('dashboard')
 @ApiBearerAuth()
 @Controller('dashboard')
 export class DashboardController {
-  constructor(private dashboard: DashboardService, private home: HomeService, private modules: ModuleHomeService, private departments: DepartmentHomeService) {}
+  constructor(private dashboard: DashboardService, private home: HomeService, private modules: ModuleHomeService, private departments: DepartmentHomeService, private areas: ProjectAreasService) {}
 
   @Get('company')
   company(@CurrentUser() user: RequestUser) {
@@ -53,6 +54,12 @@ export class DashboardController {
   @ApiQuery({ name: 'projectId', required: false, description: "The header's project; every project the caller sees when left out" })
   departmentHome(@CurrentUser() user: RequestUser, @Param('key') key: string, @Query('projectId') projectId?: string) {
     return this.departments.home(user, key, projectId || undefined);
+  }
+
+  /** One project's area summary (plan, site, materials or money): its figures, what waits on whom, its open warnings. */
+  @Get('projects/:id/areas/:area')
+  projectArea(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string, @Param('area') area: string) {
+    return this.areas.area(user, id, area);
   }
 
   @Get('projects/:id')

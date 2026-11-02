@@ -135,6 +135,8 @@ export interface GanttDto {
   projectEnd: string | null;
   /** The completion date after the extensions of time granted: where the plan must end */
   completionDate: string | null;
+  /** Days of extension of time granted, which `completionDate` adds to `projectEnd` */
+  extensionDays: number;
   today: string;
   baselineAt: string | null;
   baselineByName: string | null;

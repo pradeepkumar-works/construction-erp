@@ -207,7 +207,7 @@ look and one rule for what stands out. Three parts, all in `@erp/shared` but the
   into one quiet line, in its own `clear` words) or a limit (a margin below zero). A margin below zero reads by its
   `negativeLabel` ("Loss to date") with the amount above zero. `FIGURE_LABELS` is derived from it, so copy-check holds the
   names to WRITING.md and retires "Outstanding", "Receivables" and "Vendor payable" as figure names.
-- **`figure(id, value, opts)`** states facts only: the value (a Decimal string or a number, or `{ none: reason }`), its
+- **`figure(id, value, opts)`** states facts only (a `caveat` is a known problem with the data behind the figure, drawn in amber under it without changing its state): the value (a Decimal string or a number, or `{ none: reason }`), its
   period (`when`), a count behind it, and at most one comparison (`was` last period, `plan`, `of` a whole, `part` that
   matters, `trend` of months). A verdict from a domain rule comes with its reason in words (`unbilledAttention` for work
   not billed). The API sends the same objects: `ManagementReportDto.figures` is `Figure[]`.
@@ -309,6 +309,49 @@ toolbar the toggle is `ListToolbar`'s `view`, which a phone draws as icons besid
 count open on theirs; indents and bills open on the table); another choice is kept in the address as `?view=`, and
 clearing filters or picking a saved view keeps it. On a phone a board's stages stack. `src/scripts/list-views-test.ts`
 (CI) holds the layouts.
+
+### Project page summaries
+
+The project page answers before it lists, the way a module screen does ("Overviews answer first").
+
+- **A summary for each area.** Plan, Site, Materials and Money each open on a Summary tab (`plan-summary`,
+  `site-summary`, `materials-summary`, `money-summary`). Every summary has the same four parts:
+  - the area's three to five figures, through `figure()` and `<Figures>`;
+  - what waits in the project, on whom, ranked by `rankWaiting`;
+  - the area's warnings from the watch list, top five;
+  - links into the group's tabs.
+- **One endpoint feeds them.** All four summaries come from `GET /dashboard/projects/:id/areas/:area`
+  (`ProjectAreasService`). It reads through the modules' own services:
+  - `DashboardService.project` and `ModuleHomeService.figures`;
+  - `ManagementService.build` for money;
+  - `StockService.valuation`;
+  - `SubmissionLifecycleService.inProject` for what waits;
+  - `WarningsService.list` with the area's kinds.
+- **Which area owns what.** Which warnings and entry kinds belong to an area is the two total tables `WARNING_AREA` and
+  `SUBMISSION_AREA` (`@erp/shared/project-areas.ts`, tested by `src/scripts/project-areas-test.ts`). A new warning or
+  submission kind gets its area there.
+- **Access.** A role sees only its own figures and entries: money for `canViewContract`, margin for `canViewCost`,
+  stock value for `canViewStockValue`.
+- **Opening a group.** A group opens on its first tab, with no memory of the last tab within the group. The page still
+  remembers the last tab of the project, and `?tab=` deep links work.
+
+The Overview tells one story:
+
+- **Completion date.** There is one completion date with its basis, "04 Sep 2027 (28 Aug 2027 + 7 days extension)"
+  (`completionWords` over `grantedExtensionDays` in `@erp/shared/contract.ts`). It reads the same in the first line,
+  in Project details and on Schedule.
+- **Billed and cost.** Both are read against work done, in the chip and the figures alike.
+- **Progress.** Progress is shown once, so the header bar leaves the Overview tab.
+- **First line.** The first line is `projectHeadline`, built from the chips' own signals. It says "On track" only when
+  no chip is amber or red.
+- **Data problems.** Problems with the project's data, such as the BOQ against the contract, activities with no dates
+  and BOQ items with no activity, are `dataProblems` (`@erp/shared/project-setup.ts`). They stand on the Overview as
+  Checks until they are fixed, whatever the progress. Each marks the figures it affects with a figure `caveat`.
+
+The Schedule strip leads with the finish and the slips, for example "Finish: 30 Jun 2027, on time · 6 of 8 activities
+slipped". Red there is only for late work, and an offset is written out in words, as in "6 days late".
+
+On a phone the project header keeps the title, tags and chips. The rest goes into a ⋯ menu.
 
 ### Records lead with the decision
 

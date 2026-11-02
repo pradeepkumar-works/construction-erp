@@ -2,8 +2,9 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { Button, Card, Progress, Space, Typography } from 'antd';
-import { EditOutlined, FilePdfOutlined } from '@/components/common/icons';
+import { Button, Card, Dropdown, Progress, Space } from 'antd';
+import type { MenuProps } from 'antd';
+import { EditOutlined, FilePdfOutlined, MoreOutlined } from '@/components/common/icons';
 import type { ProjectDetail } from '@erp/shared';
 import { canManageProjects, isGuest, canViewContract, canViewVariations, canViewCost, canViewPurchaseOrders, canViewReconciliation, canViewWorkOrders, canViewEpc, canViewOm, canViewProgramme } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
@@ -15,7 +16,8 @@ import { ProjectStatusTag, ProjectTypeTag } from '@/components/common/StatusTag'
 import { ProjectOverview } from '@/components/projects/ProjectOverview';
 import { ProjectFormModal } from '@/components/projects/ProjectFormModal';
 import { ProjectHealth, useProjectHealth } from '@/components/projects/ProjectHealth';
-import { CompactTitle, ProjectWorkspace, type WorkspaceTab } from '@/components/projects/ProjectWorkspace';
+import { CompactTitle, ProjectWorkspace, workspaceTabs, type WorkspaceTab } from '@/components/projects/ProjectWorkspace';
+import { AreaSummary } from '@/components/projects/summaries/AreaSummary';
 import { SectorPanel, sectorTabLabel } from '@/components/sector/SectorPanel';
 import { StructurePanel } from '@/components/structure/StructurePanel';
 import { PipeNetworkPanel } from '@/components/pipes/PipeNetworkPanel';
@@ -51,9 +53,71 @@ import { SubcontractsPanel } from '@/components/subcontracts/SubcontractsPanel';
 import { HandoverPanel } from '@/components/handover/HandoverPanel';
 import { AskButton } from '@/components/ai/AskButton';
 import { LinkButton } from '@/components/common/LinkButton';
-import { themeFontSize } from '@/lib/theme';
+import { SparkleIcon } from '@/components/ai/SparkleIcon';
+import { tk } from '@/ds';
+import { useAsk } from '@/lib/ask';
+import { formatPct } from '@/lib/format';
+import { useIsPhone } from '@/lib/screen';
 
 const tabPref = (projectId: string) => `nirmaan.project.tab.${projectId}`;
+
+const summariseQuestion = (p: ProjectDetail) => `Summarise this week on ${p.code} ${p.name}.`;
+const SUMMARISE_TITLE = 'Ask Nirmaan for this week on this project: work against plan, labour, machines, materials, bills, risks and decisions';
+const reportHref = (p: ProjectDetail) => `/reports?projectId=${p.id}`;
+
+/** The project's code, client, place and manager, under its name. */
+function ProjectFacts({ project }: { project: ProjectDetail }) {
+  return (
+    <Space size={16} wrap>
+      <span translate="no">{project.code}</span>
+      {project.clientName && <span>Client: {project.clientName}</span>}
+      {project.location && <span>{project.location}</span>}
+      {project.projectManagerName && <span>PM: {project.projectManagerName}</span>}
+    </Space>
+  );
+}
+
+function PhysicalProgress({ pct }: { pct: number }) {
+  return (
+    <div style={{ width: 160 }}>
+      <span style={{ ...tk.type.caption, color: tk.color.text.muted }}>Physical progress</span>
+      <Progress percent={pct} size="small" format={() => formatPct(pct)} aria-label={`Physical progress ${formatPct(pct)}`} />
+    </div>
+  );
+}
+
+/**
+ * On a phone the header keeps the name and the health chips; the project's facts, its progress and the actions fold into
+ * one ⋯ menu, so the tabs start near the top of the screen.
+ */
+function ProjectMenu({ project, editor, onEdit }: { project: ProjectDetail; editor: boolean; onEdit: () => void }) {
+  const router = useRouter();
+  const ask = useAsk();
+  const items: MenuProps['items'] = [
+    ...(ask.available ? [{ key: 'ask', icon: <SparkleIcon />, label: 'Summarise this week' }] : []),
+    { key: 'report', icon: <FilePdfOutlined />, label: 'Progress report' },
+    ...(editor ? [{ key: 'edit', icon: <EditOutlined />, label: 'Edit project' }] : []),
+  ];
+  const run: Record<string, () => void> = { ask: () => ask.ask(summariseQuestion(project)), report: () => router.push(reportHref(project)), edit: onEdit };
+  return (
+    <Dropdown
+      trigger={['click']}
+      placement="bottomRight"
+      menu={{ items, onClick: ({ key }) => run[key]?.() }}
+      popupRender={(menu) => (
+        <div style={{ background: tk.color.surface.raised, borderRadius: tk.radius.lg, boxShadow: tk.shadow.float, maxWidth: `calc(100vw - 2 * ${tk.space[4]})` }}>
+          <div style={{ ...tk.type.caption, color: tk.color.text.muted, padding: `${tk.space[3]} ${tk.space[3]} ${tk.space[2]}`, display: 'flex', flexDirection: 'column', gap: tk.space[1] }}>
+            <ProjectFacts project={project} />
+            <span>Physical progress {formatPct(project.physicalProgressPct)}</span>
+          </div>
+          {React.isValidElement<{ style?: React.CSSProperties }>(menu) ? React.cloneElement(menu, { style: { boxShadow: 'none' } }) : menu}
+        </div>
+      )}
+    >
+      <Button icon={<MoreOutlined />} aria-label="Project details and actions" />
+    </Dropdown>
+  );
+}
 
 export default function ProjectDetailPage() {
   const params = useParams<{ id: string }>();
@@ -89,11 +153,13 @@ function ProjectPage({ project }: { project: ProjectDetail }) {
   const [editOpen, setEditOpen] = useState(false);
   const headerRef = useRef<HTMLDivElement>(null);
   const health = useProjectHealth(project);
+  const phone = useIsPhone();
   const editor = !!user && canManageProjects(user.roleKey);
   const can = (allowed: boolean) => !!user && allowed;
 
   const all: (WorkspaceTab | false)[] = [
     { key: 'overview', group: 'overview', label: 'Overview', children: <ProjectOverview project={project} /> },
+    { key: 'plan-summary', group: 'plan', label: 'Summary', children: <AreaSummary project={project} area="plan" /> },
     { key: 'structure', group: 'plan', label: 'Components', children: <StructurePanel project={project} /> },
     can(project.pipeNetwork) && { key: 'pipes', group: 'plan', label: 'Pipe network', children: <PipeNetworkPanel project={project} /> },
     can(project.contractModel === 'EPC' && !!user && canViewEpc(user.roleKey)) && { key: 'epc', group: 'plan', label: 'Engineering and packages', children: <EpcPanel project={project} /> },
@@ -103,6 +169,7 @@ function ProjectPage({ project }: { project: ProjectDetail }) {
     { key: 'lookahead', group: 'plan', label: 'Look-ahead', children: <LookaheadPanel projectId={project.id} /> },
     can(!!user && canViewProgramme(user.roleKey)) && { key: 'programme', group: 'plan', label: 'Programme and EOT', children: <ProgrammeTab projectId={project.id} initialOpenId={search.get('eot') ?? search.get('revision') ?? undefined} /> },
     project.locations.length > 0 && { key: 'sector', group: 'plan', label: sectorTabLabel(project), children: <SectorPanel project={project} editable={editor} /> },
+    { key: 'site-summary', group: 'site', label: 'Summary', children: <AreaSummary project={project} area="site" /> },
     { key: 'progress', group: 'site', label: 'Progress entries', children: <ProgressList projectId={project.id} newLabel="New progress entry" /> },
     { key: 'dpr', group: 'site', label: 'Daily reports', children: <DprList projectId={project.id} newLabel="New daily report" /> },
     { key: 'attendance', group: 'site', label: 'Attendance', children: <AttendancePanel projectId={project.id} /> },
@@ -112,11 +179,13 @@ function ProjectPage({ project }: { project: ProjectDetail }) {
     can(!user?.modulesOff?.includes('safety')) && { key: 'safety', group: 'site', label: 'Safety', children: <SafetyPanel projectId={project.id} /> },
     { key: 'risks', group: 'site', label: 'Delays and risks', children: <RiskList projectId={project.id} /> },
     { key: 'documents', group: 'site', label: 'Documents', children: <ProjectDocumentsTab projectId={project.id} /> },
+    { key: 'materials-summary', group: 'materials', label: 'Summary', children: <AreaSummary project={project} area="materials" /> },
     { key: 'material', group: 'materials', label: 'Indents', children: <MrList projectId={project.id} newLabel="New indent" /> },
     can(!!user && canViewPurchaseOrders(user.roleKey)) && { key: 'po', group: 'materials', label: 'Purchase orders', children: <PurchaseOrderList projectId={project.id} /> },
     { key: 'stock', group: 'materials', label: 'Stock', children: <StockPanel projectId={project.id} /> },
     can(!!user && canViewReconciliation(user.roleKey)) && { key: 'reconciliation', group: 'materials', label: 'Material reconciliation', children: <ReconciliationPanel projectId={project.id} network={project.pipeNetwork} /> },
     { key: 'machinery', group: 'materials', label: 'Machinery', children: <MachineryPanel projectId={project.id} /> },
+    { key: 'money-summary', group: 'money', label: 'Summary', children: <AreaSummary project={project} area="money" /> },
     can(!!user && canViewContract(user.roleKey)) && { key: 'contract', group: 'money', label: 'Contract', children: <ContractPanel projectId={project.id} /> },
     can(!!user && canViewContract(user.roleKey)) && { key: 'bills', group: 'money', label: 'RA bills', children: <BillList projectId={project.id} /> },
     can(!!user && canViewVariations(user.roleKey)) && { key: 'variations', group: 'money', label: 'Variations', children: <VariationsPanel projectId={project.id} /> },
@@ -128,7 +197,7 @@ function ProjectPage({ project }: { project: ProjectDetail }) {
     can(!!user && !isGuest(user.roleKey)) && { key: 'handover', group: 'handover', label: 'Handover and closure', children: <HandoverPanel projectId={project.id} members={project.members} initialDefectId={search.get('defect') ?? undefined} /> },
     can(!!project.handedOverOn && !!user && canViewOm(user.roleKey)) && { key: 'om', group: 'handover', label: 'O&M', children: <OmPanel project={project} /> },
   ];
-  const tabs = all.filter((t): t is WorkspaceTab => !!t);
+  const tabs = workspaceTabs(all);
 
   // ?tab= wins (links from elsewhere); without it, the tab last open on this project in this browser. The remembered
   // tab only places the page as it opens: once a tab is picked the URL alone says which, so Overview (no ?tab=) opens.
@@ -163,34 +232,33 @@ function ProjectPage({ project }: { project: ProjectDetail }) {
           </Space>
         }
         subtitle={
-          <Space orientation="vertical" size={8}>
-            <Space size={16} wrap>
-              <span>{project.code}</span>
-              {project.clientName && <span>Client: {project.clientName}</span>}
-              {project.location && <span>{project.location}</span>}
-              {project.projectManagerName && <span>PM: {project.projectManagerName}</span>}
-            </Space>
+          phone ? (
             <ProjectHealth signals={health} />
-          </Space>
+          ) : (
+            <Space orientation="vertical" size={8}>
+              <ProjectFacts project={project} />
+              <ProjectHealth signals={health} />
+            </Space>
+          )
         }
         extra={
-          <Space wrap>
-            <div style={{ width: 160 }}>
-              <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
-                Physical progress
-              </Typography.Text>
-              <Progress percent={project.physicalProgressPct} size="small" aria-label={`Physical progress ${project.physicalProgressPct}%`} />
-            </div>
-            <AskButton question={`Summarise this week on ${project.code} ${project.name}.`} label="Summarise this week" title="Ask Nirmaan for this week on this project: work against plan, labour, machines, materials, bills, risks and decisions" />
-            <LinkButton href={`/reports?projectId=${project.id}`} icon={<FilePdfOutlined />}>
-              Progress report
-            </LinkButton>
-            {editor && (
-              <Button icon={<EditOutlined />} onClick={() => setEditOpen(true)}>
-                Edit
-              </Button>
-            )}
-          </Space>
+          phone ? (
+            <ProjectMenu project={project} editor={editor} onEdit={() => setEditOpen(true)} />
+          ) : (
+            <Space wrap>
+              {/* The Overview leads with progress against its plan, so the bar is for the other tabs. */}
+              {active !== 'overview' && <PhysicalProgress pct={project.physicalProgressPct} />}
+              <AskButton question={summariseQuestion(project)} label="Summarise this week" title={SUMMARISE_TITLE} />
+              <LinkButton href={reportHref(project)} icon={<FilePdfOutlined />}>
+                Progress report
+              </LinkButton>
+              {editor && (
+                <Button icon={<EditOutlined />} onClick={() => setEditOpen(true)}>
+                  Edit
+                </Button>
+              )}
+            </Space>
+          )
         }
       />
       </div>
