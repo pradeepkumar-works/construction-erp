@@ -23,26 +23,26 @@ export const PALETTE = {
   successBorder: '#A7D7B6',
   /** Overdue amounts, losses and other figures that need attention (antd red-7, which reads on white). */
   danger: '#CF1322',
-  canvas: '#F3F6FA',
-  border: '#DCE3ED',
+  canvas: '#FAFAFA',
+  border: '#E4E4E7',
   /** Field, button and tick box outlines: the brand border a step darker, so a control's edge still shows on white. */
-  borderStrong: '#C5CFDC',
+  borderStrong: '#D4D4D8',
   /** Hairlines between table rows, inside cards and under drawer headers. */
-  hairline: '#E6EBF2',
+  hairline: '#EBEBED',
   /** Notice fills behind dark text (Alert): the pending orange, the danger red. Info uses `accentSoft`, success `successBg`. */
   pendingBg: '#FDF0E6',
   dangerBg: '#FDECEC',
   /** The dimmed page behind a drawer or dialog: blueprint navy rather than black. */
-  scrim: 'rgba(11, 31, 58, 0.45)',
+  scrim: 'rgba(9, 9, 11, 0.4)',
   /** Floating layers (menus, pickers, popovers): a navy-tinted shadow, so depth always means "on top". */
-  shadowFloat: '0 8px 24px -6px rgba(11, 31, 58, 0.18), 0 2px 6px -2px rgba(11, 31, 58, 0.10)',
+  shadowFloat: '0 8px 24px -8px rgba(9, 9, 11, 0.16), 0 2px 6px -2px rgba(9, 9, 11, 0.08)',
   /** Secondary text on white (subtitles), and quieter captions and footers. */
-  muted: '#5B6779',
+  muted: '#52525B',
   /** The quietest text on white that still meets WCAG AA (4.5:1): captions, footers. */
-  subtle: '#64748B',
+  subtle: '#71717A',
   /** antd's tertiary and placeholder text (descriptions, Typography secondary, empty fields), darkened from 45% and 25% black to meet AA. */
-  textTertiary: 'rgba(0, 0, 0, 0.58)',
-  textPlaceholder: 'rgba(0, 0, 0, 0.55)',
+  textTertiary: 'rgba(9, 9, 11, 0.6)',
+  textPlaceholder: 'rgba(9, 9, 11, 0.6)',
   /** Section titles on the navy sidebar. */
   inkCaption: 'rgba(255, 255, 255, 0.6)',
   /** A pale blue fill behind a selected chip. */
@@ -109,18 +109,18 @@ export const PALETTE = {
   familyAdmin: '#475569',
   familyAdminBg: '#EEF1F5',
   familyAdminNight: '#A0AEC0',
-  /** Dark mode surfaces: a near-neutral night with a little of the blueprint navy (page, cards, menus and popups). */
-  nightLayout: '#0B1119',
-  nightSurface: '#121A25',
-  nightElevated: '#18222F',
-  nightBorder: '#2B3747',
-  nightBorderSoft: '#202B39',
+  /** Dark mode surfaces: a neutral night (page, cards, menus and popups). */
+  nightLayout: '#09090B',
+  nightSurface: '#111113',
+  nightElevated: '#18181B',
+  nightBorder: '#2E2E33',
+  nightBorderSoft: '#222226',
   /** Dark mode text, and links that read on the night surfaces. */
-  nightText: '#E3EAF4',
+  nightText: '#EDEDEF',
   nightLink: '#6EA8FF',
   /** Dark mode tertiary and placeholder text: nightText at 62% and 58%, which keep 4.5:1 on every night surface. */
-  nightTextTertiary: 'rgba(227, 234, 244, 0.62)',
-  nightTextPlaceholder: 'rgba(227, 234, 244, 0.58)',
+  nightTextTertiary: 'rgba(237, 237, 239, 0.62)',
+  nightTextPlaceholder: 'rgba(237, 237, 239, 0.58)',
   /** Dark mode danger buttons: a red that reads on the night surfaces as text, with night-ink text when it is the fill. */
   nightDanger: '#F26D6F',
   /** Dark mode notice icons and their fills (the icon colour at 12% on the night surface). */
@@ -134,11 +134,11 @@ export const PALETTE = {
   nightAccentSoft: 'rgba(110, 168, 255, 0.10)',
   nightAccentChosen: 'rgba(110, 168, 255, 0.16)',
   /** The same two over the night surface, mixed solid: a table row's fixed column must hide the cells scrolling under it. */
-  nightRowHover: '#1B283B',
-  nightRowChosen: '#213148',
+  nightRowHover: '#1B1B1F',
+  nightRowChosen: '#202939',
   /** Dark mode focus ring and the scrim behind a drawer or dialog. */
   nightRing: 'rgba(110, 168, 255, 0.30)',
-  nightScrim: 'rgba(2, 6, 12, 0.66)',
+  nightScrim: 'rgba(0, 0, 0, 0.66)',
   nightShadowFloat: '0 10px 28px -6px rgba(0, 0, 0, 0.55), 0 2px 8px -2px rgba(0, 0, 0, 0.4)',
   /** The fifth tag tone (changes requested, completed, money going out): a violet no other state uses, and its fill. */
   violet: '#6D28D9',
@@ -148,29 +148,52 @@ export const PALETTE = {
    * Dark mode tag fills: each tone's colour at 16% over the night surface, mixed to a solid colour so a tag keeps 4.5:1 on
    * any surface it sits on (an unread row's blue, a popover), and the neutral tone's text.
    */
-  nightNeutralText: '#B4BFCD',
-  nightNeutralBg: '#29323E',
-  nightToneInfoBg: '#213148',
-  nightTonePendingBg: '#36322D',
-  nightToneSuccessBg: '#1E3735',
-  nightToneDangerBg: '#362731',
-  nightToneVioletBg: '#2C2E46',
+  nightNeutralText: '#B4B4BB',
+  nightNeutralBg: '#27272A',
+  nightToneInfoBg: '#202939',
+  nightTonePendingBg: '#362A1E',
+  nightToneSuccessBg: '#1E3026',
+  nightToneDangerBg: '#352022',
+  nightToneVioletBg: '#2C2637',
   /** The neutral tag tone's fill in the light theme (its text is `muted`). */
-  neutralBg: '#EDF0F4',
+  neutralBg: '#F4F4F5',
   /** The focus ring around a field in the light theme: Nirmaan blue at 18%. */
   ring: 'rgba(30, 99, 214, 0.18)',
   /** Skeleton shimmer, from and to: navy (or night text) at 6% and 12%. */
-  skeletonFrom: 'rgba(11, 31, 58, 0.06)',
-  skeletonTo: 'rgba(11, 31, 58, 0.12)',
-  nightSkeletonFrom: 'rgba(227, 234, 244, 0.06)',
-  nightSkeletonTo: 'rgba(227, 234, 244, 0.12)',
+  skeletonFrom: 'rgba(9, 9, 11, 0.04)',
+  skeletonTo: 'rgba(9, 9, 11, 0.08)',
+  nightSkeletonFrom: 'rgba(237, 237, 239, 0.06)',
+  nightSkeletonTo: 'rgba(237, 237, 239, 0.12)',
   /** antd's 88% and 65% shades of its text seed. */
-  black: '#000',
+  black: '#09090B',
   white: '#ffffff',
-  textBase: 'rgba(0,0,0,0.88)',
-  textMuted: 'rgba(0,0,0,0.65)',
-  nightTextBody: 'rgba(227,234,244,0.85)',
-  nightTextMuted: 'rgba(227,234,244,0.65)',
+  textBase: 'rgba(9, 9, 11, 0.9)',
+  textMuted: 'rgba(9, 9, 11, 0.66)',
+  nightTextBody: 'rgba(237, 237, 239, 0.86)',
+  nightTextMuted: 'rgba(237, 237, 239, 0.66)',
+  /**
+   * The Quiet look (direction A): the shell (sidebar, top bar, sign-in panel) is a light grey rail beside the page in the
+   * light theme and a near-black one in the dark, its words and icons in near-black ink (or near-white), the page you are
+   * on in Nirmaan blue.
+   */
+  chromeBg: '#F4F4F5',
+  chromeDeep: '#E4E4E7',
+  chromeInk: '#09090B',
+  chromeCaption: 'rgba(9, 9, 11, 0.6)',
+  chromeAccent: '#1A56BF',
+  nightChromeBg: '#0E0E10',
+  nightChromeDeep: '#18181B',
+  nightChromeInk: '#EDEDEF',
+  nightChromeCaption: 'rgba(237, 237, 239, 0.6)',
+  /** Primary buttons: near-black on white (near-white on the night), so blue is left for focus, links, data and AI. */
+  action: '#18181B',
+  actionHover: '#3F3F46',
+  onAction: '#FFFFFF',
+  nightAction: '#EDEDEF',
+  nightActionHover: '#D4D4D8',
+  nightOnAction: '#09090B',
+  /** A row under the pointer: a neutral step, so blue means chosen. */
+  rowHover: '#F4F4F5',
 } as const;
 
 export type PaletteKey = keyof typeof PALETTE;

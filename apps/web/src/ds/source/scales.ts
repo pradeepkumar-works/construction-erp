@@ -19,7 +19,7 @@ export const SPACE = {
 } as const satisfies Record<string, readonly [number, number]>;
 export type SpaceStep = keyof typeof SPACE;
 
-export const RADIUS = { xs: 2, sm: 4, md: 6, lg: 8, pill: 999 } as const;
+export const RADIUS = { xs: 2, sm: 4, md: 6, lg: 10, pill: 999 } as const;
 export type RadiusName = keyof typeof RADIUS;
 
 export const CONTROL = { sm: [24, 24], md: [32, 28], lg: [40, 35] } as const;
@@ -27,7 +27,7 @@ export const CONTROL = { sm: [24, 24], md: [32, 28], lg: [40, 35] } as const;
 export type FaceName = 'body' | 'display' | 'mono';
 export const FACES: Record<FaceName, string> = {
   body: "var(--font-body), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif",
-  display: "var(--font-display), 'Arial Narrow', Arial, sans-serif",
+  display: "var(--font-display), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif",
   mono: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
 };
 
@@ -42,14 +42,14 @@ export interface TypeStyle {
 
 export const TYPE = {
   caption: { size: 12, weight: 400, face: 'body' },
-  label: { size: 12, weight: 600, face: 'body' },
+  label: { size: 12, weight: 500, face: 'body' },
   body: { size: 14, weight: 400, face: 'body' },
-  strong: { size: 14, weight: 600, face: 'body' },
+  strong: { size: 14, weight: 500, face: 'body' },
   lead: { size: 16, weight: 400, face: 'body' },
-  title: { size: 16, weight: 700, face: 'display', stretchPercent: 88, track: '-0.005em' },
-  heading: { size: 24, weight: 800, face: 'display', stretchPercent: 88, track: '-0.01em' },
-  display: { size: 30, weight: 800, face: 'display', stretchPercent: 88, track: '-0.01em' },
-  figure: { size: 24, weight: 800, face: 'display', stretchPercent: 85, track: '-0.01em', tabular: true },
+  title: { size: 16, weight: 600, face: 'display', track: '-0.01em' },
+  heading: { size: 24, weight: 600, face: 'display', track: '-0.02em' },
+  display: { size: 30, weight: 600, face: 'display', track: '-0.02em' },
+  figure: { size: 24, weight: 600, face: 'display', track: '-0.02em', tabular: true },
 } as const satisfies Record<string, TypeStyle>;
 export type TypeName = keyof typeof TYPE;
 

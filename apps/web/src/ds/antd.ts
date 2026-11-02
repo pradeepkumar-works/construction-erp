@@ -80,23 +80,26 @@ function seedTokens(r: Resolved): ThemeConfig['token'] {
 }
 
 function components(r: Resolved, base: ReturnType<typeof theme.getDesignToken>): ThemeConfig['components'] {
-  const { surface, text, line, accent, tone, chrome, state } = r.color;
+  const { surface, text, line, accent, tone, chrome, state, action } = r.color;
   const dark = r.mode === 'dark';
   return {
     Layout: { headerBg: base.colorBgContainer, siderBg: chrome.bg, bodyBg: dark ? undefined : surface.canvas, triggerBg: chrome.deep, triggerColor: chrome.accent },
+    // The Quiet look: the primary button is near-black (near-white on the night); a default button stays neutral under the
+    // pointer, a step of grey rather than blue, so blue keeps its meanings (focus, links, chosen, data, AI).
     Button: {
-      colorPrimary: accent.solid,
-      colorPrimaryHover: accent.hover,
-      colorPrimaryActive: accent.hover,
-      primaryColor: text.onAccent,
+      colorPrimary: action.solid,
+      colorPrimaryHover: action.hover,
+      colorPrimaryActive: action.hover,
+      primaryColor: action.text,
       primaryShadow: 'none',
-      fontWeight: 600,
-      defaultHoverBg: accent.soft,
-      defaultHoverColor: accent.text,
-      defaultHoverBorderColor: line.focus,
-      defaultActiveBg: accent.chosen,
-      defaultActiveColor: dark ? accent.text : accent.hover,
-      defaultActiveBorderColor: dark ? accent.text : accent.hover,
+      fontWeight: 500,
+      defaultShadow: 'none',
+      defaultHoverBg: state.rowHover,
+      defaultHoverColor: text.strong,
+      defaultHoverBorderColor: line.base,
+      defaultActiveBg: line.hairline,
+      defaultActiveColor: text.strong,
+      defaultActiveBorderColor: line.base,
       ...(dark ? { colorError: tone.danger.solid, dangerColor: surface.canvas } : {}),
     },
     Menu: {
@@ -196,12 +199,12 @@ export const approveTheme: ThemeConfig = {
 };
 
 const tabularNums = { fontVariantNumeric: 'tabular-nums' } as const;
-const titleStyle = { fontFamily: FACES[TYPE.title.face], fontStretch: `${TYPE.title.stretchPercent}%`, fontWeight: TYPE.title.weight, letterSpacing: TYPE.title.track } as const;
-const figureStyle = { fontFamily: FACES[TYPE.figure.face], fontStretch: `${TYPE.figure.stretchPercent}%`, fontWeight: TYPE.figure.weight, letterSpacing: TYPE.figure.track } as const;
+const titleStyle = { fontFamily: FACES[TYPE.title.face], fontWeight: TYPE.title.weight, letterSpacing: TYPE.title.track } as const;
+const figureStyle = { fontFamily: FACES[TYPE.figure.face], fontWeight: TYPE.figure.weight, letterSpacing: TYPE.figure.track } as const;
 
 export const componentConfig: Pick<ConfigProviderProps, 'table' | 'statistic' | 'form' | 'tabs' | 'card' | 'modal' | 'drawer'> = {
   form: { validateMessages: { required: 'Enter the ${label}', types: { email: 'Enter an email address, e.g. name@company.com', number: '${label} must be a number' } } },
-  table: { styles: { title: tabularNums, section: tabularNums, footer: tabularNums, header: { cell: { whiteSpace: 'nowrap', fontSize: 'var(--ant-font-size-sm)', fontWeight: 600 } } } },
+  table: { styles: { title: tabularNums, section: tabularNums, footer: tabularNums, header: { cell: { whiteSpace: 'nowrap', fontSize: 'var(--ant-font-size-sm)', fontWeight: 500 } } } },
   statistic: { styles: { content: { ...tabularNums, ...figureStyle } } },
   card: { styles: { title: titleStyle } },
   modal: { styles: { title: titleStyle } },
