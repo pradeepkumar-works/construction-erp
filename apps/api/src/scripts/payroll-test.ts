@@ -6,7 +6,7 @@
  */
 import assert from 'node:assert/strict';
 import { professionalTax } from '@erp/shared';
-import { DEFAULT_SETTINGS, computePayslip, computeSettlement, incomeTax, monthlyTds, structureCost, type RulesStructure, type SlipResult } from '../payroll/payroll-rules';
+import { DEFAULT_SETTINGS, computePayslip, computeSettlement, incomeTax, monthlyTds, structureCost, structureForCtc, type RulesStructure, type SlipResult } from '../payroll/payroll-rules';
 
 const cases: [string, () => void][] = [];
 const test = (name: string, fn: () => void) => cases.push([name, fn]);
@@ -128,6 +128,32 @@ test('full and final: unpaid days, leave encashed, gratuity after five years, no
   assert.equal(short.gratuity, 0);
   assert.equal(short.noticeShortDays, 0);
   assert.equal(short.net, 0);
+});
+
+test('an increment to ₹6 lakh grows basic, DA, HRA and special together and lands the year within a few rupees', () => {
+  const now = S({ basic: 20000, da: 2000, hra: 8000, conveyance: 1600, special: 4400 });
+  const before = structureCost(now, DEFAULT_SETTINGS).ctcAnnual;
+  const next = structureForCtc(now, 600000, DEFAULT_SETTINGS)!;
+  assert.ok(before < 600000);
+  assert.ok(Math.abs(structureCost(next, DEFAULT_SETTINGS).ctcAnnual - 600000) <= 12, `CTC ${structureCost(next, DEFAULT_SETTINGS).ctcAnnual}`);
+  assert.equal(next.conveyance, 1600);
+  assert.ok(Math.abs(next.basic / next.hra - 20000 / 8000) < 0.01);
+  for (const k of ['basic', 'da', 'hra', 'special'] as const) assert.equal(next[k], Math.round(next[k]));
+  assert.equal(next.taxRegime, now.taxRegime);
+});
+
+test('across the ESI ceiling: a ₹19,000 gross raised past ₹21,000 drops ESI and still lands the figure', () => {
+  const now = S({ basic: 10000, hra: 4000, special: 5000 });
+  assert.ok(structureCost(now, DEFAULT_SETTINGS).employerEsi > 0);
+  const next = structureForCtc(now, 300000, DEFAULT_SETTINGS)!;
+  const c = structureCost(next, DEFAULT_SETTINGS);
+  assert.equal(c.employerEsi, 0);
+  assert.ok(Math.abs(c.ctcAnnual - 300000) <= 12, `CTC ${c.ctcAnnual}`);
+});
+
+test('nothing to grow, or a figure below the fixed parts, makes no structure', () => {
+  assert.equal(structureForCtc(S({ conveyance: 1600 }), 300000, DEFAULT_SETTINGS), null);
+  assert.equal(structureForCtc(S({ basic: 10000, otherEarnings: 50000 }), 100000, DEFAULT_SETTINGS), null);
 });
 
 let failed = 0;

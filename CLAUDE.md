@@ -383,7 +383,8 @@ and the pre-delivery checklist.
   Keep `src/scripts/management-test.ts` passing.
 - Payroll (item 100, `apps/api/src/payroll`, ARCHITECTURE "Payroll"): every figure is a pure function in `payroll-rules.ts`
   with a test in `src/scripts/payroll-test.ts` (CI runs it); a run has its own approval (prepare, approve, pay), not
-  `SubmissionLifecycleService`. Professional tax per state is `PT_RULES` in `packages/shared/src/payroll.ts`.
+  `SubmissionLifecycleService`. Professional tax per state is `PT_RULES` in `packages/shared/src/payroll.ts`. An increment
+  or promotion's new pay is a `SalaryStructure` made by `HrService.recordEvent` through `structureForCtc`, never a CTC alone.
 - Joining documents (ARCHITECTURE "HR records"): the papers are `EMPLOYEE_DOCUMENT_KINDS` (`@erp/shared/hr-documents.ts`), each
   person's an `EmployeeDocument` row moved only through `EmployeeDocumentsService` (`documentCheckProblem`); the offer and
   appointment letters go out only when `documentLetterProblem` is null. Keep `src/scripts/hr-documents-test.ts` passing.

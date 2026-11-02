@@ -120,7 +120,7 @@ export function EmployeeEventModal({ open, onClose, employee, onSaved }: { open:
           <Form.Item
             name="toCtc"
             label="New cost to company a year"
-            extra={ctcNow ? `Now ${formatINR(ctcNow)} a year` : 'No CTC recorded yet'}
+            extra={`${ctcNow ? `Now ${formatINR(ctcNow)} a year` : 'No CTC recorded yet'}. From this date their salary grows to match: basic, DA, HRA and special allowance in step.`}
             rules={type === 'INCREMENT' ? [{ required: true, message: 'Enter the new cost to company a year' }] : []}
           >
             <MoneyInput />

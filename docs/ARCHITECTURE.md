@@ -953,6 +953,11 @@ increment, warning, resigned, terminated, retired) with a letter number `HR-<yea
 (`nextLetterNo`, under an advisory lock) and the before and after of posting, designation, department and CTC.
 `HrService.recordEvent` changes the staff record to match in the same transaction (an exit sets the last working day and
 marks them as left); `removeEvent` takes back only the latest event, never the joining, and puts the record back.
+An increment or a promotion with a new CTC also writes a `SalaryStructure` from its date, grown from the one in force
+before it by `structureForCtc` (`payroll-rules.ts`: basic, DA, HRA and special allowance in step, conveyance and other
+earnings kept, the special allowance taking the rounding), so payroll pays what the letter says. It is skipped when the
+person has no structure yet or one is already dated that day, refused when that month's salary is approved, noted with
+the letter number, and removed with the event unless a payslip used it.
 Creating a staff record with a joining date writes its JOINED event. `GET /staff/events/:id/letter` returns what the
 letter needs; the web prints it from `components/staff/hrLetterPrint.ts` (an exit also prints the experience certificate).
 Other documents are attachments on `Attachment.employeeId` (`PUT /staff/employees/:id/documents`); the joining documents

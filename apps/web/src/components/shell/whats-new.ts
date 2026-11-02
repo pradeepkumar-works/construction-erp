@@ -9,6 +9,15 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-increment-pay',
+    date: '2026-11-02',
+    title: 'An increment changes the pay',
+    points: [
+      "Recording an increment or a promotion with a new cost to company now gives the person a new salary structure from that date: basic, DA, HRA and special allowance grow in step, conveyance stays, and payroll pays the new figure.",
+      'Taking the increment back removes that structure too, unless a salary run has already used it.',
+    ],
+  },
+  {
     id: '2026-11-joining-documents',
     date: '2026-11-02',
     title: 'Joining documents and the offer letter',
