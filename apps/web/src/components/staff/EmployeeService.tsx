@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { App, Button, Popconfirm, Space, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { PlusOutlined, PrinterOutlined } from '@/components/common/icons';
 import type { EmployeeDto, EmployeeEventDto, EmployeeLetterDto } from '@erp/shared';
@@ -53,7 +54,7 @@ export function EmployeeService({ employee }: { employee: EmployeeDto }) {
 
   return (
     <>
-      <Space style={{ marginBottom: 8, width: '100%', justifyContent: 'space-between' }} wrap>
+      <Space style={{ marginBottom: tk.space[2], width: '100%', justifyContent: 'space-between' }} wrap>
         <Typography.Text type="secondary">
           {employee.confirmedOn ? `Confirmed ${formatDate(employee.confirmedOn)}` : employee.probationEndsOn ? `On probation until ${formatDate(employee.probationEndsOn)}` : 'Joining to exit, newest first'}
         </Typography.Text>

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Alert, App, Button, Descriptions, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import { PlusOutlined } from '@/components/common/icons';
@@ -200,8 +201,8 @@ export function Devices() {
   ];
 
   return (
-    <div style={{ padding: 16 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
+    <div style={{ padding: tk.space[4] }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: tk.space[3], flexWrap: 'wrap', marginBottom: tk.space[3] }}>
         <Typography.Paragraph type="secondary" style={{ margin: 0, maxWidth: 680 }}>
           Fingerprint and face devices at sites and offices. A device that sends by itself (ADMS, as on ZKTeco and eSSL) or to a web address marks attendance as people punch; with any other device, import its punch file.
         </Typography.Paragraph>

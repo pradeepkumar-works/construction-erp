@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo } from 'react';
 import { Alert, App, Checkbox, Form, Input, Select, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import type { LeaveRequestDto, LeaveType } from '@erp/shared';
@@ -82,7 +83,7 @@ export function LeaveFormModal({ open, onClose, employeeId: fixedEmployee, onSav
   const noRecord = open && !admin && me && !me.employee;
   return (
     <FormShell open={open} onClose={onClose} form={form} layout="modal" title="Apply for leave" okText="Apply" onSubmit={(v) => mutation.mutateAsync(v)} okDisabled={!!noRecord} width={560}>
-      {noRecord && <Alert type="warning" showIcon style={{ marginBottom: 12 }} title="Your login is not linked to a staff record. Ask HR to link it." />}
+      {noRecord && <Alert type="warning" showIcon style={{ marginBottom: tk.space[3] }} title="Your login is not linked to a staff record. Ask HR to link it." />}
       <Form form={form} layout="vertical">
         {admin && !fixedEmployee && (
           <Form.Item name="employeeId" label="Employee" extra="Leave blank to apply for yourself">
@@ -108,7 +109,7 @@ export function LeaveFormModal({ open, onClose, employeeId: fixedEmployee, onSav
           </Form.Item>
         </FormGrid>
         {from && to && from.isSame(to, 'day') && (
-          <Form.Item name="halfDay" valuePropName="checked" style={{ marginTop: -8 }}>
+          <Form.Item name="halfDay" valuePropName="checked" style={{ marginTop: tk.neg(2) }}>
             <Checkbox>Half day</Checkbox>
           </Form.Item>
         )}

@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { App, Button, Descriptions, Divider, Drawer, Space, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import { AppTabs } from '@/components/common/AppTabs';
@@ -36,7 +37,7 @@ function EmployeeDetails({ data }: { data: EmployeeDto }) {
         <Descriptions.Item label="Grade">{val(data.grade)}</Descriptions.Item>
         <Descriptions.Item label="Joined">
           {formatDate(data.joinedOn)}
-          {!data.isActive && <AppTag meaning="closed" style={{ marginLeft: 8 }}>Left {formatDate(data.leftOn)}</AppTag>}
+          {!data.isActive && <AppTag meaning="closed" style={{ marginLeft: tk.space[2] }}>Left {formatDate(data.leftOn)}</AppTag>}
         </Descriptions.Item>
         <Descriptions.Item label={data.confirmedOn ? 'Confirmed' : 'Probation until'}>{formatDate(data.confirmedOn ?? data.probationEndsOn)}</Descriptions.Item>
         <Descriptions.Item label="Notice period">{data.noticeDays ? `${data.noticeDays} days` : none}</Descriptions.Item>
@@ -160,7 +161,7 @@ export function EmployeeDrawer({ id, open, onClose, onOpenLeave }: { id: string 
               label: 'Attendance and leave',
               children: (
                 <>
-                  <Space style={{ marginBottom: 8 }} wrap>
+                  <Space style={{ marginBottom: tk.space[2] }} wrap>
                     <DatePicker picker="month" format={MONTH_PICKER_FORMAT} allowClear={false} aria-label="Month" value={month} onChange={(d) => d && setMonth(d.startOf('month'))} disabledDate={(d) => d.isAfter(dayjs(), 'month')} />
                     <Typography.Text>
                       {totals.present} days present, {totals.absent} absent{totals.overtime ? `, ${totals.overtime} h overtime` : ''}
@@ -185,7 +186,7 @@ export function EmployeeDrawer({ id, open, onClose, onOpenLeave }: { id: string 
                   <Divider titlePlacement="start" plain>
                     Leave in {month.year()}
                   </Divider>
-                  <Space wrap size={[16, 4]} style={{ marginBottom: 8 }}>
+                  <Space wrap size={[16, 4]} style={{ marginBottom: tk.space[2] }}>
                     {(balances ?? [])
                       .filter((b) => b.entitled !== null || b.taken)
                       .map((b) => (

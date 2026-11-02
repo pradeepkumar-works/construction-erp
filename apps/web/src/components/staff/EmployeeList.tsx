@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Button, Checkbox, theme } from 'antd';
+import { Button, Checkbox } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { PlusOutlined } from '@/components/common/icons';
 import type { EmployeeDto, EmployeeSortField } from '@erp/shared';
@@ -19,8 +20,7 @@ import { RecordLink } from '@/components/record/RecordLink';
 const KEYS = ['inactive'] as const;
 
 function Sub({ children }: { children: React.ReactNode }) {
-  const { token } = theme.useToken();
-  return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
+  return <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{children}</div>;
 }
 
 /** The staff master: HR sees everyone, site in-charges the staff posted at their projects. */
@@ -48,7 +48,7 @@ export function EmployeeList({ onOpen, onNew }: { onOpen: (id: string) => void; 
               <RecordLink onOpen={() => onOpen(r.id)} strong>
                 {r.fullName}
               </RecordLink>
-              {!r.isActive && <AppTag meaning="closed" style={{ marginLeft: 6 }}>Left</AppTag>}
+              {!r.isActive && <AppTag meaning="closed" style={{ marginInlineStart: tk.space[2] }}>Left</AppTag>}
               <Sub>{r.designation}</Sub>
             </div>
           ),

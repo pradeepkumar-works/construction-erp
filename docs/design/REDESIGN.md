@@ -108,6 +108,9 @@ runs and is committed with the last PR.
     instead of a fixed 30, which no longer matched the label since PR 7; thin bars stack on the 4 step and round on
     `sm`; cash in and out bars are the `success` and `danger` solids. The invoice and bill prints and the cost head
     colours (also the cost chart's) wait for PR 14.
+  - [x] PR 12. People (staff, attendance and leave, overtime, service records, HR letters, payroll, salaries, loans,
+    settlements, biometric devices): 26 files, with no value off the scale but one tag gap (the 8 step, as PR 9). The
+    payslip and HR letter prints wait for PR 14.
 
 ### Print, charts, and deleting the old surface (PR 14 and PR 15)
 

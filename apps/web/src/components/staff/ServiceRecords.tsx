@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Button, Select, Space, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
@@ -68,8 +69,8 @@ export function ServiceRecords({ onOpen }: { onOpen: (employeeId: string) => voi
   ];
 
   return (
-    <div style={{ padding: 16 }}>
-      <Space wrap style={{ marginBottom: 12 }}>
+    <div style={{ padding: tk.space[4] }}>
+      <Space wrap style={{ marginBottom: tk.space[3] }}>
         <Select
           allowClear
           placeholder="All kinds"

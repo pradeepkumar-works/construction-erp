@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { App, Button, Checkbox, Form, Input, Popconfirm, Select, Space, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import type { TableProps } from 'antd';
 import { PlusOutlined } from '@/components/common/icons';
@@ -113,7 +114,7 @@ export function StructureForm({ open, onClose, from }: { open: boolean; onClose:
           </Typography.Text>
         </FormSection>
         <FormSection title="Deductions and tax">
-          <Space wrap size="large" style={{ marginBottom: 12 }}>
+          <Space wrap size="large" style={{ marginBottom: tk.space[3] }}>
             <Form.Item name="pf" valuePropName="checked" noStyle>
               <Checkbox>Provident fund</Checkbox>
             </Form.Item>
@@ -224,8 +225,8 @@ export function Salaries() {
   ];
 
   return (
-    <div style={{ padding: 16 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
+    <div style={{ padding: tk.space[4] }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: tk.space[3], flexWrap: 'wrap', marginBottom: tk.space[3] }}>
         <Typography.Paragraph type="secondary" style={{ margin: 0, maxWidth: 640 }}>
           Salaries in force today. A raise is a new salary from a date, so earlier months keep what they paid. Expand a row for its history.
         </Typography.Paragraph>

@@ -2,7 +2,8 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Card, Col, Flex, Progress, Row, Typography, theme } from 'antd';
+import { Card, Col, Flex, Progress, Row, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { HeadcountRowDto, HrPersonRowDto } from '@erp/shared';
 import { useHrDashboard } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
@@ -11,16 +12,15 @@ const employeeHref = (id: string) => `/staff?tab=staff&employee=${id}`;
 
 /** Head count split one way: a bar per row, longest first. */
 function Split({ title, rows, total }: { title: string; rows: HeadcountRowDto[]; total: number }) {
-  const { token } = theme.useToken();
   return (
     <Card size="small" title={title} style={{ height: '100%' }}>
       {rows.length === 0 ? (
         <Typography.Text type="secondary">No staff</Typography.Text>
       ) : (
-        <Flex vertical gap={token.marginXS}>
+        <Flex vertical gap={tk.space[2]}>
           {rows.slice(0, 8).map((r) => (
             <div key={r.key}>
-              <Flex justify="space-between" gap={token.marginSM}>
+              <Flex justify="space-between" gap={tk.space[3]}>
                 <Typography.Text ellipsis>{r.label}</Typography.Text>
                 <span translate="no">{r.count}</span>
               </Flex>
@@ -35,8 +35,7 @@ function Split({ title, rows, total }: { title: string; rows: HeadcountRowDto[];
 
 /** People in a list, each row opening their record. */
 function People({ title, rows, empty, note }: { title: string; rows: HrPersonRowDto[]; empty: string; note: (r: HrPersonRowDto) => string }) {
-  const { token } = theme.useToken();
-  const row: React.CSSProperties = { minHeight: 44, padding: `${token.paddingXXS}px 0`, borderTop: `${token.lineWidth}px ${token.lineType} ${token.colorSplit}` };
+  const row: React.CSSProperties = { minHeight: 44, padding: `${tk.space[1]} 0`, borderTop: tk.line('hairline') };
   return (
     <Card size="small" title={title} style={{ height: '100%' }}>
       {rows.length === 0 ? (
@@ -48,15 +47,15 @@ function People({ title, rows, empty, note }: { title: string; rows: HrPersonRow
           {rows.slice(0, 8).map((r) => (
             <li key={`${r.employeeId}-${r.date}`}>
               <Link href={employeeHref(r.employeeId)} className="text-link">
-                <Flex align="center" justify="space-between" gap={token.marginSM} style={row}>
+                <Flex align="center" justify="space-between" gap={tk.space[3]} style={row}>
                   <span>
                     <span translate="no">{r.fullName}</span>
-                    <Typography.Text type="secondary" style={{ display: 'block', fontSize: token.fontSizeSM }}>
+                    <Typography.Text type="secondary" style={{ display: 'block', fontSize: tk.type.caption.fontSize }}>
                       {r.designation}
                       {r.projectName ? `, ${r.projectName}` : ''}
                     </Typography.Text>
                   </span>
-                  <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM, whiteSpace: 'nowrap' }}>
+                  <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize, whiteSpace: 'nowrap' }}>
                     {note(r)}
                   </Typography.Text>
                 </Flex>
@@ -66,7 +65,7 @@ function People({ title, rows, empty, note }: { title: string; rows: HrPersonRow
         </ul>
       )}
       {rows.length > 8 && (
-        <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+        <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
           and {rows.length - 8} more
         </Typography.Text>
       )}
@@ -79,14 +78,13 @@ function People({ title, rows, empty, note }: { title: string; rows: HrPersonRow
  * left this month; probation ending; birthdays and work anniversaries; and whose details payroll still needs.
  */
 export function HrDashboard() {
-  const { token } = theme.useToken();
   const { data } = useHrDashboard();
   if (!data) return null;
   const short = (d: string) => formatDate(d).slice(0, 6);
-  const row: React.CSSProperties = { minHeight: 44, padding: `${token.paddingXXS}px 0`, borderTop: `${token.lineWidth}px ${token.lineType} ${token.colorSplit}` };
+  const row: React.CSSProperties = { minHeight: 44, padding: `${tk.space[1]} 0`, borderTop: tk.line('hairline') };
   return (
     <section aria-label="HR dashboard">
-      <Typography.Title level={2} style={{ fontSize: token.fontSizeHeading4, margin: `0 0 ${token.marginSM}px` }}>
+      <Typography.Title level={2} style={{ fontSize: tk.type.lead.fontSize, margin: `0 0 ${tk.space[3]}` }}>
         Staff: {data.active} on the rolls
       </Typography.Title>
       <Row gutter={[16, 16]}>
@@ -130,9 +128,9 @@ export function HrDashboard() {
                 {data.missingDetails.map((m) => (
                   <li key={m.employeeId} style={{ breakInside: 'avoid' }}>
                     <Link href={employeeHref(m.employeeId)} className="text-link">
-                      <Flex align="center" justify="space-between" gap={token.marginSM} style={row}>
+                      <Flex align="center" justify="space-between" gap={tk.space[3]} style={row}>
                         <span translate="no">{m.fullName}</span>
-                        <Typography.Text type="danger" style={{ fontSize: token.fontSizeSM }}>
+                        <Typography.Text type="danger" style={{ fontSize: tk.type.caption.fontSize }}>
                           No {m.missing.join(', ')}
                         </Typography.Text>
                       </Flex>

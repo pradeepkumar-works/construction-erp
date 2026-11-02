@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Alert, App, Button, Form, Select, Space, Table, Typography, Upload } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps, UploadProps } from 'antd';
@@ -98,8 +99,8 @@ export function Punches() {
   ];
 
   return (
-    <div style={{ padding: 16 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+    <div style={{ padding: tk.space[4] }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: tk.space[2], flexWrap: 'wrap', marginBottom: tk.space[3] }}>
         <Space wrap>
           <DatePicker value={date} onChange={(d) => d && setDate(d)} allowClear={false} disabledDate={(d) => d.isAfter(dayjs(), 'day')} aria-label="Day" />
           <Select allowClear placeholder="All devices" value={deviceId} onChange={setDeviceId} options={(devices ?? []).map((d) => ({ value: d.id, label: d.name }))} style={{ minWidth: 180 }} aria-label="Device" />
