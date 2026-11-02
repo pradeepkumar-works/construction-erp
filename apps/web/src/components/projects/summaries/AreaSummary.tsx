@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Card, Flex, Skeleton, Typography } from 'antd';
+import { Flex, Skeleton, Typography } from 'antd';
 import {
   NAV_TREE,
   SUBMISSION_TYPE_PLURAL_LABELS,
@@ -17,6 +17,7 @@ import {
 import { useProjectArea } from '@/lib/queries';
 import { formatDate, formatINRCompact, inSentence, plural } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
+import { Section } from '@/components/common/Section';
 import { Figures } from '@/components/figures';
 import { CheckSquareOutlined, HourglassOutlined, WarningOutlined } from '@/components/common/icons';
 import { WORKSPACE_GROUPS, useGroupTabs } from '@/components/projects/ProjectWorkspace';
@@ -45,7 +46,7 @@ function waitingHref(w: AreaWaitingDto, projectId: string) {
 function Waiting({ data, projectId, area }: { data: ProjectAreaDto | undefined; projectId: string; area: ProjectArea }) {
   if (data && data.waiting === null) return null;
   return (
-    <Card size="small" title="What waits">
+    <Section title="What waits">
       {!data ? (
         <Skeleton active title={false} paragraph={{ rows: 3 }} />
       ) : !data.waiting?.length ? (
@@ -72,7 +73,7 @@ function Waiting({ data, projectId, area }: { data: ProjectAreaDto | undefined; 
           ))}
         </ul>
       )}
-    </Card>
+    </Section>
   );
 }
 
@@ -81,7 +82,7 @@ function Exceptions({ data, projectId, area }: { data: ProjectAreaDto | undefine
   if (data && data.exceptions === null) return null;
   const watchList = `/watch-list?projectId=${projectId}`;
   return (
-    <Card size="small" title="On the watch list">
+    <Section title="On the watch list">
       {!data ? (
         <Skeleton active title={false} paragraph={{ rows: 3 }} />
       ) : !data.exceptions?.length ? (
@@ -104,7 +105,7 @@ function Exceptions({ data, projectId, area }: { data: ProjectAreaDto | undefine
           )}
         </>
       )}
-    </Card>
+    </Section>
   );
 }
 
@@ -144,7 +145,7 @@ function Pages({ projectId, area }: { projectId: string; area: ProjectArea }) {
   const tabs = useGroupTabs();
   if (!tabs.length) return null;
   return (
-    <Card size="small" title={`${AREA_LABELS[area]} pages`}>
+    <Section title={`${AREA_LABELS[area]} pages`}>
       <nav aria-label={`${AREA_LABELS[area]} pages`}>
         <ul style={{ ...list, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 16rem), 1fr))', columnGap: tk.space[6] }}>
           {tabs.map((t) => {
@@ -160,7 +161,7 @@ function Pages({ projectId, area }: { projectId: string; area: ProjectArea }) {
           })}
         </ul>
       </nav>
-    </Card>
+    </Section>
   );
 }
 
@@ -177,7 +178,7 @@ export function AreaSummary({ project, area }: { project: ProjectDetail; area: P
         <QueryError error={error} onRetry={() => refetch()} />
       ) : (
         <>
-          <Figures label={`${label} figures`} figures={data?.figures} scope={{ projectId: project.id }} />
+          <Figures bare label={`${label} figures`} figures={data?.figures} scope={{ projectId: project.id }} />
           {data?.finish ? <Finish finish={data.finish} /> : null}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 24rem), 1fr))', gap: tk.space[4], alignItems: 'start' }}>
             <Waiting data={data} projectId={project.id} area={area} />

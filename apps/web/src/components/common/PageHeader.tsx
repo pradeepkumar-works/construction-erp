@@ -4,6 +4,7 @@ import React from 'react';
 import { Breadcrumb, Space, Typography } from 'antd';
 import Link from 'next/link';
 import { textOf, usePageTitle } from '@/lib/page-title';
+import { tk } from '@/ds';
 import { usePageTrailTail } from '@/components/shell/page-trail';
 
 export interface Crumb {
@@ -12,7 +13,7 @@ export interface Crumb {
 }
 
 /**
- * A page's heading: its one `<h1>` (the brand's display face at the top of the type scale, `.page-title` in globals.css),
+ * A page's heading: its one `<h1>` (24 px Semibold, `.page-title` in globals.css),
  * the browser tab's title, the page's actions, and its breadcrumb where the header does not already show one.
  */
 export function PageHeader({
@@ -33,20 +34,20 @@ export function PageHeader({
   const last = crumbs?.[crumbs.length - 1];
   const inHeader = usePageTrailTail(last ? textOf(last.title) : null, !!crumbs?.length);
   return (
-    <div style={{ marginBottom: 20 }}>
+    <div style={{ marginBottom: tk.space[6] }}>
       {crumbs && crumbs.length > 0 && !inHeader && (
         <Breadcrumb
-          style={{ marginBottom: 6 }}
+          style={{ marginBottom: tk.space[2] }}
           items={crumbs.map((c) => ({ title: c.href ? <Link href={c.href}>{c.title}</Link> : c.title }))}
         />
       )}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: tk.space[4], flexWrap: 'wrap' }}>
         <div style={{ minWidth: 0 }}>
           <Typography.Title level={1} id="page-title" className="page-title" tabIndex={-1} style={{ margin: 0 }}>
             {title}
           </Typography.Title>
           {subtitle && (
-            <Typography.Text type="secondary" style={{ display: 'block', marginTop: 2 }}>
+            <Typography.Text type="secondary" style={{ display: 'block', marginTop: tk.space[1], maxWidth: '72ch' }}>
               {subtitle}
             </Typography.Text>
           )}

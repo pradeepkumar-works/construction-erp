@@ -149,6 +149,7 @@ export const MEASURES = {
   mixDesignsToApprove: { label: 'Mix designs to approve', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'No mix design waiting' }, items: ['mix design', 'mix designs'], list: '/rmc?tab=designs', define: 'Mix designs in draft, waiting for quality to approve.' },
   challansNotBilled: { label: 'Challans not billed', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'Every delivery is billed' }, items: ['challan', 'challans'], list: '/rmc?tab=bills', define: 'Delivered loads for a customer not yet on a bill.' },
   cubicMetresNotBilled: { label: 'Cubic metres not billed', asPart: 'm³ delivered', kind: 'qty', better: 'down', list: '/rmc?tab=bills', define: 'Concrete delivered to customers and not yet on a bill.' },
+  rmcMaterialsShort: { label: 'Materials short', kind: 'count', better: 'down', flag: { level: 'act', clear: 'The store holds what is left to pour' }, items: ['material', 'materials'], list: '/rmc?tab=day', define: 'Materials the plant store holds less of than the day\'s orders still need.' },
   rmcCustomersOwe: { label: 'RMC customers owe', kind: 'money', better: 'down', list: '/rmc?tab=bills', define: 'On bills issued, less money received.' },
   // Books
   profitThisYear: { label: 'Profit this year', negativeLabel: 'Loss this year', kind: 'money', better: 'up', limit: { below: 0, level: 'act' }, list: '/statements?tab=pl', define: 'From 1 April, before tax.' },

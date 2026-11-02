@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, Drawer, Flex, Select, theme } from 'antd';
+import { Button, Drawer, Flex, Select } from 'antd';
+import { tk } from '@/ds';
 import { FilterOutlined } from '@/components/common/icons';
 import type { SubmissionStatus } from '@erp/shared';
 import { SUBMISSION_STATUSES, SUBMISSION_STATUS_LABELS } from '@erp/shared';
@@ -59,7 +60,6 @@ export function ListToolbar({
   /** The filters on, for the phone's Filters button; left out, it counts the project and status. */
   filters?: ToolbarFilters;
 }) {
-  const { token } = theme.useToken();
   const phone = useIsPhone();
   const [open, setOpen] = useState(false);
   const projectFilter = hideProject ? null : <ProjectSelect value={projectId} onChange={(v) => onProject(v)} />;
@@ -70,13 +70,13 @@ export function ListToolbar({
 
   if (!phone)
     return (
-      <CardToolbar wrap gap={8} align="center">
+      <CardToolbar wrap gap={tk.space[2]} align="center">
         {searchBox}
         {projectFilter}
         {statusFilter}
         {children}
         {extra || view ? (
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: tk.space[2] }}>
             {view}
             {extra}
           </div>
@@ -98,16 +98,16 @@ export function ListToolbar({
     </Button>
   ) : null;
   return (
-    <CardToolbar vertical gap={token.marginXS}>
+    <CardToolbar vertical gap={tk.space[2]}>
       {searchBox || filtersButton || view ? (
-        <Flex gap={token.marginXS} align="center" justify="space-between">
+        <Flex gap={tk.space[2]} align="center" justify="space-between">
           {searchBox ? <div style={{ flex: 1, minWidth: 0 }}>{searchBox}</div> : null}
           {filtersButton}
           {view}
         </Flex>
       ) : null}
       {extra ? (
-        <Flex wrap gap={token.marginXS} justify="flex-end">
+        <Flex wrap gap={tk.space[2]} justify="flex-end">
           {extra}
         </Flex>
       ) : null}
@@ -119,9 +119,9 @@ export function ListToolbar({
           size="auto"
           title={count ? `Filters (${count})` : 'Filters'}
           rootClassName="list-filter-drawer"
-          styles={{ wrapper: { maxHeight: '85vh' }, footer: { paddingBottom: `calc(${token.paddingSM}px + env(safe-area-inset-bottom))` } }}
+          styles={{ wrapper: { maxHeight: '85vh' }, footer: { paddingBottom: `calc(${tk.space[3]} + env(safe-area-inset-bottom))` } }}
           footer={
-            <Flex gap={token.marginXS} justify="flex-end">
+            <Flex gap={tk.space[2]} justify="flex-end">
               <Button onClick={clear} disabled={!count}>
                 Clear
               </Button>
@@ -131,7 +131,7 @@ export function ListToolbar({
             </Flex>
           }
         >
-          <Flex vertical gap={token.marginSM} className="list-filter-fields">
+          <Flex vertical gap={tk.space[3]} className="list-filter-fields">
             {projectFilter}
             {statusFilter}
             {children}

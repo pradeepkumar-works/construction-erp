@@ -12,7 +12,7 @@ import { SCREENS_DIR, WALK_ROLES, WALK_VIEWS, navHrefs, routesFile, stateFile, t
  * `route-walk.setup.ts` (one sign-in per role) saves the links each role's sidebar draws, which that role's test for
  * each view then walks (nothing is skipped). A new module is walked without editing this file. On each page:
  * - axe finds nothing at WCAG 2.2 AA (every view);
- * - one `<h1>`, and a tab title of its own, not just the product name (1440, light);
+ * - one `<h1>`, and a tab title of its own, not just the product name, and no card inside a card (1440, light);
  * - controls at least 24 px, 44 px on the touch screen, and no text under 12 px (`measureTargets`; light views, as
  *   sizes do not change with the theme);
  * - no sideways scroll at 390 px (light);
@@ -56,6 +56,9 @@ async function walkPage(page: Page, url: string, name: string, role: WalkRole, v
     // The title is set once the page knows its name (a record's, say), so give it the usual wait.
     const named = await expect(page).not.toHaveTitle(new RegExp(`^\\s*(${PRODUCT_NAME})?\\s*$`)).then(() => true, () => false);
     if (!named) found.push(at(`tab title is "${(await page.title()).trim()}", not the page's own`));
+    // A part of a surface is a Section (a hairline and a title), never a second box (docs/design/REDESIGN.md, PR 5).
+    const nested = await page.locator('main .ant-card .ant-card').filter({ visible: true }).count();
+    if (nested) found.push(at(`has ${nested} ${nested === 1 ? 'card' : 'cards'} inside a card (use Section)`));
   }
 
   found.push(...(await axeViolations(page)).map((v) => at(`axe ${v}`)));

@@ -67,8 +67,10 @@ runs and is committed with the last PR.
 
 ### Redo the shared components (PR 5 to PR 7)
 
-- [ ] PR 5. Page frame: `PageHeader`, page and card spacing, no card inside a card, list toolbar on one line.
-- [ ] PR 6. Data: `DataTable` rows and header, `Figures` (the one headline block), `AppTag` tones plus an `ai` tone, `AppTabs`, `StageBar`.
+- [x] PR 5. Page frame: `PageHeader`, the page's padding, `Section`, `CardToolbar` and `ListToolbar` on `tk`; no card inside
+  a card (the six places measured across 159 pages are a `Section` or bare `Figures` now, and the route walk refuses one).
+  The list toolbar's one line moves to PR 6 with `DataTable`.
+- [ ] PR 6. Data: the list toolbar on one line, `DataTable` rows and header, `Figures` (the one headline block), `AppTag` tones plus an `ai` tone, `AppTabs`, `StageBar`.
 - [ ] PR 7. Entry and records: `FormShell`, fields, `RecordFrame`, drawers and dialogs, the Ask panel's AI surface.
 
 ### Move every screen onto `tk` (PR 8 to PR 13)
