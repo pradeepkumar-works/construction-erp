@@ -1,7 +1,7 @@
 import { officialFileName, type OfficialBlockDto, type OfficialFactDto, type OfficialReportDto } from '@erp/shared';
 import type { Content, TableCell, TDocumentDefinitions } from 'pdfmake/interfaces';
 import { BRAND } from '@/lib/brand';
-import { markSvg } from '@/components/print/printBrand';
+import { markSvg, PRINT } from '@/components/print/printBrand';
 import { cellText, isNegative, isNumeric } from '@/components/management/report-format';
 import { controlFacts, factText, footNote, issueLine, WIDE_COLUMNS } from './official-format';
 import { loadPhotos, type PhotoData } from './photoData';
@@ -13,7 +13,7 @@ import { loadPhotos, type PhotoData } from './photoData';
  * download, not with the page.
  */
 
-const C = BRAND.colors;
+const C = PRINT;
 const grid = {
   hLineWidth: () => 0.5,
   vLineWidth: () => 0.5,
@@ -145,7 +145,7 @@ export async function buildOfficialReportPdf(r: OfficialReportDto): Promise<TDoc
     pageOrientation: wide ? 'landscape' : 'portrait',
     pageMargins: [34, 76, 34, 44],
     info: { title: `${r.title} ${r.docNo}`, author: r.organizationName, subject: `${r.project.name}, ${r.period}`, creator: BRAND.name },
-    defaultStyle: { font: 'Roboto', fontSize: 8.5, lineHeight: 1.15, color: '#111111' },
+    defaultStyle: { font: 'Roboto', fontSize: 8.5, lineHeight: 1.15, color: PRINT.text },
     styles: {
       h2: { fontSize: 10.5, bold: true, color: C.ink, characterSpacing: 0.5, margin: [0, 10, 0, 5] },
       h3: { fontSize: 9, bold: true, color: C.ink, margin: [0, 5, 0, 3] },
@@ -181,7 +181,7 @@ export async function buildOfficialReportPdf(r: OfficialReportDto): Promise<TDoc
       {
         columns: r.signatures.map((s) => ({
           stack: [
-            { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 150, y2: 0, lineWidth: 0.75, lineColor: '#333333' }] },
+            { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 150, y2: 0, lineWidth: 0.75, lineColor: PRINT.text }] },
             { text: s.name ?? ' ', bold: true, color: C.ink, margin: [0, 3, 0, 0] },
             { text: s.role, color: C.muted, fontSize: 7.5 },
           ],

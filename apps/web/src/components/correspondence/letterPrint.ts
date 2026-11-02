@@ -1,5 +1,5 @@
 import type { LetterPrintDto } from '@erp/shared';
-import { AUTO_PRINT_SCRIPT, brandFooter, PRINT_BRAND_CSS, PRINT_FONT_LINKS } from '@/components/print/printBrand';
+import { AUTO_PRINT_SCRIPT, brandFooter, PRINT_BRAND_CSS, PRINT_FONT_LINKS, PRINT, PRINT_FACE } from '@/components/print/printBrand';
 import { BRAND } from '@/lib/brand';
 import { formatDate } from '@/lib/format';
 
@@ -32,17 +32,17 @@ ${PRINT_FONT_LINKS}
 <style>
   @page { size: A4; margin: 18mm; }
   * { box-sizing: border-box; }
-  body { font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #111; font-size: 12.5px; line-height: 1.55; margin: 0; padding: 28px; }
-  .head { border-bottom: 2px solid ${BRAND.colors.ink}; padding-bottom: 8px; margin-bottom: 18px; }
-  .brand { font-size: 19px; color: ${BRAND.colors.ink}; font-weight: 600; }
-  .muted { color: #555; }
+  body { font-family: ${PRINT_FACE}; color: ${PRINT.text}; font-size: 12.5px; line-height: 1.55; margin: 0; padding: 28px; }
+  .head { border-bottom: 2px solid ${PRINT.ink}; padding-bottom: 8px; margin-bottom: 18px; }
+  .brand { font-size: 19px; color: ${PRINT.ink}; font-weight: 600; }
+  .muted { color: ${PRINT.muted}; }
   .meta { display: flex; justify-content: space-between; margin-bottom: 16px; }
   .to { margin-bottom: 14px; }
   .subject { font-weight: 600; margin: 12px 0 4px; }
   .sign { margin-top: 48px; }
   .encl { margin-top: 28px; }
   .encl ol { margin: 4px 0 0 18px; padding: 0; }
-  .draft { position: fixed; top: 40%; left: 0; right: 0; text-align: center; font-size: 72px; color: rgba(0,0,0,0.07); transform: rotate(-24deg); pointer-events: none; }
+  .draft { position: fixed; top: 40%; left: 0; right: 0; text-align: center; font-size: 72px; color: color-mix(in srgb, ${PRINT.ink} 7%, transparent); transform: rotate(-24deg); pointer-events: none; }
   @media print { body { padding: 0; } }
   ${PRINT_BRAND_CSS}
 </style></head>

@@ -1,6 +1,7 @@
 'use client';
 
 import type { IDxf, IEntity } from 'dxf-parser';
+import { resolveStatic } from '@/ds';
 
 /**
  * DXF drawings in the browser: parsed with dxf-parser, flattened once into lines and text in drawing units
@@ -35,15 +36,17 @@ const apply = (m: M, x: number, y: number): [number, number] => [m[0] * x + m[2]
 const scaleOf = (m: M) => Math.sqrt(Math.abs(m[0] * m[3] - m[1] * m[2])) || 1;
 const angleOf = (m: M) => Math.atan2(m[1], m[0]);
 
+/** Black ink on the white sheet, in either theme. */
+const SHEET_INK = resolveStatic().color.sheet.ink;
 const hex = (n: number) => `#${n.toString(16).padStart(6, '0')}`;
 /** White and near-white lines (colour 7 and pale yellows) would vanish on the white sheet, so they draw dark. */
 function ink(rgb: number | undefined) {
-  if (rgb === undefined || rgb === null || Number.isNaN(rgb)) return '#000000';
+  if (rgb === undefined || rgb === null || Number.isNaN(rgb)) return SHEET_INK;
   const r = (rgb >> 16) & 255;
   const g = (rgb >> 8) & 255;
   const b = rgb & 255;
   const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
-  if (lum > 0.85) return '#000000';
+  if (lum > 0.85) return SHEET_INK;
   if (lum > 0.6) return hex(((r * 0.55) << 16) | ((g * 0.55) << 8) | (b * 0.55));
   return hex(rgb);
 }
@@ -255,7 +258,7 @@ function flatten(dxf: IDxf): { prims: Prim[]; layers: DxfLayer[] } {
       }
     }
   };
-  walk(dxf.entities ?? [], I, 0, null, '#000000');
+  walk(dxf.entities ?? [], I, 0, null, SHEET_INK);
   const layers = [...used].sort((a, b) => a.localeCompare(b)).map((name) => ({ name, color: layerColor(name) }));
   return { prims, layers };
 }

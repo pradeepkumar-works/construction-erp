@@ -2,11 +2,10 @@
 
 import React from 'react';
 import type { MarkupPoint, TakeoffKind } from '@erp/shared';
-import { BRAND } from '@/lib/brand';
-import { VB_W } from './MarkupLayer';
+import { SHEET, VB_W } from './MarkupLayer';
 
-export const TAKEOFF_INK = BRAND.colors.takeoff;
-export const SCALE_INK = BRAND.colors.takeoffScale;
+export const TAKEOFF_INK = SHEET.takeoff;
+export const SCALE_INK = SHEET.scale;
 
 export interface ShownTakeoff {
   id: string;
@@ -50,10 +49,10 @@ export function TakeoffShape({ t, vbH, px, selected, hover, drafting }: { t: Sho
     strokeLinecap: 'round' as const,
     strokeLinejoin: 'round' as const,
   };
-  const dot = (p: readonly [number, number], i: number) => <circle key={i} cx={p[0]} cy={p[1]} r={(drafting ? 3.5 : 2.5) * px} fill="#fff" stroke={ink} strokeWidth={1.5 * px} />;
+  const dot = (p: readonly [number, number], i: number) => <circle key={i} cx={p[0]} cy={p[1]} r={(drafting ? 3.5 : 2.5) * px} fill={SHEET.paper} stroke={ink} strokeWidth={1.5 * px} />;
   const [lx, ly] = labelAt(t.kind, pts);
   const label = t.label ? (
-    <text x={lx} y={ly - 8 * px} fontSize={12 * px} fontWeight={600} fill={ink} stroke="#fff" strokeWidth={3 * px} paintOrder="stroke" textAnchor="middle" style={{ userSelect: 'none' }}>
+    <text x={lx} y={ly - 8 * px} fontSize={12 * px} fontWeight={600} fill={ink} stroke={SHEET.paper} strokeWidth={3 * px} paintOrder="stroke" textAnchor="middle" style={{ userSelect: 'none' }}>
       {t.label}
     </text>
   ) : null;
@@ -62,8 +61,8 @@ export function TakeoffShape({ t, vbH, px, selected, hover, drafting }: { t: Sho
   if (t.kind === 'COUNT') {
     shape = pts.map((p, i) => (
       <g key={i}>
-        <circle cx={p[0]} cy={p[1]} r={(selected ? 9 : 8) * px} fill={ink} fillOpacity={0.85} stroke="#fff" strokeWidth={1.5 * px} />
-        <text x={p[0]} y={p[1]} fontSize={9 * px} fontWeight={700} fill="#fff" textAnchor="middle" dominantBaseline="central" style={{ userSelect: 'none' }}>
+        <circle cx={p[0]} cy={p[1]} r={(selected ? 9 : 8) * px} fill={ink} fillOpacity={0.85} stroke={SHEET.paper} strokeWidth={1.5 * px} />
+        <text x={p[0]} y={p[1]} fontSize={9 * px} fontWeight={700} fill={SHEET.paper} textAnchor="middle" dominantBaseline="central" style={{ userSelect: 'none' }}>
           {i + 1}
         </text>
       </g>

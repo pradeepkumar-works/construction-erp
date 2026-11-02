@@ -1,6 +1,6 @@
 import type { EmployeeLetterDto } from '@erp/shared';
 import { EMPLOYEE_EVENT_LETTERS } from '@erp/shared';
-import { AUTO_PRINT_SCRIPT, brandFooter, PRINT_BRAND_CSS, PRINT_FONT_LINKS } from '@/components/print/printBrand';
+import { AUTO_PRINT_SCRIPT, brandFooter, PRINT_BRAND_CSS, PRINT_FONT_LINKS, PRINT, PRINT_FACE } from '@/components/print/printBrand';
 import { BRAND } from '@/lib/brand';
 import { formatDate, formatINR } from '@/lib/format';
 
@@ -119,15 +119,15 @@ ${PRINT_FONT_LINKS}
 <style>
   @page { size: A4; margin: 18mm; }
   * { box-sizing: border-box; }
-  body { font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #111; font-size: 12.5px; line-height: 1.55; margin: 0; padding: 28px; }
-  .head { border-bottom: 2px solid ${BRAND.colors.ink}; padding-bottom: 8px; margin-bottom: 18px; }
-  .brand { font-size: 19px; color: ${BRAND.colors.ink}; font-weight: 600; }
-  .muted { color: #555; }
+  body { font-family: ${PRINT_FACE}; color: ${PRINT.text}; font-size: 12.5px; line-height: 1.55; margin: 0; padding: 28px; }
+  .head { border-bottom: 2px solid ${PRINT.ink}; padding-bottom: 8px; margin-bottom: 18px; }
+  .brand { font-size: 19px; color: ${PRINT.ink}; font-weight: 600; }
+  .muted { color: ${PRINT.muted}; }
   .meta { display: flex; justify-content: space-between; margin-bottom: 16px; }
   h1 { font-size: 15px; text-align: center; text-decoration: underline; margin: 6px 0 16px; }
   .to { margin-bottom: 14px; }
   .sign { margin-top: 48px; display: flex; justify-content: space-between; }
-  .accept { border-top: 1px dashed #999; margin-top: 40px; padding-top: 10px; }
+  .accept { border-top: 1px dashed ${PRINT.faint}; margin-top: 40px; padding-top: 10px; }
   @media print { body { padding: 0; } }
   ${PRINT_BRAND_CSS}
 </style></head>

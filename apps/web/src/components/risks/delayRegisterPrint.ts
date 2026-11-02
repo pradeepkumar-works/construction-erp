@@ -1,5 +1,5 @@
 import { DELAY_PARTY_LABELS, RISK_CATEGORY_LABELS, type DelayRegisterDto } from '@erp/shared';
-import { AUTO_PRINT_SCRIPT, brandFooter, PRINT_BRAND_CSS, PRINT_FONT_LINKS } from '@/components/print/printBrand';
+import { AUTO_PRINT_SCRIPT, brandFooter, PRINT_BRAND_CSS, PRINT_FONT_LINKS, PRINT, PRINT_FACE } from '@/components/print/printBrand';
 import { BRAND } from '@/lib/brand';
 import { formatDate, formatDateTime } from '@/lib/format';
 
@@ -12,19 +12,19 @@ const esc = (v: unknown) =>
 const STYLE = `
   @page { size: A4 landscape; margin: 12mm; }
   * { box-sizing: border-box; }
-  body { font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #111; font-size: 10.5px; margin: 0; padding: 24px; }
+  body { font-family: ${PRINT_FACE}; color: ${PRINT.text}; font-size: 10.5px; margin: 0; padding: 24px; }
   .head { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 10px; margin-bottom: 12px; }
-  .brand { font-size: 18px; color: ${BRAND.colors.ink}; }
-  .org { color: #555; font-size: 12px; }
+  .brand { font-size: 18px; color: ${PRINT.ink}; }
+  .org { color: ${PRINT.muted}; font-size: 12px; }
   h1 { font-size: 16px; margin: 0 0 2px; }
   table { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
-  th, td { border: 1px solid #bbb; padding: 4px 6px; text-align: left; vertical-align: top; }
-  th { background: #f1f4f8; font-size: 9.5px; }
+  th, td { border: 1px solid ${PRINT.border}; padding: 4px 6px; text-align: left; vertical-align: top; }
+  th { background: ${PRINT.canvas}; font-size: 9.5px; }
   td.n, th.n { text-align: right; white-space: nowrap; }
   td.d { white-space: nowrap; }
-  .muted { color: ${BRAND.colors.muted}; }
+  .muted { color: ${PRINT.muted}; }
   ul { margin: 0; padding-left: 14px; }
-  .late { color: #a33; font-weight: 600; }
+  .late { color: ${PRINT.danger}; font-weight: 600; }
   @media print { body { padding: 0; } }
   ${PRINT_BRAND_CSS}
 `;

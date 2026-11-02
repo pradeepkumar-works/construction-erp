@@ -101,7 +101,8 @@ export default defineConfig([
   },
   {
     files: ['src/**/*.{ts,tsx}'],
-    ignores: ['src/ds/**', 'src/lib/theme.ts', 'src/lib/brand.ts', ...legacyFiles],
+    // The PDF writer sizes type and gaps in points for pdfmake, not CSS; its colours still come from PRINT (resolveStatic).
+    ignores: ['src/ds/**', 'src/lib/theme.ts', 'src/lib/brand.ts', 'src/components/reports/official/officialPdf.ts', ...legacyFiles],
     plugins: { ds },
     rules: { 'ds/no-raw-style': 'error' },
   },

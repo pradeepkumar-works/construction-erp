@@ -1,5 +1,5 @@
 import type { FinalSettlementDto, PayslipDto } from '@erp/shared';
-import { AUTO_PRINT_SCRIPT, brandFooter, PRINT_BRAND_CSS, PRINT_FONT_LINKS } from '@/components/print/printBrand';
+import { AUTO_PRINT_SCRIPT, brandFooter, PRINT_BRAND_CSS, PRINT_FONT_LINKS, PRINT, PRINT_FACE } from '@/components/print/printBrand';
 import { BRAND } from '@/lib/brand';
 import { formatINR, formatMonthLong, formatDate } from '@/lib/format';
 
@@ -68,19 +68,19 @@ ${PRINT_FONT_LINKS}
 <style>
   @page { size: A4; margin: 14mm; }
   * { box-sizing: border-box; }
-  body { font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #111; font-size: 11.5px; margin: 0; padding: 24px; }
+  body { font-family: ${PRINT_FACE}; color: ${PRINT.text}; font-size: 11.5px; margin: 0; padding: 24px; }
   .slip { page-break-after: always; }
   .slip:last-of-type { page-break-after: auto; }
-  .head { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 2px solid ${BRAND.colors.ink}; padding-bottom: 6px; margin-bottom: 10px; }
-  .brand { font-size: 17px; font-weight: 600; color: ${BRAND.colors.ink}; }
+  .head { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 2px solid ${PRINT.ink}; padding-bottom: 6px; margin-bottom: 10px; }
+  .brand { font-size: 17px; font-weight: 600; color: ${PRINT.ink}; }
   table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
-  th, td { border: 1px solid #bbb; padding: 4px 6px; text-align: left; vertical-align: top; }
-  .facts th { background: #f1f4f8; width: 16%; font-weight: 500; }
-  .lines thead th { background: #f1f4f8; }
+  th, td { border: 1px solid ${PRINT.border}; padding: 4px 6px; text-align: left; vertical-align: top; }
+  .facts th { background: ${PRINT.canvas}; width: 16%; font-weight: 500; }
+  .lines thead th { background: ${PRINT.canvas}; }
   .r { text-align: right; }
   .total td { font-weight: 700; }
   .net { font-size: 13px; }
-  .muted { color: #555; }
+  .muted { color: ${PRINT.muted}; }
   @media print { body { padding: 0; } }
   ${PRINT_BRAND_CSS}
 </style></head>

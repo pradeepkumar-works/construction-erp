@@ -1,6 +1,6 @@
 import type { RaBillDto } from '@erp/shared';
 import { BILL_STAGE_LABELS, CURRENCIES, SUBMISSION_STATUS_LABELS, OM_BENCHMARK_INFO, GST_STATES, currencySymbol, fromRupees, isForeign, type ContractCurrency } from '@erp/shared';
-import { AUTO_PRINT_SCRIPT, brandFooter, PRINT_BRAND_CSS, PRINT_FONT_LINKS } from '@/components/print/printBrand';
+import { AUTO_PRINT_SCRIPT, brandFooter, PRINT_BRAND_CSS, PRINT_FONT_LINKS, PRINT, PRINT_FACE } from '@/components/print/printBrand';
 import { BRAND } from '@/lib/brand';
 import { formatDate, formatDateTime, formatINR, formatMoney, formatMonth, formatQty, toNumber } from '@/lib/format';
 
@@ -141,31 +141,31 @@ ${PRINT_FONT_LINKS}
 <style>
   @page { size: A4 landscape; margin: 12mm; }
   * { box-sizing: border-box; }
-  body { font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #111; font-size: 11px; margin: 0; padding: 24px; }
+  body { font-family: ${PRINT_FACE}; color: ${PRINT.text}; font-size: 11px; margin: 0; padding: 24px; }
   .head { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 10px; margin-bottom: 12px; }
-  .brand { font-size: 18px; color: ${BRAND.colors.ink}; }
-  .org { color: #555; font-size: 12px; }
+  .brand { font-size: 18px; color: ${PRINT.ink}; }
+  .org { color: ${PRINT.muted}; font-size: 12px; }
   h1 { font-size: 16px; margin: 0 0 2px; }
-  .status { display: inline-block; padding: 2px 8px; border: 1px solid #999; border-radius: 10px; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
+  .status { display: inline-block; padding: 2px 8px; border: 1px solid ${PRINT.faint}; border-radius: 10px; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
   .meta { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 6px 16px; margin-bottom: 12px; }
-  .meta div b { display: block; font-size: 9px; color: #666; text-transform: uppercase; letter-spacing: .04em; }
-  h2 { font-size: 11px; text-transform: uppercase; color: ${BRAND.colors.ink}; border-bottom: 1px solid #ddd; margin: 14px 0 6px; padding-bottom: 3px; }
+  .meta div b { display: block; font-size: 9px; color: ${PRINT.muted}; text-transform: uppercase; letter-spacing: .04em; }
+  h2 { font-size: 11px; text-transform: uppercase; color: ${PRINT.ink}; border-bottom: 1px solid ${PRINT.hairline}; margin: 14px 0 6px; padding-bottom: 3px; }
   table { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
-  th, td { border: 1px solid #bbb; padding: 3px 5px; text-align: left; vertical-align: top; }
-  th { background: #f1f4f8; font-size: 10px; }
+  th, td { border: 1px solid ${PRINT.border}; padding: 3px 5px; text-align: left; vertical-align: top; }
+  th { background: ${PRINT.canvas}; font-size: 10px; }
   td.num, th.num { text-align: right; white-space: nowrap; }
   td.c { text-align: center; }
   .mono { font-family: ui-monospace, Menlo, Consolas, monospace; }
-  .flag { font-size: 9px; border: 1px solid #c77; color: #a33; border-radius: 6px; padding: 0 4px; white-space: nowrap; }
+  .flag { font-size: 9px; border: 1px solid ${PRINT.danger}; color: ${PRINT.danger}; border-radius: 6px; padding: 0 4px; white-space: nowrap; }
   .summary { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; page-break-inside: avoid; }
-  .total td, .total th { font-weight: 700; background: #fafafa; }
+  .total td, .total th { font-weight: 700; background: ${PRINT.canvas}; }
   .words { margin-top: 4px; font-style: italic; }
   .mb { page-break-inside: avoid; margin-bottom: 8px; }
   .mbhead { margin: 6px 0 3px; }
   .annex { page-break-before: always; }
   .sign { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-top: 40px; page-break-inside: avoid; }
-  .sign div { border-top: 1px solid #333; padding-top: 4px; font-size: 10px; }
-  .muted { color: ${BRAND.colors.muted}; }
+  .sign div { border-top: 1px solid ${PRINT.text}; padding-top: 4px; font-size: 10px; }
+  .muted { color: ${PRINT.muted}; }
   @media print { body { padding: 0; } }
   ${PRINT_BRAND_CSS}
 </style></head>

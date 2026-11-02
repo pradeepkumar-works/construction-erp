@@ -92,7 +92,7 @@ export function MarkupList({
                   style={{ all: 'unset', cursor: 'pointer', display: 'block', width: '100%', minHeight: 44, boxSizing: 'border-box' }}
                 >
                   <Space size={6} wrap>
-                    <span aria-hidden style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 5, background: MARKUP_INK[m.color] }} />
+                    <span aria-hidden style={{ display: 'inline-block', width: 10, height: 10, borderRadius: tk.radius.pill, background: MARKUP_INK[m.color] }} />
                     <Typography.Text strong translate="no">
                       M{m.markupNo}
                     </Typography.Text>

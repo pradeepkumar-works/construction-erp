@@ -1,6 +1,10 @@
 'use client';
 
 import { DOC_READ_MAX_PAGES, DOC_READ_MAX_PAGE_BYTES } from '@erp/shared';
+import { resolveStatic } from '@/ds';
+
+/** A page is drawn on white paper before it is read, whatever the theme. */
+const PAPER = resolveStatic().color.sheet.paper;
 
 /** A page ready to send for reading: a JPEG, and a URL to show it beside the form. */
 export interface PageImage {
@@ -50,7 +54,7 @@ async function pdfPages(file: File, max: number): Promise<PageImage[]> {
     canvas.width = Math.round(viewport.width);
     canvas.height = Math.round(viewport.height);
     const ctx = canvas.getContext('2d')!;
-    ctx.fillStyle = '#fff';
+    ctx.fillStyle = PAPER;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     await page.render({ canvas, canvasContext: ctx, viewport }).promise;
     pages.push(await toJpeg(canvas.width, canvas.height, (c, w, h) => c.drawImage(canvas, 0, 0, w, h)));
@@ -70,7 +74,7 @@ async function toJpeg(width: number, height: number, draw: (ctx: CanvasRendering
     canvas.width = w;
     canvas.height = h;
     const ctx = canvas.getContext('2d')!;
-    ctx.fillStyle = '#fff';
+    ctx.fillStyle = PAPER;
     ctx.fillRect(0, 0, w, h);
     draw(ctx, w, h);
     const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.82));

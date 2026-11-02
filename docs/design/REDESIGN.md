@@ -123,8 +123,16 @@ runs and is committed with the last PR.
 
 ### Print, charts, and deleting the old surface (PR 14 and PR 15)
 
-- [ ] PR 14. Print and email templates read `resolveStatic('light')`. Charts and feature colours use `series`: the cost
+- [x] PR 14. Print and email templates read `resolveStatic('light')`. Charts and feature colours use `series`: the cost
   heads, progress meters and drawing compare, markup and take-off inks.
+  - Two role groups: `series` (cost heads, the trend's lines, physical and financial progress, light and night) and
+    `sheet` (a drawing's white paper, its default ink, markup, take-off and compare inks, the same in both themes). The
+    page reads them as CSS variables; a canvas chart through `useResolved()` (`useChartTheme` returns `c` and `r`); SVG
+    attributes and canvas fills on the sheet through `resolveStatic()`.
+  - Prints, the PDF, the Word file and the MIS read `PRINT` (`components/print/printBrand.ts`, from `resolveStatic()`):
+    Inter in place of Archivo, a near-black rule under the head in place of navy with a blue line, and greys and flags
+    from the text, line and tone roles. 29 files leave the legacy list (50 to 21). The PDF writer sizes in points, so
+    the style rule skips it; its colours come from `PRINT` like the rest.
 - [ ] PR 15. Delete `BRAND.colors`, `familyColors`, `themeColor`, `themeFontSize`, `cssVariablesFor`, the `--brand-*` and
   mirrored `--ant-*` variables and `legacy-files.json`, after a tight line height and a hairline width join the
   scales for the shell and the tucked tab bars. Lint goes to error. Commit the decision trail.

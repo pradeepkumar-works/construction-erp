@@ -1,7 +1,6 @@
 import type { OfficialBlockDto, OfficialFactDto, OfficialReportDto } from '@erp/shared';
 import { fileUrl } from '@/lib/api';
-import { BRAND } from '@/lib/brand';
-import { AUTO_PRINT_SCRIPT, PRINT_BRAND_CSS, PRINT_FONT_LINKS, brandFooter, markSvg } from '@/components/print/printBrand';
+import { AUTO_PRINT_SCRIPT, PRINT_BRAND_CSS, PRINT_FONT_LINKS, brandFooter, markSvg, PRINT, PRINT_FACE } from '@/components/print/printBrand';
 import { cellText, isNegative, isNumeric } from '@/components/management/report-format';
 import { controlFacts, factText, footNote, issueLine, WIDE_COLUMNS } from './official-format';
 
@@ -83,53 +82,53 @@ export function buildOfficialReportHtml(r: OfficialReportDto, autoPrint = false)
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"/><title>${esc(`${r.title} · ${r.project.code} · ${r.period}`)}</title>${PRINT_FONT_LINKS}
 <style>
   @page { size: A4 ${wide ? 'landscape' : 'portrait'}; margin: 12mm 12mm 16mm;
-    @bottom-left { content: "${esc(r.docNo)}"; font: 8.5px -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: ${BRAND.colors.muted}; }
-    @bottom-right { content: "Page " counter(page) " of " counter(pages); font: 8.5px -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: ${BRAND.colors.muted}; } }
+    @bottom-left { content: "${esc(r.docNo)}"; font: 8.5px -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: ${PRINT.muted}; }
+    @bottom-right { content: "Page " counter(page) " of " counter(pages); font: 8.5px -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: ${PRINT.muted}; } }
   * { box-sizing: border-box; }
-  body { font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #111; font-size: 10.5px; line-height: 1.4; margin: 0; padding: 20px; background: #fff; }
+  body { font-family: ${PRINT_FACE}; color: ${PRINT.text}; font-size: 10.5px; line-height: 1.4; margin: 0; padding: 20px; background: ${PRINT.paper}; }
   .head { display: grid; grid-template-columns: 1fr 1.4fr 1fr; gap: 12px; align-items: end; padding-bottom: 8px; margin-bottom: 10px; }
-  .brand { display: flex; align-items: center; gap: 8px; font-size: 13px; color: ${BRAND.colors.ink}; }
-  h1 { font-size: 17px; margin: 0; color: ${BRAND.colors.ink}; text-align: center; }
-  .sub { text-align: center; color: ${BRAND.colors.muted}; }
+  .brand { display: flex; align-items: center; gap: 8px; font-size: 13px; color: ${PRINT.ink}; }
+  h1 { font-size: 17px; margin: 0; color: ${PRINT.ink}; text-align: center; }
+  .sub { text-align: center; color: ${PRINT.muted}; }
   .control { border-collapse: collapse; justify-self: end; font-size: 9.5px; }
-  .control th { text-align: left; font-weight: 400; color: ${BRAND.colors.muted}; padding: 1px 8px 1px 0; }
-  .control td { font-weight: 600; color: ${BRAND.colors.ink}; white-space: nowrap; }
+  .control th { text-align: left; font-weight: 400; color: ${PRINT.muted}; padding: 1px 8px 1px 0; }
+  .control td { font-weight: 600; color: ${PRINT.ink}; white-space: nowrap; }
   table.facts { width: 100%; border-collapse: collapse; margin: 0 0 8px; }
-  table.facts th, table.facts td { border: 1px solid ${BRAND.colors.border}; padding: 4px 6px; text-align: left; vertical-align: top; }
-  table.facts th { width: 17%; background: ${BRAND.colors.canvas}; font-weight: 600; color: ${BRAND.colors.ink}; font-size: 9.5px; }
+  table.facts th, table.facts td { border: 1px solid ${PRINT.border}; padding: 4px 6px; text-align: left; vertical-align: top; }
+  table.facts th { width: 17%; background: ${PRINT.canvas}; font-weight: 600; color: ${PRINT.ink}; font-size: 9.5px; }
   table.facts td { width: 33%; }
-  h2 { font-size: 11.5px; text-transform: uppercase; color: ${BRAND.colors.ink}; margin: 16px 0 6px; padding-bottom: 3px; border-bottom: 1px solid ${BRAND.colors.border}; page-break-after: avoid; }
-  h3 { font-size: 10.5px; color: ${BRAND.colors.ink}; margin: 10px 0 3px; page-break-after: avoid; }
-  .note { margin: 0 0 4px; color: ${BRAND.colors.muted}; }
+  h2 { font-size: 11.5px; text-transform: uppercase; color: ${PRINT.ink}; margin: 16px 0 6px; padding-bottom: 3px; border-bottom: 1px solid ${PRINT.border}; page-break-after: avoid; }
+  h3 { font-size: 10.5px; color: ${PRINT.ink}; margin: 10px 0 3px; page-break-after: avoid; }
+  .note { margin: 0 0 4px; color: ${PRINT.muted}; }
   .para { margin: 0 0 6px; font-size: 11px; }
-  .figs { display: flex; flex-wrap: wrap; border-top: 1px solid ${BRAND.colors.border}; border-bottom: 1px solid ${BRAND.colors.border}; margin: 0 0 8px; }
-  .fig { flex: 1 1 120px; padding: 6px 10px; border-left: 1px solid ${BRAND.colors.border}; }
+  .figs { display: flex; flex-wrap: wrap; border-top: 1px solid ${PRINT.border}; border-bottom: 1px solid ${PRINT.border}; margin: 0 0 8px; }
+  .fig { flex: 1 1 120px; padding: 6px 10px; border-left: 1px solid ${PRINT.border}; }
   .fig:first-child { border-left: 0; padding-left: 0; }
-  .fig b { display: block; font-weight: 400; color: ${BRAND.colors.muted}; font-size: 9.5px; }
-  .fig span { display: block; font-size: 16px; font-weight: 700; color: ${BRAND.colors.ink}; font-variant-numeric: tabular-nums; }
-  .fig small { display: block; color: ${BRAND.colors.muted}; font-size: 9px; }
+  .fig b { display: block; font-weight: 400; color: ${PRINT.muted}; font-size: 9.5px; }
+  .fig span { display: block; font-size: 16px; font-weight: 700; color: ${PRINT.ink}; font-variant-numeric: tabular-nums; }
+  .fig small { display: block; color: ${PRINT.muted}; font-size: 9px; }
   table.grid { width: 100%; border-collapse: collapse; margin-bottom: 6px; page-break-inside: auto; }
   table.grid thead { display: table-header-group; }
   table.grid tr { page-break-inside: avoid; }
-  table.grid th, table.grid td { border: 1px solid ${BRAND.colors.border}; padding: 3px 5px; text-align: left; vertical-align: top; }
-  table.grid th { background: ${BRAND.colors.canvas}; font-size: 9.5px; font-weight: 600; color: ${BRAND.colors.ink}; }
+  table.grid th, table.grid td { border: 1px solid ${PRINT.border}; padding: 3px 5px; text-align: left; vertical-align: top; }
+  table.grid th { background: ${PRINT.canvas}; font-size: 9.5px; font-weight: 600; color: ${PRINT.ink}; }
   td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
-  tr.total td { font-weight: 700; border-top: 1.5px solid ${BRAND.colors.ink}; }
-  .neg { color: ${BRAND.colors.danger}; }
-  .muted { color: ${BRAND.colors.muted}; }
+  tr.total td { font-weight: 700; border-top: 1.5px solid ${PRINT.ink}; }
+  .neg { color: ${PRINT.danger}; }
+  .muted { color: ${PRINT.muted}; }
   .photos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  figure { margin: 0; page-break-inside: avoid; border: 1px solid ${BRAND.colors.border}; }
+  figure { margin: 0; page-break-inside: avoid; border: 1px solid ${PRINT.border}; }
   figure img { display: block; width: 100%; height: 210px; object-fit: cover; }
-  figcaption { font-size: 9.5px; padding: 4px 6px; background: ${BRAND.colors.canvas}; }
+  figcaption { font-size: 9.5px; padding: 4px 6px; background: ${PRINT.canvas}; }
   .sign { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 40px; page-break-inside: avoid; }
-  .sign div { border-top: 1px solid #333; padding-top: 4px; font-size: 9.5px; color: ${BRAND.colors.muted}; }
-  .sign b { display: block; color: ${BRAND.colors.ink}; font-size: 10.5px; }
+  .sign div { border-top: 1px solid ${PRINT.text}; padding-top: 4px; font-size: 9.5px; color: ${PRINT.muted}; }
+  .sign b { display: block; color: ${PRINT.ink}; font-size: 10.5px; }
   .cover { page-break-after: always; min-height: 250mm; display: flex; flex-direction: column; gap: 18px; }
-  .cover-brand { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 800; color: ${BRAND.colors.ink}; padding-bottom: 10px; border-bottom: 2px solid ${BRAND.colors.ink}; box-shadow: 0 3px 0 ${BRAND.colors.accent}; }
+  .cover-brand { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 800; color: ${PRINT.ink}; padding-bottom: 10px; border-bottom: 2px solid ${PRINT.ink}; box-shadow: 0 3px 0 ${PRINT.accent}; }
   .cover-title { margin: 36px 0 12px; }
-  .cover-title small { font-size: 13px; color: ${BRAND.colors.accentDeep}; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; }
+  .cover-title small { font-size: 13px; color: ${PRINT.accentDeep}; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; }
   .cover-title h1 { font-size: 34px; text-align: left; margin: 4px 0 6px; }
-  .cover-project { font-size: 15px; color: ${BRAND.colors.ink}; max-width: 70%; }
+  .cover-project { font-size: 15px; color: ${PRINT.ink}; max-width: 70%; }
   .contents-title { margin-top: 12px; }
   ol.contents { columns: 2; margin: 0; padding-left: 18px; font-size: 11px; }
   ol.contents li { margin-bottom: 3px; }
@@ -141,7 +140,7 @@ export function buildOfficialReportHtml(r: OfficialReportDto, autoPrint = false)
     h1, .sub { text-align: left; }
     .control { justify-self: start; }
     table.facts th, table.facts td { display: block; width: auto; border-top: 0; }
-    table.facts tr:first-child th:first-child { border-top: 1px solid ${BRAND.colors.border}; }
+    table.facts tr:first-child th:first-child { border-top: 1px solid ${PRINT.border}; }
     .photos { grid-template-columns: 1fr; }
     ol.contents { columns: 1; }
     .cover-title h1 { font-size: 26px; }

@@ -1,6 +1,6 @@
 import type { BillingInvoiceDto } from '@erp/shared';
 import { BILLING_GST_PCT, BILLING_UNIT_LABELS, GST_STATES, PRODUCT_NAME } from '@erp/shared';
-import { AUTO_PRINT_SCRIPT, brandFooter, PRINT_BRAND_CSS, PRINT_FONT_LINKS } from '@/components/print/printBrand';
+import { AUTO_PRINT_SCRIPT, brandFooter, PRINT_BRAND_CSS, PRINT_FONT_LINKS, PRINT, PRINT_FACE } from '@/components/print/printBrand';
 import { BRAND } from '@/lib/brand';
 import { formatDate, formatINR } from '@/lib/format';
 
@@ -26,16 +26,16 @@ ${PRINT_FONT_LINKS}
 <style>
   @page { size: A4; margin: 14mm; }
   * { box-sizing: border-box; }
-  body { font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #111; font-size: 11px; margin: 0; padding: 24px; }
+  body { font-family: ${PRINT_FACE}; color: ${PRINT.text}; font-size: 11px; margin: 0; padding: 24px; }
   .head { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 10px; margin-bottom: 14px; }
-  .brand { font-size: 18px; color: ${BRAND.colors.ink}; }
-  .muted { color: #555; }
+  .brand { font-size: 18px; color: ${PRINT.ink}; }
+  .muted { color: ${PRINT.muted}; }
   h1 { font-size: 16px; margin: 0 0 2px; }
   .parties { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 14px; }
-  .parties b { display: block; font-size: 9px; color: #666; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 2px; }
+  .parties b { display: block; font-size: 9px; color: ${PRINT.muted}; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 2px; }
   table { width: 100%; border-collapse: collapse; }
-  th, td { border: 1px solid #bbb; padding: 5px 6px; text-align: left; vertical-align: top; }
-  th { background: #f1f4f8; font-size: 10px; }
+  th, td { border: 1px solid ${PRINT.border}; padding: 5px 6px; text-align: left; vertical-align: top; }
+  th { background: ${PRINT.canvas}; font-size: 10px; }
   .r { text-align: right; }
   .total td { font-weight: 700; }
   @media print { body { padding: 0; } }

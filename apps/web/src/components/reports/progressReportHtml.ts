@@ -1,8 +1,7 @@
 import type { ProgressReportDto } from '@erp/shared';
 import { DELAY_PARTY_LABELS, PRODUCT_NAME, PROJECT_TYPE_LABELS } from '@erp/shared';
 import { fileUrl } from '@/lib/api';
-import { BRAND } from '@/lib/brand';
-import { AUTO_PRINT_SCRIPT, brandFooter, PRINT_BRAND_CSS, PRINT_FONT_LINKS } from '@/components/print/printBrand';
+import { AUTO_PRINT_SCRIPT, brandFooter, PRINT_BRAND_CSS, PRINT_FONT_LINKS, PRINT, PRINT_FACE } from '@/components/print/printBrand';
 import { formatDate, formatDateTime, formatINR, formatQty, NO_VALUE } from '@/lib/format';
 
 const esc = (v: unknown) =>
@@ -59,41 +58,41 @@ ${PRINT_FONT_LINKS}
 <style>
   @page { size: A4; margin: 14mm; }
   * { box-sizing: border-box; }
-  body { font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #111; font-size: 11px; margin: 0; padding: 24px; background: #fff; }
-  .head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid ${BRAND.colors.ink}; padding-bottom: 8px; margin-bottom: 12px; }
-  .brand { font-size: 16px; font-weight: 700; color: ${BRAND.colors.ink}; }
-  .org { color: #555; }
-  h1 { font-size: 16px; margin: 0 0 2px; color: ${BRAND.colors.ink}; }
-  h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: ${BRAND.colors.ink}; border-bottom: 1px solid #ddd; margin: 14px 0 6px; padding-bottom: 3px; page-break-after: avoid; }
+  body { font-family: ${PRINT_FACE}; color: ${PRINT.text}; font-size: 11px; margin: 0; padding: 24px; background: ${PRINT.paper}; }
+  .head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid ${PRINT.ink}; padding-bottom: 8px; margin-bottom: 12px; }
+  .brand { font-size: 16px; font-weight: 700; color: ${PRINT.ink}; }
+  .org { color: ${PRINT.muted}; }
+  h1 { font-size: 16px; margin: 0 0 2px; color: ${PRINT.ink}; }
+  h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: ${PRINT.ink}; border-bottom: 1px solid ${PRINT.hairline}; margin: 14px 0 6px; padding-bottom: 3px; page-break-after: avoid; }
   .meta { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px 14px; margin-bottom: 10px; }
-  .meta div b { display: block; font-size: 9px; color: #666; text-transform: uppercase; letter-spacing: .04em; }
+  .meta div b { display: block; font-size: 9px; color: ${PRINT.muted}; text-transform: uppercase; letter-spacing: .04em; }
   .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 6px 0 4px; }
-  .kpi { border: 1px solid #d6dde8; border-radius: 4px; padding: 6px 8px; }
-  .kpi b { display: block; font-size: 9px; color: #666; text-transform: uppercase; letter-spacing: .04em; }
-  .kpi span { font-size: 15px; font-weight: 700; color: ${BRAND.colors.ink}; }
-  .kpi small { color: #555; display: block; }
+  .kpi { border: 1px solid ${PRINT.hairline}; border-radius: 4px; padding: 6px 8px; }
+  .kpi b { display: block; font-size: 9px; color: ${PRINT.muted}; text-transform: uppercase; letter-spacing: .04em; }
+  .kpi span { font-size: 15px; font-weight: 700; color: ${PRINT.ink}; }
+  .kpi small { color: ${PRINT.muted}; display: block; }
   .narrative { margin: 4px 0 8px; line-height: 1.5; }
-  .narrative small { color: #555; display: block; margin-top: 2px; }
-  .bar { height: 6px; background: #e8edf3; border-radius: 3px; margin-top: 4px; position: relative; overflow: hidden; }
-  .bar i { position: absolute; left: 0; top: 0; bottom: 0; background: ${BRAND.colors.primary}; }
-  .bar i.t { background: #f0a020; height: 2px; top: auto; }
+  .narrative small { color: ${PRINT.muted}; display: block; margin-top: 2px; }
+  .bar { height: 6px; background: ${PRINT.hairline}; border-radius: 3px; margin-top: 4px; position: relative; overflow: hidden; }
+  .bar i { position: absolute; left: 0; top: 0; bottom: 0; background: ${PRINT.accent}; }
+  .bar i.t { background: ${PRINT.pendingSolid}; height: 2px; top: auto; }
   table { width: 100%; border-collapse: collapse; margin-bottom: 4px; page-break-inside: auto; }
   tr { page-break-inside: avoid; }
-  th, td { border: 1px solid #ccc; padding: 3px 5px; text-align: left; vertical-align: top; }
-  th { background: #f1f4f8; font-size: 10px; }
+  th, td { border: 1px solid ${PRINT.border}; padding: 3px 5px; text-align: left; vertical-align: top; }
+  th { background: ${PRINT.canvas}; font-size: 10px; }
   td.num, th.num { text-align: right; white-space: nowrap; }
   td.c, th.c { text-align: center; white-space: nowrap; }
-  tr.late td { background: #fff7e6; }
-  .tag { font-size: 9px; color: #ad4e00; border: 1px solid #ffa940; border-radius: 8px; padding: 0 5px; }
+  tr.late td { background: ${PRINT.pendingBg}; }
+  .tag { font-size: 9px; color: ${PRINT.pending}; border: 1px solid ${PRINT.pendingSolid}; border-radius: 8px; padding: 0 5px; }
   .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-  .muted { color: ${BRAND.colors.muted}; }
+  .muted { color: ${PRINT.muted}; }
   ul { margin: 0; padding-left: 16px; } li { margin-bottom: 3px; }
   .photos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
   figure { margin: 0; page-break-inside: avoid; }
-  figure img { width: 100%; height: 110px; object-fit: cover; border: 1px solid #ccc; }
-  figcaption { font-size: 9px; color: #666; margin-top: 2px; }
+  figure img { width: 100%; height: 110px; object-fit: cover; border: 1px solid ${PRINT.border}; }
+  figcaption { font-size: 9px; color: ${PRINT.muted}; margin-top: 2px; }
   .sign { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 36px; }
-  .sign div { border-top: 1px solid #333; padding-top: 4px; font-size: 10px; }
+  .sign div { border-top: 1px solid ${PRINT.text}; padding-top: 4px; font-size: 10px; }
   @media print { body { padding: 0; } }
   ${PRINT_BRAND_CSS}
 </style></head>
