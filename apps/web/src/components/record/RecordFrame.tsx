@@ -106,8 +106,9 @@ function useSections(record: RecordFrameProps['record']): RecordSection[] {
   const comments = useComments(kind ?? 'DPR', kind ? id : undefined);
   if (!record) return [];
   if (!kind || !id) return checksFirst(record.sections);
+  // Folded until the threads load, so the section never shows and then folds away.
   const threads = comments.data?.threads.length;
-  return checksFirst([...record.sections, { key: 'comments', title: 'Comments', count: threads, empty: threads === 0, children: <CommentsSection kind={kind} entityId={id} /> }]);
+  return checksFirst([...record.sections, { key: 'comments', title: 'Comments', count: threads, empty: !threads, children: <CommentsSection kind={kind} entityId={id} /> }]);
 }
 
 /** The record's facts with the frame's own lifted out, its sections split into shown and folded. */
