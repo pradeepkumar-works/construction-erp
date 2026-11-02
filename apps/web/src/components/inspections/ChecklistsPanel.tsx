@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { App, Button, Form, Input, Space, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ChecklistTemplateDto } from '@erp/shared';
@@ -69,7 +70,7 @@ export function ChecklistsPanel() {
       <CardToolbar wrap gap={8} align="center">
         <Typography.Text type="secondary">Pick a checklist for each activity on the project&apos;s Activities tab; its inspections start from it.</Typography.Text>
         {mayEdit && (
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: tk.space[2] }}>
             <Button onClick={() => standard.mutate()} loading={standard.isPending}>
               Add standard checklists
             </Button>
@@ -87,7 +88,7 @@ export function ChecklistsPanel() {
         pagination={false}
         expandable={{
           expandedRowRender: (t) => (
-            <ol style={{ margin: 0, paddingLeft: 20 }}>
+            <ol style={{ margin: 0, paddingLeft: tk.space[5] }}>
               {t.items.map((i, n) => (
                 <li key={n}>{i}</li>
               ))}

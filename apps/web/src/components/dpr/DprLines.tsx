@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Flex, Image, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import {
   PIPE_STAGE_LABELS,
   SEGMENT_STAGES,
@@ -73,9 +74,9 @@ export function DprWorkLines({ lines, def }: { lines: DprLineDto[]; def?: DprFor
                     ))}
                     {l.attachments.length ? (
                       <Image.PreviewGroup>
-                        <Flex gap={4} wrap style={{ marginTop: 4 }}>
+                        <Flex gap={4} wrap style={{ marginTop: tk.space[1] }}>
                           {l.attachments.map((a, i) => (
-                            <Image key={a.id} src={a.url} width={48} height={48} style={{ objectFit: 'cover', borderRadius: 4 }} alt={`Photo ${i + 1} of ${l.activityName}`} />
+                            <Image key={a.id} src={a.url} width={48} height={48} style={{ objectFit: 'cover', borderRadius: tk.radius.sm }} alt={`Photo ${i + 1} of ${l.activityName}`} />
                           ))}
                         </Flex>
                       </Image.PreviewGroup>
@@ -114,7 +115,7 @@ export function DprLineTotals({ lines }: { lines: DprLineDto[] }) {
   const used = materialUsed(lines);
   if (!hours.length && !used.length) return null;
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: tk.space[3] }}>
       {used.length ? (
         <Section title="Material used on the lines">
           <Table<DprMaterialDto>

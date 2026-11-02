@@ -2,6 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { BRAND } from '@/lib/brand';
 import { BrandMark, Wordmark } from '@/components/shell/BrandMark';
+import { tk } from '@/ds';
 
 /**
  * Top bar of the public pages (product page, privacy): the logo, section links and whatever actions the page passes in.
@@ -13,7 +14,7 @@ export function SiteHeader({ links, onField, children }: { links?: { href: strin
       <div className="lp-nav-inner">
         <Link href="/welcome" className="lp-brand" aria-label={BRAND.name}>
           <BrandMark size={32} />
-          <Wordmark color={BRAND.colors.onAccent} size={19} />
+          <Wordmark color={tk.color.text.onAccent} size={19} />
         </Link>
         {links?.length ? (
           <nav className="lp-nav-links" aria-label="Sections">

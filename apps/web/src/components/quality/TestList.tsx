@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Button, Checkbox, Select, Typography, theme } from 'antd';
+import { Button, Checkbox, Select, Typography } from 'antd';
+import { tk } from '@/ds';
 import { PlusOutlined } from '@/components/common/icons';
 import type { QualityTestDto, QualityTestSortField, TestKind, TestResult } from '@erp/shared';
 import { LIST_SORT_FIELDS, TEST_KINDS, TEST_KIND_LABELS, TEST_RESULTS, TEST_RESULT_LABELS, canRecordTest, specRange } from '@erp/shared';
@@ -23,8 +24,7 @@ import { TestFormModal } from './TestFormModal';
 const KEYS = ['kind', 'result', 'overdue', 'from', 'to'] as const;
 
 function Sub({ children }: { children: React.ReactNode }) {
-  const { token } = theme.useToken();
-  return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
+  return <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{children}</div>;
 }
 
 /** Quality tests, on the Quality page and a project's Quality tab. */

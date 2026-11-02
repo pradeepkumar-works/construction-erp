@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { Alert, Button, Flex, Form, Input, InputNumber, Segmented, Select, Space, Statistic, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { EditOutlined, UploadOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -21,7 +22,6 @@ import {
 import { api } from '@/lib/api';
 import { usePipeNetwork } from '@/lib/queries';
 import { formatPct, formatQty } from '@/lib/format';
-import { themeFontSize } from '@/lib/theme';
 import { downloadXlsx, exportFileName } from '@/lib/exportExcel';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { ExportButton } from '@/components/common/ExportButton';
@@ -34,7 +34,7 @@ import { PipeMap, SEGMENT_STATE_LABELS, segmentState, type SegmentState } from '
 
 type StateFilter = 'all' | SegmentState;
 
-const figure = { content: { fontSize: themeFontSize('fontSizeXL') } };
+const figure = { content: { fontSize: tk.type.subhead.fontSize } };
 
 /**
  * Pipe network tab (ARCHITECTURE "Pipe network"): a water supply or sewerage project's zones and mains, each
@@ -63,7 +63,7 @@ export function PipeNetworkPanel({ project }: { project: ProjectDetail }) {
 
   if (!data.zones.length)
     return (
-      <div style={{ padding: 24 }}>
+      <div style={{ padding: tk.space[6] }}>
         <p>
           No pipe zones yet. Add a component of kind Pipe network zone, Rising main or Feeder main in Structure, then load its network here from the design
           office&apos;s EPANET or Excel file.
@@ -94,7 +94,7 @@ export function PipeNetworkPanel({ project }: { project: ProjectDetail }) {
   };
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 16 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: tk.space[4] }}>
       <Flex justify="space-between" align="center" wrap gap={12}>
         {data.zones.length > 1 ? (
           <Select
@@ -132,7 +132,7 @@ export function PipeNetworkPanel({ project }: { project: ProjectDetail }) {
       ) : null}
 
       {!segments.length ? (
-        <div style={{ padding: '8px 0 24px' }}>
+        <div style={{ padding: `${tk.space[2]} 0 ${tk.space[6]}` }}>
           <p>
             No network loaded for this zone. Import the EPANET (.inp) file from WaterGEMS, LOOP or EPANET, or an Excel sheet of nodes and pipes. Each pipe then
             takes its own trenching, laying, testing and restoration from the DPR, junction to junction.
@@ -160,7 +160,7 @@ export function PipeNetworkPanel({ project }: { project: ProjectDetail }) {
             label={`Map of ${zone!.label}: ${segments.length} pipes, ${formatQty(total.laidM)} of ${formatQty(total.scopeM)} m laid. The pipe list below gives each pipe.`}
           />
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))', gap: tk.space[4] }}>
             <Section title="By diameter">
               <Table<ZoneTableRow>
                 size="small"
@@ -192,7 +192,7 @@ export function PipeNetworkPanel({ project }: { project: ProjectDetail }) {
             </Section>
             <Section title="Ready to start">
               {zone!.fronts.length ? (
-                <ul style={{ margin: 0, paddingInlineStart: 20 }}>
+                <ul style={{ margin: 0, paddingInlineStart: tk.space[5] }}>
                   {zone!.fronts.slice(0, 12).map((f) => (
                     <li key={f.segmentId} translate="no">
                       {f.code} from {f.fromCode}

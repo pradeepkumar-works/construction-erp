@@ -3,6 +3,7 @@
 import { DeleteInMenu } from '@/components/record/MoreActions';
 import React, { useState } from 'react';
 import { App, Button, Descriptions, Divider, Drawer, InputNumber, Skeleton, Space, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { EditOutlined, WarningOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { QualityTestDto, QualityTestReadingDto } from '@erp/shared';
@@ -19,7 +20,6 @@ import { NcrStatusTag, TestResultTag } from './qualityUi';
 import { TestFormModal } from './TestFormModal';
 import { NcrFormModal, type NcrPrefill } from './NcrFormModal';
 import { RecordLink } from '@/components/record/RecordLink';
-import { themeFontSize } from '@/lib/theme';
 
 /** One reading's value with a Save button; a recorded value can be corrected the same way. */
 function ReadingInput({ test, reading }: { test: QualityTestDto; reading: QualityTestReadingDto }) {
@@ -199,7 +199,7 @@ export function TestDrawer({ id, open, onClose, onOpenNcr }: { id: string | null
             ]}
           />
           {spec && data.readings.length > 1 ? (
-            <Typography.Paragraph type="secondary" style={{ marginTop: 8, fontSize: themeFontSize('fontSizeSM') }}>
+            <Typography.Paragraph type="secondary" style={{ marginTop: tk.space[2], fontSize: tk.type.caption.fontSize }}>
               The last reading ({data.readings[data.readings.length - 1].label}) decides the result.
             </Typography.Paragraph>
           ) : null}
@@ -208,7 +208,7 @@ export function TestDrawer({ id, open, onClose, onOpenNcr }: { id: string | null
           </Divider>
           {ncrs?.items.length ? (
             ncrs.items.map((n) => (
-              <div key={n.id} style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '4px 0' }}>
+              <div key={n.id} style={{ display: 'flex', gap: tk.space[2], alignItems: 'center', padding: `${tk.space[1]} 0` }}>
                 {onOpenNcr ? <RecordLink onOpen={() => onOpenNcr(n.id)}>{n.ncrNo}</RecordLink> : <span>{n.ncrNo}</span>}
                 <span>{n.title}</span>
                 <NcrStatusTag status={n.status} />

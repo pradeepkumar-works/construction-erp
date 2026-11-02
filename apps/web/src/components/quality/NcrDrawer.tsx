@@ -4,6 +4,7 @@ import { auditActionLabel } from '@erp/shared';
 import { DeleteInMenu } from '@/components/record/MoreActions';
 import React, { useState } from 'react';
 import { App, Button, Descriptions, Divider, Drawer, Form, Input, Modal, Select, Skeleton, Space, Timeline, Typography } from 'antd';
+import { tk } from '@/ds';
 import { CheckOutlined, EditOutlined, RedoOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, NcrDto } from '@erp/shared';
@@ -21,7 +22,6 @@ import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { NcrStatusTag, SeverityTag } from './qualityUi';
 import { NcrFormModal, useMasterOptions } from './NcrFormModal';
-import { themeFontSize } from '@/lib/theme';
 import { Money } from '@/components/common/Money';
 
 interface ActionValues {
@@ -239,10 +239,10 @@ export function NcrDrawer({ id, open, onClose }: { id: string | null; open: bool
               content: (
                 <div>
                   <Typography.Text strong>{auditActionLabel(h.action)}</Typography.Text> <Typography.Text type="secondary">by {h.actorName}</Typography.Text>
-                  <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                  <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                     {formatDateTime(h.createdAt)}
                   </div>
-                  {h.note && <div style={{ marginTop: 2 }}>&ldquo;{h.note}&rdquo;</div>}
+                  {h.note && <div style={{ marginTop: tk.space.half }}>&ldquo;{h.note}&rdquo;</div>}
                 </div>
               ),
             }))}

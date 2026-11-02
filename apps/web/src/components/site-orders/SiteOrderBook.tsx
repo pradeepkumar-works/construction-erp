@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Alert, App, Button, Descriptions, Divider, Drawer, Flex, Form, Input, Select, Space, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { UseQueryResult } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import {
@@ -19,7 +20,6 @@ import { errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useDecideSiteOrder, useRecordSiteOrder, useSiteOrderAction, useWriteSiteOrder } from '@/lib/queries';
 import { formatDate, NO_VALUE } from '@/lib/format';
-import { themeFontSize } from '@/lib/theme';
 import { AppTag } from '@/components/common/AppTag';
 import { DatePicker } from '@/components/common/DatePicker';
 import { QueryError } from '@/components/common/QueryState';
@@ -66,14 +66,14 @@ export function SiteOrderBook({ projectId, orders, portal, openId, onOpen }: { p
         <div>
           <div style={{ whiteSpace: 'normal' }}>{o.instruction.length > 160 ? `${o.instruction.slice(0, 159)}…` : o.instruction}</div>
           {o.location ? (
-            <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+            <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
               {o.location}
             </div>
           ) : null}
         </div>
       ),
     },
-    { key: 'by', card: 'meta', cardText: (o) => o.issuedByName, title: 'Written by', width: 180, render: (_, o) => <span>{o.issuedByName}{o.issuedByLevel ? <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{CHECK_LEVEL_LABELS[o.issuedByLevel]}</div> : null}</span> },
+    { key: 'by', card: 'meta', cardText: (o) => o.issuedByName, title: 'Written by', width: 180, render: (_, o) => <span>{o.issuedByName}{o.issuedByLevel ? <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>{CHECK_LEVEL_LABELS[o.issuedByLevel]}</div> : null}</span> },
     { key: 'comply', title: 'Comply by', width: 110, render: (_, o) => (o.complyBy ? <Typography.Text type={o.state === 'OVERDUE' ? 'danger' : undefined}>{formatDate(o.complyBy)}</Typography.Text> : '-') },
     { key: 'state', card: 'status', cardText: (o) => SITE_ORDER_STATE_LABELS[o.state], title: 'Status', width: 190, render: (_, o) => <StateTag o={o} /> },
   ];
@@ -82,7 +82,7 @@ export function SiteOrderBook({ projectId, orders, portal, openId, onOpen }: { p
     <>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {newButton ? (
-        <Flex justify="flex-end" style={{ padding: 12 }}>
+        <Flex justify="flex-end" style={{ padding: tk.space[3] }}>
           {newButton}
         </Flex>
       ) : null}
@@ -273,7 +273,7 @@ function SiteOrderDrawer({ data, portal, onClose }: { data: SiteOrderDto | null;
           <Divider titlePlacement="start" plain>
             Compliance
           </Divider>
-          {data.status === 'OPEN' && data.closeNote ? <Alert type="warning" showIcon style={{ marginBottom: 8 }} title="Sent back by the engineer" description={data.closeNote} /> : null}
+          {data.status === 'OPEN' && data.closeNote ? <Alert type="warning" showIcon style={{ marginBottom: tk.space[2] }} title="Sent back by the engineer" description={data.closeNote} /> : null}
           {data.reply ? (
             <>
               <Typography.Paragraph style={{ whiteSpace: 'pre-wrap' }}>{data.reply}</Typography.Paragraph>
@@ -345,10 +345,10 @@ function TextAction({ label, placeholder, button, required, busy, onSend }: { la
     }
   };
   return (
-    <div style={{ marginTop: 8 }}>
-      {problem ? <Alert type="error" showIcon role="alert" style={{ marginBottom: 8 }} title={problem} /> : null}
+    <div style={{ marginTop: tk.space[2] }}>
+      {problem ? <Alert type="error" showIcon role="alert" style={{ marginBottom: tk.space[2] }} title={problem} /> : null}
       <Input.TextArea aria-label={label} rows={4} maxLength={4000} value={text} onChange={(e) => setText(e.target.value)} placeholder={placeholder} />
-      <Flex justify="flex-end" style={{ marginTop: 8 }}>
+      <Flex justify="flex-end" style={{ marginTop: tk.space[2] }}>
         <Button type="primary" loading={busy} onClick={send}>
           {button}
         </Button>
@@ -374,10 +374,10 @@ function DecideBox({ order }: { order: SiteOrderDto }) {
     }
   };
   return (
-    <div style={{ marginTop: 8 }}>
-      {problem ? <Alert type="error" showIcon role="alert" style={{ marginBottom: 8 }} title={problem} /> : null}
+    <div style={{ marginTop: tk.space[2] }}>
+      {problem ? <Alert type="error" showIcon role="alert" style={{ marginBottom: tk.space[2] }} title={problem} /> : null}
       <Input.TextArea aria-label="Your note" rows={3} maxLength={2000} value={note} onChange={(e) => setNote(e.target.value)} placeholder="A note on accepting, or what is still to be done" />
-      <Flex justify="flex-end" gap={8} style={{ marginTop: 8 }} wrap>
+      <Flex justify="flex-end" gap={8} style={{ marginTop: tk.space[2] }} wrap>
         <Button loading={decide.isPending} onClick={() => go(false)}>
           Send back
         </Button>

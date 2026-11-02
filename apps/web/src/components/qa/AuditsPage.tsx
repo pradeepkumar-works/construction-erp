@@ -5,7 +5,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import dayjs from 'dayjs';
-import { Button, Card, Checkbox, Descriptions, Drawer, Flex, Form, Input, InputNumber, Select, Table, Typography, theme } from 'antd';
+import { Button, Card, Checkbox, Descriptions, Drawer, Flex, Form, Input, InputNumber, Select, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   FINDING_CLOSE_DAYS,
@@ -47,7 +48,6 @@ import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { LineTable } from '@/components/form/LineTable';
 import { useMasterOptions } from '@/components/quality/NcrFormModal';
 
-const SR_ONLY: React.CSSProperties = { position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 };
 const KEYS = ['kind', 'open'] as const;
 const SORT_FIELDS = ['date'] as const;
 type SortField = (typeof SORT_FIELDS)[number];
@@ -305,7 +305,6 @@ function NcrModal({ target, onClose }: { target: { audit: QaAuditDto; finding: Q
 
 /** An audit or visit: its facts, findings with where each stands, and closing or raising an NCR from each. */
 export function AuditDrawer({ id, onClose }: { id: string | null; onClose: () => void }) {
-  const { token } = theme.useToken();
   const { user } = useAuth();
   const qc = useQueryClient();
   const notify = useNotify();
@@ -332,7 +331,7 @@ export function AuditDrawer({ id, onClose }: { id: string | null; onClose: () =>
       size={840}
       title={
         audit ? (
-          <Flex gap={token.marginXS} align="center" wrap>
+          <Flex gap={tk.space[2]} align="center" wrap>
             <span translate="no">{audit.auditNo}</span>
             <AppTag variant="kind">{QA_AUDIT_KIND_LABELS[audit.kind]}</AppTag>
             <OpenTag audit={audit} />
@@ -348,7 +347,7 @@ export function AuditDrawer({ id, onClose }: { id: string | null; onClose: () =>
       ) : error || !audit ? (
         <QueryError error={error} onRetry={() => refetch()} />
       ) : (
-        <Flex vertical gap={token.marginLG}>
+        <Flex vertical gap={tk.space[6]}>
           <Descriptions
             column={{ xs: 1, sm: 2 }}
             size="small"
@@ -362,7 +361,7 @@ export function AuditDrawer({ id, onClose }: { id: string | null; onClose: () =>
             ]}
           />
           <div>
-            <Typography.Title level={3} style={{ marginTop: 0, fontSize: token.fontSizeLG }}>
+            <Typography.Title level={3} style={{ marginTop: 0, fontSize: tk.type.lead.fontSize }}>
               Findings
             </Typography.Title>
             <Table<QaAuditFindingDto>
@@ -399,12 +398,12 @@ export function AuditDrawer({ id, onClose }: { id: string | null; onClose: () =>
                 ...(mayRecord
                   ? [
                       {
-                        title: <span style={SR_ONLY}>Actions</span>,
+                        title: <span className="visually-hidden">Actions</span>,
                         key: 'act',
                         width: 200,
                         render: (_: unknown, f: QaAuditFindingDto) =>
                           f.state === 'OPEN' ? (
-                            <Flex gap={token.marginXS} wrap>
+                            <Flex gap={tk.space[2]} wrap>
                               <Button size="small" onClick={() => setClosing({ audit, finding: f })}>
                                 Close
                               </Button>
@@ -425,7 +424,7 @@ export function AuditDrawer({ id, onClose }: { id: string | null; onClose: () =>
           </div>
           {audit.attachments.length ? (
             <div>
-              <Typography.Title level={3} style={{ marginTop: 0, fontSize: token.fontSizeLG }}>
+              <Typography.Title level={3} style={{ marginTop: 0, fontSize: tk.type.lead.fontSize }}>
                 Report and photos
               </Typography.Title>
               <AttachmentGallery attachments={audit.attachments} />

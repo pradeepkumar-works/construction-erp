@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Flex, Statistic, Table, Typography, theme } from 'antd';
+import { Flex, Statistic, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import { LOOKAHEAD_READINESS_LABELS, type LookaheadActivityDto } from '@erp/shared';
@@ -9,10 +10,9 @@ import { useLookahead } from '@/lib/queries';
 import dayjs from 'dayjs';
 import { formatDate, formatDayMonth, formatPct } from '@/lib/format';
 import { Loading, QueryError } from '@/components/common/QueryState';
-import { themeFontSize } from '@/lib/theme';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const big = { content: { fontSize: themeFontSize('fontSizeXL') } };
+const big = { content: { fontSize: tk.type.subhead.fontSize } };
 
 type Row = LookaheadActivityDto & { overdue: boolean };
 
@@ -36,7 +36,6 @@ function daysIn(a: Row, week: { from: string; to: string }): { on: boolean[]; te
  * the activities its links tie it to. Critical activities are marked; the site team plans the next weeks from it.
  */
 export function LookaheadPanel({ projectId }: { projectId: string }) {
-  const { token } = theme.useToken();
   const { data, isLoading, error, refetch } = useLookahead(projectId);
   if (isLoading) return <Loading />;
   if (error || !data) return <QueryError error={error} onRetry={() => refetch()} />;
@@ -49,18 +48,18 @@ export function LookaheadPanel({ projectId }: { projectId: string }) {
 
   const bar = (a: Row, week: { from: string; to: string }, first: boolean) => {
     // Past its end and still open: it carries into this week.
-    if (a.overdue && first) return <span style={{ color: token.colorErrorText, fontSize: themeFontSize('fontSizeSM') }}>Still open</span>;
+    if (a.overdue && first) return <span style={{ color: tk.color.tone.danger.fg, fontSize: tk.type.caption.fontSize }}>Still open</span>;
     const d = daysIn(a, week);
     if (!d) return <span className="text-muted">-</span>;
-    const color = a.critical ? token.colorErrorText : a.readiness === 'WAITING' ? token.colorWarningText : token.colorPrimary;
+    const color = a.critical ? tk.color.tone.danger.fg : a.readiness === 'WAITING' ? tk.color.tone.pending.fg : tk.color.accent.solid;
     return (
       <div>
-        <div role="img" aria-label={d.text} style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, height: 10 }}>
+        <div role="img" aria-label={d.text} style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: tk.space.half, height: 10 }}>
           {d.on.map((on, i) => (
-            <span key={i} style={{ background: on ? color : token.colorFillSecondary, borderRadius: 2 }} />
+            <span key={i} style={{ background: on ? color : tk.color.tone.neutral.bg, borderRadius: tk.radius.xs }} />
           ))}
         </div>
-        <span aria-hidden className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+        <span aria-hidden className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
           {d.text}
         </span>
       </div>
@@ -76,11 +75,11 @@ export function LookaheadPanel({ projectId }: { projectId: string }) {
       render: (v, r) => (
         <div>
           <b>{v}</b>
-          <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+          <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
             <span translate="no">{`${formatDate(r.plannedStart)} to ${formatDate(r.plannedEnd)}`}</span>
             {r.responsibleName ? <span translate="no">{` · ${r.responsibleName}`}</span> : null}
           </div>
-          <Flex gap={4} wrap style={{ marginTop: 2 }}>
+          <Flex gap={4} wrap style={{ marginTop: tk.space.half }}>
             {r.critical ? <AppTag meaning="failed">Critical</AppTag> : null}
             {r.overdue ? <AppTag meaning="failed">{`Due ${formatDayMonth(r.plannedEnd)}`}</AppTag> : null}
           </Flex>
@@ -95,7 +94,7 @@ export function LookaheadPanel({ projectId }: { projectId: string }) {
         <div>
           <AppTag kind="lookahead" status={r.readiness}>{r.readiness === 'IN_PROGRESS' ? `Under way, ${formatPct(r.progressPct)}` : LOOKAHEAD_READINESS_LABELS[r.readiness]}</AppTag>
           {r.readiness === 'WAITING' ? (
-            <div style={{ fontSize: themeFontSize('fontSizeSM'), marginTop: 2 }}>
+            <div style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space.half }}>
               {`On ${r.waitingOn.join(', ')}`}
               {r.linkStartsOn ? `; its links allow it from ${formatDate(r.linkStartsOn)}` : ''}
             </div>
@@ -107,7 +106,7 @@ export function LookaheadPanel({ projectId }: { projectId: string }) {
       title: (
         <span>
           {i === 0 ? 'This week' : i === 1 ? 'Next week' : 'Week after'}
-          <span className="text-muted" style={{ display: 'block', fontWeight: 'normal', fontSize: themeFontSize('fontSizeSM') }} translate="no">
+          <span className="text-muted" style={{ display: 'block', fontWeight: 'normal', fontSize: tk.type.caption.fontSize }} translate="no">
             {`${formatDayMonth(w.from)} to ${formatDayMonth(w.to)}`}
           </span>
         </span>
@@ -120,13 +119,13 @@ export function LookaheadPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="lookahead-panel">
-      <div style={{ display: 'flex', gap: 28, flexWrap: 'wrap', marginBottom: 12 }}>
+      <div style={{ display: 'flex', gap: tk.space[8], flexWrap: 'wrap', marginBottom: tk.space[3] }}>
         <Statistic title="Under way" value={rows.length - starting.length} styles={big} />
-        <Statistic title="Ready to start" value={ready} suffix={<span style={{ fontSize: themeFontSize('fontSizeSM') }}>of {starting.length} to start</span>} styles={big} />
+        <Statistic title="Ready to start" value={ready} suffix={<span style={{ fontSize: tk.type.caption.fontSize }}>of {starting.length} to start</span>} styles={big} />
         <Statistic title="Waiting" value={waiting} styles={big} />
-        <Statistic title="Past planned finish" value={data.overdue.length} styles={data.overdue.length ? { content: { fontSize: themeFontSize('fontSizeXL'), color: token.colorErrorText } } : big} />
+        <Statistic title="Past planned finish" value={data.overdue.length} styles={data.overdue.length ? { content: { fontSize: tk.type.subhead.fontSize, color: tk.color.tone.danger.fg } } : big} />
       </div>
-      <Typography.Paragraph type="secondary" style={{ marginBottom: 8 }}>
+      <Typography.Paragraph type="secondary" style={{ marginBottom: tk.space[2] }}>
         {`The three weeks from Monday ${formatDate(data.weeks[0]?.from)}. An activity is ready when what it waits on has started or finished as its links need; links are set on the Schedule tab.`}
       </Typography.Paragraph>
       <Table<Row>

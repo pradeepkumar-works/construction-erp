@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Alert, App, Button } from 'antd';
+import { tk } from '@/ds';
 import { MailOutlined } from '@/components/common/icons';
 import { canDraftNotice, needsNotice, type RiskDto } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
@@ -41,7 +42,7 @@ export function NoticeClock({ risk }: { risk: RiskDto }) {
       <Alert
         type={late ? 'warning' : 'success'}
         showIcon
-        style={{ marginTop: 12 }}
+        style={{ marginTop: tk.space[3] }}
         title={
           <span>
             Notice given:{' '}
@@ -60,7 +61,7 @@ export function NoticeClock({ risk }: { risk: RiskDto }) {
     <Alert
       type={data.daysLeft <= 3 ? 'error' : 'warning'}
       showIcon
-      style={{ marginTop: 12 }}
+      style={{ marginTop: tk.space[3] }}
       title={`Hindrance notice due ${formatDate(data.due)}: ${left(data.daysLeft)}`}
       description={`The contract asks for notice within ${data.noticeDays} days of the hindrance. ${data.source}. The clock stops when a letter sent to the client is linked to this delay.`}
       action={

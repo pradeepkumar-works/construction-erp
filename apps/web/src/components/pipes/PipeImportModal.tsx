@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Alert, App, Button, Descriptions, Form, Modal, Select, Space, Upload } from 'antd';
+import { tk } from '@/ds';
 import type { UploadProps } from 'antd';
 import { DownloadOutlined, InboxOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -147,7 +148,7 @@ export function PipeImportModal({ open, onClose, projectId, zones, zoneId }: { o
           <Select id="pipe-import-zone" value={zone ?? undefined} onChange={setZone} placeholder="Choose the zone" options={zones.map((z) => ({ value: z.id, label: z.label }))} />
         </Form.Item>
       </Form>
-      {problem ? <Alert type="error" showIcon title={problem} style={{ marginBottom: 12 }} /> : null}
+      {problem ? <Alert type="error" showIcon title={problem} style={{ marginBottom: tk.space[3] }} /> : null}
       {!file ? (
         <Upload.Dragger accept=".inp,.xlsx,.xls,.csv" beforeUpload={beforeUpload} showUploadList={false} maxCount={1}>
           <p className="ant-upload-drag-icon">
@@ -188,7 +189,7 @@ export function PipeImportModal({ open, onClose, projectId, zones, zoneId }: { o
             ]}
           />
           {file.data.notes.length ? (
-            <ul style={{ marginTop: 12, paddingInlineStart: 20 }}>
+            <ul style={{ marginTop: tk.space[3], paddingInlineStart: tk.space[5] }}>
               {file.data.notes.map((n) => (
                 <li key={n}>{n}</li>
               ))}
@@ -198,10 +199,10 @@ export function PipeImportModal({ open, onClose, projectId, zones, zoneId }: { o
             <Alert
               type="error"
               showIcon
-              style={{ marginTop: 12 }}
+              style={{ marginTop: tk.space[3] }}
               title="Correct these in the file and choose it again"
               description={
-                <ul style={{ margin: 0, paddingInlineStart: 20 }}>
+                <ul style={{ margin: 0, paddingInlineStart: tk.space[5] }}>
                   {problems.map((p) => (
                     <li key={p}>{p}</li>
                   ))}
@@ -209,7 +210,7 @@ export function PipeImportModal({ open, onClose, projectId, zones, zoneId }: { o
               }
             />
           ) : null}
-          <Button style={{ marginTop: 12 }} onClick={() => setFile(null)}>
+          <Button style={{ marginTop: tk.space[3] }} onClick={() => setFile(null)}>
             Choose another file
           </Button>
         </>

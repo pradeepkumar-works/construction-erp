@@ -3,7 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import dayjs from 'dayjs';
-import { Button, Card, Flex, Form, Input, Select, Switch, Table, Typography, theme } from 'antd';
+import { Button, Card, Flex, Form, Input, Select, Switch, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { LAB_KINDS, LAB_KIND_LABELS, NABL_NO, canManageQaPlan, type LabKind, type QaLabDto } from '@erp/shared';
 import { api } from '@/lib/api';
@@ -22,7 +23,6 @@ import { CODE_INPUT, EMAIL_INPUT, PHONE_INPUT, emailRule, phoneRule, upper } fro
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { AccreditationTag } from './qaUi';
 
-const srOnly: React.CSSProperties = { position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 };
 
 interface LabForm {
   name: string;
@@ -143,7 +143,6 @@ function LabDialog({ editing, onClose }: { editing: QaLabDto | 'new' | null; onC
 
 /** Labs: where samples are tested, an NABL lab with its accreditation, and the samples each holds. */
 export function LabsPage() {
-  const { token } = theme.useToken();
   const { user } = useAuth();
   const manage = !!user && canManageQaPlan(user.roleKey);
   const { data, isLoading, error, refetch } = useQaLabs();
@@ -177,14 +176,14 @@ export function LabsPage() {
           dataSource={data}
           pagination={false}
           scroll={{ x: 860 }}
-          locale={{ emptyText: <Flex vertical align="center" gap={token.marginSM}><Typography.Text type="secondary">No lab yet. Add the labs your samples go to.</Typography.Text>{newButton}</Flex> }}
+          locale={{ emptyText: <Flex vertical align="center" gap={tk.space[3]}><Typography.Text type="secondary">No lab yet. Add the labs your samples go to.</Typography.Text>{newButton}</Flex> }}
           columns={[
             {
               title: 'Lab',
               key: 'name',
               render: (_, l) => (
                 <Flex vertical gap={2}>
-                  <Flex gap={token.marginXS} align="center" wrap>
+                  <Flex gap={tk.space[2]} align="center" wrap>
                     <Typography.Text strong translate="no">
                       {l.name}
                     </Typography.Text>
@@ -201,7 +200,7 @@ export function LabsPage() {
                 l.kind === 'NABL' ? (
                   <Flex vertical gap={2} align="start">
                     <span translate="no">{l.nablNo}</span>
-                    <Flex gap={token.marginXS} align="center" wrap>
+                    <Flex gap={tk.space[2]} align="center" wrap>
                       <Typography.Text type="secondary">till {formatDate(l.nablValidTill)}</Typography.Text>
                       <AccreditationTag state={l.accreditation} />
                     </Flex>
@@ -222,7 +221,7 @@ export function LabsPage() {
             ...(manage
               ? [
                   {
-                    title: <span style={srOnly}>Actions</span>,
+                    title: <span className="visually-hidden">Actions</span>,
                     key: 'actions',
                     width: 96,
                     render: (_: unknown, l: QaLabDto) => (
@@ -245,7 +244,7 @@ export function LabsPage() {
           ]}
         />
         {!manage ? (
-          <Typography.Paragraph type="secondary" style={{ marginTop: token.margin, marginBottom: 0 }}>
+          <Typography.Paragraph type="secondary" style={{ marginTop: tk.space[4], marginBottom: 0 }}>
             Ask QA/QC or your project manager to add or change labs.
           </Typography.Paragraph>
         ) : null}

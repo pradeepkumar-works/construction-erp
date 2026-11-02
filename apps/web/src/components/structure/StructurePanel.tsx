@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { Alert, Button, Dropdown, Flex, Progress, Space, Statistic, Table, Tooltip, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import { DeleteOutlined, EditOutlined, FileExcelOutlined, MoreOutlined, PlusOutlined } from '@/components/common/icons';
@@ -20,7 +21,6 @@ import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useStructure } from '@/lib/queries';
 import { formatINR, formatQty, toNumber } from '@/lib/format';
-import { themeFontSize } from '@/lib/theme';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { ExportButton } from '@/components/common/ExportButton';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
@@ -110,7 +110,7 @@ export function StructurePanel({ project }: { project: ProjectDetail }) {
           return (
             <div>
               <strong translate="no">{e.code}</strong> <strong>{e.name}</strong>
-              <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+              <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                 {[WORK_ELEMENT_TYPE_LABELS[e.elementType], e.activityCount ? `${e.activityCount} activities` : 'No activities yet', e.boqCount ? `${e.boqCount} BOQ items` : null].filter(Boolean).join(' · ')}
               </div>
             </div>
@@ -119,9 +119,9 @@ export function StructurePanel({ project }: { project: ProjectDetail }) {
         const a = r.activity;
         return (
           <div>
-            {a.parentActivityId ? a.name : <span style={{ fontWeight: 500 }}>{a.name}</span>}
+            {a.parentActivityId ? a.name : <span style={{ fontWeight: tk.type.strong.fontWeight }}>{a.name}</span>}
             {!a.isSummary ? (
-              <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }} translate="no">
+              <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }} translate="no">
                 {formatQty(a.executedQty)} of {formatQty(a.plannedQty)} {a.unit}
                 {toNumber(a.plannedQty) === 0 ? ' · no planned quantity yet' : ''}
               </div>
@@ -226,14 +226,14 @@ export function StructurePanel({ project }: { project: ProjectDetail }) {
     data.componentWeightTotal !== null ? `Component weights add up to ${data.componentWeightTotal}%, not 100%. Progress is worked out on their shares of ${data.componentWeightTotal}%.` : null;
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 12 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: tk.space[3] }}>
       <Flex justify="space-between" align="center" wrap gap={12}>
         <Space size={24} wrap>
-          <Statistic title="Physical progress" value={data.progressPct} suffix="%" styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
-          <Statistic title="Components" value={data.elements.filter((e) => e.level === 'COMPONENT').length} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
+          <Statistic title="Physical progress" value={data.progressPct} suffix="%" styles={{ content: { fontSize: tk.type.subhead.fontSize } }} />
+          <Statistic title="Components" value={data.elements.filter((e) => e.level === 'COMPONENT').length} styles={{ content: { fontSize: tk.type.subhead.fontSize } }} />
           <div>
             <div className="text-muted">Contract</div>
-            <AppTag variant="kind" style={{ marginTop: 6 }}>{CONTRACT_MODEL_LABELS[data.contractModel]}</AppTag>
+            <AppTag variant="kind" style={{ marginTop: tk.space[2] }}>{CONTRACT_MODEL_LABELS[data.contractModel]}</AppTag>
           </div>
         </Space>
         <Space wrap>
@@ -279,7 +279,7 @@ export function StructurePanel({ project }: { project: ProjectDetail }) {
         expandable={{ expandedRowKeys: expanded, onExpandedRowsChange: (keys) => setExpanded([...keys]), indentSize: 20 }}
         locale={{
           emptyText: (
-            <div style={{ padding: 24 }}>
+            <div style={{ padding: tk.space[6] }}>
               <p>
                 No breakdown yet. Split the project into its components (an intake well, the treatment plant, each tank, each pipe zone) and progress rolls up
                 from the activities under each, by weight.

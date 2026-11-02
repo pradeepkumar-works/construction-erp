@@ -3,6 +3,7 @@
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import React, { useEffect } from 'react';
 import { App, Checkbox, Form, Input, InputNumber, Select, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -143,7 +144,7 @@ export function PermitFormModal({ open, onClose, projectId, permit }: { open: bo
         <FormSection title="Precautions">
           {type ? (
             <Form.Item name="precautions" label="Precautions in place">
-              <Checkbox.Group style={{ display: 'grid', gap: 4 }} options={PERMIT_PRECAUTIONS[type].map((p) => ({ value: p, label: p }))} />
+              <Checkbox.Group style={{ display: 'grid', gap: tk.space[1] }} options={PERMIT_PRECAUTIONS[type].map((p) => ({ value: p, label: p }))} />
             </Form.Item>
           ) : (
             <Typography.Paragraph type="secondary">Pick the kind of work to see its precautions.</Typography.Paragraph>

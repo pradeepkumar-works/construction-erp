@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { App, Button, ConfigProvider, Input, Modal, Segmented, Space, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { CheckOutlined, CloseOutlined, RedoOutlined, WarningOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -12,7 +13,6 @@ import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useInspection } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
-import { themeColor, themeFontSize } from '@/lib/theme';
 import { approveTheme } from '@/lib/theme';
 import { StatusTag } from '@/components/common/StatusTag';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
@@ -72,17 +72,17 @@ function InspectPanel({ data }: { data: InspectionDto }) {
   return (
     <>
       {data.checklist.length > 0 && (
-        <Space style={{ marginBottom: 8 }}>
+        <Space style={{ marginBottom: tk.space[2] }}>
           <Button size="small" onClick={() => setResults((rs) => rs.map((r) => (r.result ? r : { ...r, result: 'PASS' })))} disabled={!open}>
             Mark the rest OK
           </Button>
-          <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+          <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
             {open ? `${open} of ${results.length} points to check` : failed ? `${failed} not OK` : 'All points checked'}
           </Typography.Text>
         </Space>
       )}
       {data.checklist.map((c, i) => (
-        <div key={i} className="inspect-point" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: '4px 12px', padding: '8px 0', borderBottom: `1px solid ${themeColor('colorBorderSecondary')}` }}>
+        <div key={i} className="inspect-point" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: `${tk.space[1]} ${tk.space[3]}`, padding: `${tk.space[2]} 0`, borderBottom: `1px solid ${tk.color.line.hairline}` }}>
           <span>
             {i + 1}. {c.item}
           </span>
@@ -102,13 +102,13 @@ function InspectPanel({ data }: { data: InspectionDto }) {
           )}
         </div>
       ))}
-      <div style={{ marginTop: 12 }}>
-        <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+      <div style={{ marginTop: tk.space[3] }}>
+        <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
           Inspector&apos;s photos
         </Typography.Text>
         <PhotoUpload value={photos} onChange={setPhotos} />
       </div>
-      <Space wrap style={{ marginTop: 12 }}>
+      <Space wrap style={{ marginTop: tk.space[3] }}>
         <ConfigProvider theme={approveTheme}>
           <Button type="primary" icon={<CheckOutlined />} disabled={!!open || !!failed} onClick={() => setDecision('APPROVE')}>
             Pass
@@ -199,7 +199,7 @@ export function InspectionRecord({ id, mode, open, onClose, onEdit }: RecordProp
           tags: <StatusTag status={data.status} labels={INSPECTION_STATUS_LABELS} />,
           context: { label: data.projectName, href: `/projects/${data.projectId}` },
           facts: [
-            { key: 'activity', label: 'Activity', children: <span>{data.activityName}{data.holdPoint && <AppTag meaning="waiting" style={{ marginLeft: 8 }}>Hold point</AppTag>}</span> },
+            { key: 'activity', label: 'Activity', children: <span>{data.activityName}{data.holdPoint && <AppTag meaning="waiting" style={{ marginLeft: tk.space[2] }}>Hold point</AppTag>}</span> },
             { key: 'loc', label: 'Location', children: data.location },
             { key: 'date', label: 'Ready on', children: formatDate(data.date) },
             // Hidden work: signed off before cover-up and countersigned by the client's side in their portal.
@@ -235,7 +235,7 @@ export function InspectionRecord({ id, mode, open, onClose, onEdit }: RecordProp
                           dataSource={data.checklist}
                           columns={[
                             { title: '#', key: 'n', width: 40, render: (_, __, i) => i + 1 },
-                            { title: 'Point', dataIndex: 'item', render: (v: string, c) => (c.remark ? <div>{v}<div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{c.remark}</div></div> : v) },
+                            { title: 'Point', dataIndex: 'item', render: (v: string, c) => (c.remark ? <div>{v}<div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>{c.remark}</div></div> : v) },
                             { title: 'Result', dataIndex: 'result', width: 120, render: (r: InspectionResult | null) => <ResultTag result={r} /> },
                           ]}
                         />
@@ -251,7 +251,7 @@ export function InspectionRecord({ id, mode, open, onClose, onEdit }: RecordProp
               children: (
                 <>
                   <AttachmentGallery attachments={data.attachments} />
-                  <Typography.Text type="secondary" style={{ display: 'block', fontSize: themeFontSize('fontSizeSM') }}>
+                  <Typography.Text type="secondary" style={{ display: 'block', fontSize: tk.type.caption.fontSize }}>
                     Inspection ID: {data.id}
                   </Typography.Text>
                 </>

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Statistic, Tooltip } from 'antd';
+import { tk } from '@/ds';
 import { AppTabs } from '@/components/common/AppTabs';
 import { SAFETY_INCIDENT_TYPE_LABELS, WORK_PERMIT_STATUS_LABELS } from '@erp/shared';
 import { useSafetySummary } from '@/lib/queries';
@@ -11,12 +12,11 @@ import { TalkList } from './TalkList';
 import { PermitList } from './PermitList';
 import { PpePanel } from './PpePanel';
 import { CardToolbar } from '@/components/common/CardToolbar';
-import { themeColor, themeFontSize } from '@/lib/theme';
 import { useUrlTab } from '@/lib/url-state';
 
 export const SAFETY_TABS = ['incidents', 'talks', 'permits', 'ppe'] as const;
 export type SafetyTab = (typeof SAFETY_TABS)[number];
-const big = { content: { fontSize: themeFontSize('fontSizeXL') } };
+const big = { content: { fontSize: tk.type.subhead.fontSize } };
 
 /** Safety at a glance and its three registers; the Safety page and a project tab. The open register is `?sub=` in the URL. */
 export function SafetyPanel({ projectId, initialTab, initialId }: { projectId?: string; initialTab?: SafetyTab; initialId?: string }) {
@@ -29,22 +29,22 @@ export function SafetyPanel({ projectId, initialTab, initialId }: { projectId?: 
           <Statistic
             title={<Tooltip title="Since the last lost-time injury or fatality">Days without a lost-time injury</Tooltip>}
             value={s.daysSinceLostTime ?? 'None recorded'}
-            styles={{ content: { fontSize: themeFontSize('fontSizeXL'), color: s.daysSinceLostTime !== null && s.daysSinceLostTime < 30 ? themeColor('colorErrorText') : undefined } }}
-            suffix={s.lastLostTimeDate ? <span style={{ fontSize: themeFontSize('fontSizeSM') }}>since {formatDate(s.lastLostTimeDate)}</span> : undefined}
+            styles={{ content: { fontSize: tk.type.subhead.fontSize, color: s.daysSinceLostTime !== null && s.daysSinceLostTime < 30 ? tk.color.tone.danger.fg : undefined } }}
+            suffix={s.lastLostTimeDate ? <span style={{ fontSize: tk.type.caption.fontSize }}>since {formatDate(s.lastLostTimeDate)}</span> : undefined}
           />
           <Statistic title="Incidents this month" value={s.incidentsThisMonth} styles={big} />
           <Statistic title="Near misses this month" value={s.nearMissesThisMonth} styles={big} />
           <Statistic title="Open incidents" value={s.openIncidents} styles={big} />
-          <Statistic title="Toolbox talks this month" value={s.toolboxTalksThisMonth} suffix={<span style={{ fontSize: themeFontSize('fontSizeSM') }}>{s.attendeesThisMonth} attended</span>} styles={big} />
+          <Statistic title="Toolbox talks this month" value={s.toolboxTalksThisMonth} suffix={<span style={{ fontSize: tk.type.caption.fontSize }}>{s.attendeesThisMonth} attended</span>} styles={big} />
           <Statistic title={`Permits ${WORK_PERMIT_STATUS_LABELS.REQUESTED.toLowerCase()} and ${WORK_PERMIT_STATUS_LABELS.ISSUED.toLowerCase()}`} value={`${s.permitsRequested} / ${s.permitsActive}`} styles={big} />
-          {s.permitsExpired ? <Statistic title="Permits expired, not closed" value={s.permitsExpired} styles={{ content: { fontSize: themeFontSize('fontSizeXL'), color: themeColor('colorWarningText') } }} /> : null}
+          {s.permitsExpired ? <Statistic title="Permits expired, not closed" value={s.permitsExpired} styles={{ content: { fontSize: tk.type.subhead.fontSize, color: tk.color.tone.pending.fg } }} /> : null}
           {s.byType.length ? (
-            <div style={{ flexBasis: '100%', display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
-              <span className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM'), marginRight: 4 }}>
+            <div style={{ flexBasis: '100%', display: 'flex', gap: tk.space[1], flexWrap: 'wrap', alignItems: 'center' }}>
+              <span className="text-muted" style={{ fontSize: tk.type.caption.fontSize, marginRight: tk.space[1] }}>
                 This year:
               </span>
               <span translate="no">{s.byType.map((t) => `${SAFETY_INCIDENT_TYPE_LABELS[t.type]} ${t.count}`).join(' · ')}</span>
-              <span className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+              <span className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                 {s.injuredThisYear} {s.injuredThisYear === 1 ? 'person' : 'people'} hurt, {s.lostTimeThisYear} lost-time
               </span>
             </div>

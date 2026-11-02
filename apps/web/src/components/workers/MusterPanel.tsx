@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Statistic, Table, Tooltip } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import type { TableProps } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
@@ -11,18 +12,17 @@ import { formatINR, formatQty, MONTH_PICKER_FORMAT } from '@/lib/format';
 import { downloadXlsx, exportFileName, type ExportColumn } from '@/lib/exportExcel';
 import { QueryError } from '@/components/common/QueryState';
 import { CardToolbar } from '@/components/common/CardToolbar';
-import { themeColor, themeFontSize } from '@/lib/theme';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { useProjectScope } from '@/lib/project-scope';
 import { ExportButton } from '@/components/common/ExportButton';
 import { unitLabel } from '@erp/shared';
 
 const MARK: Record<StaffAttendanceStatus, { text: string; color: string }> = {
-  PRESENT: { text: 'P', color: themeColor('colorSuccessText') },
-  HALF_DAY: { text: 'H', color: themeColor('orange7') },
-  ABSENT: { text: 'A', color: themeColor('colorErrorText') },
+  PRESENT: { text: 'P', color: tk.color.tone.success.fg },
+  HALF_DAY: { text: 'H', color: tk.color.tone.pending.fg },
+  ABSENT: { text: 'A', color: tk.color.tone.danger.fg },
 };
-const big = { content: { fontSize: themeFontSize('fontSizeXL') } };
+const big = { content: { fontSize: tk.type.subhead.fontSize } };
 
 const musterExport = (m: MusterDto): ExportColumn<MusterRowDto>[] => [
   { header: 'No.', value: (r) => r.workerNo },
@@ -62,7 +62,7 @@ export function MusterPanel({ projectId: fixedProject }: { projectId?: string })
       render: (v, r) => (
         <div>
           <b>{v}</b>
-          <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+          <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
             {r.workerNo} · {r.trade}
           </div>
         </div>
@@ -75,7 +75,7 @@ export function MusterPanel({ projectId: fixedProject }: { projectId?: string })
       align: 'center' as const,
       render: (_: unknown, r: MusterRowDto) => {
         const k = r.marks[i + 1];
-        return k ? <span style={{ color: MARK[k].color, fontWeight: 600, fontSize: themeFontSize('fontSizeSM') }}>{MARK[k].text}</span> : null;
+        return k ? <span style={{ color: MARK[k].color, fontWeight: tk.type.title.fontWeight, fontSize: tk.type.caption.fontSize }}>{MARK[k].text}</span> : null;
       },
     })),
     { title: 'Man-days', dataIndex: 'manDays', width: 90, align: 'right', fixed: 'right' },
@@ -87,7 +87,7 @@ export function MusterPanel({ projectId: fixedProject }: { projectId?: string })
     { title: 'Activity', dataIndex: 'activityName', render: (v, r) => (
       <div>
         <b>{v}</b>
-        <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{r.trades.map((t) => `${t.trade} ${t.manDays}`).join(', ')}</div>
+        <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>{r.trades.map((t) => `${t.trade} ${t.manDays}`).join(', ')}</div>
       </div>
     ) },
     { title: 'Man-days', dataIndex: 'manDays', width: 100, align: 'right' },
@@ -118,19 +118,19 @@ export function MusterPanel({ projectId: fixedProject }: { projectId?: string })
       </CardToolbar>
       {muster.error ? <QueryError error={muster.error} onRetry={() => muster.refetch()} /> : null}
       {!projectId ? (
-        <div className="text-muted" style={{ padding: 16 }}>
+        <div className="text-muted" style={{ padding: tk.space[4] }}>
           Choose a project to see its muster roll.
         </div>
       ) : (
         <>
           {m ? (
-            <div className="muster-summary" style={{ padding: '12px 16px', display: 'flex', gap: 28, flexWrap: 'wrap' }}>
+            <div className="muster-summary" style={{ padding: `${tk.space[3]} ${tk.space[4]}`, display: 'flex', gap: tk.space[8], flexWrap: 'wrap' }}>
               <Statistic title="Workers" value={m.totals.workers} styles={big} />
               <Statistic title="Man-days" value={m.totals.manDays} styles={big} />
               <Statistic title="OT hours" value={m.totals.otHours} styles={big} />
               <Statistic title="Wages at current rates" value={formatINR(m.totals.wages)} styles={big} />
               {m.byContractor.map((c) => (
-                <Statistic key={c.contractor} title={c.contractor} value={formatINR(c.wages)} suffix={<span style={{ fontSize: themeFontSize('fontSizeSM') }}>{c.workers} workers, {c.manDays} man-days</span>} styles={big} />
+                <Statistic key={c.contractor} title={c.contractor} value={formatINR(c.wages)} suffix={<span style={{ fontSize: tk.type.caption.fontSize }}>{c.workers} workers, {c.manDays} man-days</span>} styles={big} />
               ))}
             </div>
           ) : null}
@@ -146,11 +146,11 @@ export function MusterPanel({ projectId: fixedProject }: { projectId?: string })
             locale={{ emptyText: 'No roll call marked this month' }}
           />
 
-          <div style={{ padding: '20px 12px 8px', display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ padding: `${tk.space[5]} ${tk.space[3]} ${tk.space[2]}`, display: 'flex', gap: tk.space[3], alignItems: 'center', flexWrap: 'wrap' }}>
             <h4 style={{ margin: 0 }}>Output per man-day</h4>
             <DatePicker.RangePicker value={range} onChange={(v) => v && v[0] && v[1] && setRange([v[0], v[1]])} allowClear={false} aria-label="Dates" />
             {output.data ? (
-              <span className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+              <span className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                 {output.data.totalManDays} man-days{output.data.untaggedManDays ? `, ${output.data.untaggedManDays} not tagged to an activity` : ''}
               </span>
             ) : null}

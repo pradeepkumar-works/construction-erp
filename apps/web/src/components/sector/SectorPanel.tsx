@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Alert, Button, Empty } from 'antd';
+import { tk } from '@/ds';
 import { SettingOutlined } from '@/components/common/icons';
 import type { ProjectDetail } from '@erp/shared';
 import { formatChainage, sectorKinds } from '@erp/shared';
@@ -37,9 +38,9 @@ export function SectorPanel({ project, editable }: { project: ProjectDetail; edi
           : null;
 
   return (
-    <div className="sector-panel" style={{ padding: 16, display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 16 }}>
+    <div className="sector-panel" style={{ padding: tk.space[4], display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: tk.space[4] }}>
       {editable || missing ? (
-        <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: tk.space[3], alignItems: 'flex-start', flexWrap: 'wrap' }}>
           {missing ? <Alert style={{ flex: 1 }} type="info" showIcon title={missing} /> : <div style={{ flex: 1 }} />}
           {editable ? (
             <Button icon={<SettingOutlined />} onClick={() => setSettings(true)}>

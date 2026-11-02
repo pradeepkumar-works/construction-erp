@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, Drawer, Flex, Segmented, Select, Skeleton, Typography, theme } from 'antd';
+import { Button, Drawer, Flex, Segmented, Select, Skeleton, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { ToolboxTalkDraftDto } from '@erp/shared';
 import { useProjects, useTodaysTalk } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
@@ -30,13 +31,12 @@ export function TodaysTalk({
   projectId?: string | null;
   onRecord?: (talk: ToolboxTalkDraftDto) => void;
 }) {
-  const { token } = theme.useToken();
   const [chosen, setChosen] = useState<string | null>(null);
   const [lang, setLang] = useState<Lang>('hi');
   const projectId = fixedProject ?? chosen;
   const { data: projects } = useProjects();
   const { data, isLoading, error, refetch } = useTodaysTalk(open ? projectId : null);
-  const small = { fontSize: token.fontSizeSM };
+  const small = { fontSize: tk.type.caption.fontSize };
   return (
     <Drawer
       open={open}
@@ -73,14 +73,14 @@ export function TodaysTalk({
               </Typography.Text>
               <Segmented aria-label="Language of the talk" value={lang} onChange={(v) => setLang(v as Lang)} options={LANGS} />
             </Flex>
-            <div lang={lang} style={{ fontSize: token.fontSizeLG, lineHeight: 1.6 }}>
+            <div lang={lang} style={tk.type.lead}>
               <p style={{ marginTop: 0 }}>{data.opening[lang]}</p>
               {data.sections.map((s) => (
-                <section key={s.hazard} style={{ marginBottom: token.marginMD }}>
-                  <Typography.Title level={2} style={{ fontSize: token.fontSizeLG, margin: 0 }}>
+                <section key={s.hazard} style={{ marginBottom: tk.space[5] }}>
+                  <Typography.Title level={2} style={{ fontSize: tk.type.lead.fontSize, margin: 0 }}>
                     {s.title[lang]}
                   </Typography.Title>
-                  <ul style={{ margin: `${token.marginXXS}px 0 0`, paddingInlineStart: 20 }}>
+                  <ul style={{ margin: `${tk.space[1]} 0 0`, paddingInlineStart: tk.space[5] }}>
                     {s.points.map((p) => (
                       <li key={p.en}>{p[lang]}</li>
                     ))}
@@ -93,7 +93,7 @@ export function TodaysTalk({
               {data.incidents.map((i) => (
                 <p key={i.en}>{i[lang]}</p>
               ))}
-              <p style={{ fontWeight: 600, marginBottom: 0 }}>{data.closing[lang]}</p>
+              <p style={{ fontWeight: tk.type.title.fontWeight, marginBottom: 0 }}>{data.closing[lang]}</p>
             </div>
           </>
         ) : null}

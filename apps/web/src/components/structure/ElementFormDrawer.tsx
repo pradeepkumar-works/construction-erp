@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { App, Checkbox, Form, Input, InputNumber, Select, Typography } from 'antd';
+import { tk } from '@/ds';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { kindPlan, type ComponentKindDto, type ElementActivityLine, type StructureDto, type WorkElementDto, type WorkElementType } from '@erp/shared';
 import { api } from '@/lib/api';
@@ -241,7 +242,7 @@ function PlanLines({ onQty }: { onQty: (key: string, qty: number | null) => void
             title: 'Activity',
             render: (field) => {
               const l = lines[field.name];
-              return <span style={l?.parentKey ? { paddingInlineStart: 20 } : { fontWeight: 600 }}>{l?.name}</span>;
+              return <span style={l?.parentKey ? { paddingInlineStart: tk.space[5] } : { fontWeight: tk.type.title.fontWeight }}>{l?.name}</span>;
             },
           },
           { key: 'unit', title: 'Unit', width: 70, render: (field) => lines[field.name]?.unit },

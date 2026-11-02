@@ -3,7 +3,9 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import dayjs from 'dayjs';
-import { Button, Card, Col, Flex, Row, Statistic, Table, Typography, theme } from 'antd';
+import { Button, Card, Col, Flex, Row, Statistic, Table, Typography } from 'antd';
+import { tk } from '@/ds';
+import { useResolved } from '@/ds/react';
 import { CALIBRATION_SOON_DAYS, NCR_AGE_BAND_LABELS, reportingMonth, type QaReportDto, type QaReportRowDto } from '@erp/shared';
 import { useQaReport } from '@/lib/queries';
 import { useProjectScope } from '@/lib/project-scope';
@@ -19,8 +21,7 @@ import { PrinterOutlined } from '@/components/common/icons';
 const pct = (v: number | null) => (v === null ? '-' : `${v}%`);
 
 function Figure({ title, value, href, tone }: { title: string; value: React.ReactNode; href?: string; tone?: 'danger' }) {
-  const { token } = theme.useToken();
-  const stat = <Statistic title={title} value={value as string} styles={{ content: { fontFamily: DISPLAY_FONT, color: tone ? token.colorErrorText : undefined } }} />;
+  const stat = <Statistic title={title} value={value as string} styles={{ content: { fontFamily: DISPLAY_FONT, color: tone ? tk.color.tone.danger.fg : undefined } }} />;
   return <Card size="small">{href ? <Link href={href} aria-label={title} style={{ color: 'inherit', display: 'block' }}>{stat}</Link> : stat}</Card>;
 }
 
@@ -45,11 +46,12 @@ function Breakdown({ title, rows, empty }: { title: string; rows: { key: string;
 }
 
 function ReportBody({ data }: { data: QaReportDto }) {
-  const { token } = theme.useToken();
+  // antd's Row takes its gutter as numbers, so it reads the resolved scale.
+  const { space } = useResolved();
   const t = data.totals;
   return (
-    <Flex vertical gap={token.margin}>
-      <Row gutter={[token.margin, token.margin]}>
+    <Flex vertical gap={tk.space[4]}>
+      <Row gutter={[space[4], space[4]]}>
         <Col xs={12} md={6}>
           <Figure title="Material tests sampled" value={t.tests} />
         </Col>
@@ -134,7 +136,7 @@ function ReportBody({ data }: { data: QaReportDto }) {
         />
       </Card>
 
-      <Row gutter={[token.margin, token.margin]}>
+      <Row gutter={[space[4], space[4]]}>
         <Col xs={24} md={8}>
           <Breakdown title="Open NCRs by age" rows={data.ncrAges.map((a) => ({ key: a.band, name: NCR_AGE_BAND_LABELS[a.band], count: a.count }))} empty="No NCR open" />
         </Col>
@@ -170,7 +172,6 @@ function ReportBody({ data }: { data: QaReportDto }) {
 
 /** The month's quality report: tests and pass rate, NCRs by age, category and root cause, rework, audits and the registers, by project. */
 export function ReportPage() {
-  const { token } = theme.useToken();
   const [month, setMonth] = useState(() => reportingMonth(todayDate()));
   const [projectId, setProjectId] = useProjectScope();
   const { data, isLoading, error, refetch } = useQaReport(month, projectId);
@@ -185,7 +186,7 @@ export function ReportPage() {
           </Button>
         }
       />
-      <Flex gap={token.marginSM} wrap align="center" style={{ marginBottom: token.margin }}>
+      <Flex gap={tk.space[3]} wrap align="center" style={{ marginBottom: tk.space[4] }}>
         <DatePicker
           picker="month"
           format="MMM YYYY"

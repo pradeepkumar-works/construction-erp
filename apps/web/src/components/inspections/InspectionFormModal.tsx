@@ -3,6 +3,7 @@
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import React, { useEffect } from 'react';
 import { Alert, Form, Input, Select, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import type { AttachmentDto, InspectionDto } from '@erp/shared';
@@ -13,7 +14,6 @@ import { useActivities, useChecklists } from '@/lib/queries';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
-import { themeFontSize } from '@/lib/theme';
 import { recordPage } from '@/components/approvals/queue';
 
 interface FormValues {
@@ -94,7 +94,7 @@ export function InspectionFormModal({ open, onClose, projectId, inspection }: { 
       draftKey={editing ? undefined : `inspection:${projectId ?? 'any'}`}
     >
       <Form form={form} layout="vertical">
-        {inspection?.reviewNote && <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Note from ${inspection.reviewedByName ?? 'the inspector'}`} description={inspection.reviewNote} />}
+        {inspection?.reviewNote && <Alert type="warning" showIcon style={{ marginBottom: tk.space[4] }} title={`Note from ${inspection.reviewedByName ?? 'the inspector'}`} description={inspection.reviewNote} />}
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
           <ProjectSelect allowClear={false} placeholder="Choose a project" style={{ width: '100%' }} onChange={() => form.setFieldsValue({ activityId: undefined })} />
         </Form.Item>
@@ -124,7 +124,7 @@ export function InspectionFormModal({ open, onClose, projectId, inspection }: { 
         <Form.Item name="photos" label="Photos">
           <PhotoUpload />
         </Form.Item>
-        <Typography.Paragraph type="secondary" style={{ fontSize: themeFontSize('fontSizeSM'), margin: 0 }}>
+        <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, margin: 0 }}>
           QA/QC is told at once. They check each point and pass it, fail it or ask for re-inspection after rectification.
         </Typography.Paragraph>
       </Form>

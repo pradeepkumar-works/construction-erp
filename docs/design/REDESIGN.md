@@ -92,6 +92,11 @@ runs and is committed with the last PR.
   what it lists, lint, and take the screenshots.
 - [ ] PR 9 to PR 13. One department per PR: site work, materials and buying, money, people, insight and admin. Off-grid
   values (3, 5, 6, 7, 14, 18 px) are decided by hand with a before and after screenshot.
+  - [x] PR 9. Site work (daily reports, progress, attendance, measurements, delays, safety, quality and QA, inspections,
+    expenses, structure, pipes, sectors, programme, workers, imprest): 80 files. By hand: a tag beside text sits on the
+    8 step (was 6), a row of figures on 32 (was 28), a list's indent on 20 (was 18), a value beside a field on the
+    control height; screen-reader text is the shared `visually-hidden` class; the pipe map's SVG and the QA report's
+    `Row gutter` read `useResolved()`. The three print files wait for PR 14.
 
 ### Print, charts, and deleting the old surface (PR 14 and PR 15)
 

@@ -4,6 +4,7 @@ import { DeleteInMenu } from '@/components/record/MoreActions';
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { App, Button, Descriptions, Divider, Drawer, Input, Modal, Skeleton, Space, Timeline, Typography } from 'antd';
+import { tk } from '@/ds';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { RiskDto } from '@erp/shared';
 import { DELAY_PARTY_LABELS, RISK_CATEGORY_LABELS, RISK_RATING_LABELS, canDeleteRisk, canEditRisk, canViewLetters, LETTER_DIRECTION_LABELS } from '@erp/shared';
@@ -15,7 +16,6 @@ import { formatDate, formatDateTime } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { KindTag, RiskScore, RiskStatusTag } from './riskUi';
-import { themeColor, themeFontSize } from '@/lib/theme';
 import { NoticeClock } from './NoticeClock';
 
 export function RiskDrawer({ id, open, onClose, onEdit }: { id: string | null; open: boolean; onClose: () => void; onEdit: (r: RiskDto) => void }) {
@@ -135,7 +135,7 @@ export function RiskDrawer({ id, open, onClose, onEdit }: { id: string | null; o
               {
                 key: 'due',
                 label: 'Due',
-                children: data.dueDate ? <span style={data.overdue ? { color: themeColor('colorErrorText'), fontWeight: 600 } : undefined}>{formatDate(data.dueDate)}{data.overdue ? ' (overdue)' : ''}</span> : '-',
+                children: data.dueDate ? <span style={data.overdue ? { color: tk.color.tone.danger.fg, fontWeight: tk.type.title.fontWeight } : undefined}>{formatDate(data.dueDate)}{data.overdue ? ' (overdue)' : ''}</span> : '-',
               },
               { key: 'raised', label: 'Raised by', children: `${data.raisedByName}, ${formatDateTime(data.createdAt)}`, span: 2 },
               ...(data.status === 'CLOSED' ? [{ key: 'closed', label: 'Closed', children: `${formatDateTime(data.closedAt)}${data.closureNote ? `: ${data.closureNote}` : ''}`, span: 2 }] : []),
@@ -153,7 +153,7 @@ export function RiskDrawer({ id, open, onClose, onEdit }: { id: string | null; o
               </Divider>
               {letters?.items.length ? (
                 letters.items.map((l) => (
-                  <div key={l.id} style={{ display: 'flex', gap: 8, padding: '2px 0' }}>
+                  <div key={l.id} style={{ display: 'flex', gap: tk.space[2], padding: `${tk.space.half} 0` }}>
                     <span className="text-muted" style={{ width: 90, flex: 'none' }}>
                       {formatDate(l.letterDate)}
                     </span>
@@ -180,10 +180,10 @@ export function RiskDrawer({ id, open, onClose, onEdit }: { id: string | null; o
               content: (
                 <div>
                   <Typography.Text strong>{h.action.charAt(0) + h.action.slice(1).toLowerCase()}</Typography.Text> <Typography.Text type="secondary">by {h.actorName}</Typography.Text>
-                  <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                  <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                     {formatDateTime(h.createdAt)}
                   </div>
-                  {h.note && <div style={{ marginTop: 2 }}>&ldquo;{h.note}&rdquo;</div>}
+                  {h.note && <div style={{ marginTop: tk.space.half }}>&ldquo;{h.note}&rdquo;</div>}
                 </div>
               ),
             }))}

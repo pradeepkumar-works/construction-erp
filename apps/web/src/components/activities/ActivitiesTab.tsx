@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Button, Progress, Space, Table } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined, WarningOutlined } from '@/components/common/icons';
@@ -21,7 +22,6 @@ import { ActivityFormModal } from './ActivityFormModal';
 import { ApplyTemplateModal } from '@/components/templates/ApplyTemplateModal';
 import { LinkBoqModal } from './LinkBoqModal';
 import { AskButton } from '@/components/ai/AskButton';
-import { themeFontSize } from '@/lib/theme';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 export function ActivitiesTab({ projectId, members, project }: { projectId: string; members: ProjectMemberDto[]; project?: ProjectDetail }) {
@@ -50,10 +50,10 @@ export function ActivitiesTab({ projectId, members, project }: { projectId: stri
       title: 'Activity',
       dataIndex: 'name',
       render: (v, r) => (
-        <div style={r.parentActivityId ? { paddingInlineStart: 20 } : undefined}>
+        <div style={r.parentActivityId ? { paddingInlineStart: tk.space[5] } : undefined}>
           {r.parentActivityId ? <>{v}</> : <strong>{v}</strong>}{' '}
           {r.isDelayed && (
-            <AppTag meaning="failed" icon={<WarningOutlined />} style={{ marginLeft: 4 }}>
+            <AppTag meaning="failed" icon={<WarningOutlined />} style={{ marginLeft: tk.space[1] }}>
               Delayed
             </AppTag>
           )}
@@ -67,17 +67,17 @@ export function ActivitiesTab({ projectId, members, project }: { projectId: stri
             />
           )}
           {r.holdPoint && (
-            <AppTag meaning="waiting" style={{ marginLeft: 4 }}>
+            <AppTag meaning="waiting" style={{ marginLeft: tk.space[1] }}>
               Hold point
             </AppTag>
           )}
           {r.hiddenWork && (
-            <AppTag meaning="waiting" style={{ marginLeft: 4 }}>
+            <AppTag meaning="waiting" style={{ marginLeft: tk.space[1] }}>
               Hidden work
             </AppTag>
           )}
           {(r.boqItemNo || r.checklistName || (r.workElementName && !r.parentActivityId) || r.isSummary || r.weightPct) && (
-            <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+            <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
               {[
                 !r.parentActivityId && r.workElementName,
                 r.isSummary && 'Made of the parts below',
@@ -110,7 +110,7 @@ export function ActivitiesTab({ projectId, members, project }: { projectId: stri
       render: (v, r) => (
         <div>
           {formatDate(v)}
-          {r.baselineEnd && v && r.baselineEnd !== v ? <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>baseline {formatDate(r.baselineEnd)}</div> : null}
+          {r.baselineEnd && v && r.baselineEnd !== v ? <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>baseline {formatDate(r.baselineEnd)}</div> : null}
         </div>
       ),
     },
@@ -146,7 +146,7 @@ export function ActivitiesTab({ projectId, members, project }: { projectId: stri
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: tk.space[3], flexWrap: 'wrap', gap: tk.space[2] }}>
         <span className="text-muted">
           {data?.length ?? 0} activities · {data?.filter((a) => a.isDelayed).length ?? 0} delayed · {data?.filter((a) => a.progressPct >= 100).length ?? 0} completed
         </span>

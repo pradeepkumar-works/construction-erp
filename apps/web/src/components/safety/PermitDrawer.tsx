@@ -3,6 +3,7 @@
 import { DeleteInMenu } from '@/components/record/MoreActions';
 import React, { useState } from 'react';
 import { Alert, App, Button, Checkbox, Descriptions, Divider, Drawer, Form, Input, Modal, Skeleton, Space, Typography } from 'antd';
+import { tk } from '@/ds';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { WorkPermitDto } from '@erp/shared';
 import { PERMIT_PRECAUTIONS, canEditSafetyRecord, canManageSafety } from '@erp/shared';
@@ -103,7 +104,7 @@ export function PermitDrawer({ id, open, onClose, onEdit }: { id: string | null;
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {data && (
         <>
-          {data.expired ? <Alert type="warning" showIcon style={{ marginBottom: 12 }} title="This permit has expired. Close it, or request a new one if the work goes on." /> : null}
+          {data.expired ? <Alert type="warning" showIcon style={{ marginBottom: tk.space[3] }} title="This permit has expired. Close it, or request a new one if the work goes on." /> : null}
           <Descriptions
             size="small"
             column={2}
@@ -121,7 +122,7 @@ export function PermitDrawer({ id, open, onClose, onEdit }: { id: string | null;
                 label: 'Precautions',
                 span: 2,
                 children: data.precautions.length ? (
-                  <ul style={{ margin: 0, paddingLeft: 18 }}>
+                  <ul style={{ margin: 0, paddingInlineStart: tk.space[5] }}>
                     {data.precautions.map((p) => (
                       <li key={p}>{p}</li>
                     ))}
@@ -161,7 +162,7 @@ export function PermitDrawer({ id, open, onClose, onEdit }: { id: string | null;
           {action === 'issue' && data ? (
             <>
               <Form.Item name="precautions" label="Checked at site">
-                <Checkbox.Group style={{ display: 'grid', gap: 4 }} options={PERMIT_PRECAUTIONS[data.type].map((p) => ({ value: p, label: p }))} />
+                <Checkbox.Group style={{ display: 'grid', gap: tk.space[1] }} options={PERMIT_PRECAUTIONS[data.type].map((p) => ({ value: p, label: p }))} />
               </Form.Item>
               <Form.Item name="otherPrecautions" label="Other precautions">
                 <Input.TextArea rows={2} maxLength={2000} placeholder="One per line" />

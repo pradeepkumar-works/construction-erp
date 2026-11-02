@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { App, Button, Card, Col, Descriptions, Dropdown, Flex, Row, Space, Statistic, Typography, theme } from 'antd';
+import { App, Button, Card, Col, Descriptions, Dropdown, Flex, Row, Space, Statistic, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import type { MenuProps } from 'antd';
 import { DeleteOutlined, EditOutlined, MoreOutlined, PrinterOutlined, RollbackOutlined, SendOutlined, WhatsAppOutlined } from '@/components/common/icons';
@@ -42,7 +43,6 @@ export default function MeetingPage() {
 }
 
 function MeetingView({ m }: { m: MeetingDetailDto }) {
-  const { token } = theme.useToken();
   const { modal, message } = App.useApp();
   const { user } = useAuth();
   const router = useRouter();
@@ -129,8 +129,8 @@ function MeetingView({ m }: { m: MeetingDetailDto }) {
   const stat = (title: string, value: React.ReactNode, note?: React.ReactNode, tone?: 'danger') => (
     <Col xs={12} lg={6}>
       <Card size="small" style={{ height: '100%' }}>
-        <Statistic title={title} value={0} formatter={() => value} styles={{ content: { fontSize: token.fontSizeHeading4, color: tone === 'danger' ? token.colorErrorText : undefined } }} />
-        {note ? <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{note}</div> : null}
+        <Statistic title={title} value={0} formatter={() => value} styles={{ content: { fontSize: tk.type.lead.fontSize, color: tone === 'danger' ? tk.color.tone.danger.fg : undefined } }} />
+        {note ? <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{note}</div> : null}
       </Card>
     </Col>
   );
@@ -150,7 +150,7 @@ function MeetingView({ m }: { m: MeetingDetailDto }) {
         }
         extra={actions}
       />
-      <Row gutter={[12, 12]} style={{ marginBottom: token.marginMD }}>
+      <Row gutter={[12, 12]} style={{ marginBottom: tk.space[5] }}>
         {stat('Held on', <span translate="no">{formatDate(m.heldOn)}</span>, [m.startTime, m.venue].filter(Boolean).join(', ') || null)}
         {stat('Present', `${m.present} of ${m.attendees.length}`, m.attendees.length - m.present ? `${m.attendees.length - m.present} absent` : m.attendees.length ? 'Everyone listed' : 'Nobody listed yet')}
         {stat('Decisions', decisions, `${m.points.length - decisions} other point${m.points.length - decisions === 1 ? '' : 's'} noted`)}
@@ -171,9 +171,9 @@ function MeetingView({ m }: { m: MeetingDetailDto }) {
           <Flex vertical gap={16}>
             <Card size="small" title={<CardTitle>Minutes</CardTitle>}>
               {m.points.length ? (
-                <ol style={{ margin: 0, paddingLeft: 20 }}>
+                <ol style={{ margin: 0, paddingLeft: tk.space[5] }}>
                   {m.points.map((p) => (
-                    <li key={p.id} style={{ marginBottom: token.marginXS }}>
+                    <li key={p.id} style={{ marginBottom: tk.space[2] }}>
                       {p.kind === 'DECISION' ? <AppTag meaning="done">Decided</AppTag> : null}
                       <span style={{ whiteSpace: 'pre-wrap' }}>{p.text}</span>
                     </li>
@@ -196,10 +196,10 @@ function MeetingView({ m }: { m: MeetingDetailDto }) {
               {m.attendees.length ? (
                 <Flex vertical>
                   {m.attendees.map((a, i) => (
-                    <Flex key={a.id} gap={8} align="center" justify="space-between" style={{ minHeight: 44, borderTop: i ? `1px solid ${token.colorSplit}` : undefined }}>
+                    <Flex key={a.id} gap={8} align="center" justify="space-between" style={{ minHeight: 44, borderTop: i ? `1px solid ${tk.color.line.hairline}` : undefined }}>
                       <div style={{ minWidth: 0 }}>
                         <Typography.Text translate="no">{a.name}</Typography.Text>
-                        <Typography.Text type="secondary" style={{ display: 'block', fontSize: token.fontSizeSM }} translate="no">
+                        <Typography.Text type="secondary" style={{ display: 'block', fontSize: tk.type.caption.fontSize }} translate="no">
                           {[a.organisation ?? 'Our staff', a.phone].filter(Boolean).join(' · ')}
                         </Typography.Text>
                       </div>
@@ -235,9 +235,8 @@ function MeetingView({ m }: { m: MeetingDetailDto }) {
 }
 
 function CardTitle({ children }: { children: React.ReactNode }) {
-  const { token } = theme.useToken();
   return (
-    <Typography.Title level={2} style={{ fontSize: token.fontSize, margin: 0 }}>
+    <Typography.Title level={2} style={{ fontSize: tk.type.body.fontSize, margin: 0 }}>
       {children}
     </Typography.Title>
   );
@@ -245,15 +244,14 @@ function CardTitle({ children }: { children: React.ReactNode }) {
 
 /** Actions with who does each by when, where each stands, and what the caller may do with it. */
 function ActionsCard({ title, count, list, from, empty }: { title: string; count: number; list: MeetingActionDto[]; from?: boolean; empty: string }) {
-  const { token } = theme.useToken();
   const router = useRouter();
-  const small = { display: 'block', fontSize: token.fontSizeSM } as const;
+  const small = { display: 'block', fontSize: tk.type.caption.fontSize } as const;
   return (
     <Card size="small" title={<CardTitle>{title}</CardTitle>} extra={<Typography.Text type="secondary" translate="no">{`${count} ${count === 1 ? 'action' : 'actions'}`}</Typography.Text>}>
       {list.length ? (
         <Flex vertical>
           {list.map((a, i) => (
-            <Flex key={a.id} gap={12} align="center" justify="space-between" wrap style={{ minHeight: 44, padding: `${token.paddingXS}px 0`, borderTop: i ? `1px solid ${token.colorSplit}` : undefined }}>
+            <Flex key={a.id} gap={12} align="center" justify="space-between" wrap style={{ minHeight: 44, padding: `${tk.space[2]} 0`, borderTop: i ? `1px solid ${tk.color.line.hairline}` : undefined }}>
               <div style={{ minWidth: 0, flex: '1 1 260px' }}>
                 <Typography.Text delete={a.status === 'DROPPED'}>{`${from ? '' : `${i + 1}. `}${a.text}`}</Typography.Text>
                 <Typography.Text type="secondary" style={small} translate="no">

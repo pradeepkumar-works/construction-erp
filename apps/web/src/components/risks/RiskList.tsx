@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Alert, App, Button, Checkbox, Segmented, Select, Space, Statistic, Tooltip, Typography } from 'antd';
+import { tk } from '@/ds';
 import { CheckableTag } from '@/components/common/AppTag';
 import { PlusOutlined, PrinterOutlined } from '@/components/common/icons';
 import type { RiskCategory, RiskDto, RiskKind, RiskSortField, RiskStatus } from '@erp/shared';
@@ -26,10 +27,9 @@ import { RiskHeatMap } from './RiskHeatMap';
 import { HindranceSuggestions } from './HindranceSuggestions';
 import { openDelayRegisterPrint } from './delayRegisterPrint';
 import { CardToolbar } from '@/components/common/CardToolbar';
-import { themeColor, themeFontSize } from '@/lib/theme';
 
 type StatusFilter = RiskStatus | 'ACTIVE' | 'ALL';
-const big = { content: { fontSize: themeFontSize('fontSizeXL') } };
+const big = { content: { fontSize: tk.type.subhead.fontSize } };
 const KEYS = ['kind', 'status', 'category', 'mine', 'overdue'] as const;
 
 /** Delay and risk register with totals and the heat map; the Delays and risks page and a project tab. */
@@ -177,7 +177,7 @@ export function RiskList({ projectId: fixedProject, initialProject, initialOpenI
         <Alert
           type="warning"
           showIcon
-          style={{ margin: '12px 16px 0' }}
+          style={{ margin: `${tk.space[3]} ${tk.space[4]} 0` }}
           title={`${suggestions.length} activit${suggestions.length === 1 ? 'y is' : 'ies are'} past the planned finish with no delay recorded`}
           description={
             <Space size={[6, 6]} wrap>
@@ -195,11 +195,11 @@ export function RiskList({ projectId: fixedProject, initialProject, initialOpenI
       {user && canReviewHindrances(user.roleKey) ? <HindranceSuggestions projectId={projectId} onRecorded={(r) => setOpenId(r.id)} /> : null}
       {summary ? (
         <CardToolbar variant="summary" wrap gap={32} align="flex-start">
-          <div style={{ display: 'flex', gap: 28, flexWrap: 'wrap', flex: 1, minWidth: 300 }}>
+          <div style={{ display: 'flex', gap: tk.space[8], flexWrap: 'wrap', flex: 1, minWidth: 300 }}>
             <Statistic title="Open" value={summary.open} styles={big} />
             <Statistic title="Monitoring" value={summary.monitoring} styles={big} />
-            <Statistic title="High risks" value={summary.highRisks} styles={{ content: { fontSize: themeFontSize('fontSizeXL'), color: summary.highRisks ? themeColor('colorErrorText') : undefined } }} />
-            <Statistic title="Delays holding up work" value={summary.openDelays} styles={{ content: { fontSize: themeFontSize('fontSizeXL'), color: summary.openDelays ? themeColor('volcano7') : undefined } }} />
+            <Statistic title="High risks" value={summary.highRisks} styles={{ content: { fontSize: tk.type.subhead.fontSize, color: summary.highRisks ? tk.color.tone.danger.fg : undefined } }} />
+            <Statistic title="Delays holding up work" value={summary.openDelays} styles={{ content: { fontSize: tk.type.subhead.fontSize, color: summary.openDelays ? tk.color.tone.danger.fg : undefined } }} />
             <Statistic
               title={
                 <Tooltip title="Days lost to delays caused by the client, third parties or force majeure can support an extension-of-time claim">
@@ -209,7 +209,7 @@ export function RiskList({ projectId: fixedProject, initialProject, initialOpenI
               value={`${summary.daysLost} (${summary.excusableDaysLost})`}
               styles={big}
             />
-            <Statistic title="Overdue actions" value={summary.overdue} styles={{ content: { fontSize: themeFontSize('fontSizeXL'), color: summary.overdue ? themeColor('colorErrorText') : undefined } }} />
+            <Statistic title="Overdue actions" value={summary.overdue} styles={{ content: { fontSize: tk.type.subhead.fontSize, color: summary.overdue ? tk.color.tone.danger.fg : undefined } }} />
             <Statistic title="Closed" value={summary.closed} styles={big} />
             <div style={{ flexBasis: '100%' }}>
               <Space size={[4, 4]} wrap>

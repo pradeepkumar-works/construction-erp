@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { App, Button, Checkbox, Form, Input, Radio, Select, Space, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import type { PpeKind, PpeRegisterDto } from '@erp/shared';
@@ -53,7 +54,7 @@ export function IssuePpeModal({ open, onClose, register, preset }: { open: boole
     <FormShell open={open} onClose={onClose} form={form} layout="drawer" width={620} title={`Issue PPE at ${register.projectCode}`} okText="Issue" onSubmit={submit}>
       <Form form={form} layout="vertical">
         <Form.Item name="kinds" label="Kit" rules={[{ required: true, type: 'array', min: 1, message: 'Tick at least one item' }]} extra="The project's required kit is ticked to start with. Usual life in brackets sets the replace-by date.">
-          <Checkbox.Group style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 8 }}>
+          <Checkbox.Group style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: tk.space[2] }}>
             {PPE_KINDS.map((k) => (
               <Checkbox key={k} value={k}>
                 {PPE_KIND_LABELS[k]} <span className="text-muted">({life(k)})</span>
@@ -66,7 +67,7 @@ export function IssuePpeModal({ open, onClose, register, preset }: { open: boole
           label="Workers"
           rules={[{ required: true, type: 'array', min: 1, message: 'Choose at least one worker' }]}
           extra={
-            <Space wrap size={4} style={{ marginTop: 4 }}>
+            <Space wrap size={4} style={{ marginTop: tk.space[1] }}>
               {anyLacking.length ? (
                 <Button size="small" onClick={() => addWorkers(anyLacking)}>
                   Add everyone missing kit ({anyLacking.length})
@@ -178,7 +179,7 @@ export function RequiredKitModal({ open, onClose, register }: { open: boolean; o
     >
       <Form form={form} layout="vertical">
         <Form.Item name="kinds" label="Every worker must have" extra="Workers without one of these show as missing kit.">
-          <Checkbox.Group options={KIND_OPTIONS} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 8 }} />
+          <Checkbox.Group options={KIND_OPTIONS} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: tk.space[2] }} />
         </Form.Item>
       </Form>
     </FormShell>

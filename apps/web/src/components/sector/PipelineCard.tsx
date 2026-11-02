@@ -2,10 +2,9 @@
 
 import React from 'react';
 import { Progress, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { PipelineStages, VillagePipeline } from '@erp/shared';
-import { BRAND } from '@/lib/brand';
 import { formatQty, toNumber } from '@/lib/format';
-import { themeFontSize } from '@/lib/theme';
 
 const STAGES: { key: keyof Omit<PipelineStages, 'plannedM'>; label: string; hint: string }[] = [
   { key: 'orderedM', label: 'Ordered', hint: 'on approved purchase orders' },
@@ -23,15 +22,15 @@ export function PipelineCard({ stages, villages }: { stages: PipelineStages; vil
       <Typography.Title level={5} style={{ marginTop: 0 }}>
         Pipe, in metres{planned ? ` (planned ${formatQty(planned)} m)` : ''}
       </Typography.Title>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: tk.space[4], marginBottom: tk.space[4] }}>
         {STAGES.map((s) => (
           <div key={s.key} className={`stage-${s.key}`}>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <strong>{s.label}</strong>
               <span>{formatQty(stages[s.key])} m</span>
             </div>
-            <Progress percent={Math.round((toNumber(stages[s.key]) / top) * 100)} showInfo={false} strokeColor={s.key === 'testedM' ? BRAND.colors.success : BRAND.colors.primary} aria-label={`${s.label}: ${Math.round((toNumber(stages[s.key]) / top) * 100)}%`} />
-            <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+            <Progress percent={Math.round((toNumber(stages[s.key]) / top) * 100)} showInfo={false} strokeColor={s.key === 'testedM' ? tk.color.tone.success.solid : tk.color.accent.solid} aria-label={`${s.label}: ${Math.round((toNumber(stages[s.key]) / top) * 100)}%`} />
+            <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
               {s.hint}
             </div>
           </div>

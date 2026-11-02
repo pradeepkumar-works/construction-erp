@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, Card, Flex, Select, Table, Typography, theme } from 'antd';
+import { Button, Card, Flex, Select, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { CertificateMissingDto } from '@erp/shared';
 import { api } from '@/lib/api';
@@ -19,7 +20,6 @@ import { StockEntryDrawer } from '@/components/stock/StockEntryDrawer';
 
 /** Which item categories need the maker's test certificate; QA/QC and the project manager change it. */
 function CategoryChooser() {
-  const { token } = theme.useToken();
   const notify = useNotify();
   const qc = useQueryClient();
   const { data } = useCertificateCategories();
@@ -40,12 +40,12 @@ function CategoryChooser() {
   const names = new Map((list.data?.entries ?? []).map((e) => [e.code, e.name]));
   const changed = chosen.slice().sort().join('|') !== data.categories.slice().sort().join('|');
   return (
-    <Card title="Material that needs a certificate" style={{ marginBottom: token.margin }}>
+    <Card title="Material that needs a certificate" style={{ marginBottom: tk.space[4] }}>
       <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
         A GRN with an item in one of these categories waits on this page until the manufacturer&apos;s test certificate (MTC) number is entered on its QA/QC check.
       </Typography.Paragraph>
       {data.canEdit ? (
-        <Flex gap={token.marginSM} wrap align="center">
+        <Flex gap={tk.space[3]} wrap align="center">
           <Select
             mode="multiple"
             aria-label="Item categories that need a certificate"
@@ -61,7 +61,7 @@ function CategoryChooser() {
           </Button>
         </Flex>
       ) : (
-        <Flex gap={token.marginXS} wrap>
+        <Flex gap={tk.space[2]} wrap>
           {data.categories.length ? data.categories.map((c) => <AppTag variant="kind" key={c}>{names.get(c) ?? c}</AppTag>) : <Typography.Text type="secondary">None chosen</Typography.Text>}
         </Flex>
       )}
@@ -71,7 +71,6 @@ function CategoryChooser() {
 
 /** Test certificates: receipts of steel, cement, pipes… that came without the maker's test certificate. */
 export function CertificatesPage() {
-  const { token } = theme.useToken();
   const [projectId, setProjectId] = useProjectScope();
   const [openId, setOpenId] = useState<string | null>(null);
   const { data, isLoading, error, refetch } = useCertificatesMissing(projectId);
@@ -88,7 +87,7 @@ export function CertificatesPage() {
       <CategoryChooser />
       {error ? <QueryError error={error} onRetry={() => refetch()} /> : null}
       <Card title="Waiting for a certificate">
-        <Flex gap={token.marginSM} wrap style={{ marginBottom: token.margin }}>
+        <Flex gap={tk.space[3]} wrap style={{ marginBottom: tk.space[4] }}>
           <ProjectSelect allowClear placeholder="All projects" aria-label="Project" value={projectId} onChange={setProjectId} style={{ width: 220 }} />
         </Flex>
         <Table<CertificateMissingDto>

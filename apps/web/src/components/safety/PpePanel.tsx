@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { Alert, Button, Col, Empty, Row, Segmented, Skeleton, Space, Statistic, Table, Tooltip, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import { EditOutlined, PlusOutlined, SafetyOutlined } from '@/components/common/icons';
@@ -12,7 +13,6 @@ import { useDeletePpe, usePpeIssues, usePpeRegister } from '@/lib/queries';
 import { useProjectScope } from '@/lib/project-scope';
 import { formatDate } from '@/lib/format';
 import { downloadWorkbook, exportFileName, workbookSheet } from '@/lib/exportExcel';
-import { themeColor, themeFontSize } from '@/lib/theme';
 import { QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
@@ -29,8 +29,8 @@ const counted = (label: string, n: number) => (
 );
 
 type Show = 'all' | 'missing' | 'present' | 'due';
-const RED = themeColor('colorErrorText');
-const big = (color?: string) => ({ content: { fontSize: themeFontSize('fontSizeXL'), color } });
+const RED = tk.color.tone.danger.fg;
+const big = (color?: string) => ({ content: { fontSize: tk.type.subhead.fontSize, color } });
 
 interface CloseTarget {
   id: string;
@@ -73,9 +73,9 @@ export function PpePanel({ projectId: fixedProject }: { projectId?: string }) {
   const picker = fixedProject ? null : <ProjectSelect value={scoped} onChange={(v) => setScoped(v)} placeholder="Choose a project" style={{ minWidth: 260 }} />;
   if (!projectId)
     return (
-      <div style={{ padding: 16 }}>
+      <div style={{ padding: tk.space[4] }}>
         {picker}
-        <Empty style={{ marginTop: 24 }} image={Empty.PRESENTED_IMAGE_SIMPLE} description="Choose a project to see who has which PPE" />
+        <Empty style={{ marginTop: tk.space[6] }} image={Empty.PRESENTED_IMAGE_SIMPLE} description="Choose a project to see who has which PPE" />
       </div>
     );
 
@@ -136,7 +136,7 @@ export function PpePanel({ projectId: fixedProject }: { projectId?: string }) {
         {formatDate(h.issuedOn)}
         {h.due ? (
           <Tooltip title={`Due for replacement since ${formatDate(h.replaceBy)}`}>
-            <AppTag meaning="waiting" style={{ marginLeft: 6 }}>
+            <AppTag meaning="waiting" style={{ marginInlineStart: tk.space[2] }}>
               Due
             </AppTag>
           </Tooltip>
@@ -154,7 +154,7 @@ export function PpePanel({ projectId: fixedProject }: { projectId?: string }) {
       render: (v: string, w) => (
         <div>
           {v}
-          <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+          <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
             <span translate="no">{w.workerNo}</span> · {w.trade}
           </div>
         </div>
@@ -216,7 +216,7 @@ export function PpePanel({ projectId: fixedProject }: { projectId?: string }) {
       render: (v: string, r) => (
         <div>
           {v}
-          <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+          <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
             {r.contractor}
           </div>
         </div>
@@ -272,8 +272,8 @@ export function PpePanel({ projectId: fixedProject }: { projectId?: string }) {
   ];
 
   return (
-    <div style={{ padding: 16 }}>
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginBottom: 12 }}>
+    <div style={{ padding: tk.space[4] }}>
+      <div style={{ display: 'flex', gap: tk.space[3], flexWrap: 'wrap', alignItems: 'center', marginBottom: tk.space[3] }}>
         {picker}
         <Space wrap style={{ marginLeft: 'auto' }}>
           <Button onClick={exportExcel} disabled={!reg}>
@@ -295,7 +295,7 @@ export function PpePanel({ projectId: fixedProject }: { projectId?: string }) {
               type="error"
               showIcon
               icon={<SafetyOutlined />}
-              style={{ marginBottom: 12 }}
+              style={{ marginBottom: tk.space[3] }}
               title={`${reg.counts.presentMissing} ${reg.counts.presentMissing === 1 ? 'worker is' : 'workers are'} on site today without the required kit`}
               action={
                 reg.canIssue ? (
@@ -316,7 +316,7 @@ export function PpePanel({ projectId: fixedProject }: { projectId?: string }) {
             <Col xs={12} md={8} lg={5}>
               <Statistic title="On site today without it" value={reg.rollCallToday ? reg.counts.presentMissing : '-'} styles={big(reg.counts.presentMissing ? RED : undefined)} />
               {!reg.rollCallToday ? (
-                <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                   No roll call yet today
                 </div>
               ) : null}
@@ -329,7 +329,7 @@ export function PpePanel({ projectId: fixedProject }: { projectId?: string }) {
             </Col>
           </Row>
 
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginTop: 16 }}>
+          <div style={{ display: 'flex', gap: tk.space[2], flexWrap: 'wrap', alignItems: 'center', marginTop: tk.space[4] }}>
             <Typography.Text type="secondary">Required kit:</Typography.Text>
             {reg.required.length ? (
               reg.required.map((k) => (
@@ -347,12 +347,12 @@ export function PpePanel({ projectId: fixedProject }: { projectId?: string }) {
             ) : null}
           </div>
 
-          <Section style={{ marginTop: 16 }} title="Workers">
+          <Section style={{ marginTop: tk.space[4] }} title="Workers">
             <Segmented<Show>
               aria-label="Workers to show"
               value={show}
               onChange={setShow}
-              style={{ marginBottom: 12 }}
+              style={{ marginBottom: tk.space[3] }}
               options={[
                 { value: 'all', label: counted('All', reg.counts.workers) },
                 { value: 'missing', label: counted('Missing kit', reg.counts.missingAny) },
@@ -372,7 +372,7 @@ export function PpePanel({ projectId: fixedProject }: { projectId?: string }) {
           </Section>
 
           {reg.leftWithKit.length ? (
-            <Section style={{ marginTop: 16 }} title="Kit still out with workers who left">
+            <Section style={{ marginTop: tk.space[4] }} title="Kit still out with workers who left">
               <Table
                 rowKey="issueId"
                 size="small"
@@ -404,7 +404,7 @@ export function PpePanel({ projectId: fixedProject }: { projectId?: string }) {
           ) : null}
 
           {reg.byContractor.length > 0 ? (
-            <Section style={{ marginTop: 16 }} title="By contractor">
+            <Section style={{ marginTop: tk.space[4] }} title="By contractor">
               <Table
                 rowKey="contractor"
                 size="small"
@@ -418,13 +418,13 @@ export function PpePanel({ projectId: fixedProject }: { projectId?: string }) {
                   { title: 'Items to recover', dataIndex: 'recoverable', width: 140, align: 'right' },
                 ]}
               />
-              <Typography.Paragraph type="secondary" style={{ fontSize: themeFontSize('fontSizeSM'), marginTop: 8, marginBottom: 0 }}>
+              <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[2], marginBottom: 0 }}>
                 Items to recover are those lost or kept, to be deducted from the contractor&apos;s bill.
               </Typography.Paragraph>
             </Section>
           ) : null}
 
-          <Section style={{ marginTop: 16 }} title="Issues" extra={<Typography.Text type="secondary">{history.data?.total ?? 0}</Typography.Text>}>
+          <Section style={{ marginTop: tk.space[4] }} title="Issues" extra={<Typography.Text type="secondary">{history.data?.total ?? 0}</Typography.Text>}>
             {history.error ? <QueryError error={history.error} onRetry={() => history.refetch()} /> : null}
             <Table<PpeIssueDto>
               rowKey="id"

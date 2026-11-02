@@ -4,6 +4,7 @@ import React from 'react';
 import { AutoComplete, Form, Input, Select } from 'antd';
 import { formatChainage, parseChainage, sectorKinds, sectorLocation, type SectorFields } from '@erp/shared';
 import { useProject } from '@/lib/queries';
+import { tk } from '@/ds';
 
 /** Form values for the structured location: chainage typed as km+m text. */
 export interface SectorFormValues {
@@ -35,7 +36,7 @@ export const sectorBody = (v: SectorFormValues, editing: boolean) => {
 };
 
 const chainageRule = { validator: (_: unknown, v?: string) => (!v || parseChainage(v) !== null ? Promise.resolve() : Promise.reject(new Error('Give the chainage like 14+200'))) };
-const grid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', columnGap: 16 } as const;
+const grid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', columnGap: tk.space[4] } as const;
 
 /** Chainage, floor or village for the project's type, inside an antd Form. Renders nothing until the project is known. */
 export function SectorInputs({ projectId }: { projectId?: string }) {

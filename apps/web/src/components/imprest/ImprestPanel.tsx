@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { App, Button, Descriptions, Drawer, Popconfirm, Progress, Segmented, Space, Table, Tooltip } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import { PlusOutlined } from '@/components/common/icons';
@@ -19,7 +20,6 @@ import { Loading, QueryError } from '@/components/common/QueryState';
 import { CardToolbar } from '@/components/common/CardToolbar';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { ImprestActionModal, type ImprestAction } from './ImprestActions';
-import { themeFontSize } from '@/lib/theme';
 
 const rs = (v: string | number) => formatINR(v, true);
 
@@ -28,7 +28,7 @@ function CashBar({ i }: { i: ImprestDto }) {
   return (
     <div>
       <b className={i.low ? 'text-danger' : undefined}>{rs(i.cashInHand)}</b>
-      <span className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}> of {formatINR(i.floatAmount)}</span>
+      <span className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}> of {formatINR(i.floatAmount)}</span>
       <Progress percent={Math.round(pct)} size="small" showInfo={false} status={i.low ? 'exception' : 'normal'} aria-label={`Cash in hand: ${Math.round(pct)}% of float`} />
     </div>
   );
@@ -56,7 +56,7 @@ export function ImprestPanel({ projectId: fixedProject, initialId }: { projectId
       render: (v, i) => (
         <div>
           <b>{v}</b>
-          {!fixedProject ? <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{i.projectName}</div> : null}
+          {!fixedProject ? <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>{i.projectName}</div> : null}
         </div>
       ),
     },
@@ -69,7 +69,7 @@ export function ImprestPanel({ projectId: fixedProject, initialId }: { projectId
       render: (_, i) => (
         <div>
           {rs(i.approvedSpend)}
-          {Number(i.pendingSpend) ? <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>+ {rs(i.pendingSpend)} awaiting approval</div> : null}
+          {Number(i.pendingSpend) ? <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>+ {rs(i.pendingSpend)} awaiting approval</div> : null}
         </div>
       ),
     },
@@ -163,10 +163,10 @@ function ImprestDrawer({ id, onClose, admin, onAction }: { id: string | null; on
       render: (v, l) => (
         <div>
           {v}
-          <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+          <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
             {l.ref}
             {l.status ? (
-              <AppTag kind="submission" status={l.status} style={{ marginLeft: 6 }}>
+              <AppTag kind="submission" status={l.status} style={{ marginInlineStart: tk.space[2] }}>
                 {SUBMISSION_STATUS_LABELS[l.status]}
               </AppTag>
             ) : null}
@@ -228,7 +228,7 @@ function ImprestDrawer({ id, onClose, admin, onAction }: { id: string | null; on
               {i.closedOn ? `, closed ${formatDate(i.closedOn)}` : ''}
             </Descriptions.Item>
           </Descriptions>
-          <Space wrap style={{ margin: '12px 0' }}>
+          <Space wrap style={{ margin: `${tk.space[3]} 0` }}>
             {i.isActive && (holder || admin) && !i.openRequest ? <Button onClick={() => onAction({ kind: 'topup', imprest: i })}>Ask for a top-up</Button> : null}
             {admin && i.openRequest ? (
               <>
@@ -254,7 +254,7 @@ function ImprestDrawer({ id, onClose, admin, onAction }: { id: string | null; on
           </Space>
           <h4>Cash ledger</h4>
           <Table<ImprestLedgerLine> className="imprest-ledger" rowKey={(l, n) => `${l.kind}-${l.expenseId ?? l.ref ?? ''}-${n}`} size="small" pagination={false} columns={ledgerCols} dataSource={i.ledger} scroll={{ x: 640 }} />
-          <h4 style={{ marginTop: 20 }}>Advances, top-ups and returns</h4>
+          <h4 style={{ marginTop: tk.space[5] }}>Advances, top-ups and returns</h4>
           <Table<ImprestEntryDto> rowKey="id" size="small" pagination={false} columns={entryCols} dataSource={i.entries} scroll={{ x: 640 }} />
         </div>
       ) : null}

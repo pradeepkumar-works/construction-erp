@@ -2,7 +2,8 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Button, Typography, theme } from 'antd';
+import { Button, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import type { AuthUser, RiskDto, RiskSortField } from '@erp/shared';
 import { DELAY_PARTY_LABELS, RISK_CATEGORY_LABELS, canEditRisk } from '@erp/shared';
@@ -12,8 +13,7 @@ import { RecordLink } from '@/components/record/RecordLink';
 import { KindTag, RiskScore, RiskStatusTag } from './riskUi';
 
 function Sub({ children }: { children: React.ReactNode }) {
-  const { token } = theme.useToken();
-  return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
+  return <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{children}</div>;
 }
 
 /** The delay and risk register's columns; keys of sortable ones are the API's sort fields. */
@@ -60,7 +60,7 @@ export function riskColumns({
           <div>
             <strong>{r.daysLost ?? 0}</strong>
             {!r.delayEnd && r.status !== 'CLOSED' ? (
-              <AppTag meaning="failed" style={{ marginLeft: 6 }}>
+              <AppTag meaning="failed" style={{ marginInlineStart: tk.space[2] }}>
                 ongoing
               </AppTag>
             ) : null}

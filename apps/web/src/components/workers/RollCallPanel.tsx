@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, App, Button, Input, InputNumber, Radio, Select, Space, Table, Tooltip } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import type { TableProps } from 'antd';
 import { CheckOutlined, SaveOutlined } from '@/components/common/icons';
@@ -17,7 +18,6 @@ import { QueryError } from '@/components/common/QueryState';
 import { CardToolbar } from '@/components/common/CardToolbar';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { useProjectScope } from '@/lib/project-scope';
-import { themeFontSize } from '@/lib/theme';
 import { formatMonthLong } from '@/lib/format';
 
 interface Mark {
@@ -105,7 +105,7 @@ export function RollCallPanel({ projectId: fixedProject }: { projectId?: string 
       render: (v, r) => (
         <div>
           <b>{v}</b>
-          <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+          <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
             {r.workerNo} · {r.trade} · {WORKER_SKILL_LABELS[r.skill]}
           </div>
         </div>
@@ -225,16 +225,16 @@ export function RollCallPanel({ projectId: fixedProject }: { projectId?: string 
       </CardToolbar>
       {error ? <QueryError error={error} onRetry={() => refetch()} /> : null}
       {!projectId ? (
-        <div className="text-muted" style={{ padding: 16 }}>
+        <div className="text-muted" style={{ padding: tk.space[4] }}>
           Choose a project to see its roll call.
         </div>
       ) : (
         <>
           {data?.locked ? (
-            <Alert type="info" showIcon style={{ margin: 12 }} title={`Payroll for ${formatMonthLong(dateStr)} is approved (${data.lockedByRun}), so this roll call can no longer change.`} />
+            <Alert type="info" showIcon style={{ margin: tk.space[3] }} title={`Payroll for ${formatMonthLong(dateStr)} is approved (${data.lockedByRun}), so this roll call can no longer change.`} />
           ) : null}
           {data ? (
-            <div className="roll-call-summary text-muted" style={{ padding: '8px 12px', fontSize: themeFontSize('fontSizeSM') }}>
+            <div className="roll-call-summary text-muted" style={{ padding: `${tk.space[2]} ${tk.space[3]}`, fontSize: tk.type.caption.fontSize }}>
               {data.rows.length} on the roll · {count('PRESENT')} present · {count('HALF_DAY')} half day · {count('ABSENT')} absent · {count(null)} not marked ·{' '}
               {live.reduce((s, x) => s + manDays(x), 0)} man-days
               {data.headCount ? (

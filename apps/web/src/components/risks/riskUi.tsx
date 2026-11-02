@@ -5,9 +5,9 @@ import { Tooltip } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import type { RiskDto, RiskLevel, RiskStatus } from '@erp/shared';
 import { RISK_KIND_LABELS, RISK_LEVEL_LABELS, RISK_RATING_LABELS, RISK_STATUS_LABELS, riskLevel } from '@erp/shared';
-import { themeColor } from '@/lib/theme';
+import { tk } from '@/ds';
 
-export const LEVEL_COLORS: Record<RiskLevel, string> = { LOW: themeColor('colorSuccess'), MEDIUM: themeColor('colorWarning'), HIGH: themeColor('red6') };
+export const LEVEL_COLORS: Record<RiskLevel, string> = { LOW: tk.color.tone.success.solid, MEDIUM: tk.color.tone.pending.solid, HIGH: tk.color.tone.danger.solid };
 
 export const RATING_OPTIONS = [1, 2, 3, 4, 5].map((v) => ({ value: v, label: `${v} · ${RISK_RATING_LABELS[v]}` }));
 

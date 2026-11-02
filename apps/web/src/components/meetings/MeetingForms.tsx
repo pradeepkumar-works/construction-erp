@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { App, Button, Checkbox, Dropdown, Space, Form, Input, Select, TimePicker, Typography, theme } from 'antd';
+import { App, Button, Checkbox, Dropdown, Space, Form, Input, Select, TimePicker, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import dayjs from 'dayjs';
@@ -101,7 +102,6 @@ interface MeetingValues {
  */
 export function MeetingForm({ open, meeting, onClose, onSaved }: { open: boolean; meeting?: MeetingDetailDto | null; onClose: () => void; onSaved?: (id: string) => void }) {
   const [form] = Form.useForm<MeetingValues>();
-  const { token } = theme.useToken();
   const { user } = useAuth();
   const act = useMeetingAction<MeetingDetailDto>();
   const notify = useNotify();
@@ -157,7 +157,7 @@ export function MeetingForm({ open, meeting, onClose, onSaved }: { open: boolean
         .filter(([, list]) => list.length)
         .map(([kind, list]) => ({ label: `${MEETING_LINK_KIND_LABELS[kind]}s`, options: list.map((l) => ({ value: `${l.kind}:${l.id}`, label: l.label })) }))
     : [];
-  const small = { display: 'block', fontSize: token.fontSizeSM } as const;
+  const small = { display: 'block', fontSize: tk.type.caption.fontSize } as const;
 
   return (
     <FormShell
@@ -322,7 +322,7 @@ export function MeetingForm({ open, meeting, onClose, onSaved }: { open: boolean
               },
             ]}
           />
-          <Typography.Text type="secondary" style={{ ...small, marginTop: token.marginXS }}>
+          <Typography.Text type="secondary" style={{ ...small, marginTop: tk.space[2] }}>
             Everyone with an email gets the minutes when they are issued.
           </Typography.Text>
         </FormSection>
@@ -412,7 +412,7 @@ export function MeetingForm({ open, meeting, onClose, onSaved }: { open: boolean
               },
             ]}
           />
-          <Typography.Text type="secondary" style={{ ...small, marginTop: token.marginXS }}>
+          <Typography.Text type="secondary" style={{ ...small, marginTop: tk.space[2] }}>
             Each action needs who and by when before the minutes are issued. Our staff see theirs in My work.
           </Typography.Text>
         </FormSection>

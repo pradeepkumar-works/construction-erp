@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Button, Checkbox, Select, theme } from 'antd';
+import { Button, Checkbox, Select } from 'antd';
+import { tk } from '@/ds';
 import { PlusOutlined } from '@/components/common/icons';
 import type { NcrDto, NcrSeverity, NcrSortField, NcrStatus } from '@erp/shared';
 import { LIST_SORT_FIELDS, NCR_SEVERITIES, NCR_SEVERITY_LABELS, NCR_STATUSES, NCR_STATUS_LABELS, canRaiseNcr } from '@erp/shared';
@@ -22,8 +23,7 @@ import { NcrFormModal } from './NcrFormModal';
 const KEYS = ['status', 'severity', 'active', 'mine'] as const;
 
 function Sub({ children }: { children: React.ReactNode }) {
-  const { token } = theme.useToken();
-  return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
+  return <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{children}</div>;
 }
 
 /** Non-conformance reports, on the Quality page and a project's Quality tab. The drawer is the parent's, so tests can open NCRs too. */

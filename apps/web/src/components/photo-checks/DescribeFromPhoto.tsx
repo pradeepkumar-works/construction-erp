@@ -2,9 +2,9 @@
 
 import React, { useState } from 'react';
 import { App, Button, Flex, Form, type FormInstance } from 'antd';
+import { tk } from '@/ds';
 import type { AttachmentDto } from '@erp/shared';
 import { errorMessage } from '@/lib/api';
-import { themeFontSize } from '@/lib/theme';
 import { useAiStatus, useSnagDraft } from '@/lib/queries';
 import { SparkleIcon } from '@/components/ai/SparkleIcon';
 
@@ -50,11 +50,11 @@ export function DescribeFromPhoto<T extends SnagFields>({ form, projectId }: { f
   };
 
   return (
-    <Flex align="center" gap={8} wrap style={{ marginTop: -8, marginBottom: 16 }}>
+    <Flex align="center" gap={8} wrap style={{ marginTop: tk.neg(2), marginBottom: tk.space[4] }}>
       <Button size="small" icon={<SparkleIcon />} loading={draft.isPending} onClick={describe}>
         Describe from photo
       </Button>
-      <span className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+      <span className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
         {filled ? 'Filled in by Ask Nirmaan from the photo. Check it before you save.' : 'Ask Nirmaan fills in the empty fields from the first photo'}
       </span>
     </Flex>

@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
-import { Button, Card, Checkbox, Drawer, Flex, Form, Input, InputNumber, Select, Statistic, Switch, Table, Typography, theme } from 'antd';
+import { Button, Card, Checkbox, Drawer, Flex, Form, Input, InputNumber, Select, Statistic, Switch, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { CALIBRATION_RESULTS, CALIBRATION_RESULT_LABELS, CALIBRATION_SOON_DAYS, calibrationDaysFor, canManageQaPlan, type AttachmentDto, type CalibrationResult, type QaInstrumentDto } from '@erp/shared';
 import { api } from '@/lib/api';
@@ -23,7 +24,6 @@ import { CheckCircleOutlined, DeleteOutlined, EditOutlined, PlusOutlined } from 
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { CalibrationTag } from './qaUi';
 
-const srOnly: React.CSSProperties = { position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 };
 
 /** "Due 10 Nov 2026, in 13 days" or "12 days overdue". */
 function dueText(i: Pick<QaInstrumentDto, 'dueOn' | 'daysLeft' | 'state'>): string {
@@ -214,15 +214,14 @@ function CalibrateDialog({ inst, onClose }: { inst: QaInstrumentDto | null; onCl
 }
 
 function InstrumentDrawer({ id, onClose }: { id: string | null; onClose: () => void }) {
-  const { token } = theme.useToken();
   const { data, isLoading } = useInstrument(id);
   return (
     <Drawer open={!!id} onClose={onClose} size="large" title={data?.name ?? 'Instrument'}>
       {isLoading || !data ? (
         <PageSkeleton shape="record" header={false} />
       ) : (
-        <Flex vertical gap={token.margin}>
-          <Flex gap={token.marginXS} wrap align="center">
+        <Flex vertical gap={tk.space[4]}>
+          <Flex gap={tk.space[2]} wrap align="center">
             <CalibrationTag state={data.state} />
             <Typography.Text type="secondary">{dueText(data)}</Typography.Text>
           </Flex>
@@ -257,7 +256,6 @@ function InstrumentDrawer({ id, onClose }: { id: string | null; onClose: () => v
 
 /** The calibration register: lab and survey instruments by where they stand, oldest due first. */
 export function CalibrationPage() {
-  const { token } = theme.useToken();
   const { user } = useAuth();
   const manage = !!user && canManageQaPlan(user.roleKey);
   const [projectId, setProjectId] = useProjectScope();
@@ -281,7 +279,7 @@ export function CalibrationPage() {
     <div className="page-container">
       <PageHeader title="Calibration register" subtitle="Lab and survey instruments with their certificates and when each falls due. A test on an instrument out of calibration is flagged." extra={newButton} />
       <Card>
-        <Flex gap={token.marginSM} wrap align="center" style={{ marginBottom: token.margin }}>
+        <Flex gap={tk.space[3]} wrap align="center" style={{ marginBottom: tk.space[4] }}>
           <ProjectSelect value={projectId} onChange={(v) => setProjectId(v)} style={{ minWidth: 240, maxWidth: '100%' }} />
           <Checkbox checked={attention} onChange={(e) => setAttention(e.target.checked)}>
             Only those needing attention
@@ -293,8 +291,8 @@ export function CalibrationPage() {
           <QueryError error={error} onRetry={() => refetch()} />
         ) : (
           <>
-            <Flex gap={token.marginXL} wrap style={{ marginBottom: token.margin }}>
-              <Statistic title="Overdue" value={data.overdue} styles={{ content: data.overdue ? { color: token.colorErrorText } : undefined }} />
+            <Flex gap={tk.space[8]} wrap style={{ marginBottom: tk.space[4] }}>
+              <Statistic title="Overdue" value={data.overdue} styles={{ content: data.overdue ? { color: tk.color.tone.danger.fg } : undefined }} />
               <Statistic title={`Due in the next ${CALIBRATION_SOON_DAYS} days`} value={data.dueSoon} />
               <Statistic title="Out of use" value={data.outOfUse} />
             </Flex>
@@ -306,7 +304,7 @@ export function CalibrationPage() {
               scroll={{ x: 900 }}
               locale={{
                 emptyText: (
-                  <Flex vertical align="center" gap={token.marginSM}>
+                  <Flex vertical align="center" gap={tk.space[3]}>
                     <Typography.Text type="secondary">{attention ? 'Every instrument is in calibration.' : 'No instrument yet. Add the compression testing machine, moulds, cones and scales.'}</Typography.Text>
                     {attention ? null : newButton}
                   </Flex>
@@ -354,7 +352,7 @@ export function CalibrationPage() {
                 ...(manage
                   ? [
                       {
-                        title: <span style={srOnly}>Actions</span>,
+                        title: <span className="visually-hidden">Actions</span>,
                         key: 'actions',
                         width: 220,
                         render: (_: unknown, i: QaInstrumentDto) => (

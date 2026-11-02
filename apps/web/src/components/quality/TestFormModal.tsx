@@ -2,6 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { Form, Input, InputNumber, Segmented, Select, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import type { AttachmentDto, QualityTestDto, TestKind, TestResult, TestTypeDto } from '@erp/shared';
@@ -249,7 +250,7 @@ export function TestFormModal({ open, onClose, projectId, test, prefill }: { ope
             </Form.Item>
           </FormGrid>
           {hasSpec ? (
-            <Typography.Paragraph type="secondary" style={{ marginTop: -8 }}>
+            <Typography.Paragraph type="secondary" style={{ marginTop: tk.neg(2) }}>
               {kind === 'CONCRETE_CUBE' ? 'The 28-day result decides pass or fail; the 7-day one is for information.' : 'The result decides pass or fail against these limits.'}
             </Typography.Paragraph>
           ) : (

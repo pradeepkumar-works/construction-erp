@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo } from 'react';
 import { App, Checkbox, Form, Input, InputNumber, Segmented, Select, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import type { AttachmentDto, DelayParty, RiskCategory, RiskDto, RiskKind, RiskStatus } from '@erp/shared';
@@ -13,7 +14,6 @@ import { FAIL_NOTICE } from '@/lib/notify';
 import { useActivities, useProject, useProjects } from '@/lib/queries';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { RATING_OPTIONS } from './riskUi';
-import { themeColor, themeFontSize } from '@/lib/theme';
 import { todayDate } from '@/lib/format';
 
 interface FormValues {
@@ -175,7 +175,7 @@ export function RiskFormModal({ open, onClose, projectId, defaultProjectId, risk
       draftKey={editing || prefill ? undefined : `risk:${projectId ?? 'any'}`}
     >
       <Form form={form} layout="vertical">
-        <Form.Item name="kind" style={{ marginBottom: 12 }}>
+        <Form.Item name="kind" style={{ marginBottom: tk.space[3] }}>
           <Segmented
             options={[
               { value: 'DELAY', label: 'Delay: work has been held up' },
@@ -248,7 +248,7 @@ export function RiskFormModal({ open, onClose, projectId, defaultProjectId, risk
           </Form.Item>
           <Form.Item label="Score">
             {score ? (
-              <Typography.Text strong style={{ fontSize: themeFontSize('fontSizeLG'), lineHeight: '32px', color: riskLevel(score) === 'HIGH' ? themeColor('colorErrorText') : undefined }}>
+              <Typography.Text strong style={{ fontSize: tk.type.lead.fontSize, lineHeight: tk.control.md, color: riskLevel(score) === 'HIGH' ? tk.color.tone.danger.fg : undefined }}>
                 {score} · {RISK_LEVEL_LABELS[riskLevel(score)]}
               </Typography.Text>
             ) : (

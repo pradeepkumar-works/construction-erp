@@ -3,6 +3,7 @@
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import React, { useEffect } from 'react';
 import { Alert, Button, Checkbox, Form, Input, InputNumber, Select, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { DeleteOutlined, PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
@@ -17,7 +18,6 @@ import { formatINR, formatQty, toNumber } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
 import { SectorInputs, sectorBody, sectorFormValues, typedLocation, type SectorFormValues } from '@/components/sector/SectorInputs';
-import { themeColor, themeFontSize } from '@/lib/theme';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { QuantityInput } from '@/components/form/inputs';
 import { recordPage } from '@/components/approvals/queue';
@@ -42,7 +42,7 @@ interface FormValues extends SectorFormValues {
   photos?: AttachmentDto[];
 }
 
-const LINE_GRID = { display: 'grid', gridTemplateColumns: '2.4fr 0.8fr 1fr 1fr 1fr 0.9fr 1fr 32px', gap: '0 8px', alignItems: 'start' } as const;
+const LINE_GRID = { display: 'grid', gridTemplateColumns: '2.4fr 0.8fr 1fr 1fr 1fr 0.9fr 1fr 32px', gap: `0 ${tk.space[2]}`, alignItems: 'start' } as const;
 const n = (v: string | null) => (v === null ? null : Number(v));
 const str = (v: number | null | undefined) => (v === null || v === undefined ? null : String(v));
 
@@ -147,7 +147,7 @@ export function MeasurementFormModal({
       draftKey={editing || prefill ? undefined : `measurement:${projectId ?? 'any'}`}
     >
       <Form form={form} layout="vertical">
-        {sheet?.reviewNote && <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Reviewer note from ${sheet.reviewedByName ?? 'approver'}`} description={sheet.reviewNote} />}
+        {sheet?.reviewNote && <Alert type="warning" showIcon style={{ marginBottom: tk.space[4] }} title={`Reviewer note from ${sheet.reviewedByName ?? 'approver'}`} description={sheet.reviewNote} />}
         <FormSection title="What and where">
           <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
             <ProjectSelect allowClear={false} placeholder="Choose a project" style={{ width: '100%' }} onChange={() => form.setFieldsValue({ boqItemId: undefined, workOrderId: undefined })} />
@@ -191,7 +191,7 @@ export function MeasurementFormModal({
           </Form.Item>
         </FormSection>
         <FormSection title="Measurement lines">
-          <div style={{ ...LINE_GRID, fontSize: themeFontSize('fontSizeSM'), color: themeColor('colorTextDescription'), marginBottom: 4 }}>
+          <div style={{ ...LINE_GRID, fontSize: tk.type.caption.fontSize, color: tk.color.text.faint, marginBottom: tk.space[1] }}>
             <span>Description</span>
             <span>Nos</span>
             <span>Length</span>
@@ -240,7 +240,7 @@ export function MeasurementFormModal({
                       <Form.Item name={[f.name, 'deduct']} valuePropName="checked">
                         <Checkbox aria-label={`Line ${f.name + 1} deduct`} />
                       </Form.Item>
-                      <div className="mono" translate="no" style={{ textAlign: 'right', lineHeight: '32px', color: qty < 0 ? themeColor('colorErrorText') : undefined }}>
+                      <div className="mono" translate="no" style={{ textAlign: 'right', lineHeight: tk.control.md, color: qty < 0 ? tk.color.tone.danger.fg : undefined }}>
                         {formatQty(qty)}
                       </div>
                       <Button type="text" icon={<DeleteOutlined />} disabled={fields.length === 1} onClick={() => remove(f.name)} aria-label="Remove line" />
@@ -248,19 +248,19 @@ export function MeasurementFormModal({
                   );
                 })}
                 <Form.ErrorList errors={errors} />
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '4px 0 16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: `${tk.space[1]} 0 ${tk.space[4]}` }}>
                   <Button icon={<PlusOutlined />} onClick={() => add({ nos: 1 })} disabled={fields.length >= 100}>
                     Add line
                   </Button>
-                  <Typography.Text strong style={{ fontSize: themeFontSize('fontSizeLG') }}>
+                  <Typography.Text strong style={{ fontSize: tk.type.lead.fontSize }}>
                     Total {formatQty(total)} {item?.unit ?? ''}
-                    {item ? <span className="text-muted" style={{ fontWeight: 400, fontSize: themeFontSize('fontSizeSM') }}> · {formatINR(total * toNumber(item.rate))}</span> : null}
+                    {item ? <span className="text-muted" style={{ fontWeight: tk.type.body.fontWeight, fontSize: tk.type.caption.fontSize }}> · {formatINR(total * toNumber(item.rate))}</span> : null}
                   </Typography.Text>
                 </div>
               </>
             )}
           </Form.List>
-          <Typography.Paragraph type="secondary" style={{ fontSize: themeFontSize('fontSizeSM'), marginTop: -8 }}>
+          <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.neg(2) }}>
             Each line is nos × length × breadth × depth; blank columns count as 1. Tick Deduct for openings and overlaps.
           </Typography.Paragraph>
         </FormSection>

@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-import { App, Flex, Image, Spin, Switch, Typography, theme } from 'antd';
+import { App, Flex, Image, Spin, Switch, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { ExclamationCircleFilled } from '@/components/common/icons';
 import { PHOTO_FLAG_INFO, type AttachmentDto, type PhotoCheckKind } from '@erp/shared';
 import { errorMessage, fileUrl } from '@/lib/api';
-import { themeFontSize } from '@/lib/theme';
 import { usePhotoChecks, useRunPhotoChecks, useSetPhotoFlags } from '@/lib/queries';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { SparkleIcon } from '@/components/ai/SparkleIcon';
@@ -40,7 +40,6 @@ export const photosSection = (kind: PhotoCheckKind, id: string, attachments: Att
 
 function PhotoChecks({ kind, id, photos }: { kind: PhotoCheckKind; id: string; photos: AttachmentDto[] }) {
   const { message } = App.useApp();
-  const { token } = theme.useToken();
   const version = photos.length;
   const { data } = usePhotoChecks(kind, id, true, version);
   const run = useRunPhotoChecks(kind, id, version);
@@ -65,33 +64,33 @@ function PhotoChecks({ kind, id, photos }: { kind: PhotoCheckKind; id: string; p
     );
 
   return (
-    <section aria-label="Photo checks by Ask Nirmaan" className="photo-checks" style={{ marginTop: 12 }}>
-      <Flex align="center" gap={6} className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM'), marginBottom: 4 }}>
+    <section aria-label="Photo checks by Ask Nirmaan" className="photo-checks" style={{ marginTop: tk.space[3] }}>
+      <Flex align="center" gap={6} className="text-muted" style={{ fontSize: tk.type.caption.fontSize, marginBottom: tk.space[1] }}>
         <SparkleIcon /> What Ask Nirmaan sees in the photos. It can be wrong and never holds up a submission.
       </Flex>
       {photos.map((p) => {
         const c = byPhoto.get(p.id);
         if (!c) return null;
         return (
-          <Flex key={p.id} gap={10} align="flex-start" className="photo-check" style={{ padding: '8px 0', borderBottom: `1px solid ${token.colorSplit}` }}>
-            <Image src={fileUrl(p.url)} alt="" width={40} height={40} preview={false} style={{ objectFit: 'cover', borderRadius: 4, flex: 'none' }} />
+          <Flex key={p.id} gap={10} align="flex-start" className="photo-check" style={{ padding: `${tk.space[2]} 0`, borderBottom: `1px solid ${tk.color.line.hairline}` }}>
+            <Image src={fileUrl(p.url)} alt="" width={40} height={40} preview={false} style={{ objectFit: 'cover', borderRadius: tk.radius.sm, flex: 'none' }} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <Typography.Text>{c.caption ?? (c.status === 'DONE' ? 'No caption' : c.reason)}</Typography.Text>
-              <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+              <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                 {c.fileName}
                 {c.status !== 'DONE' && c.caption ? ` · ${c.reason}` : ''}
               </div>
               {c.flags.map((f) => (
-                <Flex key={f.key} gap={6} align="flex-start" style={{ marginTop: 4 }}>
-                  <ExclamationCircleFilled style={{ color: token.colorWarningText, marginTop: 4 }} aria-hidden />
+                <Flex key={f.key} gap={6} align="flex-start" style={{ marginTop: tk.space[1] }}>
+                  <ExclamationCircleFilled style={{ color: tk.color.tone.pending.fg, marginTop: tk.space[1] }} aria-hidden />
                   <span>
                     <Typography.Text strong>{f.label}</Typography.Text>
                     {PHOTO_FLAG_INFO[f.key].safety ? (
-                      <AppTag meaning="waiting" style={{ marginInlineStart: 6 }}>
+                      <AppTag meaning="waiting" style={{ marginInlineStart: tk.space[2] }}>
                         Safety
                       </AppTag>
                     ) : null}
-                    <span className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM'), display: 'block' }}>
+                    <span className="text-muted" style={{ fontSize: tk.type.caption.fontSize, display: 'block' }}>
                       {f.detail ? `${f.detail}. ` : ''}
                       {Math.round(f.confidence * 100)}% sure
                     </span>
@@ -103,16 +102,16 @@ function PhotoChecks({ kind, id, photos }: { kind: PhotoCheckKind; id: string; p
         );
       })}
       {data.available && pending > 0 && run.isPending ? (
-        <div style={{ padding: '8px 0' }}>
+        <div style={{ padding: `${tk.space[2]} 0` }}>
           <Spin size="small" description={`Ask Nirmaan is looking at ${pending === 1 ? 'a photo' : `${pending} photos`}`} />
         </div>
       ) : run.isError ? (
-        <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+        <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
           {errorMessage(run.error)}
         </Typography.Text>
       ) : null}
       {data.canSwitch || data.flagsOff ? (
-        <Flex align="center" gap={8} wrap style={{ marginTop: 8, fontSize: themeFontSize('fontSizeSM') }}>
+        <Flex align="center" gap={8} wrap style={{ marginTop: tk.space[2], fontSize: tk.type.caption.fontSize }}>
           {data.canSwitch ? (
             <>
               <Switch size="small" checked={!data.flagsOff} loading={setFlags.isPending} onChange={switchFlags} aria-label="Photo flags on this project" />

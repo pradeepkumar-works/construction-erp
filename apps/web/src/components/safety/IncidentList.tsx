@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Button, Select, theme } from 'antd';
+import { Button, Select } from 'antd';
+import { tk } from '@/ds';
 import { PlusOutlined } from '@/components/common/icons';
 import type { SafetyIncidentDto, SafetyIncidentStatus, SafetyIncidentType } from '@erp/shared';
 import { SAFETY_INCIDENT_STATUSES, SAFETY_INCIDENT_STATUS_LABELS, SAFETY_INCIDENT_TYPES, SAFETY_INCIDENT_TYPE_LABELS, canReportSafety } from '@erp/shared';
@@ -44,8 +45,7 @@ const EXPORT: ExportColumn<SafetyIncidentDto>[] = [
 const KEYS = ['type', 'status'] as const;
 
 function Sub({ children }: { children: React.ReactNode }) {
-  const { token } = theme.useToken();
-  return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
+  return <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{children}</div>;
 }
 
 /** The incident and near-miss register. */

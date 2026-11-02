@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, App, AutoComplete, Button, Form, Input, InputNumber, Modal, Select, Space, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import { DeleteOutlined, PlusOutlined } from '@/components/common/icons';
@@ -14,7 +15,6 @@ import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useAttendanceDay, useAttendanceSuggestions, useProjects } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
-import { themeColor, themeFontSize } from '@/lib/theme';
 import { FormShell } from '@/components/form/FormShell';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
@@ -130,17 +130,17 @@ export function AttendanceFormModal({ open, onClose, projectId, sheet: initial }
   ) : null;
 
   const body = (
-    <Form form={form} layout="vertical" disabled={readOnly} style={{ marginTop: 8 }}>
+    <Form form={form} layout="vertical" disabled={readOnly} style={{ marginTop: tk.space[2] }}>
       {editing && sheet.locked ? (
-        <Alert type="info" showIcon style={{ marginBottom: 12 }} title={`Locked: payroll for this month is approved (${sheet.lockedByRun}).`} />
+        <Alert type="info" showIcon style={{ marginBottom: tk.space[3] }} title={`Locked: payroll for this month is approved (${sheet.lockedByRun}).`} />
       ) : !editing && locked ? (
-        <Alert type="warning" showIcon style={{ marginBottom: 12 }} title={`Payroll for this month is approved (${day.data?.lockedByRun}), so attendance can no longer be recorded for this day.`} />
+        <Alert type="warning" showIcon style={{ marginBottom: tk.space[3] }} title={`Payroll for this month is approved (${day.data?.lockedByRun}), so attendance can no longer be recorded for this day.`} />
       ) : null}
       {existingForDay ? (
         <Alert
           type="warning"
           showIcon
-          style={{ marginBottom: 12 }}
+          style={{ marginBottom: tk.space[3] }}
           title={`Attendance for ${formatDate(existingForDay.date)} is already recorded (${existingForDay.totalWorkers} workers, by ${existingForDay.recordedByName}).`}
           action={
             <Button size="small" onClick={() => load(existingForDay)}>
@@ -149,7 +149,7 @@ export function AttendanceFormModal({ open, onClose, projectId, sheet: initial }
           }
         />
       ) : null}
-      {movedOnto ? <Alert type="warning" showIcon style={{ marginBottom: 12 }} title={`${formatDate(movedOnto.date)} already has its own sheet. Choose another date.`} /> : null}
+      {movedOnto ? <Alert type="warning" showIcon style={{ marginBottom: tk.space[3] }} title={`${formatDate(movedOnto.date)} already has its own sheet. Choose another date.`} /> : null}
 
       <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
         <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Choose a project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))} />
@@ -158,18 +158,18 @@ export function AttendanceFormModal({ open, onClose, projectId, sheet: initial }
         <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
       </Form.Item>
 
-      <Form.Item label="Workers on site" required style={{ marginBottom: 8 }}>
+      <Form.Item label="Workers on site" required style={{ marginBottom: tk.space[2] }}>
         <Form.List name="lines">
           {(fields, { add, remove: removeLine }) => (
             <Space orientation="vertical" size={6} style={{ width: '100%' }}>
-              <div style={{ display: 'flex', gap: 6, color: themeColor('colorTextDescription'), fontSize: themeFontSize('fontSizeSM') }}>
+              <div style={{ display: 'flex', gap: tk.space[2], color: tk.color.text.faint, fontSize: tk.type.caption.fontSize }}>
                 <span style={{ flex: 3 }}>Contractor</span>
                 <span style={{ flex: 2 }}>Trade</span>
                 <span style={{ width: 72 }}>Workers</span>
                 <span style={{ width: 32 }} />
               </div>
               {fields.map((f, i) => (
-                <div key={f.key} style={{ display: 'flex', gap: 6 }} data-line-label={`Workers on site, line ${i + 1}`}>
+                <div key={f.key} style={{ display: 'flex', gap: tk.space[2] }} data-line-label={`Workers on site, line ${i + 1}`}>
                   <Form.Item name={[f.name, 'contractor']} noStyle rules={[{ required: true, whitespace: true, message: '' }]}>
                     <AutoComplete style={{ flex: 3, minWidth: 0 }} options={contractorOptions} placeholder="Contractor" showSearch={{ filterOption: (input, o) => (o?.value ?? '').toLowerCase().includes(input.toLowerCase()) }} />
                   </Form.Item>
@@ -199,11 +199,11 @@ export function AttendanceFormModal({ open, onClose, projectId, sheet: initial }
         </Form.List>
       </Form.Item>
 
-      <div style={{ background: themeColor('colorFillAlter'), border: `1px solid ${themeColor('colorBorderSecondary')}`, borderRadius: 8, padding: '8px 12px', marginBottom: 16 }}>
+      <div style={{ background: tk.color.surface.sunken, border: `1px solid ${tk.color.line.hairline}`, borderRadius: tk.radius.md, padding: `${tk.space[2]} ${tk.space[3]}`, marginBottom: tk.space[4] }}>
         <Typography.Text strong>Total {total} workers</Typography.Text>
         {byTrade.length ? (
-          <div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
-            <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM'), marginRight: 4 }}>
+          <div style={{ marginTop: tk.space[2], display: 'flex', flexWrap: 'wrap', gap: tk.space[1], alignItems: 'center' }}>
+            <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginRight: tk.space[1] }}>
               Fills the DPR labour:
             </Typography.Text>
             {byTrade.map((m) => (
@@ -219,7 +219,7 @@ export function AttendanceFormModal({ open, onClose, projectId, sheet: initial }
         <Input.TextArea rows={2} maxLength={1000} />
       </Form.Item>
       {editing ? (
-        <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+        <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
           Recorded by {sheet.recordedByName}
           {sheet.updatedByName ? `, last changed by ${sheet.updatedByName}` : ''}.
         </Typography.Text>
@@ -230,7 +230,7 @@ export function AttendanceFormModal({ open, onClose, projectId, sheet: initial }
   // Read-only (a role that cannot record attendance, or a locked sheet) is a plain view with Close.
   if (readOnly) {
     return (
-      <Modal open={open} title={title} onCancel={onClose} footer={<Button onClick={onClose}>Close</Button>} width={720} destroyOnHidden styles={{ body: { maxHeight: '70vh', overflowY: 'auto', paddingRight: 8 } }}>
+      <Modal open={open} title={title} onCancel={onClose} footer={<Button onClick={onClose}>Close</Button>} width={720} destroyOnHidden styles={{ body: { maxHeight: '70vh', overflowY: 'auto', paddingRight: tk.space[2] } }}>
         {body}
       </Modal>
     );

@@ -2,7 +2,8 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Tooltip, theme } from 'antd';
+import { Tooltip } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { WarningOutlined } from '@/components/common/icons';
 import type { ExpenseDto, ExpenseSortField } from '@erp/shared';
@@ -17,8 +18,7 @@ import { RecordLink } from '@/components/record/RecordLink';
 const sumMoney = (values: string[]) => formatINR(values.reduce((n, v) => n + toNumber(v), 0), true);
 
 function Sub({ children }: { children: React.ReactNode }) {
-  const { token } = theme.useToken();
-  return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
+  return <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{children}</div>;
 }
 
 /** The site expense list's columns; keys of sortable ones are the API's sort fields. */

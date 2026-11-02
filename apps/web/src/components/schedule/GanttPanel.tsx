@@ -15,7 +15,6 @@ import { useAuth } from '@/lib/auth';
 import { useGantt, useScheduleAction } from '@/lib/queries';
 import { formatDate, formatDateTime, plural } from '@/lib/format';
 import { Loading, QueryError } from '@/components/common/QueryState';
-import { themeFontSize } from '@/lib/theme';
 import { GanttChart, GanttLegend, type GanttScale } from './GanttChart';
 import { MilestoneFormModal } from './MilestoneFormModal';
 import { ImportScheduleModal, LinksDrawer, exportSchedule } from './ScheduleLinks';
@@ -145,7 +144,7 @@ export function GanttPanel({ projectId }: { projectId: string }) {
     { title: 'Milestone', dataIndex: 'name', render: (v, r) => (
       <div>
         <b>{v}</b>
-        {r.note ? <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{r.note}</div> : null}
+        {r.note ? <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>{r.note}</div> : null}
       </div>
     ) },
     { title: 'Due on', dataIndex: 'dueDate', width: 120, render: (v) => formatDate(v) },
@@ -198,7 +197,7 @@ export function GanttPanel({ projectId }: { projectId: string }) {
           className="finish-after-completion"
           type="error"
           showIcon
-          style={{ marginBottom: 12 }}
+          style={{ marginBottom: tk.space[3] }}
           title={`The plan ends ${formatDate(s.plannedFinish)}, ${daysBetween(data.completionDate, s.plannedFinish)} days after the completion date of ${formatDate(data.completionDate)}.`}
           description="Re-plan the critical activities to finish in time, or record the delays that excuse it and claim an extension of time on the Contract tab. The client portal shows only the frozen baseline."
         />
@@ -209,7 +208,7 @@ export function GanttPanel({ projectId }: { projectId: string }) {
         type={data.baselineAt ? 'info' : 'warning'}
         showIcon
         icon={<LockOutlined />}
-        style={{ marginBottom: 12 }}
+        style={{ marginBottom: tk.space[3] }}
         title={
           data.baselineAt
             ? `Baseline frozen ${formatDateTime(data.baselineAt)}${data.baselineByName ? ` by ${data.baselineByName}` : ''}${data.baselineNote ? `: ${data.baselineNote}` : ''}`
@@ -230,7 +229,7 @@ export function GanttPanel({ projectId }: { projectId: string }) {
           className="link-conflicts"
           type="warning"
           showIcon
-          style={{ marginBottom: 12 }}
+          style={{ marginBottom: tk.space[3] }}
           title={`${s.linkConflicts} ${s.linkConflicts === 1 ? 'activity is' : 'activities are'} planned to start before ${s.linkConflicts === 1 ? 'its' : 'their'} links allow${s.networkFinish && s.plannedFinish && s.networkFinish > s.plannedFinish ? `: the links put the finish at ${formatDate(s.networkFinish)}, not ${formatDate(s.plannedFinish)}` : ''}.`}
           description={conflicts.slice(0, 3).map((a) => `${a.name} (from ${formatDate(a.linkStartsOn)})`).join(', ') + (conflicts.length > 3 ? ` and ${conflicts.length - 3} more` : '')}
           action={
@@ -243,7 +242,7 @@ export function GanttPanel({ projectId }: { projectId: string }) {
         />
       ) : null}
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: tk.space[2], marginBottom: tk.space[2] }}>
         <Space wrap>
           <Segmented<GanttScale> aria-label="Gantt scale" value={scale} onChange={setScale} options={[{ value: 'week', label: 'Weeks' }, { value: 'month', label: 'Months' }]} />
           {data.baselineAt ? (
@@ -271,7 +270,7 @@ export function GanttPanel({ projectId }: { projectId: string }) {
       <GanttChart data={data} scale={scale} showBaseline={showBaseline && !!data.baselineAt} onMilestone={editor ? (m) => setForm({ milestone: m }) : undefined} onActivity={setLinksOf} />
       <GanttLegend showBaseline={showBaseline && !!data.baselineAt} linked={s.links > 0} />
 
-      <h4 style={{ margin: '20px 0 8px', display: 'flex', alignItems: 'center', gap: 8 }}>
+      <h4 style={{ margin: `${tk.space[5]} 0 ${tk.space[2]}`, display: 'flex', alignItems: 'center', gap: tk.space[2] }}>
         <FlagOutlined /> Milestones
       </h4>
       <Table<MilestoneDto> className="milestone-table" rowKey="id" size="small" pagination={false} columns={columns} dataSource={data.milestones} scroll={{ x: 800 }} locale={{ emptyText: 'No milestones yet' }} />
