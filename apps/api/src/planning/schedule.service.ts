@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type { ActivityLinkDto, GanttActivityDto, GanttDto, LookaheadActivityDto, LookaheadDto, MilestoneDto, ScheduleFileFormat, ScheduleImportResultDto } from '@erp/shared';
-import { linkLabel, revisedCompletion } from '@erp/shared';
+import { grantedExtensionDays, linkLabel, revisedCompletion } from '@erp/shared';
 import { expectedPct, milestoneState, scheduleState, slipDays } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
@@ -130,11 +130,13 @@ export class ScheduleService {
 
     const plannedFinish = maxDate([...rows.map((r) => r.plannedEnd), ...ms.map((m) => m.dueDate)]);
     const baselineFinish = project.baselineAt ? maxDate([...rows.map((r) => r.baselineEnd), ...ms.map((m) => m.baselineDate)]) : null;
+    const extensionDays = grantedExtensionDays(project.risks);
     return {
       projectId,
       projectStart: dateOnly(project.startDate),
       projectEnd: dateOnly(project.endDate),
-      completionDate: revisedCompletion(dateOnly(project.endDate), project.risks.reduce((t, r) => t + (r.eotGrantedDays ?? 0), 0)),
+      completionDate: revisedCompletion(dateOnly(project.endDate), extensionDays),
+      extensionDays,
       today,
       baselineAt: iso(project.baselineAt),
       baselineByName: project.baselineBy?.fullName ?? null,

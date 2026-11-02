@@ -60,6 +60,7 @@ export const MEASURES = {
   cashLowest: { label: 'Lowest cash in 13 weeks', asPart: 'lowest in 13 weeks', kind: 'money', better: 'up', limit: { below: 0, level: 'act' }, list: '/cash-forecast', define: 'The lowest closing balance the 13-week cash forecast expects.' },
   // Work, billing and collection (a flow's period is its `when`: "Work done in Oct")
   workDone: { label: 'Work done', kind: 'money', better: 'up', list: '/progress', define: 'Approved progress at BOQ rates; a lump-sum or EPC contract counts by its stages.' },
+  boqValue: { label: 'BOQ value', kind: 'money', better: 'either', define: 'The BOQ’s quantities at its rates, revised quantities where there are any.' },
   billed: { label: 'Billed', kind: 'money', better: 'up', list: '/bills', define: 'Approved RA bills: work value plus price variation, before GST.' },
   moneyReceived: { label: 'Money received', kind: 'money', better: 'up', list: '/receivables', define: 'Received in the bank from clients.' },
   cost: { label: 'Cost', kind: 'money', better: 'down', list: '/cost', define: 'Site expenses, material issued, machinery, labour and subcontractor bills, approved.' },

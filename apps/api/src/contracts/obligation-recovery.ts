@@ -1,5 +1,5 @@
 import { Prisma } from '@prisma/client';
-import { billRecoveryLines, obligationDue, revisedCompletion, type ObligationAnchors, type ObligationBillLine, type ObligationBillLineDto, type ObligationTerms } from '@erp/shared';
+import { billRecoveryLines, obligationDue, grantedExtensionDays, revisedCompletion, type ObligationAnchors, type ObligationBillLine, type ObligationBillLineDto, type ObligationTerms } from '@erp/shared';
 import { dateOnly, money } from '../common/serialize';
 
 /*
@@ -18,7 +18,7 @@ export const ANCHOR_SELECT = {
 type AnchorRow = Prisma.ProjectGetPayload<{ select: typeof ANCHOR_SELECT }>;
 
 export function anchorsOf(p: AnchorRow): ObligationAnchors {
-  const eot = p.risks.reduce((s, r) => s + (r.eotGrantedDays ?? 0), 0);
+  const eot = grantedExtensionDays(p.risks);
   return {
     AGREEMENT: dateOnly(p.agreementDate),
     START: dateOnly(p.startDate),

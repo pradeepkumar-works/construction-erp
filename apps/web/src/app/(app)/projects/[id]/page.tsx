@@ -2,8 +2,9 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { Button, Card, Progress, Space, Typography } from 'antd';
-import { EditOutlined, FilePdfOutlined } from '@/components/common/icons';
+import { Button, Card, Dropdown, Progress, Space } from 'antd';
+import type { MenuProps } from 'antd';
+import { EditOutlined, FilePdfOutlined, MoreOutlined } from '@/components/common/icons';
 import type { ProjectDetail } from '@erp/shared';
 import { canManageProjects, isGuest, canViewContract, canViewVariations, canViewCost, canViewPurchaseOrders, canViewReconciliation, canViewWorkOrders, canViewEpc, canViewOm, canViewProgramme } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
@@ -52,9 +53,71 @@ import { SubcontractsPanel } from '@/components/subcontracts/SubcontractsPanel';
 import { HandoverPanel } from '@/components/handover/HandoverPanel';
 import { AskButton } from '@/components/ai/AskButton';
 import { LinkButton } from '@/components/common/LinkButton';
-import { themeFontSize } from '@/lib/theme';
+import { SparkleIcon } from '@/components/ai/SparkleIcon';
+import { tk } from '@/ds';
+import { useAsk } from '@/lib/ask';
+import { formatPct } from '@/lib/format';
+import { useIsPhone } from '@/lib/screen';
 
 const tabPref = (projectId: string) => `nirmaan.project.tab.${projectId}`;
+
+const summariseQuestion = (p: ProjectDetail) => `Summarise this week on ${p.code} ${p.name}.`;
+const SUMMARISE_TITLE = 'Ask Nirmaan for this week on this project: work against plan, labour, machines, materials, bills, risks and decisions';
+const reportHref = (p: ProjectDetail) => `/reports?projectId=${p.id}`;
+
+/** The project's code, client, place and manager, under its name. */
+function ProjectFacts({ project }: { project: ProjectDetail }) {
+  return (
+    <Space size={16} wrap>
+      <span translate="no">{project.code}</span>
+      {project.clientName && <span>Client: {project.clientName}</span>}
+      {project.location && <span>{project.location}</span>}
+      {project.projectManagerName && <span>PM: {project.projectManagerName}</span>}
+    </Space>
+  );
+}
+
+function PhysicalProgress({ pct }: { pct: number }) {
+  return (
+    <div style={{ width: 160 }}>
+      <span style={{ ...tk.type.caption, color: tk.color.text.muted }}>Physical progress</span>
+      <Progress percent={pct} size="small" format={() => formatPct(pct)} aria-label={`Physical progress ${formatPct(pct)}`} />
+    </div>
+  );
+}
+
+/**
+ * On a phone the header keeps the name and the health chips; the project's facts, its progress and the actions fold into
+ * one ⋯ menu, so the tabs start near the top of the screen.
+ */
+function ProjectMenu({ project, editor, onEdit }: { project: ProjectDetail; editor: boolean; onEdit: () => void }) {
+  const router = useRouter();
+  const ask = useAsk();
+  const items: MenuProps['items'] = [
+    ...(ask.available ? [{ key: 'ask', icon: <SparkleIcon />, label: 'Summarise this week' }] : []),
+    { key: 'report', icon: <FilePdfOutlined />, label: 'Progress report' },
+    ...(editor ? [{ key: 'edit', icon: <EditOutlined />, label: 'Edit project' }] : []),
+  ];
+  const run: Record<string, () => void> = { ask: () => ask.ask(summariseQuestion(project)), report: () => router.push(reportHref(project)), edit: onEdit };
+  return (
+    <Dropdown
+      trigger={['click']}
+      placement="bottomRight"
+      menu={{ items, onClick: ({ key }) => run[key]?.() }}
+      popupRender={(menu) => (
+        <div style={{ background: tk.color.surface.raised, borderRadius: tk.radius.lg, boxShadow: tk.shadow.float, maxWidth: `calc(100vw - 2 * ${tk.space[4]})` }}>
+          <div style={{ ...tk.type.caption, color: tk.color.text.muted, padding: `${tk.space[3]} ${tk.space[3]} ${tk.space[2]}`, display: 'flex', flexDirection: 'column', gap: tk.space[1] }}>
+            <ProjectFacts project={project} />
+            <span>Physical progress {formatPct(project.physicalProgressPct)}</span>
+          </div>
+          {React.isValidElement<{ style?: React.CSSProperties }>(menu) ? React.cloneElement(menu, { style: { boxShadow: 'none' } }) : menu}
+        </div>
+      )}
+    >
+      <Button icon={<MoreOutlined />} aria-label="Project details and actions" />
+    </Dropdown>
+  );
+}
 
 export default function ProjectDetailPage() {
   const params = useParams<{ id: string }>();
@@ -90,6 +153,7 @@ function ProjectPage({ project }: { project: ProjectDetail }) {
   const [editOpen, setEditOpen] = useState(false);
   const headerRef = useRef<HTMLDivElement>(null);
   const health = useProjectHealth(project);
+  const phone = useIsPhone();
   const editor = !!user && canManageProjects(user.roleKey);
   const can = (allowed: boolean) => !!user && allowed;
 
@@ -168,34 +232,33 @@ function ProjectPage({ project }: { project: ProjectDetail }) {
           </Space>
         }
         subtitle={
-          <Space orientation="vertical" size={8}>
-            <Space size={16} wrap>
-              <span>{project.code}</span>
-              {project.clientName && <span>Client: {project.clientName}</span>}
-              {project.location && <span>{project.location}</span>}
-              {project.projectManagerName && <span>PM: {project.projectManagerName}</span>}
-            </Space>
+          phone ? (
             <ProjectHealth signals={health} />
-          </Space>
+          ) : (
+            <Space orientation="vertical" size={8}>
+              <ProjectFacts project={project} />
+              <ProjectHealth signals={health} />
+            </Space>
+          )
         }
         extra={
-          <Space wrap>
-            <div style={{ width: 160 }}>
-              <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
-                Physical progress
-              </Typography.Text>
-              <Progress percent={project.physicalProgressPct} size="small" aria-label={`Physical progress ${project.physicalProgressPct}%`} />
-            </div>
-            <AskButton question={`Summarise this week on ${project.code} ${project.name}.`} label="Summarise this week" title="Ask Nirmaan for this week on this project: work against plan, labour, machines, materials, bills, risks and decisions" />
-            <LinkButton href={`/reports?projectId=${project.id}`} icon={<FilePdfOutlined />}>
-              Progress report
-            </LinkButton>
-            {editor && (
-              <Button icon={<EditOutlined />} onClick={() => setEditOpen(true)}>
-                Edit
-              </Button>
-            )}
-          </Space>
+          phone ? (
+            <ProjectMenu project={project} editor={editor} onEdit={() => setEditOpen(true)} />
+          ) : (
+            <Space wrap>
+              {/* The Overview leads with progress against its plan, so the bar is for the other tabs. */}
+              {active !== 'overview' && <PhysicalProgress pct={project.physicalProgressPct} />}
+              <AskButton question={summariseQuestion(project)} label="Summarise this week" title={SUMMARISE_TITLE} />
+              <LinkButton href={reportHref(project)} icon={<FilePdfOutlined />}>
+                Progress report
+              </LinkButton>
+              {editor && (
+                <Button icon={<EditOutlined />} onClick={() => setEditOpen(true)}>
+                  Edit
+                </Button>
+              )}
+            </Space>
+          )
         }
       />
       </div>

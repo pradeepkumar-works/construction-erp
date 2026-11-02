@@ -50,6 +50,8 @@ export interface FigureFacts<Id extends FigureId> {
   readonly versus?: Versus<KindOf<Id>>;
   /** A verdict from a domain rule; the measure's own flag or limit needs none */
   readonly attention?: Attention | Because;
+  /** A known fault in the records behind it, in words: "BOQ 47% below the contract value". The figure is drawn, marked. */
+  readonly caveat?: string;
 }
 
 /** Any registered figure, each with its own value type. The API sends these as they are. */
@@ -59,7 +61,7 @@ export type Figure = { [Id in FigureId]: FigureFacts<Id> }[FigureId];
 export type FigureInput = Figure | false | null | undefined;
 
 /** A bare verdict only beside a comparison, which says why; without one the verdict brings its own words (WCAG 1.4.1). */
-type FigureOptions<K extends FigureKind> = { readonly when?: FigureWhen; readonly count?: number } & (
+type FigureOptions<K extends FigureKind> = { readonly when?: FigureWhen; readonly count?: number; readonly caveat?: string } & (
   | { readonly versus: Versus<K>; readonly attention?: Attention }
   | { readonly versus?: undefined; readonly attention?: Because }
 );
