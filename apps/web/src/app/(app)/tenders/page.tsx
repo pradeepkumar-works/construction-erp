@@ -19,6 +19,7 @@ import {
   canViewTenders,
   rankLabel,
   sorPctLabel,
+  type ListViewKind,
   type TenderDto,
 } from "@erp/shared";
 import { useAuth } from "@/lib/auth";
@@ -42,9 +43,13 @@ import {
   TenderStatusTag,
 } from "@/components/tenders/tenderUi";
 import { TenderForm } from "@/components/tenders/TenderForm";
+import { TenderBoard } from "@/components/tenders/TenderBoard";
+import { ViewToggle } from "@/components/list/ListViewsOfData";
 import { Money } from '@/components/common/Money';
 
-const KEYS = ["status"] as const;
+const KEYS = ["status", "view"] as const;
+/** The register opens on its board: where each bid stands, and the rupees at each stage. */
+const VIEW_KINDS: readonly ListViewKind[] = ["board", "table"];
 const STATUS_OPTIONS = [
   { value: "open", label: "Open tenders" },
   { value: "PREPARING", label: TENDER_STATUS_LABELS.PREPARING },
@@ -73,7 +78,19 @@ function TendersPage() {
     sortBy: "submitBy",
     sortOrder: "asc",
   });
-  const status = (page.filters.status as string | undefined) ?? "open";
+  const view: ListViewKind =
+    page.filters.view === "table" ? "table" : "board";
+  const setView = (v: ListViewKind) =>
+    page.setFilter("view", v === VIEW_KINDS[0] ? undefined : v);
+  // The board lays out every stage, decided ones too; the table opens on the tenders still open.
+  const defaultStatus = view === "board" ? "all" : "open";
+  const status = (page.filters.status as string | undefined) ?? defaultStatus;
+  // Clearing the filters keeps the view: Board stays Board.
+  const empty = {
+    filtered: !!page.params.q || status !== defaultStatus,
+    clear: () =>
+      page.setFilters(page.filters.view ? { view: page.filters.view } : {}),
+  };
   const { data, isLoading, isFetching, error, refetch } = useTenders(
     { status, q: page.params.q },
     canView,
@@ -217,6 +234,18 @@ function TendersPage() {
   const rows = data?.items ?? [];
   const s = data?.summary;
 
+  const emptyText = (
+    <EmptyArt
+      art="entries"
+      title={
+        page.params.q
+          ? "No tender matches the search"
+          : status === "open"
+            ? "No open tender"
+            : "No tender here yet"
+      }
+    />
+  );
   const newButton = canManage ? (
     <Button
       type="primary"
@@ -296,45 +325,44 @@ function TendersPage() {
           onSearch={page.setSearch}
           searchPlaceholder="Search name of work, number, NIT or client"
           searchLabel="Search tenders"
+          view={<ViewToggle kinds={VIEW_KINDS} value={view} onChange={setView} />}
         >
           <Select
             aria-label="Tenders to show"
             style={{ width: 180 }}
             value={status}
             onChange={(v) =>
-              page.setFilter("status", v === "open" ? undefined : v)
+              page.setFilter("status", v === defaultStatus ? undefined : v)
             }
             options={STATUS_OPTIONS}
           />
         </ListToolbar>
-        <DataTable<TenderDto>
-          columns={columns}
-          visible={choice.visible}
-          onChooseColumns={choice.setChosen}
-          chosenIsDefault={choice.isDefault}
-          rows={rows}
-          loading={isLoading || isFetching}
-          table={{ pagination: false }}
-          onOpen={open}
-          empty={{
-            filtered: !!page.params.q || status !== "open",
-            clear: () => page.clear(),
-          }}
-          failed={!!error}
-          emptyText={
-            <EmptyArt
-              art="entries"
-              title={
-                page.params.q
-                  ? "No tender matches the search"
-                  : status === "open"
-                    ? "No open tender"
-                    : "No tender here yet"
-              }
-            />
-          }
-          emptyAction={newButton}
-        />
+        {view === "board" ? (
+          <TenderBoard
+            rows={rows}
+            loading={isLoading}
+            failed={!!error}
+            onOpen={open}
+            empty={empty}
+            emptyText={emptyText}
+            emptyAction={newButton}
+          />
+        ) : (
+          <DataTable<TenderDto>
+            columns={columns}
+            visible={choice.visible}
+            onChooseColumns={choice.setChosen}
+            chosenIsDefault={choice.isDefault}
+            rows={rows}
+            loading={isLoading || isFetching}
+            table={{ pagination: false }}
+            onOpen={open}
+            empty={empty}
+            failed={!!error}
+            emptyText={emptyText}
+            emptyAction={newButton}
+          />
+        )}
       </Card>
       <TenderForm
         open={adding}

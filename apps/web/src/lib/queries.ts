@@ -837,11 +837,12 @@ export const useMaterialRequests = (filters?: ListFilters) =>
 
 export const useMaterialRequest = (id: string | undefined) => useQuery({ ...recordQuery<MaterialRequestDto>('/material-requests', id), enabled: !!id });
 
-export const useAttendanceList = (filters?: AttendanceFilters) =>
+export const useAttendanceList = (filters?: AttendanceFilters, enabled = true) =>
   useQuery({
     queryKey: ['attendance', clean(filters)],
     queryFn: async () => (await api.get<Paginated<AttendanceSheetDto>>('/attendance', { params: clean(filters) })).data,
     placeholderData: keepPreviousData,
+    enabled,
   });
 
 /** The project's attendance for one day (`sheet: null` when not recorded), e.g. to fill DPR manpower. */

@@ -1,0 +1,154 @@
+/*
+ * Views that fit the data (ARCHITECTURE "Views that fit the data"): a board's stages side by side, each a column of
+ * cards headed by its count and rupees; on a phone the stages stack. The grid of sites by days scrolls in its own box.
+ */
+.board {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(12.5rem, 1fr);
+  gap: var(--s-3);
+  overflow-x: auto;
+  padding-block-end: var(--s-2);
+}
+
+.stack {
+  display: grid;
+  gap: var(--s-4);
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  min-width: 0;
+  padding: var(--s-3);
+  border-radius: var(--r-lg);
+  background: var(--c-surface-sunken);
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--s-2);
+}
+
+.cards {
+  display: grid;
+  gap: var(--s-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  padding: var(--s-3);
+  border: thin solid var(--c-line-hairline);
+  border-radius: var(--r-md);
+  background: var(--c-surface-base);
+}
+
+.none {
+  margin: 0;
+  color: var(--c-text-muted);
+}
+
+.gridBox {
+  --grid-place: 15rem;
+  --grid-day: 2.75rem;
+  position: relative;
+  overflow-x: auto;
+}
+
+.grid {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.placeCol {
+  width: var(--grid-place);
+}
+
+.grid th,
+.grid td {
+  padding: var(--s-2) var(--s-1);
+  border-block-end: thin solid var(--c-line-hairline);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.placeHead,
+.placeCell {
+  position: sticky;
+  inset-inline-start: 0;
+  z-index: 1;
+  padding-inline: var(--s-2) !important;
+  border-inline-end: thin solid var(--c-line-hairline);
+  text-align: start !important;
+  white-space: normal !important;
+  background: var(--c-surface-base);
+}
+
+.dayHead {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.weekday,
+.span {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--c-text-muted);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-1) var(--s-4);
+  margin: 0 0 var(--s-2);
+  padding: 0;
+  list-style: none;
+  font-size: 0.75rem;
+  color: var(--c-text-muted);
+}
+
+.legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+}
+
+.dot,
+.ring,
+.swatch {
+  display: inline-block;
+  flex: none;
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 50%;
+}
+
+.ring {
+  border: 0.125rem solid;
+}
+
+.swatch {
+  width: 0.875rem;
+  height: 0.875rem;
+  border-radius: var(--r-sm);
+  background: var(--c-surface-sunken);
+  border: thin solid var(--c-line-hairline);
+}
+
+.missing {
+  background: var(--c-surface-sunken);
+}
+
+/* On a phone the site column gives up room so a few days show beside it. */
+@media (max-width: 767px) {
+  .gridBox {
+    --grid-place: 8.5rem;
+  }
+}

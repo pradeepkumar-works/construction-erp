@@ -162,6 +162,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/waiting-rank-test.js
+      - name: A pipeline reads as a board with each stage counted, and sites by days show the day nothing was filed
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/list-views-test.js
       - name: Screens open on a month with figures in it, and history notes read rupees and days as people write them
         if: matrix.suite == 'flows'
         working-directory: apps/api
