@@ -87,6 +87,15 @@ export const SUBMISSION_STATUS_LABELS: Record<SubmissionStatus, string> = {
   CHANGES_REQUESTED: 'Changes requested',
 };
 
+/** One word for a status where the full one does not fit, as in a cell of sites by days; its name and hint keep the full label. */
+export const SUBMISSION_STATUS_SHORT_LABELS: Record<SubmissionStatus, string> = {
+  DRAFT: 'Draft',
+  SUBMITTED: 'Waiting',
+  APPROVED: 'Approved',
+  REJECTED: 'Rejected',
+  CHANGES_REQUESTED: 'Changes',
+};
+
 export const APPROVAL_STEP_ACTION_LABELS: Record<ApprovalStepAction, string> = { APPROVED: 'Approved', ESCALATED: 'Escalated', REMINDED: 'Reminded' };
 
 export const SUBMISSION_TYPE_LABELS: Record<SubmissionType, string> = {

@@ -7,7 +7,7 @@ const rows = (page: Page) => page.locator('.ant-table-tbody .ant-table-row');
 
 test('a view sets the filters, which go in the address bar and come back from a link', async ({ page }) => {
   await signIn(page, 'pm@demo.com');
-  await page.goto('/dpr');
+  await page.goto('/dpr?view=table');
   await page.getByRole('tab', { name: 'Waiting for me' }).click();
   await expect(page).toHaveURL(/\/dpr\?status=SUBMITTED$/);
   await expect(page.getByRole('tab', { name: 'Waiting for me' })).toHaveAttribute('aria-selected', 'true');
@@ -57,7 +57,7 @@ test('a view saved and shared shows for the company, and only its owner can chan
 
 test('columns can be hidden and stay hidden, and Reset brings them back', async ({ page }) => {
   await signIn(page, 'pm@demo.com');
-  await page.goto('/dpr');
+  await page.goto('/dpr?view=table');
   const header = page.locator('.ant-table-thead th').filter({ hasText: /^Work done$/ });
   await expect(header).toBeVisible();
   await page.getByRole('button', { name: 'Columns' }).click();
