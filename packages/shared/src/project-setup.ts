@@ -158,8 +158,8 @@ export type DataProblemKey = (typeof DATA_PROBLEMS)[number];
 
 /** The headline figures each problem makes wrong; the Overview marks them. */
 export const DATA_PROBLEM_AFFECTS: Record<DataProblemKey, readonly FigureId[]> = {
-  // Work done is counted at BOQ rates, and billed and cost are read against it.
-  boqOffContract: ['workDone', 'billed', 'cost'],
+  // Work done is counted at BOQ rates; billed and cost are right, and read against it in its words.
+  boqOffContract: ['workDone'],
   // Progress on an item no activity carries is never recorded.
   boqItemsWithoutActivity: ['physicalProgress', 'workDone'],
   // What is planned by today leaves out an activity with no dates.

@@ -107,7 +107,7 @@ test('problems that keep the figures wrong stand whatever the progress, each nam
   const f = { ...ready, boqTotal: 129_600_000, boqItemsWithoutActivity: 9, activitiesUndated: 3 };
   const problems = dataProblems(f);
   assert.deepEqual(problems.map((p) => [p.key, p.count, p.tab]), [['boqOffContract', null, 'boq'], ['boqItemsWithoutActivity', 9, 'activities'], ['activitiesUndated', 3, 'schedule']]);
-  assert.deepEqual(problems.find((p) => p.key === 'boqOffContract')!.affects, ['workDone', 'billed', 'cost']);
+  assert.deepEqual(problems.find((p) => p.key === 'boqOffContract')!.affects, ['workDone']);
   assert.ok(problems.find((p) => p.key === 'activitiesUndated')!.affects.includes('physicalProgress'));
   // The checklist hides from a tenth of the work on; the problems do not, as they read only the records.
   assert.ok(!setupShown({ type: 'ROAD', status: 'ACTIVE', physicalProgressPct: 64, hidden: true, done: 8, total: 11 }));

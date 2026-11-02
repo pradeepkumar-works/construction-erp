@@ -67,7 +67,7 @@ export function ProjectSetup({ project }: { project: ProjectDetail }) {
   return (
     <Section
       title="Set up this project"
-      style={{ marginBottom: token.margin }}
+      style={{ marginTop: token.margin }}
       extra={
         <Button
           size="small"

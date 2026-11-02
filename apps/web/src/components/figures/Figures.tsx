@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Card, Skeleton } from 'antd';
 import { presentFigures, type ContractCurrency, type FigureInput, type FigureScope, type FigureState, type FigureView, type Words } from '@erp/shared';
 import { tk } from '@/ds';
+import { ExclamationCircleOutlined } from '@/components/common/icons';
 import { todayDate } from '@/lib/format';
 import styles from './Figures.module.css';
 
@@ -61,7 +62,8 @@ function hairlines(spans: readonly number[], columns: number): string[] {
 /**
  * The one headline-figure block (ARCHITECTURE "Headline figures"): the presenter's words, colours, lead and spans drawn
  * as a `dl`, the figure that needs action first and larger, flag figures at zero in one quiet line under it. Colour
- * means "look here" (danger to act, pending to watch, muted for a zero), never good news.
+ * means "look here" (danger to act, pending to watch, muted for a zero), never good news. A figure the records make
+ * wrong carries its caveat under it, marked in the pending tone with the reason in words.
  */
 export function Figures({ label, figures, scope, currency, bare }: FiguresProps) {
   const frame = (body: React.ReactNode) => (bare ? body : <Card size="small" styles={{ body: { padding: 0 } }}>{body}</Card>);
@@ -110,6 +112,12 @@ export function Figures({ label, figures, scope, currency, bare }: FiguresProps)
               {c.note && (
                 <dd className={styles.note} style={{ ...tk.type.caption, color: NOTE_COLOR[c.noteState] }}>
                   <Say w={c.note} />
+                </dd>
+              )}
+              {c.caveat && (
+                <dd className={`${styles.note} figure-caveat`} style={{ ...tk.type.caption, color: tk.color.tone.pending.fg, display: 'flex', gap: tk.space[1], alignItems: 'baseline' }}>
+                  <ExclamationCircleOutlined aria-hidden />
+                  <Say w={c.caveat} />
                 </dd>
               )}
             </div>
