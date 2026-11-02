@@ -1,5 +1,6 @@
-import type { NavLayout, NavLook, NavModuleSet } from './enums';
-import { NAV_LOOKS, NAV_MODULE_SETS, NAV_LAYOUTS } from './enums';
+import type { NavLayout, NavLook, NavModuleSet, NavPalette, NavSidebarLook } from './enums';
+import { NAV_LOOKS, NAV_MODULE_SETS, NAV_LAYOUTS, NAV_PALETTES, NAV_SIDEBAR_LOOKS } from './enums';
+import { readNavFill, type NavFill } from './nav-colours';
 import type { NavFamily, NavNode, NavUser } from './navigation';
 import { NAV_TREE, canSeeNav, navNode, navNodeAt } from './navigation';
 import type { SubmissionType } from './enums';
@@ -21,6 +22,12 @@ import { PRODUCT_NAME } from './brand';
 export interface NavSettingsDto {
   layout: NavLayout;
   look: NavLook;
+  /** How the sidebar sits, when the menu is down the side */
+  sidebarLook: NavSidebarLook;
+  /** The menu's colours: a curated palette, or `CUSTOM` with the company's own `fill` */
+  palette: NavPalette;
+  /** The company's own plain colour or gradient; set only with `palette: 'CUSTOM'` */
+  fill: NavFill | null;
   moduleSet: NavModuleSet;
   /** The company's names for modules, by module key (either set's); a key left out keeps the set's name */
   names: Record<string, string>;
@@ -29,7 +36,7 @@ export interface NavSettingsDto {
 }
 
 /** A company that has not chosen keeps the sidebar it had; the top bar starts in the navy look. */
-export const DEFAULT_NAV_SETTINGS: NavSettingsDto = { layout: 'SIDEBAR', look: 'NAVY', moduleSet: 'AREAS', names: {}, personalLook: false };
+export const DEFAULT_NAV_SETTINGS: NavSettingsDto = { layout: 'SIDEBAR', look: 'NAVY', sidebarLook: 'RAIL', palette: 'QUIET', fill: null, moduleSet: 'AREAS', names: {}, personalLook: false };
 
 export const NAV_NAME_MAX = 40;
 
@@ -533,12 +540,27 @@ export function cleanNavNames(names: Record<string, string>): Record<string, str
 }
 
 /** Settings read from the database, with anything unknown (an older value) back to the default. */
-export function navSettingsFrom(row: { navLayout?: string | null; navLook?: string | null; navModuleSet?: string | null; navNames?: unknown; navPersonalLook?: boolean | null }): NavSettingsDto {
+export function navSettingsFrom(row: {
+  navLayout?: string | null;
+  navLook?: string | null;
+  navSidebarLook?: string | null;
+  navPalette?: string | null;
+  navFill?: unknown;
+  navModuleSet?: string | null;
+  navNames?: unknown;
+  navPersonalLook?: boolean | null;
+}): NavSettingsDto {
   const d = DEFAULT_NAV_SETTINGS;
   const names = row.navNames && typeof row.navNames === 'object' && !Array.isArray(row.navNames) ? (row.navNames as Record<string, unknown>) : {};
+  const fill = readNavFill(row.navFill);
+  const palette = (NAV_PALETTES as readonly string[]).includes(row.navPalette ?? '') ? (row.navPalette as NavPalette) : d.palette;
+  // A company colour that no longer reads back (or is missing) falls back to Nirmaan's own.
+  const colours = palette === 'CUSTOM' ? (fill ? { palette, fill } : { palette: d.palette, fill: null }) : { palette, fill: null };
   return {
     layout: (NAV_LAYOUTS as readonly string[]).includes(row.navLayout ?? '') ? (row.navLayout as NavLayout) : d.layout,
     look: (NAV_LOOKS as readonly string[]).includes(row.navLook ?? '') ? (row.navLook as NavLook) : d.look,
+    sidebarLook: (NAV_SIDEBAR_LOOKS as readonly string[]).includes(row.navSidebarLook ?? '') ? (row.navSidebarLook as NavSidebarLook) : d.sidebarLook,
+    ...colours,
     moduleSet: (NAV_MODULE_SETS as readonly string[]).includes(row.navModuleSet ?? '') ? (row.navModuleSet as NavModuleSet) : d.moduleSet,
     names: cleanNavNames(Object.fromEntries(Object.entries(names).filter((e): e is [string, string] => typeof e[1] === 'string'))),
     personalLook: !!row.navPersonalLook,
@@ -547,7 +569,13 @@ export function navSettingsFrom(row: { navLayout?: string | null; navLook?: stri
 
 /** Whether a company's choice is the default (so the sign-in leaves it out). */
 export const isDefaultNav = (s: NavSettingsDto) =>
-  s.layout === DEFAULT_NAV_SETTINGS.layout && s.look === DEFAULT_NAV_SETTINGS.look && s.moduleSet === DEFAULT_NAV_SETTINGS.moduleSet && !s.personalLook && Object.keys(s.names).length === 0;
+  s.layout === DEFAULT_NAV_SETTINGS.layout &&
+  s.look === DEFAULT_NAV_SETTINGS.look &&
+  s.sidebarLook === DEFAULT_NAV_SETTINGS.sidebarLook &&
+  s.palette === DEFAULT_NAV_SETTINGS.palette &&
+  s.moduleSet === DEFAULT_NAV_SETTINGS.moduleSet &&
+  !s.personalLook &&
+  Object.keys(s.names).length === 0;
 
 /** Administration › Masters: each department's Masters sub-module, with only the pages this user may open. */
 export function mastersByDepartment(user: NavUser): { module: NavModuleDef; nodes: NavNode[] }[] {
