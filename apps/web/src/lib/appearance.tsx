@@ -2,7 +2,7 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { App as AntApp, ConfigProvider } from 'antd';
-import { componentConfig, cssVariablesFor, makeTheme } from './theme';
+import { componentConfig, makeTheme } from './theme';
 import { renderEmpty } from '@/components/common/renderEmpty';
 import { resolve } from '@/ds';
 
@@ -112,7 +112,7 @@ export function AppearanceProvider({ children }: { children: React.ReactNode }) 
       document.querySelector('meta[name="theme-color"]')?.setAttribute('content', resolve('light').color.surface.canvas);
     };
   }, [dark, compact]);
-  const css = useMemo(() => `${cssVariablesFor(config)}:root{color-scheme:${dark ? 'dark' : 'light'}}`, [config, dark]);
+  const css = `:root{color-scheme:${dark ? 'dark' : 'light'}}`;
   const value = useMemo(() => ({ prefs, dark, setPrefs }), [prefs, dark, setPrefs]);
 
   return (

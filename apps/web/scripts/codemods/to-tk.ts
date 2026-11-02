@@ -1,7 +1,7 @@
 /**
  * Moves a screen's styles onto the design tokens (docs/design/REDESIGN.md, PR 8):
  *
- *   npx tsx --tsconfig tsconfig.json scripts/codemods/to-tk.ts [--write] [--prune] <file or folder>…
+ *   npx tsx --tsconfig tsconfig.json scripts/codemods/to-tk.ts [--write] <file or folder>…
  *
  * What it rewrites, only inside a `style` / `styles` value, a `React.CSSProperties` object or a `Flex`'s `gap`:
  * - antd's tokens from `theme.useToken()` (`token.marginSM`, `token.colorTextSecondary`, `token.fontSizeSM`…) and the
@@ -11,11 +11,10 @@
  * - `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}` to `tk.line('hairline')`.
  * Then it drops a `theme.useToken()` nothing reads, the imports nothing uses, and adds `tk`. Anything off the scale, in
  * arithmetic, or passed where a number is needed (antd's `Space size`, `Row gutter`, a chart) is left for a person, and
- * listed. `--prune` takes the files lint then passes off `src/ds/legacy-files.json`. Without `--write` it only reports.
+ * listed. Without `--write` it only reports. Every screen is on the tokens now; it stays for a branch written before them.
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
 import ts from 'typescript';
 
 const WEB = path.resolve(__dirname, '../..');
@@ -333,15 +332,12 @@ function filesUnder(p: string): string[] {
 function main() {
   const args = process.argv.slice(2);
   const write = args.includes('--write');
-  const prune = args.includes('--prune');
   const targets = args.filter((a) => !a.startsWith('--'));
   if (!targets.length) {
-    console.error('Usage: to-tk.ts [--write] [--prune] <file or folder>…');
+    console.error('Usage: to-tk.ts [--write] <file or folder>…');
     process.exit(2);
   }
-  const legacyPath = path.join(WEB, 'src/ds/legacy-files.json');
-  const legacy: string[] = JSON.parse(fs.readFileSync(legacyPath, 'utf8'));
-  const files = targets.flatMap(filesUnder).filter((f) => legacy.includes(path.relative(WEB, f)));
+  const files = targets.flatMap(filesUnder);
   let changed = 0;
   const left: string[] = [];
   for (const f of files) {
@@ -353,20 +349,8 @@ function main() {
       if (write) fs.writeFileSync(f, r.text);
     }
   }
-  console.log(`to-tk: ${files.length} legacy files read, ${changed} ${write ? 'rewritten' : 'would change'}.`);
+  console.log(`to-tk: ${files.length} files read, ${changed} ${write ? 'rewritten' : 'would change'}.`);
   if (left.length) console.log(`Left for a person (${left.length}):\n  ${left.join('\n  ')}`);
-  if (prune && write) {
-    // A file leaves the legacy list once lint finds nothing of the old surface in it.
-    const rel = files.map((f) => path.relative(WEB, f));
-    const without = legacy.filter((f) => !rel.includes(f));
-    fs.writeFileSync(legacyPath, JSON.stringify(without, null, 1) + '\n');
-    const run = spawnSync('npx', ['eslint', '-f', 'json', ...rel], { cwd: WEB, encoding: 'utf8', maxBuffer: 1 << 28 });
-    const report: { filePath: string; messages: { ruleId: string | null }[] }[] = JSON.parse(run.stdout);
-    const dirty = new Set(report.filter((r) => r.messages.some((m) => m.ruleId === 'ds/no-raw-style')).map((r) => path.relative(WEB, r.filePath)));
-    const next = legacy.filter((f) => !rel.includes(f) || dirty.has(f));
-    fs.writeFileSync(legacyPath, JSON.stringify(next, null, 1) + '\n');
-    console.log(`to-tk: ${legacy.length - next.length} files left the legacy list; ${dirty.size} still need a person.`);
-  }
 }
 
 if (require.main === module) main();

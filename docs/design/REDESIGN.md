@@ -145,9 +145,12 @@ runs and is committed with the last PR.
   - The website's hero gives its words seven twelfths of the row so the headline holds to two lines at 1440.
   - 20 files leave the legacy list (21 to 1). The `/design` reference page describes the old names, so it is
     rewritten in PR 16.
-- [ ] PR 16. Delete `BRAND.colors`, `familyColors`, `themeColor`, `themeFontSize`, `cssVariablesFor`, the `--brand-*` and
-  mirrored `--ant-*` variables and `legacy-files.json`; the `/design` page shows the new tokens. Lint goes to error
-  with no exceptions. Commit the decision trail.
+- [x] PR 16. Deleted `BRAND.colors`, `themeColor`, `themeFontSize`, `cssVariablesFor`, the `--brand-*` and mirrored
+  `--ant-*` variables on `:root` and `legacy-files.json`; `BRAND` keeps the name, wordmark and description. The `/design`
+  page shows the colour roles (`tk.color`, with each value in the current theme) and the ten type styles. `ds/no-raw-style`
+  holds every file under `src` with no list (the token sources and the pdfmake writer aside) and still refuses the old
+  names; `tokens-check` holds every CSS file. The codemod stays, without its list, for a branch written before the
+  tokens. The decision trail is committed at `.audit/ui-redesign.tsv`.
 
 ## Appendix A. The shape (from a two-runner arena, synthesized)
 

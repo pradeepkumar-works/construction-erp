@@ -3990,7 +3990,7 @@ days; it is claimed for delays in the register, or for the added work of a varia
   `/management/reports/[key]` (period and project in the address, `useProjectScope`; Print opens the brand's A4 page from
   `components/management/reportOutput.ts`, Excel writes a summary sheet and a sheet per section with numbers kept as
   numbers). A wide section reads its money in lakhs and crores on the screen; print and Excel keep rupees. The trend's
-  colours are `BRAND.colors.trend…`, checked for colour-blind separation in both themes. A new report is a key and an
+  colours are the `series.trend` roles (`src/ds`), checked for colour-blind separation in both themes. A new report is a key and an
   entry in `MANAGEMENT_REPORTS`, a builder in `ManagementReportsService`, and a node under Reports in the navigation tree.
 - **Not yet.** The phone, a scheduled email of the MIS, and a budget for the company as a whole.
 

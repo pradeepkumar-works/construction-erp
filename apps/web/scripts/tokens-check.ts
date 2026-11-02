@@ -2,20 +2,15 @@
  * Checks the design tokens (docs/design/REDESIGN.md). CI runs it:
  *   cd apps/web && npx tsx --tsconfig tsconfig.json scripts/tokens-check.ts
  * - every text role reads at 4.5:1 on every surface it sits on, in both themes, and each tone's text on its own fill;
- * - src/ds/legacy-files.json only shrinks: a listed file that no longer breaks `ds/no-raw-style` must leave the list,
- *   and every listed file must exist;
- * - a CSS file not on the list holds no colour literal and no px size outside 1px lines and media queries.
+ * - a CSS file holds no colour literal and no px size outside 1px lines and media queries (TS and TSX files are
+ *   held to the tokens by ESLint's `ds/no-raw-style`).
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { ESLint } from 'eslint';
-import tseslint from 'typescript-eslint';
 import { resolve, type Mode } from '../src/ds/engine';
 import { TONES } from '../src/ds/source/roles';
-import ds from '../eslint-rules/ds.mjs';
 
 const WEB = path.resolve(__dirname, '..');
-const LEGACY_PATH = path.join(WEB, 'src/ds/legacy-files.json');
 const problems: string[] = [];
 
 type Rgba = [number, number, number, number];
@@ -103,44 +98,20 @@ function cssFiles(dir: string): string[] {
   });
 }
 
-async function checkLegacy() {
-  const legacy: string[] = JSON.parse(fs.readFileSync(LEGACY_PATH, 'utf8'));
-  const sorted = [...legacy].sort();
-  if (legacy.some((f, i) => f !== sorted[i])) problems.push('src/ds/legacy-files.json: keep the list sorted');
-  const missing = legacy.filter((f) => !fs.existsSync(path.join(WEB, f)));
-  missing.forEach((f) => problems.push(`${f} is on src/ds/legacy-files.json but no longer exists; take it off`));
-
-  const scripts = legacy.filter((f) => /\.tsx?$/.test(f) && !missing.includes(f));
-  const eslint = new ESLint({
-    cwd: WEB,
-    overrideConfigFile: true,
-    allowInlineConfig: false,
-    overrideConfig: { files: ['src/**/*.{ts,tsx}'], languageOptions: { parser: tseslint.parser }, plugins: { ds }, rules: { 'ds/no-raw-style': 'error' } },
-  });
-  for (const result of await eslint.lintFiles(scripts)) {
-    if (!result.messages.some((m) => m.ruleId === 'ds/no-raw-style')) {
-      problems.push(`${path.relative(WEB, result.filePath)} is on the tokens now; take it off src/ds/legacy-files.json`);
-    }
-  }
-
-  for (const file of cssFiles('src')) {
-    const found = cssProblems(file);
-    const listed = legacy.includes(file);
-    if (listed && !found.length && !missing.includes(file)) problems.push(`${file} is on the tokens now; take it off src/ds/legacy-files.json`);
-    if (!listed) problems.push(...found);
-  }
+/** Every CSS file reads the tokens' variables: no colour literal, no px size outside 1px lines and media queries. */
+function checkCss() {
+  for (const file of cssFiles('src')) problems.push(...cssProblems(file));
 }
 
-async function main() {
+function main() {
   checkContrast('light');
   checkContrast('dark');
-  await checkLegacy();
+  checkCss();
   if (problems.length) {
     console.error(problems.map((p) => `- ${p}`).join('\n'));
     process.exit(1);
   }
-  const legacy: string[] = JSON.parse(fs.readFileSync(LEGACY_PATH, 'utf8'));
-  console.log(`tokens-check: contrast holds in both themes; ${legacy.length} files still to move onto tk.`);
+  console.log('tokens-check: contrast holds in both themes, and every CSS file reads the tokens.');
 }
 
-void main();
+main();
