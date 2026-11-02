@@ -8,7 +8,7 @@ import { AppTag } from '@/components/common/AppTag';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ContractCurrency, RaBillDto, RaBillItemDto, RaBillStageLineDto, ReceiptDto } from '@erp/shared';
-import { GST_STATES, RECEIPT_MODE_LABELS, canEditSubmission, canPrepareBill, canRecordReceipt, canResubmit, isForeign, unitLabel } from '@erp/shared';
+import { GST_STATES, RECEIPT_MODE_LABELS, figure, canEditSubmission, canPrepareBill, canRecordReceipt, canResubmit, isForeign, unitLabel } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
@@ -28,7 +28,8 @@ import { BillStages, SlippageNotes } from './BillStages';
 import { ObligationRecoveryNotes } from './BillRecoveries';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
-import { checksSection } from '@/components/checks/ChecksSection';
+import { checksSection, useChecksFigure } from '@/components/checks/ChecksSection';
+import { projectContext } from '@/components/record/RecordParts';
 import { AskButton } from '@/components/ai/AskButton';
 import { submissionLifecycle } from '@/components/record/lifecycle';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
@@ -71,6 +72,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
   const accounts = !!user && canRecordReceipt(user.roleKey);
   const [paying, setPaying] = useState(false);
   const [correcting, setCorrecting] = useState<ReceiptDto | null>(null);
+  const checks = useChecksFigure('ra-bill', id ?? undefined, dataUpdatedAt);
 
   const done = (text: string) => {
     message.success(text);
@@ -128,6 +130,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
   const certified = !!data?.items.some((i) => i.certifiedQty !== null);
   const stageClaims = data?.stageLines.filter((l) => toNumber(l.thisPct) > 0) ?? [];
   const stageAt = data ? (['NOT_SENT', 'SENT', 'CERTIFIED', 'PAID'] as const).indexOf(data.stage) : 0;
+  const withClient = approved && data?.stage !== 'NOT_SENT';
 
   const dateItem = (
     <Form.Item name="date" label={action === 'send' ? 'Date sent' : 'Certificate date'} rules={[{ required: true, message: 'Choose the date' }]}>
@@ -150,6 +153,8 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
         data && {
           href: `/bills/${data.id}`,
           title: data.billLabel,
+          context: projectContext(data),
+          headline: [figure('netPayable', data.netPayable), withClient && figure('stillToReceive', data.outstanding), checks],
           tags: (
             <>
               <StatusTag status={data.status} /> {approved && <BillStageTag stage={data.stage} />}
@@ -185,9 +190,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
             </>
           ),
           facts: [
-            { key: 'net', label: 'Net payable', children: <strong>{money(data.netPayable, data)}</strong> },
             ...(isForeign(data) ? [{ key: 'fx', label: 'Contract rate', children: <span className="mono" translate="no">{`${formatINR(data.exchangeRate, true)} to 1 ${data.currency}; ${formatINR(data.netPayable, true)} net`}</span> }] : []),
-            { key: 'project', label: 'Project', children: <Link href={`/projects/${data.projectId}?tab=bills`}>{data.projectName}</Link>, span: 2 },
             { key: 'billDate', label: 'Bill date', children: formatDate(data.billDate) },
             {
               key: 'client',
@@ -205,11 +208,13 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
             data.om
               ? { key: 'upto', label: 'O&M period', children: `${data.om.label}, to ${formatDate(data.om.to)}` }
               : { key: 'upto', label: 'Measurements up to', children: formatDate(data.measuredUpTo) },
+            ...submissionMetaItems(data),
+          ],
+          details: [
             { key: 'agreement', label: 'Agreement', children: data.agreementNo ? `${data.agreementNo}${data.agreementDate ? `, ${formatDate(data.agreementDate)}` : ''}` : NO_VALUE },
             { key: 'wo', label: 'Work order', children: data.workOrderNo ?? NO_VALUE },
             ...(data.om ? [] : [{ key: 'sheets', label: 'Measurement sheets', children: data.measurementCount }]),
             ...(data.remarks ? [{ key: 'remarks', label: 'Remarks', children: data.remarks, span: 3 }] : []),
-            ...submissionMetaItems(data).filter((i) => i.key !== 'status' && i.key !== 'project'),
           ],
           lifecycle: submissionLifecycle(data, [
             { title: 'Sent', done: stageAt >= 1, content: data.sentDate ? formatDate(data.sentDate) : undefined },
@@ -239,7 +244,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                     size="small"
                     pagination={false}
                     dataSource={data.items}
-                    scroll={{ x: 1100 }}
+                    scroll={{ x: 760 }}
                     columns={[
                       {
                         title: 'Item',
@@ -252,12 +257,12 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                       },
                       { title: 'BOQ qty', dataIndex: 'boqQty', width: 100, align: 'right', render: (v, i) => <span className="mono" translate="no">{formatQty(v)} {i.unit}</span> },
                       { title: 'Rate', dataIndex: 'rate', width: 100, align: 'right', render: (v) => <span className="mono" translate="no">{formatMoney(v, data, true)}</span> },
-                      { title: 'Previous', dataIndex: 'prevQty', width: 90, align: 'right', render: (v) => <span className="mono" translate="no">{formatQty(v)}</span> },
-                      { title: 'This bill', dataIndex: 'thisQty', width: 90, align: 'right', render: (v) => <strong className="mono" translate="no">{formatQty(v)}</strong> },
+                      { title: 'Previous', dataIndex: 'prevQty', width: 100, align: 'right', render: (v, i) => <span className="mono" translate="no">{formatQty(v)} {i.unit}</span> },
+                      { title: 'This bill', dataIndex: 'thisQty', width: 100, align: 'right', render: (v, i) => <span className="mono" translate="no">{formatQty(v)} {i.unit}</span> },
                       ...(certified
-                        ? [{ title: 'Certified', dataIndex: 'certifiedQty', width: 90, align: 'right' as const, render: (v: string | null, i: RaBillItemDto) => <span className="mono" translate="no" style={v !== null && v !== i.thisQty ? { color: themeColor('colorErrorText') } : undefined}>{formatQty(v)}</span> }]
+                        ? [{ title: 'Certified', dataIndex: 'certifiedQty', width: 100, align: 'right' as const, render: (v: string | null, i: RaBillItemDto) => <span className="mono" translate="no" style={v !== null && v !== i.thisQty ? { color: themeColor('colorErrorText') } : undefined}>{v === null ? formatQty(v) : `${formatQty(v)} ${i.unit}`}</span> }]
                         : []),
-                      { title: 'Up to date', dataIndex: 'uptoQty', width: 100, align: 'right', render: (v) => <span className="mono" translate="no">{formatQty(v)}</span> },
+                      { title: 'Up to date', dataIndex: 'uptoQty', width: 110, align: 'right', render: (v, i) => <span className="mono" translate="no">{formatQty(v)} {i.unit}</span> },
                       { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong className="mono" translate="no">{formatMoney(v, data, true)}</strong> },
                     ]}
                   />
@@ -310,26 +315,28 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                 </div>
               ),
             },
-            ...(approved && data.receipts && data.stage !== 'NOT_SENT'
+            ...(withClient && data.receipts
               ? [
                   {
                     key: 'payments',
                     title: 'Money received',
                     count: data.receipts.length,
+                    empty: data.receipts.length === 0,
                     children: (
                       <Table<ReceiptDto>
                         rowKey="id"
                         size="small"
                         pagination={false}
                         dataSource={data.receipts}
+                        scroll={{ x: 700 }}
                         locale={{ emptyText: 'No money received yet' }}
                         columns={[
                           { title: 'Date', dataIndex: 'receiptDate', width: 110, render: (v) => formatDate(v) },
                           { title: 'Mode', dataIndex: 'mode', width: 80, render: (v: ReceiptDto['mode']) => RECEIPT_MODE_LABELS[v] },
                           { title: 'Reference', dataIndex: 'reference', render: (v) => (v ? <span className="mono" translate="no">{v}</span> : NO_VALUE) },
-                          { title: 'Received', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong className="mono" translate="no">{formatMoney(v, data, true)}</strong> },
-                          { title: 'Deducted', dataIndex: 'deductedAmount', width: 130, align: 'right', render: (v) => <span className="mono" translate="no">{formatMoney(v, data, true)}</span> },
                           { title: 'By', dataIndex: 'createdByName', width: 140 },
+                          { title: 'Deducted', dataIndex: 'deductedAmount', width: 130, align: 'right', render: (v) => <span className="mono" translate="no">{formatMoney(v, data, true)}</span> },
+                          { title: 'Received', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong className="mono" translate="no">{formatMoney(v, data, true)}</strong> },
                           ...(accounts
                             ? [{ title: '', key: 'edit', width: 70, render: (_: unknown, r: ReceiptDto) => (r.exportedToTally ? <InTallyTag /> : <Button size="small" type="link" onClick={() => setCorrecting(r)}>Edit</Button>) }]
                             : []),
@@ -343,6 +350,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
               key: 'measurements',
               title: 'Measurements billed',
               count: data.measurements?.length ?? 0,
+              empty: !data.measurements?.length,
               children: (
                 <Table
                   rowKey="id"
@@ -359,7 +367,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                 />
               ),
             },
-            { key: 'documents', title: 'Documents', count: data.attachments.length, children: <AttachmentGallery attachments={data.attachments} /> },
+            { key: 'documents', title: 'Documents', count: data.attachments.length, empty: data.attachments.length === 0, children: <AttachmentGallery attachments={data.attachments} emptyText="No documents" /> },
           ].filter((s) => !data.om || (s.key !== 'abstract' && s.key !== 'measurements')),
           activity: { type: 'bill', id: data.id, submission: data },
           actions: (size) => (

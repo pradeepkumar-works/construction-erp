@@ -15,7 +15,7 @@ import { EditResubmitButton } from '@/components/common/EditResubmitButton';
 import { submissionMetaItems } from '@/components/common/SubmitterInfo';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
 import { submissionLifecycle } from '@/components/record/lifecycle';
-import { themeFontSize } from '@/lib/theme';
+import { tk } from '@/ds';
 
 const h = (v: string) => `${formatQty(v)} h`;
 
@@ -27,7 +27,7 @@ function EngineFact({ log }: { log: MachineryLogDto }) {
     <span>
       {`${h(e.engineHours)}${e.idleHours !== null ? `, ${h(e.idleHours)} idle` : ''}${e.meterStart !== null ? `, meter ${formatQty(e.meterStart)} → ${formatQty(e.meterEnd ?? e.meterStart)}` : ''}`}
       {above !== null || (e.outsideSite && e.farthestM !== null) ? (
-        <span style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 4 }}>
+        <span style={{ display: 'flex', gap: tk.space[1], flexWrap: 'wrap', marginTop: tk.space[1] }}>
           {above !== null ? <AppTag meaning="failed">{`Log ${formatQty(above)} h above the engine`}</AppTag> : null}
           {e.outsideSite && e.farthestM !== null ? <AppTag meaning="waiting">{`${distanceText(e.farthestM)} from the site`}</AppTag> : null}
         </span>
@@ -63,10 +63,9 @@ export function MachineryRecord({ id, mode, open, onClose, onEdit }: RecordProps
           href: `/machinery/${data.id}`,
           title: `${formatDate(data.date)} · ${data.equipmentCode}`,
           tags: <StatusTag status={data.status} />,
+          context: { label: data.projectName, href: `/projects/${data.projectId}` },
           facts: [
             { key: 'eq', label: 'Equipment', children: `${data.equipmentCode} ${data.equipmentName} (${inSentence(EQUIPMENT_OWNERSHIP_LABELS[data.ownership])})` },
-            { key: 'date', label: 'Date', children: formatDate(data.date) },
-            { key: 'op', label: 'Operator', children: data.operatorName ?? NO_VALUE },
             { key: 'worked', label: 'Hours worked', children: h(data.hoursWorked) },
             { key: 'idle', label: 'Idle', children: h(data.idleHours) },
             { key: 'down', label: 'Breakdown', children: h(data.breakdownHours) },
@@ -78,10 +77,11 @@ export function MachineryRecord({ id, mode, open, onClose, onEdit }: RecordProps
               children: data.meterStart === null && data.meterEnd === null ? NO_VALUE : `${data.meterStart ?? '?'} → ${data.meterEnd ?? '?'}${meterRun !== null ? ` (${formatQty(meterRun)})` : ''}`,
             },
             ...(data.engine ? [{ key: 'engine', label: 'Engine (tracker)', children: <EngineFact log={data} /> }] : []),
-            { key: 'activity', label: 'Activity', children: data.activityName ?? NO_VALUE },
+            ...(data.activityName ? [{ key: 'activity', label: 'Activity', children: data.activityName }] : []),
             ...(data.vendorBillId ? [{ key: 'bill', label: 'Billed on', children: <Link href={`/vendor-bills/${data.vendorBillId}`} className="mono">{data.vendorBillNo}</Link> }] : []),
-            ...submissionMetaItems(data).filter((i) => i.key !== 'status'),
+            ...submissionMetaItems(data),
           ],
+          details: data.operatorName ? [{ key: 'op', label: 'Operator', children: data.operatorName }] : [],
           lifecycle: submissionLifecycle(data),
           sections: [
             ...(data.workDone ? [{ key: 'work', title: 'Work done', children: <div style={{ whiteSpace: 'pre-wrap' }}>{data.workDone}</div> }] : []),
@@ -91,10 +91,11 @@ export function MachineryRecord({ id, mode, open, onClose, onEdit }: RecordProps
               key: 'photos',
               title: 'Photos',
               count: data.attachments.length,
+              empty: data.attachments.length === 0,
               children: (
                 <>
                   <AttachmentGallery attachments={data.attachments} />
-                  <Typography.Text type="secondary" style={{ display: 'block', fontSize: themeFontSize('fontSizeSM') }}>
+                  <Typography.Text type="secondary" style={{ display: 'block', ...tk.type.caption }}>
                     Log ID: {data.id}
                   </Typography.Text>
                 </>

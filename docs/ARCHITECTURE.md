@@ -293,6 +293,24 @@ rupees and says its count in words ("3 bills"); one past its mark says Overdue. 
 `figuresFirst` (`homeLayout`), so My work opens on the figures. A count that is information, not a decision (the watch
 list's), is plain text on a tile, never a red badge. `src/scripts/waiting-rank-test.ts` (CI) holds the order.
 
+### Records lead with the decision
+
+A record (`RecordFrame`, every submission and document: DPR, RA bill, order, indent…) reads top down in the order a
+decision needs. Under the title is what it belongs to (`context`: the project, linked), and one tag says where it stands.
+Then its `headline`: the one to three figures the decision rests on, as registry figures (`figure()`, the "One record"
+group in `MEASURES`: net payable, still to receive or pay, order value, received, billed above received, checks to look at,
+amount claimed, measured value, work lines) drawn by the one `<Figures>` block. Then the facts that decide, with reference
+facts (agreement, work order, form, address, terms, weather) folded under Details, and the stage bar. Who submitted and
+reviewed, and when, is History's alone: the frame leaves the status, `by` and `reviewed` facts of `submissionMetaItems`
+out, and lifts a `project` fact into the line under the title when the record gives no context of its own.
+
+Checks come first among the sections, and a record whose checks found nothing says so (a DPR's "Every check passes"), so
+clean never reads as unchecked. A section with nothing in it is `empty`: it leaves the page and the anchor bar for one
+line, "Nothing yet: Photos, Documents, Comments", where each name opens it in place, so the first photo or comment is
+still a tap away. An order puts its sections in the order of its stage (before approval: items, quotations, budget; after:
+items with what has come and been billed, then bills, receipts, dispatch), and a line billed above what was received says
+so in words.
+
 ### Launcher Home, pins and Recent (launcher phase 2)
 
 Home (`app/(app)/page.tsx`, `components/launcher/HomeLauncher.tsx`) is a launcher: a greeting (the page's `<h1>`), a search

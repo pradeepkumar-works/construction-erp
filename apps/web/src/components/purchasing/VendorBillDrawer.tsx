@@ -7,7 +7,7 @@ import { AppTag } from '@/components/common/AppTag';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { VendorBillDto, VendorBillLineDto, VendorBillSourceDto } from '@erp/shared';
-import { EXPENSE_CATEGORY_LABELS, MATCH_STATE_LABELS, MSME_CATEGORY_LABELS, VENDOR_BILL_KIND_LABELS, canEditSubmission, canRecordVendorBill, canResubmit, canViewPaymentRequests, canViewPayables } from '@erp/shared';
+import { EXPENSE_CATEGORY_LABELS, MATCH_STATE_LABELS, MSME_CATEGORY_LABELS, VENDOR_BILL_KIND_LABELS, canEditSubmission, canRecordVendorBill, canResubmit, canViewPaymentRequests, canViewPayables, figure } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
@@ -19,10 +19,11 @@ import { ReviewActions } from '@/components/common/ReviewActions';
 import { EditResubmitButton } from '@/components/common/EditResubmitButton';
 import { submissionMetaItems } from '@/components/common/SubmitterInfo';
 import { BillPayments, PaidTag } from '@/components/payables/BillPayments';
-import { TargetRequests } from '@/components/payables/TargetRequests';
+import { TargetRequests, useTargetRequests } from '@/components/payables/TargetRequests';
 import { BillDebitNotes, showsDebitNotes } from '@/components/payables/BillDebitNotes';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
-import { checksSection } from '@/components/checks/ChecksSection';
+import { checksSection, useChecksFigure } from '@/components/checks/ChecksSection';
+import { projectContext } from '@/components/record/RecordParts';
 import { submissionLifecycle } from '@/components/record/lifecycle';
 import { themeFontSize } from '@/lib/theme';
 import { Section } from '@/components/common/Section';
@@ -96,6 +97,8 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
   const debited = data ? toNumber(data.debitNoteAmount) : 0;
   const withPo = !!data?.purchaseOrderId;
   const notes = !!data && showsDebitNotes(user?.roleKey, data.status);
+  const asked = useTargetRequests({ vendorBillId: data?.id }, !!requests);
+  const checks = useChecksFigure('vendor-bill', id ?? undefined, dataUpdatedAt);
 
   return (
     <RecordFrame
@@ -112,6 +115,8 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
         data && {
           href: `/vendor-bills/${data.id}`,
           title: `${data.billNo} · ${data.vendorName}`,
+          context: projectContext(data),
+          headline: [figure('netPayable', data.payable), data.status === 'APPROVED' && figure('stillToPay', data.outstanding), checks],
           tags: (
             <>
               <StatusTag status={data.status} /> <MatchTag matched={data.matched} po={withPo} /> <PaidTag bill={data} />
@@ -140,7 +145,7 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
                   ...(data.expenseCategory ? [{ key: 'head', label: 'Cost head', children: EXPENSE_CATEGORY_LABELS[data.expenseCategory] }] : []),
                 ]),
             { key: 'invoice', label: 'Invoice', children: `${data.invoiceNo}, ${formatDate(data.invoiceDate)}` },
-            { key: 'total', label: 'Invoice total', children: <strong><Money value={data.total} paise /></strong> },
+            ...(toNumber(data.total) !== toNumber(data.payable) ? [{ key: 'total', label: 'Invoice total', children: <Money value={data.total} paise /> }] : []),
             ...(withPo && (adjusted > 0 || toNumber(data.poAdvancePaid) > 0)
               ? [
                   {
@@ -165,10 +170,9 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
             },
             ...(fuel > 0 ? [{ key: 'fuel', label: 'Fuel recovered', children: <span><Money value={data.fuelRecovery} paise /> <span className="text-muted">for {formatQty(data.fuelLitres)} L at {formatINR(data.fuelRate, true)}</span></span> }] : []),
             ...(debited > 0 ? [{ key: 'debit', label: 'Debit notes', children: <Money value={data.debitNoteAmount} paise /> }] : []),
-            { key: 'project', label: 'Project', children: <Link href={`/projects/${data.projectId}`}>{data.projectName}</Link> },
-            ...(data.remarks ? [{ key: 'remarks', label: 'Remarks', children: data.remarks }] : []),
-            ...submissionMetaItems(data).filter((i) => i.key !== 'status' && i.key !== 'project'),
+            ...submissionMetaItems(data),
           ],
+          details: data.remarks ? [{ key: 'remarks', label: 'Remarks', children: data.remarks }] : undefined,
           lifecycle: submissionLifecycle(data, [
             { title: 'Paid', done: !!data.paidDate, content: data.status !== 'APPROVED' ? undefined : data.paidDate ? formatDate(data.paidDate) : `${formatINR(data.outstanding, true)} to pay` },
           ]),
@@ -185,7 +189,7 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
                     size="small"
                     pagination={false}
                     dataSource={data.lines}
-                    scroll={{ x: withPo ? 950 : 700 }}
+                    scroll={{ x: withPo ? 760 : 640 }}
                     columns={withPo ? [
                       { title: 'Item', dataIndex: 'itemName' },
                       {
@@ -195,15 +199,20 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
                         align: 'right',
                         render: (v, l) => {
                           const over = toNumber(v) > toNumber(l.receivedQty) - toNumber(l.billedElsewhere) + 1e-9;
-                          return <Typography.Text type={over ? 'danger' : undefined} className="mono">{formatQty(v)} {l.unit}</Typography.Text>;
+                          return (
+                            <Typography.Text type={over ? 'danger' : undefined} className="mono">
+                              {formatQty(v)} {l.unit}
+                              {over ? <div><AppTag meaning="failed">Billed above received</AppTag></div> : null}
+                            </Typography.Text>
+                          );
                         },
                       },
-                      { title: 'Received', dataIndex: 'receivedQty', width: 90, align: 'right', render: (v) => <span className="mono" translate="no">{formatQty(v)}</span> },
-                      { title: 'On other bills', dataIndex: 'billedElsewhere', width: 110, align: 'right', render: (v) => <span className="mono" translate="no">{formatQty(v)}</span> },
+                      { title: 'Received', dataIndex: 'receivedQty', width: 100, align: 'right', render: (v, l) => <span className="mono" translate="no">{formatQty(v)} {l.unit}</span> },
+                      { title: 'On other bills', dataIndex: 'billedElsewhere', width: 110, align: 'right', render: (v, l) => <span className="mono" translate="no">{formatQty(v)} {l.unit}</span> },
                       {
                         title: 'Rate',
                         dataIndex: 'rate',
-                        width: 150,
+                        width: 130,
                         align: 'right',
                         render: (v, l) => (
                           <span>
@@ -219,17 +228,21 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
                         dataIndex: 'gstRate',
                         width: 80,
                         align: 'right',
-                        render: (v, l) => <Typography.Text type={toNumber(v) !== toNumber(l.poGstRate) ? 'danger' : undefined}>{formatPct(v)}</Typography.Text>,
+                        render: (v, l) => (
+                          <span>
+                            <Typography.Text type={toNumber(v) !== toNumber(l.poGstRate) ? 'danger' : undefined}>{formatPct(v)}</Typography.Text>
+                            {toNumber(v) !== toNumber(l.poGstRate) && <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>PO {formatPct(l.poGstRate)}</div>}
+                          </span>
+                        ),
                       },
                       { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong><Money value={v} paise /></strong> },
-                      { title: 'GST amount', dataIndex: 'gstAmount', width: 120, align: 'right', render: (v) => <Money value={v} paise /> },
                     ] : [
                       { title: 'Line', dataIndex: 'itemName' },
                       { title: 'Quantity', dataIndex: 'quantity', width: 130, align: 'right', render: (v, l) => <span className="mono" translate="no">{formatQty(v)} {l.unit}</span> },
                       { title: 'Rate', dataIndex: 'rate', width: 130, align: 'right', render: (v) => <Money value={v} paise /> },
                       { title: 'GST', dataIndex: 'gstRate', width: 70, align: 'right', render: (v) => formatPct(v) },
-                      { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong><Money value={v} paise /></strong> },
                       { title: 'GST amount', dataIndex: 'gstAmount', width: 120, align: 'right', render: (v) => <Money value={v} paise /> },
+                      { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong><Money value={v} paise /></strong> },
                     ]}
                   />
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
@@ -291,6 +304,7 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
                   {
                     key: 'debit-notes',
                     title: 'Debit notes',
+                    empty: debited === 0,
                     children: (
                       <BillDebitNotes bill={{ billType: 'VENDOR_BILL', billId: data.id, label: `${data.billNo} · ${data.invoiceNo}`, vendorName: data.vendorName, billDate: data.invoiceDate, outstanding: data.outstanding }} />
                     ),
@@ -322,8 +336,8 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
                   },
                 ]
               : []),
-            ...(requests ? [{ key: 'requests', title: 'Payment requests', children: <TargetRequests approved target={{ kind: 'BILL', vendorBillId: data.id, label: data.billNo, vendorName: data.vendorName }} base={data.outstanding} /> }] : []),
-            { key: 'invoice', title: 'Invoice', count: data.attachments.length, children: <AttachmentGallery attachments={data.attachments} /> },
+            ...(requests ? [{ key: 'requests', title: 'Payment requests', empty: asked.loaded && asked.rows.length === 0, children: <TargetRequests approved target={{ kind: 'BILL', vendorBillId: data.id, label: data.billNo, vendorName: data.vendorName }} base={data.outstanding} /> }] : []),
+            { key: 'invoice', title: 'Invoice', count: data.attachments.length, empty: data.attachments.length === 0, children: <AttachmentGallery attachments={data.attachments} emptyText="No invoice attached" /> },
           ],
           activity: { type: 'vendor_bill', id: data.id, submission: data },
           actions: (size) => (

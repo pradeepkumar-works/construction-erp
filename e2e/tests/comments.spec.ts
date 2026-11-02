@@ -30,6 +30,8 @@ test('a mention on a record’s page reaches the person, their reply comes back,
 
   await signIn(page, 'pm@demo.com');
   await page.goto(`/purchase-orders/${po.id}`);
+  // A record with no comments yet folds them into its "Nothing yet" line; the name opens them.
+  await page.getByRole('button', { name: 'Open Comments' }).click();
   const comments = page.locator('#record-comments');
   await expect(comments).toBeVisible();
   const box = comments.getByRole('textbox', { name: 'New comment' });

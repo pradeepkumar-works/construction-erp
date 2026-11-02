@@ -136,7 +136,10 @@ and the pre-delivery checklist.
   `RecordFrame` (`components/record/`: facts, `submissionLifecycle` stage bar, sections, activity, actions); the drawer
   export is `<XRecord mode="drawer">`. List links to it use `RecordLink` and `RowActions href`. Only the deciding buttons
   go in `actions`; a delete or anything else that cannot be taken back is a `RecordMenuAction` in `more` (the ⋯ menu,
-  through `useConfirmDelete`), never a tap from Approve.
+  through `useConfirmDelete`), never a tap from Approve. A record leads with the decision (ARCHITECTURE "Records lead with
+  the decision"): `context` (its project, linked), a `headline` of one to three registry figures (`figure()`, never a
+  label of its own), the deciding facts with reference ones in `details`, Checks first, and a section with nothing in it
+  marked `empty`; the status, who submitted and who reviewed are the tag and History, never facts.
 - Approvals inbox (`app/(app)/approvals`): the picked entry shows as `<XRecord mode="pane">` (no actions; the inbox has the
   decision bar). Every submission type has a page; a new type adds one line in `RECORD_PAGES` and one in `ApprovalPane`
   (`components/approvals/`), or the pane falls back to a summary with Open details.

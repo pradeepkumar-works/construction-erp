@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Table, Typography } from 'antd';
-import type { RankedQuote } from '@erp/shared';
+import { figure, type RankedQuote } from '@erp/shared';
 import { useSupplierChoice } from '@/lib/queries';
 import { toNumber } from '@/lib/format';
 import { AppTag } from '@/components/common/AppTag';
@@ -12,6 +12,7 @@ import { StatusTag } from '@/components/common/StatusTag';
 import { ReviewActions } from '@/components/common/ReviewActions';
 import { submissionMetaItems } from '@/components/common/SubmitterInfo';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
+import { projectContext } from '@/components/record/RecordParts';
 import { submissionLifecycle } from '@/components/record/lifecycle';
 import { Money } from '@/components/common/Money';
 
@@ -47,6 +48,8 @@ export function SupplierChoiceRecord({ id, mode, open, onClose }: RecordProps & 
       record={
         data && {
           href: `/supplier-choices/${data.id}`,
+          context: projectContext(data),
+          headline: [figure('orderValue', data.amount)],
           title: (
             <span>
               <span translate="no">{data.requestNo}</span> · <span translate="no">{chosen}</span>
@@ -73,7 +76,6 @@ export function SupplierChoiceRecord({ id, mode, open, onClose }: RecordProps & 
               ),
             },
             { key: 'chosen', label: 'Vendor', children: <span translate="no">{chosen}</span> },
-            { key: 'amount', label: 'Value of the order', children: <Money value={data.amount} paise strong /> },
             {
               key: 'l1',
               label: 'Against L1',
@@ -94,7 +96,7 @@ export function SupplierChoiceRecord({ id, mode, open, onClose }: RecordProps & 
               children: `${data.itemsLeft} item${data.itemsLeft === 1 ? '' : 's'}${data.itemNames.length ? `: ${data.itemNames.join(', ')}${data.itemsLeft > data.itemNames.length ? '…' : ''}` : ''}`,
             },
             ...(data.reason ? [{ key: 'reason', label: 'Why this vendor', span: 2, children: <span style={{ whiteSpace: 'pre-wrap' }}>{data.reason}</span> }] : []),
-            ...submissionMetaItems(data).filter((i) => i.key !== 'status'),
+            ...submissionMetaItems(data),
           ],
           lifecycle: submissionLifecycle(data, [{ title: 'Order made', done: data.status === 'APPROVED' && data.itemsLeft === 0, content: data.status === 'APPROVED' ? (data.itemsLeft ? 'Purchase makes it' : 'Everything ordered') : undefined }]),
           sections: [
