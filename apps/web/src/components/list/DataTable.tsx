@@ -10,7 +10,6 @@ import {
   Table,
   Tooltip,
   Typography,
-  theme,
 } from "antd";
 import type { TableColumnType, TableProps } from "antd";
 import {
@@ -234,7 +233,6 @@ export function DataTable<T extends { id: string }>({
   /** Lines that open under a row (a toolbox talk's notes). */
   expandable?: TableProps<T>["expandable"];
 }) {
-  const { token } = theme.useToken();
   const stickyTop = useStickyTop();
   // Below 768 px each row is a card.
   const phone = useIsPhone();
@@ -360,7 +358,7 @@ export function DataTable<T extends { id: string }>({
     <div
       aria-busy="true"
       aria-label="Loading"
-      style={{ padding: `${token.paddingXS}px 0`, textAlign: "left" }}
+      style={{ padding: `${tk.space[2]} 0`, textAlign: "left" }}
     >
       <Skeleton
         active
@@ -380,7 +378,7 @@ export function DataTable<T extends { id: string }>({
       {emptyText ?? <EmptyLine title="Nothing here yet" />}
       {emptyNext ? (
         <div
-          style={{ marginTop: -token.marginXS, paddingBottom: token.padding }}
+          style={{ marginTop: tk.neg(2), paddingBottom: tk.space[4] }}
         >
           {emptyNext}
         </div>
@@ -394,15 +392,15 @@ export function DataTable<T extends { id: string }>({
       popupRender={() => (
         <div
           style={{
-            padding: token.paddingSM,
+            padding: tk.space[3],
             maxHeight: 360,
             overflowY: "auto",
-            background: token.colorBgElevated,
-            borderRadius: token.borderRadiusLG,
-            boxShadow: token.boxShadowSecondary,
+            background: tk.color.surface.raised,
+            borderRadius: tk.radius.lg,
+            boxShadow: tk.shadow.float,
           }}
         >
-          <Flex vertical gap={token.marginXXS}>
+          <Flex vertical gap={tk.space[1]}>
             {columns
               .filter((c) => !c.locked)
               .map((c) => (
@@ -457,19 +455,19 @@ export function DataTable<T extends { id: string }>({
     <>
       <Flex
         align="center"
-        gap={token.marginXS}
+        gap={tk.space[2]}
         wrap
         style={{
-          padding: `${token.paddingXS}px ${token.paddingSM}px`,
+          padding: `${tk.space[2]} ${tk.space[3]}`,
           minHeight: phone
             ? undefined
-            : token.controlHeight + token.paddingXS * 2,
+            : `calc(${tk.control.md} + 2 * ${tk.space[2]})`,
         }}
       >
         {selected.length > 0 ? (
           <Flex
             align="center"
-            gap={token.marginXS}
+            gap={tk.space[2]}
             wrap
             role="toolbar"
             aria-label="Selected rows"
@@ -504,35 +502,37 @@ export function DataTable<T extends { id: string }>({
         ) : (
           <Flex
             align="center"
-            gap={token.marginXS}
+            gap={tk.space[2]}
             wrap
             style={{ flex: 1, minWidth: 0 }}
           >
             {chips}
           </Flex>
         )}
-        {/* Cards show every line in full and choose their own fields. */}
+        {/* Cards show every line in full and choose their own fields. The table's own tools keep the right end. */}
         {phone ? null : (
-          <Tooltip
-            title={
-              wrap ? "Cut long text to one line" : "Show long text in full"
-            }
-          >
-            <Button
-              size="small"
-              color="default"
-              variant={wrap ? "filled" : "outlined"}
-              icon={<LineHeightOutlined />}
-              aria-pressed={wrap}
-              aria-label="Wrap long text"
-              onClick={() => {
-                setWrap(!wrap);
-                writePref("nirmaan.table.wrap", !wrap);
-              }}
-            />
-          </Tooltip>
+          <Flex align="center" gap={tk.space[2]} style={{ marginInlineStart: "auto" }}>
+            <Tooltip
+              title={
+                wrap ? "Cut long text to one line" : "Show long text in full"
+              }
+            >
+              <Button
+                size="small"
+                color="default"
+                variant={wrap ? "filled" : "outlined"}
+                icon={<LineHeightOutlined />}
+                aria-pressed={wrap}
+                aria-label="Wrap long text"
+                onClick={() => {
+                  setWrap(!wrap);
+                  writePref("nirmaan.table.wrap", !wrap);
+                }}
+              />
+            </Tooltip>
+            {chooser}
+          </Flex>
         )}
-        {phone ? null : chooser}
       </Flex>
       {phone ? (
         <ListCards<T>
@@ -626,7 +626,7 @@ export function DataTable<T extends { id: string }>({
                             {c.total ? (
                               <span
                                 className="mono" translate="no"
-                                style={{ fontWeight: token.fontWeightStrong }}
+                                style={{ fontWeight: tk.type.strong.fontWeight }}
                               >
                                 {c.total(rows)}
                               </span>
