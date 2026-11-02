@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo } from 'react';
 import { Alert, App, Form, Input, Select, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import type { MaterialRequestDto, MaterialRequestStockDto, RequestLineStockDto } from '@erp/shared';
@@ -9,7 +10,6 @@ import { useCoverRequest } from '@/lib/queries';
 import { formatQty, toNumber } from '@/lib/format';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { QuantityInput } from '@/components/form/inputs';
-import { themeFontSize } from '@/lib/theme';
 import { unitLabel } from '@erp/shared';
 
 interface FormValues {
@@ -72,7 +72,7 @@ export function CoverFromStockModal({ open, onClose, request, stock }: { open: b
   return (
     <FormShell open={open} onClose={onClose} form={form} layout="modal" width={720} allValues title={`Take from stock for ${request.requestNo}`} okText={transfer ? 'Send transfer' : 'Issue from stock'} okDisabled={!sites.length} onSubmit={submit}>
       <Form form={form} layout="vertical">
-        {!sites.length ? <Alert type="info" showIcon title="No site you keep holds what this request still needs." style={{ marginBottom: 12 }} /> : null}
+        {!sites.length ? <Alert type="info" showIcon title="No site you keep holds what this request still needs." style={{ marginBottom: tk.space[3] }} /> : null}
         <FormGrid cols={2}>
           <Form.Item name="fromProjectId" label="From" rules={[{ required: true, message: 'Choose the site the material comes from' }]}>
             <Select options={sites} placeholder="Site with stock" />
@@ -87,9 +87,9 @@ export function CoverFromStockModal({ open, onClose, request, stock }: { open: b
           pagination={false}
           dataSource={needed}
           scroll={{ x: 560 }}
-          style={{ marginBottom: 16 }}
+          style={{ marginBottom: tk.space[4] }}
           columns={[
-            { title: 'Item', dataIndex: 'itemName', render: (v, l) => <div>{v}<div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>Still needed {formatQty(l.toOrderQty)} {l.unit}</div></div> },
+            { title: 'Item', dataIndex: 'itemName', render: (v, l) => <div>{v}<div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>Still needed {formatQty(l.toOrderQty)} {l.unit}</div></div> },
             { title: 'At that site', key: 'held', width: 120, align: 'right', render: (_, l) => <span className="mono" translate="no">{formatQty(heldAt(l, from, request.projectId))} {l.unit}</span> },
             {
               title: 'Quantity',

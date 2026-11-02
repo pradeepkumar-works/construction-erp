@@ -3,7 +3,8 @@
 import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Select, Typography, theme } from 'antd';
+import { Select, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { OrderStage, RequestToOrderDto } from '@erp/shared';
 import { ORDER_STAGES, ORDER_STAGE_LABELS, rankLabel } from '@erp/shared';
 import { useRequestsToOrder } from '@/lib/queries';
@@ -29,8 +30,7 @@ export function StageTag({ stage }: { stage: OrderStage }) {
 }
 
 function Sub({ children }: { children: React.ReactNode }) {
-  const { token } = theme.useToken();
-  return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
+  return <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{children}</div>;
 }
 
 /** The days a request is late (positive) or still has (negative) against the day it is needed. */
@@ -58,7 +58,7 @@ function columns(showProject: boolean): ListColumn<RequestToOrderDto>[] {
       width: 150,
       render: (_, r) => (
         <div>
-          <Link href={`/requests-to-order/${r.id}`} className="mono" style={{ fontWeight: 600 }}>
+          <Link href={`/requests-to-order/${r.id}`} className="mono" style={{ fontWeight: tk.type.title.fontWeight }}>
             {r.requestNo}
           </Link>
           <Sub>by {r.submittedByName}</Sub>

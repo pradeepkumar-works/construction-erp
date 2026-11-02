@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Alert, App, Button, Form, Input, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { FileAddOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -23,7 +24,6 @@ import { submissionLifecycle } from '@/components/record/lifecycle';
 import { FormShell } from '@/components/form/FormShell';
 import { SubBillFormModal } from './SubBillFormModal';
 import { openWoPrint } from './subcontractPrint';
-import { themeFontSize } from '@/lib/theme';
 import { Section } from '@/components/common/Section';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
 import { TargetRequests, useTargetRequests } from '@/components/payables/TargetRequests';
@@ -121,13 +121,13 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
           },
           notices: (
             <>
-              {data.status === 'DRAFT' && <Alert type="info" showIcon style={{ marginBottom: 12 }} title="Draft: check the scope, rates and terms, then submit it for approval. Print it for the contractor to sign once it is approved." />}
-              {data.closedAt && <Alert type="warning" showIcon style={{ marginBottom: 12 }} title={`Closed on ${formatDateTime(data.closedAt)}`} description={data.closeNote ?? undefined} />}
+              {data.status === 'DRAFT' && <Alert type="info" showIcon style={{ marginBottom: tk.space[3] }} title="Draft: check the scope, rates and terms, then submit it for approval. Print it for the contractor to sign once it is approved." />}
+              {data.closedAt && <Alert type="warning" showIcon style={{ marginBottom: tk.space[3] }} title={`Closed on ${formatDateTime(data.closedAt)}`} description={data.closeNote ?? undefined} />}
               {openBill && data.open && (
                 <Alert
                   type="info"
                   showIcon
-                  style={{ marginBottom: 12 }}
+                  style={{ marginBottom: tk.space[3] }}
                   title={
                     <span>
                       {openBill.label} is still open (<StatusTag status={openBill.status} />). The next bill can be prepared once it is approved or rejected.
@@ -148,7 +148,7 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
                   {data.vendorPan && <span className="text-muted"> · PAN {data.vendorPan}</span>}
                   {data.vendorGstin && <span className="text-muted"> · GSTIN <span translate="no">{data.vendorGstin}</span></span>}
                   {data.vendorMsme && (
-                    <AppTag variant="kind" style={{ marginLeft: 8 }}>
+                    <AppTag variant="kind" style={{ marginLeft: tk.space[2] }}>
                       {MSME_CATEGORY_LABELS[data.vendorMsme]}
                     </AppTag>
                   )}
@@ -165,7 +165,7 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
                 toNumber(data.advanceAmount) > 0 || advancePaid > 0 ? (
                   <span>
                     <Money value={data.advanceAmount} paise /> at {formatPct(data.advanceRecoveryPct)} a bill
-                    <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                    <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                       {advancePaid > 0 ? `${formatINR(advancePaid, true)} paid, ` : ''}
                       {formatINR(data.advanceRecovered, true)} recovered, {formatINR(Math.max(advanceLeft, 0), true)} to go
                     </div>
@@ -210,7 +210,7 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
                         title: 'Item',
                         render: (_, l) => (
                           <div>
-                            {l.itemNo ? <AppTag variant="kind" style={{ marginRight: 6 }}>{l.itemNo}</AppTag> : <AppTag variant="kind" style={{ marginRight: 6 }}>Own item</AppTag>}
+                            {l.itemNo ? <AppTag variant="kind" style={{ marginInlineEnd: tk.space[2] }}>{l.itemNo}</AppTag> : <AppTag variant="kind" style={{ marginInlineEnd: tk.space[2] }}>Own item</AppTag>}
                             {l.description}
                           </div>
                         ),
@@ -240,9 +240,9 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
                       { title: 'Amount', dataIndex: 'amount', width: 140, align: 'right', render: (v) => <strong><Money value={v} paise /></strong> },
                     ]}
                   />
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: tk.space[3] }}>
                     <Section style={{ width: 320 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: tk.type.title.fontWeight }}>
                         <span>Order value before GST</span>
                         <Money value={data.value} paise />
                       </div>

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { App, Button, Descriptions, Drawer, Space, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { CheckOutlined, ExperimentOutlined, PrinterOutlined, RollbackOutlined } from '@/components/common/icons';
 import type { RmcBatchDto, RmcBatchLineDto } from '@erp/shared';
 import { useRmcAction, useRmcBatch } from '@/lib/queries';
@@ -95,8 +96,8 @@ export function BatchDrawer({ id, onClose }: { id: string | null; onClose: () =>
               },
             ]}
           />
-          {b.note && <Typography.Paragraph style={{ marginTop: 12 }}>{b.note}</Typography.Paragraph>}
-          <Typography.Title level={2} style={{ fontSize: 16, marginTop: 16 }}>
+          {b.note && <Typography.Paragraph style={{ marginTop: tk.space[3] }}>{b.note}</Typography.Paragraph>}
+          <Typography.Title level={2} style={{ fontSize: tk.type.lead.fontSize, marginTop: tk.space[4] }}>
             Weighed against the design
           </Typography.Title>
           <Table<RmcBatchLineDto>

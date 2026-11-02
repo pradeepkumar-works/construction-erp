@@ -84,7 +84,7 @@ function InvoiceDrawer({ invoice, onClose, onReceive }: { invoice: RmcInvoiceDto
               { key: 'due', label: 'Due', children: <Money paise value={i.due} /> },
             ]}
           />
-          <Typography.Title level={2} style={{ fontSize: 16, marginTop: 16 }}>
+          <Typography.Title level={2} style={{ fontSize: tk.type.lead.fontSize, marginTop: tk.space[4] }}>
             Challans
           </Typography.Title>
           <Table
@@ -186,7 +186,7 @@ export function Bills() {
       />
       {bill && (
         <>
-          <Typography.Title level={2} style={{ fontSize: 16, marginTop: 20 }}>
+          <Typography.Title level={2} style={{ fontSize: tk.type.lead.fontSize, marginTop: tk.space[5] }}>
             Money received
           </Typography.Title>
           <Table<RmcReceiptDto>

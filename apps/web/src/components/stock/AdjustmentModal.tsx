@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { App, Button, Form, Input, InputNumber, Select, Space, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { DeleteOutlined, PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
@@ -15,7 +16,6 @@ import { SearchSelect } from '@/components/common/SearchSelect';
 import { formatQty } from '@/lib/format';
 import { UnitInput } from '@/components/common/UnitInput';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
-import { themeFontSize } from '@/lib/theme';
 
 const NEW = '__new__';
 const NEW_OPTION = [{ value: NEW, label: '+ New item' }];
@@ -100,7 +100,7 @@ export function AdjustmentModal({ open, onClose, projectId }: { open: boolean; o
         <Form.Item name="remarks" label="Details" rules={[{ required: true, whitespace: true, min: 3, message: 'Say what happened, e.g. 2 bags set hard in the rain' }]}>
           <Input maxLength={1000} placeholder="What happened, where, who found it…" />
         </Form.Item>
-        <Form.Item label="Lines" required extra="Positive adds to stock, negative takes it off." style={{ marginBottom: 8 }}>
+        <Form.Item label="Lines" required extra="Positive adds to stock, negative takes it off." style={{ marginBottom: tk.space[2] }}>
           <Form.List name="lines">
             {(fields, { add, remove }) => (
               <Space orientation="vertical" size={6} style={{ width: '100%' }}>
@@ -108,7 +108,7 @@ export function AdjustmentModal({ open, onClose, projectId }: { open: boolean; o
                   const itemId = form.getFieldValue(['lines', f.name, 'itemId']) as string | undefined;
                   const bal = itemId ? balanceOf.get(itemId) : undefined;
                   return (
-                    <div key={f.key} style={{ display: 'flex', gap: 6, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                    <div key={f.key} style={{ display: 'flex', gap: tk.space[2], alignItems: 'flex-start', flexWrap: 'wrap' }}>
                       <Form.Item name={[f.name, 'itemId']} style={{ flex: '3 1 220px', marginBottom: 0 }} rules={[{ required: true, message: 'Choose an item' }]}>
                         <SearchSelect<ItemDto>
                           source="items"
@@ -157,7 +157,7 @@ export function AdjustmentModal({ open, onClose, projectId }: { open: boolean; o
             )}
           </Form.List>
         </Form.Item>
-        <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+        <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
           Only approvers can adjust stock. Every adjustment is kept in the register with its reason.
         </Typography.Text>
       </Form>

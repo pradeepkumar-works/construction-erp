@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Alert, App, Button, Divider, Form, Input, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { ImportOutlined, MailOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -26,7 +27,6 @@ import { openPoPrint } from './poPrint';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
 import { submissionLifecycle } from '@/components/record/lifecycle';
 import { FormShell } from '@/components/form/FormShell';
-import { themeFontSize } from '@/lib/theme';
 import { Section } from '@/components/common/Section';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
 import { OrderBudget, OrderQuotes } from './OrderDecision';
@@ -158,8 +158,8 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
           },
           notices: (
             <>
-              {data.status === 'DRAFT' && <Alert type="info" showIcon style={{ marginBottom: 12 }} title="Draft: check the items and rates, then submit it for approval. Once approved, it is emailed to the vendor." />}
-              {data.closedAt && <Alert type="warning" showIcon style={{ marginBottom: 12 }} title={`Closed on ${formatDateTime(data.closedAt)}`} description={data.closeNote ?? undefined} />}
+              {data.status === 'DRAFT' && <Alert type="info" showIcon style={{ marginBottom: tk.space[3] }} title="Draft: check the items and rates, then submit it for approval. Once approved, it is emailed to the vendor." />}
+              {data.closedAt && <Alert type="warning" showIcon style={{ marginBottom: tk.space[3] }} title={`Closed on ${formatDateTime(data.closedAt)}`} description={data.closeNote ?? undefined} />}
             </>
           ),
           facts: [
@@ -171,7 +171,7 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
                 <span>
                   {data.vendorName}
                   {data.vendorGstin && <span className="text-muted"> · GSTIN <span translate="no">{data.vendorGstin}</span></span>}
-                  {data.vendorMsme && <AppTag variant="kind" style={{ marginLeft: 8 }}>{MSME_CATEGORY_LABELS[data.vendorMsme]}</AppTag>}
+                  {data.vendorMsme && <AppTag variant="kind" style={{ marginLeft: tk.space[2] }}>{MSME_CATEGORY_LABELS[data.vendorMsme]}</AppTag>}
                 </span>
               ),
             },
@@ -184,7 +184,7 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
                     children: (
                       <span>
                         <Money value={data.advancePaid} paise /> paid
-                        <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                        <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                           {formatINR(data.advanceRequested, true)} asked for, {formatINR(data.advanceAdjusted, true)} adjusted on bills
                         </div>
                       </span>
@@ -243,7 +243,7 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
                         dataSource={data.lines}
                         scroll={{ x: 760 }}
                         columns={[
-                          { title: 'Item', width: 220, render: (_, l) => <div>{l.itemName}{l.make || l.specification ? <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{[l.make ? `Make: ${l.make}` : null, l.specification].filter(Boolean).join(' · ')}</div> : null}</div> },
+                          { title: 'Item', width: 220, render: (_, l) => <div>{l.itemName}{l.make || l.specification ? <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>{[l.make ? `Make: ${l.make}` : null, l.specification].filter(Boolean).join(' · ')}</div> : null}</div> },
                           { title: 'Quantity', dataIndex: 'quantity', width: 120, align: 'right', render: (v, l) => <span className="mono" translate="no">{formatQty(v)} {l.unit}</span> },
                           ...(approved
                             ? [
@@ -273,20 +273,20 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
                           { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong><Money value={v} paise /></strong> },
                         ]}
                       />
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: tk.space[3] }}>
                         <Section style={{ width: 320 }}>
                           {[
                             ['Items', data.subtotal],
                             ['GST', data.gstAmount],
                             ...(toNumber(data.freight) > 0 ? [['Freight', data.freight]] : []),
                           ].map(([k, v]) => (
-                            <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+                            <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: `${tk.space.half} 0` }}>
                               <span>{k}</span>
                               <Money value={v} paise />
                             </div>
                           ))}
-                          <Divider style={{ margin: '6px 0' }} />
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}>
+                          <Divider style={{ margin: `${tk.space[2]} 0` }} />
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: tk.type.title.fontWeight }}>
                             <span>Order total</span>
                             <Money value={data.total} paise />
                           </div>
@@ -402,7 +402,7 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
                         dataSource={data.lines}
                         scroll={{ x: 760 }}
                         columns={[
-                          { title: 'Item', width: 220, render: (_, l) => <div>{l.itemName}{l.make || l.specification ? <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{[l.make ? `Make: ${l.make}` : null, l.specification].filter(Boolean).join(' · ')}</div> : null}</div> },
+                          { title: 'Item', width: 220, render: (_, l) => <div>{l.itemName}{l.make || l.specification ? <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>{[l.make ? `Make: ${l.make}` : null, l.specification].filter(Boolean).join(' · ')}</div> : null}</div> },
                           { title: 'Quantity', dataIndex: 'quantity', width: 120, align: 'right', render: (v, l) => <span className="mono" translate="no">{formatQty(v)} {l.unit}</span> },
                           ...(approved
                             ? [
@@ -432,20 +432,20 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
                           { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong><Money value={v} paise /></strong> },
                         ]}
                       />
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: tk.space[3] }}>
                         <Section style={{ width: 320 }}>
                           {[
                             ['Items', data.subtotal],
                             ['GST', data.gstAmount],
                             ...(toNumber(data.freight) > 0 ? [['Freight', data.freight]] : []),
                           ].map(([k, v]) => (
-                            <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+                            <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: `${tk.space.half} 0` }}>
                               <span>{k}</span>
                               <Money value={v} paise />
                             </div>
                           ))}
-                          <Divider style={{ margin: '6px 0' }} />
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}>
+                          <Divider style={{ margin: `${tk.space[2]} 0` }} />
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: tk.type.title.fontWeight }}>
                             <span>Order total</span>
                             <Money value={data.total} paise />
                           </div>

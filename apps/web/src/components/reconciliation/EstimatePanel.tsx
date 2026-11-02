@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { App, Button, Col, Empty, Form, InputNumber, Row, Segmented, Skeleton, Space, Statistic, Table, Tooltip, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { TableProps } from 'antd';
 import { CalculatorOutlined, EditOutlined, FileExcelOutlined, UploadOutlined } from '@/components/common/icons';
 import type { EstimateItemDto, ProjectEstimateDto } from '@erp/shared';
@@ -9,7 +10,6 @@ import { BOQ_RESOURCE_KIND_LABELS } from '@erp/shared';
 import { useProjectEstimate, useSetEstimateTerms } from '@/lib/queries';
 import { formatINR, formatQty, toNumber } from '@/lib/format';
 import { downloadWorkbook, exportFileName, workbookSheet } from '@/lib/exportExcel';
-import { themeColor, themeFontSize } from '@/lib/theme';
 import { QueryError } from '@/components/common/QueryState';
 import { Section, SectionStack } from '@/components/common/Section';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
@@ -17,7 +17,7 @@ import { MarginText, RateAnalysisDrawer } from './RateAnalysisDrawer';
 import { RateAnalysisImportModal } from './RateAnalysisImportModal';
 import { Money } from '@/components/common/Money';
 
-const RED = themeColor('colorErrorText');
+const RED = tk.color.tone.danger.fg;
 
 type Show = 'analysed' | 'all';
 
@@ -123,7 +123,7 @@ export function EstimatePanel({ projectId }: { projectId: string }) {
                 <>
                   <Money value={v} paise />
                   {r.unpriced ? (
-                    <div style={{ fontSize: themeFontSize('fontSizeSM'), color: themeColor('colorWarningText') }}>
+                    <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.tone.pending.fg }}>
                       {r.unpriced} without a rate
                     </div>
                   ) : null}
@@ -148,7 +148,7 @@ export function EstimatePanel({ projectId }: { projectId: string }) {
 
   return (
     <SectionStack gap={0}>
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginBottom: 12 }}>
+      <div style={{ display: 'flex', gap: tk.space[3], flexWrap: 'wrap', alignItems: 'center', marginBottom: tk.space[3] }}>
         <Segmented<Show>
           aria-label="BOQ items shown"
           value={show}
@@ -175,19 +175,19 @@ export function EstimatePanel({ projectId }: { projectId: string }) {
         <>
           <Row gutter={[16, 16]}>
             <Col xs={12} md={6}>
-              <Statistic title="BOQ items analysed" value={data.analysedCount} suffix={`/ ${data.items.length}`} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
+              <Statistic title="BOQ items analysed" value={data.analysedCount} suffix={`/ ${data.items.length}`} styles={{ content: { fontSize: tk.type.subhead.fontSize } }} />
             </Col>
             {values ? (
               <>
                 <Col xs={12} md={6}>
-                  <Statistic title="BOQ value" value={formatINR(data.boqAmount)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
-                  <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                  <Statistic title="BOQ value" value={formatINR(data.boqAmount)} styles={{ content: { fontSize: tk.type.subhead.fontSize } }} />
+                  <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                     Of the analysed items
                   </div>
                 </Col>
                 <Col xs={12} md={6}>
-                  <Statistic title="At built-up rates" value={formatINR(data.estimateAmount)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
-                  <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                  <Statistic title="At built-up rates" value={formatINR(data.estimateAmount)} styles={{ content: { fontSize: tk.type.subhead.fontSize } }} />
+                  <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                     Overheads {data.overheadPct}%, profit {data.profitPct}%{' '}
                     {data.canEdit ? (
                       <Button type="link" size="small" icon={<EditOutlined />} onClick={() => setTerms(true)} style={{ padding: 0, height: 'auto' }}>
@@ -197,8 +197,8 @@ export function EstimatePanel({ projectId }: { projectId: string }) {
                   </div>
                 </Col>
                 <Col xs={12} md={6}>
-                  <Statistic title="Items under cost" value={losing} styles={{ content: { fontSize: themeFontSize('fontSizeXL'), color: losing ? RED : undefined } }} />
-                  <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                  <Statistic title="Items under cost" value={losing} styles={{ content: { fontSize: tk.type.subhead.fontSize, color: losing ? RED : undefined } }} />
+                  <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                     BOQ rate below the built-up rate
                   </div>
                 </Col>
@@ -206,7 +206,7 @@ export function EstimatePanel({ projectId }: { projectId: string }) {
             ) : null}
           </Row>
 
-          <Section style={{ marginTop: 16 }} title={values ? 'Built-up rates against the BOQ' : 'Rate analysis by BOQ item'}>
+          <Section style={{ marginTop: tk.space[4] }} title={values ? 'Built-up rates against the BOQ' : 'Rate analysis by BOQ item'}>
             <Table<EstimateItemDto>
               rowKey="boqItemId"
               size="small"
@@ -229,7 +229,7 @@ export function EstimatePanel({ projectId }: { projectId: string }) {
             />
           </Section>
 
-          <Typography.Paragraph type="secondary" style={{ fontSize: themeFontSize('fontSizeSM'), marginTop: 12, marginBottom: 0 }}>
+          <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[3], marginBottom: 0 }}>
             <CalculatorOutlined /> A BOQ item&apos;s rate analysis is the materials one unit uses (the norms the reconciliation checks), the labour days and the machine
             hours it takes.
             {values

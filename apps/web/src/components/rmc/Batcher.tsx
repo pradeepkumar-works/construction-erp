@@ -2,13 +2,13 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { App, Button, Dropdown, Empty, Flex, Form, Input, InputNumber, Select, Space, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { TableProps } from 'antd';
 import type { BatchColumnMap, BatchField, BatchMaterialColumn, ConnectionHealth, GuessItem, PlantBatchRowDto, PlantControllerDto, RmcOrderDto } from '@erp/shared';
 import { BATCH_FIELD_LABELS, BATCH_FIELDS, BATCH_NO_CHALLAN_HOURS, BATCH_REQUIRED, CONNECTION_HEALTH_LABELS, canManageIntegrations, columnMapProblem, defaultPerUnit, guessColumns, readBatchRow, unitLabel } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useMixDesigns, usePlantBatches, useRmcAction, useRmcOrders } from '@/lib/queries';
 import { formatDateTime, formatQty } from '@/lib/format';
-import { themeColor, themeFontSize } from '@/lib/theme';
 import { AppTag } from '@/components/common/AppTag';
 import { LinkButton } from '@/components/common/LinkButton';
 import { Section } from '@/components/common/Section';
@@ -20,7 +20,7 @@ import { DispatchForm } from './BatchForms';
 import { PlantFilter, m3, usePlantScope } from './rmcUi';
 import { useRmcDrawers } from './Drawers';
 
-const small = { fontSize: themeFontSize('fontSizeSM') };
+const small = { fontSize: tk.type.caption.fontSize };
 const left = (o: RmcOrderDto) => Math.max(0, Number(o.quantity) - Number(o.delivered) - Number(o.onTheWay));
 const materialsText = (r: PlantBatchRowDto) => r.materials.map((m) => `${formatQty(m.actualQty)} ${unitLabel(m.unit)} ${m.itemName}`).join(', ');
 
@@ -91,7 +91,7 @@ export function Batcher() {
         <div>
           {loadCell(r)}
           {r.problems.length ? (
-            <div style={{ ...small, color: themeColor('colorErrorText') }}>{r.problems.join('. ')}</div>
+            <div style={{ ...small, color: tk.color.tone.danger.fg }}>{r.problems.join('. ')}</div>
           ) : null}
         </div>
       ),
@@ -189,8 +189,8 @@ export function Batcher() {
   ];
 
   return (
-    <div style={{ padding: 16 }}>
-      <Flex justify="space-between" align="center" gap={12} wrap style={{ marginBottom: 12 }}>
+    <div style={{ padding: tk.space[4] }}>
+      <Flex justify="space-between" align="center" gap={12} wrap style={{ marginBottom: tk.space[3] }}>
         <Typography.Text type="secondary" style={small}>
           {data.controllers.length
             ? 'Each batch the controller writes to its report comes in within a minute or two, with the materials it weighed.'
@@ -209,7 +209,7 @@ export function Batcher() {
         </Section>
       ) : null}
       {data.controllers.length ? (
-        <Section style={{ marginTop: 16 }} title="Waiting for a challan">
+        <Section style={{ marginTop: tk.space[4] }} title="Waiting for a challan">
           <Table<PlantBatchRowDto>
             rowKey="id"
             size="small"
@@ -222,7 +222,7 @@ export function Batcher() {
         </Section>
       ) : null}
       {data.done.length ? (
-        <Section style={{ marginTop: 16 }} title="On a challan or set aside, last 7 days">
+        <Section style={{ marginTop: tk.space[4] }} title="On a challan or set aside, last 7 days">
           <Table<PlantBatchRowDto> rowKey="id" size="small" pagination={{ pageSize: 20, hideOnSinglePage: true, showSizeChanger: false }} dataSource={data.done} scroll={{ x: 900 }} columns={doneColumns} />
         </Section>
       ) : null}
@@ -316,14 +316,14 @@ function ColumnsForm({ controller, onClose }: { controller: PlantControllerDto |
               name={['fields', f]}
               label={BATCH_FIELD_LABELS[f]}
               rules={BATCH_REQUIRED.includes(f) ? [{ required: true, message: `Choose the column for ${BATCH_FIELD_LABELS[f].toLowerCase()}` }] : []}
-              style={{ flex: '1 1 220px', marginBottom: 12 }}
+              style={{ flex: '1 1 220px', marginBottom: tk.space[3] }}
             >
               <Select allowClear placeholder={BATCH_REQUIRED.includes(f) ? 'Choose the column' : 'Not in the report'} options={headerOptions} />
             </Form.Item>
           ))}
         </Flex>
         <Typography.Text strong>Materials weighed</Typography.Text>
-        <Typography.Paragraph type="secondary" style={{ marginBottom: 8 }}>
+        <Typography.Paragraph type="secondary" style={{ marginBottom: tk.space[2] }}>
           Most controllers print kilograms: 50 makes a bag of cement, about 1,600 a cum of sand, 1 a kg or a litre of admixture.
         </Typography.Paragraph>
         <LineTable
@@ -364,10 +364,10 @@ function ColumnsForm({ controller, onClose }: { controller: PlantControllerDto |
           ]}
         />
         {read ? (
-          <Typography.Paragraph style={{ marginTop: 12, marginBottom: 0 }}>
+          <Typography.Paragraph style={{ marginTop: tk.space[3], marginBottom: 0 }}>
             <Typography.Text strong>The newest batch reads: </Typography.Text>
             {read.problems.length ? (
-              <span style={{ color: themeColor('colorErrorText') }}>{read.problems.join('. ')}</span>
+              <span style={{ color: tk.color.tone.danger.fg }}>{read.problems.join('. ')}</span>
             ) : (
               <span translate="no">
                 {[`Batch ${read.batchNo}`, read.at ? formatDateTime(read.at.toISOString()) : null, m3(read.quantity), read.mix, read.truck].filter(Boolean).join(', ')}

@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { App, Button, Checkbox, Form, Input, InputNumber, Select, Space, theme } from 'antd';
+import { App, Button, Checkbox, Form, Input, InputNumber, Select, Space } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import dayjs from 'dayjs';
@@ -50,8 +51,7 @@ import { MasterInput } from '@/components/masters/MasterInput';
 const KEYS = ['ownership', 'inactive'] as const;
 
 function Sub({ children }: { children: React.ReactNode }) {
-  const { token } = theme.useToken();
-  return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
+  return <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{children}</div>;
 }
 
 interface EquipmentForm {
@@ -194,9 +194,9 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
               ) : (
                 r.name
               )}{' '}
-              {r.isActive ? null : <AppTag meaning="closed" style={{ marginLeft: 4 }}>Inactive</AppTag>}
+              {r.isActive ? null : <AppTag meaning="closed" style={{ marginLeft: tk.space[1] }}>Inactive</AppTag>}
               {r.loan ? (
-                <AppTag variant="kind" style={{ marginLeft: 4 }}>
+                <AppTag variant="kind" style={{ marginLeft: tk.space[1] }}>
                   <RecordLink href={`/machine-loans/${r.loan.id}`} onOpen={() => router.push(`/machine-loans/${r.loan!.id}`)}>
                     {`Loan · ${r.loan.lenderName}`}
                   </RecordLink>

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Button, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { ReceiptWait, StockEntryDto, StockEntrySortField } from '@erp/shared';
 import { LIST_SORT_FIELDS, RECEIPT_BILL_WITHIN_DAYS, RECEIPT_CHECK_WITHIN_DAYS, canCheckGrn, canRaiseDebitNote, canRecordVendorBill } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
@@ -100,7 +101,7 @@ export function WaitingReceipts({ waiting, projectId: fixedProject }: { waiting:
           <div>
             <span translate="no">{r.supplier ?? NO_VALUE}</span>
             {r.poNo ? (
-              <div className="text-muted mono" style={{ fontSize: 12 }}>
+              <div className="text-muted mono" style={{ fontSize: tk.type.caption.fontSize }}>
                 <Link href={`/purchase-orders/${r.purchaseOrderId}`}>{r.poNo}</Link>
               </div>
             ) : null}
@@ -123,7 +124,7 @@ export function WaitingReceipts({ waiting, projectId: fixedProject }: { waiting:
                 </span>
               ))}
               {lines.length > 3 ? <Typography.Text type="secondary">{` and ${lines.length - 3} more`}</Typography.Text> : null}
-              {waiting === 'DEBIT_NOTE' && r.qcNote ? <div className="text-muted" style={{ fontSize: 12 }}>{r.qcNote}</div> : null}
+              {waiting === 'DEBIT_NOTE' && r.qcNote ? <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>{r.qcNote}</div> : null}
             </span>
           );
         },
@@ -152,7 +153,7 @@ export function WaitingReceipts({ waiting, projectId: fixedProject }: { waiting:
 
   return (
     <>
-      <Typography.Paragraph type="secondary" style={{ marginBottom: 8 }}>
+      <Typography.Paragraph type="secondary" style={{ marginBottom: tk.space[2] }}>
         {words.intro}
       </Typography.Paragraph>
       {error && <QueryError error={error} onRetry={() => refetch()} />}

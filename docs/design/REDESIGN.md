@@ -97,6 +97,11 @@ runs and is committed with the last PR.
     8 step (was 6), a row of figures on 32 (was 28), a list's indent on 20 (was 18), a value beside a field on the
     control height; screen-reader text is the shared `visually-hidden` class; the pipe map's SVG and the QA report's
     `Row gutter` read `useResolved()`. The three print files wait for PR 14.
+  - [x] PR 10. Materials and buying (indents, material approvals, requests to order, purchase orders, stock and stores,
+    vendors, the supplier portal, machinery and maintenance, loans, RMC, subcontract enquiries and work orders,
+    reconciliation): 96 files. By hand: the same tag, gap and indent steps as PR 9; red and amber text from the old
+    colour helper is the `danger` and `pending` tones; the finalise step's `Row gutter` reads `useResolved()`. The order
+    and work order print files wait for PR 14.
 
 ### Print, charts, and deleting the old surface (PR 14 and PR 15)
 

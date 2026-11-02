@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo } from 'react';
 import { Alert, App, AutoComplete, Button, Form, Input, InputNumber, Select, Space, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { DeleteOutlined, PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
@@ -102,7 +103,7 @@ export function StockMoveModal({ move, open, onClose, projectId }: { move: Stock
   // The project stock is sent from is a deliberate choice, so a transfer does not start on the header's project.
   return (
     <FormShell open={open} onClose={onClose} form={form} layout="modal" width={720} title={copy.title} okText={copy.ok} projectDefault={move !== 'transfer'} onSubmit={(v) => save.mutateAsync(v)}>
-      <Typography.Paragraph type="secondary" style={{ marginBottom: 12 }}>
+      <Typography.Paragraph type="secondary" style={{ marginBottom: tk.space[3] }}>
         {copy.help}
       </Typography.Paragraph>
       <Form form={form} layout="vertical">
@@ -166,10 +167,10 @@ export function StockMoveModal({ move, open, onClose, projectId }: { move: Stock
         </FormGrid>
 
         {scope && !stock.isLoading && !items.length ? (
-          <Alert type="warning" showIcon style={{ marginBottom: 12 }} title={move === 'site' ? 'Nothing has been issued at this project yet.' : 'Nothing is in stock at this project.'} />
+          <Alert type="warning" showIcon style={{ marginBottom: tk.space[3] }} title={move === 'site' ? 'Nothing has been issued at this project yet.' : 'Nothing is in stock at this project.'} />
         ) : null}
 
-        <Form.Item label="Items" required style={{ marginBottom: 8 }}>
+        <Form.Item label="Items" required style={{ marginBottom: tk.space[2] }}>
           <Form.List name="lines">
             {(fields, { add, remove }) => (
               <Space orientation="vertical" size={6} style={{ width: '100%' }}>
@@ -177,7 +178,7 @@ export function StockMoveModal({ move, open, onClose, projectId }: { move: Stock
                   const itemId = form.getFieldValue(['lines', f.name, 'itemId']) as string | undefined;
                   const row = items.find((i) => i.itemId === itemId);
                   return (
-                    <div key={f.key} className="stock-move-line" style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
+                    <div key={f.key} className="stock-move-line" style={{ display: 'flex', gap: tk.space[2], alignItems: 'flex-start' }}>
                       <Form.Item name={[f.name, 'itemId']} style={{ flex: 3, marginBottom: 0 }} rules={[{ required: true, message: 'Choose an item' }]}>
                         <Select
                           showSearch={{ optionFilterProp: 'label' }}

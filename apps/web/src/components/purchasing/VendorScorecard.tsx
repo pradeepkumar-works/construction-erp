@@ -2,9 +2,9 @@
 
 import React from 'react';
 import { Flex, Typography } from 'antd';
+import { tk } from '@/ds';
 import { VENDOR_RECORD_DAYS, rateVsMedian, vendorScore, type ComparativeStatementDto, type QuotationDto } from '@erp/shared';
 import { AppTag } from '@/components/common/AppTag';
-import { themeFontSize } from '@/lib/theme';
 
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 
@@ -17,7 +17,7 @@ export function VendorScorecard({ data, quotation }: { data: ComparativeStatemen
   const record = data.vendorRecords?.find((r) => r.vendorId === quotation.vendorId);
   const ratePct = rateVsMedian(data.lines, quotation.id);
   const s = vendorScore(record, ratePct);
-  const small = { fontSize: themeFontSize('fontSizeSM') };
+  const small = { fontSize: tk.type.caption.fontSize };
   const rate = ratePct === null ? null : ratePct === 0 ? 'At the median here' : `${Math.abs(ratePct)}% ${ratePct > 0 ? 'above' : 'below'} the median here`;
   return (
     <Flex vertical align="flex-end" gap={2}>

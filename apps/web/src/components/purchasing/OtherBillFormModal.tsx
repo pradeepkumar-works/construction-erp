@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo } from 'react';
 import { Alert, Checkbox, Form, Input, Select, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -17,7 +18,6 @@ import { UnitInput } from '@/components/common/UnitInput';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { LineTable } from '@/components/form/LineTable';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
-import { themeFontSize } from '@/lib/theme';
 import { recordPage } from '@/components/approvals/queue';
 import { Money } from '@/components/common/Money';
 
@@ -269,7 +269,7 @@ export function OtherBillFormModal({
       draftKey={given || kind === 'HIRE' ? undefined : `vendor-bill-${kind.toLowerCase()}:${start?.projectId ?? 'any'}`}
       onSubmit={(v, secondary) => save.mutateAsync({ v, submit: !secondary })}
       footerExtra={
-        <Typography.Text strong className="mono" style={{ marginInlineEnd: 8 }}>
+        <Typography.Text strong className="mono" style={{ marginInlineEnd: tk.space[2] }}>
           {formatINR(totals.total, true)}
         </Typography.Text>
       }
@@ -321,14 +321,14 @@ export function OtherBillFormModal({
         {kind === 'HIRE' ? (
           <FormSection title="Hire from the logs">
             {preview.error ? (
-              <Alert type="error" showIcon style={{ marginBottom: 12 }} title={errorMessage(preview.error)} />
+              <Alert type="error" showIcon style={{ marginBottom: tk.space[3] }} title={errorMessage(preview.error)} />
             ) : !p ? (
-              <Alert type="info" showIcon style={{ marginBottom: 12 }} title={preview.isFetching ? 'Reading the approved logs…' : 'Choose the project, the hired machine and the month; the bill fills in from its approved logs.'} />
+              <Alert type="info" showIcon style={{ marginBottom: tk.space[3] }} title={preview.isFetching ? 'Reading the approved logs…' : 'Choose the project, the hired machine and the month; the bill fills in from its approved logs.'} />
             ) : (
               <>
-                {p.existingBill ? <Alert type="error" showIcon style={{ marginBottom: 12 }} title={`${p.equipmentCode} for ${formatMonthLong(p.month)} is already billed on ${p.existingBill.billNo}`} /> : null}
-                {!p.vendorId ? <Alert type="error" showIcon style={{ marginBottom: 12 }} title={`Link ${p.equipmentCode} to its hire agency first, in Machinery › ${p.equipmentCode} › Edit`} /> : null}
-                <Typography.Paragraph type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                {p.existingBill ? <Alert type="error" showIcon style={{ marginBottom: tk.space[3] }} title={`${p.equipmentCode} for ${formatMonthLong(p.month)} is already billed on ${p.existingBill.billNo}`} /> : null}
+                {!p.vendorId ? <Alert type="error" showIcon style={{ marginBottom: tk.space[3] }} title={`Link ${p.equipmentCode} to its hire agency first, in Machinery › ${p.equipmentCode} › Edit`} /> : null}
+                <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
                   {[
                     p.vendorName,
                     `${p.logs.length} approved log${p.logs.length === 1 ? '' : 's'}: ${p.workedDays} days, ${formatQty(p.workedHours)} hours worked`,
@@ -361,7 +361,7 @@ export function OtherBillFormModal({
                   rowKey="key"
                   pagination={false}
                   dataSource={hireLines}
-                  style={{ marginBottom: 12 }}
+                  style={{ marginBottom: tk.space[3] }}
                   columns={[
                     { title: 'Line', dataIndex: 'label' },
                     { title: 'Quantity', key: 'qty', width: 140, align: 'right', render: (_, l) => `${formatQty(l.quantity)} ${unitLabel(l.unit)}` },
@@ -370,7 +370,7 @@ export function OtherBillFormModal({
                   ]}
                 />
                 {p.logs.length ? (
-                  <Typography.Paragraph type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                  <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
                     Logs: {p.logs.map((l) => `${formatDate(l.date)} ${formatQty(l.hoursWorked)} h`).join(', ')}. They lock once the bill is saved.
                   </Typography.Paragraph>
                 ) : null}
@@ -382,19 +382,19 @@ export function OtherBillFormModal({
         {kind === 'SERVICE' ? (
           <FormSection title="Job cards">
             {!projectId ? (
-              <Alert type="info" showIcon style={{ marginBottom: 12 }} title="Choose the project; its closed job cards not yet billed show here." />
+              <Alert type="info" showIcon style={{ marginBottom: tk.space[3] }} title="Choose the project; its closed job cards not yet billed show here." />
             ) : billable.length === 0 && !jobs.isLoading ? (
-              <Alert type="warning" showIcon style={{ marginBottom: 12 }} title="No closed job card on this project waits for a bill. Close the job with its cost first (Machinery, Maintenance)." />
+              <Alert type="warning" showIcon style={{ marginBottom: tk.space[3] }} title="No closed job card on this project waits for a bill. Close the job with its cost first (Machinery, Maintenance)." />
             ) : (
               <Form.Item name="jobIds" rules={[{ required: true, type: 'array', min: 1, message: 'Choose the closed job cards the workshop bills' }]}>
-                <Checkbox.Group style={{ display: 'grid', gap: 8 }} onChange={(ids) => pickJobs(ids as string[])}>
+                <Checkbox.Group style={{ display: 'grid', gap: tk.space[2] }} onChange={(ids) => pickJobs(ids as string[])}>
                   {billable.map((j) => (
                     <Checkbox key={j.id} value={j.id}>
                       <span className="mono" translate="no">
                         {j.jobNo}
                       </span>{' '}
                       {j.equipmentCode} · {j.description}
-                      <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                      <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
                         {' '}
                         · closed {j.closedDate ? formatDate(j.closedDate) : NO_VALUE} · labour {formatINR(j.labourCost, true)}, parts {formatINR(j.partsCost, true)}
                       </Typography.Text>
@@ -474,10 +474,10 @@ export function OtherBillFormModal({
               <Alert
                 type="warning"
                 showIcon
-                style={{ marginBottom: 12 }}
+                style={{ marginBottom: tk.space[3] }}
                 title="The approver will see these exceptions"
                 description={
-                  <ul style={{ margin: 0, paddingLeft: 18 }}>
+                  <ul style={{ margin: 0, paddingInlineStart: tk.space[5] }}>
                     {issues.map((i) => (
                       <li key={i}>{i}</li>
                     ))}
@@ -495,7 +495,7 @@ export function OtherBillFormModal({
           <Alert
             type="info"
             title={
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '4px 12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: `${tk.space[1]} ${tk.space[3]}` }}>
                 <span>Before GST</span>
                 {money(totals.subtotal)}
                 <span>GST</span>
@@ -515,7 +515,7 @@ export function OtherBillFormModal({
               </div>
             }
             description={
-              <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+              <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
                 Due 30 days from the invoice.
               </Typography.Text>
             }

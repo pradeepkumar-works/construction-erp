@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { App, Button, Checkbox, Descriptions, Drawer, Dropdown, Empty, Form, Grid, Select, Space, Table, Tooltip, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import type { MenuProps, TableProps } from 'antd';
 import { CopyOutlined, DeleteOutlined, DownOutlined, EditOutlined, PlusOutlined } from '@/components/common/icons';
@@ -9,7 +10,6 @@ import type { EstimateItemDto, EstimateLineDto, MaterialNormDto } from '@erp/sha
 import { BOQ_RESOURCE_KIND_LABELS, RATE_LIBRARY, suggestRateLibrary } from '@erp/shared';
 import { useCopyRateAnalysis, useProjectEstimate, useProjects, useRemoveBoqResource, useRemoveMaterialNorm } from '@/lib/queries';
 import { formatINR, formatQty, toNumber, NO_VALUE } from '@/lib/format';
-import { themeColor, themeFontSize } from '@/lib/theme';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 import { QueryError } from '@/components/common/QueryState';
 import { Section, SectionStack } from '@/components/common/Section';
@@ -18,7 +18,7 @@ import { NormFormModal } from './NormFormModal';
 import { ResourceFormModal } from './ResourceFormModal';
 import { Money } from '@/components/common/Money';
 
-const RED = themeColor('colorErrorText');
+const RED = tk.color.tone.danger.fg;
 
 /** Six-decimal norm with its units: "8.2 Bags / Cum". */
 const per = (l: EstimateLineDto, boqUnit: string) => (
@@ -96,7 +96,7 @@ export function RateAnalysisDrawer({ projectId, boqItemId, open, onClose }: { pr
       content: (
         <>
           <Typography.Paragraph>Check these:</Typography.Paragraph>
-          <ul style={{ paddingLeft: 18, margin: 0 }}>
+          <ul style={{ paddingInlineStart: tk.space[5], margin: 0 }}>
             {r.skipped.map((s) => (
               <li key={s}>{s}</li>
             ))}
@@ -167,7 +167,7 @@ export function RateAnalysisDrawer({ projectId, boqItemId, open, onClose }: { pr
         <>
           {v}
           {l.note ? (
-            <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+            <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
               {l.note}
             </div>
           ) : null}
@@ -288,7 +288,7 @@ export function RateAnalysisDrawer({ projectId, boqItemId, open, onClose }: { pr
                 ]}
               />
               {item.unpriced ? (
-                <Typography.Paragraph type="secondary" style={{ fontSize: themeFontSize('fontSizeSM'), marginTop: 8, marginBottom: 0 }}>
+                <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[2], marginBottom: 0 }}>
                   {item.unpriced} line{item.unpriced === 1 ? ' has' : 's have'} no rate and count as nothing: set item rates in the item master, labour rates in Settings, or a rate on a
                   machine of that category.
                 </Typography.Paragraph>

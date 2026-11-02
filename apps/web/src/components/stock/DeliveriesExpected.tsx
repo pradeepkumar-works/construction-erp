@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Button, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { ProcurementStatusRowDto, RoleKey } from '@erp/shared';
 import { canKeepStock, canViewPurchaseOrders } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
@@ -43,10 +44,10 @@ export function DeliveriesExpected({ projectId }: { projectId?: string }) {
       width: 160,
       render: (_, r) => (
         <div>
-          <Link href={`/purchase-orders/${r.purchaseOrderId}`} className="mono" style={{ fontWeight: 600 }}>
+          <Link href={`/purchase-orders/${r.purchaseOrderId}`} className="mono" style={{ fontWeight: tk.type.title.fontWeight }}>
             {r.poNo}
           </Link>
-          <div className="text-muted" style={{ fontSize: 12 }}>
+          <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
             {formatDate(r.poDate)}
           </div>
         </div>
@@ -64,7 +65,7 @@ export function DeliveriesExpected({ projectId }: { projectId?: string }) {
         <div>
           {r.deliveryBy ? formatDate(r.deliveryBy) : <span className="text-muted">Not set</span>}
           {r.daysLate > 0 ? (
-            <div style={{ fontSize: 12 }}>
+            <div style={{ fontSize: tk.type.caption.fontSize }}>
               <Typography.Text type="danger" style={{ fontSize: 'inherit' }}>
                 {r.daysLate} day{r.daysLate === 1 ? '' : 's'} late
               </Typography.Text>
@@ -87,7 +88,7 @@ export function DeliveriesExpected({ projectId }: { projectId?: string }) {
               </span>
             ))}
             {left.length > 3 ? <Typography.Text type="secondary">{` and ${left.length - 3} more`}</Typography.Text> : null}
-            {r.receivedPct > 0 ? <div className="text-muted" style={{ fontSize: 12 }}>{r.receivedPct}% received</div> : null}
+            {r.receivedPct > 0 ? <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>{r.receivedPct}% received</div> : null}
           </span>
         );
       },
@@ -111,7 +112,7 @@ export function DeliveriesExpected({ projectId }: { projectId?: string }) {
   ];
   return (
     <>
-      <Typography.Paragraph type="secondary" style={{ marginBottom: 8 }}>
+      <Typography.Paragraph type="secondary" style={{ marginBottom: tk.space[2] }}>
         Approved orders with something still to come, late first. Receive books the goods received note against the order, so the bill and QA/QC follow it.
       </Typography.Paragraph>
       <LocalDataTable<Row>

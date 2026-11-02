@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Button, Space, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { TableProps } from 'antd';
 import type { MachineDayDto } from '@erp/shared';
 import { canLogMachinery, canManageIntegrations, distanceText } from '@erp/shared';
@@ -9,7 +10,6 @@ import { useAuth } from '@/lib/auth';
 import { useMachineDays } from '@/lib/queries';
 import { useProjectScope } from '@/lib/project-scope';
 import { formatDate, formatQty, NO_VALUE } from '@/lib/format';
-import { themeFontSize } from '@/lib/theme';
 import { AppTag } from '@/components/common/AppTag';
 import { LinkButton } from '@/components/common/LinkButton';
 import { QueryError } from '@/components/common/QueryState';
@@ -59,7 +59,7 @@ export function EngineHoursPanel({ projectId: fixedProject }: { projectId?: stri
           </span>{' '}
           {d.equipmentName}
           {!fixedProject && d.projectName ? (
-            <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+            <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
               {d.projectName}
             </div>
           ) : null}
@@ -95,7 +95,7 @@ export function EngineHoursPanel({ projectId: fixedProject }: { projectId?: stri
               {formatQty(v)} L
             </span>
             {d.fuel?.litresPerHour ? (
-              <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }} translate="no">
+              <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }} translate="no">
                 {`${formatQty(d.fuel.litresPerHour)} L/h`}
               </div>
             ) : null}
@@ -152,7 +152,7 @@ export function EngineHoursPanel({ projectId: fixedProject }: { projectId?: stri
 
   const empty = (
     <EmptyLine title="No engine hours yet">
-      <p style={{ margin: '4px 0 8px' }}>
+      <p style={{ margin: `${tk.space[1]} 0 ${tk.space[2]}` }}>
         {data?.unmatchedDevices
           ? `${data.unmatchedDevices} tracker${data.unmatchedDevices === 1 ? ' is' : 's are'} not matched to a machine yet. Match them in Admin › Connections › Devices.`
           : "Connect the fleet's GPS trackers or a machine maker's feed in Admin › Connections, and each machine's engine hours show here by the day."}
@@ -162,8 +162,8 @@ export function EngineHoursPanel({ projectId: fixedProject }: { projectId?: stri
   );
 
   return (
-    <div style={{ paddingTop: 12 }}>
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginBottom: 12 }}>
+    <div style={{ paddingTop: tk.space[3] }}>
+      <div style={{ display: 'flex', gap: tk.space[3], flexWrap: 'wrap', alignItems: 'center', marginBottom: tk.space[3] }}>
         {fixedProject ? null : <ProjectSelect value={scope} onChange={(v) => setScope(v)} style={{ minWidth: 220, maxWidth: '100%' }} />}
         <DateRangeFilter from={range.from} to={range.to} onChange={(from, to) => setRange({ from, to })} />
         {data ? (
@@ -186,7 +186,7 @@ export function EngineHoursPanel({ projectId: fixedProject }: { projectId?: stri
           locale={{ emptyText: empty }}
         />
       )}
-      <Typography.Paragraph type="secondary" style={{ fontSize: themeFontSize('fontSizeSM'), marginTop: 12, marginBottom: 0 }}>
+      <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[3], marginBottom: 0 }}>
         From each machine&rsquo;s hour meter as its tracker or maker&rsquo;s feed reads it (ignition time where there is no meter), the last week unless you choose dates. A log&rsquo;s worked and idle hours more than half an hour above the engine&rsquo;s are flagged, and so is a machine beyond its site&rsquo;s radius (2 km at least).
       </Typography.Paragraph>
       <MachineryDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} />

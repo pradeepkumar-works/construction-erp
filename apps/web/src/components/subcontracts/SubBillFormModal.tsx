@@ -2,6 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { Alert, Checkbox, Form, Input, Select, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -13,7 +14,6 @@ import { formatINR, formatQty, toNumber } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
-import { themeFontSize } from '@/lib/theme';
 import { recordPage } from '@/components/approvals/queue';
 import { unitLabel } from '@erp/shared';
 import { Money } from '@/components/common/Money';
@@ -165,7 +165,7 @@ export function SubBillFormModal({
               <Alert
                 type="info"
                 showIcon
-                style={{ marginBottom: 12 }}
+                style={{ marginBottom: tk.space[3] }}
                 title="BOQ items are billed as measured"
                 description={
                   <span>
@@ -182,7 +182,7 @@ export function SubBillFormModal({
                   size="small"
                   pagination={false}
                   dataSource={ownLines}
-                  style={{ margin: '6px 0 16px' }}
+                  style={{ margin: `${tk.space[2]} 0 ${tk.space[4]}` }}
                   columns={[
                     { title: 'Item', dataIndex: 'description' },
                     { title: 'Ordered', width: 120, align: 'right', render: (_, l) => <span className="mono" translate="no">{formatQty(l.quantity)} {l.unit}</span> },
@@ -219,7 +219,7 @@ export function SubBillFormModal({
             <PhotoUpload max={4} />
           </Form.Item>
           {wo && (
-            <Typography.Paragraph type="secondary" style={{ fontSize: themeFontSize('fontSizeSM'), marginBottom: 0 }}>
+            <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginBottom: 0 }}>
               Deducted on saving: retention {wo.retentionPct}%, TDS {wo.tdsPct}%
               {toNumber(wo.advanceAmount) > 0 ? `, advance recovery ${wo.advanceRecoveryPct}% (${formatINR(toNumber(wo.advanceAmount) - toNumber(wo.advanceRecovered), true)} left)` : ''}, and material issued to them at our rates. GST {wo.gstRate}% is added.
             </Typography.Paragraph>

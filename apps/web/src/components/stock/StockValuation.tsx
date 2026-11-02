@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Alert, Statistic, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { TableProps } from 'antd';
 import type { StockValuationRowDto } from '@erp/shared';
 import { STOCK_AGEING_BUCKETS, unitLabel } from '@erp/shared';
@@ -12,7 +13,6 @@ import { downloadXlsx, exportFileName, type ExportColumn } from '@/lib/exportExc
 import { QueryError } from '@/components/common/QueryState';
 import { ExportButton } from '@/components/common/ExportButton';
 import { CardToolbar } from '@/components/common/CardToolbar';
-import { themeFontSize } from '@/lib/theme';
 import { Money } from '@/components/common/Money';
 
 const EXPORT: ExportColumn<StockValuationRowDto>[] = [
@@ -50,9 +50,9 @@ export function StockValuation({ projectId }: { projectId?: string }) {
     <div className="stock-valuation">
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <CardToolbar variant="summary" wrap gap={32} align="flex-end">
-        <Statistic title="Stock value" value={formatINR(data?.totalValue ?? 0)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
+        <Statistic title="Stock value" value={formatINR(data?.totalValue ?? 0)} styles={{ content: { fontSize: tk.type.subhead.fontSize } }} />
         {STOCK_AGEING_BUCKETS.map((b, i) => (
-          <Statistic key={b} title={b} value={formatINR(data?.ageingValue[i] ?? 0)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
+          <Statistic key={b} title={b} value={formatINR(data?.ageingValue[i] ?? 0)} styles={{ content: { fontSize: tk.type.subhead.fontSize } }} />
         ))}
         <div style={{ marginLeft: 'auto' }}>
           <ExportButton
@@ -67,7 +67,7 @@ export function StockValuation({ projectId }: { projectId?: string }) {
         <Alert
           type="warning"
           showIcon
-          style={{ margin: 12 }}
+          style={{ margin: tk.space[3] }}
           title={`${data.unpricedItems} item${data.unpricedItems === 1 ? ' has' : 's have'} no rate and ${data.unpricedItems === 1 ? 'is' : 'are'} not valued`}
           description="Set rates in the item master."
         />
@@ -82,7 +82,7 @@ export function StockValuation({ projectId }: { projectId?: string }) {
         scroll={{ x: projectId ? 980 : 1200 }}
         locale={{ emptyText: 'Nothing in stock' }}
       />
-      <Typography.Paragraph type="secondary" style={{ fontSize: themeFontSize('fontSizeSM'), padding: '8px 16px 0' }}>
+      <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, padding: `${tk.space[2]} ${tk.space[4]} 0` }}>
         Stock on hand at the item master rate. Ageing assumes the oldest stock is used first, so what is on hand is the latest that came in (GRNs,
         transfers in, returns from site and positive adjustments); the buckets show how long ago that was.
       </Typography.Paragraph>

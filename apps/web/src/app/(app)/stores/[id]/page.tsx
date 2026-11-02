@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { useParams } from 'next/navigation';
-import { Button, Card, Col, Row, Statistic, theme } from 'antd';
+import { Button, Card, Col, Row, Statistic } from 'antd';
+import { tk } from '@/ds';
 import { EditOutlined } from '@/components/common/icons';
 import { canEditProjects } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
@@ -17,7 +18,6 @@ import { Money } from '@/components/common/Money';
 
 /** One central store: its stock, register, value and ageing, and the transfers coming in to receive. */
 export default function StorePage() {
-  const { token } = theme.useToken();
   const { user } = useAuth();
   const params = useParams<{ id: string }>();
   const id = params?.id;
@@ -40,7 +40,7 @@ export default function StorePage() {
   const stat = (title: string, value: React.ReactNode) => (
     <Col xs={12} md={6}>
       <Card size="small" style={{ height: '100%' }}>
-        <Statistic title={title} value={0} formatter={() => value} styles={{ content: { fontSize: token.fontSizeHeading4 } }} />
+        <Statistic title={title} value={0} formatter={() => value} styles={{ content: { fontSize: tk.type.lead.fontSize } }} />
       </Card>
     </Col>
   );
@@ -64,7 +64,7 @@ export default function StorePage() {
         }
       />
       {summary ? (
-        <Row gutter={[12, 12]} style={{ marginBottom: token.marginMD }}>
+        <Row gutter={[12, 12]} style={{ marginBottom: tk.space[5] }}>
           {stat('Items in stock', summary.items)}
           {summary.value !== null ? stat('Stock value', <Money value={summary.value} />) : null}
           {stat('On the road to sites', summary.outInTransit)}

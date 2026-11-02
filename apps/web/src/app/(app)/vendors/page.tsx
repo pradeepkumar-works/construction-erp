@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Button, Card, Flex, Select, Space, Table, Tooltip, Typography, theme } from 'antd';
+import { Button, Card, Flex, Select, Space, Table, Tooltip, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { AppTabs } from '@/components/common/AppTabs';
 import { ContactsOutlined, DeleteOutlined, EditOutlined, PlusOutlined } from '@/components/common/icons';
@@ -40,8 +41,7 @@ const usedOn = (r: { expenseCount: number; equipmentCount: number; grnCount: num
 const KEYS = ['kind', 'msme', 'inactive'] as const;
 
 function Sub({ children }: { children: React.ReactNode }) {
-  const { token } = theme.useToken();
-  return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
+  return <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{children}</div>;
 }
 
 function VendorsTab({ editable, onEdit, onPortal, emptyAction }: { editable: boolean; onEdit: (v: VendorDto) => void; onPortal?: (v: VendorDto) => void; emptyAction?: React.ReactNode }) {
@@ -87,7 +87,7 @@ function VendorsTab({ editable, onEdit, onPortal, emptyAction }: { editable: boo
         render: (_, v) => (
           <div>
             <Typography.Text strong>{v.name}</Typography.Text> {!v.isActive && <AppTag meaning="closed">Inactive</AppTag>}
-            <Flex gap={4} wrap style={{ marginTop: 2 }}>
+            <Flex gap={4} wrap style={{ marginTop: tk.space.half }}>
               {v.kinds.map((k) => (
                 <AppTag variant="kind" key={k} style={{ margin: 0 }}>
                   {VENDOR_KIND_LABELS[k]}
@@ -231,7 +231,7 @@ function UnlistedTab({ editable, onAdd }: { editable: boolean; onAdd: (u: Unlist
   return (
     <>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      <Typography.Paragraph type="secondary" style={{ padding: '12px 12px 0' }}>
+      <Typography.Paragraph type="secondary" style={{ padding: `${tk.space[3]} ${tk.space[3]} 0` }}>
         Names typed on expenses, machines and GRNs that match no vendor in the master. Adding one links those entries to it; entries typed later with the same name link on their own.
       </Typography.Paragraph>
       <Table<UnlistedVendorDto>

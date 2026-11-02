@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Alert, Form, Input, InputNumber, Radio, Select, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -132,7 +133,7 @@ export function LoanFormModal({ open, onClose, loan, equipmentId, onSaved }: { o
       draftKey={editing ? undefined : 'machine-loan'}
     >
       <Form form={form} layout="vertical">
-        {fixedTerms ? <Alert type="info" showIcon style={{ marginBottom: 16 }} title="EMIs are paid on this loan, so its terms stay as they are. Who it was paid out to, the account number and the note can change." /> : null}
+        {fixedTerms ? <Alert type="info" showIcon style={{ marginBottom: tk.space[4] }} title="EMIs are paid on this loan, so its terms stay as they are. Who it was paid out to, the account number and the note can change." /> : null}
         <FormSection title="Loan">
           <Form.Item name="equipmentId" label="Machine" rules={[{ required: true, message: 'Choose the machine the loan is on' }]} extra="Owned machines only.">
             <EquipmentSelect aria-label="Machine" params={{ ownership: 'OWNED' }} disabled={fixedTerms} />
@@ -174,7 +175,7 @@ export function LoanFormModal({ open, onClose, loan, equipmentId, onSaved }: { o
           </FormGrid>
           {!fixedTerms && preview ? (
             preview.problem ? (
-              <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={preview.problem} />
+              <Alert type="warning" showIcon style={{ marginBottom: tk.space[4] }} title={preview.problem} />
             ) : (
               <Typography.Paragraph type="secondary">
                 {preview.rows.length} EMIs from {formatDate(preview.rows[0]?.dueDate)} to {formatDate(preview.rows[preview.rows.length - 1]?.dueDate)}, interest {formatINR(preview.totalInterest, true)} in all.

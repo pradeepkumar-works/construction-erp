@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Descriptions, Drawer, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { StockBalanceDto, StockEntryDto } from '@erp/shared';
 import { useStockEntries } from '@/lib/queries';
 import { formatDate, formatQty, NO_VALUE } from '@/lib/format';
@@ -24,7 +25,7 @@ export function ItemLedgerDrawer({ row, onClose }: { row: StockBalanceDto | null
             size="small"
             bordered
             column={3}
-            style={{ marginBottom: 16 }}
+            style={{ marginBottom: tk.space[4] }}
             items={[
               { key: 'r', label: 'Received', children: `${formatQty(row.received)} ${unitLabel(row.unit)}` },
               { key: 'i', label: 'Issued', children: `${formatQty(row.issued)} ${unitLabel(row.unit)}` },

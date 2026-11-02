@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Checkbox, Form, Input, Select, Space, Typography, theme } from 'antd';
+import { App, Button, Checkbox, Form, Input, Select, Space, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
@@ -25,7 +26,6 @@ import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { PHONE_INPUT, phoneRule } from '@/components/form/inputs';
 import { ExpiryTag } from './maintenanceUi';
-import { themeFontSize } from '@/lib/theme';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 interface DocValues {
@@ -55,8 +55,7 @@ const DOC_KEYS = ['type', 'state', 'equipmentId', 'old'] as const;
 const DRIVER_KEYS = ['left'] as const;
 
 function Sub({ children }: { children: React.ReactNode }) {
-  const { token } = theme.useToken();
-  return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
+  return <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{children}</div>;
 }
 
 /** Vehicle papers that expire (insurance, fitness, permit, PUC, road tax, RC) and the drivers with their licences. */
@@ -296,11 +295,11 @@ export function PapersPanel() {
 
   return (
     <div className="papers-panel">
-      <div style={{ padding: '12px 16px 0' }}>
+      <div style={{ padding: `${tk.space[3]} ${tk.space[4]} 0` }}>
         <Typography.Title level={5} style={{ margin: 0 }}>
           Vehicle and machine papers
         </Typography.Title>
-        <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+        <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
           The latest paper of each kind per machine. Admins, management and the store team are alerted {DOC_ALERT_DAYS} days before one expires.
         </Typography.Text>
       </div>
@@ -337,7 +336,7 @@ export function PapersPanel() {
         emptyAction={newButton}
       />
 
-      <div style={{ padding: '20px 16px 0' }}>
+      <div style={{ padding: `${tk.space[5]} ${tk.space[4]} 0` }}>
         <Typography.Title level={5} style={{ margin: 0 }}>
           Drivers and operators
         </Typography.Title>

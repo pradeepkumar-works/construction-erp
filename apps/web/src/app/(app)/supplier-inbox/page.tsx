@@ -4,6 +4,7 @@ import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Button, Descriptions, Drawer, Flex, Segmented, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTabs } from '@/components/common/AppTabs';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -80,7 +81,7 @@ function Invoices({ openId, setOpen }: { openId: string | null; setOpen: (id: st
   const { data, isFetching, isLoading, error, refetch } = useSupplierInbox(stage === 'ALL' ? { all: true } : { stage });
   return (
     <>
-      <Flex gap={8} wrap align="center" style={{ marginBottom: 12 }}>
+      <Flex gap={8} wrap align="center" style={{ marginBottom: tk.space[3] }}>
         <Segmented<StageFilter>
           value={stage}
           onChange={setStage}
@@ -179,7 +180,7 @@ function InvoiceDrawer({ id, onClose }: { id: string | null; onClose: () => void
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {i ? (
         <>
-          <Descriptions size="small" column={{ xs: 1, sm: 2 }} bordered style={{ marginBottom: 16 }}>
+          <Descriptions size="small" column={{ xs: 1, sm: 2 }} bordered style={{ marginBottom: tk.space[4] }}>
             <Descriptions.Item label="Status" span={2}>
               <InvoiceStageTag stage={i.stage} />
               {i.bill ? (
@@ -225,12 +226,12 @@ function InvoiceDrawer({ id, onClose }: { id: string | null; onClose: () => void
               </Descriptions.Item>
             ) : null}
           </Descriptions>
-          <Typography.Title level={2} style={{ fontSize: 16 }}>
+          <Typography.Title level={2} style={{ fontSize: tk.type.lead.fontSize }}>
             Invoice file
           </Typography.Title>
           <AttachmentGallery attachments={i.attachments} />
           {waiting ? (
-            <Typography.Paragraph type="secondary" style={{ marginTop: 16 }}>
+            <Typography.Paragraph type="secondary" style={{ marginTop: tk.space[4] }}>
               {i.purchaseOrderId || i.workOrderId
                 ? 'A bill with the same invoice number moves this invoice to Billed, and the supplier sees it.'
                 : 'This invoice names no order, so it is recorded as a vendor bill for another service. A bill with the same invoice number moves it to Billed, and the supplier sees it.'}

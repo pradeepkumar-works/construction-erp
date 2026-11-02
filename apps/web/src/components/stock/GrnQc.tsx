@@ -3,6 +3,7 @@
 import React, { useEffect } from 'react';
 import dayjs from 'dayjs';
 import { Alert, App, Form, Input, Segmented, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { GrnQcStatus, StockEntryDto, StockLineDto } from '@erp/shared';
@@ -97,7 +98,7 @@ export function GrnQcModal({ entry, open, onClose }: { entry: StockEntryDto; ope
             size="small"
             rowKey="id"
             pagination={false}
-            style={{ marginBottom: 16 }}
+            style={{ marginBottom: tk.space[4] }}
             dataSource={entry.lines}
             columns={[
               { title: 'Item', dataIndex: 'itemName' },
@@ -124,7 +125,7 @@ export function GrnQcModal({ entry, open, onClose }: { entry: StockEntryDto; ope
           </Form.Item>
         </FormGrid>
         {needsMtc && !mtcNo && status !== 'REJECTED' ? (
-          <Alert type="warning" showIcon style={{ marginBottom: 16 }} title="This material needs the maker's test certificate" description="Ask the supplier for it. You can accept the material now; the receipt stays on the certificates list until its number is entered." />
+          <Alert type="warning" showIcon style={{ marginBottom: tk.space[4] }} title="This material needs the maker's test certificate" description="Ask the supplier for it. You can accept the material now; the receipt stays on the certificates list until its number is entered." />
         ) : null}
         <Form.Item
           name="note"

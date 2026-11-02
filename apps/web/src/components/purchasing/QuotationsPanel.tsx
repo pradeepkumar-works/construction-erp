@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Empty, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import type { MaterialRequestDto } from '@erp/shared';
 import { canPurchase } from '@erp/shared';
@@ -29,7 +30,7 @@ export function QuotationsPanel({ request }: { request: MaterialRequestDto }) {
 
   return (
     <>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: tk.space[2], flexWrap: 'wrap', marginBottom: tk.space[2] }}>
         <Typography.Text type="secondary">
           {quotes.length ? `${quotes.length} quotation${quotes.length === 1 ? '' : 's'}; the lowest landed rate (with GST) per item is marked.` : 'No quotations yet.'}
         </Typography.Text>
@@ -42,11 +43,11 @@ export function QuotationsPanel({ request }: { request: MaterialRequestDto }) {
       <EnquiriesList requestId={request.id} />
       {quotes.length > 0 && data ? <ComparativeTable request={request} data={data} loading={isLoading} /> : null}
       {(orders.data?.items.length ?? 0) > 0 ? (
-        <RequestOrders requestId={request.id} onOpen={setOpenPo} style={{ marginTop: 12 }} />
+        <RequestOrders requestId={request.id} onOpen={setOpenPo} style={{ marginTop: tk.space[3] }} />
       ) : quotes.length === 0 && !buyer ? (
         <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No quotations or purchase orders yet" />
       ) : null}
-      {!remaining && <AppTag meaning="done" style={{ marginTop: 8 }}>Everything on this indent is ordered or received</AppTag>}
+      {!remaining && <AppTag meaning="done" style={{ marginTop: tk.space[2] }}>Everything on this indent is ordered or received</AppTag>}
       <PurchaseOrderDrawer id={openPo} open={!!openPo} onClose={() => setOpenPo(null)} />
     </>
   );

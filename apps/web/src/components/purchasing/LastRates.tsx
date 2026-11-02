@@ -2,11 +2,11 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Button, Popover, Table, Typography, theme } from 'antd';
+import { Button, Popover, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { HistoryOutlined, WarningOutlined } from '@/components/common/icons';
 import { LAST_RATES_COUNT, rateAboveOthers, type LastRateDto, type RateQuote } from '@erp/shared';
 import { formatDate, formatINR, formatQty } from '@/lib/format';
-import { themeFontSize } from '@/lib/theme';
 import { Money } from '@/components/common/Money';
 
 /**
@@ -17,7 +17,7 @@ export function LastRates({ itemName, rates, loading }: { itemName: string; rate
   if (loading || !rates) return null;
   if (!rates.length)
     return (
-      <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+      <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
         No earlier orders
       </Typography.Text>
     );
@@ -37,13 +37,13 @@ export function LastRates({ itemName, rates, loading }: { itemName: string; rate
           columns={[
             { title: 'Order', dataIndex: 'poNo', width: 130, render: (v, r) => <Link href={`/purchase-orders/${r.purchaseOrderId}`} className="mono">{v}</Link> },
             { title: 'Date', dataIndex: 'poDate', width: 100, render: (v) => formatDate(v) },
-            { title: 'Vendor', dataIndex: 'vendorName', render: (v, r) => <div translate="no">{v}<div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{r.projectName} · {formatQty(r.quantity)}</div></div> },
-            { title: 'Rate', dataIndex: 'rate', width: 110, align: 'right', render: (v, r) => <span className="mono" translate="no">{formatINR(v, true)}<div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>+{r.gstRate}%</div></span> },
+            { title: 'Vendor', dataIndex: 'vendorName', render: (v, r) => <div translate="no">{v}<div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>{r.projectName} · {formatQty(r.quantity)}</div></div> },
+            { title: 'Rate', dataIndex: 'rate', width: 110, align: 'right', render: (v, r) => <span className="mono" translate="no">{formatINR(v, true)}<div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>+{r.gstRate}%</div></span> },
           ]}
         />
       }
     >
-      <Button type="link" size="small" icon={<HistoryOutlined />} style={{ padding: 0, height: 'auto', minHeight: 24, fontSize: themeFontSize('fontSizeSM') }}>
+      <Button type="link" size="small" icon={<HistoryOutlined />} style={{ padding: 0, height: 'auto', minHeight: 24, fontSize: tk.type.caption.fontSize }}>
         Last order <span translate="no">{formatINR(last.rate, true)} · {last.vendorName}</span>
       </Button>
     </Popover>
@@ -55,14 +55,13 @@ export function LastRates({ itemName, rates, loading }: { itemName: string; rate
  * 30 days before the order. The same rule as the order's record, the leakage page and the watch list.
  */
 export function RateAbove({ rate, quantity, projectId, poDate, quotes }: { rate: number | string | null | undefined; quantity?: number | string | null; projectId: string | undefined; poDate: string; quotes: RateQuote[] | undefined }) {
-  const { token } = theme.useToken();
   const r = Number(rate);
   if (!projectId || !quotes?.length || !(r > 0)) return null;
   const hit = rateAboveOthers({ rate: r, projectId, poDate }, quotes);
   if (!hit) return null;
   const q = Number(quantity);
   return (
-    <div style={{ color: token.colorWarningText, fontSize: themeFontSize('fontSizeSM') }} role="note">
+    <div style={{ color: tk.color.tone.pending.fg, fontSize: tk.type.caption.fontSize }} role="note">
       <WarningOutlined aria-hidden /> {Math.round(hit.abovePct)}% above the <Money value={hit.best.rate} paise />{' '}
       <Link href={`/purchase-orders/${hit.best.purchaseOrderId}`} className="text-link" translate="no">
         {hit.best.projectName}

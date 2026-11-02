@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { App, Button, Checkbox, InputNumber, Popover, Space, Tooltip, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { EditOutlined, WarningOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -24,7 +25,6 @@ import { exportSelected } from '@/components/list/bulk';
 import { useListFrame } from '@/components/list/useListFrame';
 import { RecordLink } from '@/components/record/RecordLink';
 import { ItemLedgerDrawer } from './ItemLedgerDrawer';
-import { themeColor, themeFontSize } from '@/lib/theme';
 
 /** Minimum level editor in a popover: store manager and approvers. */
 function MinLevelEditor({ row }: { row: StockBalanceDto }) {
@@ -76,7 +76,7 @@ function MinLevelEditor({ row }: { row: StockBalanceDto }) {
               </Button>
             ) : null}
           </Space>
-          <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+          <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
             The store manager and PM are alerted when an issue takes the stock below it.
           </Typography.Text>
         </Space>
@@ -140,7 +140,7 @@ export function StockBalances({ projectId: fixedProject, initialLow = false, ini
             <Space size={4}>
               {r.low ? (
                 <Tooltip title={`Below the minimum of ${formatQty(r.minQty)} ${unitLabel(r.unit)}`}>
-                  <WarningOutlined style={{ color: themeColor('volcano7') }} />
+                  <WarningOutlined style={{ color: tk.color.tone.danger.fg }} />
                 </Tooltip>
               ) : null}
               <Typography.Text strong type={r.low ? 'danger' : undefined}>

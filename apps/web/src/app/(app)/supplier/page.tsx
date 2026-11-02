@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Alert, Card, Col, Row, Statistic, Typography, theme } from 'antd';
+import { Alert, Card, Col, Row, Statistic, Typography } from 'antd';
+import { tk } from '@/ds';
 import { useSupplierHome } from '@/lib/queries';
 import { formatDate, formatINR } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -11,14 +12,13 @@ import { Money } from '@/components/common/Money';
 
 /** The supplier portal's home: what waits on the supplier, and what is due to them. */
 export default function SupplierHomePage() {
-  const { token } = theme.useToken();
   const { data, isLoading, error, refetch } = useSupplierHome();
   const tile = (title: string, value: React.ReactNode, href: string, action: string, note?: React.ReactNode) => (
     <Col xs={24} sm={12} xl={8}>
       <Card style={{ height: '100%' }}>
-        <Statistic title={title} value={typeof value === 'number' ? value : 0} formatter={typeof value === 'number' ? undefined : () => value} styles={{ content: { fontSize: token.fontSizeHeading3 } }} />
-        {note ? <Typography.Paragraph type="secondary" style={{ margin: `${token.marginXS}px 0 0` }}>{note}</Typography.Paragraph> : null}
-        <LinkButton href={href} style={{ marginTop: token.marginSM }}>
+        <Statistic title={title} value={typeof value === 'number' ? value : 0} formatter={typeof value === 'number' ? undefined : () => value} styles={{ content: { fontSize: tk.type.subhead.fontSize } }} />
+        {note ? <Typography.Paragraph type="secondary" style={{ margin: `${tk.space[2]} 0 0` }}>{note}</Typography.Paragraph> : null}
+        <LinkButton href={href} style={{ marginTop: tk.space[3] }}>
           {action}
         </LinkButton>
       </Card>
@@ -40,7 +40,7 @@ export default function SupplierHomePage() {
               showIcon
               title={`${data.invoicesReturned} invoice${data.invoicesReturned === 1 ? ' was' : 's were'} returned by accounts. Fix and send again.`}
               action={<LinkButton href="/supplier/invoices">Open invoices</LinkButton>}
-              style={{ marginBottom: token.marginMD }}
+              style={{ marginBottom: tk.space[5] }}
             />
           ) : null}
           <Row gutter={[16, 16]}>

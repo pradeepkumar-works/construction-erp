@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Button, Progress, Space, theme } from 'antd';
+import { Button, Progress, Space } from 'antd';
+import { tk } from '@/ds';
 import { PlusOutlined } from '@/components/common/icons';
 import type { PurchaseOrderDto, PurchaseOrderSortField } from '@erp/shared';
 import { LIST_SORT_FIELDS, canPurchase } from '@erp/shared';
@@ -31,11 +32,10 @@ const KEYS = ['status', 'mine', 'from', 'to', 'vendorId', 'open'] as const;
 const sumMoney = (values: string[]) => formatINR(values.reduce((n, v) => n + Number(v || 0), 0));
 
 function TwoLine({ top, sub }: { top: React.ReactNode; sub: React.ReactNode }) {
-  const { token } = theme.useToken();
   return (
     <div>
       {top}
-      <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{sub}</div>
+      <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{sub}</div>
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Button, Col, Empty, Row, Skeleton, Space, Statistic, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { TableProps } from 'antd';
 import { FileExcelOutlined } from '@/components/common/icons';
 import type { StockAdjustmentReason, WastageRowDto } from '@erp/shared';
@@ -9,13 +10,12 @@ import { STOCK_ADJUSTMENT_REASON_LABELS } from '@erp/shared';
 import { useWastageReport } from '@/lib/queries';
 import { formatINR, toNumber, NO_VALUE } from '@/lib/format';
 import { downloadXlsx, exportFileName } from '@/lib/exportExcel';
-import { themeColor, themeFontSize } from '@/lib/theme';
 import { QueryError } from '@/components/common/QueryState';
 import { Section, SectionStack } from '@/components/common/Section';
 import { PeriodPicker, periodLabel, periodParams, type PeriodState } from '@/components/cost/PeriodPicker';
 import { qty } from './ReconciliationPanel';
 
-const RED = themeColor('colorErrorText');
+const RED = tk.color.tone.danger.fg;
 const reasonLabel = (r: StockAdjustmentReason | null) => (r ? STOCK_ADJUSTMENT_REASON_LABELS[r] : 'Not given');
 
 /**
@@ -76,7 +76,7 @@ export function WastageReport({ projectId }: { projectId: string }) {
 
   return (
     <SectionStack gap={0}>
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginBottom: 12 }}>
+      <div style={{ display: 'flex', gap: tk.space[3], flexWrap: 'wrap', alignItems: 'center', marginBottom: tk.space[3] }}>
         <PeriodPicker value={period} onChange={setPeriod} />
         <Space wrap style={{ marginLeft: 'auto' }}>
           <Button icon={<FileExcelOutlined />} onClick={exportExcel} disabled={!data?.rows.length}>
@@ -94,9 +94,9 @@ export function WastageReport({ projectId }: { projectId: string }) {
                 <Statistic
                   title="Written off"
                   value={formatINR(data.lostValue)}
-                  styles={{ content: { fontSize: themeFontSize('fontSizeXL'), color: toNumber(data.lostValue) > 0 ? RED : undefined } }}
+                  styles={{ content: { fontSize: tk.type.subhead.fontSize, color: toNumber(data.lostValue) > 0 ? RED : undefined } }}
                 />
-                <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                   {periodLabel(period)}
                 </div>
               </Col>
@@ -106,16 +106,16 @@ export function WastageReport({ projectId }: { projectId: string }) {
                 <Statistic
                   title={reasonLabel(b.reason)}
                   value={values && b.lostValue !== null ? formatINR(b.lostValue) : b.entries}
-                  styles={{ content: { fontSize: themeFontSize('fontSizeLG') } }}
+                  styles={{ content: { fontSize: tk.type.lead.fontSize } }}
                 />
-                <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                   {b.entries} entr{b.entries === 1 ? 'y' : 'ies'}
                 </div>
               </Col>
             ))}
           </Row>
 
-          <Section style={{ marginTop: 16 }} title="By reason and item">
+          <Section style={{ marginTop: tk.space[4] }} title="By reason and item">
             <Table<WastageRowDto>
               rowKey={(r) => `${r.reason ?? 'none'}:${r.itemId}`}
               size="small"
@@ -127,7 +127,7 @@ export function WastageReport({ projectId }: { projectId: string }) {
             />
           </Section>
 
-          <Typography.Paragraph type="secondary" style={{ fontSize: themeFontSize('fontSizeSM'), marginTop: 12, marginBottom: 0 }}>
+          <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[3], marginBottom: 0 }}>
             Every stock adjustment in the period by the reason the storekeeper gave, valued at the item&apos;s rate. A stock count posts its differences as Count
             difference; opening stock is left out. Adjustments made before reasons were asked show as Not given.
           </Typography.Paragraph>

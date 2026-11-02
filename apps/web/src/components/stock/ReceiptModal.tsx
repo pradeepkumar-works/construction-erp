@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, App, Empty, Flex, Form, Input, InputNumber, Select, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -234,7 +235,7 @@ export function ReceiptModal({
           <Alert
             type={weighTicket.short?.short ? 'warning' : 'info'}
             showIcon
-            style={{ marginBottom: 16 }}
+            style={{ marginBottom: tk.space[4] }}
             title={`From weighbridge ticket ${weighTicket.ticketNo}: ${weighTicket.vehicleNo}, net ${formatQty(weighTicket.netKg)} kg (${formatQty(weighTicket.grossKg)} less ${formatQty(weighTicket.tareKg)})`}
             description={
               weighTicket.short?.short
@@ -248,7 +249,7 @@ export function ReceiptModal({
           />
         ) : null}
         {!readState && !weighTicket ? (
-          <Flex justify="flex-end" style={{ marginBottom: 8 }}>
+          <Flex justify="flex-end" style={{ marginBottom: tk.space[2] }}>
             <ReadDocumentButton kind="challan" label="Fill from challan" onRead={applyRead} disabled={loading} />
           </Flex>
         ) : readState ? (
@@ -294,7 +295,7 @@ export function ReceiptModal({
             size="small"
             rowKey="id"
             pagination={false}
-            style={{ marginBottom: 16 }}
+            style={{ marginBottom: tk.space[4] }}
             dataSource={request.lines}
             columns={[
               {
@@ -340,7 +341,7 @@ export function ReceiptModal({
             ]}
           />
         ) : watchedSource ? null : (
-          <Alert type="info" showIcon style={{ marginBottom: 16 }} title="Material is received against an approved purchase order or indent. Each line can take up to what is still pending." />
+          <Alert type="info" showIcon style={{ marginBottom: tk.space[4] }} title="Material is received against an approved purchase order or indent. Each line can take up to what is still pending." />
         )}
 
         <FormGrid cols={2}>

@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Drawer, Flex, Switch, Table, Typography, theme } from 'antd';
+import { App, Button, Drawer, Flex, Switch, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { canApproveSupplierChange, type PasswordLinkDto, type SupplierChangeDto, type SupplierLoginDto } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
@@ -16,7 +17,6 @@ import { DecideChangeForm, InviteLoginForm } from './StaffForms';
 
 /** A vendor's supplier-portal logins and the changes they asked for, from the vendor master. */
 export function VendorPortalDrawer({ vendor, onClose }: { vendor: { id: string; name: string } | null; onClose: () => void }) {
-  const { token } = theme.useToken();
   const { message } = App.useApp();
   const { user } = useAuth();
   const { data, isLoading, error, refetch } = useVendorPortal(vendor?.id ?? null);
@@ -88,7 +88,7 @@ export function VendorPortalDrawer({ vendor, onClose }: { vendor: { id: string; 
           ]}
         />
       </Section>
-      <div style={{ height: token.marginLG }} />
+      <div style={{ height: tk.space[6] }} />
       <Section title="Changes to their details">
         <ChangeList
           changes={data?.changes ?? []}

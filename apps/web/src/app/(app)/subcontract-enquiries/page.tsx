@@ -2,7 +2,8 @@
 
 import React, { Suspense, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Card, Col, Row, Select, Statistic, Typography, theme } from 'antd';
+import { Button, Card, Col, Row, Select, Statistic, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { PlusOutlined } from '@/components/common/icons';
 import { canRunSubcontractEnquiries, type ScEnquiryDto } from '@erp/shared';
@@ -33,7 +34,6 @@ const STATUS_OPTIONS = [
  * one made a work order. Open ones first, soonest closing; run by those who issue work orders.
  */
 function ScEnquiriesPage() {
-  const { token } = theme.useToken();
   const { user } = useAuth();
   const router = useRouter();
   const canRun = !!user && canRunSubcontractEnquiries(user.roleKey);
@@ -45,7 +45,7 @@ function ScEnquiriesPage() {
   const { data, isLoading, isFetching, error, refetch } = useScEnquiries({ status, projectId, q: page.params.q }, canRun);
   const open = (id: string) => router.push(`/subcontract-enquiries/${id}`);
   const sub = (text: React.ReactNode) => (
-    <Typography.Text type="secondary" style={{ display: 'block', fontSize: token.fontSizeSM }}>
+    <Typography.Text type="secondary" style={{ display: 'block', fontSize: tk.type.caption.fontSize }}>
       {text}
     </Typography.Text>
   );
@@ -149,8 +149,8 @@ function ScEnquiriesPage() {
   const stat = (title: string, value: React.ReactNode, note?: React.ReactNode) => (
     <Col xs={12} lg={6}>
       <Card size="small" style={{ height: '100%' }}>
-        <Statistic title={title} value={0} formatter={() => value} styles={{ content: { fontSize: token.fontSizeHeading4 } }} />
-        {note ? <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{note}</div> : null}
+        <Statistic title={title} value={0} formatter={() => value} styles={{ content: { fontSize: tk.type.lead.fontSize } }} />
+        {note ? <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{note}</div> : null}
       </Card>
     </Col>
   );
@@ -161,7 +161,7 @@ function ScEnquiriesPage() {
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {isLoading ? <PageSkeleton header={false} shape="list" /> : null}
       {s ? (
-        <Row gutter={[12, 12]} style={{ marginBottom: token.marginMD }}>
+        <Row gutter={[12, 12]} style={{ marginBottom: tk.space[5] }}>
           {stat('Open', s.open, 'Enquiries out to quote')}
           {stat('Awaiting quotes', s.awaitingQuotes, 'Open, with a quote not yet in')}
           {stat('Ready to award', s.readyToAward, 'Open, with a complete quote in')}

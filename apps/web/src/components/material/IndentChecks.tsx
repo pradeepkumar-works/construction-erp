@@ -1,6 +1,7 @@
 'use client';
 
 import { Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { IndentCheckDto, IndentCheckLineDto } from '@erp/shared';
 import { formatQty, toNumber, NO_VALUE } from '@/lib/format';
 import { AppTag } from '@/components/common/AppTag';
@@ -28,7 +29,7 @@ function Verdict({ line }: { line: IndentCheckLineDto }) {
     );
   if (!tags.length && line.notes.includes('NO_NORM')) return <span className="text-muted">No norm for this item</span>;
   if (!tags.length) return <AppTag meaning="done">Within the BOQ</AppTag>;
-  return <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 4 }}>{tags}</span>;
+  return <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: tk.space[1] }}>{tags}</span>;
 }
 
 const muted = (v: string | null) => (v === null ? <span className="text-muted">{NO_VALUE}</span> : toNumber(v) === 0 ? <span className="text-muted">0</span> : <span translate="no">{formatQty(v)}</span>);

@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Button, Dropdown, Select, Space, theme } from 'antd';
+import { Button, Dropdown, Select, Space } from 'antd';
+import { tk } from '@/ds';
 import { DownOutlined, PlusOutlined } from '@/components/common/icons';
 import type { VendorBillDto, VendorBillKind, VendorBillSortField } from '@erp/shared';
 import { LIST_SORT_FIELDS, MATCH_STATE_LABELS, VENDOR_BILL_KINDS, VENDOR_BILL_KIND_LABELS, canRecordVendorBill } from '@erp/shared';
@@ -39,8 +40,7 @@ const KIND_HINTS: Record<VendorBillKind, string> = {
 };
 
 function Sub({ children }: { children: React.ReactNode }) {
-  const { token } = theme.useToken();
-  return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
+  return <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{children}</div>;
 }
 
 function vendorBillColumns({ showProject, onOpen, onEdit, sortOrderFor }: { showProject: boolean; onOpen: (id: string) => void; onEdit: (row: VendorBillDto) => void; sortOrderFor: (key: VendorBillSortField) => 'ascend' | 'descend' | null }): ListColumn<VendorBillDto>[] {

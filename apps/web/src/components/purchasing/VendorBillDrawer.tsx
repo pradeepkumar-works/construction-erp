@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { App, Button, Divider, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -25,7 +26,6 @@ import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
 import { checksSection, useChecksFigure } from '@/components/checks/ChecksSection';
 import { projectContext } from '@/components/record/RecordParts';
 import { submissionLifecycle } from '@/components/record/lifecycle';
-import { themeFontSize } from '@/lib/theme';
 import { Section } from '@/components/common/Section';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
 import { Money } from '@/components/common/Money';
@@ -131,7 +131,7 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
                 <span>
                   {data.vendorName}
                   {data.vendorGstin && <span className="text-muted"> · GSTIN <span translate="no">{data.vendorGstin}</span></span>}
-                  {data.vendorMsme && <AppTag variant="kind" style={{ marginLeft: 8 }}>{MSME_CATEGORY_LABELS[data.vendorMsme]}</AppTag>}
+                  {data.vendorMsme && <AppTag variant="kind" style={{ marginLeft: tk.space[2] }}>{MSME_CATEGORY_LABELS[data.vendorMsme]}</AppTag>}
                 </span>
               ),
             },
@@ -219,7 +219,7 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
                             <Typography.Text type={toNumber(v) > toNumber(l.poRate) ? 'danger' : undefined} className="mono">
                               {formatINR(v, true)}
                             </Typography.Text>
-                            {v !== l.poRate && <div className="text-muted mono" translate="no" style={{ fontSize: themeFontSize('fontSizeSM') }}>PO {formatINR(l.poRate, true)}</div>}
+                            {v !== l.poRate && <div className="text-muted mono" translate="no" style={{ fontSize: tk.type.caption.fontSize }}>PO {formatINR(l.poRate, true)}</div>}
                           </span>
                         ),
                       },
@@ -231,7 +231,7 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
                         render: (v, l) => (
                           <span>
                             <Typography.Text type={toNumber(v) !== toNumber(l.poGstRate) ? 'danger' : undefined}>{formatPct(v)}</Typography.Text>
-                            {toNumber(v) !== toNumber(l.poGstRate) && <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>PO {formatPct(l.poGstRate)}</div>}
+                            {toNumber(v) !== toNumber(l.poGstRate) && <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>PO {formatPct(l.poGstRate)}</div>}
                           </span>
                         ),
                       },
@@ -245,20 +245,20 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
                       { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong><Money value={v} paise /></strong> },
                     ]}
                   />
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: tk.space[3] }}>
                     <Section style={{ width: 320 }}>
                       {[
                         ['Items', data.subtotal],
                         ['GST', data.gstAmount],
                         ...(toNumber(data.freight) > 0 ? [['Freight', data.freight]] : []),
                       ].map(([k, v]) => (
-                        <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+                        <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: `${tk.space.half} 0` }}>
                           <span>{k}</span>
                           <Money value={v} paise />
                         </div>
                       ))}
-                      <Divider style={{ margin: '6px 0' }} />
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}>
+                      <Divider style={{ margin: `${tk.space[2]} 0` }} />
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: tk.type.title.fontWeight }}>
                         <span>Invoice total</span>
                         <Money value={data.total} paise />
                       </div>
@@ -273,12 +273,12 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
                           )
                             .filter(([, v]) => v > 0)
                             .map(([k, v]) => (
-                              <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+                              <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: `${tk.space.half} 0` }}>
                                 <span>{k}</span>
                                 <Money value={-v} paise />
                               </div>
                             ))}
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: tk.type.title.fontWeight }}>
                             <span>Payable</span>
                             <Money value={data.payable} paise />
                           </div>

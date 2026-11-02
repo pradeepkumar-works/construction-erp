@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Alert, Button, Card, Descriptions, Typography, theme } from 'antd';
+import { Alert, Button, Card, Descriptions, Typography } from 'antd';
+import { tk } from '@/ds';
 import { MSME_CATEGORY_LABELS, SUPPLIER_BANK_FIELDS, SUPPLIER_PROFILE_FIELDS, SUPPLIER_PROFILE_LABELS, type MsmeCategory } from '@erp/shared';
 import { useSupplierProfile } from '@/lib/queries';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -12,7 +13,6 @@ import { NO_VALUE } from '@/lib/format';
 
 /** The supplier's details as the company holds them; a change goes to the company for approval (bank changes to those who pay). */
 export default function SupplierProfilePage() {
-  const { token } = theme.useToken();
   const { data, isLoading, error, refetch } = useSupplierProfile();
   const [editing, setEditing] = useState(false);
   const pending = data?.changes.find((c) => c.status === 'PENDING');
@@ -39,10 +39,10 @@ export default function SupplierProfilePage() {
               showIcon
               title="A change is waiting for approval"
               description="You can ask for another change once the company decides on this one. Payments keep going to the account shown below until then."
-              style={{ marginBottom: token.marginMD }}
+              style={{ marginBottom: tk.space[5] }}
             />
           ) : null}
-          <Card title="Company and contact" size="small" style={{ marginBottom: token.marginMD }}>
+          <Card title="Company and contact" size="small" style={{ marginBottom: tk.space[5] }}>
             <Descriptions size="small" column={{ xs: 1, md: 2 }}>
               {SUPPLIER_PROFILE_FIELDS.filter((f) => !SUPPLIER_BANK_FIELDS.includes(f)).map((f) => (
                 <Descriptions.Item key={f} label={SUPPLIER_PROFILE_LABELS[f]}>
@@ -51,7 +51,7 @@ export default function SupplierProfilePage() {
               ))}
             </Descriptions>
           </Card>
-          <Card title="Bank account for payments" size="small" style={{ marginBottom: token.marginMD }}>
+          <Card title="Bank account for payments" size="small" style={{ marginBottom: tk.space[5] }}>
             <Descriptions size="small" column={{ xs: 1, md: 2 }}>
               {SUPPLIER_BANK_FIELDS.map((f) => (
                 <Descriptions.Item key={f} label={SUPPLIER_PROFILE_LABELS[f]}>
@@ -59,7 +59,7 @@ export default function SupplierProfilePage() {
                 </Descriptions.Item>
               ))}
             </Descriptions>
-            <Typography.Paragraph type="secondary" style={{ margin: `${token.marginXS}px 0 0` }}>
+            <Typography.Paragraph type="secondary" style={{ margin: `${tk.space[2]} 0 0` }}>
               Only the last four digits are shown. A new account is checked and approved by the company&apos;s accounts before any payment goes to it.
             </Typography.Paragraph>
           </Card>

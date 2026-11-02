@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Card, Col, Empty, Flex, Row, Statistic, Typography, theme } from 'antd';
+import { Button, Card, Col, Empty, Flex, Row, Statistic, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { PlusOutlined } from '@/components/common/icons';
 import { canEditProjects, type StoreSummaryDto } from '@erp/shared';
@@ -54,12 +55,11 @@ export default function StoresPage() {
 }
 
 function StoreCard({ store: s }: { store: StoreSummaryDto }) {
-  const { token } = theme.useToken();
   return (
     <Card style={{ height: '100%' }}>
       <Flex justify="space-between" align="flex-start" gap={8} wrap>
         <div>
-          <Typography.Title level={2} style={{ fontSize: token.fontSizeHeading4, margin: 0 }} translate="no">
+          <Typography.Title level={2} style={{ fontSize: tk.type.lead.fontSize, margin: 0 }} translate="no">
             {s.name}
           </Typography.Title>
           <Typography.Text type="secondary" translate="no">
@@ -68,7 +68,7 @@ function StoreCard({ store: s }: { store: StoreSummaryDto }) {
         </div>
         <ProjectStatusTag status={s.status} />
       </Flex>
-      <Row gutter={[12, 12]} style={{ marginTop: token.marginMD }}>
+      <Row gutter={[12, 12]} style={{ marginTop: tk.space[5] }}>
         <Col xs={12} sm={8}>
           <Statistic title="Items in stock" value={s.items} />
         </Col>
@@ -81,12 +81,12 @@ function StoreCard({ store: s }: { store: StoreSummaryDto }) {
           <Statistic title="Last movement" value={0} formatter={() => formatDate(s.lastMovement)} />
         </Col>
       </Row>
-      <Flex gap={8} wrap style={{ marginTop: token.marginSM }}>
+      <Flex gap={8} wrap style={{ marginTop: tk.space[3] }}>
         {s.low ? <AppTag meaning="failed">{`${s.low} item${s.low === 1 ? '' : 's'} below minimum`}</AppTag> : null}
         {s.outInTransit ? <AppTag meaning="inHand">{`${s.outInTransit} transfer${s.outInTransit === 1 ? '' : 's'} to sites in transit`}</AppTag> : null}
         {s.inInTransit ? <AppTag meaning="waiting">{`${s.inInTransit} in transit to receive`}</AppTag> : null}
       </Flex>
-      <LinkButton href={`/stores/${s.id}`} style={{ marginTop: token.marginMD }} aria-label={`Open store: ${s.name}`}>
+      <LinkButton href={`/stores/${s.id}`} style={{ marginTop: tk.space[5] }} aria-label={`Open store: ${s.name}`}>
         Open store
       </LinkButton>
     </Card>

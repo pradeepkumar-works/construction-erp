@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Alert, Button, Card, Col, Descriptions, Dropdown, Flex, Row, Space, Statistic, Typography, theme } from 'antd';
+import { Alert, Button, Card, Col, Descriptions, Dropdown, Flex, Row, Space, Statistic, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { MenuProps } from 'antd';
 import { CheckCircleOutlined, DeleteOutlined, EditOutlined, MoreOutlined, RedoOutlined, SendOutlined, StopOutlined } from '@/components/common/icons';
 import { MATERIAL_APPROVAL_KIND_LABELS, revisionLabel, type MaterialApprovalDetailDto } from '@erp/shared';
@@ -40,7 +41,6 @@ export default function MaterialApprovalPage() {
 type Dialog = 'edit' | 'submit' | 'review' | 'withdraw' | null;
 
 function ApprovalView({ a }: { a: MaterialApprovalDetailDto }) {
-  const { token } = theme.useToken();
   const router = useRouter();
   const act = useMaterialApprovalAction<{ ok: boolean }>();
   const [dialog, setDialog] = useState<Dialog>(null);
@@ -100,8 +100,8 @@ function ApprovalView({ a }: { a: MaterialApprovalDetailDto }) {
   const stat = (title: string, value: React.ReactNode, note?: React.ReactNode, tone?: 'danger') => (
     <Col xs={12} lg={6}>
       <Card size="small" style={{ height: '100%' }}>
-        <Statistic title={title} value={0} formatter={() => value} styles={{ content: { fontSize: token.fontSizeHeading4, color: tone === 'danger' ? token.colorErrorText : undefined } }} />
-        {note ? <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{note}</div> : null}
+        <Statistic title={title} value={0} formatter={() => value} styles={{ content: { fontSize: tk.type.lead.fontSize, color: tone === 'danger' ? tk.color.tone.danger.fg : undefined } }} />
+        {note ? <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{note}</div> : null}
       </Card>
     </Col>
   );
@@ -112,7 +112,7 @@ function ApprovalView({ a }: { a: MaterialApprovalDetailDto }) {
         showIcon
         title={`${a.make} is an approved make for ${a.material} on ${a.projectCode}.`}
         description={a.status === 'APPROVED_AS_NOTED' && current?.comments ? `As noted: ${current.comments}` : 'Purchase orders for it are no longer flagged.'}
-        style={{ marginBottom: token.marginMD }}
+        style={{ marginBottom: tk.space[5] }}
       />
     ) : a.status === 'REVISE_RESUBMIT' || a.status === 'REJECTED' ? (
       <Alert
@@ -120,10 +120,10 @@ function ApprovalView({ a }: { a: MaterialApprovalDetailDto }) {
         showIcon
         title={a.status === 'REJECTED' ? 'Rejected. Resubmit with another make, or withdraw the request.' : 'Returned to us to revise and resubmit.'}
         description={current?.comments ?? undefined}
-        style={{ marginBottom: token.marginMD }}
+        style={{ marginBottom: tk.space[5] }}
       />
     ) : a.status === 'WITHDRAWN' ? (
-      <Alert type="info" showIcon title="Withdrawn" description={a.withdrawnNote ?? undefined} style={{ marginBottom: token.marginMD }} />
+      <Alert type="info" showIcon title="Withdrawn" description={a.withdrawnNote ?? undefined} style={{ marginBottom: tk.space[5] }} />
     ) : null;
 
   return (
@@ -141,13 +141,13 @@ function ApprovalView({ a }: { a: MaterialApprovalDetailDto }) {
         extra={actions}
       />
       {notice}
-      <Row gutter={[12, 12]} style={{ marginBottom: token.marginMD }}>
+      <Row gutter={[12, 12]} style={{ marginBottom: tk.space[5] }}>
         {stat('Make', <span translate="no">{a.make}</span>, a.model)}
         {stat('Submitted', a.submittedOn ? <span translate="no">{formatDate(a.submittedOn)}</span> : 'Not yet', a.revisions.length ? `${a.revisions.length} submission${a.revisions.length === 1 ? '' : 's'}` : 'A draft')}
         {a.status === 'UNDER_REVIEW'
           ? stat('Waiting', `${a.daysOutstanding ?? 0} day${a.daysOutstanding === 1 ? '' : 's'}`, a.replyBy ? `Reply asked by ${formatDate(a.replyBy)}` : 'No reply date asked', a.overdue ? 'danger' : undefined)
           : stat('Decisions', decided.length, decided.length ? `Last on ${formatDate(decided[0].reviewedOn!)}` : 'None yet')}
-        {stat('With', <span translate="no" style={{ fontSize: token.fontSize }}>{a.toParty}</span>)}
+        {stat('With', <span translate="no" style={{ fontSize: tk.type.body.fontSize }}>{a.toParty}</span>)}
       </Row>
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={16}>
@@ -156,21 +156,21 @@ function ApprovalView({ a }: { a: MaterialApprovalDetailDto }) {
               {a.revisions.length ? (
                 <Flex vertical>
                   {a.revisions.map((r, i) => (
-                    <div key={r.id} style={{ padding: `${token.paddingSM}px 0`, borderTop: i ? `1px solid ${token.colorSplit}` : undefined }}>
+                    <div key={r.id} style={{ padding: `${tk.space[3]} 0`, borderTop: i ? `1px solid ${tk.color.line.hairline}` : undefined }}>
                       <Flex gap={8} align="center" wrap justify="space-between">
                         <Typography.Text strong translate="no">{`${revisionLabel(r.revision)}, submitted ${formatDate(r.submittedOn)} by ${r.submittedByName}`}</Typography.Text>
                         {r.outcome ? <OutcomeTag outcome={r.outcome} /> : <MaterialApprovalStatusTag status="UNDER_REVIEW" overdue={a.overdue} />}
                       </Flex>
-                      {r.submitNote ? <Typography.Paragraph style={{ margin: `${token.marginXXS}px 0 0` }}>{r.submitNote}</Typography.Paragraph> : null}
+                      {r.submitNote ? <Typography.Paragraph style={{ margin: `${tk.space[1]} 0 0` }}>{r.submitNote}</Typography.Paragraph> : null}
                       {r.outcome ? (
-                        <div style={{ marginTop: token.marginXS, paddingLeft: token.paddingSM, borderLeft: `3px solid ${token.colorBorderSecondary}` }}>
-                          <Typography.Text type="secondary" style={{ display: 'block', fontSize: token.fontSizeSM }} translate="no">
+                        <div style={{ marginTop: tk.space[2], paddingLeft: tk.space[3], borderLeft: `3px solid ${tk.color.line.hairline}` }}>
+                          <Typography.Text type="secondary" style={{ display: 'block', fontSize: tk.type.caption.fontSize }} translate="no">
                             {[`Reviewed ${formatDate(r.reviewedOn!)}`, r.reviewerName, r.reviewRef, `${r.days} day${r.days === 1 ? '' : 's'}`].filter(Boolean).join(' · ')}
                           </Typography.Text>
                           {r.comments ? <Typography.Paragraph style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{r.comments}</Typography.Paragraph> : null}
                         </div>
                       ) : (
-                        <Typography.Text type="secondary" style={{ display: 'block', fontSize: token.fontSizeSM }}>
+                        <Typography.Text type="secondary" style={{ display: 'block', fontSize: tk.type.caption.fontSize }}>
                           {`With the reviewer for ${r.days} day${r.days === 1 ? '' : 's'}`}
                         </Typography.Text>
                       )}
@@ -216,9 +216,8 @@ function ApprovalView({ a }: { a: MaterialApprovalDetailDto }) {
 }
 
 function CardTitle({ children }: { children: React.ReactNode }) {
-  const { token } = theme.useToken();
   return (
-    <Typography.Title level={2} style={{ fontSize: token.fontSize, margin: 0 }}>
+    <Typography.Title level={2} style={{ fontSize: tk.type.body.fontSize, margin: 0 }}>
       {children}
     </Typography.Title>
   );

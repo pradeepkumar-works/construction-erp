@@ -1,8 +1,9 @@
 "use client";
 
 import React, { Suspense, useEffect, useRef, useState } from "react";
+import { tk } from '@/ds';
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Button, Card, Col, Dropdown, Empty, Flex, Form, Input, Row, Select, Space, Table, Typography, theme } from "antd";
+import { Button, Card, Col, Dropdown, Empty, Flex, Form, Input, Row, Select, Space, Table, Typography } from "antd";
 import { AppTag } from "@/components/common/AppTag";
 import type { MenuProps } from "antd";
 import {
@@ -44,7 +45,6 @@ const PAGE_SIZE = 50;
  * against, each imported from Excel and searched by code, chapter or words. Kept by admin, management and the QS.
  */
 function ScheduleOfRatesPage() {
-  const { token } = theme.useToken();
   const { user } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -138,7 +138,7 @@ function ScheduleOfRatesPage() {
               title={
                 <Typography.Title
                   level={2}
-                  style={{ fontSize: token.fontSize, margin: 0 }}
+                  style={{ fontSize: tk.type.body.fontSize, margin: 0 }}
                 >
                   Schedules
                 </Typography.Title>
@@ -159,21 +159,21 @@ function ScheduleOfRatesPage() {
                         textAlign: "left",
                         justifyContent: "flex-start",
                         whiteSpace: "normal",
-                        paddingBlock: 6,
+                        paddingBlock: tk.space[2],
                       }}
                     >
                       <span>
                         <span
                           translate="no"
-                          style={{ display: "block", fontWeight: 500, color: token.colorText }}
+                          style={{ display: "block", fontWeight: tk.type.strong.fontWeight, color: tk.color.text.base }}
                         >
                           {b.name}
                         </span>
                         <span
                           style={{
                             display: "block",
-                            fontSize: token.fontSizeSM,
-                            color: token.colorTextSecondary,
+                            fontSize: tk.type.caption.fontSize,
+                            color: tk.color.text.muted,
                           }}
                         >
                           {`${SOR_BOOK_KIND_LABELS[b.kind]} · ${b.itemCount} item${b.itemCount === 1 ? "" : "s"}`}
@@ -193,14 +193,14 @@ function ScheduleOfRatesPage() {
                   <div style={{ whiteSpace: "normal" }}>
                     <Typography.Title
                       level={2}
-                      style={{ fontSize: token.fontSize, margin: 0 }}
+                      style={{ fontSize: tk.type.body.fontSize, margin: 0 }}
                       translate="no"
                     >
                       {book.name}
                     </Typography.Title>
                     <Typography.Text
                       type="secondary"
-                      style={{ fontSize: token.fontSizeSM, fontWeight: 400 }}
+                      style={{ fontSize: tk.type.caption.fontSize, fontWeight: tk.type.body.fontWeight }}
                     >
                       {[
                         SOR_BOOK_KIND_LABELS[book.kind],
@@ -223,7 +223,7 @@ function ScheduleOfRatesPage() {
                   wrap
                   gap={8}
                   align="center"
-                  style={{ marginBottom: token.marginSM }}
+                  style={{ marginBottom: tk.space[3] }}
                 >
                   <Input.Search
                     allowClear
@@ -291,7 +291,7 @@ function ScheduleOfRatesPage() {
                           {i.description}
                           {i.chapter ? (
                             <div>
-                              <AppTag variant="kind" style={{ marginTop: 2 }}>{i.chapter}</AppTag>
+                              <AppTag variant="kind" style={{ marginTop: tk.space.half }}>{i.chapter}</AppTag>
                             </div>
                           ) : null}
                         </div>
@@ -365,7 +365,7 @@ function ScheduleOfRatesPage() {
                 {items ? (
                   <Typography.Text
                     type="secondary"
-                    style={{ fontSize: token.fontSizeSM }}
+                    style={{ fontSize: tk.type.caption.fontSize }}
                   >
                     {`${items.total} item${items.total === 1 ? "" : "s"}${q ? " found" : ""}${book.tenderCount ? `; tenders priced against it: ${book.tenderCount}` : ""}`}
                   </Typography.Text>

@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Card, Col, Empty, Flex, Form, Grid, Input, Row, Space, Statistic, Table, Typography, theme } from 'antd';
+import { App, Button, Card, Col, Empty, Flex, Form, Grid, Input, Row, Space, Statistic, Table, Typography } from 'antd';
+import { tk } from '@/ds';
+import { useResolved } from '@/ds/react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { CheckCircleOutlined, ClockCircleOutlined, CloseCircleFilled, DeleteOutlined, EditOutlined, MailOutlined, PlusOutlined, ShoppingCartOutlined, TrophyOutlined } from '@/components/common/icons';
 import type { ComparativeStatementDto, EnquiryDto, MaterialRequestDto, MaterialRequestItemDto, QuotationDto, RankedQuote, RequestToOrderDto } from '@erp/shared';
@@ -12,7 +14,6 @@ import { useAuth } from '@/lib/auth';
 import { useUrlTab } from '@/lib/url-state';
 import { useComparative, useFinaliseL1, useLastRates, useMaterialRequest, useRequestToOrder } from '@/lib/queries';
 import { formatDate, formatDateTime, formatINR, formatQty, toNumber, NO_VALUE, todayDate } from '@/lib/format';
-import { themeFontSize } from '@/lib/theme';
 import { AppTabs } from '@/components/common/AppTabs';
 import { AppTag } from '@/components/common/AppTag';
 import { RankText } from '@/components/tenders/tenderUi';
@@ -38,7 +39,7 @@ const STEP_OF: Record<OrderStage, Step> = { TO_ENQUIRE: 'enquiries', AWAITING_QU
 const BAR_AT: Record<OrderStage, number> = { TO_ENQUIRE: 0, AWAITING_QUOTES: 1, TO_FINALISE: 2, AWAITING_APPROVAL: 2, READY: 3 };
 
 function Muted({ children }: { children: React.ReactNode }) {
-  return <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{children}</div>;
+  return <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>{children}</div>;
 }
 
 /**
@@ -84,7 +85,7 @@ export function RequestToOrderScreen({ id }: { id: string }) {
           label="Where this indent stands"
           current={done ? 3 : at}
           status={done ? 'finish' : statusTone('orderStage', r.stage) === 'waiting' ? 'wait' : 'process'}
-          style={{ marginBottom: 12 }}
+          style={{ marginBottom: tk.space[3] }}
           items={[
             { title: 'Enquiry', content: r.enquiry ? `${r.enquiry.replied} of ${r.enquiry.invited} replied` : 'Not sent' },
             { title: 'Quotations', content: `${r.quotations} quotation${r.quotations === 1 ? '' : 's'} in` },
@@ -118,15 +119,14 @@ export function RequestToOrderScreen({ id }: { id: string }) {
 // 1. Enquiry
 
 function EnquiryStep({ request, row, buyer, onNext }: { request: MaterialRequestDto; row: RequestToOrderDto; buyer: boolean; onNext: () => void }) {
-  const { token } = theme.useToken();
   const [enquiring, setEnquiring] = useState(false);
   const [sent, setSent] = useState<EnquiryDto | null>(null);
   const left = request.items.filter((i) => toNumber(i.toOrderQty) > 0);
   const waiting = row.enquiry && enquiryOpen(row.enquiry, todayDate());
   return (
     <>
-      <Flex justify="space-between" align="center" wrap gap={token.marginXS} style={{ marginBottom: token.marginSM }}>
-        <Typography.Title level={2} style={{ fontSize: token.fontSizeLG, margin: 0 }}>
+      <Flex justify="space-between" align="center" wrap gap={tk.space[2]} style={{ marginBottom: tk.space[3] }}>
+        <Typography.Title level={2} style={{ fontSize: tk.type.lead.fontSize, margin: 0 }}>
           What to buy
         </Typography.Title>
         {buyer && left.length > 0 ? (
@@ -136,13 +136,13 @@ function EnquiryStep({ request, row, buyer, onNext }: { request: MaterialRequest
         ) : null}
       </Flex>
       <ItemsToBuy items={request.items} />
-      <Typography.Title level={2} style={{ fontSize: token.fontSizeLG, margin: `${token.marginLG}px 0 ${token.marginSM}px` }}>
+      <Typography.Title level={2} style={{ fontSize: tk.type.lead.fontSize, margin: `${tk.space[6]} 0 ${tk.space[3]}` }}>
         Enquiries sent
       </Typography.Title>
       {row.enquiry ? (
         <>
           <EnquiriesList requestId={request.id} />
-          <Flex justify="space-between" align="center" wrap gap={token.marginXS}>
+          <Flex justify="space-between" align="center" wrap gap={tk.space[2]}>
             <Typography.Text type="secondary">
               {waiting
                 ? `${row.enquiry.replied} of ${row.enquiry.invited} vendors have replied. The links work until ${formatDate(row.enquiry.closesOn)}; replies land on the quotations.`
@@ -199,7 +199,6 @@ function ItemsToBuy({ items }: { items: MaterialRequestItemDto[] }) {
 // 2. Quotations
 
 function QuotationsStep({ request, cs, loading, buyer, onNext }: { request: MaterialRequestDto; cs: ComparativeStatementDto | undefined; loading: boolean; buyer: boolean; onNext: () => void }) {
-  const { token } = theme.useToken();
   const qc = useQueryClient();
   const [quoting, setQuoting] = useState<QuotationDto | 'new' | null>(null);
   const ranked = new Map(ranksFor(request, cs).map((x) => [x.quotationId, x]));
@@ -213,7 +212,7 @@ function QuotationsStep({ request, cs, loading, buyer, onNext }: { request: Mate
   const quotes = cs?.quotations ?? [];
   return (
     <>
-      <Flex justify="space-between" align="center" wrap gap={token.marginXS} style={{ marginBottom: token.marginSM }}>
+      <Flex justify="space-between" align="center" wrap gap={tk.space[2]} style={{ marginBottom: tk.space[3] }}>
         <Typography.Text type="secondary">Replies to the enquiry come in here by themselves. Record a quotation that came by email, letter or phone.</Typography.Text>
         <Space wrap>
           {buyer ? (
@@ -307,11 +306,12 @@ function QuotationsStep({ request, cs, loading, buyer, onNext }: { request: Mate
 // 3. Finalise L1
 
 function FinaliseStep({ request, row, cs, buyer, onNext }: { request: MaterialRequestDto; row: RequestToOrderDto; cs: ComparativeStatementDto | undefined; buyer: boolean; onNext: () => void }) {
-  const { token } = theme.useToken();
   const { message } = App.useApp();
   const { finalise, reopen } = useFinaliseL1(request.id);
   const [choosing, setChoosing] = useState<RankedQuote | null>(null);
   const screens = Grid.useBreakpoint();
+  // antd's Row takes its gutter as numbers, so it reads the resolved scale.
+  const { space } = useResolved();
   const last = useLastRates(request.items);
   const ranked = ranksFor(request, cs);
   const quotes = cs?.quotations ?? [];
@@ -351,7 +351,7 @@ function FinaliseStep({ request, row, cs, buyer, onNext }: { request: MaterialRe
     <>
       {row.final ? <FinalNotice row={row} buyer={buyer} reopening={reopen.isPending} onReopen={() => reopen.mutate()} onNext={onNext} /> : null}
 
-      <Row gutter={[token.margin, token.margin]} style={{ marginBottom: token.margin }}>
+      <Row gutter={[space[4], space[4]]} style={{ marginBottom: tk.space[4] }}>
         <Col xs={12} lg={6}>
           <Statistic title="L1 for what is left" value={l1 ? formatINR(l1.total) : 'No complete quotation'} valueRender={(v) => <span translate="no">{v}</span>} />
           <Muted>{l1 ? <span translate="no">{l1.vendorName}</span> : 'Every quotation leaves out an item'}</Muted>
@@ -384,8 +384,8 @@ function FinaliseStep({ request, row, cs, buyer, onNext }: { request: MaterialRe
         </Col>
       </Row>
 
-      <Flex justify="space-between" align="center" wrap gap={token.marginXS} style={{ marginBottom: token.marginSM }}>
-        <Typography.Title level={2} style={{ fontSize: token.fontSizeLG, margin: 0 }}>
+      <Flex justify="space-between" align="center" wrap gap={tk.space[2]} style={{ marginBottom: tk.space[3] }}>
+        <Typography.Title level={2} style={{ fontSize: tk.type.lead.fontSize, margin: 0 }}>
           Ranking for what is still to order
         </Typography.Title>
         {/* On a phone the table scrolls sideways, so its Finalise L1 is also here, in reach. */}
@@ -401,7 +401,7 @@ function FinaliseStep({ request, row, cs, buyer, onNext }: { request: MaterialRe
         pagination={false}
         dataSource={ranked}
         scroll={{ x: 920 }}
-        style={{ marginBottom: token.marginLG }}
+        style={{ marginBottom: tk.space[6] }}
         columns={[
           { title: 'Rank', key: 'rank', width: 80, render: (_, x) => (x.rank ? <RankText rank={x.rank} /> : <span className="text-muted">Part quotation</span>) },
           {
@@ -446,7 +446,7 @@ function FinaliseStep({ request, row, cs, buyer, onNext }: { request: MaterialRe
         ]}
       />
       {split && buyer ? (
-        <Flex justify="space-between" align="center" wrap gap={token.marginXS} style={{ marginBottom: token.marginLG }}>
+        <Flex justify="space-between" align="center" wrap gap={tk.space[2]} style={{ marginBottom: tk.space[6] }}>
           <Typography.Text type="secondary">
             Taking L1 per item gives {split.orders.length} orders ({split.orders.map((o) => o.vendorName).join(', ')}) for {formatINR(split.total)}.
           </Typography.Text>
@@ -456,7 +456,7 @@ function FinaliseStep({ request, row, cs, buyer, onNext }: { request: MaterialRe
         </Flex>
       ) : null}
 
-      <Typography.Title level={2} style={{ fontSize: token.fontSizeLG, margin: `0 0 ${token.marginSM}px` }}>
+      <Typography.Title level={2} style={{ fontSize: tk.type.lead.fontSize, margin: `0 0 ${tk.space[3]}` }}>
         Comparative statement
       </Typography.Title>
       <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
@@ -480,26 +480,25 @@ function FinaliseStep({ request, row, cs, buyer, onNext }: { request: MaterialRe
  * (the order waits too), approved (raise it) or rejected and sent back (finalise again, the ranking is below).
  */
 function FinalNotice({ row, buyer, reopening, onReopen, onNext }: { row: RequestToOrderDto; buyer: boolean; reopening: boolean; onReopen: () => void; onNext: () => void }) {
-  const { token } = theme.useToken();
   const final = row.final!;
   const approval = final.approval;
   const waiting = row.stage === 'AWAITING_APPROVAL';
   const refused = approval?.status === 'REJECTED' || approval?.status === 'CHANGES_REQUESTED';
   const tone = refused
-    ? { bg: token.colorErrorBg, fg: token.colorErrorText }
+    ? { bg: tk.color.tone.danger.bg, fg: tk.color.tone.danger.fg }
     : waiting
-      ? { bg: token.colorWarningBg, fg: token.colorWarningText }
-      : { bg: token.colorSuccessBg, fg: token.colorSuccessText };
+      ? { bg: tk.color.tone.pending.bg, fg: tk.color.tone.pending.fg }
+      : { bg: tk.color.tone.success.bg, fg: tk.color.tone.success.fg };
   const chosen = final.split ? 'L1 per item, over more than one vendor' : <span translate="no">{final.vendorName ?? 'a quotation since deleted'}</span>;
   return (
-    <Flex align="center" justify="space-between" wrap gap={token.marginSM} style={{ padding: token.paddingSM, marginBottom: token.margin, background: tone.bg, borderRadius: token.borderRadius }}>
-      <Flex align="flex-start" gap={token.marginXS} style={{ minWidth: 0, flex: '1 1 320px' }}>
+    <Flex align="center" justify="space-between" wrap gap={tk.space[3]} style={{ padding: tk.space[3], marginBottom: tk.space[4], background: tone.bg, borderRadius: tk.radius.md }}>
+      <Flex align="flex-start" gap={tk.space[2]} style={{ minWidth: 0, flex: '1 1 320px' }}>
         {refused ? (
-          <CloseCircleFilled style={{ color: tone.fg, marginTop: 4 }} aria-hidden />
+          <CloseCircleFilled style={{ color: tone.fg, marginTop: tk.space[1] }} aria-hidden />
         ) : waiting ? (
-          <ClockCircleOutlined style={{ color: tone.fg, marginTop: 4 }} aria-hidden />
+          <ClockCircleOutlined style={{ color: tone.fg, marginTop: tk.space[1] }} aria-hidden />
         ) : (
-          <CheckCircleOutlined style={{ color: tone.fg, marginTop: 4 }} aria-hidden />
+          <CheckCircleOutlined style={{ color: tone.fg, marginTop: tk.space[1] }} aria-hidden />
         )}
         <Typography.Text>
           <strong>
@@ -572,7 +571,6 @@ function ChooseInsteadModal({ choice, ranked, onClose, onSubmit }: { choice: Ran
 // 4. Purchase order
 
 function OrdersStep({ request, row, cs, buyer, onFinalise }: { request: MaterialRequestDto; row: RequestToOrderDto; cs: ComparativeStatementDto | undefined; buyer: boolean; onFinalise: () => void }) {
-  const { token } = theme.useToken();
   const [start, setStart] = useState<PoStart | null>(null);
   const [awarding, setAwarding] = useState(false);
   const [openPo, setOpenPo] = useState<string | null>(null);
@@ -580,7 +578,7 @@ function OrdersStep({ request, row, cs, buyer, onFinalise }: { request: Material
   const left = row.itemsLeft > 0;
   return (
     <>
-      <Flex justify="space-between" align="center" wrap gap={token.marginXS} style={{ marginBottom: token.marginSM }}>
+      <Flex justify="space-between" align="center" wrap gap={tk.space[2]} style={{ marginBottom: tk.space[3] }}>
         <Typography.Text type="secondary">
           {!left
             ? 'Everything on this request is ordered or received.'

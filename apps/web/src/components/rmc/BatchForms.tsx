@@ -2,12 +2,12 @@
 
 import React, { useEffect } from 'react';
 import { App, Form, Input, InputNumber, Switch, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { MixDesignDto, PlantBatchRowDto, RmcBatchDto, RmcOrderDto } from '@erp/shared';
 import { useMixDesigns, useRmcAction } from '@/lib/queries';
 import { formatQty } from '@/lib/format';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { CODE_INPUT, QuantityInput } from '@/components/form/inputs';
-import { themeColor } from '@/lib/theme';
 import { m3 } from './rmcUi';
 import { unitLabel } from '@erp/shared';
 
@@ -74,7 +74,7 @@ export function DispatchForm({ order, row, onClose }: { order: RmcOrderDto | nul
           </Typography.Paragraph>
         )}
         {notInDesign.length ? (
-          <Typography.Paragraph style={{ color: themeColor('colorErrorText') }}>
+          <Typography.Paragraph style={{ color: tk.color.tone.danger.fg }}>
             {`The controller weighed ${notInDesign.map((m) => m.itemName).join(', ')}, which ${order?.mixDesignCode ?? 'the design'} does not use. Check the order is the batch's.`}
           </Typography.Paragraph>
         ) : null}
@@ -100,7 +100,7 @@ export function DispatchForm({ order, row, onClose }: { order: RmcOrderDto | nul
         {design && (
           <>
             <Typography.Text strong>Weighed at the batcher</Typography.Text>
-            <Typography.Paragraph type="secondary" style={{ marginBottom: 8 }}>
+            <Typography.Paragraph type="secondary" style={{ marginBottom: tk.space[2] }}>
               Leave a material empty when it went at the design; enter the printout’s figure where it differs.
             </Typography.Paragraph>
             <Table
@@ -125,7 +125,7 @@ export function DispatchForm({ order, row, onClose }: { order: RmcOrderDto | nul
             />
           </>
         )}
-        <Form.Item name="note" label="Note" style={{ marginTop: 16 }}>
+        <Form.Item name="note" label="Note" style={{ marginTop: tk.space[4] }}>
           <Input maxLength={500} />
         </Form.Item>
       </Form>

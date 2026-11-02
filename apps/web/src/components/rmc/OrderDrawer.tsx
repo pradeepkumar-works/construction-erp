@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { App, Button, Descriptions, Drawer, Popconfirm, Space, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { CarOutlined, CheckOutlined, EditOutlined, FileDoneOutlined, StopOutlined } from '@/components/common/icons';
 import type { RmcBatchDto, RmcOrderDto } from '@erp/shared';
 import { canBillRmc } from '@erp/shared';
@@ -104,8 +105,8 @@ export function OrderDrawer({ id, onClose, onBatch }: { id: string | null; onClo
               ...(o.clientId ? [{ key: 'ub', label: 'Delivered, not billed', children: <M3 value={o.unbilled} /> }] : []),
             ]}
           />
-          {o.notes && <Typography.Paragraph style={{ marginTop: 12 }}>{o.notes}</Typography.Paragraph>}
-          <Typography.Title level={2} style={{ fontSize: 16, marginTop: 16 }}>
+          {o.notes && <Typography.Paragraph style={{ marginTop: tk.space[3] }}>{o.notes}</Typography.Paragraph>}
+          <Typography.Title level={2} style={{ fontSize: tk.type.lead.fontSize, marginTop: tk.space[4] }}>
             Trucks
           </Typography.Title>
           <Table<RmcBatchDto>

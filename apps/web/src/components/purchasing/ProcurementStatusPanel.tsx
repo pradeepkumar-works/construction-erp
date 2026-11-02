@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Card, Flex, Progress, Segmented, Statistic, Table, Typography, theme } from 'antd';
+import { Card, Flex, Progress, Segmented, Statistic, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
@@ -46,7 +47,6 @@ const EXPORT: ExportColumn<ExportRow>[] = [
  * deliveries first, and the vendors with orders pending.
  */
 export function ProcurementStatusPanel() {
-  const { token } = theme.useToken();
   const [show, setShow] = useState<Show>('PENDING');
   const [projectId, setProjectId] = useProjectScope();
   const [vendorId, setVendorId] = useState<string | undefined>();
@@ -69,7 +69,7 @@ export function ProcurementStatusPanel() {
         <div>
           <Typography.Link href={`/purchase-orders/${r.purchaseOrderId}`}>{r.poNo}</Typography.Link>
           <div>
-            <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+            <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
               {formatDate(r.poDate)}
             </Typography.Text>
           </div>
@@ -83,7 +83,7 @@ export function ProcurementStatusPanel() {
         <div>
           {r.vendorName}
           <div>
-            <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+            <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
               {r.projectName}
             </Typography.Text>
           </div>
@@ -99,7 +99,7 @@ export function ProcurementStatusPanel() {
           {r.deliveryBy ? formatDate(r.deliveryBy) : <Typography.Text type="secondary">Not set</Typography.Text>}
           {r.daysLate ? (
             <div>
-              <Typography.Text type="danger" style={{ fontSize: token.fontSizeSM }}>
+              <Typography.Text type="danger" style={{ fontSize: tk.type.caption.fontSize }}>
                 {r.daysLate} day{r.daysLate === 1 ? '' : 's'} late
               </Typography.Text>
             </div>
@@ -119,7 +119,7 @@ export function ProcurementStatusPanel() {
             {DELIVERY_STATE_LABELS[r.state]}
           </AppTag>
           {r.awaitingQc ? (
-            <Typography.Text type="warning" style={{ fontSize: token.fontSizeSM }}>
+            <Typography.Text type="warning" style={{ fontSize: tk.type.caption.fontSize }}>
               {r.awaitingQc} GRN{r.awaitingQc === 1 ? '' : 's'} awaiting QA/QC
             </Typography.Text>
           ) : null}
@@ -132,14 +132,14 @@ export function ProcurementStatusPanel() {
     <Flex vertical gap={12} className="procurement-status">
       {error ? <QueryError error={error} onRetry={refetch} /> : null}
       {t ? (
-        <Flex gap={32} wrap className="procurement-summary" style={{ padding: `${token.paddingXS}px ${token.padding}px` }}>
+        <Flex gap={32} wrap className="procurement-summary" style={{ padding: `${tk.space[2]} ${tk.space[4]}` }}>
           <Statistic title="Approved orders" value={t.orders} />
           <Statistic title="With deliveries pending" value={t.pending} />
-          <Statistic title="Late" value={t.late} styles={{ content: t.late ? { color: token.colorErrorText } : undefined }} />
+          <Statistic title="Late" value={t.late} styles={{ content: t.late ? { color: tk.color.tone.danger.fg } : undefined }} />
           <Statistic title="Value still to come" value={formatINR(t.pendingValue)} />
         </Flex>
       ) : null}
-      <Flex gap={8} wrap align="center" style={{ padding: `0 ${token.paddingSM}px` }}>
+      <Flex gap={8} wrap align="center" style={{ padding: `0 ${tk.space[3]}` }}>
         <Segmented<Show>
           value={show}
           onChange={setShow}

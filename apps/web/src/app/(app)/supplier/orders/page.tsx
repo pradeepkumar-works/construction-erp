@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { App, Button, Descriptions, Drawer, Flex, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { AppTabs } from '@/components/common/AppTabs';
 import type { SupplierDispatchDto, SupplierOrderDto } from '@erp/shared';
@@ -122,7 +123,7 @@ function OrderDrawer({ order, onClose, onAccept, onDispatch, canSend }: { order:
     >
       {o ? (
         <>
-          <Descriptions size="small" column={{ xs: 1, sm: 2 }} bordered style={{ marginBottom: 16 }}>
+          <Descriptions size="small" column={{ xs: 1, sm: 2 }} bordered style={{ marginBottom: tk.space[4] }}>
             <Descriptions.Item label="Site">
               <span translate="no">{o.projectName}</span>
             </Descriptions.Item>

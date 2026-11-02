@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, Select, Statistic, Table, Typography, theme } from 'antd';
+import { Button, Select, Statistic, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { PlusOutlined, ToolOutlined } from '@/components/common/icons';
 import type { TableProps } from 'antd';
 import type { MaintenanceJobDto, MaintenanceKind, MaintenanceStatus, ServiceStatusDto } from '@erp/shared';
@@ -20,14 +21,12 @@ import { JobDrawer } from './JobDrawer';
 import { JobFormModal } from './JobFormModal';
 import { JobKindTag, JobStatusTag, ServiceStateTag, serviceLeft } from './maintenanceUi';
 import { CardToolbar } from '@/components/common/CardToolbar';
-import { themeColor, themeFontSize } from '@/lib/theme';
 
-const big = { content: { fontSize: themeFontSize('fontSizeXL') } };
+const big = { content: { fontSize: tk.type.subhead.fontSize } };
 const KEYS = ['status', 'kind', 'equipmentId'] as const;
 
 function Sub({ children }: { children: React.ReactNode }) {
-  const { token } = theme.useToken();
-  return <span style={{ color: token.colorTextSecondary }}>{children}</span>;
+  return <span style={{ color: tk.color.text.muted }}>{children}</span>;
 }
 
 /**
@@ -101,7 +100,7 @@ export function MaintenancePanel({ projectId: fixedProject, initialOpenId }: { p
       render: (_, r) => (
         <div>
           <b className="mono" translate="no">{r.equipmentCode}</b> {r.equipmentName}
-          {!projectId ? <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{r.projectName ?? 'Yard'}</div> : null}
+          {!projectId ? <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>{r.projectName ?? 'Yard'}</div> : null}
         </div>
       ),
     },
@@ -121,7 +120,7 @@ export function MaintenancePanel({ projectId: fixedProject, initialOpenId }: { p
         <span>
           {`${formatQty(v)} h`}
           {r.hoursFrom === 'METER' ? (
-            <span className="text-muted" style={{ display: 'block', fontSize: themeFontSize('fontSizeSM') }}>
+            <span className="text-muted" style={{ display: 'block', fontSize: tk.type.caption.fontSize }}>
               hour meter
             </span>
           ) : null}
@@ -162,21 +161,21 @@ export function MaintenancePanel({ projectId: fixedProject, initialOpenId }: { p
       {s ? (
         <CardToolbar className="maintenance-summary" variant="summary" wrap gap={28}>
           <Statistic title="Open job cards" value={s.openJobs} styles={big} />
-          <Statistic title="Machines broken down" value={s.openBreakdowns} styles={{ content: { fontSize: themeFontSize('fontSizeXL'), color: s.openBreakdowns ? themeColor('colorErrorText') : undefined } }} />
+          <Statistic title="Machines broken down" value={s.openBreakdowns} styles={{ content: { fontSize: tk.type.subhead.fontSize, color: s.openBreakdowns ? tk.color.tone.danger.fg : undefined } }} />
           <Statistic title="Service overdue / due soon" value={`${s.service.filter((x) => x.state === 'OVERDUE').length} / ${s.service.filter((x) => x.state === 'DUE_SOON').length}`} styles={big} />
-          <Statistic title="Closed this month" value={s.closedThisMonth} suffix={<span style={{ fontSize: themeFontSize('fontSizeSM') }}>{formatQty(s.downtimeHoursThisMonth)} h down</span>} styles={big} />
+          <Statistic title="Closed this month" value={s.closedThisMonth} suffix={<span style={{ fontSize: tk.type.caption.fontSize }}>{formatQty(s.downtimeHoursThisMonth)} h down</span>} styles={big} />
           <Statistic title="Repair cost this month" value={formatINR(s.costThisMonth)} styles={big} />
         </CardToolbar>
       ) : null}
       {s && s.service.length ? (
-        <div style={{ padding: '12px 16px 0' }}>
+        <div style={{ padding: `${tk.space[3]} ${tk.space[4]} 0` }}>
           <Typography.Title level={5} style={{ marginTop: 0 }}>
             Service schedule
           </Typography.Title>
           <Table<ServiceStatusDto> className="service-table" size="small" rowKey="equipmentId" pagination={false} dataSource={s.service} columns={serviceColumns} scroll={{ x: 860 }} />
         </div>
       ) : null}
-      <div style={{ padding: '12px 16px 0' }}>
+      <div style={{ padding: `${tk.space[3]} ${tk.space[4]} 0` }}>
         <Typography.Title level={5} style={{ margin: 0 }}>
           Job cards
         </Typography.Title>

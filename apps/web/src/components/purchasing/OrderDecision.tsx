@@ -1,12 +1,12 @@
 'use client';
 
 import React from 'react';
-import { Progress, Table, Typography, theme } from 'antd';
+import { Progress, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { ComparativeStatementDto, PurchaseOrderDto, QuotationDto } from '@erp/shared';
 import { useComparative, useProjectBudget } from '@/lib/queries';
 import { AppTag } from '@/components/common/AppTag';
 import { formatINR, toNumber } from '@/lib/format';
-import { themeFontSize } from '@/lib/theme';
 import { Money } from '@/components/common/Money';
 
 /**
@@ -45,7 +45,7 @@ export function OrderQuotes({ order }: { order: PurchaseOrderDto }) {
                 <span translate="no">{q.vendorName}</span>{' '}
                 {q.id === lowest?.id ? <AppTag meaning="done">Lowest</AppTag> : null}
                 {q.id === order.quotationId ? <AppTag variant="kind">This order</AppTag> : null}
-                <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                   {q.deliveryDays !== null ? `Delivers in ${q.deliveryDays} days` : 'Delivery not said'}
                   {q.missingLines ? ` · ${q.missingLines} item${q.missingLines === 1 ? '' : 's'} not quoted` : ''}
                   {toNumber(q.freight) > 0 ? ` · freight ${formatINR(q.freight)}` : ''}
@@ -65,7 +65,7 @@ export function OrderQuotes({ order }: { order: PurchaseOrderDto }) {
         ]}
       />
       {lowest && order.quotationId && order.quotationId !== lowest.id ? (
-        <Typography.Paragraph type="secondary" style={{ marginTop: 8, marginBottom: 0 }}>
+        <Typography.Paragraph type="secondary" style={{ marginTop: tk.space[2], marginBottom: 0 }}>
           The lowest complete quotation is {lowest.vendorName} at {formatINR(lowest.total, true)}. Why this order goes elsewhere is above, under Why this vendor.
         </Typography.Paragraph>
       ) : null}
@@ -75,7 +75,6 @@ export function OrderQuotes({ order }: { order: PurchaseOrderDto }) {
 
 /** The project's material budget, what it has cost so far, and where this order takes it. */
 export function OrderBudget({ order }: { order: PurchaseOrderDto }) {
-  const { token } = theme.useToken();
   const { data, isLoading } = useProjectBudget(order.projectId);
   const material = data?.heads.find((h) => h.head === 'material');
   if (isLoading && !data) return <Typography.Text type="secondary">Reading the budget…</Typography.Text>;
@@ -91,7 +90,7 @@ export function OrderBudget({ order }: { order: PurchaseOrderDto }) {
 
   return (
     <>
-      <Typography.Paragraph style={{ marginBottom: 8 }}>
+      <Typography.Paragraph style={{ marginBottom: tk.space[2] }}>
         Material budget <Money value={budget} />, of which{' '}
         <Money value={spent} /> has been spent. This order of{' '}
         <Money value={order.total} paise /> takes it to{' '}
@@ -104,7 +103,7 @@ export function OrderBudget({ order }: { order: PurchaseOrderDto }) {
         success={{ percent: budget > 0 ? Math.min(Math.round((spent / budget) * 100), 100) : 0 }}
       />
       {over ? (
-        <Typography.Text style={{ color: token.colorErrorText }}>
+        <Typography.Text style={{ color: tk.color.tone.danger.fg }}>
           It would go {formatINR(after - budget)} past the material budget. Check it against the budget before approving.
         </Typography.Text>
       ) : null}

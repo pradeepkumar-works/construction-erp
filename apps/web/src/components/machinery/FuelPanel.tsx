@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Button, Empty, Skeleton, Space, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import type { TableProps } from 'antd';
 import { FileExcelOutlined, PlusOutlined } from '@/components/common/icons';
@@ -11,14 +12,13 @@ import { useFuelPosition } from '@/lib/queries';
 import { useProjectScope } from '@/lib/project-scope';
 import { formatDate, formatQty, toNumber, NO_VALUE } from '@/lib/format';
 import { downloadXlsx, exportFileName } from '@/lib/exportExcel';
-import { themeColor, themeFontSize } from '@/lib/theme';
 import { QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { Section, SectionStack } from '@/components/common/Section';
 import { FuelIssueModal } from './FuelIssueModal';
 import { FuelTanks } from './FuelTanks';
 
-const RED = themeColor('colorErrorText');
+const RED = tk.color.tone.danger.fg;
 const q = (v: string, unit: string, muted = true) =>
   toNumber(v) === 0 && muted ? (
     <span className="text-muted">{NO_VALUE}</span>
@@ -72,7 +72,7 @@ export function FuelPanel({ projectId: fixedProject }: { projectId?: string }) {
                 <span className="mono" translate="no">
                   {r.projectCode}
                 </span>
-                <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                   {r.projectName}
                 </div>
               </div>
@@ -93,10 +93,10 @@ export function FuelPanel({ projectId: fixedProject }: { projectId?: string }) {
         const low = r.minLevel !== null && toNumber(v) < toNumber(r.minLevel);
         return (
           <div>
-            <span className="mono" translate="no" style={{ fontWeight: 600, color: low ? RED : undefined }}>
+            <span className="mono" translate="no" style={{ fontWeight: tk.type.title.fontWeight, color: low ? RED : undefined }}>
               {formatQty(v)} {r.unit}
             </span>
-            {low ? <div style={{ fontSize: themeFontSize('fontSizeSM'), color: RED }}>below {formatQty(r.minLevel!)} minimum</div> : null}
+            {low ? <div style={{ fontSize: tk.type.caption.fontSize, color: RED }}>below {formatQty(r.minLevel!)} minimum</div> : null}
           </div>
         );
       },
@@ -115,7 +115,7 @@ export function FuelPanel({ projectId: fixedProject }: { projectId?: string }) {
           </span>{' '}
           {r.equipmentName}
           {r.issuedTo ? (
-            <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+            <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
               to {r.issuedTo}
             </div>
           ) : null}
@@ -129,7 +129,7 @@ export function FuelPanel({ projectId: fixedProject }: { projectId?: string }) {
 
   return (
     <SectionStack gap={0}>
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', padding: '12px 0' }}>
+      <div style={{ display: 'flex', gap: tk.space[3], flexWrap: 'wrap', alignItems: 'center', padding: `${tk.space[3]} 0` }}>
         {fixedProject ? null : <ProjectSelect value={scope} onChange={(v) => setScope(v)} style={{ minWidth: 220, maxWidth: '100%' }} />}
         <DatePicker
           value={date}
@@ -164,7 +164,7 @@ export function FuelPanel({ projectId: fixedProject }: { projectId?: string }) {
               locale={{ emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No fuel held at these sites. Mark diesel as fuel in Items to see it here." /> }}
             />
           </Section>
-          <Section style={{ marginTop: 16 }} title="Into machines">
+          <Section style={{ marginTop: tk.space[4] }} title="Into machines">
             <Table<FuelIssueDto>
               rowKey="entryId"
               size="small"
@@ -176,7 +176,7 @@ export function FuelPanel({ projectId: fixedProject }: { projectId?: string }) {
             />
           </Section>
           <FuelTanks date={data.date} projectId={projectId} canIssue={data.canIssue} />
-          <Typography.Paragraph type="secondary" style={{ fontSize: themeFontSize('fontSizeSM'), marginTop: 12, marginBottom: 0 }}>
+          <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[3], marginBottom: 0 }}>
             A fuel issue names the machine and its meter, so each machine&apos;s litres an hour can be checked against its norm (set on the machine in
             Equipment). The watch list flags a machine whose recent logs are off the norm by more than its tolerance.
           </Typography.Paragraph>

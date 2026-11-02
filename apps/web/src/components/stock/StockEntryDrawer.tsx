@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Button, Descriptions, Divider, Drawer, Dropdown, Skeleton, Space, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { FileTextOutlined, ImportOutlined, MoreOutlined, SafetyCertificateOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { StockEntryDto, StockLineDto } from '@erp/shared';
@@ -102,7 +103,7 @@ export function StockEntryDrawer({ id, onClose }: { id: string | null; onClose: 
             size="small"
             column={2}
             bordered
-            style={{ marginBottom: 16 }}
+            style={{ marginBottom: tk.space[4] }}
             items={[
               { key: 'date', label: 'Date', children: formatDate(data.date) },
               { key: 'project', label: 'Project', children: <Link href={`/projects/${data.projectId}?tab=stock`}>{data.projectName}</Link> },
