@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Alert, App, Button, Descriptions, Divider, Drawer, Input, Space, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { UseQueryResult } from '@tanstack/react-query';
 import type { PortalRfiDto } from '@erp/shared';
 import { isGuest } from '@erp/shared';
@@ -9,7 +10,6 @@ import { errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useAnswerRfiAsClient } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
-import { themeFontSize } from '@/lib/theme';
 import { QueryError } from '@/components/common/QueryState';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { RecordLink } from '@/components/record/RecordLink';
@@ -43,7 +43,7 @@ export function PortalRfis({ rfis, openId, onOpen }: { rfis: UseQueryResult<Port
                   <UrgentTag priority={r.priority} />
                 </Space>
                 {r.location ? (
-                  <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                  <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                     {r.location}
                   </div>
                 ) : null}
@@ -80,9 +80,9 @@ function AnswerBox({ rfi }: { rfi: PortalRfiDto }) {
   };
   return (
     <>
-      {problem ? <Alert type="error" showIcon role="alert" style={{ marginBottom: 8 }} title={problem} /> : null}
+      {problem ? <Alert type="error" showIcon role="alert" style={{ marginBottom: tk.space[2] }} title={problem} /> : null}
       <Input.TextArea aria-label="Your answer" rows={5} maxLength={4000} showCount value={text} onChange={(e) => setText(e.target.value)} placeholder="Your answer, as an instruction the contractor can act on" />
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 28 }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: tk.space[6] }}>
         <Button type="primary" onClick={save} loading={answer.isPending}>
           Send answer
         </Button>

@@ -3,7 +3,8 @@
 import React, { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { App, Button, Card, Descriptions, Empty, Flex, Image, Pagination, Segmented, Select, Switch, Typography, theme } from 'antd';
+import { App, Button, Card, Descriptions, Empty, Flex, Image, Pagination, Segmented, Select, Switch, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { CheckOutlined, CloseOutlined, EditOutlined } from '@/components/common/icons';
 import {
@@ -75,7 +76,6 @@ function Capture() {
   const [state, setState] = useState<InboundState | undefined>(undefined);
   const [page, setPage] = useState(1);
   const list = useCaptureMessages({ scope, state, id: only, page, pageSize: PAGE_SIZE }, allowed);
-  const { token } = theme.useToken();
 
   if (user && !allowed)
     return (
@@ -92,10 +92,10 @@ function Capture() {
   return (
     <>
       <PageHeader title="WhatsApp entries" subtitle={`Send what happened on site as a text, a photo or a voice note. ${PRODUCT_NAME} drafts the entry and you save it with one tap.`} />
-      <Flex vertical gap={token.marginMD}>
+      <Flex vertical gap={tk.space[5]}>
         <SetupCard setup={setup.data} />
         <Card size="small" title="Try it">
-          <Flex vertical gap={token.marginXS}>
+          <Flex vertical gap={tk.space[2]}>
             <Typography.Text type="secondary">Write the way you would to your project manager. Name the project if you work on more than one.</Typography.Text>
             {EXAMPLES.map((e) => (
               <Typography.Text key={e} translate="no">
@@ -106,8 +106,8 @@ function Capture() {
           </Flex>
         </Card>
 
-        <Flex wrap gap={token.marginSM} align="center" justify="space-between">
-          <Flex wrap gap={token.marginSM} align="center">
+        <Flex wrap gap={tk.space[3]} align="center" justify="space-between">
+          <Flex wrap gap={tk.space[3]} align="center">
             {setup.data.canSeeCompany && (
               <Segmented
                 aria-label="Whose messages"
@@ -157,7 +157,6 @@ function Capture() {
 function SetupCard({ setup }: { setup: CaptureSetupDto }) {
   const { message } = App.useApp();
   const update = useUpdateCaptureSetup();
-  const { token } = theme.useToken();
   const { user } = useAuth();
   const admin = !!user && canManageIntegrations(user.roleKey);
   const toggle = async (on: boolean) => {
@@ -196,8 +195,8 @@ function SetupCard({ setup }: { setup: CaptureSetupDto }) {
   ];
   return (
     <Card size="small" title="Your WhatsApp entries">
-      <Flex vertical gap={token.marginSM}>
-        <Flex gap={token.marginSM} align="center" wrap>
+      <Flex vertical gap={tk.space[3]}>
+        <Flex gap={tk.space[3]} align="center" wrap>
           <Switch checked={setup.enabled} loading={update.isPending} disabled={!setup.phone && !setup.enabled} onChange={toggle} aria-label="Read my WhatsApp messages as me" />
           <Typography.Text>
             {setup.phone ? (
@@ -237,7 +236,6 @@ function MessageCard({ m, showSender, picked }: { m: InboundMessageDto; showSend
   const { message } = App.useApp();
   const router = useRouter();
   const decide = useDecideCapture();
-  const { token } = theme.useToken();
   const act = async (action: 'save' | 'discard') => {
     try {
       const r = await decide.mutateAsync({ id: m.id, action });
@@ -249,9 +247,9 @@ function MessageCard({ m, showSender, picked }: { m: InboundMessageDto; showSend
   const open = () => m.draft && requestNew(m.draft.kind, () => router.push(DRAFT_PAGES[m.draft!.kind]), m.draft);
   const isImage = m.attachment?.mimeType.startsWith('image/');
   return (
-    <Card size="small" data-message-id={m.id} style={picked ? { borderColor: token.colorPrimary } : undefined}>
-      <Flex vertical gap={token.marginXS}>
-        <Flex wrap gap={token.marginXS} align="center">
+    <Card size="small" data-message-id={m.id} style={picked ? { borderColor: tk.color.accent.solid } : undefined}>
+      <Flex vertical gap={tk.space[2]}>
+        <Flex wrap gap={tk.space[2]} align="center">
           <AppTag variant="kind">{INBOUND_TYPE_LABELS[m.type]}</AppTag>
           <AppTag kind="inbound" status={m.state}>{m.outcome ? CAPTURE_OUTCOME_LABELS[m.outcome] : INBOUND_STATE_LABELS[m.state]}</AppTag>
           <Typography.Text type="secondary">
@@ -268,7 +266,7 @@ function MessageCard({ m, showSender, picked }: { m: InboundMessageDto; showSend
         )}
         {m.attachment &&
           (isImage ? (
-            <Image src={fileUrl(m.attachment.url)} alt="Photo sent on WhatsApp" width={96} height={96} style={{ objectFit: 'cover', borderRadius: token.borderRadius }} />
+            <Image src={fileUrl(m.attachment.url)} alt="Photo sent on WhatsApp" width={96} height={96} style={{ objectFit: 'cover', borderRadius: tk.radius.md }} />
           ) : (
             <Typography.Link href={fileUrl(m.attachment.url)} target="_blank" rel="noreferrer">
               Play the voice note
@@ -276,7 +274,7 @@ function MessageCard({ m, showSender, picked }: { m: InboundMessageDto; showSend
           ))}
         {m.draft && (
           <Card size="small" type="inner" title={`${AI_DRAFT_LABELS[m.draft.kind]}${m.state === 'SAVED' ? '' : ', not saved'}`}>
-            <Flex vertical gap={token.marginXS}>
+            <Flex vertical gap={tk.space[2]}>
               <Typography.Text>{m.draft.title}</Typography.Text>
               {m.draft.flags.map((f) => (
                 <Typography.Text key={f.field} type="warning">
@@ -284,7 +282,7 @@ function MessageCard({ m, showSender, picked }: { m: InboundMessageDto; showSend
                 </Typography.Text>
               ))}
               {m.state === 'DRAFTED' && (
-                <Flex wrap gap={token.marginXS}>
+                <Flex wrap gap={tk.space[2]}>
                   {m.canSave && (
                     <Button type="primary" icon={<CheckOutlined />} loading={decide.isPending && decide.variables?.action === 'save'} onClick={() => act('save')}>
                       Save

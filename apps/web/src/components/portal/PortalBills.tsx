@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, App, Button, Descriptions, Drawer, Form, Input, Skeleton, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import type { UseQueryResult } from '@tanstack/react-query';
 import dayjs from 'dayjs';
@@ -74,12 +75,12 @@ function PortalBillDrawer({ id, onClose }: { id: string | null; onClose: () => v
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {data ? (
         <>
-          {data.stage === 'SENT' && !canCertify ? <Alert type="info" showIcon style={{ marginBottom: 12 }} title="Waiting for the client's certificate" /> : null}
+          {data.stage === 'SENT' && !canCertify ? <Alert type="info" showIcon style={{ marginBottom: tk.space[3] }} title="Waiting for the client's certificate" /> : null}
           {held ? (
             <Alert
               type="warning"
               showIcon
-              style={{ marginBottom: 12 }}
+              style={{ marginBottom: tk.space[3] }}
               title={held}
               description={nextSheets.length ? `Check next, in Check measurement: ${nextSheets.join(', ')}.` : undefined}
             />
@@ -88,7 +89,7 @@ function PortalBillDrawer({ id, onClose }: { id: string | null; onClose: () => v
             size="small"
             bordered
             column={2}
-            style={{ marginBottom: 16 }}
+            style={{ marginBottom: tk.space[4] }}
             items={[
               { key: 'stage', label: 'Stage', children: <BillStageTag stage={data.stage} /> },
               { key: 'date', label: 'Bill date', children: `${formatDate(data.billDate)} (measured up to ${formatDate(data.measuredUpTo)})` },
@@ -107,7 +108,7 @@ function PortalBillDrawer({ id, onClose }: { id: string | null; onClose: () => v
           <BillItemsTable items={data.items} />
           {data.measurements?.length && checks.data ? (
             <>
-              <Typography.Title level={5} style={{ marginTop: 16 }}>
+              <Typography.Title level={5} style={{ marginTop: tk.space[4] }}>
                 Check measurement
               </Typography.Title>
               <CheckCoverage coverage={checks.data.coverage} level={checks.data.level} />
@@ -115,7 +116,7 @@ function PortalBillDrawer({ id, onClose }: { id: string | null; onClose: () => v
           ) : null}
           {data.measurements?.length ? (
             <>
-              <Typography.Title level={5} style={{ marginTop: 16 }}>
+              <Typography.Title level={5} style={{ marginTop: tk.space[4] }}>
                 Measurements
               </Typography.Title>
               <Table

@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Card, Col, Empty, Progress, Row, Space, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { PROJECT_STATUS_LABELS, PROJECT_TYPE_LABELS } from '@erp/shared';
 import { usePortalProjects } from '@/lib/queries';
@@ -10,7 +11,6 @@ import { formatDate, formatINRCompact } from '@/lib/format';
 import { useAuth } from '@/lib/auth';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
-import { themeFontSize } from '@/lib/theme';
 
 /** The client portal home: the projects the client's engineer or consultant is on. */
 export default function PortalPage() {
@@ -40,10 +40,10 @@ export default function PortalPage() {
                   </Typography.Title>
                   <Typography.Text type="secondary">{[p.location, p.contractValue ? `Contract ${formatINRCompact(p.contractValue)}` : null].filter(Boolean).join(' · ')}</Typography.Text>
                   <div>
-                    <Typography.Text style={{ fontSize: themeFontSize('fontSizeSM') }}>Physical progress</Typography.Text>
+                    <Typography.Text style={{ fontSize: tk.type.caption.fontSize }}>Physical progress</Typography.Text>
                     <Progress percent={p.physicalProgressPct} size="small" aria-label={`Physical progress ${p.physicalProgressPct}%`} />
                     {p.timeElapsedPct != null ? (
-                      <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                      <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
                         {p.timeElapsedPct}% of the contract period gone · ends {formatDate(p.endDate)}
                       </Typography.Text>
                     ) : null}
@@ -52,7 +52,7 @@ export default function PortalPage() {
                     {p.billsToCertify ? <AppTag meaning="waiting">{`${p.billsToCertify} ${p.billsToCertify === 1 ? 'bill' : 'bills'} to certify`}</AppTag> : <Typography.Text type="secondary">No bills to certify</Typography.Text>}
                     {p.openInspections ? <AppTag meaning="waiting">{`${p.openInspections} ${p.openInspections === 1 ? 'inspection' : 'inspections'} requested`}</AppTag> : null}
                   </Space>
-                  <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                  <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
                     Last daily report: {p.lastDprDate ? formatDate(p.lastDprDate) : 'none yet'}
                   </Typography.Text>
                 </Space>

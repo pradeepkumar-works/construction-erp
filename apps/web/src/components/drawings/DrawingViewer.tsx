@@ -2,7 +2,8 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Alert, App, Button, Checkbox, Flex, Popover, Result, Segmented, Select, Space, Spin, Switch, Tooltip, Typography, theme } from 'antd';
+import { Alert, App, Button, Checkbox, Flex, Popover, Result, Segmented, Select, Space, Spin, Switch, Tooltip, Typography } from 'antd';
+import { tk } from '@/ds';
 import { ResultMark } from '@/components/common/ResultMark';
 import {
   ArrowRightOutlined,
@@ -138,7 +139,6 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
   const router = useRouter();
   const search = useSearchParams();
   const { message } = App.useApp();
-  const { token } = theme.useToken();
   const { data: doc, isLoading, error, refetch } = useDocument(documentId);
   const { data: allMarks = [] } = useDrawingMarkups(documentId);
   const create = useCreateMarkup(documentId);
@@ -685,7 +685,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
   const otherFiles = (revision?.attachments ?? []).filter((a) => !canViewDrawingFile(a));
   const pages = sheet?.pages ?? 1;
   const toolbar = (
-    <Flex wrap gap={token.marginXS} align="center">
+    <Flex wrap gap={tk.space[2]} align="center">
       <Space.Compact>
         {TOOLS.map((t) => (
           <Tooltip key={t.tool} title={t.label}>
@@ -714,7 +714,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
               aria-label={`${MARKUP_COLOR_LABELS[c]} ink`}
               aria-pressed={color === c}
               onClick={() => setColor(c)}
-              icon={<span aria-hidden style={{ display: 'inline-block', width: 14, height: 14, borderRadius: 7, background: MARKUP_INK[c], outline: color === c ? `2px solid ${token.colorText}` : 'none', outlineOffset: 2 }} />}
+              icon={<span aria-hidden style={{ display: 'inline-block', width: 14, height: 14, borderRadius: 7, background: MARKUP_INK[c], outline: color === c ? `2px solid ${tk.color.text.base}` : 'none', outlineOffset: 2 }} />}
             />
           </Tooltip>
         ))}
@@ -733,7 +733,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
       {pages > 1 ? (
         <Space.Compact>
           <Button icon={<LeftOutlined />} aria-label="Previous page" disabled={page <= 1} onClick={() => go({ page: page - 1, mark: null })} />
-          <Button disabled style={{ color: token.colorText }} translate="no">
+          <Button disabled style={{ color: tk.color.text.base }} translate="no">
             {page} / {pages}
           </Button>
           <Button icon={<RightOutlined />} aria-label="Next page" disabled={page >= pages} onClick={() => go({ page: page + 1, mark: null })} />
@@ -790,7 +790,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
         }
         crumbs={[{ title: 'Drawings and documents', href: '/documents' }, { title: doc.docNo, href: `/documents?id=${doc.id}` }, { title: 'Drawing' }]}
         extra={
-          <Flex gap={token.marginXS} wrap>
+          <Flex gap={tk.space[2]} wrap>
             {revisions.length > 1 ? (
               <Select
                 aria-label="Revision"
@@ -831,7 +831,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
         />
       ) : (
         <div className="drawing-layout">
-          <Flex vertical gap={token.marginSM} style={{ minWidth: 0 }}>
+          <Flex vertical gap={tk.space[3]} style={{ minWidth: 0 }}>
             {toolbar}
             {otherFiles.length ? (
               <Alert
@@ -854,17 +854,17 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
               />
             ) : null}
             {compareRev ? (
-              <Flex gap={token.marginSM} wrap align="center" style={{ fontSize: token.fontSizeSM }}>
+              <Flex gap={tk.space[3]} wrap align="center" style={{ fontSize: tk.type.caption.fontSize }}>
                 <span>
-                  <span aria-hidden style={{ display: 'inline-block', width: 12, height: 3, background: BRAND.colors.compareOld, verticalAlign: 'middle', marginRight: 4 }} />
+                  <span aria-hidden style={{ display: 'inline-block', width: 12, height: 3, background: BRAND.colors.compareOld, verticalAlign: 'middle', marginRight: tk.space[1] }} />
                   Only on {revLabel(compareIsOlder ? compareRev.revision : revision.revision)} (older)
                 </span>
                 <span>
-                  <span aria-hidden style={{ display: 'inline-block', width: 12, height: 3, background: BRAND.colors.compareNew, verticalAlign: 'middle', marginRight: 4 }} />
+                  <span aria-hidden style={{ display: 'inline-block', width: 12, height: 3, background: BRAND.colors.compareNew, verticalAlign: 'middle', marginRight: tk.space[1] }} />
                   Only on {revLabel(compareIsOlder ? revision.revision : compareRev.revision)} (newer)
                 </span>
                 <span>
-                  <span aria-hidden style={{ display: 'inline-block', width: 12, height: 3, background: BRAND.colors.compareBoth, verticalAlign: 'middle', marginRight: 4 }} />
+                  <span aria-hidden style={{ display: 'inline-block', width: 12, height: 3, background: BRAND.colors.compareBoth, verticalAlign: 'middle', marginRight: tk.space[1] }} />
                   On both
                 </span>
               </Flex>
@@ -886,9 +886,9 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
               className="drawing-viewport"
               style={{
                 cursor: tool === 'MOVE' ? 'grab' : 'crosshair',
-                background: token.colorFillTertiary,
-                border: `1px solid ${token.colorBorderSecondary}`,
-                borderRadius: token.borderRadiusLG,
+                background: tk.color.surface.sunken,
+                border: `1px solid ${tk.color.line.hairline}`,
+                borderRadius: tk.radius.lg,
               }}
             >
               {sheetError ? (
@@ -898,7 +898,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
                   <Spin description="Opening the drawing…" />
                 </Flex>
               ) : (
-                <div style={{ position: 'absolute', left: 0, top: 0, width: baseW, height: baseH, transform: `translate(${view.x}px, ${view.y}px) scale(${view.zoom})`, transformOrigin: '0 0', boxShadow: token.boxShadowTertiary }}>
+                <div style={{ position: 'absolute', left: 0, top: 0, width: baseW, height: baseH, transform: `translate(${view.x}px, ${view.y}px) scale(${view.zoom})`, transformOrigin: '0 0', boxShadow: tk.shadow.float }}>
                   <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', background: '#fff' }} aria-hidden />
                   <svg ref={svgRef} viewBox={`0 0 ${VB_W} ${vbH}`} preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'visible' }} aria-hidden>
                     {shown.map((m) => (
@@ -926,14 +926,14 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
                     left: 8,
                     top: 8,
                     maxWidth: 'calc(100% - 16px)',
-                    padding: `${token.paddingXXS}px ${token.paddingXS}px`,
-                    background: token.colorBgElevated,
-                    borderRadius: token.borderRadius,
-                    boxShadow: token.boxShadowSecondary,
+                    padding: `${tk.space[1]} ${tk.space[2]}`,
+                    background: tk.color.surface.raised,
+                    borderRadius: tk.radius.md,
+                    boxShadow: tk.shadow.float,
                     cursor: 'default',
                   }}
                 >
-                  <Flex gap={token.marginXS} wrap align="center">
+                  <Flex gap={tk.space[2]} wrap align="center">
                     <span aria-live="polite">
                       <Typography.Text strong>{tool === 'SCALE' ? 'Scale' : TAKEOFF_KIND_LABELS[tool]}</Typography.Text>{' '}
                       <Typography.Text translate="no">
@@ -966,12 +966,12 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
                 </div>
               ) : null}
             </div>
-            <Flex justify="space-between" wrap gap={token.marginXS} align="center">
+            <Flex justify="space-between" wrap gap={tk.space[2]} align="center">
               <Flex gap={8} align="center" style={{ minHeight: 32 }}>
                 <Switch size="small" checked={carry} onChange={setCarry} id="carry-marks" aria-labelledby="carry-marks-label" />
                 <span id="carry-marks-label">Show open marks from earlier revisions</span>
               </Flex>
-              <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+              <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
                 {tool === 'MOVE'
                   ? 'Drag to move, wheel or pinch to zoom, tap a mark to pick it.'
                   : isMeasure(tool)
@@ -982,7 +982,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
               </Typography.Text>
             </Flex>
           </Flex>
-          <Flex vertical gap={token.marginSM} style={{ minWidth: 0 }}>
+          <Flex vertical gap={tk.space[3]} style={{ minWidth: 0 }}>
             <Segmented
               block
               value={panel}

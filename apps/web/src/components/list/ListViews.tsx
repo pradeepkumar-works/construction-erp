@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { App, Button, Checkbox, Dropdown, Flex, Form, Input, Modal, Select, Tabs, Tooltip, theme } from 'antd';
+import { tk } from '@/ds';
 import type { MenuProps } from 'antd';
 import { DeleteOutlined, EditOutlined, EllipsisOutlined, SaveOutlined, TeamOutlined } from '@/components/common/icons';
 import type { SavedViewDto, SavedViewList } from '@erp/shared';
@@ -137,11 +138,11 @@ export function ListViews({
     ...(saved ?? []).map((v) => ({
       key: v.id,
       label: (
-        <Flex align="center" gap={token.marginXXS}>
+        <Flex align="center" gap={tk.space[1]}>
           <span>{v.name}</span>
           {v.shared ? (
             <Tooltip title={v.mine ? 'Shared with the company' : `Shared by ${v.ownerName}`}>
-              <TeamOutlined style={{ color: token.colorTextTertiary }} aria-label="Shared" />
+              <TeamOutlined style={{ color: tk.color.text.faint }} aria-label="Shared" />
             </Tooltip>
           ) : null}
           {mayEdit(v) && (
@@ -166,14 +167,14 @@ export function ListViews({
   return (
     <>
       {/* Save view sits beside the tabs, not in antd's tab bar, whose role="tablist" may hold only tabs. */}
-      <Flex align="center" gap={token.marginSM} style={{ padding: `0 ${token.paddingSM}px`, borderBottom: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}` }}>
+      <Flex align="center" gap={tk.space[3]} style={{ padding: `0 ${tk.space[3]}`, borderBottom: tk.line('hairline') }}>
         {phone ? (
           <Select
             aria-label="View"
             value={active}
             placeholder="Custom filters"
             onChange={pick}
-            style={{ flex: 1, minWidth: 0, margin: `${token.marginXS}px 0` }}
+            style={{ flex: 1, minWidth: 0, margin: `${tk.space[2]} 0` }}
             options={[...builtIns.map((v) => ({ value: v.key, label: v.label })), ...(saved ?? []).map((v) => ({ value: v.id, label: v.shared ? `${v.name} (shared)` : v.name }))]}
           />
         ) : (
@@ -198,7 +199,7 @@ export function ListViews({
         </Button>
       </Flex>
       <Modal open={!!editing} title={editing === 'new' ? 'Save this view' : 'Rename or share'} okText="Save" onOk={submit} okButtonProps={{ loading: save.isPending }} onCancel={() => setEditing(null)} destroyOnHidden>
-        <Form form={form} layout="vertical" style={{ marginTop: token.marginSM }} onFinish={submit}>
+        <Form form={form} layout="vertical" style={{ marginTop: tk.space[3] }} onFinish={submit}>
           <Form.Item name="name" label="Name" rules={[{ required: true, whitespace: true, message: 'Give the view a name' }, { max: 60, message: 'Keep the name under 60 characters' }]}>
             <Input
               placeholder="Submitted this month"

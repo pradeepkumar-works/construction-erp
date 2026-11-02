@@ -5,7 +5,8 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import dayjs from 'dayjs';
-import { App, Button, Card, Checkbox, Descriptions, Drawer, Flex, Form, Input, Select, Space, Table, Typography, theme } from 'antd';
+import { App, Button, Card, Checkbox, Descriptions, Drawer, Flex, Form, Input, Select, Space, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   DOCUMENT_DISCIPLINES,
@@ -312,7 +313,6 @@ function ManyFormDrawer({ open, onClose, projectId }: { open: boolean; onClose: 
 
 /** A scheduled drawing: where it stands, how it was chased, and the next step. */
 function NeedDrawer({ need, onClose, onEdit }: { need: DrawingNeedDto | null; onClose: () => void; onEdit: (n: DrawingNeedDto) => void }) {
-  const { token } = theme.useToken();
   const { user } = useAuth();
   const { message } = App.useApp();
   const router = useRouter();
@@ -348,7 +348,7 @@ function NeedDrawer({ need, onClose, onEdit }: { need: DrawingNeedDto | null; on
       size={640}
       title={
         n ? (
-          <Flex gap={token.marginXS} align="center" wrap>
+          <Flex gap={tk.space[2]} align="center" wrap>
             <span translate="no">{n.docNo ?? n.title}</span>
             <NeedStateTag n={n} />
           </Flex>
@@ -359,7 +359,7 @@ function NeedDrawer({ need, onClose, onEdit }: { need: DrawingNeedDto | null; on
       extra={may && n ? <Button onClick={() => onEdit(n)}>Edit</Button> : null}
     >
       {n ? (
-        <Flex vertical gap={token.marginLG}>
+        <Flex vertical gap={tk.space[6]}>
           <Descriptions
             column={1}
             size="small"
@@ -403,7 +403,7 @@ function NeedDrawer({ need, onClose, onEdit }: { need: DrawingNeedDto | null; on
             ]}
           />
           {may && awaited ? (
-            <Flex gap={token.marginXS} wrap>
+            <Flex gap={tk.space[2]} wrap>
               {remindsByLetter(n.source) ? (
                 <Button type="primary" loading={remind.isPending} onClick={() => remind.mutate()}>
                   Write reminder letter
@@ -434,7 +434,6 @@ function NeedDrawer({ need, onClose, onEdit }: { need: DrawingNeedDto | null; on
 }
 
 function ScheduleList() {
-  const { token } = theme.useToken();
   const { user } = useAuth();
   const params = useSearchParams();
   const [openId, setOpenId] = useUrlParam('id');
@@ -525,7 +524,7 @@ function ScheduleList() {
     <>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {c ? (
-        <p translate="no" style={{ margin: `${token.marginSM}px 0` }}>
+        <p translate="no" style={{ margin: `${tk.space[3]} 0` }}>
           {`${c.overdue} late · ${c.dueSoon} due within a week · ${c.gfc} of ${c.total} good for construction`}
         </p>
       ) : null}
@@ -567,13 +566,12 @@ function ScheduleList() {
 
 /** Drawings site builds from that have no as-built revision yet: what the handover still owes. */
 function AsBuiltPanel() {
-  const { token } = theme.useToken();
   const router = useRouter();
   const [projectId, setProjectId] = useProjectScope();
   const { data, isLoading, error, refetch } = useAsBuiltDue(projectId);
   return (
-    <Flex vertical gap={token.margin} style={{ paddingTop: token.marginSM }}>
-      <Flex gap={token.marginSM} wrap align="center">
+    <Flex vertical gap={tk.space[4]} style={{ paddingTop: tk.space[3] }}>
+      <Flex gap={tk.space[3]} wrap align="center">
         <ProjectSelect value={projectId} onChange={(v) => setProjectId(v)} aria-label="Project" style={{ minWidth: 240, maxWidth: '100%' }} />
       </Flex>
       <Typography.Paragraph type="secondary" style={{ margin: 0 }}>

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Alert, Button, Descriptions, Form, Input, Result, Skeleton } from 'antd';
+import { tk } from '@/ds';
 import { useQuery } from '@tanstack/react-query';
 import { MIN_PASSWORD_LENGTH, type LoginResponse, type PasswordTokenInfoDto } from '@erp/shared';
 import { api, errorMessage } from '@/lib/api';
@@ -59,13 +60,13 @@ export default function SetPasswordPage() {
         <Skeleton active />
       ) : info.data ? (
         <>
-          <Descriptions size="small" column={1} bordered style={{ marginBottom: 16 }}>
+          <Descriptions size="small" column={1} bordered style={{ marginBottom: tk.space[4] }}>
             <Descriptions.Item label="Company">{info.data.organizationName}</Descriptions.Item>
             <Descriptions.Item label="Name">{info.data.fullName}</Descriptions.Item>
             <Descriptions.Item label="Email">{info.data.email}</Descriptions.Item>
             <Descriptions.Item label="Link valid until">{formatDateTime(info.data.expiresAt)}</Descriptions.Item>
           </Descriptions>
-          {error && <Alert type="error" showIcon title={error} style={{ marginBottom: 16 }} />}
+          {error && <Alert type="error" showIcon title={error} style={{ marginBottom: tk.space[4] }} />}
           <Form layout="vertical" onFinish={onFinish} requiredMark={false}>
             <input type="email" name="username" autoComplete="username" value={info.data.email} readOnly hidden />
             <Form.Item name="password" label="New password" rules={[{ required: true, min: MIN_PASSWORD_LENGTH, message: `At least ${MIN_PASSWORD_LENGTH} characters` }]}>

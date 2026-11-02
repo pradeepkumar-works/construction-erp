@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { App, Select, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { TableProps } from 'antd';
 import type { DeviceLinkDto } from '@erp/shared';
 import { MAX_PAGE_SIZE } from '@erp/shared';
@@ -77,8 +78,8 @@ export function Devices() {
   ];
 
   return (
-    <div style={{ padding: 16 }}>
-      <Typography.Paragraph type="secondary" style={{ margin: '0 0 12px', maxWidth: 680 }}>
+    <div style={{ padding: tk.space[4] }}>
+      <Typography.Paragraph type="secondary" style={{ margin: `0 0 ${tk.space[3]}`, maxWidth: 680 }}>
         Every device a connection has reported on shows here the first time it is heard from. Match each to its machine so its hours and fuel go on the right log.
       </Typography.Paragraph>
       {error ? (

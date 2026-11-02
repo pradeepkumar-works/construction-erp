@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Button, Select, theme } from 'antd';
+import { Button, Select } from 'antd';
+import { tk } from '@/ds';
 import { PlusOutlined } from '@/components/common/icons';
 import type { DocumentDiscipline, DocumentDto, DocumentKind, DocumentSortField, RevisionStatus } from '@erp/shared';
 import { DOCUMENT_DISCIPLINES, DOCUMENT_DISCIPLINE_LABELS, DOCUMENT_KINDS, DOCUMENT_KIND_LABELS, LIST_SORT_FIELDS, REVISION_STATUSES, REVISION_STATUS_LABELS, canManageDocuments, canViewDrawingFile } from '@erp/shared';
@@ -21,8 +22,7 @@ import { DocumentFormModal } from './DocumentFormModal';
 const KEYS = ['kind', 'discipline', 'status'] as const;
 
 function Sub({ children }: { children: React.ReactNode }) {
-  const { token } = theme.useToken();
-  return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
+  return <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{children}</div>;
 }
 
 /** The register: each drawing or document with its current revision and file. */

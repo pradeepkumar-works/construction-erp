@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Button, Descriptions, Drawer, Segmented, Select, Space, Statistic, Table } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import { PlusOutlined } from '@/components/common/icons';
@@ -29,14 +30,13 @@ import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { SearchBox } from '@/components/common/SearchBox';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { CardToolbar } from '@/components/common/CardToolbar';
-import { themeColor, themeFontSize } from '@/lib/theme';
 import { ExpiryTag } from '@/components/maintenance/maintenanceUi';
 import { RecordLink } from '@/components/record/RecordLink';
 import { ComplianceFormModal, type ComplianceAction } from './ComplianceForms';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 import { openableRow } from '@/components/list/openableRow';
 
-const big = { content: { fontSize: themeFontSize('fontSizeXL') } };
+const big = { content: { fontSize: tk.type.subhead.fontSize } };
 
 const KindTag = ({ kind }: { kind: ComplianceDocKind }) => (
   <AppTag variant="kind" style={{ margin: 0 }}>
@@ -105,7 +105,7 @@ export function CompliancePanel({ initialId }: { initialId?: string }) {
         <div>
           <KindTag kind={d.kind} />
           {d.category ? (
-            <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM'), marginTop: 2 }}>
+            <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space.half }}>
               {d.category}
             </div>
           ) : null}
@@ -118,7 +118,7 @@ export function CompliancePanel({ initialId }: { initialId?: string }) {
       render: (_, d) => (
         <div>
           <b>{d.reference}</b>
-          <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+          <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
             {d.issuer ?? ' '}
           </div>
         </div>
@@ -131,7 +131,7 @@ export function CompliancePanel({ initialId }: { initialId?: string }) {
         <div>
           {d.projectName ?? <span className="text-muted">Company-wide</span>}
           {d.beneficiary ? (
-            <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+            <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
               In favour of {d.beneficiary}
             </div>
           ) : null}
@@ -148,7 +148,7 @@ export function CompliancePanel({ initialId }: { initialId?: string }) {
           <div>
             {formatINR(d.amount)}
             {d.margin ? (
-              <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+              <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                 margin {formatINR(d.margin)}
               </div>
             ) : null}
@@ -170,14 +170,14 @@ export function CompliancePanel({ initialId }: { initialId?: string }) {
           <Statistic title="Margin money blocked" value={formatINR(t.marginBlocked)} styles={big} />
           <Statistic title="EMD with tenders" value={formatINR(t.emdOut)} styles={big} />
           <div role="button" tabIndex={0} aria-pressed={state === 'EXPIRING'} style={{ cursor: 'pointer' }} onClick={() => pickState('EXPIRING')} onKeyDown={onKeys(() => pickState('EXPIRING'))}>
-            <Statistic title={`Expiring in ${DOC_ALERT_DAYS} days`} value={t.expiring} styles={{ content: { fontSize: themeFontSize('fontSizeXL'), color: t.expiring ? themeColor('orange7') : undefined } }} />
+            <Statistic title={`Expiring in ${DOC_ALERT_DAYS} days`} value={t.expiring} styles={{ content: { fontSize: tk.type.subhead.fontSize, color: t.expiring ? tk.color.tone.pending.fg : undefined } }} />
           </div>
           <div role="button" tabIndex={0} aria-pressed={state === 'EXPIRED'} style={{ cursor: 'pointer' }} onClick={() => pickState('EXPIRED')} onKeyDown={onKeys(() => pickState('EXPIRED'))}>
-            <Statistic title="Expired, not renewed" value={t.expired} styles={{ content: { fontSize: themeFontSize('fontSizeXL'), color: t.expired ? themeColor('colorErrorText') : undefined } }} />
+            <Statistic title="Expired, not renewed" value={t.expired} styles={{ content: { fontSize: tk.type.subhead.fontSize, color: t.expired ? tk.color.tone.danger.fg : undefined } }} />
           </div>
         </CardToolbar>
       ) : null}
-      <div style={{ padding: 12, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+      <div style={{ padding: tk.space[3], display: 'flex', gap: tk.space[2], flexWrap: 'wrap', alignItems: 'center' }}>
         <Segmented<ComplianceDocKind | 'ALL'>
           value={kind}
           onChange={setKind}
@@ -269,7 +269,7 @@ export function CompliancePanel({ initialId }: { initialId?: string }) {
           <QueryError error={open.error} onRetry={open.refetch} />
         ) : d ? (
           <>
-            <Space style={{ marginBottom: 12 }}>
+            <Space style={{ marginBottom: tk.space[3] }}>
               <KindTag kind={d.kind} />
               <StandTag d={d} />
             </Space>
@@ -294,15 +294,15 @@ export function CompliancePanel({ initialId }: { initialId?: string }) {
               <Descriptions.Item label="Added by">{d.createdByName}</Descriptions.Item>
             </Descriptions>
             {d.renewedById ? (
-              <p style={{ marginTop: 12 }}>
+              <p style={{ marginTop: tk.space[3] }}>
                 Renewed: <RecordLink onOpen={() => setOpenId(d.renewedById)}>open the current entry</RecordLink>
               </p>
             ) : null}
-            <h4 style={{ marginTop: 16 }}>Scans</h4>
+            <h4 style={{ marginTop: tk.space[4] }}>Scans</h4>
             <AttachmentGallery attachments={d.attachments} size={72} />
             {d.history.length ? (
               <>
-                <h4 style={{ marginTop: 16 }}>Earlier periods</h4>
+                <h4 style={{ marginTop: tk.space[4] }}>Earlier periods</h4>
                 <Table<ComplianceDocDto>
                   className="compliance-history"
                   rowKey="id"

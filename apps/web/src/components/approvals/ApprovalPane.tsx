@@ -2,11 +2,12 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Button, ConfigProvider, Descriptions, Divider, Flex, Space, Typography, theme } from 'antd';
+import { Button, ConfigProvider, Descriptions, Divider, Flex, Space, Typography } from 'antd';
+import { tk } from '@/ds';
 import { CheckOutlined, CloseOutlined, EditOutlined, FileSearchOutlined } from '@/components/common/icons';
 import { SUBMISSION_TYPE_LABELS, type PendingApprovalDto, type ReviewDecision } from '@erp/shared';
 import { approvalTypeParam } from '@/lib/queries';
-import { approveTheme, themeFontSize } from '@/lib/theme';
+import { approveTheme } from '@/lib/theme';
 import { formatDateTime } from '@/lib/format';
 import { AuditTrail } from '@/components/common/AuditTrail';
 import { ProgressRecord } from '@/components/progress/ProgressDrawer';
@@ -29,10 +30,9 @@ import { Money } from '@/components/common/Money';
 
 /** The record of the entry picked in the queue, then the decision bar. */
 export function ApprovalPane({ item, onDecide, onOpenDetails }: { item: PendingApprovalDto; onDecide: (d: ReviewDecision) => void; onOpenDetails: () => void }) {
-  const { token } = theme.useToken();
   return (
     <Flex vertical style={{ height: '100%' }}>
-      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: token.padding }} key={`${item.type}:${item.id}`}>
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: tk.space[4] }} key={`${item.type}:${item.id}`}>
         <PaneRecord item={item} onOpenDetails={onOpenDetails} />
       </div>
       <Flex
@@ -41,8 +41,8 @@ export function ApprovalPane({ item, onDecide, onOpenDetails }: { item: PendingA
         justify="space-between"
         align="center"
         wrap
-        gap={token.marginSM}
-        style={{ padding: `${token.paddingSM}px ${token.padding}px`, borderTop: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}`, background: token.colorBgContainer }}
+        gap={tk.space[3]}
+        style={{ padding: `${tk.space[3]} ${tk.space[4]}`, borderTop: tk.line('hairline'), background: tk.color.surface.base }}
       >
         {decidedInPlace(item.type) ? (
           <Space wrap>
@@ -63,7 +63,7 @@ export function ApprovalPane({ item, onDecide, onOpenDetails }: { item: PendingA
             Record the checklist
           </Button>
         )}
-        <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+        <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
           <Key k="J" /> <Key k="K" /> next and previous
         </Typography.Text>
       </Flex>
@@ -73,7 +73,7 @@ export function ApprovalPane({ item, onDecide, onOpenDetails }: { item: PendingA
 
 function Key({ k }: { k: string }) {
   return (
-    <Typography.Text keyboard aria-hidden style={{ fontSize: themeFontSize('fontSizeSM'), marginInlineStart: 2, color: 'inherit' }}>
+    <Typography.Text keyboard aria-hidden style={{ fontSize: tk.type.caption.fontSize, marginInlineStart: tk.space.half, color: 'inherit' }}>
       {k}
     </Typography.Text>
   );
@@ -116,16 +116,15 @@ function PaneRecord({ item, onOpenDetails }: { item: PendingApprovalDto; onOpenD
 
 /** A type without a record page: what the queue knows, the activity, and the details a click away. Every type has one today. */
 function PendingSummary({ item, onOpenDetails }: { item: PendingApprovalDto; onOpenDetails: () => void }) {
-  const { token } = theme.useToken();
   return (
     <>
-      <Flex justify="space-between" align="flex-start" gap={token.marginSM} style={{ marginBottom: token.marginSM }}>
-        <Space wrap size={token.marginXS} align="center">
-          <span role="heading" aria-level={2} style={{ fontSize: token.fontSizeLG, fontWeight: token.fontWeightStrong }}>
+      <Flex justify="space-between" align="flex-start" gap={tk.space[3]} style={{ marginBottom: tk.space[3] }}>
+        <Flex wrap gap={tk.space[2]} align="center">
+          <span role="heading" aria-level={2} style={{ fontSize: tk.type.lead.fontSize, fontWeight: tk.type.title.fontWeight }}>
             {item.title}
           </span>
           <TypeTag label={SUBMISSION_TYPE_LABELS[item.type]} />
-        </Space>
+        </Flex>
         <Button size="small" icon={<FileSearchOutlined />} onClick={onOpenDetails}>
           Open details
         </Button>

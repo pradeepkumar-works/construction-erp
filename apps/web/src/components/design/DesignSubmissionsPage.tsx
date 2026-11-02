@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Button, Card, Checkbox, Col, Row, Select, Statistic, Typography, theme } from 'antd';
+import { Button, Card, Checkbox, Col, Row, Select, Statistic, Typography } from 'antd';
+import { tk } from '@/ds';
 import {
   DESIGN_PURPOSE_LABELS,
   DESIGN_PURPOSES,
@@ -47,7 +48,6 @@ const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
  * with, and the comments still to answer. Late reviews come first.
  */
 export function DesignSubmissionsPage() {
-  const { token } = theme.useToken();
   const { user } = useAuth();
   const router = useRouter();
   const params = useSearchParams();
@@ -56,7 +56,7 @@ export function DesignSubmissionsPage() {
   useNewIntent('design-submission', may, () => setAdding(true));
   const open = (id: string) => router.push(`/design-submissions/${id}`);
   const sub = (text: React.ReactNode) => (
-    <Typography.Text type="secondary" style={{ display: 'block', fontSize: token.fontSizeSM }}>
+    <Typography.Text type="secondary" style={{ display: 'block', fontSize: tk.type.caption.fontSize }}>
       {text}
     </Typography.Text>
   );
@@ -159,8 +159,8 @@ export function DesignSubmissionsPage() {
   const stat = (title: string, value: React.ReactNode, note: React.ReactNode, tone?: 'danger') => (
     <Col xs={12} lg={6}>
       <Card size="small" style={{ height: '100%' }}>
-        <Statistic title={title} value={0} formatter={() => value} styles={{ content: { fontFamily: DISPLAY_FONT, fontSize: token.fontSizeHeading4, color: tone === 'danger' ? token.colorErrorText : undefined } }} />
-        <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{note}</div>
+        <Statistic title={title} value={0} formatter={() => value} styles={{ content: { fontFamily: DISPLAY_FONT, fontSize: tk.type.lead.fontSize, color: tone === 'danger' ? tk.color.tone.danger.fg : undefined } }} />
+        <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{note}</div>
       </Card>
     </Col>
   );
@@ -170,7 +170,7 @@ export function DesignSubmissionsPage() {
       <PageHeader title="Design submissions" subtitle="Drawings and designs sent for approval or vetting, the codes they came back with and our replies to the comments." />
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {s ? (
-        <Row gutter={[12, 12]} style={{ marginBottom: token.marginMD }}>
+        <Row gutter={[12, 12]} style={{ marginBottom: tk.space[5] }}>
           {stat('With the reviewer', s.underReview, s.late ? `${s.late} past the reply date` : 'None past its reply date', s.late ? 'danger' : undefined)}
           {stat('Back with us', s.withUs, 'Code C or D, to revise and resubmit')}
           {stat('Comments to answer', s.toAnswer, 'Before the next submission')}

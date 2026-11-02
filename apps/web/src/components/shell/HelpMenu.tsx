@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Badge, Button, Drawer, Dropdown, Flex, Modal, Switch, Timeline, Typography, theme } from 'antd';
+import { Badge, Button, Drawer, Dropdown, Flex, Modal, Switch, Timeline, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { MenuProps } from 'antd';
 import { CompassOutlined, CustomerServiceOutlined, GiftOutlined, QuestionCircleOutlined, ThunderboltOutlined } from '@/components/common/icons';
 import { PRODUCT_NAME } from '@erp/shared';
@@ -22,9 +23,8 @@ export const isTyping = (el: EventTarget | null) => el instanceof HTMLElement &&
 export const dialogOpen = () => Array.from(document.querySelectorAll<HTMLElement>('.ant-modal-wrap, .ant-drawer-open')).some((el) => el.getClientRects().length > 0);
 
 function Keys({ keys }: { keys: string[] }) {
-  const { token } = theme.useToken();
   return (
-    <Flex gap={token.marginXXS}>
+    <Flex gap={tk.space[1]}>
       {keys.map((k) => (
         <Typography.Text key={k} keyboard>
           {k}
@@ -39,7 +39,6 @@ function Keys({ keys }: { keys: string[] }) {
  * header shows them under its Help button, or on a phone inside the account menu, with `dialogs` on the page.
  */
 export function useHelpMenu({ onTour, withSearch, withAsk = false }: { onTour: () => void; withSearch: boolean; withAsk?: boolean }) {
-  const { token } = theme.useToken();
   const [keysOpen, setKeysOpen] = useState(false);
   const [newsOpen, setNewsOpen] = useState(false);
   const [seen, setSeen] = useState<string | null>(() => readPref<string | null>(PREF_SEEN, null));
@@ -105,29 +104,29 @@ export function useHelpMenu({ onTour, withSearch, withAsk = false }: { onTour: (
   const dialogs = (
     <>
       <Modal open={keysOpen} onCancel={() => setKeysOpen(false)} footer={null} title="Keyboard shortcuts" width={460}>
-        <Flex vertical gap={token.marginSM}>
-          <Flex justify="space-between" align="flex-start" gap={token.margin} style={{ paddingBottom: token.paddingSM, borderBottom: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}` }}>
+        <Flex vertical gap={tk.space[3]}>
+          <Flex justify="space-between" align="flex-start" gap={tk.space[4]} style={{ paddingBottom: tk.space[3], borderBottom: tk.line('hairline') }}>
             <div>
               <Typography.Text strong id="single-keys-label">
                 Single-key shortcuts
               </Typography.Text>
-              <Typography.Text type="secondary" style={{ display: 'block', fontSize: token.fontSizeSM }}>
+              <Typography.Text type="secondary" style={{ display: 'block', fontSize: tk.type.caption.fontSize }}>
                 Keys such as J, K and ? on their own. Turn them off if you use speech input or press keys by accident.
               </Typography.Text>
             </div>
             <Switch checked={singleKeys} onChange={setSingleKeys} aria-labelledby="single-keys-label" />
           </Flex>
           {shortcuts.map(([what, keys]) => (
-            <Flex key={what} justify="space-between" align="center" gap={token.margin}>
+            <Flex key={what} justify="space-between" align="center" gap={tk.space[4]}>
               <Typography.Text>{what}</Typography.Text>
               <Keys keys={keys} />
             </Flex>
           ))}
-          <Typography.Text strong style={{ marginTop: token.marginXS }}>
+          <Typography.Text strong style={{ marginTop: tk.space[2] }}>
             In Approvals
           </Typography.Text>
           {approvalKeys.map(([what, keys]) => (
-            <Flex key={what} justify="space-between" align="center" gap={token.margin}>
+            <Flex key={what} justify="space-between" align="center" gap={tk.space[4]}>
               <Typography.Text>{what}</Typography.Text>
               <Keys keys={keys} />
             </Flex>
@@ -141,10 +140,10 @@ export function useHelpMenu({ onTour, withSearch, withAsk = false }: { onTour: (
             content: (
               <>
                 <Typography.Text strong>{n.title}</Typography.Text>
-                <Typography.Text type="secondary" style={{ display: 'block', fontSize: token.fontSizeSM }}>
+                <Typography.Text type="secondary" style={{ display: 'block', fontSize: tk.type.caption.fontSize }}>
                   {formatDate(n.date)}
                 </Typography.Text>
-                <ul style={{ margin: `${token.marginXS}px 0 0`, paddingLeft: token.paddingMD }}>
+                <ul style={{ margin: `${tk.space[2]} 0 0`, paddingLeft: tk.space[5] }}>
                   {n.points.map((p) => (
                     <li key={p}>{p}</li>
                   ))}
@@ -161,10 +160,9 @@ export function useHelpMenu({ onTour, withSearch, withAsk = false }: { onTour: (
 
 /** The header's Help button, opening the menu `useHelpMenu` gives. */
 export function HelpButton({ items, unseen }: { items: MenuProps['items']; unseen: boolean }) {
-  const { token } = theme.useToken();
   return (
     <Dropdown menu={{ items }} trigger={['click']} placement="bottomRight">
-      <Button type="text" aria-label="Help" data-tour="help" icon={<Badge dot={unseen}>{<QuestionCircleOutlined style={{ fontSize: token.fontSizeLG }} />}</Badge>} />
+      <Button type="text" aria-label="Help" data-tour="help" icon={<Badge dot={unseen}>{<QuestionCircleOutlined style={{ fontSize: tk.type.lead.fontSize }} />}</Badge>} />
     </Dropdown>
   );
 }

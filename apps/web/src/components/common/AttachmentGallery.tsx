@@ -2,10 +2,10 @@
 
 import React from 'react';
 import { Image, Space, Typography } from 'antd';
+import { tk } from '@/ds';
 import { PaperClipOutlined } from '@/components/common/icons';
 import type { AttachmentDto } from '@erp/shared';
 import { fileUrl } from '@/lib/api';
-import { themeColor } from '@/lib/theme';
 import { NO_VALUE } from '@/lib/format';
 
 export function AttachmentGallery({ attachments, size = 96, emptyText = 'No photos' }: { attachments: AttachmentDto[]; size?: number; emptyText?: string }) {
@@ -24,7 +24,7 @@ export function AttachmentGallery({ attachments, size = 96, emptyText = 'No phot
                 alt={a.fileName}
                 width={size}
                 height={size}
-                style={{ objectFit: 'cover', borderRadius: 6, border: `1px solid ${themeColor('colorBorderSecondary')}` }}
+                style={{ objectFit: 'cover', borderRadius: tk.radius.md, border: `1px solid ${tk.color.line.hairline}` }}
               />
             ))}
           </Space>
@@ -47,7 +47,7 @@ export function PhotoThumbs({ attachments, size = 36, max = 3 }: { attachments: 
     <Image.PreviewGroup>
       <Space size={4}>
         {shown.map((a) => (
-          <Image key={a.id} src={fileUrl(a.url)} alt={a.fileName} width={size} height={size} style={{ objectFit: 'cover', borderRadius: 4 }} />
+          <Image key={a.id} src={fileUrl(a.url)} alt={a.fileName} width={size} height={size} style={{ objectFit: 'cover', borderRadius: tk.radius.sm }} />
         ))}
         {images.length > max && <span className="text-muted">+{images.length - max}</span>}
       </Space>

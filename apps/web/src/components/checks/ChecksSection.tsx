@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { themeFontSize } from '@/lib/theme';
 import Link from 'next/link';
-import { Alert, App, Button, Flex, Form, Input, Skeleton, Spin, Typography, theme } from 'antd';
+import { Alert, App, Button, Flex, Form, Input, Skeleton, Spin, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { CheckCircleFilled, CheckOutlined, ExclamationCircleFilled } from '@/components/common/icons';
 import { figure, type BillCheckDto, type CheckKind, type FigureInput } from '@erp/shared';
@@ -45,14 +45,14 @@ export function ChecksSection({ kind, id, version }: { kind: CheckKind; id: stri
         title={line.summary}
         description={
           line.summaryBy === 'ai' ? (
-            <span className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM'), display: 'inline-flex', gap: 6, alignItems: 'center' }}>
+            <span className="text-muted" style={{ fontSize: tk.type.caption.fontSize, display: 'inline-flex', gap: tk.space[2], alignItems: 'center' }}>
               <SparkleIcon /> Summary by Ask Nirmaan from the checks below
             </span>
           ) : data.aiSummaryPending && summary.isFetching ? (
             <Spin size="small" description="Ask Nirmaan is writing a summary" />
           ) : undefined
         }
-        style={{ marginBottom: 8 }}
+        style={{ marginBottom: tk.space[2] }}
       />
 
       <CheckRows
@@ -107,29 +107,28 @@ export function useChecksFigure(kind: CheckKind, id: string | undefined, version
 
 /** The flags, each with what it is about and an optional action, then a tick for each check that passed. */
 export function CheckRows({ checks, action }: { checks: BillCheckDto[]; action?: (c: BillCheckDto) => React.ReactNode }) {
-  const { token } = theme.useToken();
   const flags = checks.filter((c) => !c.ok);
   const passed = checks.filter((c) => c.ok);
   return (
     <>
       {flags.map((c) => (
-        <Flex key={c.key} gap={10} align="flex-start" className="bill-check-flag" style={{ padding: '8px 0', borderBottom: `1px solid ${token.colorSplit}` }}>
+        <Flex key={c.key} gap={10} align="flex-start" className="bill-check-flag" style={{ padding: `${tk.space[2]} 0`, borderBottom: `1px solid ${tk.color.line.hairline}` }}>
           {c.accepted ? (
-            <CheckCircleFilled style={{ color: token.colorTextTertiary, marginTop: 4 }} aria-label="Accepted" />
+            <CheckCircleFilled style={{ color: tk.color.text.faint, marginTop: tk.space[1] }} aria-label="Accepted" />
           ) : (
-            <ExclamationCircleFilled style={{ color: token.colorWarningText, marginTop: 4 }} aria-label="Flag" />
+            <ExclamationCircleFilled style={{ color: tk.color.tone.pending.fg, marginTop: tk.space[1] }} aria-label="Flag" />
           )}
           <div style={{ flex: 1, minWidth: 0 }}>
             <Typography.Text strong={!c.accepted} type={c.accepted ? 'secondary' : undefined}>
               {c.title}
             </Typography.Text>
             {c.detail ? (
-              <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+              <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                 {c.detail}
               </div>
             ) : null}
             {c.links.length ? (
-              <Flex gap={10} wrap style={{ fontSize: themeFontSize('fontSizeSM') }}>
+              <Flex gap={10} wrap style={{ fontSize: tk.type.caption.fontSize }}>
                 {c.links.map((l) => (
                   <Link key={`${l.href}-${l.label}`} href={l.href} className="text-link">
                     {l.label}
@@ -138,7 +137,7 @@ export function CheckRows({ checks, action }: { checks: BillCheckDto[]; action?:
               </Flex>
             ) : null}
             {c.accepted ? (
-              <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+              <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                 Accepted by {c.accepted.byName}, {formatDateTime(c.accepted.at)}: {c.accepted.note}
               </div>
             ) : null}

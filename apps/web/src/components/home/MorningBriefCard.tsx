@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { App, Button, Card, Flex, Typography, theme } from 'antd';
+import { App, Button, Card, Flex, Typography } from 'antd';
+import { tk } from '@/ds';
 import { CloseOutlined } from '@/components/common/icons';
 import { PRODUCT_NAME } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
@@ -18,7 +19,6 @@ const offerHiddenKey = (userId: string) => `nirmaan.morningBrief.offerHidden.${u
  */
 export function MorningBriefCard() {
   const { user } = useAuth();
-  const { token } = theme.useToken();
   const { message } = App.useApp();
   const { data } = useMorningBrief();
   const set = useSetMorningBrief();
@@ -54,10 +54,10 @@ export function MorningBriefCard() {
       }
     };
     return (
-      <Card size="small" style={{ marginBottom: token.margin }}>
-        <Flex gap={token.margin} align="center" wrap justify="space-between">
+      <Card size="small" style={{ marginBottom: tk.space[4] }}>
+        <Flex gap={tk.space[4]} align="center" wrap justify="space-between">
           <Typography.Text style={{ flex: '1 1 320px', minWidth: 0 }}>Three lines each morning on what needs you, here and by email.</Typography.Text>
-          <Flex gap={token.marginXS}>
+          <Flex gap={tk.space[2]}>
             <Button type="primary" onClick={() => turn(true)} loading={set.isPending}>
               Get the morning brief
             </Button>
@@ -78,18 +78,18 @@ export function MorningBriefCard() {
           Turn off
         </Button>
       }
-      style={{ marginBottom: token.margin }}
+      style={{ marginBottom: tk.space[4] }}
     >
       {brief ? (
         <>
-          <ul style={{ margin: 0, paddingLeft: token.paddingLG }}>
+          <ul style={{ margin: 0, paddingLeft: tk.space[6] }}>
             {brief.lines.map((l, i) => (
-              <li key={i} style={{ marginBottom: token.marginXXS }}>
+              <li key={i} style={{ marginBottom: tk.space[1] }}>
                 {l.href ? <Link href={l.href}>{l.text}</Link> : l.text}
               </li>
             ))}
           </ul>
-          <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+          <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
             {brief.byAssistant ? `Written by Ask ${PRODUCT_NAME} from your records, ${formatDateTime(brief.writtenAt)}` : `From your records, ${formatDateTime(brief.writtenAt)}`}
           </Typography.Text>
         </>

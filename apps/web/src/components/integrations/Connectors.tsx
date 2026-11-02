@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Alert, App, Button, Form, Input, Modal, Space, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { TableProps } from 'antd';
 import { PlusOutlined } from '@/components/common/icons';
 import { AppTag } from '@/components/common/AppTag';
@@ -56,12 +57,12 @@ function PairCode({ shown, onClose }: { shown: ConnectorPairCodeDto | null; onCl
           <div>
             <Typography.Text type="secondary">Pairing code, good until {formatDateTime(shown.expiresAt)}</Typography.Text>
             <div>
-              <Typography.Text copyable translate="no" style={{ fontFamily: DISPLAY_FONT, fontSize: 32, fontWeight: 600, letterSpacing: 2 }}>
+              <Typography.Text copyable translate="no" style={{ fontFamily: DISPLAY_FONT, fontSize: tk.type.display.fontSize, fontWeight: tk.type.title.fontWeight, letterSpacing: tk.space.half }}>
                 {shown.code}
               </Typography.Text>
             </div>
           </div>
-          <ol style={{ margin: 0, paddingInlineStart: 20 }}>
+          <ol style={{ margin: 0, paddingInlineStart: tk.space[5] }}>
             <li>On a computer at the site that stays on and can reach the devices, install Node.js 20 or later.</li>
             <li>Copy the Nirmaan Connector folder to it and open a command prompt there.</li>
             <li>
@@ -138,8 +139,8 @@ export function Connectors() {
   ];
 
   return (
-    <div style={{ padding: 16 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
+    <div style={{ padding: tk.space[4] }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: tk.space[3], flexWrap: 'wrap', marginBottom: tk.space[3] }}>
         <Typography.Paragraph type="secondary" style={{ margin: 0, maxWidth: 680 }}>
           The Nirmaan Connector runs on a computer at a site or office and reads devices on its network (weighbridges, batching plants, meters). It keeps readings while the internet is down and sends them when it is back. Nothing needs to be opened on the site’s router.
         </Typography.Paragraph>

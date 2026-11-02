@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Alert, Button, Form, Input } from 'antd';
+import { tk } from '@/ds';
 import { useAuth } from '@/lib/auth';
 import { errorMessage } from '@/lib/api';
 import { useAuthOptions } from '@/lib/queries';
@@ -50,7 +51,7 @@ export default function LoginPage() {
 
   return (
     <AuthCard title="Sign in" subtitle="Manage projects, site progress and approvals.">
-      {error && <Alert type="error" showIcon title={error} style={{ marginBottom: 24 }} />}
+      {error && <Alert type="error" showIcon title={error} style={{ marginBottom: tk.space[6] }} />}
 
       <Form form={form} layout="vertical" onFinish={onFinish} requiredMark={false}>
         <Form.Item name="email" label="Email" rules={[{ required: true, message: 'Enter your email' }, { type: 'email', message: 'Enter an email address, e.g. name@company.com' }]}>
@@ -74,7 +75,7 @@ export default function LoginPage() {
             Forgot password?
           </Link>
         </div>
-        <Button type="primary" htmlType="submit" block size="large" loading={submitting} style={{ marginTop: 8 }}>
+        <Button type="primary" htmlType="submit" block size="large" loading={submitting} style={{ marginTop: tk.space[2] }}>
           Sign in
         </Button>
       </Form>

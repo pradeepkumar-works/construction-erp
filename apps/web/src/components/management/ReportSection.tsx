@@ -3,7 +3,8 @@
 import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Card, Table, Typography, theme } from 'antd';
+import { Card, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { TableColumnsType } from 'antd';
 import type { ReportRowDto, ReportSectionDto } from '@erp/shared';
 import { cellText, isNegative, isNumeric } from './report-format';
@@ -14,7 +15,6 @@ import { cellText, isNegative, isNumeric } from './report-format';
  * shows it in rupees.
  */
 export function ReportSection({ section }: { section: ReportSectionDto }) {
-  const { token } = theme.useToken();
   const router = useRouter();
   const first = section.columns[0]?.key;
   // A wide section reads its money in lakhs and crores on the screen, so every column fits; print and Excel keep rupees.
@@ -31,7 +31,7 @@ export function ReportSection({ section }: { section: ReportSectionDto }) {
     render: (_: unknown, row: ReportRowDto) => {
       const v = row[c.key];
       const text = cellText(c.kind, v, compact);
-      const style = isNegative(c.kind, v) ? { color: token.colorErrorText } : undefined;
+      const style = isNegative(c.kind, v) ? { color: tk.color.tone.danger.fg } : undefined;
       const href = c.key === first ? row._href : null;
       if (href)
         return (
@@ -59,11 +59,11 @@ export function ReportSection({ section }: { section: ReportSectionDto }) {
       size="small"
       title={section.title}
       styles={{
-        body: { paddingTop: section.note ? token.paddingXS : undefined },
+        body: { paddingTop: section.note ? tk.space[2] : undefined },
       }}
     >
       {section.note ? (
-        <Typography.Paragraph type="secondary" style={{ fontSize: token.fontSizeSM, marginBottom: token.marginXS }}>
+        <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginBottom: tk.space[2] }}>
           {section.note}
         </Typography.Paragraph>
       ) : null}
@@ -99,7 +99,7 @@ export function ReportSection({ section }: { section: ReportSectionDto }) {
                             translate="no"
                             style={{
                               whiteSpace: 'nowrap',
-                              color: isNegative(c.kind, v) ? token.colorErrorText : undefined,
+                              color: isNegative(c.kind, v) ? tk.color.tone.danger.fg : undefined,
                             }}
                           >
                             {i === 0 && (v === null || v === undefined) ? 'Total' : v === null || v === undefined ? '' : cellText(c.kind, v, compact)}

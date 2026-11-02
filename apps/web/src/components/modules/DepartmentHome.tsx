@@ -3,7 +3,8 @@
 import React, { useId, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Button, Card, Flex, Typography, theme } from 'antd';
+import { Button, Card, Flex, Typography } from 'antd';
+import { tk } from '@/ds';
 import { CheckSquareOutlined } from '@/components/common/icons';
 import type { NavNode, SubmissionType } from '@erp/shared';
 import { SUBMISSION_TYPE_PLURAL_LABELS, mayApprove, navDestination, navNodeForPath, projectTabHref, submissionListHref } from '@erp/shared';
@@ -74,7 +75,6 @@ function PageRow({ node, badge, projectId, onPick }: { node: NavNode; badge?: Ti
 export function DepartmentHome({ moduleKey }: { moduleKey: string }) {
   const { user } = useAuth();
   const router = useRouter();
-  const { token } = theme.useToken();
   const { menu } = useNavMenu(user);
   const mod = menu.find((m) => m.key === moduleKey);
   const { data: badges } = useLauncherBadges(!!mod);
@@ -128,7 +128,7 @@ export function DepartmentHome({ moduleKey }: { moduleKey: string }) {
               {waiting.map(([type, w], i) => (
                 <li key={type}>
                   <Link href={`/approvals?type=${type}`} className="text-link">
-                    <Flex align="center" justify="space-between" gap={token.marginSM} style={{ minHeight: 44, borderTop: i ? `${token.lineWidth}px ${token.lineType} ${token.colorSplit}` : undefined }}>
+                    <Flex align="center" justify="space-between" gap={tk.space[3]} style={{ minHeight: 44, borderTop: i ? tk.line('hairline') : undefined }}>
                       <span>
                         <CheckSquareOutlined aria-hidden /> {SUBMISSION_TYPE_PLURAL_LABELS[type]}: {w.count} to approve
                       </span>

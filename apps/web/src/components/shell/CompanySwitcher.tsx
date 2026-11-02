@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { App, Button, Dropdown, theme } from 'antd';
+import { App, Button, Dropdown } from 'antd';
+import { tk } from '@/ds';
 import type { MenuProps } from 'antd';
 import { COMPANY_KIND_LABELS, canSeeGroupCompanies, type AuthUser } from '@erp/shared';
 import { BuildOutlined, CheckOutlined, DownOutlined, SwapOutlined } from '@/components/common/icons';
@@ -35,9 +36,9 @@ export function useCompanyMenu(user: AuthUser): { items: MenuProps['items']; bus
       icon: c.current ? <CheckOutlined /> : <span className="menu-check-gap" />,
       disabled: busy,
       label: (
-        <span style={{ display: 'inline-flex', flexDirection: 'column', lineHeight: 1.3, paddingBlock: 4 }}>
+        <span style={{ display: 'inline-flex', flexDirection: 'column', lineHeight: 1.3, paddingBlock: tk.space[1] }}>
           <span translate="no">{c.name}</span>
-          <span className="text-muted" style={{ fontSize: 12 }}>
+          <span className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
             {COMPANY_KIND_LABELS[c.kind]} · {c.roleName}
           </span>
         </span>
@@ -51,7 +52,6 @@ export function useCompanyMenu(user: AuthUser): { items: MenuProps['items']; bus
 
 /** The header's company: the one this session is in, and the others of the group to move to. */
 export function CompanySwitcher({ user, compact, maxWidth }: { user: AuthUser; compact: boolean; maxWidth: number }) {
-  const { token } = theme.useToken();
   const menu = useCompanyMenu(user);
   if (!menu) return null;
   return (
@@ -72,7 +72,7 @@ export function CompanySwitcher({ user, compact, maxWidth }: { user: AuthUser; c
             <span translate="no" style={{ display: 'inline-block', maxWidth: maxWidth - 64, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'bottom' }}>
               {user.organizationName}
             </span>
-            <DownOutlined style={{ fontSize: token.fontSizeSM, color: token.colorTextTertiary }} />
+            <DownOutlined style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.faint }} />
           </>
         )}
       </Button>
@@ -101,7 +101,7 @@ export function CompanyName({ user, className }: { user: AuthUser; className: st
         aria-haspopup="menu"
         aria-label={`Company: ${user.organizationName}. Switch company`}
         data-tour="company"
-        style={{ display: 'inline-flex', alignItems: 'center', gap: 4, minHeight: 24, background: 'none', borderTop: 0, borderRight: 0, borderBottom: 0, font: 'inherit', fontSize: 'inherit', cursor: 'pointer' }}
+        style={{ display: 'inline-flex', alignItems: 'center', gap: tk.space[1], minHeight: 24, background: 'none', borderTop: 0, borderRight: 0, borderBottom: 0, font: 'inherit', fontSize: 'inherit', cursor: 'pointer' }}
       >
         <span translate="no" style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {user.organizationName}

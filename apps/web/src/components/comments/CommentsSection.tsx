@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { App, Avatar, Button, Card, Dropdown, Flex, Mentions, Skeleton, Typography, theme } from 'antd';
+import { App, Avatar, Button, Card, Dropdown, Flex, Mentions, Skeleton, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import type { GetRef } from 'antd';
 import { CheckCircleOutlined, EllipsisOutlined, MessageOutlined, UndoOutlined } from '@/components/common/icons';
@@ -10,7 +11,6 @@ import { useCommentAction, useComments, useMentionable } from '@/lib/queries';
 import { errorMessage } from '@/lib/api';
 import { formatDateTime, timeAgo } from '@/lib/format';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
-import { themeFontSize } from '@/lib/theme';
 
 const initials = (name: string) =>
   name
@@ -38,7 +38,6 @@ interface ComposerProps {
 
 /** A comment box: type @ for the people who see the project; Ctrl Enter sends. */
 function Composer({ kind, entityId, label, placeholder, submitLabel, initial, focusOnOpen, onSubmit, onCancel }: ComposerProps) {
-  const { token } = theme.useToken();
   const box = useRef<GetRef<typeof Mentions>>(null);
   const [body, setBody] = useState(initial?.body ?? '');
   const [picked, setPicked] = useState<{ id: string; name: string }[]>(initial?.mentions ?? []);
@@ -98,11 +97,11 @@ function Composer({ kind, entityId, label, placeholder, submitLabel, initial, fo
         status={error ? 'error' : undefined}
       />
       {error && (
-        <Typography.Text type="danger" role="alert" style={{ display: 'block', marginTop: token.marginXXS, fontSize: themeFontSize('fontSizeSM') }}>
+        <Typography.Text type="danger" role="alert" style={{ display: 'block', marginTop: tk.space[1], fontSize: tk.type.caption.fontSize }}>
           {error}
         </Typography.Text>
       )}
-      <Flex gap={token.marginXS} justify="flex-end" style={{ marginTop: token.marginXS }}>
+      <Flex gap={tk.space[2]} justify="flex-end" style={{ marginTop: tk.space[2] }}>
         {onCancel && <Button onClick={onCancel}>Cancel</Button>}
         <Button type="primary" loading={busy} onClick={() => void send()}>
           {submitLabel}
@@ -113,13 +112,12 @@ function Composer({ kind, entityId, label, placeholder, submitLabel, initial, fo
 }
 
 function Body({ c }: { c: CommentDto }) {
-  const { token } = theme.useToken();
   if (c.removed) return <Typography.Text type="secondary">Comment removed</Typography.Text>;
   return (
     <Typography.Paragraph style={{ marginBottom: 0, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
       {commentSegments(c.body, c.mentions).map((s, i) =>
         s.mentionId ? (
-          <span key={i} translate="no" style={{ color: token.colorPrimaryText, fontWeight: token.fontWeightStrong }}>
+          <span key={i} translate="no" style={{ color: tk.color.accent.text, fontWeight: tk.type.title.fontWeight }}>
             {s.text}
           </span>
         ) : (
@@ -141,20 +139,19 @@ interface CommentProps {
 }
 
 function Comment({ c, kind, entityId, canComment, extra, askRemove }: CommentProps) {
-  const { token } = theme.useToken();
   const [editing, setEditing] = useState(false);
   const action = useCommentAction(kind, entityId);
   return (
-    <Flex gap={token.marginSM} align="flex-start" className="comment">
-      <Avatar size={32} style={{ flex: 'none', background: token.colorPrimaryBg, color: token.colorPrimaryText }} aria-hidden>
+    <Flex gap={tk.space[3]} align="flex-start" className="comment">
+      <Avatar size={32} style={{ flex: 'none', background: tk.color.accent.soft, color: tk.color.accent.text }} aria-hidden>
         {initials(c.authorName)}
       </Avatar>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <Flex gap={token.marginXS} wrap align="baseline">
+        <Flex gap={tk.space[2]} wrap align="baseline">
           <Typography.Text strong translate="no">
             {c.authorName}
           </Typography.Text>
-          <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }} title={formatDateTime(c.createdAt)}>
+          <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }} title={formatDateTime(c.createdAt)}>
             {timeAgo(c.createdAt)}
             {c.editedAt && !c.removed ? ' · edited' : ''}
           </Typography.Text>
@@ -198,7 +195,6 @@ function Comment({ c, kind, entityId, canComment, extra, askRemove }: CommentPro
 }
 
 function Thread({ t, kind, entityId, canComment, askRemove }: { t: CommentThreadDto; kind: CommentKind; entityId: string; canComment: boolean; askRemove: (c: CommentDto) => void }) {
-  const { token } = theme.useToken();
   const { message } = App.useApp();
   const [replying, setReplying] = useState(false);
   const action = useCommentAction(kind, entityId);
@@ -212,7 +208,7 @@ function Thread({ t, kind, entityId, canComment, askRemove }: { t: CommentThread
     }
   };
   const tools = canComment ? (
-    <Flex gap={token.marginXS} wrap style={{ marginTop: token.marginXXS, marginInlineStart: -token.paddingXS }}>
+    <Flex gap={tk.space[2]} wrap style={{ marginTop: tk.space[1], marginInlineStart: -tk.space[2] }}>
       {!replying && (
         <Button type="link" size="small" icon={<MessageOutlined />} onClick={() => setReplying(true)}>
           Reply
@@ -229,20 +225,20 @@ function Thread({ t, kind, entityId, canComment, askRemove }: { t: CommentThread
       className="comment-thread"
       data-thread={t.id}
       style={{
-        padding: token.paddingSM,
-        border: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}`,
-        borderRadius: token.borderRadiusLG,
-        background: resolved ? token.colorFillQuaternary : token.colorBgContainer,
+        padding: tk.space[3],
+        border: tk.line('hairline'),
+        borderRadius: tk.radius.lg,
+        background: resolved ? tk.color.surface.sunken : tk.color.surface.base,
       }}
     >
       {resolved && (
-        <AppTag meaning="done" icon={<CheckCircleOutlined />} style={{ marginBottom: token.marginXS }}>
+        <AppTag meaning="done" icon={<CheckCircleOutlined />} style={{ marginBottom: tk.space[2] }}>
           {`Resolved by ${t.resolvedByName ?? 'someone'} on ${formatDateTime(t.resolvedAt)}`}
         </AppTag>
       )}
       <Comment c={t} kind={kind} entityId={entityId} canComment={canComment} askRemove={askRemove} extra={t.replies.length ? null : tools} />
       {t.replies.length > 0 && (
-        <Flex vertical gap={token.marginSM} style={{ marginTop: token.marginSM, marginInlineStart: token.marginLG, paddingInlineStart: token.paddingSM, borderInlineStart: `2px solid ${token.colorBorderSecondary}` }}>
+        <Flex vertical gap={tk.space[3]} style={{ marginTop: tk.space[3], marginInlineStart: tk.space[6], paddingInlineStart: tk.space[3], borderInlineStart: `2px solid ${tk.color.line.hairline}` }}>
           {t.replies.map((r) => (
             <Comment key={r.id} c={r} kind={kind} entityId={entityId} canComment={canComment} askRemove={askRemove} />
           ))}
@@ -250,7 +246,7 @@ function Thread({ t, kind, entityId, canComment, askRemove }: { t: CommentThread
         </Flex>
       )}
       {replying && (
-        <div style={{ marginTop: token.marginSM, marginInlineStart: token.marginLG }}>
+        <div style={{ marginTop: tk.space[3], marginInlineStart: tk.space[6] }}>
           <Composer
             kind={kind}
             entityId={entityId}
@@ -275,7 +271,6 @@ function Thread({ t, kind, entityId, canComment, askRemove }: { t: CommentThread
  * and so does everyone in a thread when it gets a reply), resolve and reopen. Open threads first; resolved ones on request.
  */
 export function CommentsSection({ kind, entityId }: { kind: CommentKind; entityId: string }) {
-  const { token } = theme.useToken();
   const { data, isLoading, error } = useComments(kind, entityId);
   const action = useCommentAction(kind, entityId);
   const [showResolved, setShowResolved] = useState(false);
@@ -301,7 +296,7 @@ export function CommentsSection({ kind, entityId }: { kind: CommentKind; entityI
     });
 
   return (
-    <Flex vertical gap={token.marginSM} className="comments">
+    <Flex vertical gap={tk.space[3]} className="comments">
       {data.canComment && (
         <Composer
           kind={kind}

@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import { Alert, App, Button, Checkbox, Form, Input, InputNumber, Select, Switch, Table, Typography, theme } from 'antd';
+import { Alert, App, Button, Checkbox, Form, Input, InputNumber, Select, Switch, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { FormListFieldData } from 'antd';
 import {
   MAX_KIND_STEPS,
@@ -123,13 +124,12 @@ export function PlanPreview({ lines, empty }: { lines: ElementActivityLine[]; em
 }
 
 function StepCard({ field, index, count, specs, onMove, onRemove }: { field: FormListFieldData; index: number; count: number; specs: { value: string; label: string }[]; onMove: (to: number) => void; onRemove: () => void }) {
-  const { token } = theme.useToken();
   const form = Form.useFormInstance<Values>();
   const kind = Form.useWatch(['steps', field.name, 'kind'], form) as StepRow['kind'] | undefined;
   const name = (Form.useWatch(['steps', field.name, 'name'], form) as string | undefined)?.trim() || `step ${index + 1}`;
   return (
-    <div data-line-label={`Step ${index + 1}`} style={{ border: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}`, borderRadius: token.borderRadius, padding: token.paddingSM, marginBottom: token.marginSM }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: token.marginXS, marginBottom: token.marginXS }}>
+    <div data-line-label={`Step ${index + 1}`} style={{ border: tk.line('hairline'), borderRadius: tk.radius.md, padding: tk.space[3], marginBottom: tk.space[3] }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: tk.space[2], marginBottom: tk.space[2] }}>
         <Typography.Text strong>Step {index + 1}</Typography.Text>
         <span>
           <Button size="small" type="text" icon={<ArrowUpOutlined />} aria-label={`Move ${name} up`} disabled={index === 0} onClick={() => onMove(index - 1)} />
@@ -171,7 +171,7 @@ function StepCard({ field, index, count, specs, onMove, onRemove }: { field: For
       ) : null}
       {kind === 'rcc' || kind === 'lifts' ? (
         <>
-          <Typography.Paragraph type="secondary" style={{ marginBottom: token.marginXS }}>
+          <Typography.Paragraph type="secondary" style={{ marginBottom: tk.space[2] }}>
             Parts of each {kind === 'lifts' ? 'lift' : 'RCC activity'}. Left empty: {STANDARD_RCC_PARTS.map((p) => `${p.name.toLowerCase()} ${p.weightPct}%`).join(', ')}.
           </Typography.Paragraph>
           <LineTable
@@ -334,7 +334,7 @@ export function KindEditor({ kind, editable, onClose, onUpdateProjects }: { kind
           </Form.List>
         </FormSection>
         <FormSection title="A new component lays out">
-          {problems.length ? <Alert type="warning" showIcon title="Fix these to save" description={<ul style={{ margin: 0, paddingInlineStart: 18 }}>{problems.map((p) => <li key={p}>{p}</li>)}</ul>} /> : <PlanPreview lines={plan} empty="This kind has no steps; its parts are added as sub-components." />}
+          {problems.length ? <Alert type="warning" showIcon title="Fix these to save" description={<ul style={{ margin: 0, paddingInlineStart: tk.space[5] }}>{problems.map((p) => <li key={p}>{p}</li>)}</ul>} /> : <PlanPreview lines={plan} empty="This kind has no steps; its parts are added as sub-components." />}
         </FormSection>
       </Form>
     </FormShell>

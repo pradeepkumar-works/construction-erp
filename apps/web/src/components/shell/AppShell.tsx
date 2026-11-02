@@ -213,7 +213,7 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
     // A phone's header has room for search, New, the bell and the account only: Ask and Help live here.
     ...(isMobile
       ? [
-          ...(askVisible ? [{ key: 'ask', icon: <SparkleIcon style={{ color: token.colorPrimary }} />, label: `Ask ${PRODUCT_NAME}`, onClick: () => openAsk() }] : []),
+          ...(askVisible ? [{ key: 'ask', icon: <SparkleIcon style={{ color: tk.color.accent.solid }} />, label: `Ask ${PRODUCT_NAME}`, onClick: () => openAsk() }] : []),
           { key: 'help', icon: <QuestionCircleOutlined />, label: help.unseen ? <Badge dot offset={[6, 0]}>Help</Badge> : 'Help', children: help.items },
           { type: 'divider' as const },
         ]
@@ -285,10 +285,10 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
             onClick={openSearch}
             aria-keyshortcuts="Control+K Meta+K"
             data-tour="search"
-            style={{ width: toolsSpacious || !askVisible ? 260 : 220, justifyContent: 'flex-start', color: navyBar ? undefined : token.colorTextTertiary }}
+            style={{ width: toolsSpacious || !askVisible ? 260 : 220, justifyContent: 'flex-start', color: navyBar ? undefined : tk.color.text.faint }}
           >
             <span style={{ flex: 1, textAlign: 'left' }}>Search or jump to…</span>
-            <Typography.Text keyboard type="secondary" style={{ fontSize: token.fontSizeSM }}>
+            <Typography.Text keyboard type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
               {searchShortcut()}
             </Typography.Text>
           </Button>
@@ -297,7 +297,7 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
         <Tooltip title={`Ask ${PRODUCT_NAME}  ${askShortcutLabel()}`}>
           <Button
             type="text"
-            icon={<SparkleIcon style={{ color: navyBar ? tk.color.chrome.accent : token.colorPrimary }} />}
+            icon={<SparkleIcon style={{ color: navyBar ? tk.color.chrome.accent : tk.color.accent.solid }} />}
             onClick={() => (askOpen ? setAskOpen(false) : openAsk())}
             aria-label={toolsSpacious ? undefined : `Ask ${PRODUCT_NAME}`}
             aria-keyshortcuts="Alt+J Meta+J"
@@ -308,7 +308,7 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
           </Button>
         </Tooltip>
       )}
-      <span style={{ marginInline: token.marginXXS }}>
+      <span style={{ marginInline: tk.space[1] }}>
         <NewMenu user={user} compact={isMobile || !toolsRoomy} />
       </span>
       {isMobile ? null : <HelpButton items={help.items} unseen={help.unseen} />}
@@ -316,7 +316,7 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
         <NotificationBell />
       </span>
       <Dropdown menu={{ items: userMenu }} trigger={['click']}>
-        <Button type="text" style={{ height: 40, padding: `0 ${token.paddingXS}px` }} data-tour="account" aria-label={toolsRoomy ? undefined : `${user.fullName}, account`}>
+        <Button type="text" style={{ height: 40, padding: `0 ${tk.space[2]}` }} data-tour="account" aria-label={toolsRoomy ? undefined : `${user.fullName}, account`}>
           <Space>
             {isMobile && help.unseen ? (
               <Badge dot offset={[-2, 2]}>
@@ -331,10 +331,10 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
             )}
             {toolsRoomy && (
               <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: 1.1 }}>
-                <span style={{ fontWeight: 600, fontSize: token.fontSize }} translate="no">
+                <span style={{ fontWeight: tk.type.title.fontWeight, fontSize: tk.type.body.fontSize }} translate="no">
                   {user.fullName}
                 </span>
-                <span className="text-muted" style={{ fontSize: token.fontSizeSM }}>
+                <span className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                   {user.roleName}
                 </span>
               </span>
@@ -403,18 +403,18 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: isMobile ? `0 ${token.paddingSM}px` : `0 ${token.paddingLG}px`,
-            borderBottom: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}`,
+            padding: isMobile ? `0 ${tk.space[3]}` : `0 ${tk.space[6]}`,
+            borderBottom: tk.line('hairline'),
             position: 'sticky',
             top: 0,
             zIndex: 10,
             height: 56,
             lineHeight: '56px',
-            background: token.colorBgContainer,
-            gap: token.marginSM,
+            background: tk.color.surface.base,
+            gap: tk.space[3],
           }}
         >
-          <Flex gap={isMobile ? token.marginXS : token.marginSM} align="center" style={{ minWidth: 0, flex: 1 }}>
+          <Flex gap={isMobile ? tk.space[2] : tk.space[3]} align="center" style={{ minWidth: 0, flex: 1 }}>
             {isMobile ? (
               <>
                 <Button type="text" icon={<MenuOutlined />} onClick={() => setMobileOpen(true)} aria-label="Open menu" data-tour="menu" />
@@ -461,7 +461,7 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
                       icon={<TreeIcon name={isPinned ? 'pin-off' : 'pin'} />}
                       onClick={togglePin}
                       // A long breadcrumb gives way first; the pin keeps its 24 px target.
-                      style={{ flexShrink: 0, color: isPinned ? token.colorPrimary : undefined }}
+                      style={{ flexShrink: 0, color: isPinned ? tk.color.accent.solid : undefined }}
                     />
                   </Tooltip>
                 )}

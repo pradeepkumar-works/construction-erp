@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Card, Flex, Segmented, Table, Typography, theme } from 'antd';
+import { Card, Flex, Segmented, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { CostHeadsDto, HomeTrendsDto } from '@erp/shared';
 import { formatINR, formatPct, toNumber, inSentence } from '@/lib/format';
 import { Section } from '@/components/common/Section';
@@ -30,10 +31,9 @@ export function ChartCard({
   table: React.ReactNode;
   inSurface?: boolean;
 }) {
-  const { token } = theme.useToken();
   const [view, setView] = useState<View>('chart');
   const extra = (
-    <Flex align="center" gap={token.marginSM}>
+    <Flex align="center" gap={tk.space[3]}>
       {note}
       <Segmented<View>
         size="small"
@@ -49,7 +49,7 @@ export function ChartCard({
   );
   const body = (
     <>
-      <Typography.Paragraph type="secondary" style={{ fontSize: token.fontSizeSM, marginBottom: token.marginXS }}>
+      <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginBottom: tk.space[2] }}>
         {summary}
       </Typography.Paragraph>
       {view === 'chart' ? (

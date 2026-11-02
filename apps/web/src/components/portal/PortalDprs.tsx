@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Card, Descriptions, Divider, Drawer, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import type { PortalDprDto } from '@erp/shared';
 import { WEATHER_LABELS } from '@erp/shared';
@@ -12,7 +13,7 @@ import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) =>
   children ? (
-    <div style={{ marginBottom: 12 }}>
+    <div style={{ marginBottom: tk.space[3] }}>
       <Typography.Text strong>{title}</Typography.Text>
       <div style={{ whiteSpace: 'pre-wrap' }}>{children}</div>
     </div>
@@ -60,7 +61,7 @@ export function PortalDprs({ projectId }: { projectId: string }) {
               size="small"
               column={2}
               bordered
-              style={{ marginBottom: 16 }}
+              style={{ marginBottom: tk.space[4] }}
               items={[
                 { key: 'w', label: 'Weather', children: open.weather ? <AppTag variant="kind" style={{ margin: 0 }}>{WEATHER_LABELS[open.weather]}</AppTag> : NO_VALUE },
                 { key: 'c', label: 'Site condition', children: open.siteCondition ?? NO_VALUE },
@@ -70,7 +71,7 @@ export function PortalDprs({ projectId }: { projectId: string }) {
               ]}
             />
             <Section title="Work done">{open.workExecuted}</Section>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: tk.space[3], marginBottom: tk.space[3] }}>
               <Card size="small" title="Labour">
                 {open.manpower.map((m, i) => (
                   <div key={i} style={{ display: 'flex', justifyContent: 'space-between' }}>

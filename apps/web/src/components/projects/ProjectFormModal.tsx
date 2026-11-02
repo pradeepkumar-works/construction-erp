@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { App, Button, Checkbox, Flex, Form, Input, InputNumber, Select, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { AimOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
@@ -272,14 +273,14 @@ export function ProjectFormModal({
     >
       <Form form={form} layout="vertical">
         {!isEdit && initialType !== 'STORE' && !readState ? (
-          <Flex justify="flex-end" style={{ marginBottom: 8 }}>
+          <Flex justify="flex-end" style={{ marginBottom: tk.space[2] }}>
             <ReadDocumentButton kind="workOrder" label="Fill from work order" onRead={applyRead} />
           </Flex>
         ) : null}
         {readState ? (
           <ReadPreview state={readState} active={activeRead} onClear={() => setReadState(null)}>
             {readClient && !readState.result.client ? (
-              <Typography.Paragraph style={{ margin: '8px 0 0' }}>
+              <Typography.Paragraph style={{ margin: `${tk.space[2]} 0 0` }}>
                 {readClient} is not in the client master.{' '}
                 <Button size="small" onClick={() => setAddClient(true)}>
                   Add client
@@ -387,7 +388,7 @@ export function ProjectFormModal({
             <Form.Item
               name="copyFromProjectId"
               label="Copy from project"
-              style={{ marginTop: 16, marginBottom: 0 }}
+              style={{ marginTop: tk.space[4], marginBottom: 0 }}
               extra={`Its team and contract terms: deductions, GST, liquidated damages and periods. Without one, the client's usual terms, else ${STANDARD_TERMS.securityDepositPct}% security deposit, ${STANDARD_TERMS.tdsPct}% TDS, ${STANDARD_TERMS.gstTdsPct}% GST TDS and ${STANDARD_TERMS.labourCessPct}% cess.`}
             >
               <ProjectSelect placeholder="None" style={{ width: '100%' }} aria-label={undefined} />
@@ -438,7 +439,7 @@ export function ProjectFormModal({
           </FormGrid>
           <Button
             icon={<AimOutlined />}
-            style={{ marginBottom: 16 }}
+            style={{ marginBottom: tk.space[4] }}
             onClick={async () => {
               const at = await currentPosition();
               if (!at) {

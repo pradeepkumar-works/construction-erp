@@ -22,6 +22,7 @@ import {
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { LineTable } from '@/components/form/LineTable';
 import { useSaveProjectType } from '@/lib/queries';
+import { tk } from '@/ds';
 
 interface Values {
   name: string;
@@ -260,7 +261,7 @@ export function TypeEditor({ type, kinds, open, onClose }: { type: ProjectTypeDt
           />
         </FormSection>
         {problems.length ? (
-          <Alert type="warning" showIcon title="Fix these to save" description={<ul style={{ margin: 0, paddingInlineStart: 18 }}>{problems.map((p) => <li key={p}>{p}</li>)}</ul>} />
+          <Alert type="warning" showIcon title="Fix these to save" description={<ul style={{ margin: 0, paddingInlineStart: tk.space[5] }}>{problems.map((p) => <li key={p}>{p}</li>)}</ul>} />
         ) : null}
       </Form>
     </FormShell>

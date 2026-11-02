@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, Card, Progress, Typography, theme } from 'antd';
+import { Button, Card, Progress, Typography } from 'antd';
+import { tk } from '@/ds';
 import { CheckCircleFilled, CloseOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import type { GettingStartedStep } from '@erp/shared';
@@ -9,7 +10,6 @@ import { seesGettingStarted } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useGettingStarted as useGettingStartedQuery } from '@/lib/queries';
 import { BRAND } from '@/lib/brand';
-import { themeColor } from '@/lib/theme';
 import { LinkButton } from '@/components/common/LinkButton';
 
 /** What each step asks for, where to do it, and which day of the first week it fits. */
@@ -63,7 +63,6 @@ export function useGettingStarted() {
 
 /** First-week setup checklist on the dashboard, for admin and management, until every step is done or it is hidden. */
 export function GettingStartedCard({ state }: { state: ReturnType<typeof useGettingStarted> }) {
-  const { token } = theme.useToken();
   const { user, allowed, hidden, hide, data } = state;
   if (!user || !allowed || hidden || !data || data.done === data.total) return null;
 
@@ -73,11 +72,11 @@ export function GettingStartedCard({ state }: { state: ReturnType<typeof useGett
   return (
     <Card
       size="small"
-      style={{ marginBottom: 16 }}
+      style={{ marginBottom: tk.space[4] }}
       title={
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: tk.space[3], flexWrap: 'wrap' }}>
           <span>Your first week on {BRAND.name}</span>
-          <Typography.Text type="secondary" style={{ fontWeight: 400, fontSize: token.fontSizeSM }}>
+          <Typography.Text type="secondary" style={{ fontWeight: tk.type.body.fontWeight, fontSize: tk.type.caption.fontSize }}>
             {day <= 7 ? `Day ${day} of 7 · ` : ''}
             {data.done} of {data.total} done
           </Typography.Text>
@@ -85,25 +84,25 @@ export function GettingStartedCard({ state }: { state: ReturnType<typeof useGett
       }
       extra={<Button type="text" size="small" icon={<CloseOutlined />} onClick={hide} aria-label="Hide the setup checklist" />}
     >
-      <Progress percent={Math.round((data.done / data.total) * 100)} showInfo={false} strokeColor={BRAND.colors.accent} size="small" style={{ marginBottom: 8 }} aria-label={`Setup checklist: ${data.done} of ${data.total} done`} />
+      <Progress percent={Math.round((data.done / data.total) * 100)} showInfo={false} strokeColor={tk.color.accent.solid} size="small" style={{ marginBottom: tk.space[2] }} aria-label={`Setup checklist: ${data.done} of ${data.total} done`} />
       <ol style={{ listStyle: 'none', margin: 0, padding: 0 }}>
         {data.steps.map((s, i) => {
           const step = STEPS[s.key];
           const isNext = s.key === next;
           return (
-            <li key={s.key} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '8px 0', borderTop: i ? `1px solid ${themeColor('colorBorderSecondary')}` : undefined }}>
-              <span style={{ width: 22, flex: '0 0 22px', textAlign: 'center', marginTop: 1 }}>
-                {s.done ? <CheckCircleFilled style={{ color: token.colorSuccess, fontSize: 18 }} /> : <Typography.Text className="mono" strong type={isNext ? undefined : 'secondary'}>{i + 1}</Typography.Text>}
+            <li key={s.key} style={{ display: 'flex', gap: tk.space[3], alignItems: 'flex-start', padding: `${tk.space[2]} 0`, borderTop: i ? `1px solid ${tk.color.line.hairline}` : undefined }}>
+              <span style={{ width: 22, flex: '0 0 22px', textAlign: 'center', marginTop: tk.space.half }}>
+                {s.done ? <CheckCircleFilled style={{ color: tk.color.tone.success.solid, fontSize: tk.type.lead.fontSize }} /> : <Typography.Text className="mono" strong type={isNext ? undefined : 'secondary'}>{i + 1}</Typography.Text>}
               </span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <Typography.Text strong={isNext} delete={s.done} type={s.done ? 'secondary' : undefined}>
                   {step.title}
                 </Typography.Text>
-                <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM, marginLeft: 8 }}>
+                <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginLeft: tk.space[2] }}>
                   Day {step.day}
                 </Typography.Text>
                 {!s.done && (
-                  <div className="text-muted" style={{ fontSize: token.fontSizeSM }}>
+                  <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                     {step.help}
                   </div>
                 )}

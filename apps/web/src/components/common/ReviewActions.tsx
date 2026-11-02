@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Alert, App, Button, ConfigProvider, Form, Input, Modal, Space, Tooltip, Typography } from 'antd';
+import { tk } from '@/ds';
 import { CheckOutlined, CloseOutlined, EditOutlined } from '@/components/common/icons';
 import type { ReviewDecision, SubmissionStatus, SubmissionType } from '@erp/shared';
 import { mayApproveType, mayApproveTypeAtAll } from '@erp/shared';
@@ -9,7 +10,7 @@ import { useAuth } from '@/lib/auth';
 import { errorMessage } from '@/lib/api';
 import { handledInPlace } from '@/lib/notify';
 import { useApprovalStage, usePendingApprovals, useReview, type ApprovalTypeParam } from '@/lib/queries';
-import { approveTheme, themeFontSize } from '@/lib/theme';
+import { approveTheme } from '@/lib/theme';
 import { inSentence } from '@/lib/format';
 
 export const REVIEW_LABELS: Record<ReviewDecision, string> = {
@@ -166,8 +167,8 @@ export function ReviewDialog({ type, id, decision, onClose, onDone }: { type: Ap
       }}
       destroyOnHidden
     >
-      {problem ? <Alert type="error" showIcon role="alert" title={problem} style={{ marginTop: 12 }} /> : null}
-      <Form form={form} layout="vertical" style={{ marginTop: 12 }}>
+      {problem ? <Alert type="error" showIcon role="alert" title={problem} style={{ marginTop: tk.space[3] }} /> : null}
+      <Form form={form} layout="vertical" style={{ marginTop: tk.space[3] }}>
         <Form.Item
           name="note"
           label={decision === 'APPROVE' ? 'Note' : 'Reason'}
@@ -194,7 +195,7 @@ export function ReviewDialog({ type, id, decision, onClose, onDone }: { type: Ap
           />
         </Form.Item>
       </Form>
-      <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+      <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
         Ctrl Enter to {decision ? inSentence(REVIEW_LABELS[decision]) : 'confirm'}
       </Typography.Text>
     </Modal>

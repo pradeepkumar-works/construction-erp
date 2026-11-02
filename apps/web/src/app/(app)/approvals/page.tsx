@@ -2,7 +2,8 @@
 
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Alert, App, Button, ConfigProvider, Empty, Flex, Grid, Input, Segmented, Select, Skeleton, Splitter, Typography, theme } from 'antd';
+import { Alert, App, Button, ConfigProvider, Empty, Flex, Grid, Input, Segmented, Select, Skeleton, Splitter, Typography } from 'antd';
+import { tk } from '@/ds';
 import { CheckOutlined } from '@/components/common/icons';
 import type { PendingApprovalDto, ReviewDecision, SubmissionType } from '@erp/shared';
 import { APPROVAL_AMOUNT_BASIS, SUBMISSION_TYPE_LABELS, approvalRightsOf, mayApprove } from '@erp/shared';
@@ -47,7 +48,6 @@ type Opened = { type: SubmissionType; id: string };
  * on the keyboard. Phones get the queue alone, each entry opening in its drawer.
  */
 export default function ApprovalsPage() {
-  const { token } = theme.useToken();
   const { modal } = App.useApp();
   const router = useRouter();
   const screens = Grid.useBreakpoint();
@@ -214,7 +214,7 @@ export default function ApprovalsPage() {
   const typeOptions = QUEUE_TYPES.filter(([t]) => rights.some((r) => r.type === t)).map(([t, label]) => ({
     value: t,
     label: (
-      <Flex justify="space-between" gap={token.marginSM}>
+      <Flex justify="space-between" gap={tk.space[3]}>
         <span>{label}</span>
         <Typography.Text type="secondary">{counts[t] ?? 0} waiting</Typography.Text>
       </Flex>
@@ -229,15 +229,15 @@ export default function ApprovalsPage() {
         <Flex
           align="center"
           justify="space-between"
-          gap={token.marginXS}
+          gap={tk.space[2]}
           role="toolbar"
           aria-label="Selection"
-          style={{ position: 'sticky', top: 0, zIndex: 2, padding: `${token.paddingXS}px ${token.paddingSM}px`, background: token.colorPrimaryBg, borderBottom: `${token.lineWidth}px ${token.lineType} ${token.colorPrimaryBorder}` }}
+          style={{ position: 'sticky', top: 0, zIndex: 2, padding: `${tk.space[2]} ${tk.space[3]}`, background: tk.color.accent.soft, borderBottom: `1px solid ${tk.color.accent.chosen}` }}
         >
           <Typography.Text strong>
             {selected.size} selected in {inSentence(QUEUE_TYPE_LABELS[selectedType])}
           </Typography.Text>
-          <Flex gap={token.marginXS}>
+          <Flex gap={tk.space[2]}>
             <Button size="small" type="text" onClick={clearSelection}>
               Clear
             </Button>
@@ -250,7 +250,7 @@ export default function ApprovalsPage() {
         </Flex>
       )}
       {isLoading ? (
-        <div style={{ padding: token.padding }}>
+        <div style={{ padding: tk.space[4] }}>
           <Skeleton active paragraph={{ rows: 8 }} />
         </div>
       ) : total === 0 ? (
@@ -277,14 +277,14 @@ export default function ApprovalsPage() {
     </>
   );
 
-  const frame = { background: token.colorBgContainer, border: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}`, borderRadius: token.borderRadiusLG, overflow: 'hidden' } as const;
+  const frame = { background: tk.color.surface.base, border: tk.line('hairline'), borderRadius: tk.radius.lg, overflow: 'hidden' } as const;
 
   return (
     <div className="page-container">
       <PageHeader title="Approvals" subtitle={subtitle} extra={approver ? <ReviewedToday onOpen={(r) => setDrawer({ type: r.type, id: r.id })} /> : undefined} />
-      {!approver && <Alert type="info" showIcon title="Your role cannot approve submissions. Submissions you create appear in the project pages with their current status." style={{ marginBottom: token.margin }} />}
+      {!approver && <Alert type="info" showIcon title="Your role cannot approve submissions. Submissions you create appear in the project pages with their current status." style={{ marginBottom: tk.space[4] }} />}
       {!!error && <QueryError error={error} onRetry={() => refetch()} />}
-      <Flex wrap gap={token.marginSM} align="center" style={{ marginBottom: token.marginSM }}>
+      <Flex wrap gap={tk.space[3]} align="center" style={{ marginBottom: tk.space[3] }}>
         <Input.Search allowClear placeholder="Search the queue" aria-label="Search the queue" value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: screens.md ? 240 : '100%' }} />
         <Select<SubmissionType> allowClear placeholder="All types" aria-label="Type" value={type} onChange={setType} options={typeOptions} style={{ minWidth: 200, width: screens.md ? undefined : '100%' }} popupMatchSelectWidth={false} />
         <ProjectSelect value={projectId} onChange={(v) => setProjectId(v)} style={{ minWidth: 260, width: screens.md ? undefined : '100%' }} />

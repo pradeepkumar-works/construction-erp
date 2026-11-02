@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Alert, App, Card, Flex, Switch, Typography, theme } from 'antd';
+import { Alert, App, Card, Flex, Switch, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { MODULE_KEYS, MODULE_LABELS, MODULE_TIER_LABELS, SWITCHABLE_MODULE_INFO, canManageModules, type ModuleSwitchDto, type ModuleSwitchesDto } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
@@ -14,14 +15,13 @@ import { useNavMenu } from '@/components/shell/menu';
 
 /** One module: its switch, what it is, and why it cannot be turned on when the plan leaves it out. */
 function ModuleRow({ m, busy, onChange }: { m: ModuleSwitchDto; busy: boolean; onChange: (on: boolean) => void }) {
-  const { token } = theme.useToken();
   const id = `module-${m.key}`;
   return (
-    <Flex gap={token.margin} align="flex-start" style={{ minHeight: 44, paddingBlock: token.paddingXS }}>
+    <Flex gap={tk.space[4]} align="flex-start" style={{ minHeight: 44, paddingBlock: tk.space[2] }}>
       <Switch id={id} checked={m.on} disabled={!m.inPlan} loading={busy} onChange={onChange} aria-describedby={`${id}-help`} />
       <div style={{ minWidth: 0 }}>
-        <Flex gap={token.marginXS} align="center" wrap>
-          <label htmlFor={id} style={{ fontWeight: 600 }}>
+        <Flex gap={tk.space[2]} align="center" wrap>
+          <label htmlFor={id} style={{ fontWeight: tk.type.title.fontWeight }}>
             {m.label}
           </label>
           {!m.inPlan && <AppTag meaning="closed">Not in your plan</AppTag>}
@@ -36,7 +36,6 @@ function ModuleRow({ m, busy, onChange }: { m: ModuleSwitchDto; busy: boolean; o
 
 function Modules({ data }: { data: ModuleSwitchesDto }) {
   const { message } = App.useApp();
-  const { token } = theme.useToken();
   const { user, refresh } = useAuth();
   const { settings } = useNavMenu(user);
   const set = useSetModuleSwitch();
@@ -55,7 +54,7 @@ function Modules({ data }: { data: ModuleSwitchesDto }) {
     );
   const sections = MODULE_KEYS.map((s) => ({ key: s, modules: data.modules.filter((m) => SWITCHABLE_MODULE_INFO[m.key].section === s) })).filter((s) => s.modules.length);
   return (
-    <Flex vertical gap={token.margin}>
+    <Flex vertical gap={tk.space[4]}>
       {data.tier && (
         <Alert
           type="info"

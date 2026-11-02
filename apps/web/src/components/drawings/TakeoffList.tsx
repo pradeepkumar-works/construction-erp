@@ -2,7 +2,8 @@
 
 import { revLabel } from '@/components/documents/docUi';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Button, Checkbox, Empty, Flex, Form, Input, Radio, Segmented, Select, Space, Typography, theme } from 'antd';
+import { Alert, Button, Checkbox, Empty, Flex, Form, Input, Radio, Segmented, Select, Space, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { BookOutlined, ColumnWidthOutlined, DeleteOutlined, EditOutlined, TableOutlined } from '@/components/common/icons';
 import type { BoqItemDto, DrawingScaleDto, DrawingTakeoffDto, TakeoffBoqField, TakeoffKind } from '@erp/shared';
@@ -10,7 +11,6 @@ import { DRAWING_UNIT_METRES, TAKEOFF_KINDS, TAKEOFF_KIND_LABELS, TAKEOFF_LABEL_
 import { useAuth } from '@/lib/auth';
 import { useBoq } from '@/lib/queries';
 import { formatDate, formatQty, toNumber } from '@/lib/format';
-import { themeFontSize } from '@/lib/theme';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { QuantityInput } from '@/components/form/inputs';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
@@ -64,7 +64,6 @@ export function TakeoffList({
   canSetBoq: boolean;
 }) {
   const { user } = useAuth();
-  const { token } = theme.useToken();
   const [unit, setUnit] = useState<DrawingUnit>('mm');
   const [unitBusy, setUnitBusy] = useState(false);
   const picked = takeoffs.filter((t) => chosen.has(t.id));
@@ -75,11 +74,11 @@ export function TakeoffList({
   const pickedTotal = takeoffBoqQty(picked);
   const allChosen = takeoffs.length > 0 && takeoffs.every((t) => chosen.has(t.id));
   return (
-    <Flex vertical gap={token.marginSM}>
-      <Flex justify="space-between" align="center" wrap gap={token.marginXS}>
-        <Typography.Title level={2} style={{ fontSize: themeFontSize('fontSizeLG'), margin: 0 }}>
+    <Flex vertical gap={tk.space[3]}>
+      <Flex justify="space-between" align="center" wrap gap={tk.space[2]}>
+        <Typography.Title level={2} style={{ fontSize: tk.type.lead.fontSize, margin: 0 }}>
           Measures{' '}
-          <Typography.Text type="secondary" style={{ fontWeight: 400 }} translate="no">
+          <Typography.Text type="secondary" style={{ fontWeight: tk.type.body.fontWeight }} translate="no">
             {takeoffs.length}
           </Typography.Text>
         </Typography.Title>
@@ -95,7 +94,7 @@ export function TakeoffList({
         />
       </Flex>
       {scale ? (
-        <Flex justify="space-between" align="center" gap={token.marginXS} wrap style={{ fontSize: themeFontSize('fontSizeSM') }}>
+        <Flex justify="space-between" align="center" gap={tk.space[2]} wrap style={{ fontSize: tk.type.caption.fontSize }}>
           <span>
             Scale: <span translate="no">{formatQty(scale.lengthM)} m</span> between two points · {scale.setByName}, {formatDate(scale.updatedAt)}
           </span>
@@ -109,7 +108,7 @@ export function TakeoffList({
           showIcon
           title="Set the scale first"
           description={
-            <Flex vertical gap={token.marginXS}>
+            <Flex vertical gap={tk.space[2]}>
               <p style={{ margin: 0 }}>Click two points a known distance apart, such as a dimensioned wall or the grid spacing, and enter the distance. Counts need no scale.</p>
               <Space wrap>
                 <Button size="small" icon={<ColumnWidthOutlined />} onClick={onSetScale}>
@@ -146,7 +145,7 @@ export function TakeoffList({
         />
       )}
       {totals.length ? (
-        <Flex gap={token.marginSM} wrap style={{ fontSize: themeFontSize('fontSizeSM') }}>
+        <Flex gap={tk.space[3]} wrap style={{ fontSize: tk.type.caption.fontSize }}>
           {totals.map((x) => (
             <span key={x.kind}>
               {TAKEOFF_KIND_LABELS[x.kind]}s{' '}
@@ -164,11 +163,11 @@ export function TakeoffList({
         />
       ) : (
         <>
-          <Flex justify="space-between" align="center" wrap gap={token.marginXS}>
+          <Flex justify="space-between" align="center" wrap gap={tk.space[2]}>
             <Checkbox checked={allChosen} indeterminate={!allChosen && picked.length > 0} onChange={(e) => onChoose(new Set(e.target.checked ? takeoffs.map((t) => t.id) : []))}>
               Tick all
             </Checkbox>
-            <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+            <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
               {picked.length
                 ? 'qty' in pickedTotal
                   ? `${picked.length} ticked: ${takeoffFigure(picked[0].kind, pickedTotal.qty)}`
@@ -197,7 +196,7 @@ export function TakeoffList({
               padding: 0,
               display: 'flex',
               flexDirection: 'column',
-              gap: token.marginXS,
+              gap: tk.space[2],
             }}
             aria-label="Measures"
           >
@@ -209,19 +208,19 @@ export function TakeoffList({
                   key={t.id}
                   style={{
                     display: 'flex',
-                    gap: token.marginXS,
+                    gap: tk.space[2],
                     alignItems: 'flex-start',
-                    border: `1px solid ${selected ? token.colorPrimary : token.colorBorderSecondary}`,
-                    borderRadius: token.borderRadiusLG,
-                    padding: token.paddingSM,
-                    background: selected ? token.colorPrimaryBg : token.colorBgContainer,
+                    border: `1px solid ${selected ? tk.color.accent.solid : tk.color.line.hairline}`,
+                    borderRadius: tk.radius.lg,
+                    padding: tk.space[3],
+                    background: selected ? tk.color.accent.soft : tk.color.surface.base,
                   }}
                 >
                   <Checkbox
                     checked={chosen.has(t.id)}
                     aria-label={`Tick T${t.takeoffNo}`}
                     onChange={(e) => onChoose(toggle(chosen, t.id, e.target.checked))}
-                    style={{ minHeight: 24, paddingTop: 2 }}
+                    style={{ minHeight: 24, paddingTop: tk.space.half }}
                   />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <button
@@ -244,7 +243,7 @@ export function TakeoffList({
                             display: 'inline-block',
                             width: 10,
                             height: 10,
-                            borderRadius: 2,
+                            borderRadius: tk.radius.xs,
                             background: TAKEOFF_INK,
                           }}
                         />
@@ -267,12 +266,12 @@ export function TakeoffList({
                           </AppTag>
                         ) : null}
                       </Space>
-                      <div style={{ marginTop: 2, overflowWrap: 'anywhere' }}>{t.label}</div>
+                      <div style={{ marginTop: tk.space.half, overflowWrap: 'anywhere' }}>{t.label}</div>
                       <div
                         className="text-muted"
                         style={{
-                          fontSize: themeFontSize('fontSizeSM'),
-                          marginTop: 2,
+                          fontSize: tk.type.caption.fontSize,
+                          marginTop: tk.space.half,
                         }}
                       >
                         {t.createdByName} · {formatDate(t.createdAt)}
@@ -329,7 +328,7 @@ export function TakeoffLabelForm({
     <FormShell open={open} onClose={onClose} form={form} layout="modal" width={480} title={title} okText="Save" onSubmit={(v) => onSubmit(v.label.trim())}>
       <Form form={form} layout="vertical">
         {figure ? (
-          <Typography.Paragraph strong style={{ fontSize: themeFontSize('fontSizeLG') }} translate="no">
+          <Typography.Paragraph strong style={{ fontSize: tk.type.lead.fontSize }} translate="no">
             {figure}
           </Typography.Paragraph>
         ) : null}
@@ -499,7 +498,7 @@ export function TakeoffBoqForm({
             showIcon
             title={`${item.itemNo} is in ${item.unit} and these are in ${TAKEOFF_UNITS[kind]}`}
             description="Multiply by a thickness or a weight per metre if need be, or choose another item."
-            style={{ marginBottom: 16 }}
+            style={{ marginBottom: tk.space[4] }}
           />
         ) : null}
         {item && 'qty' in got ? (

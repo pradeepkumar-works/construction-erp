@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useCallback, useId, useRef, useState } from 'react';
-import { Alert, Flex, Modal, Popconfirm, Typography, theme } from 'antd';
+import { Alert, Flex, Modal, Popconfirm, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { PopconfirmProps } from 'antd';
 import { ExclamationCircleFilled } from '@/components/common/icons';
 import { errorMessage } from '@/lib/api';
@@ -124,7 +125,6 @@ export function ConfirmDelete({
  * `askDelete({ what, onConfirm })`.
  */
 export function useConfirmDelete(): [(r: DeleteRequest) => void, React.ReactNode] {
-  const { token } = theme.useToken();
   const run = useRunDelete();
   const okId = useId();
   const [request, setRequest] = useState<DeleteRequest | null>(null);
@@ -144,8 +144,8 @@ export function useConfirmDelete(): [(r: DeleteRequest) => void, React.ReactNode
       width={416}
       title={
         request ? (
-          <Flex gap={token.marginSM} align="center">
-            <ExclamationCircleFilled style={{ color: token.colorWarning }} aria-hidden />
+          <Flex gap={tk.space[3]} align="center">
+            <ExclamationCircleFilled style={{ color: tk.color.tone.pending.solid }} aria-hidden />
             <span>{`${verb} ${request.what}?`}</span>
           </Flex>
         ) : null
@@ -172,7 +172,7 @@ export function useConfirmDelete(): [(r: DeleteRequest) => void, React.ReactNode
         else setOpen(false);
       }}
     >
-      {request?.description ? <Typography.Paragraph style={{ marginBottom: problem ? token.marginSM : 0 }}>{request.description}</Typography.Paragraph> : null}
+      {request?.description ? <Typography.Paragraph style={{ marginBottom: problem ? tk.space[3] : 0 }}>{request.description}</Typography.Paragraph> : null}
       {problem ? <Alert type="error" showIcon title={problem} role="alert" /> : null}
     </Modal>
   );

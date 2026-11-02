@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, App, Button, Card, Checkbox, Descriptions, Drawer, Flex, Input, InputNumber, Progress, Radio, Select, Space, Spin, Switch, Table, Typography, theme } from 'antd';
+import { Alert, App, Button, Card, Checkbox, Descriptions, Drawer, Flex, Input, InputNumber, Progress, Radio, Select, Space, Spin, Switch, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { DownloadOutlined } from '@/components/common/icons';
 import XMarkdown from '@ant-design/x-markdown';
@@ -21,7 +22,6 @@ import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 
 function SettingsCard({ data }: { data: AiSettingsDto }) {
   const { message } = App.useApp();
-  const { token } = theme.useToken();
   const update = useUpdateAiSettings();
   const notify = useNotify();
   const [cap, setCap] = useState<number | null>(data.monthlyCapInr);
@@ -40,18 +40,18 @@ function SettingsCard({ data }: { data: AiSettingsDto }) {
   const unit = plan ? BILLING_UNIT_LABELS[plan.unit] : null;
 
   return (
-    <Card title="Settings" style={{ marginBottom: token.margin }}>
+    <Card title="Settings" style={{ marginBottom: tk.space[4] }}>
       {!data.configured && (
         <Alert
           type="info"
           showIcon
-          style={{ marginBottom: token.margin }}
+          style={{ marginBottom: tk.space[4] }}
           title={`Ask ${PRODUCT_NAME} is not set up for your company yet`}
           description={`Ask ${PRODUCT_NAME} support to turn it on. Your choices here are kept until then.`}
         />
       )}
-      <Flex vertical gap={token.marginLG}>
-        <Flex gap={token.margin} align="flex-start">
+      <Flex vertical gap={tk.space[6]}>
+        <Flex gap={tk.space[4]} align="flex-start">
           <Switch
             id="ai-enabled"
             checked={data.enabled}
@@ -60,7 +60,7 @@ function SettingsCard({ data }: { data: AiSettingsDto }) {
             aria-describedby="ai-enabled-help"
           />
           <div>
-            <label htmlFor="ai-enabled" style={{ fontWeight: 600 }}>
+            <label htmlFor="ai-enabled" style={{ fontWeight: tk.type.title.fontWeight }}>
               On for the company
             </label>
             <Typography.Paragraph id="ai-enabled-help" type="secondary" style={{ margin: 0 }}>
@@ -70,7 +70,7 @@ function SettingsCard({ data }: { data: AiSettingsDto }) {
           </div>
         </Flex>
         <div role="group" aria-labelledby="ai-roles-label">
-          <div id="ai-roles-label" style={{ fontWeight: 600, marginBottom: token.marginXXS }}>
+          <div id="ai-roles-label" style={{ fontWeight: tk.type.title.fontWeight, marginBottom: tk.space[1] }}>
             Who can use it
           </div>
           <Radio.Group
@@ -86,16 +86,16 @@ function SettingsCard({ data }: { data: AiSettingsDto }) {
               aria-label="Roles that can use it"
               value={roles}
               onChange={(v) => setRoles(v as RoleKey[])}
-              style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: token.marginXS, marginTop: token.marginSM }}
+              style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: tk.space[2], marginTop: tk.space[3] }}
               options={AI_ROLE_CHOICES.map((r) => ({ value: r, label: ROLE_LABELS[r] }))}
             />
           )}
-          <Typography.Paragraph type="secondary" style={{ margin: `${token.marginSM}px 0 0` }}>
+          <Typography.Paragraph type="secondary" style={{ margin: `${tk.space[3]} 0 0` }}>
             {limited && !roles.length ? 'Choose at least one role, or pick All staff.' : 'Admins can always use it.'}
           </Typography.Paragraph>
         </div>
         <div>
-          <label htmlFor="ai-cap" style={{ fontWeight: 600, display: 'block', marginBottom: token.marginXXS }}>
+          <label htmlFor="ai-cap" style={{ fontWeight: tk.type.title.fontWeight, display: 'block', marginBottom: tk.space[1] }}>
             Monthly allowance
           </label>
           <Space wrap>
@@ -113,7 +113,7 @@ function SettingsCard({ data }: { data: AiSettingsDto }) {
             />
             {data.monthlyCapInr !== null && <Button onClick={() => save({ monthlyCapInr: null }, plan ? "Allowance back to the plan's" : 'Allowance back to the default')}>{plan ? "Use the plan's" : 'Use the default'}</Button>}
           </Space>
-          <Typography.Paragraph type="secondary" style={{ margin: `${token.marginXXS}px 0 0` }}>
+          <Typography.Paragraph type="secondary" style={{ margin: `${tk.space[1]} 0 0` }}>
             Ask {PRODUCT_NAME} stops for the rest of the month once the company has used this much.{' '}
             {plan
               ? `Your plan includes ${formatINR(plan.allowanceInr)} a month${
@@ -128,7 +128,7 @@ function SettingsCard({ data }: { data: AiSettingsDto }) {
             <Alert
               type="warning"
               showIcon
-              style={{ marginTop: token.marginSM }}
+              style={{ marginTop: tk.space[3] }}
               title={`Paused: ${BILLING_STATUS_LABELS.READ_ONLY}`}
               description={`The trial or subscription has ended, so Ask ${PRODUCT_NAME} is paused with the rest of the company's changes. Renew it in Admin › Subscription to use it again.`}
             />
@@ -153,13 +153,12 @@ function SettingsCard({ data }: { data: AiSettingsDto }) {
 const recentMonths = () => Array.from({ length: 12 }, (_, i) => dayjs().subtract(i, 'month').format('YYYY-MM'));
 
 function UsageCard({ data, month, onMonth }: { data: AiSettingsDto; month: string; onMonth: (m: string) => void }) {
-  const { token } = theme.useToken();
   const current = data.month === dayjs().format('YYYY-MM');
   const pct = data.effectiveCapInr > 0 ? Math.min(100, Math.round((data.spentThisMonthInr / data.effectiveCapInr) * 100)) : 100;
   return (
     <Card
       title="Usage"
-      style={{ marginBottom: token.margin }}
+      style={{ marginBottom: tk.space[4] }}
       extra={<Select aria-label="Month" value={month} onChange={onMonth} style={{ width: 140 }} options={recentMonths().map((m) => ({ value: m, label: formatMonth(m) }))} />}
     >
       <Descriptions
@@ -170,10 +169,10 @@ function UsageCard({ data, month, onMonth }: { data: AiSettingsDto; month: strin
         ]}
       />
       {current && <Progress percent={pct} status={pct >= 100 ? 'exception' : 'normal'} aria-label={`${pct}% of the monthly allowance used`} style={{ maxWidth: 480 }} />}
-      <Typography.Paragraph type="secondary" style={{ marginTop: token.marginXS }}>
+      <Typography.Paragraph type="secondary" style={{ marginTop: tk.space[2] }}>
         What the AI provider charged for each answer, in rupees at the server&apos;s exchange rate; the provider&apos;s own invoice is the final figure.
       </Typography.Paragraph>
-      <Typography.Title level={2} style={{ fontSize: token.fontSizeLG }}>
+      <Typography.Title level={2} style={{ fontSize: tk.type.lead.fontSize }}>
         By feature
       </Typography.Title>
       <Table
@@ -181,14 +180,14 @@ function UsageCard({ data, month, onMonth }: { data: AiSettingsDto; month: strin
         rowKey="feature"
         pagination={false}
         dataSource={data.byFeature}
-        style={{ marginBottom: token.marginLG }}
+        style={{ marginBottom: tk.space[6] }}
         columns={[
           { key: 'feature', title: 'Used for', dataIndex: 'feature', render: (f: AiFeature) => AI_FEATURE_LABELS[f] },
           { key: 'count', title: 'Count', dataIndex: 'count', align: 'right', render: (n: number) => formatCount(n) },
           { key: 'spent', title: 'Used', dataIndex: 'spentInr', align: 'right', render: (v: number) => formatINR(v) },
         ]}
       />
-      <Typography.Title level={2} style={{ fontSize: token.fontSizeLG }}>
+      <Typography.Title level={2} style={{ fontSize: tk.type.lead.fontSize }}>
         By person
       </Typography.Title>
       <Table<AiUserUsageDto>
@@ -208,7 +207,7 @@ function UsageCard({ data, month, onMonth }: { data: AiSettingsDto; month: strin
           { key: 'spent', title: 'Used', dataIndex: 'spentInr', align: 'right', render: (v: number) => formatINR(v) },
         ]}
       />
-      <Typography.Paragraph type="secondary" style={{ margin: `${token.marginXS}px 0 0` }}>
+      <Typography.Paragraph type="secondary" style={{ margin: `${tk.space[2]} 0 0` }}>
         Bill check summaries, photo checks and weekly project summaries run for the company, so they count under By feature only.
       </Typography.Paragraph>
     </Card>
@@ -219,7 +218,6 @@ const PAGE_SIZE = 20;
 
 function ConversationsCard({ month, people }: { month: string; people: AiUserUsageDto[] }) {
   const { message } = App.useApp();
-  const { token } = theme.useToken();
   const notify = useNotify();
   const [userId, setUserId] = useState<string | undefined>();
   const [search, setSearch] = useState('');
@@ -260,7 +258,7 @@ function ConversationsCard({ month, people }: { month: string; people: AiUserUsa
   return (
     <Card
       title="Conversation log"
-      style={{ marginBottom: token.margin }}
+      style={{ marginBottom: tk.space[4] }}
       extra={
         <Button icon={<DownloadOutlined />} loading={exporting} onClick={() => void exportLog()}>
           Export
@@ -270,7 +268,7 @@ function ConversationsCard({ month, people }: { month: string; people: AiUserUsa
       <Typography.Paragraph type="secondary">
         Every question asked in {formatMonth(month)} and its answer. People are told in Ask {PRODUCT_NAME} that admins can read them; opening or exporting one is recorded in the audit log.
       </Typography.Paragraph>
-      <Flex gap={token.marginSM} wrap style={{ marginBottom: token.marginSM }}>
+      <Flex gap={tk.space[3]} wrap style={{ marginBottom: tk.space[3] }}>
         <Select
           allowClear
           aria-label="Person"
@@ -320,18 +318,17 @@ function ConversationsCard({ month, people }: { month: string; people: AiUserUsa
 }
 
 function ConversationDrawer({ id, onClose }: { id: string | null; onClose: () => void }) {
-  const { token } = theme.useToken();
   const { data, isLoading, error, refetch } = useAiConversation(id);
   return (
     <Drawer open={!!id} onClose={onClose} size="large" title={data ? data.title : 'Conversation'} destroyOnHidden>
       {error ? (
         <QueryError error={error} onRetry={() => refetch()} />
       ) : isLoading || !data ? (
-        <Flex justify="center" style={{ padding: token.paddingLG }}>
+        <Flex justify="center" style={{ padding: tk.space[6] }}>
           <Spin description="Loading" />
         </Flex>
       ) : (
-        <Flex vertical gap={token.marginSM}>
+        <Flex vertical gap={tk.space[3]}>
           <Typography.Text type="secondary">
             {data.fullName} · {data.questions} question{data.questions === 1 ? '' : 's'} · {formatINR(data.spentInr)}
           </Typography.Text>
@@ -339,25 +336,25 @@ function ConversationDrawer({ id, onClose }: { id: string | null; onClose: () =>
             <div
               key={m.id}
               style={{
-                padding: token.paddingSM,
-                borderRadius: token.borderRadius,
-                background: m.role === 'user' ? token.colorFillQuaternary : undefined,
-                border: m.role === 'user' ? undefined : `1px solid ${token.colorBorderSecondary}`,
+                padding: tk.space[3],
+                borderRadius: tk.radius.md,
+                background: m.role === 'user' ? tk.color.surface.sunken : undefined,
+                border: m.role === 'user' ? undefined : `1px solid ${tk.color.line.hairline}`,
               }}
             >
-              <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM, display: 'block' }}>
+              <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize, display: 'block' }}>
                 {m.role === 'user' ? 'Question' : 'Answer'} · {formatDateTime(m.createdAt)}
                 {m.role === 'assistant' && m.model ? ` · ${m.model} · ${formatINR(m.costInr)}` : ''}
               </Typography.Text>
               {m.role === 'assistant' && m.text ? (
-                <div style={{ marginTop: token.marginXXS }}>
+                <div style={{ marginTop: tk.space[1] }}>
                   <XMarkdown content={m.text} escapeRawHtml />
                 </div>
               ) : (
-                <Typography.Paragraph style={{ whiteSpace: 'pre-wrap', margin: `${token.marginXXS}px 0 0` }}>{m.text || '(no text)'}</Typography.Paragraph>
+                <Typography.Paragraph style={{ whiteSpace: 'pre-wrap', margin: `${tk.space[1]} 0 0` }}>{m.text || '(no text)'}</Typography.Paragraph>
               )}
               {m.role === 'assistant' && (m.tools.length || m.feedback || m.unverified.length) ? (
-                <Flex gap={token.marginXXS} wrap>
+                <Flex gap={tk.space[1]} wrap>
                   {m.feedback === 1 && <AppTag meaning="done">Helpful</AppTag>}
                   {m.feedback === -1 && <AppTag meaning="waiting">Not helpful</AppTag>}
                   {m.unverified.length ? <AppTag meaning="waiting">Figures not found in records: {m.unverified.join(', ')}</AppTag> : null}

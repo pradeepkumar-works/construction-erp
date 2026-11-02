@@ -3,6 +3,7 @@
 import { revLabel } from './docUi';
 import React, { useEffect, useMemo } from 'react';
 import { App, Form, Input, InputNumber, Select, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import type { TransmittalDto, TransmittalPurpose } from '@erp/shared';
@@ -102,7 +103,7 @@ export function TransmittalFormModal({
   const locked = !!transmittal?.acknowledgedOn;
   return (
     <FormShell open={open} onClose={onClose} form={form} layout="modal" width={720} title={transmittal ? `Edit ${transmittal.transmittalNo}` : 'New transmittal'} okText={transmittal ? 'Save' : 'Record transmittal'} onSubmit={(v) => mutation.mutateAsync(v)}>
-      <Form form={form} layout="vertical" style={{ marginTop: 8 }}>
+      <Form form={form} layout="vertical" style={{ marginTop: tk.space[2] }}>
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
           <Select
             showSearch={{ optionFilterProp: 'label' }}
@@ -165,7 +166,7 @@ export function TransmittalFormModal({
             },
           ]}
         />
-        <Form.Item name="remarks" label="Remarks" style={{ marginTop: 16 }}>
+        <Form.Item name="remarks" label="Remarks" style={{ marginTop: tk.space[4] }}>
           <Input.TextArea rows={2} maxLength={1000} />
         </Form.Item>
       </Form>

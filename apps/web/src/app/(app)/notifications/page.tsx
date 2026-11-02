@@ -3,6 +3,7 @@
 import React, { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Badge, Button, Card, Flex, Pagination, Segmented, Space } from 'antd';
+import { tk } from '@/ds';
 import { AppTabs } from '@/components/common/AppTabs';
 import { CheckOutlined, MessageOutlined } from '@/components/common/icons';
 import type { NotificationDto, NotificationTab, SubmissionType } from '@erp/shared';
@@ -19,7 +20,6 @@ import { MessagingSettingsModal } from '@/components/notifications/MessagingSett
 import { MessageLog } from '@/components/notifications/MessageLog';
 import { EmptyArt } from '@/components/common/EmptyArt';
 import { CardToolbar } from '@/components/common/CardToolbar';
-import { themeColor } from '@/lib/theme';
 
 const PAGE_SIZE = 25;
 
@@ -102,11 +102,11 @@ function NotificationsPageInner() {
         {items.length ? (
           <NotificationFeed items={items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)} onOpen={onClick} />
         ) : (
-          <Flex justify="center" style={{ padding: 16, color: themeColor('colorTextDescription') }}>
+          <Flex justify="center" style={{ padding: tk.space[4], color: tk.color.text.faint }}>
             {filter === 'UNREAD' ? <EmptyArt art="approved" title="You are all caught up." /> : 'No notifications yet. You will be told here when your submissions are reviewed.'}
           </Flex>
         )}
-        <Flex justify="flex-end" style={{ padding: items.length > PAGE_SIZE ? 16 : 0 }}>
+        <Flex justify="flex-end" style={{ padding: items.length > PAGE_SIZE ? tk.space[4] : 0 }}>
           <Pagination current={page} pageSize={PAGE_SIZE} total={items.length} hideOnSinglePage onChange={setPage} />
         </Flex>
         </>

@@ -2,6 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { Button, Result, Space, Typography } from 'antd';
+import { tk } from '@/ds';
 import { ReloadOutlined } from '@/components/common/icons';
 import { LinkButton } from '@/components/common/LinkButton';
 import { usePageTitle } from '@/lib/page-title';
@@ -22,7 +23,7 @@ export default function PageError({ error, reset }: { error: Error & { digest?: 
           <>
             Nothing you saved is lost. Try again, and if it keeps happening tell your admin what you were doing.
             {error.digest ? (
-              <Typography.Paragraph type="secondary" copyable={{ text: error.digest }} style={{ marginTop: 8, marginBottom: 0 }}>
+              <Typography.Paragraph type="secondary" copyable={{ text: error.digest }} style={{ marginTop: tk.space[2], marginBottom: 0 }}>
                 Reference {error.digest}
               </Typography.Paragraph>
             ) : null}

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Button, Flex, Result, Space } from 'antd';
+import { tk } from '@/ds';
 import { BrandMark } from '@/components/shell/BrandMark';
 import { LinkButton } from '@/components/common/LinkButton';
 import { usePageTitle } from '@/lib/page-title';
@@ -11,7 +12,7 @@ import { ResultMark } from '@/components/common/ResultMark';
 export default function NotFound() {
   usePageTitle('Page not found');
   return (
-    <Flex vertical align="center" justify="center" style={{ minHeight: '100vh', padding: 24 }}>
+    <Flex vertical align="center" justify="center" style={{ minHeight: '100vh', padding: tk.space[6] }}>
       <BrandMark />
       <Result
         icon={<ResultMark kind="not-found" />}

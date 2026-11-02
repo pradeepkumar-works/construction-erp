@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, Divider, Flex, Table, Typography, theme } from 'antd';
+import { Button, Divider, Flex, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import Link from 'next/link';
 import { copyLabel, type ControlledCopyDto, type RevisionImpactItem } from '@erp/shared';
 import { useRevisionImpact } from '@/lib/queries';
@@ -10,7 +11,6 @@ import { AppTag } from '@/components/common/AppTag';
 import { PlusOutlined } from '@/components/common/icons';
 import { CopyStateTag, IssueCopiesDialog, ReissueDialog, TakeBackDialog } from './ControlledCopies';
 
-const srOnly: React.CSSProperties = { position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 };
 const KEY_LABEL: Record<RevisionImpactItem['key'], string> = {
   copies: 'Copies',
   submissions: 'Approval',
@@ -23,11 +23,10 @@ const KEY_LABEL: Record<RevisionImpactItem['key'], string> = {
 
 /** What a revision changes, as a short list: each line with its area and what to do. */
 export function ImpactList({ items }: { items: RevisionImpactItem[] }) {
-  const { token } = theme.useToken();
   return (
-    <Flex vertical gap={token.marginXS}>
+    <Flex vertical gap={tk.space[2]}>
       {items.map((i, n) => (
-        <Flex key={`${i.key}-${n}`} gap={token.marginXS} align="baseline">
+        <Flex key={`${i.key}-${n}`} gap={tk.space[2]} align="baseline">
           <AppTag kind="impact" status={i.tone} style={{ flex: 'none' }}>
             {KEY_LABEL[i.key]}
           </AppTag>
@@ -56,7 +55,6 @@ export function ImpactList({ items }: { items: RevisionImpactItem[] }) {
  * revision and Take back for those who keep the register.
  */
 export function RevisionImpactPanel({ documentId, projectId, manage, buildable }: { documentId: string; projectId: string; manage: boolean; buildable: boolean }) {
-  const { token } = theme.useToken();
   const { data } = useRevisionImpact(documentId);
   const [issuing, setIssuing] = useState(false);
   const [takeBack, setTakeBack] = useState<ControlledCopyDto | null>(null);
@@ -80,7 +78,7 @@ export function RevisionImpactPanel({ documentId, projectId, manage, buildable }
         Controlled copies{out.length ? <Typography.Text type="secondary" translate="no">{` ${out.length}`}</Typography.Text> : null}
       </Divider>
       {manage && buildable ? (
-        <Button size="small" icon={<PlusOutlined />} onClick={() => setIssuing(true)} style={{ marginBottom: token.marginXS }}>
+        <Button size="small" icon={<PlusOutlined />} onClick={() => setIssuing(true)} style={{ marginBottom: tk.space[2] }}>
           {`Issue copies of ${data.revision}`}
         </Button>
       ) : null}
@@ -100,7 +98,7 @@ export function RevisionImpactPanel({ documentId, projectId, manage, buildable }
             ...(manage
               ? [
                   {
-                    title: <span style={srOnly}>Actions</span>,
+                    title: <span className="visually-hidden">Actions</span>,
                     key: 'act',
                     width: 120,
                     render: (_: unknown, c: ControlledCopyDto) =>
@@ -125,7 +123,7 @@ export function RevisionImpactPanel({ documentId, projectId, manage, buildable }
         <Typography.Text type="secondary">No controlled copy out.</Typography.Text>
       )}
       {back ? (
-        <Typography.Paragraph type="secondary" style={{ marginTop: token.marginXS, marginBottom: 0 }}>
+        <Typography.Paragraph type="secondary" style={{ marginTop: tk.space[2], marginBottom: 0 }}>
           {`${back} earlier cop${back === 1 ? 'y' : 'ies'} taken back. `}
           <Link href={`/controlled-copies?documentId=${documentId}`}>All copies of {data.docNo}</Link>
         </Typography.Paragraph>

@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Button, Card, Col, Flex, Row, Select, Statistic, Typography, theme } from 'antd';
+import { Button, Card, Col, Flex, Row, Select, Statistic, Typography } from 'antd';
+import { tk } from '@/ds';
 import { canManageDocuments, copyLabel, type ControlledCopyDto, type CopyState } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useControlledCopies } from '@/lib/queries';
@@ -19,7 +20,6 @@ import { RecordLink } from '@/components/record/RecordLink';
 import { DISPLAY_FONT } from '@/lib/theme';
 import { CopyStateTag, IssueCopiesDialog, ReissueDialog, TakeBackDialog } from './ControlledCopies';
 
-const srOnly: React.CSSProperties = { position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 };
 const KEYS = ['state'] as const;
 const SORT_FIELDS = ['issuedOn'] as const;
 type SortField = (typeof SORT_FIELDS)[number];
@@ -36,7 +36,6 @@ const STATE_FILTERS: { value: StateFilter; label: string }[] = [
  * first, to be taken back; and copies issued from here or from the document.
  */
 export function ControlledCopiesPage() {
-  const { token } = theme.useToken();
   const { user } = useAuth();
   const router = useRouter();
   const params = useSearchParams();
@@ -48,7 +47,7 @@ export function ControlledCopiesPage() {
   useNewIntent('controlled-copy', may, () => setIssuing(true));
   const open = (c: ControlledCopyDto) => router.push(`/documents?id=${c.documentId}`);
   const sub = (text: React.ReactNode) => (
-    <Typography.Text type="secondary" style={{ display: 'block', fontSize: token.fontSizeSM }}>
+    <Typography.Text type="secondary" style={{ display: 'block', fontSize: tk.type.caption.fontSize }}>
       {text}
     </Typography.Text>
   );
@@ -122,7 +121,7 @@ export function ControlledCopiesPage() {
         ? [
             {
               key: 'act',
-              title: <span style={srOnly}>Actions</span>,
+              title: <span className="visually-hidden">Actions</span>,
               width: 120,
               card: false as const,
               render: (_: unknown, r: ControlledCopyDto) =>
@@ -166,8 +165,8 @@ export function ControlledCopiesPage() {
   const stat = (title: string, value: React.ReactNode, note: React.ReactNode, tone?: 'danger') => (
     <Col xs={12} lg={8}>
       <Card size="small" style={{ height: '100%' }}>
-        <Statistic title={title} value={0} formatter={() => value} styles={{ content: { fontFamily: DISPLAY_FONT, fontSize: token.fontSizeHeading4, color: tone === 'danger' ? token.colorErrorText : undefined } }} />
-        <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{note}</div>
+        <Statistic title={title} value={0} formatter={() => value} styles={{ content: { fontFamily: DISPLAY_FONT, fontSize: tk.type.lead.fontSize, color: tone === 'danger' ? tk.color.tone.danger.fg : undefined } }} />
+        <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{note}</div>
       </Card>
     </Col>
   );
@@ -183,7 +182,7 @@ export function ControlledCopiesPage() {
       />
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {c && !documentId ? (
-        <Row gutter={[12, 12]} style={{ marginBottom: token.marginMD }}>
+        <Row gutter={[12, 12]} style={{ marginBottom: tk.space[5] }}>
           {stat('To withdraw', c.toRecall, c.recallsLate ? `${c.recallsLate} out more than a week` : 'Superseded, still on site', c.recallsLate ? 'danger' : undefined)}
           {stat('In force', c.inForce, 'Copies of the current revision')}
           {stat('Holders', c.holders, 'Offices, gangs and people with a copy')}

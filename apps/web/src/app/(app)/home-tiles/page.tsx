@@ -4,7 +4,8 @@ import React, { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import dayjs from 'dayjs';
-import { Button, Card, Empty, Flex, Form, Input, Switch, Typography, theme } from 'antd';
+import { Button, Card, Empty, Flex, Form, Input, Switch, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import {
@@ -73,20 +74,19 @@ function DecideDialog({ decision, onClose }: { decision: Decision | null; onClos
 }
 
 function RequestRow({ r, highlighted, onDecide }: { r: AccessRequestDto; highlighted: boolean; onDecide: (status: Decision['status']) => void }) {
-  const { token } = theme.useToken();
   return (
     <li
       id={`request-${r.id}`}
       style={{
         listStyle: 'none',
-        padding: token.paddingSM,
-        borderRadius: token.borderRadiusLG,
-        border: `${token.lineWidth}px solid ${highlighted ? token.colorPrimary : token.colorBorderSecondary}`,
+        padding: tk.space[3],
+        borderRadius: tk.radius.lg,
+        border: `1px solid ${highlighted ? tk.color.accent.solid : tk.color.line.hairline}`,
       }}
     >
-      <Flex justify="space-between" align="flex-start" gap={token.margin} wrap>
+      <Flex justify="space-between" align="flex-start" gap={tk.space[4]} wrap>
         <div style={{ minWidth: 0, flex: '1 1 280px' }}>
-          <Flex gap={token.marginXS} align="center" wrap>
+          <Flex gap={tk.space[2]} align="center" wrap>
             <Typography.Text strong translate="no">
               {r.userName}
             </Typography.Text>
@@ -94,8 +94,8 @@ function RequestRow({ r, highlighted, onDecide }: { r: AccessRequestDto; highlig
             <span aria-hidden>·</span>
             <span>asks to open {r.nodeLabel}</span>
           </Flex>
-          {r.note && <Typography.Paragraph style={{ margin: `${token.marginXXS}px 0 0` }}>“{r.note}”</Typography.Paragraph>}
-          <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+          {r.note && <Typography.Paragraph style={{ margin: `${tk.space[1]} 0 0` }}>“{r.note}”</Typography.Paragraph>}
+          <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
             Asked {formatDateTime(r.createdAt)}
             {r.status !== 'OPEN' && r.decidedAt && (
               <>
@@ -121,7 +121,6 @@ function RequestRow({ r, highlighted, onDecide }: { r: AccessRequestDto; highlig
 }
 
 function Requests({ requests }: { requests: AccessRequestDto[] }) {
-  const { token } = theme.useToken();
   const search = useSearchParams();
   const highlight = search.get('request');
   const [decision, setDecision] = useState<Decision | null>(null);
@@ -132,7 +131,7 @@ function Requests({ requests }: { requests: AccessRequestDto[] }) {
   return (
     <Card title="Access requests" extra={waiting ? `${waiting} waiting` : undefined} size="small">
       {requests.length ? (
-        <ul style={{ margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: token.marginSM }}>
+        <ul style={{ margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: tk.space[3] }}>
           {requests.map((r) => (
             <RequestRow key={r.id} r={r} highlighted={r.id === highlight} onDecide={(status) => setDecision({ request: r, status })} />
           ))}
@@ -147,7 +146,6 @@ function Requests({ requests }: { requests: AccessRequestDto[] }) {
 
 /** One of Home's tiles: New (until a day) and Featured, each the company's own or as shipped. */
 function FlagRow({ node, flag }: { node: NavNode; flag: LauncherFlagDto | undefined }) {
-  const { token } = theme.useToken();
   const set = useSetLauncherFlag();
   const notify = useNotify();
   const today = todayDate();
@@ -159,22 +157,22 @@ function FlagRow({ node, flag }: { node: NavNode; flag: LauncherFlagDto | undefi
   };
   const id = `flag-${node.id}`;
   return (
-    <Flex gap={token.margin} align="center" wrap style={{ minHeight: 44, paddingBlock: token.paddingXS, borderTop: `${token.lineWidth}px solid ${token.colorSplit}` }}>
-      <Flex gap={token.marginSM} align="center" style={{ flex: '1 1 260px', minWidth: 0 }}>
-        <span aria-hidden style={{ fontSize: 18, color: token.colorTextSecondary, display: 'inline-flex' }}>
+    <Flex gap={tk.space[4]} align="center" wrap style={{ minHeight: 44, paddingBlock: tk.space[2], borderTop: `1px solid ${tk.color.line.hairline}` }}>
+      <Flex gap={tk.space[3]} align="center" style={{ flex: '1 1 260px', minWidth: 0 }}>
+        <span aria-hidden style={{ fontSize: tk.type.lead.fontSize, color: tk.color.text.muted, display: 'inline-flex' }}>
           <TreeIcon name={node.icon} />
         </span>
         <div style={{ minWidth: 0 }}>
-          <div id={id} style={{ fontWeight: 600 }}>
+          <div id={id} style={{ fontWeight: tk.type.title.fontWeight }}>
             {node.label}
           </div>
-          <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+          <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
             {node.description}
           </Typography.Text>
         </div>
       </Flex>
-      <Flex gap={token.marginSM} align="center" wrap>
-        <Flex gap={token.marginXS} align="center">
+      <Flex gap={tk.space[3]} align="center" wrap>
+        <Flex gap={tk.space[2]} align="center">
           <Switch checked={marks.isNew} loading={set.isPending} onChange={(on) => save({ isNew: on, newUntil: on ? newUntil : null })} aria-labelledby={`${id} ${id}-new`} />
           <span id={`${id}-new`}>New</span>
         </Flex>
@@ -189,7 +187,7 @@ function FlagRow({ node, flag }: { node: NavNode; flag: LauncherFlagDto | undefi
             style={{ width: 160 }}
           />
         )}
-        <Flex gap={token.marginXS} align="center">
+        <Flex gap={tk.space[2]} align="center">
           <Switch checked={marks.featured} loading={set.isPending} onChange={(on) => save({ featured: on })} aria-labelledby={`${id} ${id}-featured`} />
           <span id={`${id}-featured`}>Featured</span>
         </Flex>
@@ -204,19 +202,18 @@ function FlagRow({ node, flag }: { node: NavNode; flag: LauncherFlagDto | undefi
 }
 
 function HomeTiles({ data }: { data: HomeTilesDto }) {
-  const { token } = theme.useToken();
   const settings = useSetHomeTilesSettings();
   const notify = useNotify();
   const flags = new Map(data.flags.map((f) => [f.nodeId, f]));
   const setLocked = (on: boolean) => settings.mutate({ discoverLocked: on }, { onError: (e) => notify.failed(e, () => setLocked(on)) });
   return (
-    <Flex vertical gap={token.margin}>
+    <Flex vertical gap={tk.space[4]}>
       <Requests requests={data.requests} />
       <Card title="Discover" size="small">
-        <Flex gap={token.margin} align="flex-start" style={{ minHeight: 44 }}>
+        <Flex gap={tk.space[4]} align="flex-start" style={{ minHeight: 44 }}>
           <Switch id="discover-locked" checked={data.discoverLocked} loading={settings.isPending} onChange={setLocked} aria-describedby="discover-locked-help" />
           <div>
-            <label htmlFor="discover-locked" style={{ fontWeight: 600 }}>
+            <label htmlFor="discover-locked" style={{ fontWeight: tk.type.title.fontWeight }}>
               Show modules a person’s role cannot open
             </label>
             <Typography.Paragraph id="discover-locked-help" type="secondary" style={{ margin: 0 }}>

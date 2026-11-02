@@ -3,6 +3,7 @@
 import { revLabel } from './docUi';
 import React, { useEffect } from 'react';
 import { App, Form } from 'antd';
+import { tk } from '@/ds';
 import dayjs from 'dayjs';
 import type { AttachmentDto, DocumentDetailDto, DocumentRevisionDto, RevisionStatus } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -82,7 +83,7 @@ export function RevisionFormModal({ open, onClose, doc, revision }: { open: bool
       okText={editing ? 'Save' : 'Record revision'}
       onSubmit={(v) => mutation.mutateAsync(v)}
     >
-      <Form form={form} layout="vertical" style={{ marginTop: 8 }}>
+      <Form form={form} layout="vertical" style={{ marginTop: tk.space[2] }}>
         <RevisionFields />
       </Form>
     </FormShell>

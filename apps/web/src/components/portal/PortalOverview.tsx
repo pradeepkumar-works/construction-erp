@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Descriptions, Progress, Table } from 'antd';
+import { tk } from '@/ds';
 import type { PortalActivityDto, PortalProjectDetailDto } from '@erp/shared';
 import { formatDate, formatINR, formatQty, progressStatus, NO_VALUE } from '@/lib/format';
 import { unitLabel } from '@erp/shared';
@@ -9,12 +10,12 @@ import { unitLabel } from '@erp/shared';
 /** The project at a glance and approved progress by activity. */
 export function PortalOverview({ project: p }: { project: PortalProjectDetailDto }) {
   return (
-    <div style={{ padding: 12 }}>
+    <div style={{ padding: tk.space[3] }}>
       <Descriptions
         size="small"
         bordered
         column={{ xs: 1, md: 2, xl: 3 }}
-        style={{ marginBottom: 16 }}
+        style={{ marginBottom: tk.space[4] }}
         items={[
           { key: 'pp', label: 'Physical progress', children: <Progress percent={p.physicalProgressPct} size="small" style={{ minWidth: 160, margin: 0 }} aria-label={`Physical progress ${p.physicalProgressPct}%`} /> },
           { key: 'te', label: 'Contract period gone', children: p.timeElapsedPct != null ? `${p.timeElapsedPct}%` : NO_VALUE },

@@ -14,7 +14,6 @@ import { Figures } from '@/components/figures';
 import { tk } from '@/ds';
 import { useAuth } from '@/lib/auth';
 import { GettingStartedCard, useGettingStarted } from '@/components/dashboard/GettingStartedCard';
-import { themeFontSize } from '@/lib/theme';
 import { MyWorkPanel } from '@/components/home/MyWorkPanel';
 import { MorningBriefCard } from '@/components/home/MorningBriefCard';
 import { homeLayout, type ChartKey, type KpiKey } from '@/components/home/layout';
@@ -62,7 +61,7 @@ export default function MyWorkPage() {
       {ready && <MyWorkPanel data={myWork.data} loading={false} order={layout.myWork} />}
       {!layout.figuresFirst && keyFigures}
       {ready && data && t && (
-        <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+        <Row gutter={[16, 16]} style={{ marginTop: tk.space[4] }}>
           {layout.charts.map((c) => (
             <HomeChart key={c} c={c} trends={t} />
           ))}
@@ -72,7 +71,7 @@ export default function MyWorkPage() {
   );
 }
 
-const small = { fontSize: themeFontSize('fontSizeSM') } as const;
+const small = { fontSize: tk.type.caption.fontSize } as const;
 
 /** A role's figure for one of its layout's keys; nothing when the role cannot see it or it has no data yet. */
 function kpiFigure(k: KpiKey, data: CompanyDashboard, trends: HomeTrendsDto | undefined): FigureInput {
@@ -178,7 +177,7 @@ function HomeChart({ c, trends }: { c: ChartKey; trends: HomeTrendsDto }) {
         <Col xs={24} xl={12}>
           <Card size="small" title="Billed against contract" extra={note('Approved RA bills to date')} style={{ height: '100%' }}>
             {trends.billingVsContract.length ? (
-              <Flex vertical gap={12} style={{ paddingTop: 8 }}>
+              <Flex vertical gap={12} style={{ paddingTop: tk.space[2] }}>
                 {trends.billingVsContract.map((b) => {
                   const pct = toNumber(b.contractValue) > 0 ? (toNumber(b.billed) / toNumber(b.contractValue)) * 100 : 0;
                   return (

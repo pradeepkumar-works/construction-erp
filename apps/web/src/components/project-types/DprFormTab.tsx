@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { App, Button, Flex, Popconfirm, Segmented, Table, Typography, theme } from 'antd';
+import { App, Button, Flex, Popconfirm, Segmented, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { normaliseDprForm, standardDprForm, type DprFormDef, type ProjectTypeDto } from '@erp/shared';
 import { EditOutlined } from '@/components/common/icons';
 import { QueryError } from '@/components/common/QueryState';
@@ -15,7 +16,6 @@ import { DprFormPreview, type PreviewMode } from './DprFormPreview';
  * phone shows it, with its saved versions and how many reports each holds.
  */
 export function DprFormTab({ type, editable }: { type: ProjectTypeDto; editable: boolean }) {
-  const { token } = theme.useToken();
   const { message } = App.useApp();
   const q = useDprForm(type.code);
   const reset = useResetDprForm();
@@ -32,10 +32,10 @@ export function DprFormTab({ type, editable }: { type: ProjectTypeDto; editable:
   const projects = type.projects === 1 ? 'the 1 project' : `the ${type.projects} projects`;
 
   return (
-    <div style={{ paddingTop: token.paddingSM }}>
-      <Flex justify="space-between" align="start" gap={token.margin} wrap>
+    <div style={{ paddingTop: tk.space[3] }}>
+      <Flex justify="space-between" align="start" gap={tk.space[4]} wrap>
         <div style={{ flex: '1 1 320px' }}>
-          <Typography.Paragraph style={{ marginBottom: token.marginXXS }}>
+          <Typography.Paragraph style={{ marginBottom: tk.space[1] }}>
             {form.standard ? (
               <>The standard form of {type.name}. </>
             ) : (
@@ -54,7 +54,7 @@ export function DprFormTab({ type, editable }: { type: ProjectTypeDto; editable:
           </Typography.Text>
         </div>
         {editable ? (
-          <Flex gap={token.marginXS} wrap>
+          <Flex gap={tk.space[2]} wrap>
             {!form.standard && !asStandard ? (
               <Popconfirm
                 title="Go back to the standard form?"
@@ -75,8 +75,8 @@ export function DprFormTab({ type, editable }: { type: ProjectTypeDto; editable:
         ) : null}
       </Flex>
 
-      <Flex justify="space-between" align="center" style={{ margin: `${token.marginLG}px 0 ${token.marginSM}px` }}>
-        <Typography.Title level={2} style={{ margin: 0, fontSize: token.fontSizeHeading5 }}>
+      <Flex justify="space-between" align="center" style={{ margin: `${tk.space[6]} 0 ${tk.space[3]}` }}>
+        <Typography.Title level={2} style={{ margin: 0, fontSize: tk.type.body.fontSize }}>
           Preview
         </Typography.Title>
         <Segmented aria-label="Preview as" value={mode} onChange={(m) => setMode(m as PreviewMode)} options={[{ value: 'web', label: 'Web' }, { value: 'phone', label: 'Phone' }]} />
@@ -85,7 +85,7 @@ export function DprFormTab({ type, editable }: { type: ProjectTypeDto; editable:
 
       {versions.length ? (
         <>
-          <Typography.Title level={2} style={{ margin: `${token.marginLG}px 0 ${token.marginSM}px`, fontSize: token.fontSizeHeading5 }}>
+          <Typography.Title level={2} style={{ margin: `${tk.space[6]} 0 ${tk.space[3]}`, fontSize: tk.type.body.fontSize }}>
             Versions
           </Typography.Title>
           <Table

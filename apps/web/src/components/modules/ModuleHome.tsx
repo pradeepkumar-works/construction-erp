@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Button, Card, Col, Flex, Result, Row, Typography, theme } from 'antd';
+import { Button, Card, Col, Flex, Result, Row, Typography } from 'antd';
 import { CheckSquareOutlined, HourglassOutlined, RollbackOutlined } from '@/components/common/icons';
 import type { ModuleHomeDto, ModuleKey } from '@erp/shared';
 import { MODULE_INTROS, MODULE_LABELS, MODULE_SUBMISSION_TYPES, SUBMISSION_TYPE_PLURAL_LABELS, canManageStaff, canSeeNav, canViewEmployeePrivate, isModuleKey, navDestination, navNode, navTilesFor, projectTabHref, submissionListHref } from '@erp/shared';
@@ -28,10 +28,9 @@ const oldest = (n: number) => (n === 0 ? 'all from today' : `oldest ${n} day${n 
 
 /** What waits for the caller in this module: approvals by type, their entries sent back, and theirs waiting with others. */
 function Waiting({ data, label }: { data: ModuleHomeDto; label: string }) {
-  const { token } = theme.useToken();
   const total = data.waiting.reduce((s, w) => s + w.count, 0);
   const back = data.sentBack.reduce((s, w) => s + w.count, 0);
-  const row: React.CSSProperties = { minHeight: 44, padding: `${token.paddingXS}px 0`, borderTop: `${token.lineWidth}px ${token.lineType} ${token.colorSplit}` };
+  const row: React.CSSProperties = { minHeight: 44, padding: `${tk.space[2]} 0`, borderTop: tk.line('hairline') };
   return (
     <Card size="small" title="Waiting for you" style={{ height: '100%' }}>
       {total === 0 && back === 0 && data.waitingWithOthers === 0 ? (
@@ -43,11 +42,11 @@ function Waiting({ data, label }: { data: ModuleHomeDto; label: string }) {
           {data.waiting.map((w) => (
             <li key={w.type}>
               <Link href={`/approvals?type=${w.type}`} className="text-link">
-                <Flex align="center" justify="space-between" gap={token.marginSM} style={row}>
+                <Flex align="center" justify="space-between" gap={tk.space[3]} style={row}>
                   <span>
                     <CheckSquareOutlined aria-hidden /> {SUBMISSION_TYPE_PLURAL_LABELS[w.type]}: {w.count} to approve
                   </span>
-                  <Typography.Text type={w.oldestDays > 2 ? 'warning' : 'secondary'} style={{ fontSize: token.fontSizeSM, whiteSpace: 'nowrap' }}>
+                  <Typography.Text type={w.oldestDays > 2 ? 'warning' : 'secondary'} style={{ fontSize: tk.type.caption.fontSize, whiteSpace: 'nowrap' }}>
                     {w.amount !== null ? <span translate="no">{formatINRCompact(w.amount)} · </span> : null}
                     {oldest(w.oldestDays)}
                   </Typography.Text>
@@ -58,7 +57,7 @@ function Waiting({ data, label }: { data: ModuleHomeDto; label: string }) {
           {data.sentBack.map((s) => (
             <li key={`back-${s.type}`}>
               <Link href={submissionListHref(s.type)} className="text-link">
-                <Flex align="center" gap={token.marginXS} style={row}>
+                <Flex align="center" gap={tk.space[2]} style={row}>
                   <RollbackOutlined aria-hidden /> {SUBMISSION_TYPE_PLURAL_LABELS[s.type]}: {s.count} of yours with changes requested or rejected
                 </Flex>
               </Link>
@@ -66,7 +65,7 @@ function Waiting({ data, label }: { data: ModuleHomeDto; label: string }) {
           ))}
           {data.waitingWithOthers > 0 && (
             <li>
-              <Flex align="center" gap={token.marginXS} style={row}>
+              <Flex align="center" gap={tk.space[2]} style={row}>
                 <HourglassOutlined aria-hidden /> {data.waitingWithOthers} of your entries waiting with others
               </Flex>
             </li>

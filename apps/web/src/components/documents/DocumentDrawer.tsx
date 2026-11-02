@@ -4,6 +4,7 @@ import { auditActionLabel } from '@erp/shared';
 import { DeleteInMenu } from '@/components/record/MoreActions';
 import React, { useState } from 'react';
 import { Alert, Button, Descriptions, Divider, Drawer, Skeleton, Space, Table, Timeline, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DeleteOutlined, EditOutlined, PlusOutlined, SendOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { DocumentRevisionDto } from '@erp/shared';
@@ -18,7 +19,6 @@ import { FileLinks, RevisionStatusTag, ViewDrawingLink } from './docUi';
 import { DocumentFormModal } from './DocumentFormModal';
 import { RevisionFormModal } from './RevisionFormModal';
 import { RecordLink } from '@/components/record/RecordLink';
-import { themeFontSize } from '@/lib/theme';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 import { RevisionImpactPanel } from '@/components/design/RevisionImpact';
 
@@ -81,7 +81,7 @@ export function DocumentDrawer({ id, open, onClose, onSend, onOpenTransmittal }:
       {data && (
         <>
           {cur && !isBuildable(cur.status) ? (
-            <Alert type="warning" showIcon style={{ marginBottom: 12 }} title={`The current revision is ${cur.status === 'AS_BUILT' ? 'the as-built record' : 'not for construction'}`} />
+            <Alert type="warning" showIcon style={{ marginBottom: tk.space[3] }} title={`The current revision is ${cur.status === 'AS_BUILT' ? 'the as-built record' : 'not for construction'}`} />
           ) : null}
           <Descriptions
             size="small"
@@ -128,13 +128,13 @@ export function DocumentDrawer({ id, open, onClose, onSend, onOpenTransmittal }:
                 key: 'files',
                 render: (_, r) => (
                   <div>
-                    {r.remarks ? <div style={{ fontSize: themeFontSize('fontSizeSM') }}>{r.remarks}</div> : null}
+                    {r.remarks ? <div style={{ fontSize: tk.type.caption.fontSize }}>{r.remarks}</div> : null}
                     <Space size={8} wrap>
                       <ViewDrawingLink documentId={data.id} revisionId={r.id} files={r.attachments} label="View" />
                       <FileLinks files={r.attachments} compact />
                     </Space>
                     {r.transmittals.length ? (
-                      <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                      <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                         Sent on{' '}
                         {r.transmittals.map((t, i) => (
                           <React.Fragment key={t.id}>
@@ -179,7 +179,7 @@ export function DocumentDrawer({ id, open, onClose, onSend, onOpenTransmittal }:
                 <div>
                   <Typography.Text strong>{auditActionLabel(h.action)}</Typography.Text> <Typography.Text type="secondary">by {h.actorName}</Typography.Text>
                   {h.note ? <span> · {h.note}</span> : null}
-                  <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                  <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                     {formatDateTime(h.createdAt)}
                   </div>
                 </div>

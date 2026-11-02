@@ -2,7 +2,8 @@
 
 import React, { useMemo, useState } from 'react';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { App, Button, Flex, Result, Spin, Typography, theme } from 'antd';
+import { App, Button, Flex, Result, Spin, Typography } from 'antd';
+import { tk } from '@/ds';
 import dayjs, { type Dayjs } from 'dayjs';
 import { MANAGEMENT_REPORTS, MANAGEMENT_REPORT_KEYS, canSeeManagement, reportingMonth, type ManagementReportDto, type ManagementReportKey } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
@@ -50,7 +51,6 @@ export default function Page() {
 }
 
 function Report({ reportKey }: { reportKey: ManagementReportKey }) {
-  const { token } = theme.useToken();
   const { message } = App.useApp();
   const { user } = useAuth();
   const info = MANAGEMENT_REPORTS[reportKey];
@@ -148,7 +148,7 @@ function Report({ reportKey }: { reportKey: ManagementReportKey }) {
           </>
         }
       />
-      <Flex wrap align="center" gap={token.marginSM} style={{ marginBottom: token.margin }}>
+      <Flex wrap align="center" gap={tk.space[3]} style={{ marginBottom: tk.space[4] }}>
         {period}
         <ProjectSelect value={projectId} onChange={(v) => setProjectId(v)} options={options} placeholder="Every contract project" aria-label="Project" />
         {isFetching && data ? <Spin size="small" description="Updating…" /> : null}
@@ -165,13 +165,12 @@ function Report({ reportKey }: { reportKey: ManagementReportKey }) {
 }
 
 function ReportBody({ data, projectId }: { data: ManagementReportDto; projectId: string | undefined }) {
-  const { token } = theme.useToken();
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: token.margin }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: tk.space[4] }}>
       <Typography.Text type="secondary">
         <span translate="no">{data.period}</span>, {data.projectName ? <span translate="no">{data.projectName}</span> : data.verticalName ? <span translate="no">{`every project in ${data.verticalName}`}</span> : 'every contract project'}
       </Typography.Text>
-      {data.commentary ? <p style={{ margin: 0, fontSize: token.fontSizeLG, lineHeight: 1.6, maxWidth: 960 }}>{data.commentary}</p> : null}
+      {data.commentary ? <p style={{ margin: 0, ...tk.type.lead, maxWidth: 960 }}>{data.commentary}</p> : null}
       <Figures label={`${data.title} figures`} figures={data.figures} scope={projectId ? { projectId } : undefined} />
       {data.sections.map((s) => (
         <ReportSection key={s.key} section={s} />
@@ -180,12 +179,12 @@ function ReportBody({ data, projectId }: { data: ManagementReportDto; projectId:
         <section
           aria-label="How the figures are worked out"
           style={{
-            color: token.colorTextSecondary,
-            fontSize: token.fontSizeSM,
+            color: tk.color.text.muted,
+            fontSize: tk.type.caption.fontSize,
           }}
         >
           {data.notes.map((n, i) => (
-            <p key={i} style={{ margin: `0 0 ${token.marginXXS}px` }}>
+            <p key={i} style={{ margin: `0 0 ${tk.space[1]}` }}>
               {n}
             </p>
           ))}

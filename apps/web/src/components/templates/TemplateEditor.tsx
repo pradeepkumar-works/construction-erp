@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Alert, App, Button, Input, InputNumber, Popconfirm, Space, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, PlusOutlined } from '@/components/common/icons';
 import type { TableProps } from 'antd';
@@ -118,7 +119,7 @@ export function TemplateEditor({ template, editable, standard = true }: { templa
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: tk.space[2], marginBottom: tk.space[3] }}>
         <Typography.Text type="secondary">
           {standard && template.isDefault ? <AppTag variant="kind">Standard list</AppTag> : null}
           {standard && !template.isDefault ? <AppTag variant="kind">Your list</AppTag> : null}
@@ -148,7 +149,7 @@ export function TemplateEditor({ template, editable, standard = true }: { templa
           </Space>
         ) : null}
       </div>
-      {problems.length && dirty ? <Alert type="error" showIcon style={{ marginBottom: 12 }} title={problems.join(' ')} /> : null}
+      {problems.length && dirty ? <Alert type="error" showIcon style={{ marginBottom: tk.space[3] }} title={problems.join(' ')} /> : null}
       <Table<Row> rowKey="key" columns={columns} dataSource={rows} size="small" pagination={false} scroll={{ x: 900 }} />
     </div>
   );

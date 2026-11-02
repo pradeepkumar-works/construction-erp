@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Card, Flex, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { PIPELINE_STAGES, type DepartmentPipelineDto, type PipelineRowDto, type StatusOf } from '@erp/shared';
 import { useDepartmentHome } from '@/lib/queries';
 import { useProjectScope } from '@/lib/project-scope';
@@ -87,7 +88,7 @@ function Pipeline({ p }: { p: DepartmentPipelineDto }) {
             ]}
           />
           {p.total > p.rows.length && (
-            <Typography.Paragraph type="secondary" style={{ margin: '8px 0 0' }}>
+            <Typography.Paragraph type="secondary" style={{ margin: `${tk.space[2]} 0 0` }}>
               The {p.rows.length} most urgent of {p.total}.
             </Typography.Paragraph>
           )}

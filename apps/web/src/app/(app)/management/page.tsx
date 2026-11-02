@@ -3,7 +3,8 @@
 import React from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { Card, Col, Row, Skeleton, Typography, theme } from 'antd';
+import { Card, Col, Row, Skeleton, Typography } from 'antd';
+import { tk } from '@/ds';
 import { SUBMISSION_TYPE_LABELS, canSeeManagement, figure, unbilledAttention, type FigureInput, type PortfolioDto } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useManagementPortfolio } from '@/lib/queries';
@@ -61,7 +62,6 @@ export default function Page() {
 }
 
 function Dashboard({ data }: { data: PortfolioDto }) {
-  const { token } = theme.useToken();
   const t = data.totals;
   const acts = data.attention.filter((a) => a.level === 'act').length;
   const billing = unbilledAttention(data.attention);
@@ -90,7 +90,7 @@ function Dashboard({ data }: { data: PortfolioDto }) {
         }
       />
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: token.margin }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: tk.space[4] }}>
         <Figures label="Portfolio figures" figures={figures} />
 
         <Row gutter={[16, 16]}>
@@ -155,11 +155,10 @@ function Dashboard({ data }: { data: PortfolioDto }) {
 }
 
 function ApprovalAgeing({ data }: { data: PortfolioDto }) {
-  const { token } = theme.useToken();
   const a = data.approvals;
   const buckets = ['0 to 2 days', '3 to 7 days', '8 to 15 days', 'Over 15 days'];
   const max = Math.max(1, ...a.buckets);
-  const line = `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}`;
+  const line = tk.line('hairline');
   if (!a.waiting)
     return (
       <Typography.Paragraph type="secondary" style={{ margin: 0 }}>
@@ -168,23 +167,23 @@ function ApprovalAgeing({ data }: { data: PortfolioDto }) {
     );
   return (
     <>
-      <p style={{ margin: `0 0 ${token.marginSM}px` }}>
+      <p style={{ margin: `0 0 ${tk.space[3]}` }}>
         <span
           className="mono"
           style={{
-            fontSize: token.fontSizeHeading3,
-            fontWeight: 700,
-            marginInlineEnd: token.marginXS,
+            fontSize: tk.type.subhead.fontSize,
+            fontWeight: tk.type.title.fontWeight,
+            marginInlineEnd: tk.space[2],
           }}
         >
           {a.waiting}
         </span>
-        <span style={{ color: token.colorTextSecondary }}>
+        <span style={{ color: tk.color.text.muted }}>
           {a.waiting === 1 ? 'entry' : 'entries'} waiting
           {a.oldestDays !== null ? `, the oldest ${a.oldestDays === 1 ? '1 day' : `${a.oldestDays} days`}` : ''}
         </span>
       </p>
-      <dl style={{ margin: `0 0 ${token.marginSM}px` }}>
+      <dl style={{ margin: `0 0 ${tk.space[3]}` }}>
         {a.buckets.map((n, i) => (
           <div
             key={buckets[i]}
@@ -192,14 +191,14 @@ function ApprovalAgeing({ data }: { data: PortfolioDto }) {
               display: 'grid',
               gridTemplateColumns: '96px minmax(0, 1fr) 32px',
               alignItems: 'center',
-              gap: token.marginSM,
+              gap: tk.space[3],
               minHeight: 24,
             }}
           >
             <dt
               style={{
-                color: token.colorTextSecondary,
-                fontSize: token.fontSizeSM,
+                color: tk.color.text.muted,
+                fontSize: tk.type.caption.fontSize,
               }}
             >
               {buckets[i]}
@@ -209,8 +208,8 @@ function ApprovalAgeing({ data }: { data: PortfolioDto }) {
               style={{
                 margin: 0,
                 height: 8,
-                borderRadius: 4,
-                background: token.colorFillSecondary,
+                borderRadius: tk.radius.sm,
+                background: tk.color.tone.neutral.bg,
                 overflow: 'hidden',
               }}
             >
@@ -220,8 +219,8 @@ function ApprovalAgeing({ data }: { data: PortfolioDto }) {
                   height: '100%',
                   width: `${(n / max) * 100}%`,
                   minWidth: n ? 4 : 0,
-                  borderRadius: 4,
-                  background: i >= 2 ? token.colorError : token.colorPrimary,
+                  borderRadius: tk.radius.sm,
+                  background: i >= 2 ? tk.color.tone.danger.solid : tk.color.accent.solid,
                 }}
               />
             </dd>
@@ -238,13 +237,13 @@ function ApprovalAgeing({ data }: { data: PortfolioDto }) {
             style={{
               display: 'flex',
               justifyContent: 'space-between',
-              gap: token.marginSM,
-              padding: `${token.paddingXXS}px 0`,
+              gap: tk.space[3],
+              padding: `${tk.space[1]} 0`,
               borderBlockStart: line,
             }}
           >
             <span>{SUBMISSION_TYPE_LABELS[b.type]}</span>
-            <span className="mono" style={{ color: token.colorTextSecondary, whiteSpace: 'nowrap' }}>
+            <span className="mono" style={{ color: tk.color.text.muted, whiteSpace: 'nowrap' }}>
               {b.count}
               {b.oldestDays ? `, oldest ${b.oldestDays === 1 ? '1 day' : `${b.oldestDays} days`}` : ''}
             </span>

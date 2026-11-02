@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Button, Card, Flex, Form, Input, Radio, Select, Table, Typography, theme } from 'antd';
+import { Button, Card, Flex, Form, Input, Radio, Select, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { LetterApprovalRule, LetterDirection, LetterSeriesDto, LetterSettingsDto } from '@erp/shared';
 import {
@@ -27,7 +28,6 @@ import { CODE_INPUT } from '@/components/form/inputs';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { todayDate } from '@/lib/format';
 
-const srOnly: React.CSSProperties = { position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 };
 const HO = 'HO';
 
 interface SeriesForm {
@@ -93,7 +93,7 @@ function SeriesDialog({ editing, onClose }: { editing: LetterSeriesDto | 'new' |
         <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
           Parts: {'{PREFIX}'}, {'{DIR}'} (IN or OUT), {'{FY}'} (26-27) or {'{YYYY}'} (the year the financial year starts), and the running number {'{N}'}, {'{NN}'}, {'{NNN}'} or {'{NNNN}'}, padded with zeros. It starts again at 1 each financial year.
         </Typography.Paragraph>
-        <Typography.Paragraph style={{ marginTop: 8, marginBottom: 0 }} type={problem ? 'danger' : undefined}>
+        <Typography.Paragraph style={{ marginTop: tk.space[2], marginBottom: 0 }} type={problem ? 'danger' : undefined}>
           {problem ?? (
             <>
               The 42nd letter reads{' '}
@@ -110,7 +110,6 @@ function SeriesDialog({ editing, onClose }: { editing: LetterSeriesDto | 'new' |
 
 /** Numbering and approval: which outward letters wait for their signatory, and each series' pattern. */
 export function LetterNumbering() {
-  const { token } = theme.useToken();
   const qc = useQueryClient();
   const notify = useNotify();
   const { data, isLoading, error, refetch } = useLetterSettings();
@@ -143,7 +142,7 @@ export function LetterNumbering() {
           ) : null
         }
       />
-      <Flex vertical gap={token.margin}>
+      <Flex vertical gap={tk.space[4]}>
         <Card title="Approval before numbering" size="small">
           <Radio.Group
             value={data.approval}
@@ -153,7 +152,7 @@ export function LetterNumbering() {
             options={LETTER_APPROVAL_RULES.map((r) => ({ value: r, label: LETTER_APPROVAL_RULE_LABELS[r] }))}
             orientation="vertical"
           />
-          <Typography.Paragraph type="secondary" style={{ marginTop: token.marginSM, marginBottom: 0 }}>
+          <Typography.Paragraph type="secondary" style={{ marginTop: tk.space[3], marginBottom: 0 }}>
             Contractual letters are those in the categories {contractual}. Once sent, they also need proof of delivery.
           </Typography.Paragraph>
         </Card>
@@ -187,7 +186,7 @@ export function LetterNumbering() {
               ...(manage
                 ? [
                     {
-                      title: <span style={srOnly}>Actions</span>,
+                      title: <span className="visually-hidden">Actions</span>,
                       key: 'edit',
                       width: 56,
                       render: (_: unknown, s: LetterSeriesDto) => <Button type="text" icon={<EditOutlined />} aria-label={`Edit ${s.projectName ?? 'head office'} ${LETTER_DIRECTION_LABELS[s.direction].toLowerCase()}`} onClick={() => setEditing(s)} />,

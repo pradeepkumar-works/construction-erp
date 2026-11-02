@@ -4,7 +4,8 @@ import React, { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Badge, Button, Drawer, Flex, Grid, Segmented, Spin, Typography, theme } from 'antd';
+import { Badge, Button, Drawer, Flex, Grid, Segmented, Spin, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTabs } from '@/components/common/AppTabs';
 import { BellOutlined, CheckOutlined } from '@/components/common/icons';
 import type { NotificationDto, NotificationTab, SubmissionType } from '@erp/shared';
@@ -36,7 +37,6 @@ export function submissionOf(n: NotificationDto): OpenSubmission {
  */
 export function NotificationBell() {
   const router = useRouter();
-  const { token } = theme.useToken();
   const screens = Grid.useBreakpoint();
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<NotificationTab>('FOR_ME');
@@ -76,8 +76,8 @@ export function NotificationBell() {
   const tabUnread = byTab?.[tab] ?? 0;
   const body = (
     <Spin spinning={isLoading && open}>
-      <Flex justify="space-between" align="center" style={{ padding: `${token.paddingXS}px ${token.paddingSM}px`, borderBottom: `1px solid ${token.colorSplit}` }}>
-        <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+      <Flex justify="space-between" align="center" style={{ padding: `${tk.space[2]} ${tk.space[3]}`, borderBottom: `1px solid ${tk.color.line.hairline}` }}>
+        <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
           {tabUnread ? `${tabUnread} unread` : 'Nothing unread'}
         </Typography.Text>
         <Segmented
@@ -96,7 +96,7 @@ export function NotificationBell() {
       ) : isLoading ? (
         <div style={{ minHeight: 160 }} />
       ) : (
-        <div style={{ padding: token.paddingLG }}>
+        <div style={{ padding: tk.space[6] }}>
           <EmptyArt art="approved" title={unreadOnly ? 'You are all caught up.' : `No ${inSentence(NOTIFICATION_TAB_LABELS[tab])} notifications yet`}>
             {unreadOnly ? null : EMPTY[tab]}
           </EmptyArt>
@@ -108,7 +108,7 @@ export function NotificationBell() {
   return (
     <>
       <Badge count={unread} overflowCount={Infinity} size="small" offset={[-4, 4]}>
-        <Button type="text" icon={<BellOutlined style={{ fontSize: 18 }} />} aria-label={unread ? `Notifications, ${unread} unread` : 'Notifications'} style={{ height: 40, width: 40 }} onClick={() => setOpen(true)} />
+        <Button type="text" icon={<BellOutlined style={{ fontSize: tk.type.lead.fontSize }} />} aria-label={unread ? `Notifications, ${unread} unread` : 'Notifications'} style={{ height: 40, width: 40 }} onClick={() => setOpen(true)} />
       </Badge>
       <Drawer
         open={open}

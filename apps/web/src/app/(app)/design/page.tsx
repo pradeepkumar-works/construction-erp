@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Alert, Button, Card, Col, ConfigProvider, Descriptions, Empty, Flex, Input, InputNumber, Progress, Row, Segmented, Select, Space, Statistic, Table, Typography, theme } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { StageBar } from '@/components/record/StageBar';
 import { AppTag } from '@/components/common/AppTag';
@@ -11,7 +12,7 @@ import { useAuth } from '@/lib/auth';
 import { PageHeader } from '@/components/common/PageHeader';
 import { StatusTag } from '@/components/common/StatusTag';
 import { BRAND } from '@/lib/brand';
-import { approveTheme, makeTheme, themeFontSize } from '@/lib/theme';
+import { approveTheme, makeTheme } from '@/lib/theme';
 import { Section } from '@/components/common/Section';
 import { formatINR, formatINRCompact } from '@/lib/format';
 import { useAppearance, type Density, type ThemeMode } from '@/lib/appearance';
@@ -63,7 +64,7 @@ function Measured({ children }: { children: React.ReactNode }) {
       <span ref={ref} style={{ display: 'inline-flex' }}>
         {children}
       </span>
-      <Typography.Text type="secondary" className="mono" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+      <Typography.Text type="secondary" className="mono" style={{ fontSize: tk.type.caption.fontSize }}>
         {height ?? '…'} px
       </Typography.Text>
     </Flex>
@@ -72,9 +73,8 @@ function Measured({ children }: { children: React.ReactNode }) {
 
 /** One density's controls, drawn with that density's theme. */
 function TargetSample({ label }: { label: string }) {
-  const { token } = theme.useToken();
   return (
-    <Flex vertical gap={token.marginSM} align="flex-start">
+    <Flex vertical gap={tk.space[3]} align="flex-start">
       <Typography.Text strong>{label}</Typography.Text>
       <Measured>
         <Button size="small" icon={<EditOutlined />} aria-label={`Edit, ${label.toLowerCase()} small`} />
@@ -157,9 +157,9 @@ function DesignReference() {
           <Row gutter={[token.marginSM, token.marginSM]}>
             {TOKENS.map((k) => (
               <Col key={k} xs={12} sm={8} md={6} lg={4}>
-                <div data-token={k} style={{ height: 48, borderRadius: token.borderRadius, background: token[k], border: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}` }} />
-                <Typography.Text style={{ fontSize: token.fontSizeSM, display: 'block', marginTop: 4 }}>{k}</Typography.Text>
-                <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+                <div data-token={k} style={{ height: 48, borderRadius: tk.radius.md, background: token[k], border: tk.line('hairline') }} />
+                <Typography.Text style={{ fontSize: tk.type.caption.fontSize, display: 'block', marginTop: tk.space[1] }}>{k}</Typography.Text>
+                <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
                   {String(token[k])}
                 </Typography.Text>
               </Col>
@@ -188,7 +188,7 @@ function DesignReference() {
                   <>
                     <Typography.Text code>{k}</Typography.Text>
                     {t.alias ? <Typography.Text code>{t.alias}</Typography.Text> : null}
-                    <div className="text-muted mono" translate="no" style={{ fontSize: token.fontSizeSM }}>
+                    <div className="text-muted mono" translate="no" style={{ fontSize: tk.type.caption.fontSize }}>
                       var(--ant-{kebab(k)})
                     </div>
                   </>
@@ -198,11 +198,11 @@ function DesignReference() {
               { title: 'Sample', key: 'sample', render: (_, t) => <span style={{ fontSize: t.px, lineHeight: 1.3 }}>Hospital Block B</span> },
             ]}
           />
-          <Typography.Paragraph style={{ marginTop: token.margin, marginBottom: 0 }}>
-            Headings: level 1 is {token.fontSizeHeading1} px, 2 is {token.fontSizeHeading2}, 3 is {token.fontSizeHeading3}, 4 is {token.fontSizeHeading4} and 5 is{' '}
-            {token.fontSizeHeading5}. A page title is an h1 drawn at {token.fontSizeHeading2} px.
+          <Typography.Paragraph style={{ marginTop: tk.space[4], marginBottom: 0 }}>
+            Headings: level 1 is {tk.type.display.fontSize} px, 2 is {tk.type.heading.fontSize}, 3 is {tk.type.subhead.fontSize}, 4 is {tk.type.lead.fontSize} and 5 is{' '}
+            {tk.type.body.fontSize}. A page title is an h1 drawn at {tk.type.heading.fontSize} px.
           </Typography.Paragraph>
-          <Space size={token.marginLG} wrap style={{ marginTop: token.marginSM }}>
+          <Space size={token.marginLG} wrap style={{ marginTop: tk.space[3] }}>
             <Typography.Text type="secondary">Secondary</Typography.Text>
             <Typography.Text type="success">Success</Typography.Text>
             <Typography.Text type="warning">Warning</Typography.Text>
@@ -240,40 +240,40 @@ function DesignReference() {
           </Typography.Paragraph>
           <Row gutter={[token.marginLG, token.margin]}>
             <Col xs={24} md={12}>
-              <Flex align="center" gap={token.marginXS} style={{ marginBottom: token.marginSM }}>
-                <CheckCircleFilled style={{ color: token.colorSuccess }} aria-hidden />
+              <Flex align="center" gap={tk.space[2]} style={{ marginBottom: tk.space[3] }}>
+                <CheckCircleFilled style={{ color: tk.color.tone.success.solid }} aria-hidden />
                 <Typography.Text strong>Correct</Typography.Text>
               </Flex>
               <Row gutter={[token.margin, token.margin]}>
                 <Col span={8}>
-                  <Statistic title="Contract value" value={formatINRCompact(592700000)} styles={{ content: { fontSize: token.fontSizeXL } }} />
+                  <Statistic title="Contract value" value={formatINRCompact(592700000)} styles={{ content: { fontSize: tk.type.subhead.fontSize } }} />
                 </Col>
                 <Col span={8}>
-                  <Statistic title="Pending approvals" value={34} styles={{ content: { fontSize: token.fontSizeXL } }} />
+                  <Statistic title="Pending approvals" value={34} styles={{ content: { fontSize: tk.type.subhead.fontSize } }} />
                 </Col>
                 <Col span={8}>
-                  <Statistic title="Vendor payable" value={formatINRCompact(18400000)} styles={{ content: { fontSize: token.fontSizeXL, color: token.colorErrorText } }} />
-                  <Typography.Text type="danger" style={{ fontSize: token.fontSizeSM }}>
+                  <Statistic title="Vendor payable" value={formatINRCompact(18400000)} styles={{ content: { fontSize: tk.type.subhead.fontSize, color: tk.color.tone.danger.fg } }} />
+                  <Typography.Text type="danger" style={{ fontSize: tk.type.caption.fontSize }}>
                     {formatINRCompact(1326000)} overdue
                   </Typography.Text>
                 </Col>
               </Row>
             </Col>
             <Col xs={24} md={12}>
-              <Flex align="center" gap={token.marginXS} style={{ marginBottom: token.marginSM }}>
-                <CloseCircleFilled style={{ color: token.colorError }} aria-hidden />
+              <Flex align="center" gap={tk.space[2]} style={{ marginBottom: tk.space[3] }}>
+                <CloseCircleFilled style={{ color: tk.color.tone.danger.solid }} aria-hidden />
                 <Typography.Text strong>Incorrect</Typography.Text>
               </Flex>
               <Row gutter={[token.margin, token.margin]}>
                 <Col span={8}>
-                  <Statistic title="Contract value" value={formatINRCompact(592700000)} styles={{ content: { fontSize: token.fontSizeXL, color: token.colorSuccessText } }} />
+                  <Statistic title="Contract value" value={formatINRCompact(592700000)} styles={{ content: { fontSize: tk.type.subhead.fontSize, color: tk.color.tone.success.fg } }} />
                 </Col>
                 <Col span={8}>
-                  <Statistic title="Pending approvals" value={34} styles={{ content: { fontSize: token.fontSizeXL, color: token.colorWarningText } }} />
+                  <Statistic title="Pending approvals" value={34} styles={{ content: { fontSize: tk.type.subhead.fontSize, color: tk.color.tone.pending.fg } }} />
                 </Col>
                 <Col span={8}>
-                  <Statistic title="Vendor payable" value={formatINRCompact(18400000)} styles={{ content: { fontSize: token.fontSizeXL, color: token.colorPrimaryText } }} />
-                  <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+                  <Statistic title="Vendor payable" value={formatINRCompact(18400000)} styles={{ content: { fontSize: tk.type.subhead.fontSize, color: tk.color.accent.text } }} />
+                  <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
                     the overdue part gets lost
                   </Typography.Text>
                 </Col>
@@ -291,7 +291,7 @@ function DesignReference() {
           </Typography.Paragraph>
           <Row gutter={[token.marginLG, token.margin]}>
             <Col xs={24} md={12}>
-              <Flex vertical gap={token.margin}>
+              <Flex vertical gap={tk.space[4]}>
                 <Section title="Agreement" extra={<Button size="small">Edit</Button>}>
                   <Descriptions size="small" column={2} items={[{ label: 'Work order', children: 'WO/OWD/2025/0417' }, { label: 'Contract value', children: formatINR('186500000') }]} />
                 </Section>
@@ -310,7 +310,7 @@ function DesignReference() {
         </Card>
 
         <Card title="Actions and status" size="small">
-          <Flex wrap gap={token.marginSM} style={{ marginBottom: token.margin }}>
+          <Flex wrap gap={tk.space[3]} style={{ marginBottom: tk.space[4] }}>
             <Button type="primary" icon={<PlusOutlined />}>
               New daily report
             </Button>
@@ -325,7 +325,7 @@ function DesignReference() {
               </Button>
             </ConfigProvider>
           </Flex>
-          <Flex wrap gap={token.marginXS}>
+          <Flex wrap gap={tk.space[2]}>
             {SUBMISSION_STATUSES.map((s) => (
               <StatusTag key={s} status={s} />
             ))}
@@ -389,7 +389,7 @@ function DesignReference() {
               <StageBar
                 current={2}
                 items={[{ title: 'Draft' }, { title: 'Submitted' }, { title: 'Approved' }, { title: 'Certified' }, { title: 'Paid' }]}
-                style={{ marginBottom: token.margin }}
+                style={{ marginBottom: tk.space[4] }}
               />
               <Descriptions size="small" bordered column={1} items={[{ label: 'Bill', children: 'RA bill 1' }, { label: 'Net payable', children: formatINR('2498618') }]} />
             </Card>

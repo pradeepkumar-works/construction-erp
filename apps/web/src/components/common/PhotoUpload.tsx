@@ -8,6 +8,7 @@ import type { AttachmentDto } from '@erp/shared';
 import { errorMessage, fileUrl } from '@/lib/api';
 import { uploadFile } from '@/lib/queries';
 import { shrinkPhoto } from '@/lib/shrink-photo';
+import { tk } from '@/ds';
 
 const toUploadFile = (a: AttachmentDto): UploadFile => ({ uid: a.id, name: a.fileName, status: 'done', url: fileUrl(a.url), response: a });
 
@@ -77,7 +78,7 @@ export function PhotoUpload({
       {files.length >= max ? null : (
         <div>
           <PlusOutlined />
-          <div style={{ marginTop: 6 }}>Upload</div>
+          <div style={{ marginTop: tk.space[2] }}>Upload</div>
         </div>
       )}
     </Upload>

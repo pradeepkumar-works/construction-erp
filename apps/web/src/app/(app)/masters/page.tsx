@@ -2,7 +2,8 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Card, Flex, Typography, theme } from 'antd';
+import { Card, Flex, Typography } from 'antd';
+import { tk } from '@/ds';
 import { MASTER_LISTS, MASTER_LIST_DEFS, mastersByDepartment, navDestination, type MasterList, type NavNode } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useMasterCounts } from '@/lib/queries';
@@ -13,14 +14,13 @@ import { TreeIcon } from '@/components/shell/nav-icons';
 const LIST_OF_NODE = new Map<string, MasterList>(MASTER_LISTS.map((l) => [MASTER_LIST_DEFS[l].node, l]));
 
 function MasterRow({ node, count }: { node: NavNode; count?: { active: number; total: number } }) {
-  const { token } = theme.useToken();
   const dest = navDestination(node);
   const href = dest?.kind === 'page' ? dest.href : '/masters';
   return (
-    <Link href={href} className="master-row" style={{ display: 'flex', alignItems: 'center', gap: token.marginSM, minHeight: 44, padding: `${token.paddingXS}px 0`, color: 'inherit' }}>
+    <Link href={href} className="master-row" style={{ display: 'flex', alignItems: 'center', gap: tk.space[3], minHeight: 44, padding: `${tk.space[2]} 0`, color: 'inherit' }}>
       <TreeIcon name={node.icon} />
       <Flex vertical style={{ flex: 1, minWidth: 0 }}>
-        <Typography.Text strong style={{ color: token.colorLink }}>
+        <Typography.Text strong style={{ color: tk.color.text.link }}>
           {node.label}
         </Typography.Text>
         <Typography.Text type="secondary">{node.description}</Typography.Text>
@@ -40,7 +40,6 @@ function MasterRow({ node, count }: { node: NavNode; count?: { active: number; t
  */
 export default function MastersPage() {
   const { user } = useAuth();
-  const { token } = theme.useToken();
   const { settings } = useNavMenu(user);
   const counts = useMasterCounts(!!user);
   if (!user) return null;
@@ -52,9 +51,9 @@ export default function MastersPage() {
       {departments.length === 0 ? (
         <Typography.Paragraph>Your role opens none of the masters. Ask an administrator if you need one.</Typography.Paragraph>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 420px), 1fr))', gap: token.margin }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 420px), 1fr))', gap: tk.space[4] }}>
           {departments.map(({ module, nodes }) => (
-            <Card key={module.key} size="small" title={<h2 style={{ margin: 0, fontSize: token.fontSizeLG }}>{settings.names[module.key] || module.label}</h2>}>
+            <Card key={module.key} size="small" title={<h2 style={{ margin: 0, fontSize: tk.type.lead.fontSize }}>{settings.names[module.key] || module.label}</h2>}>
               {nodes.map((n) => {
                 const list = LIST_OF_NODE.get(n.id);
                 return <MasterRow key={n.id} node={n} count={list ? countOf.get(list) : undefined} />;

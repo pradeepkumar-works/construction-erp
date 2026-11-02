@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Alert, App, Button, Card, Select, Space, Switch, Tooltip, theme } from 'antd';
+import { Alert, App, Button, Card, Select, Space, Switch, Tooltip } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { useSearchParams } from 'next/navigation';
 import { EditOutlined, LinkOutlined, PlusOutlined } from '@/components/common/icons';
@@ -30,8 +31,7 @@ import { NoAccess } from '@/components/common/NoAccess';
 const KEYS = ['roleKey', 'active'] as const;
 
 function Sub({ children }: { children: React.ReactNode }) {
-  const { token } = theme.useToken();
-  return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
+  return <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{children}</div>;
 }
 
 export default function UsersPage() {
@@ -93,7 +93,7 @@ export default function UsersPage() {
             <div>
               <strong>{v}</strong>
               {r.invitePending ? (
-                <AppTag meaning="waiting" style={{ marginLeft: 8 }}>
+                <AppTag meaning="waiting" style={{ marginLeft: tk.space[2] }}>
                   Invited
                 </AppTag>
               ) : null}
@@ -185,7 +185,7 @@ export default function UsersPage() {
           type="success"
           showIcon
           closable
-          style={{ marginBottom: 16 }}
+          style={{ marginBottom: tk.space[4] }}
           title={`${user?.organizationName ?? 'Your company'} is ready.`}
           description="Add your team with New user: each person gets an invite link to choose a password. Then create your first project; it starts with the standard activities for its type."
         />

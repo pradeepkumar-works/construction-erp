@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { Alert, App, Button, Descriptions, Divider, Drawer, Flex, Form, Input, Modal, Select, Space, Table, Tooltip, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import dayjs from 'dayjs';
@@ -14,7 +15,6 @@ import { useOpenSupportSession, usePlatformCompanies, usePlatformCompany, useSet
 import { formatDate, formatDateTime, NO_VALUE, formatBytes } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
-import { themeFontSize } from '@/lib/theme';
 
 const supportOpen = (c: Pick<PlatformCompanyDto, 'supportAccessUntil'>) => !!c.supportAccessUntil && new Date(c.supportAccessUntil) > new Date();
 
@@ -81,7 +81,7 @@ export default function PlatformPage() {
             render: (v: string, r) => (
               <div>
                 {v}
-                <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                   {r.code}, since {formatDate(r.createdAt)}
                 </div>
               </div>
@@ -166,7 +166,7 @@ function CompanyDrawer({ id, ownOrgId, onClose }: { id: string | null; ownOrgId:
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {c && (
         <>
-          <Space wrap style={{ marginBottom: 16 }}>
+          <Space wrap style={{ marginBottom: tk.space[4] }}>
             <Tooltip title={supportOpen(c) ? `Read-only for ${SUPPORT_SESSION_HOURS} hours; the visit goes in the company's log` : "The company's admin has not allowed support access"}>
               <Button type="primary" icon={<EyeOutlined />} disabled={!supportOpen(c)} loading={open.isPending} onClick={view}>
                 Open read-only
@@ -182,7 +182,7 @@ function CompanyDrawer({ id, ownOrgId, onClose }: { id: string | null; ownOrgId:
               </Button>
             )}
           </Space>
-          {c.suspendedAt && <Alert type="error" showIcon style={{ marginBottom: 16 }} title={`Suspended ${formatDateTime(c.suspendedAt)}: ${c.suspendedReason ?? ''}`} />}
+          {c.suspendedAt && <Alert type="error" showIcon style={{ marginBottom: tk.space[4] }} title={`Suspended ${formatDateTime(c.suspendedAt)}: ${c.suspendedReason ?? ''}`} />}
           <Descriptions
             size="small"
             column={2}
@@ -257,7 +257,7 @@ function CompanyDrawer({ id, ownOrgId, onClose }: { id: string | null; ownOrgId:
                 render: (v: string, u) => (
                   <div>
                     {v} {!u.isActive && <AppTag meaning="closed">Inactive</AppTag>}
-                    <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                    <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                       {u.email}
                     </div>
                   </div>

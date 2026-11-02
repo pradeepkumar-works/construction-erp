@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useParams } from 'next/navigation';
-import { Alert, Button, Card, Descriptions, Flex, Form, Input, InputNumber, Result, Select, Skeleton, Typography, theme } from 'antd';
+import { Alert, Button, Card, Descriptions, Flex, Form, Input, InputNumber, Result, Select, Skeleton, Typography } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { useQuery } from '@tanstack/react-query';
@@ -15,6 +15,7 @@ import { MoneyInput } from '@/components/form/inputs';
 import { BrandMark } from '@/components/shell/BrandMark';
 import { ResultMark } from '@/components/common/ResultMark';
 import { CheckCircleOutlined, DisconnectOutlined } from '@/components/common/icons';
+import { tk } from '@/ds';
 
 interface FormValues {
   rates: Record<string, { rate?: number | null; gstRate?: number; remarks?: string }>;
@@ -32,7 +33,6 @@ interface FormValues {
  */
 export default function QuotePage() {
   const { token } = useParams<{ token: string }>();
-  const { token: t } = theme.useToken();
   const [form] = Form.useForm<FormValues>();
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
@@ -78,13 +78,13 @@ export default function QuotePage() {
 
   const done = sentAt ?? e?.respondedAt ?? null;
   return (
-    <div style={{ minHeight: '100vh', background: t.colorBgLayout, padding: `${t.paddingLG}px 16px` }}>
+    <div style={{ minHeight: '100vh', background: tk.color.surface.canvas, padding: `${tk.space[6]} ${tk.space[4]}` }}>
       <main style={{ maxWidth: 820, margin: '0 auto' }}>
-        <Flex align="center" gap={t.marginXS} style={{ marginBottom: t.marginMD }}>
+        <Flex align="center" gap={tk.space[2]} style={{ marginBottom: tk.space[4] }}>
           <BrandMark size={28} />
           <Typography.Text type="secondary">Request for quotation</Typography.Text>
         </Flex>
-        <h1 style={{ fontSize: t.fontSizeHeading3, margin: `0 0 ${t.marginXS}px` }}>{e ? <span translate="no">{e.organizationName}</span> : 'Send your quote'}</h1>
+        <h1 style={{ ...tk.type.heading, margin: `0 0 ${tk.space[2]}` }}>{e ? <span translate="no">{e.organizationName}</span> : 'Send your quote'}</h1>
         {!token || info.error ? (
           <Result icon={<ResultMark icon={<DisconnectOutlined />} />} title="This link cannot be used" subTitle={errorMessage(info.error)} />
         ) : info.isLoading || !e ? (
@@ -96,15 +96,15 @@ export default function QuotePage() {
             <Typography.Paragraph>
               Dear <span translate="no">{e.vendorName}</span>, please quote your rates for the items below by <strong>{formatDate(e.closesOn)}</strong>. Leave out any item you do not supply.
             </Typography.Paragraph>
-            <Descriptions size="small" column={{ xs: 1, sm: 2 }} bordered style={{ marginBottom: t.marginMD }}>
+            <Descriptions size="small" column={{ xs: 1, sm: 2 }} bordered style={{ marginBottom: tk.space[4] }}>
               <Descriptions.Item label="Site"><span translate="no">{e.projectName}</span></Descriptions.Item>
               {e.siteAddress ? <Descriptions.Item label="Delivery at"><span translate="no">{e.siteAddress}</span></Descriptions.Item> : null}
               <Descriptions.Item label="Request">{e.requestNo}</Descriptions.Item>
               <Descriptions.Item label="Needed by">{formatDate(e.requiredDate)}</Descriptions.Item>
             </Descriptions>
-            {e.message ? <Alert type="info" showIcon title={e.message} style={{ marginBottom: t.marginMD }} /> : null}
+            {e.message ? <Alert type="info" showIcon title={e.message} style={{ marginBottom: tk.space[4] }} /> : null}
             <Form form={form} layout="vertical" onFinish={submit} initialValues={{ rates: Object.fromEntries(e.lines.map((l) => [l.materialRequestItemId, { gstRate: 18 }])) }}>
-              <Flex vertical gap={t.marginSM} style={{ marginBottom: t.marginMD }}>
+              <Flex vertical gap={tk.space[3]} style={{ marginBottom: tk.space[4] }}>
                 {e.lines.map((l, i) => (
                   <Card key={l.materialRequestItemId} size="small" title={<span style={{ whiteSpace: 'normal' }}>{i + 1}. {l.itemName}</span>} extra={<span className="mono" translate="no">{formatQty(l.quantity)} {l.unit}</span>}>
                     {l.specification ? <Typography.Paragraph type="secondary">{l.specification}</Typography.Paragraph> : null}
@@ -122,7 +122,7 @@ export default function QuotePage() {
                   </Card>
                 ))}
               </Flex>
-              <Card size="small" title="Terms" style={{ marginBottom: t.marginMD }}>
+              <Card size="small" title="Terms" style={{ marginBottom: tk.space[4] }}>
                 <FormGrid cols={3}>
                   <Form.Item name="freight" label="Freight to site">
                     <MoneyInput />
@@ -144,11 +144,11 @@ export default function QuotePage() {
                   <Input.TextArea rows={2} maxLength={1000} />
                 </Form.Item>
               </Card>
-              {error ? <Alert type="error" showIcon title={error} style={{ marginBottom: t.marginMD }} /> : null}
+              {error ? <Alert type="error" showIcon title={error} style={{ marginBottom: tk.space[4] }} /> : null}
               <Button type="primary" htmlType="submit" size="large" loading={sending} block>
                 Send quote
               </Button>
-              <Typography.Paragraph type="secondary" style={{ marginTop: t.marginSM }}>
+              <Typography.Paragraph type="secondary" style={{ marginTop: tk.space[3] }}>
                 You can send it once. The link closes on {formatDate(e.closesOn)}.
               </Typography.Paragraph>
             </Form>

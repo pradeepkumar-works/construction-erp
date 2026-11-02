@@ -2,7 +2,8 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Button, Checkbox, Select, Space, Typography, theme } from 'antd';
+import { Button, Checkbox, Select, Space, Typography } from 'antd';
+import { tk } from '@/ds';
 import { PlusOutlined } from '@/components/common/icons';
 import type { RfiDto, RfiSortField, RfiStatus } from '@erp/shared';
 import { LIST_SORT_FIELDS, RFI_STATUSES, RFI_STATUS_LABELS, canRaiseRfi } from '@erp/shared';
@@ -10,7 +11,6 @@ import { useAuth } from '@/lib/auth';
 import { useRfiSummary, useRfis } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
 import { downloadXlsx, exportFileName, fetchAllPages, type ExportColumn } from '@/lib/exportExcel';
-import { themeFontSize } from '@/lib/theme';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
 import { ExportButton } from '@/components/common/ExportButton';
@@ -47,8 +47,7 @@ const EXPORT: ExportColumn<RfiDto>[] = [
 ];
 
 function Sub({ children }: { children: React.ReactNode }) {
-  const { token } = theme.useToken();
-  return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
+  return <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{children}</div>;
 }
 
 /** Requests for information to the client or consultant, with the answer awaited and how late it is. */
@@ -140,7 +139,7 @@ export function RfiList({ projectId: fixedProject, onOpen, onNew }: { projectId?
     <>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {summary && (summary.open || summary.answered) ? (
-        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', padding: '12px 16px 0', fontSize: themeFontSize('fontSizeSM') }} className="text-muted">
+        <div style={{ display: 'flex', gap: tk.space[4], flexWrap: 'wrap', padding: `${tk.space[3]} ${tk.space[4]} 0`, fontSize: tk.type.caption.fontSize }} className="text-muted">
           <span>
             <strong translate="no">{summary.open}</strong> waiting for an answer
           </span>

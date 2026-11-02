@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Alert, Button, Form, Input, Result } from 'antd';
+import { tk } from '@/ds';
 import { api, errorMessage } from '@/lib/api';
 import { useAuthOptions } from '@/lib/queries';
 import { AuthCard } from '@/components/auth/AuthCard';
@@ -43,12 +44,12 @@ export default function ForgotPasswordPage() {
             <Alert
               type="warning"
               showIcon
-              style={{ marginBottom: 16 }}
+              style={{ marginBottom: tk.space[4] }}
               title="Password emails are not set up yet."
               description="Ask your admin: they can send you a new password link from the Users page."
             />
           ) : null}
-          {error && <Alert type="error" showIcon title={error} style={{ marginBottom: 16 }} />}
+          {error && <Alert type="error" showIcon title={error} style={{ marginBottom: tk.space[4] }} />}
           <Form layout="vertical" onFinish={onFinish} requiredMark={false}>
             <Form.Item name="email" label="Email" rules={[{ required: true, message: 'Enter your email' }, { type: 'email', message: 'Enter an email address, e.g. name@company.com' }]}>
               <Input

@@ -2,6 +2,7 @@
 
 import React, { useCallback, useState } from 'react';
 import { App, Avatar, Button, Dropdown, Empty, Flex, Listy, Select, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { CopyOutlined, EllipsisOutlined, UserAddOutlined, UserDeleteOutlined } from '@/components/common/icons';
 import type { ProjectDetail, UserSummary } from '@erp/shared';
@@ -15,9 +16,7 @@ import { UserMultiSelect } from '@/components/common/SearchSelect';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { Section } from '@/components/common/Section';
 import { useAuth } from '@/lib/auth';
-import { BRAND } from '@/lib/brand';
 import { ListRowMeta } from '@/components/common/ListRowMeta';
-import { themeFontSize } from '@/lib/theme';
 
 export function MembersCard({ project }: { project: ProjectDetail }) {
   const { user } = useAuth();
@@ -100,7 +99,7 @@ export function MembersCard({ project }: { project: ProjectDetail }) {
       }
     >
       {adding && (
-        <Flex vertical gap="small" style={{ marginBottom: 12 }}>
+        <Flex vertical gap="small" style={{ marginBottom: tk.space[3] }}>
           <UserMultiSelect exclude={onTeam} placeholder="Type names" aria-label="People to add" value={userIds} onChange={setUserIds} style={{ width: '100%' }} />
           <Flex gap="small" wrap>
             <Button type="primary" disabled={!userIds.length} loading={add.isPending} onClick={() => add.mutate(userIds)}>
@@ -128,12 +127,12 @@ export function MembersCard({ project }: { project: ProjectDetail }) {
         <Listy
           items={members}
           rowKey="id"
-          styles={{ item: { padding: '8px 0', background: 'transparent' } }}
+          styles={{ item: { padding: `${tk.space[2]} 0`, background: 'transparent' } }}
           itemRender={(m) => (
             <Flex gap="middle" align="center">
               <ListRowMeta
                 avatar={
-                  <Avatar size="small" style={{ background: m.isPm ? BRAND.colors.accent : undefined }}>
+                  <Avatar size="small" style={{ background: m.isPm ? tk.color.accent.solid : undefined }}>
                     {m.fullName
                       .split(' ')
                       .map((s) => s[0])
@@ -143,11 +142,11 @@ export function MembersCard({ project }: { project: ProjectDetail }) {
                   </Avatar>
                 }
                 title={
-                  <span style={{ fontSize: themeFontSize('fontSize') }}>
-                    {m.fullName} {m.isPm && <AppTag variant="kind" style={{ marginLeft: 4 }}>PM</AppTag>}
+                  <span style={{ fontSize: tk.type.body.fontSize }}>
+                    {m.fullName} {m.isPm && <AppTag variant="kind" style={{ marginLeft: tk.space[1] }}>PM</AppTag>}
                   </span>
                 }
-                description={<Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>{m.roleName}</Typography.Text>}
+                description={<Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>{m.roleName}</Typography.Text>}
               />
               {!m.isPm && isClientGuest(m.roleKey) ? (
                 // A client guest's check level: how much of the measurements they check before certifying.
