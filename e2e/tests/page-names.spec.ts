@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { api, apiToken, menuSettled, signIn } from './helpers';
+import { api, apiToken, menuSettled, paletteColour, signIn } from './helpers';
 
 /**
  * Every page named and reachable by keyboard: a tab title and one heading per page, one breadcrumb,
@@ -100,7 +100,7 @@ test('a dark-mode page starts dark before the app loads', async ({ page }) => {
   await page.goto('/dpr', { waitUntil: 'commit' });
   await page.waitForFunction(() => document.documentElement.dataset.theme !== undefined);
   expect(await page.evaluate(() => document.documentElement.dataset.theme)).toBe('dark');
-  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#0B1119');
+  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', paletteColour('nightLayout'));
 
   // The public pages stay light.
   await page.goto('/privacy');
