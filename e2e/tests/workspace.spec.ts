@@ -1,9 +1,9 @@
 import { expect, test } from '@playwright/test';
 import { openProjectTab, projectTabs, signIn } from './helpers';
 
-/** The project page: six groups, health in the header, a bar that stays, the last tab kept. */
+/** The project page: six groups, health in the header, a bar that stays, a group opening on its summary, the last tab kept. */
 
-test('a project opens in groups, keeps its last tab and still takes old tab links', async ({ page }) => {
+test('a project opens in groups, a group on its summary, keeps its last tab and still takes old tab links', async ({ page }) => {
   await signIn(page, 'pm@demo.com');
   await page.goto('/projects');
   await page.getByText('RD-2026-01').first().click();
@@ -16,10 +16,12 @@ test('a project opens in groups, keeps its last tab and still takes old tab link
   await expect(page.getByRole('tabpanel', { name: 'Daily reports' })).toBeVisible();
   const projectUrl = page.url().replace(/\?.*$/, '');
 
-  // A group opens on the tab last used in it.
+  // A group opens on its summary, whichever of its tabs was open last.
   await openProjectTab(page, 'Money');
-  await expect(page).toHaveURL(/\?tab=contract$/);
+  await expect(page).toHaveURL(/\?tab=money-summary$/);
   await openProjectTab(page, 'Site');
+  await expect(page).toHaveURL(/\?tab=site-summary$/);
+  await projectTabs(page, 'Site').getByText('Daily reports', { exact: true }).click();
   await expect(page).toHaveURL(/\?tab=dpr$/);
 
   // Coming back to the project opens the tab last used on it.

@@ -314,6 +314,8 @@ import type {
   NextProjectCodeDto,
   ProgressEntryDto,
   ProjectDashboard,
+  ProjectArea,
+  ProjectAreaDto,
   ProjectDetail,
   ProjectSummary,
   ReviewDecision,
@@ -710,6 +712,14 @@ export const useProjectDashboard = (id: string | undefined) =>
     queryKey: ['dashboard', 'project', id],
     queryFn: async () => (await api.get<ProjectDashboard>(`/dashboard/projects/${id}`)).data,
     enabled: !!id,
+  });
+
+/** A project area's summary tab: its figures, what waits on whom and its open warnings. */
+export const useProjectArea = (id: string, area: ProjectArea) =>
+  useQuery({
+    queryKey: ['dashboard', 'project', id, 'area', area],
+    queryFn: async () => (await api.get<ProjectAreaDto>(`/dashboard/projects/${id}/areas/${area}`)).data,
+    refetchInterval: 60_000,
   });
 
 /**
