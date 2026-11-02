@@ -4,6 +4,7 @@ import { DeleteInMenu } from '@/components/record/MoreActions';
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { App, Button, Descriptions, Divider, Drawer, Form, Input, Segmented, Skeleton, Space, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import { CheckCircleOutlined, EditOutlined, SendOutlined } from '@/components/common/icons';
@@ -21,7 +22,6 @@ import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
 import { VariationFormModal } from './VariationFormModal';
-import { themeFontSize } from '@/lib/theme';
 import { Money } from '@/components/common/Money';
 
 
@@ -58,7 +58,7 @@ export function VariationDrawer({ id, open, onClose }: { id: string | null; open
         <div>
           <span className="mono" translate="no">{l.itemNo}</span> {l.description}
           {l.isNewItem ? (
-            <AppTag meaning="waiting" style={{ marginLeft: 6 }}>
+            <AppTag meaning="waiting" style={{ marginInlineStart: tk.space[2] }}>
               New item
             </AppTag>
           ) : null}
@@ -80,7 +80,7 @@ export function VariationDrawer({ id, open, onClose }: { id: string | null; open
             render: (_: unknown, l: VariationLineDto) => (
               <div>
                 {formatINR(l.approvedAmount)}
-                <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                   {formatQty(l.approvedQty)} @ {formatINR(l.approvedRate, true)}
                 </div>
               </div>
@@ -152,7 +152,7 @@ export function VariationDrawer({ id, open, onClose }: { id: string | null; open
             ]}
           />
           {decided ? (
-            <Typography.Paragraph type="secondary" style={{ marginTop: 12, marginBottom: 0 }}>
+            <Typography.Paragraph type="secondary" style={{ marginTop: tk.space[3], marginBottom: 0 }}>
               The approved quantities are in the BOQ and the amount is in the project&apos;s revised contract value.
             </Typography.Paragraph>
           ) : null}
@@ -280,14 +280,14 @@ function DecisionModal({ open, onClose, variation }: { open: boolean; onClose: (
             <Typography.Text strong>What the client approved</Typography.Text>
             <Form.List name="lines">
               {(fields) => (
-                <div style={{ marginTop: 8 }}>
+                <div style={{ marginTop: tk.space[2] }}>
                   {fields.map((f) => {
                     const l = variation.lines[f.name];
                     return (
-                      <div key={f.key} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 140px 160px', gap: '0 12px', alignItems: 'center' }}>
-                        <div style={{ paddingBottom: 24 }}>
+                      <div key={f.key} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 140px 160px', gap: `0 ${tk.space[3]}`, alignItems: 'center' }}>
+                        <div style={{ paddingBottom: tk.space[6] }}>
                           <span className="mono" translate="no">{l.itemNo}</span> {l.description}
-                          <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                          <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                             Claimed {formatQty(l.qty)} {l.unit} @ {formatINR(l.rate, true)}
                           </div>
                         </div>

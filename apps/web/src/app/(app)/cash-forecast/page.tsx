@@ -3,7 +3,8 @@
 import React, { useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { Card, Collapse, Empty, Flex, Segmented, Skeleton, Statistic, Table, Typography, theme } from 'antd';
+import { Card, Collapse, Empty, Flex, Segmented, Skeleton, Statistic, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { CASH_FLOW_KIND_LABELS, canSeeCashForecast, type CashFlowItemDto, type CashForecastDto, type CashWeekDto } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
@@ -46,15 +47,14 @@ export default function Page() {
 }
 
 function Forecast({ data }: { data: CashForecastDto }) {
-  const { token } = theme.useToken();
   const [direction, setDirection] = useState<Direction>('ALL');
   const squeezed = data.weeks.filter((w) => w.short || w.atRisk);
   const last = data.weeks[data.weeks.length - 1];
   const lowWeeks = data.weeks.filter((w) => w.atRisk).length;
-  const big = { content: { fontSize: token.fontSizeHeading4 } };
+  const big = { content: { fontSize: tk.type.lead.fontSize } };
   const items = data.items.filter((i) => direction === 'ALL' || i.direction === direction);
   const money = (v: number, dir?: 'IN' | 'OUT') => (
-    <span className="mono" translate="no" style={{ color: dir === 'IN' ? token.colorSuccessText : v < 0 ? token.colorErrorText : undefined }}>
+    <span className="mono" translate="no" style={{ color: dir === 'IN' ? tk.color.tone.success.fg : v < 0 ? tk.color.tone.danger.fg : undefined }}>
       {dir === 'OUT' ? '−' : dir === 'IN' ? '+' : ''}
       {formatINR(v)}
     </span>
@@ -63,9 +63,9 @@ function Forecast({ data }: { data: CashForecastDto }) {
 
   const list = (rows: CashFlowItemDto[], empty: string) =>
     rows.length ? (
-      <ul style={{ margin: 0, paddingInlineStart: token.paddingLG }}>
+      <ul style={{ margin: 0, paddingInlineStart: tk.space[6] }}>
         {rows.map((i) => (
-          <li key={i.key} style={{ marginBottom: token.marginXS }}>
+          <li key={i.key} style={{ marginBottom: tk.space[2] }}>
             {i.href ? (
               <Link href={i.href} className="text-link" translate="no">
                 {i.label}
@@ -91,7 +91,7 @@ function Forecast({ data }: { data: CashForecastDto }) {
         subtitle={`Bank and cash for the next 13 weeks from the books and every bill, order, salary and EMI on record, as of ${formatDate(data.asOf)}. Low is clients paying late and bills going out early; high is the reverse.`}
       />
 
-      <Flex wrap gap={token.marginSM} style={{ marginBottom: token.margin }}>
+      <Flex wrap gap={tk.space[3]} style={{ marginBottom: tk.space[4] }}>
         <Card size="small" style={{ flex: '1 1 180px' }}>
           <Statistic title="Bank and cash today" value={0} formatter={() => <span translate="no">{formatINRCompact(data.opening.total)}</span>} styles={big} />
           <Typography.Text type="secondary" translate="no">
@@ -99,13 +99,13 @@ function Forecast({ data }: { data: CashForecastDto }) {
           </Typography.Text>
         </Card>
         <Card size="small" style={{ flex: '1 1 180px' }}>
-          <Statistic title="Lowest likely balance" value={0} formatter={() => <span translate="no">{formatINRCompact(data.lowest.closing.likely)}</span>} styles={{ content: { ...big.content, color: data.lowest.closing.likely < 0 ? token.colorErrorText : undefined } }} />
+          <Statistic title="Lowest likely balance" value={0} formatter={() => <span translate="no">{formatINRCompact(data.lowest.closing.likely)}</span>} styles={{ content: { ...big.content, color: data.lowest.closing.likely < 0 ? tk.color.tone.danger.fg : undefined } }} />
           <Typography.Text type="secondary">
             Week of {day(data.lowest.week)}; low case <span translate="no">{formatINRCompact(data.lowest.closing.low)}</span>
           </Typography.Text>
         </Card>
         <Card size="small" style={{ flex: '1 1 180px' }}>
-          <Statistic title="First short week" value={0} formatter={() => (data.firstShort ? day(data.firstShort) : 'None')} styles={{ content: { ...big.content, color: data.weeks.some((w) => w.short) ? token.colorErrorText : undefined } }} />
+          <Statistic title="First short week" value={0} formatter={() => (data.firstShort ? day(data.firstShort) : 'None')} styles={{ content: { ...big.content, color: data.weeks.some((w) => w.short) ? tk.color.tone.danger.fg : undefined } }} />
           <Typography.Text type="secondary">
             {data.weeks.some((w) => w.short) ? 'The likely balance goes below zero' : lowWeeks ? `Short only in the low case, ${lowWeeks === 1 ? '1 week' : `${lowWeeks} weeks`}` : 'Above zero in every case for 13 weeks'}
           </Typography.Text>
@@ -130,13 +130,13 @@ function Forecast({ data }: { data: CashForecastDto }) {
         </Card>
       </Flex>
 
-      <div style={{ marginBottom: token.margin }}>
+      <div style={{ marginBottom: tk.space[4] }}>
         <ChartCard title="Balance at each week’s end" summary={summary} chart={<CashForecastChart weeks={data.weeks} />} table={<WeeksTable weeks={data.weeks} />} />
       </div>
 
       {squeezed.length ? (
-        <Card size="small" title="Why it runs short" style={{ marginBottom: token.margin }}>
-          <Flex vertical gap={token.marginSM}>
+        <Card size="small" title="Why it runs short" style={{ marginBottom: tk.space[4] }}>
+          <Flex vertical gap={tk.space[3]}>
             {squeezed.map((w) => (
               <div key={w.start} data-week={w.start}>
                 <Typography.Text strong>
@@ -149,7 +149,7 @@ function Forecast({ data }: { data: CashForecastDto }) {
                     </>
                   )}
                 </Typography.Text>
-                <ul style={{ margin: `${token.marginXXS}px 0 0`, paddingInlineStart: token.paddingLG }}>
+                <ul style={{ margin: `${tk.space[1]} 0 0`, paddingInlineStart: tk.space[6] }}>
                   {w.reasons.map((r, i) => (
                     <li key={i} translate="no">
                       {r}
@@ -162,7 +162,7 @@ function Forecast({ data }: { data: CashForecastDto }) {
         </Card>
       ) : null}
 
-      <Flex wrap gap={token.marginSM} style={{ marginBottom: token.margin }}>
+      <Flex wrap gap={tk.space[3]} style={{ marginBottom: tk.space[4] }}>
         <Card size="small" title="Chase" style={{ flex: '1 1 320px' }}>
           {list(data.chase, data.firstShort || squeezed.length ? 'No client bill falls after the short week.' : 'No client bill is past its usual days.')}
         </Card>
@@ -187,7 +187,7 @@ function Forecast({ data }: { data: CashForecastDto }) {
             ]}
           />
         }
-        style={{ marginBottom: token.margin }}
+        style={{ marginBottom: tk.space[4] }}
       >
         {items.length ? (
           <Table<CashFlowItemDto>
@@ -205,7 +205,7 @@ function Forecast({ data }: { data: CashForecastDto }) {
                   <>
                     {day(i.likely)}
                     {i.early !== i.likely || i.late !== i.likely ? (
-                      <div className="text-muted" style={{ fontSize: token.fontSizeSM }}>
+                      <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                         {day(i.early)} to {day(i.late)}
                       </div>
                     ) : null}
@@ -249,7 +249,7 @@ function Forecast({ data }: { data: CashForecastDto }) {
             key: 'how',
             label: 'How the forecast is worked out',
             children: (
-              <ul style={{ margin: 0, paddingInlineStart: token.paddingLG }}>
+              <ul style={{ margin: 0, paddingInlineStart: tk.space[6] }}>
                 {data.assumptions.map((a, i) => (
                   <li key={i}>{a}</li>
                 ))}
@@ -263,9 +263,8 @@ function Forecast({ data }: { data: CashForecastDto }) {
 }
 
 function WeeksTable({ weeks }: { weeks: CashWeekDto[] }) {
-  const { token } = theme.useToken();
   const amount = (v: number) => (
-    <span className="mono" translate="no" style={{ color: v < 0 ? token.colorErrorText : undefined }}>
+    <span className="mono" translate="no" style={{ color: v < 0 ? tk.color.tone.danger.fg : undefined }}>
       {formatINRCompact(v)}
     </span>
   );

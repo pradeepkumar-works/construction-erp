@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, App, Button, Flex, Form, Input, InputNumber, Segmented, Select, Space, Statistic, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import { EditOutlined, PlusOutlined } from '@/components/common/icons';
@@ -37,7 +38,6 @@ import { FAIL_NOTICE } from '@/lib/notify';
 import { useEpc, usePurchaseOrders, useStructure, WATCH_LIST_KEY } from '@/lib/queries';
 import { useUrlTab } from '@/lib/url-state';
 import { formatDate, formatMoney, formatPct, inContract, moneyPrefix, outOfContract, plural, toNumber } from '@/lib/format';
-import { themeFontSize } from '@/lib/theme';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { Section } from '@/components/common/Section';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
@@ -56,7 +56,7 @@ const counted = (label: string, n: number) => (
 
 const VIEWS = ['engineering', 'packages', 'inputs'] as const;
 type View = (typeof VIEWS)[number];
-const figure = { content: { fontSize: themeFontSize('fontSizeXL') } };
+const figure = { content: { fontSize: tk.type.subhead.fontSize } };
 const day = (v: string | null) => (v ? <span translate="no">{formatDate(v)}</span> : '-');
 const ymd = (d: dayjs.Dayjs | null | undefined) => (d ? d.format('YYYY-MM-DD') : null);
 const notAfterToday = (d: dayjs.Dayjs) => d.isAfter(dayjs(), 'day');
@@ -79,7 +79,7 @@ export function EpcPanel({ project }: { project: ProjectDetail }) {
   const s = data.summary;
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 16 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: tk.space[4] }}>
       <Space size={32} wrap>
         <Statistic title="Engineering approved" value={s.deliverables ? `${s.approved} of ${s.deliverables} (${formatPct(s.engineeringPct)})` : 'None listed'} styles={figure} />
         <Statistic title="Packages on site" value={s.packages ? `${s.delivered} of ${s.packages}` : 'None listed'} styles={figure} />
@@ -204,7 +204,7 @@ function Engineering({ data, onEdit }: { data: EpcDto; onEdit: (d: DeliverableDt
                     </span>{' '}
                     {d.title}
                   </div>
-                  <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                  <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
                     {[ENGINEERING_DISCIPLINE_LABELS[d.discipline], d.workElementLabel, d.documentNo ? `filed as ${d.documentNo}${d.documentRevision ? ` ${d.documentRevision}` : ''}` : null].filter(Boolean).join(' · ')}
                   </Typography.Text>
                 </>
@@ -476,7 +476,7 @@ function Packages({ data, onEdit }: { data: EpcDto; onEdit: (p: PackageDto | 'ne
                     </span>{' '}
                     {p.name}
                   </div>
-                  <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                  <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
                     {[ENGINEERING_DISCIPLINE_LABELS[p.discipline], p.vendorName, p.poNo, p.scope].filter(Boolean).join(' · ')}
                   </Typography.Text>
                 </>
@@ -491,7 +491,7 @@ function Packages({ data, onEdit }: { data: EpcDto; onEdit: (p: PackageDto | 'ne
                 <Flex vertical gap={2} align="start">
                   <span>{p.currentStage ? PACKAGE_STAGE_LABELS[p.currentStage] : 'Not started'}</span>
                   {p.nextStage ? (
-                    <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                    <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
                       Next: {PACKAGE_STAGE_LABELS[p.nextStage]}
                       {p.nextPlannedOn ? <span translate="no">{`, ${formatDate(p.nextPlannedOn)}`}</span> : null}
                     </Typography.Text>
@@ -509,7 +509,7 @@ function Packages({ data, onEdit }: { data: EpcDto; onEdit: (p: PackageDto | 'ne
                 <Flex vertical gap={2} align="start">
                   <span translate="no">{p.forecastOnSite ? formatDate(p.forecastOnSite) : '-'}</span>
                   {p.forecastFrom && p.forecastFrom !== 'DELIVERED' ? (
-                    <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                    <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
                       {p.forecastFrom === 'ETA' ? 'From the ship’s ETA' : 'From the plan and the slip so far'}
                     </Typography.Text>
                   ) : p.forecastFrom === 'DELIVERED' ? (
@@ -709,7 +709,7 @@ function PackageForm({ projectId, data, target, onClose }: { projectId: string; 
           <Typography.Paragraph type="secondary">Give a planned day to the stages that apply, and the day each is done. A stage with neither is left out.</Typography.Paragraph>
           {stages.map((stage) => (
             <FormGrid key={stage} cols={3}>
-              <div style={{ alignSelf: 'center', paddingBottom: 12 }}>{PACKAGE_STAGE_LABELS[stage]}</div>
+              <div style={{ alignSelf: 'center', paddingBottom: tk.space[3] }}>{PACKAGE_STAGE_LABELS[stage]}</div>
               <Form.Item name={['stages', stage, 'plannedOn']} label="Planned">
                 <DatePicker style={{ width: '100%' }} />
               </Form.Item>
@@ -755,7 +755,7 @@ function ClientInputs({ data, onEdit }: { data: EpcDto; onEdit: (m: ClientInputD
         scroll={{ x: 760 }}
         locale={{ emptyText: 'Nothing listed yet' }}
         columns={[
-          { key: 'name', title: 'Input', render: (_, m) => (m.note ? <>{m.name}<div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{m.note}</div></> : m.name) },
+          { key: 'name', title: 'Input', render: (_, m) => (m.note ? <>{m.name}<div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>{m.note}</div></> : m.name) },
           { key: 'due', title: 'Due', width: 120, render: (_, m) => day(m.dueDate) },
           {
             key: 'given',

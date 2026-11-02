@@ -2,6 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { Alert, App, Button, Form, Input, Modal, Skeleton, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { DeleteOutlined, PlusOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -11,7 +12,6 @@ import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useLabourRates } from '@/lib/queries';
 import { formatINR } from '@/lib/format';
-import { themeColor } from '@/lib/theme';
 import { FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
 
@@ -50,13 +50,13 @@ export function LabourRatesModal({ open, onClose }: { open: boolean; onClose: ()
         <Alert
           type="warning"
           showIcon
-          style={{ marginBottom: 12 }}
+          style={{ marginBottom: tk.space[3] }}
           title="Trades on attendance sheets without a rate"
           description={
             <span>
               {data.unpricedTrades.map((t) => (
                 editable ? (
-                  <Button key={t} size="small" color="default" variant="filled" aria-label={`Add a rate for ${t}`} onClick={() => form.setFieldValue('rates', [...(form.getFieldValue('rates') ?? []), { category: t }])} style={{ marginInlineEnd: 8 }}>
+                  <Button key={t} size="small" color="default" variant="filled" aria-label={`Add a rate for ${t}`} onClick={() => form.setFieldValue('rates', [...(form.getFieldValue('rates') ?? []), { category: t }])} style={{ marginInlineEnd: tk.space[2] }}>
                     {t}
                   </Button>
                 ) : (
@@ -88,7 +88,7 @@ export function LabourRatesModal({ open, onClose }: { open: boolean; onClose: ()
         {data ? (
           <div>
             {data.rates.map((r) => (
-              <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: `1px solid ${themeColor('colorBorderSecondary')}` }}>
+              <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', padding: `${tk.space[2]} 0`, borderBottom: `1px solid ${tk.color.line.hairline}` }}>
                 <span>{r.category}</span>
                 <span className="mono" translate="no">{formatINR(r.dailyRate, true)} / day</span>
               </div>
@@ -107,7 +107,7 @@ export function LabourRatesModal({ open, onClose }: { open: boolean; onClose: ()
             {(fields, { add, remove }) => (
               <>
                 {fields.map((f) => (
-                  <div key={f.key} style={{ display: 'grid', gridTemplateColumns: '1fr 180px 32px', gap: 8 }}>
+                  <div key={f.key} style={{ display: 'grid', gridTemplateColumns: '1fr 180px 32px', gap: tk.space[2] }}>
                     <Form.Item name={[f.name, 'category']} rules={[{ required: true, whitespace: true, message: 'Enter the trade' }]}>
                       <Input placeholder="Trade, e.g. Mason" maxLength={60} aria-label="Trade" />
                     </Form.Item>

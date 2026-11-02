@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Alert, App, Button, Input, Select, Space, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { SyncOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
@@ -26,7 +27,7 @@ function PostingLine() {
   const held = data?.held ?? [];
   return (
     <>
-      <Space wrap style={{ marginBottom: 12 }}>
+      <Space wrap style={{ marginBottom: tk.space[3] }}>
         <Typography.Text type="secondary">{data?.lastPostedAt ? `Bills, receipts, payments, expenses and salaries posted ${formatDateTime(data.lastPostedAt)}` : 'Posting the modules…'}</Typography.Text>
         <Button
           size="small"
@@ -48,11 +49,11 @@ function PostingLine() {
         <Alert
           type="warning"
           showIcon
-          style={{ marginBottom: 12 }}
+          style={{ marginBottom: tk.space[3] }}
           title={`${held.length === 1 ? '1 record' : `${held.length} records`} could not be posted`}
           description={
             showHeld ? (
-              <ul style={{ margin: 0, paddingInlineStart: 20 }}>
+              <ul style={{ margin: 0, paddingInlineStart: tk.space[5] }}>
                 {held.map((h) => (
                   <li key={`${h.source}:${h.sourceId}`}>
                     <span translate="no">{`${h.number} (${BOOK_SOURCE_LABELS[h.source]}, ${formatDate(h.date)}, ${h.party})`}</span>: {h.reason}
@@ -83,9 +84,9 @@ export function DayBook() {
   const { data, isLoading, isFetching, error, refetch } = useDayBook({ from: range[0].format('YYYY-MM-DD'), to: range[1].format('YYYY-MM-DD'), type, source, projectId, q: q || undefined, page, pageSize: 50 });
   const reset = () => setPage(1);
   return (
-    <div style={{ padding: 16 }}>
+    <div style={{ padding: tk.space[4] }}>
       <PostingLine />
-      <Space wrap style={{ marginBottom: 12 }}>
+      <Space wrap style={{ marginBottom: tk.space[3] }}>
         <DatePicker.RangePicker
           aria-label="Period"
          

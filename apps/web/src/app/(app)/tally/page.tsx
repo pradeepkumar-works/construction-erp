@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Alert, App, Button, Card, Input, Popconfirm, Select, Space, Switch, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import { AppTabs } from '@/components/common/AppTabs';
@@ -25,7 +26,6 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
 import { CardToolbar } from '@/components/common/CardToolbar';
 import { NoAccess } from '@/components/common/NoAccess';
-import { themeColor, themeFontSize } from '@/lib/theme';
 import { Money } from '@/components/common/Money';
 
 const LEDGER_KIND_LABELS: Record<TallyLedgerKind, string> = { FIXED: 'Accounts', EXPENSE: 'Expense categories', CLIENT: 'Clients', VENDOR: 'Vendors', LOAN: 'Machine loans' };
@@ -85,7 +85,7 @@ function ToExport() {
       render: (v: string, r) => (
         <div>
           <span className="mono" translate="no">{v}</span>
-          <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+          <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
             {TALLY_VOUCHER_TYPES[r.kind]}
           </div>
         </div>
@@ -100,7 +100,7 @@ function ToExport() {
       render: (v: string, r) => (
         <div>
           {v}
-          <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+          <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
             {r.projectCode} · {r.projectName}
           </div>
         </div>
@@ -134,15 +134,15 @@ function ToExport() {
           </Button>
         </Popconfirm>
       </CardToolbar>
-      <div style={{ padding: '12px 12px 0' }}>
+      <div style={{ padding: `${tk.space[3]} ${tk.space[3]} 0` }}>
         {data && data.held.length > 0 && (
           <Alert
             type="warning"
             showIcon
-            style={{ marginBottom: 12 }}
+            style={{ marginBottom: tk.space[3] }}
             title={`${data.held.length} record${data.held.length === 1 ? '' : 's'} cannot go yet`}
             description={
-              <ul style={{ margin: 0, paddingLeft: 18 }}>
+              <ul style={{ margin: 0, paddingInlineStart: tk.space[5] }}>
                 {data.held.map((h) => (
                   <li key={`${h.kind}:${h.sourceId}`}>
                     <span translate="no">{h.number}</span> of {formatDate(h.date)} ({h.party}): {h.reason}
@@ -169,7 +169,7 @@ function ToExport() {
         expandable={{
           expandedRowRender: (v) => (
             <div style={{ maxWidth: 760 }}>
-              <Typography.Paragraph type="secondary" style={{ marginBottom: 8 }}>
+              <Typography.Paragraph type="secondary" style={{ marginBottom: tk.space[2] }}>
                 {v.narration}
               </Typography.Paragraph>
               <Table
@@ -216,7 +216,7 @@ function Exports() {
       card: 'date',
       cardText: (r) => `Exported ${formatDateTime(r.createdAt)} by ${r.createdByName}`,
       width: 180,
-      render: (v, r) => <div>{formatDateTime(v)}<div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{r.createdByName}</div></div>,
+      render: (v, r) => <div>{formatDateTime(v)}<div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>{r.createdByName}</div></div>,
     },
     { key: 'upTo', title: 'Up to', dataIndex: 'upTo', width: 120, card: 'title', cardText: (r) => `Up to ${formatDate(r.upTo)}`, render: (v) => formatDate(v) },
     {
@@ -326,7 +326,7 @@ function Ledgers() {
       render: (_, l) => (
         <div>
           {l.kind === 'FIXED' ? l.use : l.defaultName}
-          <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+          <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
             {l.kind === 'FIXED' ? `Default "${l.defaultName}"` : l.use}
           </div>
         </div>
@@ -351,7 +351,7 @@ function Ledgers() {
   return (
     <>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      <div style={{ padding: 12, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, borderBottom: `1px solid ${themeColor('colorBorderSecondary')}` }}>
+      <div style={{ padding: tk.space[3], display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: tk.space[3], borderBottom: `1px solid ${tk.color.line.hairline}` }}>
         <label>
           <Typography.Text type="secondary">Company name in Tally</Typography.Text>
           <Input value={company} onChange={(e) => setCompany(e.target.value)} placeholder="The company open in Tally" maxLength={200} />
@@ -362,7 +362,7 @@ function Ledgers() {
         </label>
         <div>
           <Typography.Text type="secondary">Projects as cost centres</Typography.Text>
-          <div style={{ paddingTop: 4 }}>
+          <div style={{ paddingTop: tk.space[1] }}>
             <Switch checked={costCentres} onChange={setCostCentres} />
           </div>
         </div>
@@ -375,7 +375,7 @@ function Ledgers() {
           </Button>
         </Space>
       </div>
-      <div style={{ padding: 12, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+      <div style={{ padding: tk.space[3], display: 'flex', gap: tk.space[3], flexWrap: 'wrap' }}>
         <Select
           value={kind}
           onChange={setKind}

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo } from 'react';
 import { Alert, Form, Input, Select, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -148,7 +149,7 @@ export function DebitNoteFormModal({ open, bill, grn, onClose, onSaved }: { open
       okDisabled={!target || over > 1}
       onSubmit={(v) => save.mutateAsync(v)}
       footerExtra={
-        <Typography.Text strong className="mono" style={{ marginInlineEnd: 8 }}>
+        <Typography.Text strong className="mono" style={{ marginInlineEnd: tk.space[2] }}>
           {formatINR(totals.total, true)}
         </Typography.Text>
       }
@@ -262,8 +263,8 @@ export function DebitNoteFormModal({ open, bill, grn, onClose, onSaved }: { open
             </Table.Summary.Row>
           )}
         />
-        {over > 1 ? <Alert type="error" showIcon style={{ margin: '12px 0' }} title={`The note is ${formatINR(over, true)} more than is still unpaid on the bill; record a refund from the supplier instead`} /> : null}
-        <Form.Item name="remarks" label="Remarks" style={{ marginTop: 12 }}>
+        {over > 1 ? <Alert type="error" showIcon style={{ margin: `${tk.space[3]} 0` }} title={`The note is ${formatINR(over, true)} more than is still unpaid on the bill; record a refund from the supplier instead`} /> : null}
+        <Form.Item name="remarks" label="Remarks" style={{ marginTop: tk.space[3] }}>
           <Input.TextArea rows={2} maxLength={1000} />
         </Form.Item>
       </Form>

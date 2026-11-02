@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { Checkbox, Form, Input, InputNumber, Radio, Select, Switch, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { useRouter } from 'next/navigation';
@@ -336,7 +337,7 @@ export function BidBoqImport({ tender, open, onClose }: { tender: TenderDetailDt
       }}
       extra={
         tender.items.length ? (
-          <Checkbox checked={replace} onChange={(e) => setReplace(e.target.checked)} style={{ marginBottom: 12 }}>
+          <Checkbox checked={replace} onChange={(e) => setReplace(e.target.checked)} style={{ marginBottom: tk.space[3] }}>
             {`Replace the ${tender.items.length} items already in the bid (and their rate analysis)`}
           </Checkbox>
         ) : null

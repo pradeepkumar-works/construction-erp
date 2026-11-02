@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Alert, Button, Col, Empty, Progress, Row, Skeleton, Statistic, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { EditOutlined } from '@/components/common/icons';
 import type { BudgetBoqItemDto, BudgetHeadDto } from '@erp/shared';
 import { COST_HEAD_LABELS, canSetBudget, unitLabel } from '@erp/shared';
@@ -12,13 +13,12 @@ import { QueryError } from '@/components/common/QueryState';
 import { HEAD_COLORS } from './CostBar';
 import { BudgetFormModal } from './BudgetFormModal';
 import { CashFlowPanel } from './CashFlowPanel';
-import { themeColor, themeFontSize } from '@/lib/theme';
 import { AskButton } from '@/components/ai/AskButton';
 import { Section, SectionStack } from '@/components/common/Section';
 import { Money } from '@/components/common/Money';
 
-const RED = themeColor('colorErrorText');
-const GREEN = themeColor('colorSuccessText');
+const RED = tk.color.tone.danger.fg;
+const GREEN = tk.color.tone.success.fg;
 const variance = (v: string | null) =>
   v === null ? <span className="text-muted">{NO_VALUE}</span> : <span className="mono" translate="no" style={{ color: toNumber(v) < 0 ? RED : GREEN }}>{formatINR(v)}</span>;
 
@@ -37,8 +37,8 @@ export function ProjectBudgetPanel({ projectId }: { projectId: string }) {
       {isLoading && <Skeleton active />}
       {data && (
         <>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginBottom: 12 }}>
-            <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+          <div style={{ display: 'flex', gap: tk.space[3], flexWrap: 'wrap', alignItems: 'center', marginBottom: tk.space[3] }}>
+            <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
               {data.updatedAt ? `Budget last set by ${data.updatedByName} on ${formatDateTime(data.updatedAt)}` : data.boqBudget ? 'Budget from BOQ budget rates' : 'No budget yet'}
             </Typography.Text>
             {canEdit && (
@@ -51,7 +51,7 @@ export function ProjectBudgetPanel({ projectId }: { projectId: string }) {
             <Alert
               type="info"
               showIcon
-              style={{ marginBottom: 12 }}
+              style={{ marginBottom: tk.space[3] }}
               title="This project has no budget yet"
               description={`Set a budget by cost head, or a budget rate on the BOQ items, to see budget against actual and the forecast to complete.${canEdit ? '' : ' Admin, management or the project manager can set it.'}`}
             />
@@ -60,43 +60,43 @@ export function ProjectBudgetPanel({ projectId }: { projectId: string }) {
             <Alert
               type="warning"
               showIcon
-              style={{ marginBottom: 12 }}
+              style={{ marginBottom: tk.space[3] }}
               title={`The cost-head budget (${formatINR(data.budgetAtCompletion)}) and the BOQ budget (${formatINR(data.boqBudget)}) differ`}
               description="The cost-head budget is used for the forecast. Bring them in line, or remove the cost-head budget to forecast from the BOQ."
             />
           ) : null}
           <Row gutter={[16, 16]}>
             <Col xs={12} md={8} lg={4}>
-              <Statistic title="Budget at completion" value={data.budgetAtCompletion ? formatINR(data.budgetAtCompletion) : NO_VALUE} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
+              <Statistic title="Budget at completion" value={data.budgetAtCompletion ? formatINR(data.budgetAtCompletion) : NO_VALUE} styles={{ content: { fontSize: tk.type.subhead.fontSize } }} />
             </Col>
             <Col xs={12} md={8} lg={4}>
-              <div className="text-muted" style={{ fontSize: themeFontSize('fontSize'), marginBottom: 4 }}>
+              <div className="text-muted" style={{ fontSize: tk.type.body.fontSize, marginBottom: tk.space[1] }}>
                 Work done
               </div>
               <Progress percent={data.pctComplete} size="small" aria-label={`Work done ${data.pctComplete}%`} />
-              <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+              <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                 {formatINR(data.executedValue)} of {formatINR(data.boqValue)} BOQ
               </div>
             </Col>
             <Col xs={12} md={8} lg={4}>
-              <Statistic title="Actual cost" value={formatINR(data.actualCost)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
+              <Statistic title="Actual cost" value={formatINR(data.actualCost)} styles={{ content: { fontSize: tk.type.subhead.fontSize } }} />
             </Col>
             <Col xs={12} md={8} lg={4}>
               <Statistic
                 title="Cost variance"
                 value={data.costVariance ? formatINR(data.costVariance) : NO_VALUE}
-                styles={{ content: { fontSize: themeFontSize('fontSizeXL'), color: data.costVariance ? (toNumber(data.costVariance) < 0 ? RED : GREEN) : undefined } }}
+                styles={{ content: { fontSize: tk.type.subhead.fontSize, color: data.costVariance ? (toNumber(data.costVariance) < 0 ? RED : GREEN) : undefined } }}
               />
               {data.costVariance ? (
-                <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                   {toNumber(data.costVariance) < 0 ? 'Over' : 'Under'} the budget for the work done
                 </div>
               ) : null}
             </Col>
             <Col xs={12} md={8} lg={4}>
-              <Statistic title="Forecast at completion" value={data.forecastAtCompletion ? formatINR(data.forecastAtCompletion) : NO_VALUE} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
+              <Statistic title="Forecast at completion" value={data.forecastAtCompletion ? formatINR(data.forecastAtCompletion) : NO_VALUE} styles={{ content: { fontSize: tk.type.subhead.fontSize } }} />
               {data.forecastToComplete ? (
-                <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                   {formatINR(data.forecastToComplete)} still to spend
                 </div>
               ) : null}
@@ -105,17 +105,17 @@ export function ProjectBudgetPanel({ projectId }: { projectId: string }) {
               <Statistic
                 title="Forecast margin"
                 value={data.forecastMargin ? formatINR(data.forecastMargin) : NO_VALUE}
-                styles={{ content: { fontSize: themeFontSize('fontSizeXL'), color: data.forecastMargin ? (toNumber(data.forecastMargin) < 0 ? RED : GREEN) : undefined } }}
+                styles={{ content: { fontSize: tk.type.subhead.fontSize, color: data.forecastMargin ? (toNumber(data.forecastMargin) < 0 ? RED : GREEN) : undefined } }}
               />
               {data.revisedContractValue ? (
-                <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                   On a revised contract of {formatINR(data.revisedContractValue)}
                 </div>
               ) : null}
             </Col>
           </Row>
 
-          <Section style={{ marginTop: 16 }} title="By cost head">
+          <Section style={{ marginTop: tk.space[4] }} title="By cost head">
             {data.hasHeadBudget ? (
               <Table<BudgetHeadDto>
                 rowKey="head"
@@ -125,8 +125,8 @@ export function ProjectBudgetPanel({ projectId }: { projectId: string }) {
                 scroll={{ x: 860 }}
                 columns={[
                   { title: 'Head', dataIndex: 'head', render: (h: BudgetHeadDto['head']) => (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ width: 10, height: 10, borderRadius: 2, background: HEAD_COLORS[h], display: 'inline-block' }} />
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: tk.space[2] }}>
+                        <span style={{ width: 10, height: 10, borderRadius: tk.radius.xs, background: HEAD_COLORS[h], display: 'inline-block' }} />
                         {COST_HEAD_LABELS[h]}
                       </span>
                     ) },
@@ -171,7 +171,7 @@ export function ProjectBudgetPanel({ projectId }: { projectId: string }) {
             ) : (
               <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No budget by cost head" />
             )}
-            <Typography.Paragraph type="secondary" style={{ fontSize: themeFontSize('fontSizeSM'), marginTop: 8, marginBottom: 0 }}>
+            <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[2], marginBottom: 0 }}>
               Work done is approved progress at BOQ rates over the BOQ value. Earned is the budget for the work done (budget × work done); variance is
               earned less actual, red when over budget. Forecast is the actual cost so far plus the budget for the work left. Actual cost is the cost view&apos;s,
               from the start of the project.
@@ -179,10 +179,10 @@ export function ProjectBudgetPanel({ projectId }: { projectId: string }) {
           </Section>
 
           <Section
-            style={{ marginTop: 16 }}
+            style={{ marginTop: tk.space[4] }}
             title="BOQ budget"
             extra={
-              <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+              <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
                 {data.boqBudget ? `${formatINR(data.boqBudget)}` : 'No budget rates'}
                 {data.itemsWithoutBudgetRate ? ` · ${data.itemsWithoutBudgetRate} item${data.itemsWithoutBudgetRate === 1 ? '' : 's'} without a budget rate` : ''}
               </Typography.Text>
@@ -215,12 +215,12 @@ export function ProjectBudgetPanel({ projectId }: { projectId: string }) {
           </Section>
 
           {data.notes ? (
-            <Typography.Paragraph type="secondary" style={{ marginTop: 12 }}>
+            <Typography.Paragraph type="secondary" style={{ marginTop: tk.space[3] }}>
               <strong>Notes:</strong> {data.notes}
             </Typography.Paragraph>
           ) : null}
 
-          <Section style={{ marginTop: 16 }} title="Cash-flow forecast">
+          <Section style={{ marginTop: tk.space[4] }} title="Cash-flow forecast">
             <CashFlowPanel projectId={projectId} />
           </Section>
           {canEdit && <BudgetFormModal open={editing} onClose={() => setEditing(false)} budget={data} />}

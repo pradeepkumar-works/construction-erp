@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Button, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { DebitNoteDto } from '@erp/shared';
 import { DEBIT_NOTE_REASON_LABELS, canRaiseDebitNote, canViewDebitNotes } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
@@ -27,7 +28,7 @@ export function BillDebitNotes({ bill }: { bill: DebitNoteBill }) {
 
   return (
     <>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, gap: 8, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: tk.space[2], gap: tk.space[2], flexWrap: 'wrap' }}>
         <Typography.Text type="secondary">Short supply, billed in excess, rejected or returned material, a rate difference: taken off what is unpaid.</Typography.Text>
         {raiser && toNumber(bill.outstanding) > 0 ? (
           <Button size="small" onClick={() => setRaising(true)}>

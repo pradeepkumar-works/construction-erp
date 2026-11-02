@@ -102,6 +102,12 @@ runs and is committed with the last PR.
     reconciliation): 96 files. By hand: the same tag, gap and indent steps as PR 9; red and amber text from the old
     colour helper is the `danger` and `pending` tones; the finalise step's `Row gutter` reads `useResolved()`. The order
     and work order print files wait for PR 14.
+  - [x] PR 11. Money (client billing and receivables, payables and payment requests, books and statements, GST and
+    Tally, the BOQ, contract, cost and budget, variations, EPC, O&M, tenders, clients, the cash forecast and billing
+    readiness): 55 files. By hand: a delete button beside a labelled field drops by the label's own line and gap
+    instead of a fixed 30, which no longer matched the label since PR 7; thin bars stack on the 4 step and round on
+    `sm`; cash in and out bars are the `success` and `danger` solids. The invoice and bill prints and the cost head
+    colours (also the cost chart's) wait for PR 14.
 
 ### Print, charts, and deleting the old surface (PR 14 and PR 15)
 

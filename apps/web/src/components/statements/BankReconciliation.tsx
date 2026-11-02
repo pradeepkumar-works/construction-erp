@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import { tk } from '@/ds';
 import { Alert, App, Button, Descriptions, Form, Modal, Segmented, Select, Space, Table, Typography, Upload } from "antd";
 import { DatePicker } from "@/components/common/DatePicker";
 import { AppTag } from "@/components/common/AppTag";
@@ -307,14 +308,14 @@ function Summary({ d }: { d: BankReconciliationDto }) {
         bordered
         column={1}
         items={items}
-        style={{ marginBottom: 12, maxWidth: 720 }}
+        style={{ marginBottom: tk.space[3], maxWidth: 720 }}
         styles={{ content: { textAlign: "right" } }}
       />
       {d.difference !== null && Number(d.difference) !== 0 && (
         <Alert
           type="warning"
           showIcon
-          style={{ marginBottom: 12, maxWidth: 720 }}
+          style={{ marginBottom: tk.space[3], maxWidth: 720 }}
           title={`The statement differs by ${formatINR(Math.abs(Number(d.difference)), true)}`}
           description={`Import the statement from ${d.statementFrom ? formatDate(d.statementFrom) : "the day the books begin"} without gaps, and check the lines matched by hand. Book entries before the statement's first day are taken as cleared.`}
         />
@@ -323,7 +324,7 @@ function Summary({ d }: { d: BankReconciliationDto }) {
         <Alert
           type="success"
           showIcon
-          style={{ marginBottom: 12, maxWidth: 720 }}
+          style={{ marginBottom: tk.space[3], maxWidth: 720 }}
           title="The books agree with the bank"
         />
       )}
@@ -385,14 +386,14 @@ export function BankReconciliation() {
     });
 
   return (
-    <div style={{ padding: 16 }}>
+    <div style={{ padding: tk.space[4] }}>
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
-          gap: 8,
+          gap: tk.space[2],
           flexWrap: "wrap",
-          marginBottom: 12,
+          marginBottom: tk.space[3],
         }}
       >
         <Space wrap>
@@ -458,12 +459,12 @@ export function BankReconciliation() {
             <Alert
               type="info"
               showIcon
-              style={{ marginBottom: 12, maxWidth: 720 }}
+              style={{ marginBottom: tk.space[3], maxWidth: 720 }}
               title="No statement imported for this account yet"
               description="Download the statement from the bank's net banking as CSV or Excel and import it. Lines that agree by amount and day are matched at once."
             />
           )}
-          <Space wrap style={{ marginBottom: 12 }}>
+          <Space wrap style={{ marginBottom: tk.space[3] }}>
             <Segmented
               aria-label="Which side"
               value={view}

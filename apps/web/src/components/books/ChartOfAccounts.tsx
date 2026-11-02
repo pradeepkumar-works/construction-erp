@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { App, Button, Form, Input, Segmented, Select, Space, Switch, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import { PlusOutlined } from '@/components/common/icons';
@@ -105,8 +106,8 @@ export function ChartOfAccounts() {
     .filter((a) => words.every((w) => `${a.name} ${a.code ?? ''} ${ACCOUNT_GROUP_LABELS[a.group]}`.toLowerCase().includes(w)))
     .sort((a, b) => NATURES.indexOf(a.nature) - NATURES.indexOf(b.nature) || ACCOUNT_GROUPS.indexOf(a.group) - ACCOUNT_GROUPS.indexOf(b.group) || a.name.localeCompare(b.name));
   return (
-    <div style={{ padding: 16 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+    <div style={{ padding: tk.space[4] }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: tk.space[2], flexWrap: 'wrap', marginBottom: tk.space[3] }}>
         <Space wrap>
           <Segmented aria-label="Which accounts" value={nature} onChange={(v) => setNature(v as AccountNature | 'ALL')} options={[{ value: 'ALL', label: 'All' }, ...NATURES.map((n) => ({ value: n, label: ACCOUNT_NATURE_LABELS[n] }))]} />
           <DatePicker aria-label="Balances as on" allowClear={false} value={asOn} onChange={(d) => d && setAsOn(d)} />

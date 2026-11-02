@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Alert, Button, Col, Empty, Row, Skeleton, Statistic, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTabs } from '@/components/common/AppTabs';
 import { TeamOutlined } from '@/components/common/icons';
 import type { ProjectCostDto } from '@erp/shared';
@@ -14,11 +15,10 @@ import { CostBar, CostHeadTitle, CostLegend } from './CostBar';
 import { defaultPeriod, PeriodPicker, periodLabel, periodParams, type PeriodState } from './PeriodPicker';
 import { LabourRatesModal } from './LabourRatesModal';
 import { unpricedText } from './UnpricedNote';
-import { themeColor, themeFontSize } from '@/lib/theme';
 import { Section, SectionStack } from '@/components/common/Section';
 import { Money } from '@/components/common/Money';
 
-const rateOrDash = (v: string | null, suffix: string) => (v === null ? <span style={{ color: themeColor('colorWarningText') }}>No rate</span> : <span className="mono" translate="no">{`${formatINR(v, true)} ${suffix}`}</span>);
+const rateOrDash = (v: string | null, suffix: string) => (v === null ? <span style={{ color: tk.color.tone.pending.fg }}>No rate</span> : <span className="mono" translate="no">{`${formatINR(v, true)} ${suffix}`}</span>);
 
 /** One project's cost heads, month by month, and what makes them up. */
 export function ProjectCostPanel({ projectId }: { projectId: string }) {
@@ -30,7 +30,7 @@ export function ProjectCostPanel({ projectId }: { projectId: string }) {
 
   return (
     <SectionStack gap={0}>
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginBottom: 12 }}>
+      <div style={{ display: 'flex', gap: tk.space[3], flexWrap: 'wrap', alignItems: 'center', marginBottom: tk.space[3] }}>
         <PeriodPicker value={period} onChange={setPeriod} />
         <Button icon={<TeamOutlined />} onClick={() => setRatesOpen(true)} style={{ marginLeft: 'auto' }}>
           Labour rates
@@ -40,48 +40,48 @@ export function ProjectCostPanel({ projectId }: { projectId: string }) {
       {isLoading && <Skeleton active />}
       {data && (
         <>
-          {missing.length ? <Alert type="warning" showIcon style={{ marginBottom: 12 }} title="Part of the cost is not counted because a rate is missing" description={missing.join('; ') + '. Set rates in the item master, the equipment master or Labour rates.'} /> : null}
+          {missing.length ? <Alert type="warning" showIcon style={{ marginBottom: tk.space[3] }} title="Part of the cost is not counted because a rate is missing" description={missing.join('; ') + '. Set rates in the item master, the equipment master or Labour rates.'} /> : null}
           <Row gutter={[16, 16]}>
             <Col xs={12} md={6}>
-              <Statistic title="Work done" value={formatINR(data.executedValue)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
+              <Statistic title="Work done" value={formatINR(data.executedValue)} styles={{ content: { fontSize: tk.type.subhead.fontSize } }} />
             </Col>
             <Col xs={12} md={6}>
-              <Statistic title="Measured (approved MB)" value={formatINR(data.measuredValue)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
+              <Statistic title="Measured (approved MB)" value={formatINR(data.measuredValue)} styles={{ content: { fontSize: tk.type.subhead.fontSize } }} />
             </Col>
             <Col xs={12} md={6}>
-              <Statistic title="Cost" value={formatINR(data.cost.total)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
+              <Statistic title="Cost" value={formatINR(data.cost.total)} styles={{ content: { fontSize: tk.type.subhead.fontSize } }} />
             </Col>
             <Col xs={12} md={6}>
               <Statistic
                 title={`Margin${data.costPct !== null ? ` (cost ${formatPct(data.costPct)} of work done)` : ''}`}
                 value={formatINR(data.margin)}
-                styles={{ content: { fontSize: themeFontSize('fontSizeXL'), color: toNumber(data.margin) < 0 ? themeColor('colorErrorText') : themeColor('colorSuccessText') } }}
+                styles={{ content: { fontSize: tk.type.subhead.fontSize, color: toNumber(data.margin) < 0 ? tk.color.tone.danger.fg : tk.color.tone.success.fg } }}
               />
             </Col>
           </Row>
-          <Row gutter={[16, 16]} style={{ marginTop: 8 }}>
+          <Row gutter={[16, 16]} style={{ marginTop: tk.space[2] }}>
             <Col xs={12} md={6}>
-              <Statistic title="Billed (approved RA bills)" value={formatINR(data.billedValue)} styles={{ content: { fontSize: themeFontSize('fontSizeLG') } }} />
+              <Statistic title="Billed (approved RA bills)" value={formatINR(data.billedValue)} styles={{ content: { fontSize: tk.type.lead.fontSize } }} />
             </Col>
             <Col xs={12} md={6}>
-              <Statistic title="Money in from the client" value={formatINR(data.cashIn)} styles={{ content: { fontSize: themeFontSize('fontSizeLG') } }} />
+              <Statistic title="Money in from the client" value={formatINR(data.cashIn)} styles={{ content: { fontSize: tk.type.lead.fontSize } }} />
             </Col>
             <Col xs={12} md={6}>
-              <Statistic title="Vendor and subcontractor bills (incl. GST)" value={formatINR(data.payableBilled)} styles={{ content: { fontSize: themeFontSize('fontSizeLG') } }} />
+              <Statistic title="Vendor and subcontractor bills (incl. GST)" value={formatINR(data.payableBilled)} styles={{ content: { fontSize: tk.type.lead.fontSize } }} />
             </Col>
             <Col xs={12} md={6}>
-              <Statistic title="Money out to them" value={formatINR(data.cashOut)} styles={{ content: { fontSize: themeFontSize('fontSizeLG') } }} />
+              <Statistic title="Money out to them" value={formatINR(data.cashOut)} styles={{ content: { fontSize: tk.type.lead.fontSize } }} />
             </Col>
           </Row>
-          <Section style={{ marginTop: 16 }} title="Cost heads" extra={<CostLegend />}>
+          <Section style={{ marginTop: tk.space[4] }} title="Cost heads" extra={<CostLegend />}>
             <CostBar cost={data.cost} scale={toNumber(data.cost.total)} height={18} />
-            <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', marginTop: 12 }}>
+            <div style={{ display: 'flex', gap: tk.space[8], flexWrap: 'wrap', marginTop: tk.space[3] }}>
               {COST_HEADS.map((h) => (
-                <Statistic key={h} title={<CostHeadTitle head={h} />} value={formatINR(data.cost[h])} styles={{ content: { fontSize: themeFontSize('fontSizeLG') } }} />
+                <Statistic key={h} title={<CostHeadTitle head={h} />} value={formatINR(data.cost[h])} styles={{ content: { fontSize: tk.type.lead.fontSize } }} />
               ))}
             </div>
           </Section>
-          <Section style={{ marginTop: 16 }} title="By month" extra={<Typography.Text type="secondary">{periodLabel(period)}</Typography.Text>}>
+          <Section style={{ marginTop: tk.space[4] }} title="By month" extra={<Typography.Text type="secondary">{periodLabel(period)}</Typography.Text>}>
             {data.months.length ? (
               <Table<ProjectCostDto['months'][number]>
                 rowKey="month"
@@ -97,8 +97,8 @@ export function ProjectCostPanel({ projectId }: { projectId: string }) {
                     title: '',
                     key: 'bars',
                     render: (_, m) => (
-                      <div style={{ display: 'grid', gap: 3 }}>
-                        <div style={{ height: 8, width: `${(toNumber(m.executedValue) / monthScale) * 100}%`, background: themeColor('colorSuccess'), borderRadius: 2, minWidth: toNumber(m.executedValue) > 0 ? 2 : 0 }} />
+                      <div style={{ display: 'grid', gap: tk.space[1] }}>
+                        <div style={{ height: 8, width: `${(toNumber(m.executedValue) / monthScale) * 100}%`, background: tk.color.tone.success.solid, borderRadius: tk.radius.xs, minWidth: toNumber(m.executedValue) > 0 ? 2 : 0 }} />
                         <CostBar cost={m} scale={monthScale} height={8} />
                       </div>
                     ),
@@ -109,7 +109,7 @@ export function ProjectCostPanel({ projectId }: { projectId: string }) {
               <Empty description="Nothing executed or spent in this period" />
             )}
           </Section>
-          <Section style={{ marginTop: 16 }}>
+          <Section style={{ marginTop: tk.space[4] }}>
             <AppTabs
               items={[
                 {

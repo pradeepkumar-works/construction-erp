@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Button, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { PaymentRequestDto } from '@erp/shared';
 import { canRecordPayment, canRequestPayment, canViewPaymentRequests } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
@@ -55,8 +56,8 @@ export function TargetRequests({ target, base, approved }: { target: Omit<Reques
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: 8,
-          gap: 8,
+          marginBottom: tk.space[2],
+          gap: tk.space[2],
           flexWrap: 'wrap',
         }}
       >

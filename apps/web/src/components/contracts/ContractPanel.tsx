@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Alert, Button, Descriptions, Skeleton, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { EditOutlined } from '@/components/common/icons';
 import type { ContractExtensionDto } from '@erp/shared';
@@ -16,7 +17,6 @@ import { LdExposureCard } from './LdExposure';
 import { PriceVariationCard } from './PriceVariation';
 import { BillingBreakup } from './BillingBreakup';
 import { ObligationsCard } from './Obligations';
-import { themeFontSize } from '@/lib/theme';
 import { Section, SectionStack } from '@/components/common/Section';
 
 /** A project's contract with its client: the Contract tab of a project. */
@@ -51,7 +51,7 @@ export function ContractPanel({ projectId }: { projectId: string }) {
               <div>
                 <Typography.Text strong>{c.client.name}</Typography.Text>
                 {c.client.department && <div>{c.client.department}</div>}
-                {c.client.billingAddress && <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{c.client.billingAddress}</div>}
+                {c.client.billingAddress && <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>{c.client.billingAddress}</div>}
               </div>
             ) : (
               <span>
@@ -61,14 +61,14 @@ export function ContractPanel({ projectId }: { projectId: string }) {
           </Descriptions.Item>
           <Descriptions.Item label="Client GSTIN">
             {c.client?.gstin ? <span translate="no">{c.client.gstin}</span> : NO_VALUE}
-            {c.client?.stateCode && <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{GST_STATES[c.client.stateCode] ?? c.client.stateCode}</div>}
+            {c.client?.stateCode && <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>{GST_STATES[c.client.stateCode] ?? c.client.stateCode}</div>}
           </Descriptions.Item>
           <Descriptions.Item label="Work order">{c.workOrderNo ?? NO_VALUE}</Descriptions.Item>
           <Descriptions.Item label="Agreement">{c.agreementNo ? `${c.agreementNo}${c.agreementDate ? `, ${formatDate(c.agreementDate)}` : ''}` : NO_VALUE}</Descriptions.Item>
           <Descriptions.Item label="Contract value">
             {c.contractValue ? <span translate="no">{formatMoney(c.contractValue, c)}</span> : NO_VALUE}
             {isForeign(c) && (
-              <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }} translate="no">
+              <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }} translate="no">
                 {formatINR(c.contractValue)} at ₹&nbsp;{c.exchangeRate} to 1 {c.currency}
               </div>
             )}
@@ -76,7 +76,7 @@ export function ContractPanel({ projectId }: { projectId: string }) {
           <Descriptions.Item label="Revised contract value">
             {c.revisedContractValue ? <span translate="no">{formatMoney(c.revisedContractValue, c)}</span> : NO_VALUE}
             {toNumber(c.approvedVariations) !== 0 && (
-              <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+              <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                 <Link href={`/projects/${c.projectId}?tab=variations`}>{formatMoney(c.approvedVariations, c)} in approved variations</Link>
               </div>
             )}
@@ -100,7 +100,7 @@ export function ContractPanel({ projectId }: { projectId: string }) {
           {CONTRACT_PERCENT_FIELDS.map((k) => (
             <Descriptions.Item key={k} label={CONTRACT_PERCENT_LABELS[k]}>
               {c[k]}%
-              {k === 'securityDepositPct' && c.securityDepositCapPct !== null && <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>up to {c.securityDepositCapPct}% of the contract</div>}
+              {k === 'securityDepositPct' && c.securityDepositCapPct !== null && <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>up to {c.securityDepositCapPct}% of the contract</div>}
             </Descriptions.Item>
           ))}
         </Descriptions>

@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { tk } from '@/ds';
 import { DatePicker } from "@/components/common/DatePicker";
 import dayjs from "dayjs";
 import { formatINR } from "@/lib/format";
@@ -75,7 +76,7 @@ export function Signed({
   const n = Number(value ?? 0);
   const text = n < 0 ? `(${formatINR(-n, true)})` : formatINR(n, true);
   return (
-    <span translate="no" style={strong ? { fontWeight: 600 } : undefined}>
+    <span translate="no" style={strong ? { fontWeight: tk.type.title.fontWeight } : undefined}>
       {text}
     </span>
   );

@@ -4,6 +4,7 @@ import React, { Suspense, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Alert, Card, Col, Row, Statistic, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import { AppTabs } from '@/components/common/AppTabs';
@@ -22,7 +23,6 @@ import { useUrlTab, writeUrlParam } from '@/lib/url-state';
 import { LocalDataTable } from '@/components/list/LocalDataTable';
 import type { ListColumn } from '@/components/list/DataTable';
 import { NoAccess } from '@/components/common/NoAccess';
-import { themeFontSize } from '@/lib/theme';
 import { Money } from '@/components/common/Money';
 
 const taxColumns = <T extends { igst: string; cgst: string; sgst: string }>(): ListColumn<T>[] => [
@@ -75,7 +75,7 @@ function GstRegistersPage() {
           <Link href={`/bills?id=${r.billId}`} className="mono">
             {v}
           </Link>
-          <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+          <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
             {formatDate(r.invoiceDate)}
           </div>
         </div>
@@ -88,8 +88,8 @@ function GstRegistersPage() {
       cardText: (r) => [r.recipientName, r.section, r.recipientGstin ?? 'Unregistered'].join(' · '),
       render: (_, r) => (
         <div>
-          {r.recipientName} <AppTag variant="kind" style={{ marginLeft: 4 }}>{r.section}</AppTag>
-          <div className="text-muted mono" translate="no" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+          {r.recipientName} <AppTag variant="kind" style={{ marginLeft: tk.space[1] }}>{r.section}</AppTag>
+          <div className="text-muted mono" translate="no" style={{ fontSize: tk.type.caption.fontSize }}>
             {r.recipientGstin ? <span translate="no">{r.recipientGstin}</span> : 'Unregistered'} · {placeOfSupply(r.placeOfSupply) || 'place of supply not known'}
           </div>
         </div>
@@ -112,7 +112,7 @@ function GstRegistersPage() {
       render: (_, r) => (
         <div>
           <span className="mono" translate="no">{r.invoiceNo ?? <Typography.Text type="warning">no invoice no.</Typography.Text>}</span>
-          <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+          <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
             {formatDate(r.invoiceDate)}
           </div>
         </div>
@@ -127,11 +127,11 @@ function GstRegistersPage() {
         <div>
           {r.supplierName}
           {!r.itcEligible && (
-            <AppTag meaning="failed" style={{ marginLeft: 6 }}>
+            <AppTag meaning="failed" style={{ marginInlineStart: tk.space[2] }}>
               No GSTIN
             </AppTag>
           )}
-          <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+          <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
             <span className="mono" translate="no">{r.supplierGstin ?? NO_VALUE}</span> · {GST_SOURCE_LABELS[r.source]} {r.ref} · {r.projectCode}
           </div>
         </div>
@@ -167,11 +167,11 @@ function GstRegistersPage() {
       {isLoading && <PageSkeleton shape="workspace" header={false} />}
       {data && (
         <>
-          <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
+          <Row gutter={[12, 12]} style={{ marginBottom: tk.space[4] }}>
             <Col flex="1 1 180px">
               <Card style={{ height: '100%' }}>
                 <Statistic title="Output tax" value={formatINRCompact(data.outwardTotals.tax)} />
-                <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
                   On {formatINR(data.outwardTotals.taxable)} billed, {data.outward.length} invoice{data.outward.length === 1 ? '' : 's'}
                 </Typography.Text>
               </Card>
@@ -179,7 +179,7 @@ function GstRegistersPage() {
             <Col flex="1 1 180px">
               <Card style={{ height: '100%' }}>
                 <Statistic title="Input tax" value={formatINRCompact(data.inwardTotals.tax)} />
-                <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
                   On {formatINR(data.inwardTotals.taxable)} bought from registered suppliers
                 </Typography.Text>
               </Card>
@@ -187,7 +187,7 @@ function GstRegistersPage() {
             <Col flex="1 1 180px">
               <Card style={{ height: '100%' }}>
                 <Statistic title={net >= 0 ? 'Net GST to pay' : 'Input tax carried forward'} value={formatINRCompact(Math.abs(net))} />
-                <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
                   Before TDS credits and the electronic ledgers
                 </Typography.Text>
               </Card>
@@ -195,7 +195,7 @@ function GstRegistersPage() {
             <Col flex="1 1 180px">
               <Card style={{ height: '100%' }}>
                 <Statistic title="Not claimable" value={formatINRCompact(data.ineligibleTax)} />
-                <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
                   GST paid where the supplier&apos;s GSTIN is missing
                 </Typography.Text>
               </Card>
@@ -205,10 +205,10 @@ function GstRegistersPage() {
             <Alert
               type="warning"
               showIcon
-              style={{ marginBottom: 16 }}
+              style={{ marginBottom: tk.space[4] }}
               title="Check before filing"
               description={
-                <ul style={{ margin: 0, paddingLeft: 18 }}>
+                <ul style={{ margin: 0, paddingInlineStart: tk.space[5] }}>
                   {data.warnings.map((w) => (
                     <li key={w}>{w}</li>
                   ))}
@@ -290,7 +290,7 @@ function GstRegistersPage() {
           ]}
         />
       </Card>
-      <Typography.Paragraph type="secondary" style={{ fontSize: themeFontSize('fontSizeSM'), marginTop: 8 }}>
+      <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[2] }}>
         RA bills are taken by bill date once approved, invoice number as in the Tally export; works contracts are supplied where the site is, so their GST is CGST and SGST.
         Purchases are approved bills and expenses by invoice date, one row per GST rate; IGST when the supplier is registered in another state. E-invoicing is not
         generated here.

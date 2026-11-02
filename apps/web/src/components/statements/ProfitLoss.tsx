@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { tk } from '@/ds';
 import { Button, Segmented, Space, Table, Typography } from "antd";
 import type { TableColumnsType } from "antd";
 import { DownloadOutlined } from "@/components/common/icons";
@@ -187,14 +188,14 @@ export function ProfitLoss() {
       tableRows.flatMap((r) => [r, ...(r.children ?? [])]),
     );
   return (
-    <div style={{ padding: 16 }}>
+    <div style={{ padding: tk.space[4] }}>
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
-          gap: 8,
+          gap: tk.space[2],
           flexWrap: "wrap",
-          marginBottom: 12,
+          marginBottom: tk.space[3],
         }}
       >
         <Space wrap>
@@ -252,7 +253,7 @@ export function ProfitLoss() {
               to,
             )}
           />
-          <Typography.Paragraph type="secondary" style={{ marginTop: 12 }}>
+          <Typography.Paragraph type="secondary" style={{ marginTop: tk.space[3] }}>
             Open a line to see its accounts, and an account for its ledger.
             Accounts choose another line for an account from the chart of
             accounts (Change, Shows in the statements as).

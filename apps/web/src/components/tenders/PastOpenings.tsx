@@ -2,7 +2,8 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Card, Flex, Skeleton, Typography, theme } from 'antd';
+import { Card, Flex, Skeleton, Typography } from 'antd';
+import { tk } from '@/ds';
 import { BID_HISTORY_DAYS, BID_MATCH_LABELS, WORK_KIND_LABELS, sorPctLabel, type BidLevelDto, type PastOpeningsDto, type TenderDetailDto } from '@erp/shared';
 import { usePastOpenings } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
@@ -25,15 +26,14 @@ function basisWords(level: BidLevelDto, data: PastOpeningsDto) {
  * come from `GET /tenders/:id/past-openings`; nothing here is a rule of its own.
  */
 export function PastOpenings({ tender }: { tender: TenderDetailDto }) {
-  const { token } = theme.useToken();
   const { data, isLoading } = usePastOpenings(tender.id);
-  const small = { fontSize: token.fontSizeSM };
+  const small = { fontSize: tk.type.caption.fontSize };
   const level = data?.level ?? null;
   return (
     <Card
       size="small"
       title={
-        <Typography.Title level={2} style={{ fontSize: token.fontSize, margin: 0 }}>
+        <Typography.Title level={2} style={{ fontSize: tk.type.body.fontSize, margin: 0 }}>
           Past openings
         </Typography.Title>
       }
@@ -70,7 +70,7 @@ export function PastOpenings({ tender }: { tender: TenderDetailDto }) {
               justify="space-between"
               align="center"
               gap={12}
-              style={{ minHeight: 44, borderTop: `1px solid ${token.colorBorderSecondary}`, paddingTop: 6 }}
+              style={{ minHeight: 44, borderTop: `1px solid ${tk.color.line.hairline}`, paddingTop: tk.space[2] }}
             >
               <div style={{ minWidth: 0 }}>
                 <Link href={`/tenders/${o.tenderId}`} translate="no">

@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
+import { tk } from '@/ds';
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { App, Button, Card, Col, Descriptions, Dropdown, Flex, InputNumber, Row, Space, Statistic, Table, Typography, theme } from "antd";
+import { App, Button, Card, Col, Descriptions, Dropdown, Flex, InputNumber, Row, Space, Statistic, Table, Typography } from "antd";
 import { AppTag } from "@/components/common/AppTag";
 import { AppTabs } from "@/components/common/AppTabs";
 import type { MenuProps } from "antd";
@@ -88,7 +89,6 @@ export default function TenderPage() {
 }
 
 function TenderView({ tender }: { tender: TenderDetailDto }) {
-  const { token } = theme.useToken();
   const { modal } = App.useApp();
   const router = useRouter();
   const notify = useNotify();
@@ -285,13 +285,13 @@ function TenderView({ tender }: { tender: TenderDetailDto }) {
           title={title}
           value={0}
           formatter={() => value}
-          styles={{ content: { fontSize: token.fontSizeHeading4 } }}
+          styles={{ content: { fontSize: tk.type.lead.fontSize } }}
         />
         {note ? (
           <div
             style={{
-              fontSize: token.fontSizeSM,
-              color: token.colorTextSecondary,
+              fontSize: tk.type.caption.fontSize,
+              color: tk.color.text.muted,
             }}
           >
             {note}
@@ -320,7 +320,7 @@ function TenderView({ tender }: { tender: TenderDetailDto }) {
         }
         extra={actions}
       />
-      <Row gutter={[12, 12]} style={{ marginBottom: token.marginMD }}>
+      <Row gutter={[12, 12]} style={{ marginBottom: tk.space[5] }}>
         {stat(
           "At SOR rates",
           <Money value={tot.sorAmount} paise />,
@@ -441,7 +441,6 @@ function TenderView({ tender }: { tender: TenderDetailDto }) {
 
 /** The quote: on a percentage tender one percentage on the SOR, set here; on an item-rate tender the items' rates. */
 function PricingCard({ tender }: { tender: TenderDetailDto }) {
-  const { token } = theme.useToken();
   const notify = useNotify();
   const act = useTenderAction();
   const tot = tender.totals;
@@ -467,10 +466,10 @@ function PricingCard({ tender }: { tender: TenderDetailDto }) {
     note?: string | null,
     strong?: boolean,
   ) => (
-    <Flex justify="space-between" gap={12} style={{ padding: "4px 0" }}>
+    <Flex justify="space-between" gap={12} style={{ padding: `${tk.space[1]} 0` }}>
       <span>{label}</span>
       <span
-        style={{ textAlign: "right", fontWeight: strong ? 600 : undefined }}
+        style={{ textAlign: "right", fontWeight: strong ? tk.type.title.fontWeight : undefined }}
       >
         {value}
         {note ? (
@@ -478,8 +477,8 @@ function PricingCard({ tender }: { tender: TenderDetailDto }) {
             type="secondary"
             style={{
               display: "block",
-              fontSize: token.fontSizeSM,
-              fontWeight: 400,
+              fontSize: tk.type.caption.fontSize,
+              fontWeight: tk.type.body.fontWeight,
             }}
           >
             {note}
@@ -494,7 +493,7 @@ function PricingCard({ tender }: { tender: TenderDetailDto }) {
       title={
         <Typography.Title
           level={2}
-          style={{ fontSize: token.fontSize, margin: 0 }}
+          style={{ fontSize: tk.type.body.fontSize, margin: 0 }}
         >
           Pricing
         </Typography.Title>
@@ -505,7 +504,7 @@ function PricingCard({ tender }: { tender: TenderDetailDto }) {
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-          columnGap: 32,
+          columnGap: tk.space[8],
           alignItems: "start",
         }}
       >
@@ -523,10 +522,10 @@ function PricingCard({ tender }: { tender: TenderDetailDto }) {
           true,
         )}
         {tender.bidType === "PERCENTAGE" && !fixed ? (
-          <div style={{ padding: "4px 0 8px" }}>
+          <div style={{ padding: `${tk.space[1]} 0 ${tk.space[2]}` }}>
             <label
               htmlFor="tender-pct"
-              style={{ display: "block", marginBottom: 4 }}
+              style={{ display: "block", marginBottom: tk.space[1] }}
             >
               Percentage on the SOR (minus for below)
             </label>
@@ -556,7 +555,7 @@ function PricingCard({ tender }: { tender: TenderDetailDto }) {
             </Space.Compact>
             <Typography.Text
               type="secondary"
-              style={{ fontSize: token.fontSizeSM }}
+              style={{ fontSize: tk.type.caption.fontSize }}
             >
               {pct === null
                 ? "Not set yet"
@@ -611,7 +610,6 @@ function BoqTab({
   onAdd: () => void;
   onImport: () => void;
 }) {
-  const { token } = theme.useToken();
   const notify = useNotify();
   const act = useTenderAction();
   const [askDelete, deleteDialog] = useConfirmDelete();
@@ -638,14 +636,14 @@ function BoqTab({
           title={
             <Typography.Title
               level={2}
-              style={{ fontSize: token.fontSize, margin: 0 }}
+              style={{ fontSize: tk.type.body.fontSize, margin: 0 }}
             >
               Items
             </Typography.Title>
           }
         >
           {edit ? (
-            <Space wrap style={{ marginBottom: token.marginSM }}>
+            <Space wrap style={{ marginBottom: tk.space[3] }}>
               <Button icon={<PlusOutlined />} onClick={onAdd}>
                 Add item
               </Button>
@@ -705,7 +703,7 @@ function BoqTab({
                     </Button>
                     <Typography.Text
                       type="secondary"
-                      style={{ display: "block", fontSize: token.fontSizeSM }}
+                      style={{ display: "block", fontSize: tk.type.caption.fontSize }}
                       translate="no"
                     >
                       {[
@@ -818,7 +816,6 @@ function BidsTab({
   tender: TenderDetailDto;
   onAdd: () => void;
 }) {
-  const { token } = theme.useToken();
   const act = useTenderAction();
   const [askDelete, deleteDialog] = useConfirmDelete();
   const edit = tender.canEdit;
@@ -831,7 +828,7 @@ function BidsTab({
         <Button
           icon={<PlusOutlined />}
           onClick={onAdd}
-          style={{ marginBottom: token.marginSM }}
+          style={{ marginBottom: tk.space[3] }}
         >
           Record a bidder’s price
         </Button>
@@ -864,7 +861,7 @@ function BidsTab({
             render: (_, b) => (
               <span translate="no">
                 {b.bidderName}
-                {b.us ? <AppTag variant="kind" style={{ marginLeft: 8 }}>Us</AppTag> : null}
+                {b.us ? <AppTag variant="kind" style={{ marginLeft: tk.space[2] }}>Us</AppTag> : null}
               </span>
             ),
           },
@@ -932,7 +929,7 @@ function BidsTab({
       {tender.bids.length > 1 ? (
         <Typography.Paragraph
           type="secondary"
-          style={{ marginTop: token.marginSM, marginBottom: 0 }}
+          style={{ marginTop: tk.space[3], marginBottom: 0 }}
         >
           Ranked lowest first. Bids of the same amount share a rank.
         </Typography.Paragraph>
@@ -943,9 +940,8 @@ function BidsTab({
 }
 
 function DetailsTab({ tender: t }: { tender: TenderDetailDto }) {
-  const { token } = theme.useToken();
   const title = (s: string) => (
-    <Typography.Title level={2} style={{ fontSize: token.fontSize, margin: 0 }}>
+    <Typography.Title level={2} style={{ fontSize: tk.type.body.fontSize, margin: 0 }}>
       {s}
     </Typography.Title>
   );

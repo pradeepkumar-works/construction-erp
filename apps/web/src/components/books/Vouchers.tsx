@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Button, Input, Segmented, Space, Table } from 'antd';
+import { tk } from '@/ds';
 import { PlusOutlined } from '@/components/common/icons';
 import type { BookVoucherDto, BookVoucherStatus, BookVoucherType } from '@erp/shared';
 import { canApproveVouchers } from '@erp/shared';
@@ -36,8 +37,8 @@ export function Vouchers() {
     { value: 'all', label: 'All' },
   ];
   return (
-    <div style={{ padding: 16 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+    <div style={{ padding: tk.space[4] }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: tk.space[2], flexWrap: 'wrap', marginBottom: tk.space[3] }}>
         <Space wrap>
           <Segmented
             aria-label="Which vouchers"

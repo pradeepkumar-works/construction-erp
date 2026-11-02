@@ -2,6 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { App, Checkbox, Form, Input, InputNumber, Select } from 'antd';
+import { tk } from '@/ds';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ClientDto, ClientTermPercent } from '@erp/shared';
 import { CLIENT_TERM_PERCENTS, CONTRACT_PERCENT_LABELS, GST_STATES, GSTIN_PATTERN, MAX_GST_RATE, PAN_PATTERN, panFromGstin, STANDARD_TERMS, gstStateCode } from '@erp/shared';
@@ -151,7 +152,7 @@ export function ClientFormModal({ open, client, initialName, onClose, onSaved }:
           </FormGrid>
         </FormSection>
         <FormSection title="Usual contract terms">
-          <p style={{ margin: '0 0 12px' }}>A new project for this client starts with these. Left empty, a term takes the standard figure shown.</p>
+          <p style={{ margin: `0 0 ${tk.space[3]}` }}>A new project for this client starts with these. Left empty, a term takes the standard figure shown.</p>
           <FormGrid cols={3}>
             {CLIENT_TERM_PERCENTS.map((k) => (
               <Form.Item key={k} name={k} label={`${CONTRACT_PERCENT_LABELS[k]} %`}>

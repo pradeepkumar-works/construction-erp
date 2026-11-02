@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { App, Button, Form, Input, InputNumber, Space, Table, Tooltip, Typography } from 'antd';
+import { tk } from '@/ds';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { BudgetBoqItemDto, CostHead, ProjectBudgetDto } from '@erp/shared';
 import { COST_HEADS, COST_HEAD_LABELS, unitLabel } from '@erp/shared';
@@ -10,7 +11,6 @@ import { FAIL_NOTICE } from '@/lib/notify';
 import { formatINR, formatQty, toNumber, NO_VALUE } from '@/lib/format';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
-import { themeFontSize } from '@/lib/theme';
 import { Money } from '@/components/common/Money';
 
 interface FormValues {
@@ -76,7 +76,7 @@ export function BudgetFormModal({ open, onClose, budget }: { open: boolean; onCl
     <FormShell open={open} onClose={onClose} form={form} layout="drawer" width={980} title={`Budget: ${budget.projectCode}`} okText="Save" onSubmit={(v) => save.mutateAsync({ v })}>
       <Form form={form} layout="vertical">
         <FormSection title="By cost head">
-          <Typography.Paragraph type="secondary" style={{ fontSize: themeFontSize('fontSizeSM'), marginBottom: 8 }}>
+          <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginBottom: tk.space[2] }}>
             What the whole job should cost under each head of the cost view. This total is the budget at completion; without it, the BOQ budget below is used.
           </Typography.Paragraph>
           <FormGrid cols={3}>
@@ -86,7 +86,7 @@ export function BudgetFormModal({ open, onClose, budget }: { open: boolean; onCl
               </Form.Item>
             ))}
           </FormGrid>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: tk.space[2], marginBottom: tk.space[4] }}>
             <Space wrap>
               <Tooltip title="Material 44%, subcontractors 20%, machinery 16%, labour 12%, site expenses 8%; adjust after">
                 <Button size="small" onClick={splitFromBoq} disabled={boqTotal <= 0}>
@@ -119,14 +119,14 @@ export function BudgetFormModal({ open, onClose, budget }: { open: boolean; onCl
         </FormSection>
 
         <FormSection title="BOQ budget rates">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
-            <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: tk.space[2], marginBottom: tk.space[2] }}>
+            <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
               Our cost per unit of each item, not the client&apos;s rate. It gives each item&apos;s planned margin.
             </div>
             <Space>
-              <span style={{ fontSize: themeFontSize('fontSizeSM') }}>Fill empty rates at</span>
+              <span style={{ fontSize: tk.type.caption.fontSize }}>Fill empty rates at</span>
               <InputNumber<number> size="small" min={1} max={200} value={fillPct} onChange={setFillPct} suffix="%" style={{ width: 90 }} aria-label="Fill empty rates at, % of the client's rate" />
-              <span style={{ fontSize: themeFontSize('fontSizeSM') }}>of the client&apos;s rate</span>
+              <span style={{ fontSize: tk.type.caption.fontSize }}>of the client&apos;s rate</span>
               <Button size="small" onClick={fillRates}>
                 Fill
               </Button>
@@ -156,7 +156,7 @@ export function BudgetFormModal({ open, onClose, budget }: { open: boolean; onCl
               { title: 'Budget', key: 'amount', width: 130, align: 'right', render: (_, r) => <span className="mono" translate="no">{rates?.[r.boqItemId] !== null && rates?.[r.boqItemId] !== undefined ? formatINR(toNumber(r.qty) * rates[r.boqItemId]!) : NO_VALUE}</span> },
             ]}
           />
-          <div style={{ textAlign: 'right', marginTop: 8 }}>
+          <div style={{ textAlign: 'right', marginTop: tk.space[2] }}>
             <Typography.Text strong>
               BOQ budget <Money value={boqTotal} />
             </Typography.Text>

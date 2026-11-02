@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Button, Divider, Space, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { VendorPaymentDto } from '@erp/shared';
@@ -54,7 +55,7 @@ export function BillPayments({ target, approved, heading = true }: { target: Pay
           Payments ({data?.total ?? 0})
         </Divider>
       )}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, gap: 8, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: tk.space[2], gap: tk.space[2], flexWrap: 'wrap' }}>
         <Typography.Text>
           Paid {formatINR(target.paidAmount, true)} of {formatINR(target.payable, true)} ·{' '}
           {outstanding > 0 ? (

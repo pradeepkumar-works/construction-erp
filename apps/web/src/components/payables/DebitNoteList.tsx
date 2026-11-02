@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Checkbox, Select } from 'antd';
+import { tk } from '@/ds';
 import type { DebitNoteDto, DebitNoteReason, DebitNoteSortField } from '@erp/shared';
 import { DEBIT_NOTE_REASONS, DEBIT_NOTE_REASON_LABELS, LIST_SORT_FIELDS } from '@erp/shared';
 import { useDebitNotes } from '@/lib/queries';
@@ -10,7 +11,6 @@ import { useListPage } from '@/lib/listPage';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { DEBIT_NOTE_EXPORT } from '@/lib/exportColumns';
 import { formatDate, formatINR, toNumber } from '@/lib/format';
-import { themeFontSize } from '@/lib/theme';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
 import { ExportButton } from '@/components/common/ExportButton';
@@ -63,7 +63,7 @@ export function DebitNoteList({ projectId, vendorId }: { projectId?: string; ven
           <RecordLink href={`/debit-notes/${r.id}`} onOpen={() => setOpened(r.id)} strong className="mono">
             {r.noteNo}
           </RecordLink>
-          <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+          <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
             {DEBIT_NOTE_REASON_LABELS[r.reason]}
           </div>
         </div>
@@ -89,7 +89,7 @@ export function DebitNoteList({ projectId, vendorId }: { projectId?: string; ven
       render: (_, r) => (
         <div>
           {r.vendorName}
-          <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+          <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
             {r.projectCode} · {r.projectName}
           </div>
         </div>

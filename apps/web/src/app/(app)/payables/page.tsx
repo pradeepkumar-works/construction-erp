@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Button, Card, Col, Row, Space, Statistic, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { AppTabs } from '@/components/common/AppTabs';
 import { PlusOutlined } from '@/components/common/icons';
@@ -39,7 +40,6 @@ import { LocalDataTable } from '@/components/list/LocalDataTable';
 import { DueCell } from '@/components/list/DueCell';
 import { exportSelected } from '@/components/list/bulk';
 import { RecordLink } from '@/components/record/RecordLink';
-import { themeColor, themeFontSize } from '@/lib/theme';
 import { VendorSelect } from '@/components/common/SearchSelect';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
 import { MoreActions } from '@/components/record/MoreActions';
@@ -275,7 +275,7 @@ export default function PayablesPage() {
           <RecordLink href={r.billType === 'VENDOR_BILL' ? `/vendor-bills/${r.billId}` : `/subcontract-bills/${r.billId}`} onOpen={() => setBill(r)} strong className="mono">
             {r.billLabel}
           </RecordLink>
-          <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+          <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
             {r.billType === 'VENDOR_BILL' ? 'Vendor bill' : 'Subcontractor bill'} · {formatDate(r.billDate)}
           </div>
         </div>
@@ -291,11 +291,11 @@ export default function PayablesPage() {
         <div>
           {r.vendorName}
           {isSmall(r.vendorMsme) && (
-            <AppTag {...(r.msmeFlag ? { meaning: 'failed' as const } : { variant: 'kind' as const })} style={{ marginLeft: 6 }}>
+            <AppTag {...(r.msmeFlag ? { meaning: 'failed' as const } : { variant: 'kind' as const })} style={{ marginInlineStart: tk.space[2] }}>
               {MSME_CATEGORY_LABELS[r.vendorMsme!]}
             </AppTag>
           )}
-          <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+          <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
             {r.projectCode} · {r.projectName}
           </div>
         </div>
@@ -322,7 +322,7 @@ export default function PayablesPage() {
             <RecordLink href={`/payment-requests/${r.request.id}`} onOpen={() => setRequest(r.request!.id)} className="mono">
               {r.request.requestNo}
             </RecordLink>
-            <div style={{ fontSize: themeFontSize('fontSizeSM') }}>{r.request.status === 'APPROVED' ? `Approved, ${formatINR(r.request.unpaid)} to pay` : SUBMISSION_STATUS_LABELS[r.request.status]}</div>
+            <div style={{ fontSize: tk.type.caption.fontSize }}>{r.request.status === 'APPROVED' ? `Approved, ${formatINR(r.request.unpaid)} to pay` : SUBMISSION_STATUS_LABELS[r.request.status]}</div>
           </div>
         ) : (
           <span className="text-muted">{NO_VALUE}</span>
@@ -383,7 +383,7 @@ export default function PayablesPage() {
         <span>
           {v}
           {isSmall(r.vendorMsme) && (
-            <AppTag meaning="waiting" style={{ marginLeft: 6 }}>
+            <AppTag meaning="waiting" style={{ marginInlineStart: tk.space[2] }}>
               {MSME_CATEGORY_LABELS[r.vendorMsme!]}
             </AppTag>
           )}
@@ -429,27 +429,27 @@ export default function PayablesPage() {
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {isLoading && <PageSkeleton shape="workspace" header={false} />}
       {t && (
-        <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
+        <Row gutter={[12, 12]} style={{ marginBottom: tk.space[4] }}>
           <Col flex="1 1 180px">
             <Card style={{ height: '100%' }}>
               <Statistic title="Outstanding" value={formatINRCompact(t.outstanding)} />
-              <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+              <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
                 {data.openBills.length} open bill{data.openBills.length === 1 ? '' : 's'} · paid so far {formatINR(t.paid)}
               </Typography.Text>
             </Card>
           </Col>
           <Col flex="1 1 180px">
             <Card style={{ height: '100%' }}>
-              <Statistic title="Overdue" value={formatINRCompact(t.overdue)} styles={{ content: { color: toNumber(t.overdue) > 0 ? themeColor('colorErrorText') : undefined } }} />
-              <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+              <Statistic title="Overdue" value={formatINRCompact(t.overdue)} styles={{ content: { color: toNumber(t.overdue) > 0 ? tk.color.tone.danger.fg : undefined } }} />
+              <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
                 Due in the next 7 days: {formatINR(t.dueSoon)}
               </Typography.Text>
             </Card>
           </Col>
           <Col flex="1 1 180px">
             <Card style={{ height: '100%' }}>
-              <Statistic title="MSME at risk" value={formatINRCompact(t.msmeAtRisk)} styles={{ content: { color: toNumber(t.msmeAtRisk) > 0 ? themeColor('colorErrorText') : undefined } }} />
-              <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+              <Statistic title="MSME at risk" value={formatINRCompact(t.msmeAtRisk)} styles={{ content: { color: toNumber(t.msmeAtRisk) > 0 ? tk.color.tone.danger.fg : undefined } }} />
+              <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
                 Micro and small enterprises due within 7 days or late
               </Typography.Text>
             </Card>
@@ -457,7 +457,7 @@ export default function PayablesPage() {
           <Col flex="1 1 180px">
             <Card style={{ height: '100%' }}>
               <Statistic title="Retention held" value={formatINRCompact(t.retentionHeld)} />
-              <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+              <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
                 TDS deducted {formatINR(t.tdsDeducted)}
               </Typography.Text>
             </Card>

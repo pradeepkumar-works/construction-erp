@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, App, Button, Descriptions, Empty, Flex, Form, Input, InputNumber, Popconfirm, Progress, Segmented, Select, Space, Table, Tooltip, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import { EditOutlined, PlusOutlined } from '@/components/common/icons';
@@ -13,7 +14,6 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useActivities, useBillingBreakup, useEpc, useStockItems } from '@/lib/queries';
 import { formatMoney, formatMonthShort, formatPct, inContract, moneyPrefix, outOfContract, toNumber, NO_VALUE, todayDate } from '@/lib/format';
-import { themeColor, themeFontSize } from '@/lib/theme';
 import { QueryError } from '@/components/common/QueryState';
 import { Section } from '@/components/common/Section';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
@@ -98,7 +98,7 @@ export function BillingBreakup({ projectId }: { projectId: string }) {
       render: (_: unknown, s: BillingStageDto) => (
         <div style={{ minWidth: 200 }}>
           <Pct value={s.evidencePct} label={`${s.name}: earned today`} />
-          <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+          <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
             {s.evidenceText}
           </Typography.Text>
         </div>
@@ -160,10 +160,10 @@ export function BillingBreakup({ projectId }: { projectId: string }) {
           </Space>
         }
       >
-        <Descriptions size="small" column={{ xs: 1, sm: 3 }} layout="vertical" bordered style={{ marginBottom: 12 }}>
+        <Descriptions size="small" column={{ xs: 1, sm: 3 }} layout="vertical" bordered style={{ marginBottom: tk.space[3] }}>
           <Descriptions.Item label="Lump sum the components share">
             {money(data.lumpSum)}
-            {!data.lumpSumSet && <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>The contract value</div>}
+            {!data.lumpSumSet && <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>The contract value</div>}
           </Descriptions.Item>
           <Descriptions.Item label="Unit-rate items paid at">
             <span className="mono" translate="no">rate × {data.tenderFactor}</span>
@@ -176,10 +176,10 @@ export function BillingBreakup({ projectId }: { projectId: string }) {
           <Alert
             type="warning"
             showIcon
-            style={{ marginBottom: 12 }}
+            style={{ marginBottom: tk.space[3] }}
             title="Bills stay on measured items until the break-up adds up"
             description={
-              <ul style={{ margin: 0, paddingInlineStart: 18 }}>
+              <ul style={{ margin: 0, paddingInlineStart: tk.space[5] }}>
                 {data.problems.map((p) => (
                   <li key={p}>{p}</li>
                 ))}
@@ -229,7 +229,7 @@ export function BillingBreakup({ projectId }: { projectId: string }) {
                 title: 'Component',
                 key: 'name',
                 render: (_, c) => (
-                  <div style={{ paddingInlineStart: c.parentId ? 20 : 0 }}>
+                  <div style={{ paddingInlineStart: c.parentId ? tk.space[5] : 0 }}>
                     <span className="mono" translate="no">
                       {c.code}
                     </span>{' '}
@@ -370,7 +370,7 @@ function MilestoneGrid({ data }: { data: BillingBreakupDto }) {
               const ended = dayjs(m).endOf('month').format('YYYY-MM-DD') <= today;
               const behind = ended && target !== null && actual !== null && actual < target - 0.05;
               return (
-                <span className="mono" translate="no" style={{ whiteSpace: 'nowrap', color: behind ? themeColor('colorErrorText') : undefined }}>
+                <span className="mono" translate="no" style={{ whiteSpace: 'nowrap', color: behind ? tk.color.tone.danger.fg : undefined }}>
                   {target === null ? NO_VALUE : Math.round(target)}
                   {actual !== null ? ` / ${Math.round(actual)}` : ''}
                   {behind ? (
@@ -795,7 +795,7 @@ function TiersModal({ data, open, onClose, onSaved }: { data: BillingBreakupDto;
                   <Form.Item name={[f.name, 'withheldPct']} label={f.name === 0 ? 'Withheld (%)' : undefined} rules={[{ required: true, message: 'Enter the %' }]}>
                     <InputNumber min={0} max={100} step={0.5} style={{ width: 110 }} aria-label="Withheld" />
                   </Form.Item>
-                  <Button type="text" danger onClick={() => remove(f.name)} style={{ marginTop: f.name === 0 ? 30 : 0 }}>
+                  <Button type="text" danger onClick={() => remove(f.name)} style={{ marginTop: f.name === 0 ? `calc(${tk.type.body.lineHeight} + ${tk.space[1]})` : 0 }}>
                     Remove
                   </Button>
                 </Space>

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { App, Button, Checkbox, Form, Input, InputNumber, Select } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
@@ -129,8 +130,8 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
       <FormShell open={open} onClose={onClose} form={form} layout="drawer" title={`Contract: ${contract.projectCode}`} okText="Save contract" onSubmit={(v) => save.mutateAsync(v)}>
         <Form form={form} layout="vertical">
           <FormSection title="Client and agreement">
-            <Form.Item label="Client" required={false} style={{ marginBottom: 12 }}>
-              <div style={{ display: 'flex', gap: 8 }}>
+            <Form.Item label="Client" required={false} style={{ marginBottom: tk.space[3] }}>
+              <div style={{ display: 'flex', gap: tk.space[2] }}>
                 <Form.Item name="clientId" noStyle>
                   <ClientSelect
                     allowClear

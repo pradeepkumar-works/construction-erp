@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { App, Button, Checkbox, Dropdown, Form, Input, InputNumber, Radio, Select, Space, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -23,7 +24,6 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useContractObligations } from '@/lib/queries';
 import { formatDate, formatINR, toNumber, todayDate } from '@/lib/format';
-import { themeFontSize } from '@/lib/theme';
 import { AppTag } from '@/components/common/AppTag';
 import { DatePicker } from '@/components/common/DatePicker';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
@@ -31,8 +31,6 @@ import { MoreOutlined, PlusOutlined } from '@/components/common/icons';
 import { Section } from '@/components/common/Section';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
-
-const srOnly: React.CSSProperties = { position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 };
 
 interface FormValues {
   title?: string;
@@ -135,7 +133,7 @@ export function ObligationsCard({ projectId }: { projectId: string }) {
   return (
     <Section title="Obligations and recoveries" extra={extra} loading={isLoading}>
       {summary && (
-        <Typography.Paragraph type="secondary" style={{ marginBottom: 12 }}>
+        <Typography.Paragraph type="secondary" style={{ marginBottom: tk.space[3] }}>
           {summary}
         </Typography.Paragraph>
       )}
@@ -157,7 +155,7 @@ export function ObligationsCard({ projectId }: { projectId: string }) {
             render: (_, o) => (
               <div>
                 <div>{o.title}</div>
-                <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                   {[o.clause, o.party === 'CLIENT' ? OBLIGATION_PARTY_LABELS.CLIENT : null].filter(Boolean).join(' · ') || null}
                 </div>
               </div>
@@ -169,7 +167,7 @@ export function ObligationsCard({ projectId }: { projectId: string }) {
             render: (_, o) => (
               <div>
                 <div translate="no">{o.due ? formatDate(o.due) : '-'}</div>
-                <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                   {deadlineRule(o)}
                 </div>
               </div>
@@ -181,7 +179,7 @@ export function ObligationsCard({ projectId }: { projectId: string }) {
             render: (_, o) => (
               <div>
                 <AppTag kind="obligation" status={o.state}>{OBLIGATION_STATE_LABELS[o.state]}</AppTag>
-                <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                   {o.metOn ? `Met ${formatDate(o.metOn)}` : stateNote(o)}
                 </div>
               </div>
@@ -200,7 +198,7 @@ export function ObligationsCard({ projectId }: { projectId: string }) {
                 <div>
                   <div translate="no">{cost ? formatINR(cost) : '-'}</div>
                   {note && (
-                    <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                    <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                       {note}
                     </div>
                   )}
@@ -211,7 +209,7 @@ export function ObligationsCard({ projectId }: { projectId: string }) {
           ...(canEdit
             ? [
                 {
-                  title: <span style={srOnly}>Actions</span>,
+                  title: <span className="visually-hidden">Actions</span>,
                   key: 'actions',
                   width: 48,
                   render: (_: unknown, o: ContractObligationDto) => (
