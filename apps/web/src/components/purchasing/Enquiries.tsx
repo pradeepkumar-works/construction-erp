@@ -2,6 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { Alert, App, Button, Form, Input, Modal, Select, Space, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import { CopyOutlined, WhatsAppOutlined } from '@/components/common/icons';
@@ -9,7 +10,6 @@ import dayjs from 'dayjs';
 import { ENQUIRY_DEFAULT_DAYS, ENQUIRY_VENDOR_STATE_LABELS, MAX_PAGE_SIZE, whatsAppShareUrl, type EnquiryDto, type EnquiryVendorDto, type MaterialRequestDto } from '@erp/shared';
 import { useEnquiries, useSendEnquiry, useVendorsPage } from '@/lib/queries';
 import { formatDate, formatDateTime } from '@/lib/format';
-import { themeFontSize } from '@/lib/theme';
 import { FormShell } from '@/components/form/FormShell';
 
 
@@ -111,9 +111,9 @@ export function EnquirySentModal({ enquiry, request, onClose }: { enquiry: Enqui
               {byHand.map((v) => (
                 <div key={v.vendorId}>
                   <Typography.Text strong translate="no">{v.vendorName}</Typography.Text>
-                  {v.emailError ? <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>Not emailed: {v.emailError}</div> : null}
+                  {v.emailError ? <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>Not emailed: {v.emailError}</div> : null}
                   {v.link ? (
-                    <Space.Compact style={{ width: '100%', marginTop: 4 }}>
+                    <Space.Compact style={{ width: '100%', marginTop: tk.space[1] }}>
                       <Input readOnly value={v.link} aria-label={`Quotation link for ${v.vendorName}`} onFocus={(e) => e.target.select()} />
                       <Button icon={<CopyOutlined />} onClick={() => copy(v)}>
                         Copy
@@ -145,12 +145,12 @@ export function EnquiriesList({ requestId }: { requestId: string }) {
       size="small"
       rowKey="key"
       pagination={false}
-      style={{ marginBottom: 12 }}
+      style={{ marginBottom: tk.space[3] }}
       dataSource={rows}
       scroll={{ x: 560 }}
       columns={[
-        { title: 'Enquiry to', dataIndex: 'vendorName', render: (v, r) => <div translate="no">{v}<div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{r.email ?? 'No email'}</div></div> },
-        { title: 'Sent', dataIndex: 'sentAt', width: 170, render: (v, r) => <div>{formatDateTime(v)}<div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>by {r.sentBy}</div></div> },
+        { title: 'Enquiry to', dataIndex: 'vendorName', render: (v, r) => <div translate="no">{v}<div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>{r.email ?? 'No email'}</div></div> },
+        { title: 'Sent', dataIndex: 'sentAt', width: 170, render: (v, r) => <div>{formatDateTime(v)}<div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>by {r.sentBy}</div></div> },
         { title: 'Closes', dataIndex: 'closesOn', width: 110, render: (v) => formatDate(v) },
         {
           title: 'Status',
@@ -161,7 +161,7 @@ export function EnquiriesList({ requestId }: { requestId: string }) {
               <AppTag kind="enquiryVendor" status={r.state} style={{ margin: 0 }}>
                 {ENQUIRY_VENDOR_STATE_LABELS[r.state]}
               </AppTag>
-              {r.respondedAt ? <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{formatDateTime(r.respondedAt)}</div> : null}
+              {r.respondedAt ? <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>{formatDateTime(r.respondedAt)}</div> : null}
             </div>
           ),
         },

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { App, Button, Space, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { TableProps } from 'antd';
 import type { FuelDispenseDto, MachineDayDto, MachineFuelDto } from '@erp/shared';
 import { canManageIntegrations } from '@erp/shared';
@@ -9,7 +10,6 @@ import { useAuth } from '@/lib/auth';
 import { useMachineDays, useRetryDispense } from '@/lib/queries';
 import { errorMessage } from '@/lib/api';
 import { formatDateTime, formatQty, formatTime, NO_VALUE } from '@/lib/format';
-import { themeFontSize } from '@/lib/theme';
 import { AppTag } from '@/components/common/AppTag';
 import { LinkButton } from '@/components/common/LinkButton';
 import { Section } from '@/components/common/Section';
@@ -24,7 +24,7 @@ const L = (v: string | null, muted = true) =>
       {formatQty(v)} L
     </span>
   );
-const small = { fontSize: themeFontSize('fontSizeSM') };
+const small = { fontSize: tk.type.caption.fontSize };
 
 /** What does not add up on a machine's tank that day, as tags; the norm's only where asked for. */
 export function fuelTags(f: MachineFuelDto, withNorm = true): React.ReactNode[] {
@@ -205,16 +205,16 @@ export function FuelTanks({ date, projectId, canIssue }: { date: string; project
   return (
     <>
       {rows.length ? (
-        <Section style={{ marginTop: 16 }} title="Fuel tanks">
+        <Section style={{ marginTop: tk.space[4] }} title="Fuel tanks">
           <Table<TankRow> rowKey="id" size="small" pagination={false} dataSource={rows} scroll={{ x: 1000 }} columns={columns} />
-          <Typography.Paragraph type="secondary" style={{ ...small, marginTop: 8, marginBottom: 0 }}>
+          <Typography.Paragraph type="secondary" style={{ ...small, marginTop: tk.space[2], marginBottom: 0 }}>
             From each machine&rsquo;s fuel sensor through its tracker. A rise of 20 litres or more is a fill and is set against the day&rsquo;s slips; a fall
             as big with the engine off is a drain. Set the tank&rsquo;s size on the machine in Equipment when the sensor sends a %.
           </Typography.Paragraph>
         </Section>
       ) : null}
       {waiting.length ? (
-        <Section style={{ marginTop: 16 }} title="Dispenser fills not on a slip">
+        <Section style={{ marginTop: tk.space[4] }} title="Dispenser fills not on a slip">
           <Table<FuelDispenseDto> rowKey="id" size="small" pagination={false} dataSource={waiting} scroll={{ x: 760 }} columns={waitingColumns} />
         </Section>
       ) : null}

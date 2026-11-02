@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Alert, App, Checkbox, Grid, Modal, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { StandardNormMatchDto, StandardNormPlanDto, StandardNormResultDto } from '@erp/shared';
 import { api } from '@/lib/api';
@@ -10,7 +11,6 @@ import { useStandardNorms } from '@/lib/queries';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { AppTag } from '@/components/common/AppTag';
 import { formatQty } from '@/lib/format';
-import { themeFontSize } from '@/lib/theme';
 
 /**
  * Adopt the standard norms library on a project: the reconciliation stayed empty
@@ -21,7 +21,7 @@ function workCell(r: StandardNormMatchDto) {
   return (
     <div>
       <span translate="no">{r.itemNo}</span> {r.description}
-      <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+      <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
         {r.normLabel} · {r.note}
       </div>
     </div>
@@ -31,7 +31,7 @@ function workCell(r: StandardNormMatchDto) {
 /** What one unit of the work takes. */
 function materialsCell(r: StandardNormMatchDto) {
   return (
-    <div style={{ fontSize: themeFontSize('fontSizeSM') }}>
+    <div style={{ fontSize: tk.type.caption.fontSize }}>
       {r.materials.map((m) => (
         <div key={m.item}>
           <span className="mono" translate="no">
@@ -120,18 +120,18 @@ export function StandardNormsModal({ open, onClose, projectId }: { open: boolean
             }
           />
           {plan.newItems.length ? (
-            <Typography.Paragraph type="secondary" style={{ marginTop: 12, marginBottom: 0 }}>
+            <Typography.Paragraph type="secondary" style={{ marginTop: tk.space[3], marginBottom: 0 }}>
               {plan.newItems.length} item{plan.newItems.length === 1 ? '' : 's'} will be added to the item master:{' '}
               <span translate="no">{plan.newItems.map((i) => `${i.name} (${i.unit})`).join(', ')}</span>.
             </Typography.Paragraph>
           ) : null}
           {already ? (
-            <Checkbox checked={replace} onChange={(e) => setReplace(e.target.checked)} style={{ marginTop: 12 }}>
+            <Checkbox checked={replace} onChange={(e) => setReplace(e.target.checked)} style={{ marginTop: tk.space[3] }}>
               Replace the norms already set on {already} item{already === 1 ? '' : 's'}
             </Checkbox>
           ) : null}
           {plan.canAdopt ? null : (
-            <Alert style={{ marginTop: 12 }} type="info" showIcon title="You can see these but not set them" description="The QS, the project manager, management or an admin can add them." />
+            <Alert style={{ marginTop: tk.space[3] }} type="info" showIcon title="You can see these but not set them" description="The QS, the project manager, management or an admin can add them." />
           )}
         </>
       ) : (

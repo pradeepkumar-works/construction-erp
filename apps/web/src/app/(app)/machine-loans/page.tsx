@@ -2,7 +2,8 @@
 
 import React, { Suspense, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Card, Col, Row, Select, Statistic, Table, Typography, theme } from 'antd';
+import { Button, Card, Col, Row, Select, Statistic, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { PlusOutlined } from '@/components/common/icons';
 import { EQUIPMENT_LOAN_STATUS_LABELS, canManageMachineLoans, type EquipmentLoanDto, type EquipmentLoanStatus, type LenderOutstandingDto } from '@erp/shared';
@@ -33,7 +34,6 @@ const STATUS_OPTIONS: { value: EquipmentLoanStatus | 'ALL'; label: string }[] = 
  * overdue, and the running loans by lender. Kept by admin, management and accounts.
  */
 function MachineLoansPage() {
-  const { token } = theme.useToken();
   const { user } = useAuth();
   const router = useRouter();
   const canManage = !!user && canManageMachineLoans(user.roleKey);
@@ -54,7 +54,7 @@ function MachineLoansPage() {
           <RecordLink href={`/machine-loans/${r.id}`} onOpen={() => open(r.id)} strong>
             {r.lenderName}
           </RecordLink>
-          <Typography.Text type="secondary" style={{ display: 'block', fontSize: token.fontSizeSM }} translate="no">
+          <Typography.Text type="secondary" style={{ display: 'block', fontSize: tk.type.caption.fontSize }} translate="no">
             {r.loanNo}
           </Typography.Text>
         </div>
@@ -67,7 +67,7 @@ function MachineLoansPage() {
         <div translate="no">
           {r.equipmentCode} {r.equipmentName}
           {r.projectName ? (
-            <Typography.Text type="secondary" style={{ display: 'block', fontSize: token.fontSizeSM }}>
+            <Typography.Text type="secondary" style={{ display: 'block', fontSize: tk.type.caption.fontSize }}>
               {r.projectName}
             </Typography.Text>
           ) : null}
@@ -89,7 +89,7 @@ function MachineLoansPage() {
           <div>
             <span translate="no">{formatDate(r.nextDue.dueDate)}</span> <EmiStageTag stage={r.nextDue.stage} />
             {r.overdueCount > 1 ? (
-              <Typography.Text type="danger" style={{ display: 'block', fontSize: token.fontSizeSM }}>
+              <Typography.Text type="danger" style={{ display: 'block', fontSize: tk.type.caption.fontSize }}>
                 {`${r.overdueCount} EMIs overdue, ${formatINR(r.overdueAmount)}`}
               </Typography.Text>
             ) : null}
@@ -111,8 +111,8 @@ function MachineLoansPage() {
   const stat = (title: string, value: React.ReactNode, note?: React.ReactNode) => (
     <Col xs={12} lg={6}>
       <Card size="small" style={{ height: '100%' }}>
-        <Statistic title={title} value={0} formatter={() => value} styles={{ content: { fontSize: token.fontSizeHeading4 } }} />
-        {note ? <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{note}</div> : null}
+        <Statistic title={title} value={0} formatter={() => value} styles={{ content: { fontSize: tk.type.lead.fontSize } }} />
+        {note ? <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{note}</div> : null}
       </Card>
     </Col>
   );
@@ -124,7 +124,7 @@ function MachineLoansPage() {
       {isLoading ? <PageSkeleton header={false} shape="list" /> : null}
       {s ? (
         <>
-          <Row gutter={[12, 12]} style={{ marginBottom: token.marginMD }}>
+          <Row gutter={[12, 12]} style={{ marginBottom: tk.space[5] }}>
             {stat('Owed on running loans', <Money value={s.outstanding} />, `${s.loans} loan${s.loans === 1 ? '' : 's'}`)}
             {stat(
               'Overdue',
@@ -141,7 +141,7 @@ function MachineLoansPage() {
             {stat('Interest this year', <Money value={s.interestThisYear} />, 'Paid since 1 April, a finance cost')}
           </Row>
           {s.lenders.length ? (
-            <Card size="small" title={<Typography.Title level={2} style={{ fontSize: token.fontSize, margin: 0 }}>Owed by lender</Typography.Title>} style={{ marginBottom: token.marginMD }}>
+            <Card size="small" title={<Typography.Title level={2} style={{ fontSize: tk.type.body.fontSize, margin: 0 }}>Owed by lender</Typography.Title>} style={{ marginBottom: tk.space[5] }}>
               <Table<LenderOutstandingDto>
                 size="small"
                 rowKey="lenderName"

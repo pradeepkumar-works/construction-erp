@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Button, Progress, Space, theme } from 'antd';
+import { Button, Progress, Space } from 'antd';
+import { tk } from '@/ds';
 import { PlusOutlined } from '@/components/common/icons';
 import type { WorkOrderDto, WorkOrderSortField, VendorKind } from '@erp/shared';
 import { LIST_SORT_FIELDS, canIssueWorkOrder } from '@erp/shared';
@@ -30,8 +31,7 @@ const SUB_KINDS: VendorKind[] = ['SUBCONTRACTOR', 'LABOUR_CONTRACTOR'];
 const KEYS = ['status', 'mine', 'from', 'to', 'vendorId', 'open'] as const;
 
 function Sub({ children }: { children: React.ReactNode }) {
-  const { token } = theme.useToken();
-  return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
+  return <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{children}</div>;
 }
 
 function workOrderColumns({ showProject, onOpen, onEdit, sortOrderFor }: { showProject: boolean; onOpen: (id: string) => void; onEdit: (row: WorkOrderDto) => void; sortOrderFor: (key: WorkOrderSortField) => 'ascend' | 'descend' | null }): ListColumn<WorkOrderDto>[] {

@@ -2,6 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { Alert, Form, Input, Select } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import type { AiDraftDto, MaterialPriority, MaterialRequestDto } from '@erp/shared';
@@ -91,7 +92,7 @@ export function MrFormModal({ open, onClose, projectId, defaultProjectId, entry,
     >
       <Form form={form} layout="vertical">
         {entry?.reviewNote && (
-          <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Reviewer note from ${entry.reviewedByName ?? 'approver'}`} description={entry.reviewNote} />
+          <Alert type="warning" showIcon style={{ marginBottom: tk.space[4] }} title={`Reviewer note from ${entry.reviewedByName ?? 'approver'}`} description={entry.reviewNote} />
         )}
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
           <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Choose a project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))} />

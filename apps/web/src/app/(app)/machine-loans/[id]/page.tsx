@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { App, Button, Card, Col, Descriptions, Dropdown, Flex, Row, Space, Statistic, Table, Typography, theme } from 'antd';
+import { App, Button, Card, Col, Descriptions, Dropdown, Flex, Row, Space, Statistic, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import type { MenuProps } from 'antd';
 import { DeleteOutlined, EditOutlined, MoreOutlined, RollbackOutlined } from '@/components/common/icons';
@@ -25,7 +26,6 @@ import { Money } from '@/components/common/Money';
  * order, close the loan early, or undo the last EMI recorded.
  */
 export default function MachineLoanPage() {
-  const { token } = theme.useToken();
   const { modal } = App.useApp();
   const params = useParams<{ id: string }>();
   const router = useRouter();
@@ -102,8 +102,8 @@ export default function MachineLoanPage() {
   const stat = (title: string, value: React.ReactNode, note?: React.ReactNode) => (
     <Col xs={12} lg={6}>
       <Card size="small" style={{ height: '100%' }}>
-        <Statistic title={title} value={0} formatter={() => value} styles={{ content: { fontSize: token.fontSizeHeading4 } }} />
-        {note ? <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{note}</div> : null}
+        <Statistic title={title} value={0} formatter={() => value} styles={{ content: { fontSize: tk.type.lead.fontSize } }} />
+        {note ? <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{note}</div> : null}
       </Card>
     </Col>
   );
@@ -140,7 +140,7 @@ export default function MachineLoanPage() {
           </Space>
         }
       />
-      <Row gutter={[12, 12]} style={{ marginBottom: token.marginMD }}>
+      <Row gutter={[12, 12]} style={{ marginBottom: tk.space[5] }}>
         {stat('Owed', <Money value={loan.outstanding} />, `of ${formatINR(loan.amount)} borrowed`)}
         {stat('EMIs paid', `${loan.emisPaid} of ${loan.emiCount}`, `${formatINR(loan.principalRepaid)} repaid`)}
         {stat(
@@ -166,9 +166,9 @@ export default function MachineLoanPage() {
           loan.overdueCount ? `${loan.overdueCount} EMI${loan.overdueCount === 1 ? '' : 's'} past their date` : 'Every EMI paid on time',
         )}
       </Row>
-      <Row gutter={[12, 12]} style={{ marginBottom: token.marginMD }}>
+      <Row gutter={[12, 12]} style={{ marginBottom: tk.space[5] }}>
         <Col xs={24} lg={14}>
-          <Card size="small" title={<Typography.Title level={2} style={{ fontSize: token.fontSize, margin: 0 }}>Terms</Typography.Title>} style={{ height: '100%' }}>
+          <Card size="small" title={<Typography.Title level={2} style={{ fontSize: tk.type.body.fontSize, margin: 0 }}>Terms</Typography.Title>} style={{ height: '100%' }}>
             <Descriptions
               size="small"
               column={{ xs: 1, sm: 2 }}
@@ -187,7 +187,7 @@ export default function MachineLoanPage() {
           </Card>
         </Col>
         <Col xs={24} lg={10}>
-          <Card size="small" title={<Typography.Title level={2} style={{ fontSize: token.fontSize, margin: 0 }}>The machine’s cost of finance</Typography.Title>} style={{ height: '100%' }}>
+          <Card size="small" title={<Typography.Title level={2} style={{ fontSize: tk.type.body.fontSize, margin: 0 }}>The machine’s cost of finance</Typography.Title>} style={{ height: '100%' }}>
             <Descriptions
               size="small"
               column={1}
@@ -201,7 +201,7 @@ export default function MachineLoanPage() {
           </Card>
         </Col>
       </Row>
-      <Card size="small" title={<Typography.Title level={2} style={{ fontSize: token.fontSize, margin: 0 }}>EMI schedule</Typography.Title>}>
+      <Card size="small" title={<Typography.Title level={2} style={{ fontSize: tk.type.body.fontSize, margin: 0 }}>EMI schedule</Typography.Title>}>
         <Table<LoanEmiDto>
           size="small"
           rowKey="id"
@@ -226,7 +226,7 @@ export default function MachineLoanPage() {
                     <span>
                       <EmiStageTag stage="PAID" /> {formatDate(e.paidOn)}
                     </span>
-                    <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+                    <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
                       {[e.mode ? PAYMENT_MODE_LABELS[e.mode] : null, e.reference].filter(Boolean).join(' · ')}
                     </Typography.Text>
                   </Flex>

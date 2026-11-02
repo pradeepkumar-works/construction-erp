@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { figure, type RankedQuote } from '@erp/shared';
 import { useSupplierChoice } from '@/lib/queries';
 import { toNumber } from '@/lib/format';
@@ -147,7 +148,7 @@ export function SupplierChoiceRecord({ id, mode, open, onClose }: RecordProps & 
                       render: (_, x) => (
                         <span>
                           <span translate="no">{x.vendorName}</span>
-                          {x.quotationId === data.quotationId ? <AppTag meaning="done" style={{ marginLeft: 8 }}>Chosen</AppTag> : null}
+                          {x.quotationId === data.quotationId ? <AppTag meaning="done" style={{ marginLeft: tk.space[2] }}>Chosen</AppTag> : null}
                           {x.missing ? <div className="text-muted">Leaves out {x.missing} item{x.missing === 1 ? '' : 's'}</div> : null}
                         </span>
                       ),

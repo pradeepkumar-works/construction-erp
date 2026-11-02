@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Flex, Form, Input, Select, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -16,7 +17,6 @@ import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
 import { ReadDocumentButton, ReadPreview, ReadSource, readDateReason, readFieldProps, useKeepReadFile, type ReadState } from '@/components/ai/ReadDocument';
 import { DraftBillChecks } from './DraftBillChecks';
-import { themeFontSize } from '@/lib/theme';
 import { recordPage } from '@/components/approvals/queue';
 import { OtherBillFormModal } from './OtherBillFormModal';
 import { Money } from '@/components/common/Money';
@@ -242,24 +242,24 @@ export function VendorBillFormModal({
     >
       <Form form={form} layout="vertical">
         {!bill && !readState ? (
-          <Flex justify="flex-end" style={{ marginBottom: 8 }}>
+          <Flex justify="flex-end" style={{ marginBottom: tk.space[2] }}>
             <ReadDocumentButton kind="invoice" label="Fill from invoice" purchaseOrderId={purchaseOrderId} onRead={applyRead} />
           </Flex>
         ) : null}
         {readState ? (
           <ReadPreview state={readState} active={activeRead} kept={keepScan.kept} onClear={() => setReadState(null)}>
             {readState.result.match?.vendor ? (
-              <div style={{ fontSize: themeFontSize('fontSizeSM'), marginTop: 4 }}>
+              <div style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[1] }}>
                 Vendor {readState.result.match.vendor.name}
                 {readState.result.match.purchaseOrder ? `, order ${readState.result.match.purchaseOrder.poNo}` : ''}. {readState.result.match.note ?? ''}
               </div>
             ) : readState.result.match?.note ? (
-              <Typography.Text type="warning" style={{ fontSize: themeFontSize('fontSizeSM'), display: 'block', marginTop: 4 }}>
+              <Typography.Text type="warning" style={{ fontSize: tk.type.caption.fontSize, display: 'block', marginTop: tk.space[1] }}>
                 {readState.result.match.note}
               </Typography.Text>
             ) : null}
             {unmatched.length ? (
-              <Typography.Text type="warning" style={{ fontSize: themeFontSize('fontSizeSM'), display: 'block' }}>
+              <Typography.Text type="warning" style={{ fontSize: tk.type.caption.fontSize, display: 'block' }}>
                 Not on the order, so not filled: {unmatched.map((l) => readText(l.description)).join('; ')}.
               </Typography.Text>
             ) : null}
@@ -309,7 +309,7 @@ export function VendorBillFormModal({
               pagination={false}
               loading={poLoading}
               dataSource={po.lines}
-              style={{ marginBottom: 12 }}
+              style={{ marginBottom: tk.space[3] }}
               columns={[
                 {
                   title: 'Item',
@@ -376,7 +376,7 @@ export function VendorBillFormModal({
               ]}
             />
           ) : (
-            <Alert type="info" showIcon style={{ marginBottom: 12 }} title="Choose the purchase order; its lines fill in with what was received and not yet billed, at the PO rates." />
+            <Alert type="info" showIcon style={{ marginBottom: tk.space[3] }} title="Choose the purchase order; its lines fill in with what was received and not yet billed, at the PO rates." />
           )}
         </FormSection>
         {po && (
@@ -386,10 +386,10 @@ export function VendorBillFormModal({
                 <Alert
                   type="warning"
                   showIcon
-                  style={{ marginBottom: 12 }}
+                  style={{ marginBottom: tk.space[3] }}
                   title="Does not match the PO and what was received"
                   description={
-                    <ul style={{ margin: 0, paddingLeft: 18 }}>
+                    <ul style={{ margin: 0, paddingInlineStart: tk.space[5] }}>
                       {issues.map((i) => (
                         <li key={i}>{i}</li>
                       ))}
@@ -420,7 +420,7 @@ export function VendorBillFormModal({
             <Alert
               type="info"
               title={
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '4px 12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: `${tk.space[1]} ${tk.space[3]}` }}>
                   <span>Items</span>
                   <Money value={totals.subtotal} paise />
                   <span>GST</span>
@@ -446,7 +446,7 @@ export function VendorBillFormModal({
                 </div>
               }
               description={
-                <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
                   Due {po.paymentDays ?? 30} days from the invoice{po.vendorMsme === 'MICRO' || po.vendorMsme === 'SMALL' ? ' (45 at most, MSME)' : ''}.
                 </Typography.Text>
               }

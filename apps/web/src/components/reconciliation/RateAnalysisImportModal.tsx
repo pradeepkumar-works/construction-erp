@@ -2,11 +2,11 @@
 
 import React, { useState } from 'react';
 import { Alert, App, Button, Modal, Space, Table, Typography, Upload } from 'antd';
+import { tk } from '@/ds';
 import type { UploadProps } from 'antd';
 import { DownloadOutlined, InboxOutlined } from '@/components/common/icons';
 import { useImportRateAnalysis, type RateImportRow } from '@/lib/queries';
 import { loadXlsx } from '@/lib/exportExcel';
-import { themeColor, themeFontSize } from '@/lib/theme';
 
 type Col = 'boqItemNo' | 'kind' | 'name' | 'unit' | 'qtyPerUnit' | 'wastagePct' | 'note';
 
@@ -141,7 +141,7 @@ export function RateAnalysisImportModal({ open, onClose, projectId }: { open: bo
         One row per line: the BOQ item number, Material, Labour or Machine, the store item (by its name in the item master), trade or equipment category, and how much one unit
         of the BOQ item takes. Lines a BOQ item already has are changed; the rest stay.
       </Typography.Paragraph>
-      <Space style={{ marginBottom: 12 }}>
+      <Space style={{ marginBottom: tk.space[3] }}>
         <Button icon={<DownloadOutlined />} onClick={() => void downloadRateAnalysisTemplate()}>
           Download the template
         </Button>
@@ -152,13 +152,13 @@ export function RateAnalysisImportModal({ open, onClose, projectId }: { open: bo
         </p>
         <p>{fileName ? `${fileName}: choose another file to replace it` : 'Drop the Excel file here, or click to choose it'}</p>
       </Upload.Dragger>
-      {problem ? <Alert type="error" showIcon title={problem} style={{ marginTop: 12 }} /> : null}
-      {serverError ? <Alert type="error" showIcon title="Nothing was imported" description={serverError} style={{ marginTop: 12 }} /> : null}
+      {problem ? <Alert type="error" showIcon title={problem} style={{ marginTop: tk.space[3] }} /> : null}
+      {serverError ? <Alert type="error" showIcon title="Nothing was imported" description={serverError} style={{ marginTop: tk.space[3] }} /> : null}
       {rows.length ? (
         <>
-          {bad ? <Alert type="warning" showIcon title={`${bad} row${bad === 1 ? ' needs' : 's need'} fixing in the sheet before it can be imported`} style={{ marginTop: 12 }} /> : null}
+          {bad ? <Alert type="warning" showIcon title={`${bad} row${bad === 1 ? ' needs' : 's need'} fixing in the sheet before it can be imported`} style={{ marginTop: tk.space[3] }} /> : null}
           <Table<Parsed>
-            style={{ marginTop: 12 }}
+            style={{ marginTop: tk.space[3] }}
             rowKey="row"
             size="small"
             dataSource={rows}
@@ -177,7 +177,7 @@ export function RateAnalysisImportModal({ open, onClose, projectId }: { open: bo
                 width: 200,
                 render: (e: string | null) =>
                   e ? (
-                    <span style={{ color: themeColor('colorErrorText'), fontSize: themeFontSize('fontSizeSM') }}>{e}</span>
+                    <span style={{ color: tk.color.tone.danger.fg, fontSize: tk.type.caption.fontSize }}>{e}</span>
                   ) : (
                     <span className="text-muted">Ready</span>
                   ),

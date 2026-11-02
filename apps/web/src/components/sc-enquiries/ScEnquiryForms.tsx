@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef } from 'react';
-import { Alert, Form, Input, InputNumber, Radio, Select, Table, Typography, theme } from 'antd';
+import { Alert, Form, Input, InputNumber, Radio, Select, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import dayjs from 'dayjs';
@@ -54,7 +55,6 @@ interface EnquiryValues {
  */
 export function ScEnquiryForm({ open, enquiry, onClose, onSaved }: { open: boolean; enquiry?: ScEnquiryDetailDto | null; onClose: () => void; onSaved?: (id: string) => void }) {
   const [form] = Form.useForm<EnquiryValues>();
-  const { token } = theme.useToken();
   const act = useScEnquiryAction<{ id: string; enquiryNo: string }>();
   const notify = useNotify();
   const saved = useRef<string | null>(null);
@@ -140,7 +140,7 @@ export function ScEnquiryForm({ open, enquiry, onClose, onSaved }: { open: boole
             <Alert
               type="info"
               showIcon
-              style={{ marginBottom: token.margin }}
+              style={{ marginBottom: tk.space[4] }}
               title="Quotes are in against these items, so they stay as they are. Start a new enquiry to ask for different items."
             />
           ) : (
@@ -180,7 +180,7 @@ export function ScEnquiryForm({ open, enquiry, onClose, onSaved }: { open: boole
                   render: (f) => {
                     const b = items?.[f.name]?.boqItemId ? boqById.get(items[f.name].boqItemId!) : undefined;
                     return b ? (
-                      <Typography.Text style={{ fontSize: token.fontSizeSM }}>{b.description}</Typography.Text>
+                      <Typography.Text style={{ fontSize: tk.type.caption.fontSize }}>{b.description}</Typography.Text>
                     ) : (
                       <Form.Item name={[f.name, 'description']} noStyle rules={[{ required: true, whitespace: true, message: 'Describe the item' }]}>
                         <Input placeholder="Scaffolding, hire and erection" aria-label={`Description of line ${f.name + 1}`} maxLength={300} />
@@ -213,7 +213,7 @@ export function ScEnquiryForm({ open, enquiry, onClose, onSaved }: { open: boole
                           <QuantityInput min={0.001} aria-label={`Quantity of line ${f.name + 1}`} />
                         </Form.Item>
                         {b ? (
-                          <Typography.Text type="secondary" style={{ display: 'block', fontSize: token.fontSizeSM }} translate="no">
+                          <Typography.Text type="secondary" style={{ display: 'block', fontSize: tk.type.caption.fontSize }} translate="no">
                             {`BOQ ${formatQty(b.revisedQty ?? b.originalQty)}`}
                           </Typography.Text>
                         ) : null}
@@ -280,7 +280,6 @@ interface QuoteValues {
 /** A subcontractor's quote as it came: their rate for each item (left empty where they did not quote it), GST and validity. */
 export function QuoteDrawer({ enquiry, quote, onClose }: { enquiry: ScEnquiryDetailDto; quote: ScQuoteDto | null; onClose: () => void }) {
   const [form] = Form.useForm<QuoteValues>();
-  const { token } = theme.useToken();
   const act = useScEnquiryAction();
   const notify = useNotify();
   const rates = Form.useWatch('rates', { form, preserve: true }) as QuoteValues['rates'] | undefined;
@@ -358,7 +357,7 @@ export function QuoteDrawer({ enquiry, quote, onClose }: { enquiry: ScEnquiryDet
                   <div>
                     <span translate="no">{it.itemNo ? `${it.itemNo} ` : ''}</span>
                     {it.description}
-                    <Typography.Text type="secondary" style={{ display: 'block', fontSize: token.fontSizeSM }} translate="no">
+                    <Typography.Text type="secondary" style={{ display: 'block', fontSize: tk.type.caption.fontSize }} translate="no">
                       {`${formatQty(it.quantity)} ${unitLabel(it.unit)}${it.clientRate ? ` · client ${formatINR(it.clientRate)}` : ''}`}
                     </Typography.Text>
                   </div>
@@ -402,7 +401,7 @@ export function QuoteDrawer({ enquiry, quote, onClose }: { enquiry: ScEnquiryDet
             </>
           )}
         />
-        <Form.Item name="note" label="Note" style={{ marginTop: token.margin }}>
+        <Form.Item name="note" label="Note" style={{ marginTop: tk.space[4] }}>
           <Input.TextArea autoSize={{ minRows: 2, maxRows: 4 }} maxLength={1000} placeholder="Conditions they quoted with, e.g. can start after the monsoon" />
         </Form.Item>
       </Form>
@@ -458,7 +457,7 @@ export function AwardDialog({ enquiry, open, quoteId, onClose }: { enquiry: ScEn
       <Form form={form} layout="vertical">
         <Form.Item name="quoteId" label="Quote" rules={[{ required: true, message: 'Choose the quote to award' }]}>
           <Radio.Group
-            style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
+            style={{ display: 'flex', flexDirection: 'column', gap: tk.space[2] }}
             options={choices.map((q) => ({
               value: q.id,
               label: (

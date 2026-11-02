@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { App, Button, Dropdown, Empty, Flex, Form, Input, InputNumber, Radio, Select, Space, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { TableProps } from 'antd';
 import type { ShortCheck, WeighingDto, WeighTicketDto } from '@erp/shared';
 import { canKeepStock, canManageIntegrations, kgToUnit, shortSupply, weighNet, WEIGH_SHORT_TOLERANCE_KG, WEIGH_SHORT_TOLERANCE_PCT, unitLabel } from '@erp/shared';
@@ -9,7 +10,6 @@ import { useAuth } from '@/lib/auth';
 import { useProjects, useReceivableOrders, useWeighbridge, useWeighTicket, type WeightInput } from '@/lib/queries';
 import { useProjectScope } from '@/lib/project-scope';
 import { formatDateTime, formatQty, formatTime, NO_VALUE } from '@/lib/format';
-import { themeFontSize } from '@/lib/theme';
 import { AppTag } from '@/components/common/AppTag';
 import { LinkButton } from '@/components/common/LinkButton';
 import { Section } from '@/components/common/Section';
@@ -20,7 +20,7 @@ import { MoreOutlined, PlusOutlined } from '@/components/common/icons';
 import { ReceiptModal } from './ReceiptModal';
 import { StockEntryDrawer } from './StockEntryDrawer';
 
-const small = { fontSize: themeFontSize('fontSizeSM') };
+const small = { fontSize: tk.type.caption.fontSize };
 const kg = (v: string | number | null) =>
   v === null ? (
     <span className="text-muted">{NO_VALUE}</span>
@@ -40,7 +40,7 @@ export function shortTag(s: ShortCheck | null, unit: string | null): React.React
 
 const truck = (t: WeighTicketDto) => (
   <div>
-    <span className="mono" style={{ fontWeight: 600 }} translate="no">
+    <span className="mono" style={{ fontWeight: tk.type.title.fontWeight }} translate="no">
       {t.ticketNo}
     </span>
     <div className="text-muted" style={small} translate="no">
@@ -302,7 +302,7 @@ export function Weighbridge({ projectId }: { projectId?: string }) {
 
   return (
     <>
-      <Flex justify="space-between" align="center" gap={12} wrap style={{ marginBottom: 12 }}>
+      <Flex justify="space-between" align="center" gap={12} wrap style={{ marginBottom: tk.space[3] }}>
         <Typography.Text type="secondary" style={small}>
           {data.bridges
             ? `${data.bridges} weighbridge${data.bridges === 1 ? '' : 's'} read from the weighbridge on site. Weights come in within a minute.`
@@ -315,27 +315,27 @@ export function Weighbridge({ projectId }: { projectId?: string }) {
         </Typography.Text>
         {weighButton}
       </Flex>
-      {nothing ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No trucks weighed in the last month" style={{ margin: '32px 0' }} /> : null}
+      {nothing ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No trucks weighed in the last month" style={{ margin: `${tk.space[8]} 0` }} /> : null}
       {data.weighings.length ? (
         <Section title="On the bridge, on no ticket yet">
           <Table<WeighingDto> rowKey="id" size="small" pagination={false} dataSource={data.weighings} scroll={{ x: 700 }} columns={weighingColumns} />
         </Section>
       ) : null}
       {data.open.length ? (
-        <Section style={{ marginTop: 16 }} title="Waiting for the second weight">
+        <Section style={{ marginTop: tk.space[4] }} title="Waiting for the second weight">
           <Table<WeighTicketDto> rowKey="id" size="small" pagination={false} dataSource={data.open} scroll={{ x: 700 }} columns={openColumns} />
         </Section>
       ) : null}
       {data.weighed.length ? (
-        <Section style={{ marginTop: 16 }} title="Weighed, no GRN yet">
+        <Section style={{ marginTop: tk.space[4] }} title="Weighed, no GRN yet">
           <Table<WeighTicketDto> rowKey="id" size="small" pagination={false} dataSource={data.weighed} scroll={{ x: 1000 }} columns={weighedColumns} />
-          <Typography.Paragraph type="secondary" style={{ ...small, marginTop: 8, marginBottom: 0 }}>
+          <Typography.Paragraph type="secondary" style={{ ...small, marginTop: tk.space[2], marginBottom: 0 }}>
             {`The GRN is drafted at the net weight. A load is short when it weighs less than its challan by more than ${WEIGH_SHORT_TOLERANCE_PCT}% or ${WEIGH_SHORT_TOLERANCE_KG} kg, whichever is more.`}
           </Typography.Paragraph>
         </Section>
       ) : null}
       {data.done.length ? (
-        <Section style={{ marginTop: 16 }} title="Done this week">
+        <Section style={{ marginTop: tk.space[4] }} title="Done this week">
           <Table<WeighTicketDto> rowKey="id" size="small" pagination={false} dataSource={data.done} scroll={{ x: 800 }} columns={doneColumns} />
         </Section>
       ) : null}

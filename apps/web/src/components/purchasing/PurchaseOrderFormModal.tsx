@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo } from 'react';
 import { Alert, Form, Input, InputNumber, Select, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -19,7 +20,6 @@ import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { LineTable } from '@/components/form/LineTable';
 import { ItemPicker } from '@/components/form/ItemPicker';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
-import { themeColor, themeFontSize } from '@/lib/theme';
 import { recordPage } from '@/components/approvals/queue';
 import { LastRates, RateAbove } from './LastRates';
 import { Money } from '@/components/common/Money';
@@ -201,7 +201,7 @@ export function PurchaseOrderFormModal({
   });
 
   const summary = (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '4px 12px' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: `${tk.space[1]} ${tk.space[3]}` }}>
       <span>Total before GST</span>
       <Money value={totals.subtotal} paise />
       <span>GST</span>
@@ -227,7 +227,7 @@ export function PurchaseOrderFormModal({
       draftKey={order || start?.materialRequestId || start?.quotationId ? undefined : `po:${start?.projectId ?? 'any'}`}
       width={1040}
       footerExtra={
-        <Typography.Text strong className="mono" style={{ marginInlineEnd: 8 }}>
+        <Typography.Text strong className="mono" style={{ marginInlineEnd: tk.space[2] }}>
           {formatINR(totals.total, true)}
         </Typography.Text>
       }
@@ -280,10 +280,10 @@ export function PurchaseOrderFormModal({
             <Alert
               type="warning"
               showIcon
-              style={{ marginBottom: 12 }}
+              style={{ marginBottom: tk.space[3] }}
               title={`${makeWarnings.length === 1 ? '1 line is' : `${makeWarnings.length} lines are`} not in a make approved for this project`}
               description={
-                <ul style={{ margin: 0, paddingLeft: 18 }}>
+                <ul style={{ margin: 0, paddingInlineStart: tk.space[5] }}>
                   {makeWarnings.map((w) => (
                     <li key={w.index}>{makeWarningText(w)}</li>
                   ))}
@@ -305,7 +305,7 @@ export function PurchaseOrderFormModal({
                   lines?.[f.name]?.materialRequestItemId ? (
                     <div>
                       <Typography.Text strong>{lines[f.name].itemName}</Typography.Text>
-                      {lines[f.name].specification && <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{lines[f.name].specification}</div>}
+                      {lines[f.name].specification && <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>{lines[f.name].specification}</div>}
                     </div>
                   ) : (
                     <div style={{ minWidth: 200 }}>
@@ -323,7 +323,7 @@ export function PurchaseOrderFormModal({
                         />
                       </Form.Item>
                       <Form.Item name={[f.name, 'specification']} noStyle>
-                        <Input placeholder="Specification" maxLength={300} style={{ marginTop: 4 }} />
+                        <Input placeholder="Specification" maxLength={300} style={{ marginTop: tk.space[1] }} />
                       </Form.Item>
                     </div>
                   ),
@@ -340,7 +340,7 @@ export function PurchaseOrderFormModal({
                         <Input placeholder="Make" aria-label={`Make of line ${f.name + 1}`} maxLength={120} status={warn ? 'warning' : undefined} translate="no" />
                       </Form.Item>
                       {warn ? (
-                        <Typography.Text style={{ display: 'block', fontSize: themeFontSize('fontSizeSM'), color: themeColor('colorWarningText') }}>
+                        <Typography.Text style={{ display: 'block', fontSize: tk.type.caption.fontSize, color: tk.color.tone.pending.fg }}>
                           {warn.reason === 'NO_MAKE' ? 'Name an approved make' : 'Not approved'}
                         </Typography.Text>
                       ) : null}

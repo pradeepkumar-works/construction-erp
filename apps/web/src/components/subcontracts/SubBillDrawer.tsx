@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Alert, App, Button, Divider, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { SubcontractBillDto, SubcontractBillLineDto } from '@erp/shared';
@@ -110,13 +111,13 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
           notices: (
             <>
               {data.status === 'DRAFT' && (
-                <Alert type="info" showIcon style={{ marginBottom: 12 }} title="Draft: the quantities come from approved measurements and the recoveries from material issued to them. Saving again picks up anything approved since." />
+                <Alert type="info" showIcon style={{ marginBottom: tk.space[3] }} title="Draft: the quantities come from approved measurements and the recoveries from material issued to them. Saving again picks up anything approved since." />
               )}
               {excess.length > 0 && (
                 <Alert
                   type="warning"
                   showIcon
-                  style={{ marginBottom: 12 }}
+                  style={{ marginBottom: tk.space[3] }}
                   title="Billed beyond the work order"
                   description={excess.map((l) => `${l.itemNo ?? l.description}: ${formatQty(l.uptoQty)} against ${formatQty(l.woQty)} ${unitLabel(l.unit)} ordered`).join(' · ')}
                 />
@@ -133,7 +134,7 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                   {data.vendorName}
                   {data.vendorPan && <span className="text-muted"> · PAN {data.vendorPan}</span>}
                   {data.vendorMsme && (
-                    <AppTag variant="kind" style={{ marginLeft: 8 }}>
+                    <AppTag variant="kind" style={{ marginLeft: tk.space[2] }}>
                       {MSME_CATEGORY_LABELS[data.vendorMsme]}
                     </AppTag>
                   )}
@@ -150,7 +151,7 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                 <span>
                   {formatDate(data.dueDate)}
                   {late && (
-                    <AppTag meaning="failed" style={{ marginLeft: 8 }}>
+                    <AppTag meaning="failed" style={{ marginLeft: tk.space[2] }}>
                       {late} days overdue
                     </AppTag>
                   )}
@@ -186,7 +187,7 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                         title: 'Item',
                         render: (_, l) => (
                           <div>
-                            {l.itemNo ? <AppTag variant="kind" style={{ marginRight: 6 }}>{l.itemNo}</AppTag> : <AppTag variant="kind" style={{ marginRight: 6 }}>Own item</AppTag>}
+                            {l.itemNo ? <AppTag variant="kind" style={{ marginInlineEnd: tk.space[2] }}>{l.itemNo}</AppTag> : <AppTag variant="kind" style={{ marginInlineEnd: tk.space[2] }}>Own item</AppTag>}
                             {l.description}
                           </div>
                         ),
@@ -210,13 +211,13 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                       { title: 'This bill (₹)', dataIndex: 'amount', width: 140, align: 'right', render: (v) => <strong><Money value={v} paise /></strong> },
                     ]}
                   />
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: tk.space[3] }}>
                     <Section style={{ width: 380 }}>
                       {[
                         ['Work in this bill', data.grossAmount],
                         [`GST ${formatPct(data.gstRate)}`, data.gstAmount],
                       ].map(([k, v]) => (
-                        <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+                        <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: `${tk.space.half} 0` }}>
                           <span>{k}</span>
                           <Money value={v} paise />
                         </div>
@@ -224,7 +225,7 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                       {data.deductions
                         .filter((d) => toNumber(d.amount) > 0)
                         .map((d) => (
-                          <div key={d.key} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+                          <div key={d.key} style={{ display: 'flex', justifyContent: 'space-between', padding: `${tk.space.half} 0` }}>
                             <span>
                               Less {d.label}
                               {d.pct ? ` @ ${formatPct(d.pct)}` : ''}
@@ -233,18 +234,18 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                             <span className="mono" translate="no">({formatINR(d.amount, true)})</span>
                           </div>
                         ))}
-                      <Divider style={{ margin: '6px 0' }} />
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}>
+                      <Divider style={{ margin: `${tk.space[2]} 0` }} />
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: tk.type.title.fontWeight }}>
                         <span>Bill net</span>
                         <Money value={data.netPayable} paise />
                       </div>
                       {debited > 0 ? (
                         <>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', padding: `${tk.space.half} 0` }}>
                             <span>Less debit notes</span>
                             <span className="mono" translate="no">({formatINR(debited, true)})</span>
                           </div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: tk.type.title.fontWeight }}>
                             <span>Payable</span>
                             <Money value={payable} paise />
                           </div>

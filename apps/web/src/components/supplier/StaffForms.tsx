@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { App, Form, Input, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { SupplierChangeDto, SupplierInviteResultDto, SupplierInvoiceDto } from '@erp/shared';
 import { useSupplierAction } from '@/lib/queries';
 import { FormShell } from '@/components/form/FormShell';
@@ -62,7 +63,7 @@ export function DecideChangeForm({ decision, onClose }: { decision: { change: Su
     >
       <Form form={form} layout="vertical">
         {c ? (
-          <div style={{ marginBottom: 12 }}>
+          <div style={{ marginBottom: tk.space[3] }}>
             {c.changes.map((x) => (
               <div key={x.field}>
                 {x.label}: <span translate="no">{x.from ?? NO_VALUE}</span> to <span translate="no">{x.to ?? NO_VALUE}</span>

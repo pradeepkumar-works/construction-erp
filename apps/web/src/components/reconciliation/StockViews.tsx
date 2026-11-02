@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Alert, Button, Col, Empty, Row, Skeleton, Space, Statistic, Table, Tooltip, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import { FileExcelOutlined } from '@/components/common/icons';
@@ -20,7 +21,6 @@ import { ISSUE_WORK_DAYS, KIT_STATUS_LABELS, PIPE_FLAG_HINTS, PIPE_FLAG_LABELS, 
 import { useKitRecon, usePipeRecon, useReconExceptions, useStructureRecon } from '@/lib/queries';
 import { formatDate, formatQty, toNumber, NO_VALUE } from '@/lib/format';
 import { downloadWorkbook, exportFileName, workbookSheet } from '@/lib/exportExcel';
-import { themeColor, themeFontSize } from '@/lib/theme';
 import { QueryError } from '@/components/common/QueryState';
 import { LinkButton } from '@/components/common/LinkButton';
 import { Section, SectionStack } from '@/components/common/Section';
@@ -28,16 +28,16 @@ import { defaultPeriod, PeriodPicker, periodLabel, periodParams, type PeriodStat
 import { StockEntryDrawer } from '@/components/stock/StockEntryDrawer';
 import { StatusCell, qty } from './ReconciliationPanel';
 
-const RED = themeColor('colorErrorText');
-const small = { fontSize: themeFontSize('fontSizeSM') };
-const statStyle = { content: { fontSize: themeFontSize('fontSizeXL') } };
+const RED = tk.color.tone.danger.fg;
+const small = { fontSize: tk.type.caption.fontSize };
+const statStyle = { content: { fontSize: tk.type.subhead.fontSize } };
 const metres = (v: number | null) => (v === null ? <span className="text-muted">{NO_VALUE}</span> : qty(String(v), 'm'));
 const pct = (v: number | null) => (v === null ? null : `${v > 0 ? '+' : ''}${v}%`);
 const n = (v: string | null) => (v === null ? null : toNumber(v));
 
 function Toolbar({ period, onPeriod, onExport, canExport }: { period?: PeriodState; onPeriod?: (p: PeriodState) => void; onExport: () => void; canExport: boolean }) {
   return (
-    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginBottom: 12 }}>
+    <div style={{ display: 'flex', gap: tk.space[3], flexWrap: 'wrap', alignItems: 'center', marginBottom: tk.space[3] }}>
       {period && onPeriod ? <PeriodPicker value={period} onChange={onPeriod} /> : null}
       <Space wrap style={{ marginLeft: 'auto' }}>
         <Button icon={<FileExcelOutlined />} onClick={onExport} disabled={!canExport}>
@@ -49,7 +49,7 @@ function Toolbar({ period, onPeriod, onExport, canExport }: { period?: PeriodSta
 }
 
 const Note = ({ children }: { children: React.ReactNode }) => (
-  <Typography.Paragraph type="secondary" style={{ ...small, marginTop: 12, marginBottom: 0 }}>
+  <Typography.Paragraph type="secondary" style={{ ...small, marginTop: tk.space[3], marginBottom: 0 }}>
     {children}
   </Typography.Paragraph>
 );
@@ -164,7 +164,7 @@ export function StructureView({ projectId }: { projectId: string }) {
       {isLoading && <Skeleton active />}
       {data && (
         <>
-          <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+          <Row gutter={[16, 16]} style={{ marginBottom: tk.space[4] }}>
             <Col xs={12} md={6}>
               <Statistic title="Components" value={data.elements.length} styles={statStyle} />
               <div className="text-muted" style={small}>
@@ -190,7 +190,7 @@ export function StructureView({ projectId }: { projectId: string }) {
           {data.elements.map((e) => (
             <Section
               key={e.elementId}
-              style={{ marginTop: 8 }}
+              style={{ marginTop: tk.space[2] }}
               title={
                 <span>
                   <span className="mono" translate="no">
@@ -344,12 +344,12 @@ export function PipeView({ projectId }: { projectId: string }) {
             <Alert
               type="warning"
               showIcon
-              style={{ marginBottom: 12 }}
+              style={{ marginBottom: tk.space[3] }}
               title={`${data.unconverted.length} pipe item${data.unconverted.length === 1 ? ' is' : 's are'} bought by weight with no weight per metre`}
               description={`${data.unconverted.map((u) => `${u.itemName} (${u.unit})`).join(', ')}. Set kg per metre on the item in the item master to count it here.`}
             />
           ) : null}
-          <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+          <Row gutter={[16, 16]} style={{ marginBottom: tk.space[4] }}>
             <Col xs={12} md={6}>
               <Statistic title="Pipe sizes" value={data.sizes.length} styles={statStyle} />
               <div className="text-muted" style={small}>
@@ -370,7 +370,7 @@ export function PipeView({ projectId }: { projectId: string }) {
           {data.zones.map((z) => (
             <Section
               key={z.zoneId}
-              style={{ marginTop: 16 }}
+              style={{ marginTop: tk.space[4] }}
               title={
                 <span>
                   <span className="mono" translate="no">
@@ -474,7 +474,7 @@ export function KitsView({ projectId }: { projectId: string }) {
           {data.kits.map((k) => (
             <Section
               key={k.activityId}
-              style={{ marginTop: 8 }}
+              style={{ marginTop: tk.space[2] }}
               title={`${k.elementLabel ? `${k.elementLabel} › ` : ''}${k.activityName}`}
               extra={
                 <Space size={8} wrap>
@@ -570,7 +570,7 @@ export function ExceptionsView({ projectId }: { projectId: string }) {
             <Alert
               type="info"
               showIcon
-              style={{ marginBottom: 12 }}
+              style={{ marginBottom: tk.space[3] }}
               title="No issue in the period names a component"
               description="Only pipe can be checked. Choose the component or the activity on each issue slip, and use and issues are checked against each other."
             />

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { App, Button, Drawer, Empty, Form, Input, Select, Skeleton, Space, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
@@ -11,7 +12,6 @@ import type { EquipmentDto, EquipmentPartDto, EquipmentPartKind } from '@erp/sha
 import { EQUIPMENT_PART_KINDS, EQUIPMENT_PART_KIND_LABELS, unitLabel } from '@erp/shared';
 import { useEquipmentParts, useSaveEquipmentPart } from '@/lib/queries';
 import { formatDate, formatQty, NO_VALUE } from '@/lib/format';
-import { themeFontSize } from '@/lib/theme';
 import { QueryError } from '@/components/common/QueryState';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
@@ -34,7 +34,7 @@ interface PartForm {
 
 type Editing = { mode: 'fit'; part?: undefined } | { mode: 'edit' | 'off'; part: EquipmentPartDto };
 
-const small = { fontSize: themeFontSize('fontSizeSM') };
+const small = { fontSize: tk.type.caption.fontSize };
 const num = (v: number | null | undefined) => (v === null || v === undefined ? null : String(v));
 
 /**

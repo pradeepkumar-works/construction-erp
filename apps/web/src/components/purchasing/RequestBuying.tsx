@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Space, Table, Tooltip } from 'antd';
+import { tk } from '@/ds';
 import dayjs from 'dayjs';
 import { TrophyOutlined } from '@/components/common/icons';
 import { AppTag } from '@/components/common/AppTag';
@@ -10,7 +11,6 @@ import type { ComparativeStatementDto, MaterialRequestDto, QuotationDto } from '
 import { lastRateKey, rankQuotations } from '@erp/shared';
 import { useLastRates, usePurchaseOrders } from '@/lib/queries';
 import { formatDate, formatINR, formatQty, toNumber } from '@/lib/format';
-import { themeColor, themeFontSize } from '@/lib/theme';
 import { StatusTag } from '@/components/common/StatusTag';
 import { RecordLink } from '@/components/record/RecordLink';
 import { LastRates } from './LastRates';
@@ -78,7 +78,7 @@ export function ComparativeTable({ request, data, loading, actions }: { request:
           render: (_, l) => (
             <div>
               {l.itemName}
-              <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+              <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                 {formatQty(l.quantity)} {l.unit}
                 {toNumber(l.orderedQty) > 0 ? ` · ${formatQty(l.orderedQty)} ordered` : ''}
               </div>
@@ -95,19 +95,19 @@ export function ComparativeTable({ request, data, loading, actions }: { request:
               <div style={{ whiteSpace: 'normal' }}>
                 {data.lowestQuotationId === q.id && quotes.length > 1 && (
                   <Tooltip title="Lowest total among quotations for every item">
-                    <TrophyOutlined style={{ color: themeColor('gold7'), marginRight: 4 }} />
+                    <TrophyOutlined style={{ color: tk.color.tone.pending.fg, marginRight: tk.space[1] }} />
                   </Tooltip>
                 )}
                 {q.vendorName}
               </div>
-              <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM'), fontWeight: 400 }}>
+              <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize, fontWeight: tk.type.body.fontWeight }}>
                 {[q.quoteRef, formatDate(q.quoteDate), q.deliveryDays != null ? `${q.deliveryDays} days` : null].filter(Boolean).join(' · ')}
               </div>
               <Space size={4} wrap style={{ justifyContent: 'flex-end' }}>
                 <RankText rank={ranks.get(q.id)} />
                 {q.fromSupplier && (
                   <Tooltip title="Typed by the vendor on the enquiry link">
-                    <AppTag variant="kind" style={{ margin: 0, fontWeight: 400 }}>
+                    <AppTag variant="kind" style={{ margin: 0, fontWeight: tk.type.body.fontWeight }}>
                       From vendor
                     </AppTag>
                   </Tooltip>
@@ -119,9 +119,9 @@ export function ComparativeTable({ request, data, loading, actions }: { request:
             const r = l.rates[q.id];
             if (!r) return <span className="text-muted">Not quoted</span>;
             return (
-              <div style={best(l, q) ? { background: themeColor('colorSuccessBg'), borderRadius: 4, padding: '0 4px' } : undefined}>
+              <div style={best(l, q) ? { background: tk.color.tone.success.bg, borderRadius: tk.radius.sm, padding: `0 ${tk.space[1]}` } : undefined}>
                 <Money value={r.rate} paise /> <span className="text-muted">+{r.gstRate}%</span>
-                <div className="text-muted mono" translate="no" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                <div className="text-muted mono" translate="no" style={{ fontSize: tk.type.caption.fontSize }}>
                   {formatINR(r.amount, true)}
                 </div>
               </div>
@@ -135,7 +135,7 @@ export function ComparativeTable({ request, data, loading, actions }: { request:
             <Table.Summary.Row>
               <Table.Summary.Cell index={0}>
                 <strong>Vendor record</strong>
-                <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                   Deliveries in the last year, rates against the median of these quotations
                 </div>
               </Table.Summary.Cell>
@@ -153,9 +153,9 @@ export function ComparativeTable({ request, data, loading, actions }: { request:
             {quotes.map((q, i) => (
               <Table.Summary.Cell key={q.id} index={i + 1} align="right">
                 <Money value={q.total} paise strong />
-                {q.missingLines > 0 && <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{q.missingLines} item{q.missingLines === 1 ? '' : 's'} not quoted</div>}
-                {toNumber(q.freight) > 0 && <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>freight {formatINR(q.freight)}</div>}
-                {actions ? <div style={{ marginTop: 4 }}>{actions(q)}</div> : null}
+                {q.missingLines > 0 && <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>{q.missingLines} item{q.missingLines === 1 ? '' : 's'} not quoted</div>}
+                {toNumber(q.freight) > 0 && <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>freight {formatINR(q.freight)}</div>}
+                {actions ? <div style={{ marginTop: tk.space[1] }}>{actions(q)}</div> : null}
               </Table.Summary.Cell>
             ))}
           </Table.Summary.Row>

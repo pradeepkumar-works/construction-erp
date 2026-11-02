@@ -2,6 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { App, Form, Input, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -39,7 +40,7 @@ export function ReceiveTransferModal({ open, onClose, transfer }: { open: boolea
         rowKey="id"
         pagination={false}
         dataSource={transfer.lines}
-        style={{ marginBottom: 12 }}
+        style={{ marginBottom: tk.space[3] }}
         columns={[
           { title: 'Item', dataIndex: 'itemName' },
           { title: 'Quantity', dataIndex: 'quantity', align: 'right', width: 140, render: (v: string, r) => `${formatQty(String(-Number(v)))} ${unitLabel(r.unit)}` },

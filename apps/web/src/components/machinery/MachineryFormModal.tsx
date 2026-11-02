@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useRef } from 'react';
 import { Alert, Form, Input, InputNumber, Select, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import type { AttachmentDto, EquipmentDto, MachineryLogDto } from '@erp/shared';
@@ -11,7 +12,6 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
 import { useActivities, useMachineDay, useProjects } from '@/lib/queries';
 import { formatQty } from '@/lib/format';
-import { themeColor, themeFontSize } from '@/lib/theme';
 import { EquipmentSelect } from '@/components/common/SearchSelect';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
@@ -165,7 +165,7 @@ export function MachineryFormModal({ open, onClose, projectId, log, prefill }: {
       onSubmit={submit}
     >
       <Form form={form} layout="vertical">
-        {log?.reviewNote && <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Reviewer note from ${log.reviewedByName ?? 'approver'}`} description={log.reviewNote} />}
+        {log?.reviewNote && <Alert type="warning" showIcon style={{ marginBottom: tk.space[4] }} title={`Reviewer note from ${log.reviewedByName ?? 'approver'}`} description={log.reviewNote} />}
         <FormSection title="Machine and hours">
           <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
             <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Choose a project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))} onChange={() => form.setFieldValue('activityId', undefined)} />
@@ -193,12 +193,12 @@ export function MachineryFormModal({ open, onClose, projectId, log, prefill }: {
             </Form.Item>
           </FormGrid>
           {day ? (
-            <Typography.Paragraph style={{ fontSize: themeFontSize('fontSizeSM'), marginTop: -8 }}>
+            <Typography.Paragraph style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.neg(2) }}>
               <Typography.Text type="secondary">
                 {`From the tracker: the engine ran ${formatQty(day.engineHours)} h${day.idleHours !== null ? `, ${formatQty(day.idleHours)} idle` : ''}${day.meterStart !== null ? `, meter ${formatQty(day.meterStart)} to ${formatQty(day.meterEnd ?? day.meterStart)}` : ''}. Check it and change what is not right.`}
               </Typography.Text>
               {above !== null ? (
-                <span style={{ display: 'block', color: themeColor('colorWarningText') }}>{`That is ${formatQty(above)} h more than the engine ran; the approver sees it.`}</span>
+                <span style={{ display: 'block', color: tk.color.tone.pending.fg }}>{`That is ${formatQty(above)} h more than the engine ran; the approver sees it.`}</span>
               ) : null}
             </Typography.Paragraph>
           ) : null}

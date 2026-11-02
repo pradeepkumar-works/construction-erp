@@ -2,6 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { App, Button, Form, Input, InputNumber, Select, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { DownloadOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
@@ -14,7 +15,6 @@ import { useProjects, useStockBalances } from '@/lib/queries';
 import { formatQty, NO_VALUE } from '@/lib/format';
 import { downloadXlsx, exportFileName, type ExportColumn } from '@/lib/exportExcel';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
-import { themeFontSize } from '@/lib/theme';
 
 const SHEET: ExportColumn<StockBalanceDto>[] = [
   { header: 'Item', value: (r) => r.itemName, width: 40 },
@@ -126,7 +126,7 @@ export function StockCountModal({ open, onClose, projectId: fixedProject }: { op
             <Input maxLength={800} placeholder="Who counted, which store" />
           </Form.Item>
         </FormGrid>
-        <Typography.Paragraph type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+        <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
           Enter what is on the shelf. Items left blank are not touched. Posting sets each counted item to the counted quantity with one adjustment.
         </Typography.Paragraph>
         <Table<StockBalanceDto>
@@ -165,7 +165,7 @@ export function StockCountModal({ open, onClose, projectId: fixedProject }: { op
             },
           ]}
         />
-        <Typography.Text style={{ display: 'block', marginTop: 8 }}>
+        <Typography.Text style={{ display: 'block', marginTop: tk.space[2] }}>
           {counted.length} counted, {differing.length} differ{differing.length === 1 ? 's' : ''}
         </Typography.Text>
       </Form>

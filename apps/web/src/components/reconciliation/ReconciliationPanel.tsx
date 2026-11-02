@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Alert, Button, Col, Empty, Row, Skeleton, Space, Statistic, Table, Tooltip, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { AppTabs } from '@/components/common/AppTabs';
 import type { TableProps } from 'antd';
@@ -13,7 +14,6 @@ import { useUrlTab } from '@/lib/url-state';
 import { useProjectReconciliation, useRemoveActivityNorm, useRemoveMaterialNorm } from '@/lib/queries';
 import { formatDate, formatDateTime, formatINR, formatQty, toNumber, NO_VALUE } from '@/lib/format';
 import { downloadWorkbook, exportFileName, workbookSheet } from '@/lib/exportExcel';
-import { themeColor, themeFontSize } from '@/lib/theme';
 import { QueryError } from '@/components/common/QueryState';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 import { Section, SectionStack } from '@/components/common/Section';
@@ -25,7 +25,7 @@ import { WastageReport } from './WastageReport';
 import { EstimatePanel } from './EstimatePanel';
 import { ExceptionsView, KitsView, PipeView, StructureView } from './StockViews';
 
-const RED = themeColor('colorErrorText');
+const RED = tk.color.tone.danger.fg;
 
 export const qty = (v: string, unit?: string) => (
   <span className="mono" translate="no">
@@ -70,7 +70,7 @@ function UsedCell({ r }: { r: ReconciliationItemDto }) {
       <span className="mono" translate="no" style={{ color: r.usedStatus === 'OVER' ? RED : undefined }}>
         {formatQty(r.usedQty)} {r.unit}
       </span>
-      <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+      <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
         needs {formatQty(r.neededQty)}
         {r.usedVariancePct !== null ? ` (${r.usedVariancePct > 0 ? '+' : ''}${r.usedVariancePct}%)` : ''}
       </div>
@@ -236,7 +236,7 @@ function MaterialsView({ projectId }: { projectId: string }) {
         <>
           {qty(v, r.unit)}
           {toNumber(r.returnedQty) > 0 ? (
-            <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+            <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
               {formatQty(r.issuedQty)} issued, {formatQty(r.returnedQty)} back
             </div>
           ) : null}
@@ -356,7 +356,7 @@ function MaterialsView({ projectId }: { projectId: string }) {
 
   return (
     <SectionStack gap={0}>
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginBottom: 12 }}>
+      <div style={{ display: 'flex', gap: tk.space[3], flexWrap: 'wrap', alignItems: 'center', marginBottom: tk.space[3] }}>
         <PeriodPicker value={period} onChange={setPeriod} />
         <Space wrap style={{ marginLeft: 'auto' }}>
           <Button icon={<FileExcelOutlined />} onClick={exportExcel} disabled={!data}>
@@ -381,7 +381,7 @@ function MaterialsView({ projectId }: { projectId: string }) {
             <Alert
               type="info"
               showIcon
-              style={{ marginBottom: 12 }}
+              style={{ marginBottom: tk.space[3] }}
               title="No material norms yet"
               description={`A norm says how much of a store item one unit of a BOQ item uses, such as 8.2 bags of cement per cum of M25. With norms set, approved progress gives the theoretical consumption to check issues against.${data.canEditNorms ? ' Add standard norms starts from the usual figures for the work your BOQ names.' : ' The QS, the project manager, management or admin can set them.'}`}
               action={
@@ -395,17 +395,17 @@ function MaterialsView({ projectId }: { projectId: string }) {
           ) : null}
           <Row gutter={[16, 16]}>
             <Col xs={12} md={6}>
-              <Statistic title="Items reconciled" value={data.items.length} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
-              <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+              <Statistic title="Items reconciled" value={data.items.length} styles={{ content: { fontSize: tk.type.subhead.fontSize } }} />
+              <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                 {periodLabel(period)}
               </div>
             </Col>
             <Col xs={12} md={6}>
-              <Statistic title="Over allowance" value={data.overCount} styles={{ content: { fontSize: themeFontSize('fontSizeXL'), color: data.overCount ? RED : undefined } }} />
+              <Statistic title="Over allowance" value={data.overCount} styles={{ content: { fontSize: tk.type.subhead.fontSize, color: data.overCount ? RED : undefined } }} />
             </Col>
             <Col xs={12} md={6}>
-              <Statistic title="Below theoretical" value={data.underCount} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
-              <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+              <Statistic title="Below theoretical" value={data.underCount} styles={{ content: { fontSize: tk.type.subhead.fontSize } }} />
+              <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                 By more than {RECONCILIATION_UNDER_PCT}%
               </div>
             </Col>
@@ -414,16 +414,16 @@ function MaterialsView({ projectId }: { projectId: string }) {
                 <Statistic
                   title="Excess value"
                   value={formatINR(data.excessValue)}
-                  styles={{ content: { fontSize: themeFontSize('fontSizeXL'), color: toNumber(data.excessValue) > 0 ? RED : undefined } }}
+                  styles={{ content: { fontSize: tk.type.subhead.fontSize, color: toNumber(data.excessValue) > 0 ? RED : undefined } }}
                 />
-                <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                   Used beyond the allowance, at item rates
                 </div>
               </Col>
             ) : null}
           </Row>
 
-          <Section style={{ marginTop: 16 }} title="Theoretical against consumed">
+          <Section style={{ marginTop: tk.space[4] }} title="Theoretical against consumed">
             <Table<ReconciliationItemDto>
               rowKey="itemId"
               size="small"
@@ -438,7 +438,7 @@ function MaterialsView({ projectId }: { projectId: string }) {
               }}
             />
             {reports ? (
-              <Typography.Paragraph type="secondary" style={{ fontSize: themeFontSize('fontSizeSM'), marginTop: 8, marginBottom: 0 }}>
+              <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[2], marginBottom: 0 }}>
                 Used per DPR is what the approved DPR lines in the period say they used, against what those lines needed by the norms. At the work front is
                 what should be on site now: issued less returned from a week before {formatDate(data.frontFrom)}, the first DPR that reported material, less all
                 the DPRs say was used since
@@ -448,19 +448,19 @@ function MaterialsView({ projectId }: { projectId: string }) {
                 .
               </Typography.Paragraph>
             ) : (
-              <Typography.Paragraph type="secondary" style={{ fontSize: themeFontSize('fontSizeSM'), marginTop: 8, marginBottom: 0 }}>
+              <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[2], marginBottom: 0 }}>
                 No approved DPR in the period says what material it used, so use and the work front cannot be checked yet. The site engineer adds the material on each work line of the DPR.
               </Typography.Paragraph>
             )}
             {data.boqItemsWithoutNorm ? (
-              <Typography.Paragraph type="secondary" style={{ fontSize: themeFontSize('fontSizeSM'), marginTop: 8, marginBottom: 0 }}>
+              <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[2], marginBottom: 0 }}>
                 {data.boqItemsWithoutNorm} BOQ item{data.boqItemsWithoutNorm === 1 ? ' has' : 's have'} work done in the period and no norm. Work such as excavation needs none.
               </Typography.Paragraph>
             ) : null}
           </Section>
 
           {data.unreconciled.length ? (
-            <Section style={{ marginTop: 16 }} title="Without a norm">
+            <Section style={{ marginTop: tk.space[4] }} title="Without a norm">
               <Table<UnreconciledItemDto>
                 rowKey="itemId"
                 size="small"
@@ -474,13 +474,13 @@ function MaterialsView({ projectId }: { projectId: string }) {
                   { title: 'At work front', dataIndex: 'atFrontQty', width: 170, align: 'right', render: (v: string | null, r) => <FrontCell qtyValue={v} unit={r.unit} flag={r.front} /> },
                 ]}
               />
-              <Typography.Paragraph type="secondary" style={{ fontSize: themeFontSize('fontSizeSM'), marginTop: 8, marginBottom: 0 }}>
+              <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[2], marginBottom: 0 }}>
                 These were used at site but no norm ties them to the work, so they cannot be checked. Consumables such as diesel and shuttering usually stay here.
               </Typography.Paragraph>
             </Section>
           ) : null}
 
-          <Section style={{ marginTop: 16 }} title="Norms" extra={<Typography.Text type="secondary">{data.norms.length}</Typography.Text>}>
+          <Section style={{ marginTop: tk.space[4] }} title="Norms" extra={<Typography.Text type="secondary">{data.norms.length}</Typography.Text>}>
             <Table<MaterialNormDto>
               rowKey="id"
               size="small"
@@ -493,15 +493,15 @@ function MaterialsView({ projectId }: { projectId: string }) {
           </Section>
 
           {data.activityNorms.length ? (
-            <Section style={{ marginTop: 16 }} title="Norms on activities" extra={<Typography.Text type="secondary">{data.activityNorms.length}</Typography.Text>}>
+            <Section style={{ marginTop: tk.space[4] }} title="Norms on activities" extra={<Typography.Text type="secondary">{data.activityNorms.length}</Typography.Text>}>
               <Table<ActivityNormDto> rowKey="id" size="small" pagination={false} dataSource={data.activityNorms} scroll={{ x: 980 }} columns={activityNormColumns} />
-              <Typography.Paragraph type="secondary" style={{ fontSize: themeFontSize('fontSizeSM'), marginTop: 8, marginBottom: 0 }}>
+              <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[2], marginBottom: 0 }}>
                 For work with no BOQ item of its own. An activity with norms here counts by them, not by its BOQ item&apos;s.
               </Typography.Paragraph>
             </Section>
           ) : null}
 
-          <Typography.Paragraph type="secondary" style={{ fontSize: themeFontSize('fontSizeSM'), marginTop: 12, marginBottom: 0 }}>
+          <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[3], marginBottom: 0 }}>
             Theoretical is approved progress on each BOQ item in the period × its norm; allowed adds the norm&apos;s wastage. Consumed is what the store issued to
             this site less what came back from site in the same period; transfers to other projects and returns to the supplier do not count. A row is over its
             allowance when more was consumed than allowed, and below theoretical when it is more than {RECONCILIATION_UNDER_PCT}% under.

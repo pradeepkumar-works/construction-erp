@@ -2,10 +2,10 @@
 
 import React, { useMemo, useState } from 'react';
 import { AutoComplete } from 'antd';
+import { tk } from '@/ds';
 import type { VendorDto, VendorKind } from '@erp/shared';
 import { usePickerPage } from '@/lib/queries';
 import { useDebounced } from '@/lib/debounce';
-import { themeFontSize } from '@/lib/theme';
 
 /**
  * Vendor name with suggestions from the vendor master (vendors of `kind` first), searched as you type rather
@@ -35,9 +35,9 @@ export function VendorPicker({
   const options = rows.map((v) => ({
     value: v.name,
     label: (
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: tk.space[2] }}>
         <span>{v.name}</span>
-        {v.gstin && <span className="text-muted mono" translate="no" style={{ fontSize: themeFontSize('fontSizeSM') }}>{v.gstin}</span>}
+        {v.gstin && <span className="text-muted mono" translate="no" style={{ fontSize: tk.type.caption.fontSize }}>{v.gstin}</span>}
       </div>
     ),
   }));

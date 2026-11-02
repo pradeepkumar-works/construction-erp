@@ -2,6 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { App, Button, Checkbox, Divider, Form, Input, Select } from 'antd';
+import { tk } from '@/ds';
 import { ContactsOutlined } from '@/components/common/icons';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { CODE_INPUT, EMAIL_INPUT, PHONE_INPUT, emailRule, phoneRule, upper } from '@/components/form/inputs';
@@ -140,7 +141,7 @@ export function VendorFormModal({
     >
       <Form form={form} layout="vertical">
         {vendor && onPortal ? (
-          <Button type="link" icon={<ContactsOutlined />} onClick={onPortal} style={{ paddingInline: 0, marginBottom: 8 }}>
+          <Button type="link" icon={<ContactsOutlined />} onClick={onPortal} style={{ paddingInline: 0, marginBottom: tk.space[2] }}>
             Supplier portal logins
           </Button>
         ) : null}

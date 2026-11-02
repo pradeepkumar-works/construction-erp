@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Card, Col, Row, Statistic, Table, Typography, theme } from 'antd';
+import { Card, Col, Row, Statistic, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import { AppTabs } from '@/components/common/AppTabs';
@@ -16,13 +17,12 @@ import { Money } from '@/components/common/Money';
 
 /** The supplier's account with the company: bills, payments and what is still owed, from a date they pick. */
 export default function SupplierStatementPage() {
-  const { token } = theme.useToken();
   const [from, setFrom] = useState<Dayjs | null>(null);
   const { data, isLoading, error, refetch } = useSupplierStatement(from ? from.format('YYYY-MM-DD') : undefined);
   const stat = (title: string, value: string | undefined, note?: string) => (
     <Col xs={12} md={8} xl={4}>
       <Card size="small" style={{ height: '100%' }}>
-        <Statistic title={title} value={formatINR(value)} styles={{ content: { fontSize: token.fontSizeHeading4 } }} />
+        <Statistic title={title} value={formatINR(value)} styles={{ content: { fontSize: tk.type.lead.fontSize } }} />
         {note ? <Typography.Text type="secondary">{note}</Typography.Text> : null}
       </Card>
     </Col>
@@ -51,7 +51,7 @@ export default function SupplierStatementPage() {
       {isLoading ? <PageSkeleton header={false} /> : null}
       {data ? (
         <>
-          <Row gutter={[12, 12]} style={{ marginBottom: token.marginMD }}>
+          <Row gutter={[12, 12]} style={{ marginBottom: tk.space[5] }}>
             {stat('Billed', data.billed, data.from ? `Since ${formatDate(data.from)}` : 'All time')}
             {stat('Paid to you', data.paid)}
             {stat('Deducted', data.deducted, 'TDS, other deductions, debit notes')}

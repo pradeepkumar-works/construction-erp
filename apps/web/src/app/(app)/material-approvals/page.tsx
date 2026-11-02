@@ -2,7 +2,8 @@
 
 import React, { Suspense, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Card, Col, Row, Select, Statistic, Typography, theme } from 'antd';
+import { Button, Card, Col, Row, Select, Statistic, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { AppTabs } from '@/components/common/AppTabs';
 import { DeleteOutlined, PlusOutlined } from '@/components/common/icons';
@@ -49,7 +50,6 @@ const KINDS = [
  * approved on request), which purchase orders are checked against.
  */
 function MaterialApprovalsPage() {
-  const { token } = theme.useToken();
   const { user } = useAuth();
   const router = useRouter();
   const canRaise = !!user && canRaiseMaterialApprovals(user.roleKey);
@@ -69,7 +69,7 @@ function MaterialApprovalsPage() {
   const q = view === 'requests' ? requests : makes;
   const open = (id: string) => router.push(`/material-approvals/${id}`);
   const sub = (text: React.ReactNode) => (
-    <Typography.Text type="secondary" style={{ display: 'block', fontSize: token.fontSizeSM }}>
+    <Typography.Text type="secondary" style={{ display: 'block', fontSize: tk.type.caption.fontSize }}>
       {text}
     </Typography.Text>
   );
@@ -236,8 +236,8 @@ function MaterialApprovalsPage() {
   const stat = (title: string, value: React.ReactNode, note?: React.ReactNode, tone?: 'danger') => (
     <Col xs={12} lg={6}>
       <Card size="small" style={{ height: '100%' }}>
-        <Statistic title={title} value={0} formatter={() => value} styles={{ content: { fontSize: token.fontSizeHeading4, color: tone === 'danger' ? token.colorErrorText : undefined } }} />
-        {note ? <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{note}</div> : null}
+        <Statistic title={title} value={0} formatter={() => value} styles={{ content: { fontSize: tk.type.lead.fontSize, color: tone === 'danger' ? tk.color.tone.danger.fg : undefined } }} />
+        {note ? <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{note}</div> : null}
       </Card>
     </Col>
   );
@@ -251,7 +251,7 @@ function MaterialApprovalsPage() {
       {q.error && <QueryError error={q.error} onRetry={() => q.refetch()} />}
       {q.isLoading ? <PageSkeleton header={false} shape="list" /> : null}
       {view === 'requests' && s ? (
-        <Row gutter={[12, 12]} style={{ marginBottom: token.marginMD }}>
+        <Row gutter={[12, 12]} style={{ marginBottom: tk.space[5] }}>
           {stat('With the reviewer', s.underReview, s.overdue ? `${s.overdue} past the reply date` : 'None past its reply date', s.overdue ? 'danger' : undefined)}
           {stat('Returned to us', s.withUs, 'To revise and resubmit, or rejected')}
           {stat('Approved this month', s.approvedThisMonth, 'Including approved as noted')}

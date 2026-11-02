@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo } from 'react';
 import { App, Checkbox, Form, Input, Select, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { PAYMENT_MODES, PAYMENT_MODE_LABELS, type RmcInvoiceDto, type RmcReceiptDto } from '@erp/shared';
@@ -54,7 +55,7 @@ export function InvoiceForm({ open, orderId, onClose }: { open: boolean; orderId
         </FormGrid>
         {chosen && (
           <Form.Item name="batchIds" label="Challans" rules={[{ required: true, type: 'array', min: 1, message: 'Tick the challans to bill' }]} extra="Concrete at the order's rate, pumping on the trucks pumped, GST at 18%">
-            <Checkbox.Group style={{ display: 'grid', gap: 4 }} options={unbilled.map((b) => ({ value: b.id, label: <span translate="no">{`${b.batchNo} · ${formatDate(b.date)} · ${m3(b.quantity)}${b.pumped ? ' · pumped' : ''}`}</span> }))} />
+            <Checkbox.Group style={{ display: 'grid', gap: tk.space[1] }} options={unbilled.map((b) => ({ value: b.id, label: <span translate="no">{`${b.batchNo} · ${formatDate(b.date)} · ${m3(b.quantity)}${b.pumped ? ' · pumped' : ''}`}</span> }))} />
           </Form.Item>
         )}
       </Form>

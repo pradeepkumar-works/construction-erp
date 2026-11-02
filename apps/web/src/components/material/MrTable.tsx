@@ -2,7 +2,6 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { theme } from 'antd';
 import type { MaterialRequestDto, MaterialRequestSortField } from '@erp/shared';
 import { formatDate, formatQty } from '@/lib/format';
 import { PriorityTag, StatusTag } from '@/components/common/StatusTag';
@@ -11,10 +10,10 @@ import { DueCell } from '@/components/list/DueCell';
 import { RowActions } from '@/components/list/RowActions';
 import { RecordLink } from '@/components/record/RecordLink';
 import { unitLabel } from '@erp/shared';
+import { tk } from '@/ds';
 
 function ItemsCell({ row }: { row: MaterialRequestDto }) {
-  const { token } = theme.useToken();
-  const muted = { color: token.colorTextSecondary };
+  const muted = { color: tk.color.text.muted };
   return (
     <div>
       {row.items.slice(0, 3).map((i) => (

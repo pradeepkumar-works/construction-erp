@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { App, Button, Card, Col, Descriptions, Dropdown, Flex, Grid, Row, Space, Statistic, Table, Typography, theme } from 'antd';
+import { App, Button, Card, Col, Descriptions, Dropdown, Flex, Grid, Row, Space, Statistic, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import type { MenuProps, TableColumnType } from 'antd';
 import { DeleteOutlined, EditOutlined, MoreOutlined, PlusOutlined, RollbackOutlined, StopOutlined, TrophyOutlined } from '@/components/common/icons';
@@ -45,7 +46,6 @@ export default function ScEnquiryPage() {
 }
 
 function EnquiryView({ e }: { e: ScEnquiryDetailDto }) {
-  const { token } = theme.useToken();
   const { modal } = App.useApp();
   const router = useRouter();
   const notify = useNotify();
@@ -130,8 +130,8 @@ function EnquiryView({ e }: { e: ScEnquiryDetailDto }) {
   const stat = (title: string, value: React.ReactNode, note?: React.ReactNode) => (
     <Col xs={12} lg={6}>
       <Card size="small" style={{ height: '100%' }}>
-        <Statistic title={title} value={0} formatter={() => value} styles={{ content: { fontSize: token.fontSizeHeading4 } }} />
-        {note ? <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{note}</div> : null}
+        <Statistic title={title} value={0} formatter={() => value} styles={{ content: { fontSize: tk.type.lead.fontSize } }} />
+        {note ? <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{note}</div> : null}
       </Card>
     </Col>
   );
@@ -152,7 +152,7 @@ function EnquiryView({ e }: { e: ScEnquiryDetailDto }) {
         }
         extra={actions}
       />
-      <Row gutter={[12, 12]} style={{ marginBottom: token.marginMD }}>
+      <Row gutter={[12, 12]} style={{ marginBottom: tk.space[5] }}>
         {stat('Quotes in', `${received.length} of ${e.quotes.length}`, awaited.length ? `Awaited: ${awaited.map((q) => q.vendorName).join(', ')}` : e.quotes.length ? 'All in' : 'Ask subcontractors to quote')}
         {stat(
           awarded ? 'Awarded' : 'Lowest quote',
@@ -177,7 +177,7 @@ function EnquiryView({ e }: { e: ScEnquiryDetailDto }) {
         )}
       </Row>
       <Comparison e={e} onQuote={setQuote} onAward={edit && (isOpen || orphaned) ? (id) => setAwarding({ quoteId: id }) : undefined} />
-      <Row gutter={[16, 16]} style={{ marginTop: token.marginMD }}>
+      <Row gutter={[16, 16]} style={{ marginTop: tk.space[5] }}>
         <Col xs={24} lg={14}>
           <QuotesCard
             e={e}
@@ -221,9 +221,8 @@ function EnquiryView({ e }: { e: ScEnquiryDetailDto }) {
 }
 
 function CardTitle({ children }: { children: React.ReactNode }) {
-  const { token } = theme.useToken();
   return (
-    <Typography.Title level={2} style={{ fontSize: token.fontSize, margin: 0 }}>
+    <Typography.Title level={2} style={{ fontSize: tk.type.body.fontSize, margin: 0 }}>
       {children}
     </Typography.Title>
   );
@@ -236,12 +235,11 @@ type CmpRow = { key: string; item?: ScEnquiryItemDto; total?: 'total' | 'gst' | 
  * (L1 first), the lowest rate of each item in bold on a green ground, and the totals, GST and margin below.
  */
 function Comparison({ e, onQuote, onAward }: { e: ScEnquiryDetailDto; onQuote: (q: ScQuoteDto) => void; onAward?: (quoteId: string) => void }) {
-  const { token } = theme.useToken();
   // On a phone the item column is narrow and scrolls with the rest, so the rates stay in view.
   const wide = !!Grid.useBreakpoint().md;
   const itemWidth = wide ? 300 : 170;
   const quotes = e.quotes.filter((q) => q.received);
-  const small = { display: 'block', fontSize: token.fontSizeSM } as const;
+  const small = { display: 'block', fontSize: tk.type.caption.fontSize } as const;
   const rows: CmpRow[] = [
     ...e.items.map((item) => ({ key: item.id, item })),
     ...(quotes.length
@@ -266,7 +264,7 @@ function Comparison({ e, onQuote, onAward }: { e: ScEnquiryDetailDto; onQuote: (
           {q.rank ? <RankText rank={q.rank} /> : <span className="text-muted">{q.complete ? NO_VALUE : `${q.priced} of ${e.items.length} priced`}</span>}
           {q.awarded ? <AppTag meaning="done">Awarded</AppTag> : null}
         </Flex>
-        <Space size={0} style={{ marginTop: 4 }}>
+        <Space size={0} style={{ marginTop: tk.space[1] }}>
           {e.status === 'OPEN' && e.canEdit ? (
             <Button size="small" type="link" onClick={() => onQuote(q)} aria-label={`Edit quote from ${q.vendorName}`}>
               Edit
@@ -286,9 +284,9 @@ function Comparison({ e, onQuote, onAward }: { e: ScEnquiryDetailDto; onQuote: (
         if (rate === null || rate === undefined) return <Typography.Text type="secondary">Not quoted</Typography.Text>;
         const low = r.item.lowestQuoteIds.includes(q.id) && quotes.length > 1;
         return (
-          <div translate="no" style={low ? { background: token.colorSuccessBg, fontWeight: 600, borderRadius: token.borderRadiusSM, padding: '2px 6px', margin: '-2px -6px' } : undefined}>
+          <div translate="no" style={low ? { background: tk.color.tone.success.bg, fontWeight: tk.type.title.fontWeight, borderRadius: tk.radius.sm, padding: `${tk.space.half} ${tk.space[2]}`, margin: `${tk.neg('half')} ${tk.neg(2)}` } : undefined}>
             {formatINR(rate, true)}
-            <Typography.Text type="secondary" style={{ ...small, fontWeight: 400 }}>
+            <Typography.Text type="secondary" style={{ ...small, fontWeight: tk.type.body.fontWeight }}>
               {formatINR(toNumber(rate) * toNumber(r.item.quantity), true)}
             </Typography.Text>
           </div>
@@ -367,12 +365,12 @@ function Comparison({ e, onQuote, onAward }: { e: ScEnquiryDetailDto; onQuote: (
         scroll={{ x: itemWidth + 150 + quotes.length * 190 + (quotes.length > 1 ? 100 : 0) }}
       />
       {quotes.length > 1 ? (
-        <Typography.Paragraph type="secondary" style={{ margin: `${token.marginSM}px 0 0`, fontSize: token.fontSizeSM }}>
+        <Typography.Paragraph type="secondary" style={{ margin: `${tk.space[3]} 0 0`, fontSize: tk.type.caption.fontSize }}>
           Bold on a green ground: the item&apos;s lowest rate. Spread: how far the highest rate is above the lowest.
         </Typography.Paragraph>
       ) : null}
       {!quotes.length ? (
-        <Typography.Paragraph type="secondary" style={{ margin: `${token.marginSM}px 0 0` }}>
+        <Typography.Paragraph type="secondary" style={{ margin: `${tk.space[3]} 0 0` }}>
           {e.quotes.length ? 'No quote is in yet. Enter each one as it comes, from the quotes below.' : 'Nobody is asked to quote yet. Use Ask to quote to add subcontractors.'}
         </Typography.Paragraph>
       ) : null}
@@ -382,7 +380,6 @@ function Comparison({ e, onQuote, onAward }: { e: ScEnquiryDetailDto; onQuote: (
 
 /** Everyone asked: when their quote came and how long it holds, or that it is awaited, with their phone. */
 function QuotesCard({ e, onEnter, onRemove }: { e: ScEnquiryDetailDto; onEnter?: (q: ScQuoteDto) => void; onRemove?: (q: ScQuoteDto) => void }) {
-  const { token } = theme.useToken();
   return (
     <Card size="small" title={<CardTitle>{`Asked to quote (${e.quotes.length})`}</CardTitle>}>
       {e.quotes.length ? (
@@ -394,14 +391,14 @@ function QuotesCard({ e, onEnter, onRemove }: { e: ScEnquiryDetailDto; onEnter?:
               align="center"
               justify="space-between"
               wrap
-              style={{ minHeight: 44, padding: `${token.paddingXS}px 0`, borderTop: i ? `1px solid ${token.colorSplit}` : undefined }}
+              style={{ minHeight: 44, padding: `${tk.space[2]} 0`, borderTop: i ? `1px solid ${tk.color.line.hairline}` : undefined }}
             >
               <div style={{ minWidth: 0, flex: '1 1 220px' }}>
                 <Typography.Text strong translate="no">
                   {q.vendorName}
                 </Typography.Text>{' '}
                 {q.rank ? <RankText rank={q.rank} /> : null}
-                <Typography.Text type="secondary" style={{ display: 'block', fontSize: token.fontSizeSM }} translate="no">
+                <Typography.Text type="secondary" style={{ display: 'block', fontSize: tk.type.caption.fontSize }} translate="no">
                   {[
                     q.received ? `In on ${formatDate(q.receivedOn!)}` : 'Awaited',
                     q.received && !q.complete ? `${q.priced} of ${e.items.length} items priced` : null,
@@ -411,7 +408,7 @@ function QuotesCard({ e, onEnter, onRemove }: { e: ScEnquiryDetailDto; onEnter?:
                     .filter(Boolean)
                     .join(' · ')}
                 </Typography.Text>
-                {q.note ? <Typography.Text style={{ display: 'block', fontSize: token.fontSizeSM }}>{q.note}</Typography.Text> : null}
+                {q.note ? <Typography.Text style={{ display: 'block', fontSize: tk.type.caption.fontSize }}>{q.note}</Typography.Text> : null}
               </div>
               {onEnter || onRemove ? (
                 <Space size={4}>

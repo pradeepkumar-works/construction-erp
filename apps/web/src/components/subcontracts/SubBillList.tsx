@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Button, Space, theme } from 'antd';
+import { Button, Space } from 'antd';
+import { tk } from '@/ds';
 import { PlusOutlined } from '@/components/common/icons';
 import type { SubcontractBillDto, SubcontractBillSortField, VendorKind } from '@erp/shared';
 import { LIST_SORT_FIELDS, canPrepareSubcontractBill } from '@erp/shared';
@@ -33,8 +34,7 @@ const KEYS = ['status', 'mine', 'from', 'to', 'vendorId'] as const;
 const sumMoney = (values: string[]) => formatINR(values.reduce((n, v) => n + toNumber(v), 0));
 
 function Sub({ children }: { children: React.ReactNode }) {
-  const { token } = theme.useToken();
-  return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
+  return <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{children}</div>;
 }
 
 function subBillColumns({ showProject, onOpen, onEdit, sortOrderFor }: { showProject: boolean; onOpen: (id: string) => void; onEdit: (row: SubcontractBillDto) => void; sortOrderFor: (key: SubcontractBillSortField) => 'ascend' | 'descend' | null }): ListColumn<SubcontractBillDto>[] {

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { App, Button, Popconfirm, Space, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { CheckOutlined, EditOutlined, PlusOutlined } from '@/components/common/icons';
 import type { MixDesignDto } from '@erp/shared';
 import { canApproveMixDesign, canRunRmcPlant, unitLabel } from '@erp/shared';
@@ -33,8 +34,8 @@ export function MixDesigns() {
     }
   };
   return (
-    <div style={{ padding: 16 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+    <div style={{ padding: tk.space[4] }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: tk.space[2], flexWrap: 'wrap', marginBottom: tk.space[3] }}>
         <PlantFilter />
         {mayMake && (
           <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreating(true)}>
@@ -101,7 +102,7 @@ export function MixDesigns() {
           ]}
         />
       )}
-      <Typography.Paragraph type="secondary" style={{ marginTop: 12 }}>
+      <Typography.Paragraph type="secondary" style={{ marginTop: tk.space[3] }}>
         Material a cubic metre is at the item master’s rates. Each truck issues its materials from the plant’s store at its design, or as weighed at the batcher.
       </Typography.Paragraph>
       <DesignForm open={creating || !!editing} design={editing} onClose={() => (setCreating(false), setEditing(null))} />

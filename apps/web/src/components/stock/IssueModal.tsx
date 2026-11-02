@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo } from 'react';
 import { Alert, App, AutoComplete, Button, Form, Input, InputNumber, Select, Space, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { DeleteOutlined, PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
@@ -14,7 +15,6 @@ import { useActivities, useAttendanceSuggestions, useProjects, useStockBalances,
 import { useAuth } from '@/lib/auth';
 import { formatQty } from '@/lib/format';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
-import { themeFontSize } from '@/lib/theme';
 
 interface LineValue {
   itemId?: string;
@@ -140,10 +140,10 @@ export function IssueModal({ open, onClose, projectId }: { open: boolean; onClos
         </FormGrid>
 
         {scope && !stock.isLoading && !items.length ? (
-          <Alert type="warning" showIcon style={{ marginBottom: 12 }} title="Nothing is in stock at this project yet. Receive material first." />
+          <Alert type="warning" showIcon style={{ marginBottom: tk.space[3] }} title="Nothing is in stock at this project yet. Receive material first." />
         ) : null}
 
-        <Form.Item label="Items" required style={{ marginBottom: 8 }}>
+        <Form.Item label="Items" required style={{ marginBottom: tk.space[2] }}>
           <Form.List name="lines">
             {(fields, { add, remove }) => (
               <Space orientation="vertical" size={6} style={{ width: '100%' }}>
@@ -151,7 +151,7 @@ export function IssueModal({ open, onClose, projectId }: { open: boolean; onClos
                   const itemId = form.getFieldValue(['lines', f.name, 'itemId']) as string | undefined;
                   const row = items.find((i) => i.itemId === itemId);
                   return (
-                    <div key={f.key} style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
+                    <div key={f.key} style={{ display: 'flex', gap: tk.space[2], alignItems: 'flex-start' }}>
                       <Form.Item name={[f.name, 'itemId']} style={{ flex: 3, marginBottom: 0 }} rules={[{ required: true, message: 'Choose an item' }]}>
                         <Select
                           showSearch={{ optionFilterProp: 'label' }}
@@ -192,7 +192,7 @@ export function IssueModal({ open, onClose, projectId }: { open: boolean; onClos
         <Form.Item name="remarks" label="Remarks">
           <Input.TextArea rows={2} maxLength={1000} />
         </Form.Item>
-        <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+        <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
           Items that fall below their minimum level alert the store manager and the project manager.
         </Typography.Text>
       </Form>

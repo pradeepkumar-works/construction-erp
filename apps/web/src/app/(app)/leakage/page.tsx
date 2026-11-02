@@ -3,7 +3,8 @@
 import React, { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Button, Card, Empty, Flex, Segmented, Statistic, Typography, theme } from 'antd';
+import { Button, Card, Empty, Flex, Segmented, Statistic, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import { DownOutlined, UpOutlined } from '@/components/common/icons';
@@ -39,7 +40,6 @@ export default function Page() {
 
 function Leakage() {
   const { user } = useAuth();
-  const { token } = theme.useToken();
   const search = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -87,7 +87,7 @@ function Leakage() {
     const id = `working-${f.key.replace(/[^a-zA-Z0-9-]/g, '-')}`;
     return (
       <Card key={f.key} data-flag-key={f.key} size="small">
-        <Flex gap={token.marginXS} wrap align="center" style={{ marginBottom: token.marginXS }}>
+        <Flex gap={tk.space[2]} wrap align="center" style={{ marginBottom: tk.space[2] }}>
           <AppTag variant="kind">{LEAKAGE_SECTION_LABELS[f.section]}</AppTag>
           {f.projectName ? (
             <Typography.Text type="secondary" translate="no">
@@ -95,10 +95,10 @@ function Leakage() {
             </Typography.Text>
           ) : null}
         </Flex>
-        <Typography.Title level={2} style={{ fontSize: token.fontSizeHeading5, marginTop: 0, marginBottom: token.marginXS }}>
+        <Typography.Title level={2} style={{ fontSize: tk.type.body.fontSize, marginTop: 0, marginBottom: tk.space[2] }}>
           {f.title}
         </Typography.Title>
-        <Flex gap={token.marginXS} wrap align="baseline" style={{ marginBottom: token.marginXS }}>
+        <Flex gap={tk.space[2]} wrap align="baseline" style={{ marginBottom: tk.space[2] }}>
           <Typography.Text strong>At risk:</Typography.Text>
           <Typography.Text translate="no">{f.quantity}</Typography.Text>
           {f.valueInr !== null ? (
@@ -107,14 +107,14 @@ function Leakage() {
             </AppTag>
           ) : null}
         </Flex>
-        <Typography.Paragraph type="secondary" style={{ marginBottom: token.marginXS }}>
+        <Typography.Paragraph type="secondary" style={{ marginBottom: tk.space[2] }}>
           {f.detail}
         </Typography.Paragraph>
         <Button type="link" size="small" icon={open ? <UpOutlined /> : <DownOutlined />} aria-expanded={open} aria-controls={id} onClick={() => toggleWhy(f.key)} style={{ paddingInline: 0 }}>
           Show how this was worked out
         </Button>
         {open ? (
-          <ol id={id} style={{ margin: `${token.marginXS}px 0 0`, paddingInlineStart: token.paddingLG }} translate="no">
+          <ol id={id} style={{ margin: `${tk.space[2]} 0 0`, paddingInlineStart: tk.space[6] }} translate="no">
             {f.working.map((line, i) => (
               <li key={i}>
                 <Typography.Text>{line}</Typography.Text>
@@ -122,7 +122,7 @@ function Leakage() {
             ))}
           </ol>
         ) : null}
-        <Flex gap={token.margin} wrap className="link-row" style={{ marginTop: token.marginSM }}>
+        <Flex gap={tk.space[4]} wrap className="link-row" style={{ marginTop: tk.space[3] }}>
           {f.links.map((l) => (
             <Link key={l.href} href={l.href}>
               {l.label}
@@ -139,7 +139,7 @@ function Leakage() {
         title="Leakage checks"
         subtitle={`Where material, money and fuel may be going missing, ${formatDate(data.from)} to ${formatDate(data.to)}${running ? ' (so far)' : ''}, with the working behind each flag. A flag is a reason to look, not proof.`}
       />
-      <Flex wrap gap={token.marginSM} align="center" style={{ marginBottom: token.margin }}>
+      <Flex wrap gap={tk.space[3]} align="center" style={{ marginBottom: tk.space[4] }}>
         <DatePicker
           picker="month"
           format={MONTH_PICKER_FORMAT}
@@ -160,13 +160,13 @@ function Leakage() {
         ) : null}
       </Flex>
 
-      <Flex wrap gap={token.marginSM} style={{ marginBottom: token.margin }}>
+      <Flex wrap gap={tk.space[3]} style={{ marginBottom: tk.space[4] }}>
         <Card size="small" style={{ flex: '1 1 150px' }}>
           <Statistic
             title="At risk this month"
             value={0}
             formatter={() => <span translate="no">{totalInr !== null ? formatINRCompact(totalInr) : `${scoped.length} flags`}</span>}
-            styles={{ content: { fontSize: token.fontSizeHeading4 } }}
+            styles={{ content: { fontSize: tk.type.lead.fontSize } }}
           />
           <Typography.Text type="secondary">
             {scoped.length === 1 ? '1 flag' : `${scoped.length} flags`} over {data.projects === 1 ? '1 project' : `${data.projects} projects`}
@@ -181,7 +181,7 @@ function Leakage() {
                 title={LEAKAGE_SECTION_LABELS[s]}
                 value={0}
                 formatter={() => <span translate="no">{t !== null ? formatINRCompact(t) : count === 1 ? '1 flag' : `${count} flags`}</span>}
-                styles={{ content: { fontSize: token.fontSizeHeading4 } }}
+                styles={{ content: { fontSize: tk.type.lead.fontSize } }}
               />
               <Typography.Text type="secondary">{SECTION_HELP[s]}</Typography.Text>
             </Card>
@@ -190,7 +190,7 @@ function Leakage() {
       </Flex>
 
       {shown.length ? (
-        <Flex vertical gap={token.marginSM}>
+        <Flex vertical gap={tk.space[3]}>
           {shown.map(card)}
         </Flex>
       ) : (

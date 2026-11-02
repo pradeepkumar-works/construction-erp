@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo } from 'react';
 import { Alert, Button, Form, Input, InputNumber, Select, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { DeleteOutlined, PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
@@ -17,7 +18,6 @@ import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { UnitInput } from '@/components/common/UnitInput';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
-import { themeFontSize } from '@/lib/theme';
 import { recordPage } from '@/components/approvals/queue';
 import { Money } from '@/components/common/Money';
 
@@ -209,7 +209,7 @@ export function WorkOrderFormModal({
                 pagination={false}
                 rowKey="key"
                 dataSource={fields}
-                style={{ marginBottom: 8 }}
+                style={{ marginBottom: tk.space[2] }}
                 columns={[
                   {
                     title: 'BOQ item',
@@ -239,7 +239,7 @@ export function WorkOrderFormModal({
                     render: (_, f) => {
                       const b = lines?.[f.name]?.boqItemId ? boqById.get(lines[f.name].boqItemId!) : undefined;
                       return b ? (
-                        <Typography.Text style={{ fontSize: themeFontSize('fontSizeSM') }}>{b.description}</Typography.Text>
+                        <Typography.Text style={{ fontSize: tk.type.caption.fontSize }}>{b.description}</Typography.Text>
                       ) : (
                         <Form.Item name={[f.name, 'description']} noStyle rules={[{ required: true, whitespace: true, message: 'Describe the item' }]}>
                           <Input placeholder="Scaffolding, hire and erection" aria-label={`Description of line ${f.name + 1}`} maxLength={300} />
@@ -284,7 +284,7 @@ export function WorkOrderFormModal({
                             <MoneyInput aria-label={`Rate of line ${f.name + 1}`} />
                           </Form.Item>
                           {b && (
-                            <Typography.Text type={rate > client ? 'danger' : 'secondary'} style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                            <Typography.Text type={rate > client ? 'danger' : 'secondary'} style={{ fontSize: tk.type.caption.fontSize }}>
                               Client {formatINR(client)}
                               {rate > 0 && client > 0 ? ` · margin ${Math.round(((client - rate) / client) * 1000) / 10}%` : ''}
                             </Typography.Text>
@@ -302,7 +302,7 @@ export function WorkOrderFormModal({
                   },
                 ]}
               />
-              <Button size="small" icon={<PlusOutlined />} onClick={() => add({})} style={{ marginBottom: 16 }}>
+              <Button size="small" icon={<PlusOutlined />} onClick={() => add({})} style={{ marginBottom: tk.space[4] }}>
                 Add item
               </Button>
             </>
@@ -350,7 +350,7 @@ export function WorkOrderFormModal({
             <Alert
               type="info"
               title={
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '4px 12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: `${tk.space[1]} ${tk.space[3]}` }}>
                   <span>Work order value</span>
                   <Money value={value} paise strong />
                   <span>GST at {toNumber(gstRate)}%</span>

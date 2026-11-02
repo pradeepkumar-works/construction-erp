@@ -2,6 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { App, Form, Input, InputNumber, Select, Table } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -14,7 +15,6 @@ import { VendorSelect } from '@/components/common/SearchSelect';
 import { formatQty, toNumber } from '@/lib/format';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
-import { themeFontSize } from '@/lib/theme';
 import { LastRates } from './LastRates';
 
 interface FormValues {
@@ -124,7 +124,7 @@ export function QuotationFormModal({ open, request, quotation, onClose }: { open
             pagination={false}
             dataSource={request.items}
             columns={[
-              { title: 'Item', dataIndex: 'itemName', render: (v, i) => <div>{v}{i.specification && <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{i.specification}</div>}</div> },
+              { title: 'Item', dataIndex: 'itemName', render: (v, i) => <div>{v}{i.specification && <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>{i.specification}</div>}</div> },
               { title: 'Quantity', dataIndex: 'quantity', width: 120, align: 'right', render: (v, i) => `${formatQty(v)} ${unitLabel(i.unit)}` },
               {
                 title: 'Rate (per unit, before GST)',

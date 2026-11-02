@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Alert, Button, Space, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { StockEntryDto } from '@erp/shared';
 import { canKeepStock } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
@@ -21,13 +22,13 @@ export function IncomingTransfers({ projectId }: { projectId?: string }) {
       <Alert
         type="info"
         showIcon
-        style={{ margin: 12 }}
+        style={{ margin: tk.space[3] }}
         className="incoming-transfers"
         title={`${data.length} transfer${data.length === 1 ? '' : 's'} in transit`}
         description={
           <Space orientation="vertical" size={4} style={{ width: '100%' }}>
             {data.map((t) => (
-              <div key={t.id} style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+              <div key={t.id} style={{ display: 'flex', gap: tk.space[3], alignItems: 'center', flexWrap: 'wrap' }}>
                 <Typography.Text>
                   <span className="mono" translate="no">{t.entryNo}</span> from {t.projectName}
                   {projectId ? '' : ` to ${t.toProjectName}`}, sent {formatDate(t.date)}: {t.lines.map((l) => l.itemName).join(', ')}

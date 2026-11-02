@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { App, Button, Empty, Form, Input, Skeleton, Table, Tooltip, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import { DeleteOutlined } from '@/components/common/icons';
@@ -10,7 +11,6 @@ import type { ExcessRecoveryDto, ReconciliationStatus, SubconMaterialDto, Subcon
 import { SUBMISSION_STATUS_LABELS, unitLabel } from '@erp/shared';
 import { useCancelRecovery, useRecoverExcess, useSubconReconciliation } from '@/lib/queries';
 import { formatDate, formatINR, formatQty, toNumber, NO_VALUE } from '@/lib/format';
-import { themeColor, themeFontSize } from '@/lib/theme';
 import { QueryError } from '@/components/common/QueryState';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 import { Section, SectionStack } from '@/components/common/Section';
@@ -19,7 +19,7 @@ import { MoneyInput, QuantityInput } from '@/components/form/inputs';
 import { StatusCell, qty } from './ReconciliationPanel';
 import { Money } from '@/components/common/Money';
 
-const RED = themeColor('colorErrorText');
+const RED = tk.color.tone.danger.fg;
 
 /**
  * Material issued to each subcontractor against what their approved measured work should have taken,
@@ -94,12 +94,12 @@ function WorkOrderBlock({
           <>
             {qty(r.excessQty, r.unit)}
             {values && r.excessValue ? (
-              <div className="mono" translate="no" style={{ fontSize: themeFontSize('fontSizeSM'), color: RED }}>
+              <div className="mono" translate="no" style={{ fontSize: tk.type.caption.fontSize, color: RED }}>
                 {formatINR(r.excessValue)}
               </div>
             ) : null}
             {toNumber(r.recoveredQty) > 0 ? (
-              <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+              <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                 {formatQty(r.recoveredQty)} raised
               </div>
             ) : null}
@@ -148,7 +148,7 @@ function WorkOrderBlock({
             <Link href={`/subcontract-bills/${r.billId}`} className="mono" translate="no">
               {r.billLabel}
             </Link>{' '}
-            {r.billStatus ? <AppTag kind="submission" status={r.billStatus as SubmissionStatus} style={{ marginLeft: 4 }}>{SUBMISSION_STATUS_LABELS[r.billStatus as SubmissionStatus] ?? r.billStatus}</AppTag> : null}
+            {r.billStatus ? <AppTag kind="submission" status={r.billStatus as SubmissionStatus} style={{ marginLeft: tk.space[1] }}>{SUBMISSION_STATUS_LABELS[r.billStatus as SubmissionStatus] ?? r.billStatus}</AppTag> : null}
           </>
         ) : (
           <span className="text-muted">Their next bill</span>
@@ -182,7 +182,7 @@ function WorkOrderBlock({
         </span>
       }
       extra={
-        <span className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+        <span className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
           {wo.title}
           {wo.closed ? ' · closed' : ''}
           {wo.openBill ? (
@@ -211,7 +211,7 @@ function WorkOrderBlock({
       />
       {wo.recoveries.length ? (
         <>
-          <Typography.Text strong style={{ display: 'block', marginTop: 12, marginBottom: 4 }}>
+          <Typography.Text strong style={{ display: 'block', marginTop: tk.space[3], marginBottom: tk.space[1] }}>
             Raised for recovery
           </Typography.Text>
           <Table<ExcessRecoveryDto> rowKey="id" size="small" pagination={false} dataSource={wo.recoveries} columns={recoveryColumns} scroll={{ x: 820 }} />

@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import { Alert, App, Card, Flex, Form, Input, InputNumber, Select, Table, Typography, theme } from 'antd';
+import { Alert, App, Card, Flex, Form, Input, InputNumber, Select, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import {
@@ -29,7 +30,6 @@ import { PhotoUpload } from '@/components/common/PhotoUpload';
 
 /** A quote on an enquiry: a rate and GST per item, freight, delivery and terms; sent once. */
 export function QuoteForm({ enquiry, onClose }: { enquiry: SupplierEnquiryDto | null; onClose: () => void }) {
-  const { token } = theme.useToken();
   const [form] = Form.useForm<{
     rates: Record<string, { rate?: number | null; gstRate?: number; remarks?: string }>;
     quoteRef?: string;
@@ -76,8 +76,8 @@ export function QuoteForm({ enquiry, onClose }: { enquiry: SupplierEnquiryDto | 
           <Typography.Paragraph type="secondary">
             <span translate="no">{e.projectName}</span>, needed by {formatDate(e.requiredDate)}. Quote by {formatDate(e.closesOn)}; leave out any item you do not supply.
           </Typography.Paragraph>
-          {e.message ? <Alert type="info" showIcon title={e.message} style={{ marginBottom: token.marginMD }} /> : null}
-          <Flex vertical gap={token.marginSM} style={{ marginBottom: token.marginMD }}>
+          {e.message ? <Alert type="info" showIcon title={e.message} style={{ marginBottom: tk.space[5] }} /> : null}
+          <Flex vertical gap={tk.space[3]} style={{ marginBottom: tk.space[5] }}>
             {e.lines.map((l, i) => (
               <Card key={l.materialRequestItemId} size="small" title={<span style={{ whiteSpace: 'normal' }}>{i + 1}. {l.itemName}</span>} extra={<span translate="no">{formatQty(l.quantity)} {l.unit}</span>}>
                 {l.specification ? <Typography.Paragraph type="secondary">{l.specification}</Typography.Paragraph> : null}
@@ -217,7 +217,7 @@ export function DispatchForm({ open, orderId, onClose }: { open: boolean; orderI
             size="small"
             rowKey="id"
             pagination={false}
-            style={{ marginBottom: 16 }}
+            style={{ marginBottom: tk.space[4] }}
             dataSource={order.lines}
             scroll={{ x: 560 }}
             columns={[
@@ -325,7 +325,7 @@ export function InvoiceForm({ open, again, onClose }: { open: boolean; again?: S
       }}
     >
       <Form form={form} layout="vertical">
-        {again?.returnNote ? <Alert type="warning" showIcon title={`Returned: ${again.returnNote}`} style={{ marginBottom: 16 }} /> : null}
+        {again?.returnNote ? <Alert type="warning" showIcon title={`Returned: ${again.returnNote}`} style={{ marginBottom: tk.space[4] }} /> : null}
         <Form.Item name="order" label="Against" extra="Leave empty for a service with no order">
           <Select
             allowClear

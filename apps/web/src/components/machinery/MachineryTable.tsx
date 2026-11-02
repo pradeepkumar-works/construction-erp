@@ -2,7 +2,8 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { theme } from 'antd';
+import {  } from 'antd';
+import { tk } from '@/ds';
 import type { MachineryLogDto, MachineryLogSortField } from '@erp/shared';
 import { formatDate, formatQty, toNumber } from '@/lib/format';
 import { StatusTag } from '@/components/common/StatusTag';
@@ -12,8 +13,7 @@ import { RecordLink } from '@/components/record/RecordLink';
 import { HoursCell, OwnershipTag } from './hours';
 
 function Sub({ children }: { children: React.ReactNode }) {
-  const { token } = theme.useToken();
-  return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
+  return <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{children}</div>;
 }
 
 const sum = (values: (string | null)[]) => values.reduce((n, v) => n + toNumber(v ?? 0), 0);

@@ -2,13 +2,13 @@
 
 import React from 'react';
 import { Alert, App, Grid, Modal, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AwardLine, AwardPlan, ComparativeStatementDto, MaterialRequestDto, PurchaseOrderDto } from '@erp/shared';
 import { awardLowestPerItem } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { formatINR, formatQty } from '@/lib/format';
-import { themeFontSize } from '@/lib/theme';
 import { Money } from '@/components/common/Money';
 
 type Row = AwardLine & { vendorName: string; quotationId: string };
@@ -23,7 +23,7 @@ function itemCell(r: Row) {
   return (
     <div>
       {r.itemName}
-      <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+      <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
         <span translate="no">
           {formatQty(r.quantity)} {r.unit}
         </span>
@@ -123,7 +123,7 @@ export function AwardLowestModal({
                   ]
             }
           />
-          <Typography.Paragraph style={{ marginTop: 12, marginBottom: 0 }}>
+          <Typography.Paragraph style={{ marginTop: tk.space[3], marginBottom: 0 }}>
             {plan.orders.map((o) => (
               <div key={o.quotationId}>
                 <span translate="no">{o.vendorName}</span>:{' '}
@@ -141,7 +141,7 @@ export function AwardLowestModal({
           </Typography.Paragraph>
           {plan.singleVendor && plan.saving != null ? (
             <Alert
-              style={{ marginTop: 12 }}
+              style={{ marginTop: tk.space[3] }}
               type={plan.saving > 0 ? 'success' : 'warning'}
               showIcon
               title={
@@ -157,7 +157,7 @@ export function AwardLowestModal({
             />
           ) : null}
           {plan.leftOut.some((l) => l.reason === 'not quoted') ? (
-            <Typography.Paragraph type="secondary" style={{ marginTop: 12, marginBottom: 0 }}>
+            <Typography.Paragraph type="secondary" style={{ marginTop: tk.space[3], marginBottom: 0 }}>
               Not quoted by anyone, so left out: {plan.leftOut.filter((l) => l.reason === 'not quoted').map((l) => l.itemName).join(', ')}.
             </Typography.Paragraph>
           ) : null}
