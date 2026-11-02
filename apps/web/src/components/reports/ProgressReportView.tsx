@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { App, Button, Card, Empty, Segmented, Skeleton, Space, theme } from 'antd';
+import { App, Button, Card, Empty, Segmented, Skeleton, Space } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { formatDayMonth, formatDate, MONTH_PICKER_FORMAT } from '@/lib/format';
 import { PrinterOutlined } from '@/components/common/icons';
@@ -21,7 +22,6 @@ const weekOf = (d: Dayjs): [Dayjs, Dayjs] => {
  * /reports/progress, the client portal from /portal/projects/:id/report (the same report).
  */
 export function ProgressReportView({ projectId, portal = false, picker, only }: { projectId: string | undefined; portal?: boolean; picker?: React.ReactNode; only?: ReportKind }) {
-  const { token } = theme.useToken();
   const { message } = App.useApp();
   const [chosen, setKind] = useState<ReportKind>('MONTHLY');
   const kind = only ?? chosen;
@@ -41,7 +41,7 @@ export function ProgressReportView({ projectId, portal = false, picker, only }: 
 
   return (
     <>
-      <Card size="small" style={{ marginBottom: 12 }}>
+      <Card size="small" style={{ marginBottom: tk.space[3] }}>
         <Space wrap>
           {picker}
           {only ? null : (
@@ -75,9 +75,9 @@ export function ProgressReportView({ projectId, portal = false, picker, only }: 
       {!projectId ? <Empty description="Choose a project" /> : null}
       {isLoading ? <Skeleton active /> : null}
       {data ? (
-        <Card size="small" styles={{ body: { padding: 0, background: token.colorFillSecondary } }}>
-          <div style={{ padding: 16, display: 'flex', justifyContent: 'center', opacity: isFetching ? 0.6 : 1 }}>
-            <iframe title="Report preview" srcDoc={html} style={{ width: '100%', maxWidth: 900, height: 1200, border: `1px solid ${token.colorBorder}`, background: token.colorBgContainer, boxShadow: token.boxShadowTertiary }} />
+        <Card size="small" styles={{ body: { padding: 0, background: tk.color.tone.neutral.bg } }}>
+          <div style={{ padding: tk.space[4], display: 'flex', justifyContent: 'center', opacity: isFetching ? 0.6 : 1 }}>
+            <iframe title="Report preview" srcDoc={html} style={{ width: '100%', maxWidth: 900, height: 1200, border: `1px solid ${tk.color.line.base}`, background: tk.color.surface.base, boxShadow: tk.shadow.float }} />
           </div>
         </Card>
       ) : null}

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { App, Button, Descriptions, Divider, Drawer, Form, Input, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { EyeOutlined } from '@/components/common/icons';
 import type { UseQueryResult } from '@tanstack/react-query';
@@ -16,7 +17,6 @@ import { QueryError } from '@/components/common/QueryState';
 import { StatusTag } from '@/components/common/StatusTag';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { ResultTag } from '@/components/inspections/InspectionDrawer';
-import { themeFontSize } from '@/lib/theme';
 
 /** Inspections requested on the project: the client's engineer can see the checklist and record that they attended. */
 export function PortalInspections({ inspections, openId, onOpen }: { inspections: UseQueryResult<PortalInspectionDto[]>; openId: string | null; onOpen: (id: string | null) => void }) {
@@ -43,12 +43,12 @@ export function PortalInspections({ inspections, openId, onOpen }: { inspections
               <span>
                 {v}
                 {r.holdPoint && (
-                  <AppTag meaning="waiting" style={{ marginLeft: 8 }}>
+                  <AppTag meaning="waiting" style={{ marginLeft: tk.space[2] }}>
                     Hold point
                   </AppTag>
                 )}
                 {r.hiddenWork && (
-                  <AppTag meaning={r.hidden?.countersignedAt ? 'done' : r.hidden?.signedAt ? 'waiting' : 'inHand'} style={{ marginLeft: 8 }}>
+                  <AppTag meaning={r.hidden?.countersignedAt ? 'done' : r.hidden?.signedAt ? 'waiting' : 'inHand'} style={{ marginLeft: tk.space[2] }}>
                     {r.hidden?.countersignedAt ? 'Hidden work countersigned' : r.hidden?.signedAt ? 'Hidden work to countersign' : 'Hidden work'}
                   </AppTag>
                 )}
@@ -135,7 +135,7 @@ function PortalInspectionDrawer({ data, onClose }: { data: PortalInspectionDto |
             <Input.TextArea id="witness-remarks" rows={3} value={note} onChange={(e) => setNote(e.target.value)} maxLength={1000} />
           </Form.Item>
         </Form>
-              <Button type="primary" icon={<EyeOutlined />} style={{ marginTop: 8 }} loading={witness.isPending} onClick={save}>
+              <Button type="primary" icon={<EyeOutlined />} style={{ marginTop: tk.space[2] }} loading={witness.isPending} onClick={save}>
                 {data.witnessedAt ? 'Update my remarks' : 'I attended this inspection'}
               </Button>
             </>
@@ -153,7 +153,7 @@ function PortalInspectionDrawer({ data, onClose }: { data: PortalInspectionDto |
                 dataSource={data.checklist}
                 columns={[
                   { title: '#', key: 'n', width: 40, render: (_, __, i) => i + 1 },
-                  { title: 'Point', dataIndex: 'item', render: (v: string, c) => (c.remark ? <div>{v}<div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{c.remark}</div></div> : v) },
+                  { title: 'Point', dataIndex: 'item', render: (v: string, c) => (c.remark ? <div>{v}<div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>{c.remark}</div></div> : v) },
                   { title: 'Result', dataIndex: 'result', width: 120, render: (r: InspectionResult | null) => <ResultTag result={r} /> },
                 ]}
               />
@@ -212,11 +212,11 @@ function HiddenWorkSection({ data }: { data: PortalInspectionDto }) {
         />
       ) : null}
       {maySign ? (
-        <div style={{ marginTop: 12 }}>
+        <div style={{ marginTop: tk.space[3] }}>
           <QuantityInput aria-label="Quantity measured before cover-up" placeholder="Quantity measured" value={qty} onChange={(v) => setQty(v ?? null)} style={{ maxWidth: 240 }} />
-          <Input.TextArea rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="What you measured and checked" aria-label="Sign-off note" maxLength={2000} style={{ marginTop: 8 }} />
+          <Input.TextArea rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="What you measured and checked" aria-label="Sign-off note" maxLength={2000} style={{ marginTop: tk.space[2] }} />
           <Button
-            style={{ marginTop: 8 }}
+            style={{ marginTop: tk.space[2] }}
             loading={sign.isPending}
             onClick={() => run(() => sign.mutateAsync({ id: data.id, qty: qty == null ? null : String(qty), note: note.trim() || null }), `Hidden work on ${data.inspectionNo} signed off`)}
           >
@@ -225,9 +225,9 @@ function HiddenWorkSection({ data }: { data: PortalInspectionDto }) {
         </div>
       ) : null}
       {mayCountersign ? (
-        <div style={{ marginTop: 12 }}>
+        <div style={{ marginTop: tk.space[3] }}>
           <Input.TextArea rows={2} value={counterNote} onChange={(e) => setCounterNote(e.target.value)} placeholder="Note (optional)" aria-label="Countersign note" maxLength={2000} />
-          <Button type="primary" style={{ marginTop: 8 }} loading={countersign.isPending} onClick={() => run(() => countersign.mutateAsync({ id: data.id, note: counterNote.trim() || null }), `Hidden work on ${data.inspectionNo} countersigned`)}>
+          <Button type="primary" style={{ marginTop: tk.space[2] }} loading={countersign.isPending} onClick={() => run(() => countersign.mutateAsync({ id: data.id, note: counterNote.trim() || null }), `Hidden work on ${data.inspectionNo} countersigned`)}>
             Countersign
           </Button>
         </div>

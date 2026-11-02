@@ -2,8 +2,8 @@
 
 import React from 'react';
 import { Flex, Progress, Typography } from 'antd';
+import { tk } from '@/ds';
 import { CHECK_LEVEL_LABELS, type CheckLevel, type LevelCoverage } from '@erp/shared';
-import { themeFontSize } from '@/lib/theme';
 
 /** How far each level has checked a set of sheets against its share: one bar a level, the caller's marked. */
 export function CheckCoverage({ coverage, level }: { coverage: LevelCoverage[]; level: CheckLevel | null }) {
@@ -14,7 +14,7 @@ export function CheckCoverage({ coverage, level }: { coverage: LevelCoverage[]; 
         const name = `${CHECK_LEVEL_LABELS[c.level]}${c.level === level ? ' (you)' : ''}`;
         return (
           <div key={c.level}>
-            <Flex justify="space-between" gap={8} style={{ fontSize: themeFontSize('fontSizeSM') }}>
+            <Flex justify="space-between" gap={8} style={{ fontSize: tk.type.caption.fontSize }}>
               <Typography.Text strong={c.level === level}>{name}</Typography.Text>
               <Typography.Text type="secondary" translate="no">
                 {c.checkedPct}% checked of {c.requiredPct}% {by}

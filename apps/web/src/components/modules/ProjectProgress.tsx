@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button, Card, Flex, Grid, Segmented, Table, Typography, theme } from 'antd';
+import { tk } from '@/ds';
 import type { TableColumnsType } from 'antd';
 import { PROJECT_STATUS_LABELS, canSeeNav, navNode, progressNotes, type ModuleProgressDto, type ProjectProgressDto } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
@@ -28,26 +29,24 @@ function useProgressColors() {
 
 /** One percentage against 100 (a meter): the track is the whole job, the bar what is done; the tick, where the plan stands today. */
 function Meter({ pct, color, planned }: { pct: number; color: string; planned?: number | null }) {
-  const { token } = theme.useToken();
   const d = Math.max(0, Math.min(100, pct));
   const p = planned === null || planned === undefined ? null : Math.max(0, Math.min(100, planned));
   return (
     <span aria-hidden style={{ position: 'relative', display: 'block', height: 14, minWidth: 64 }}>
-      <span style={{ position: 'absolute', insetInline: 0, top: 3, height: 8, borderRadius: 4, background: token.colorFillSecondary }} />
-      <span style={{ position: 'absolute', insetInlineStart: 0, top: 3, height: 8, width: `${d}%`, minWidth: d > 0 ? 4 : 0, borderRadius: 4, background: color }} />
-      {p !== null && <span style={{ position: 'absolute', top: 0, height: 14, width: 2, insetInlineStart: `calc(${p}% - 1px)`, background: token.colorText, borderRadius: 1 }} />}
+      <span style={{ position: 'absolute', insetInline: 0, top: 3, height: 8, borderRadius: tk.radius.sm, background: tk.color.tone.neutral.bg }} />
+      <span style={{ position: 'absolute', insetInlineStart: 0, top: 3, height: 8, width: `${d}%`, minWidth: d > 0 ? 4 : 0, borderRadius: tk.radius.sm, background: color }} />
+      {p !== null && <span style={{ position: 'absolute', top: 0, height: 14, width: 2, insetInlineStart: `calc(${p}% - 1px)`, background: tk.color.text.base, borderRadius: 1 }} />}
     </span>
   );
 }
 
 /** A meter with its name on the left and its figure on the right, in text colours (the bar carries the colour). */
 function MeterLine({ label, pct, color, planned }: { label: string; pct: number | null; color: string; planned?: number | null }) {
-  const { token } = theme.useToken();
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '68px minmax(0, 1fr) 44px', alignItems: 'center', gap: token.marginXS }}>
-      <span style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{label}</span>
+    <div style={{ display: 'grid', gridTemplateColumns: '68px minmax(0, 1fr) 44px', alignItems: 'center', gap: tk.space[2] }}>
+      <span style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{label}</span>
       {pct === null ? (
-        <span style={{ fontSize: token.fontSizeSM, color: token.colorTextTertiary }}>No contract value</span>
+        <span style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.faint }}>No contract value</span>
       ) : (
         <Meter pct={pct} color={color} planned={planned} />
       )}
@@ -60,10 +59,9 @@ function MeterLine({ label, pct, color, planned }: { label: string; pct: number 
 
 /** Physical progress in a list's cell: the meter with the tick where the plan stands today, and the figure. */
 export function ProgressAgainstPlan({ pct, planned }: { pct: number; planned: number | null }) {
-  const { token } = theme.useToken();
   const colors = useProgressColors();
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 44px', alignItems: 'center', gap: token.marginXS }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 44px', alignItems: 'center', gap: tk.space[2] }}>
       <Meter pct={pct} color={colors.physical} planned={planned} />
       <span className="mono" translate="no" style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
         {formatPct(pct)}
@@ -75,15 +73,14 @@ export function ProgressAgainstPlan({ pct, planned }: { pct: number; planned: nu
 
 /** What the two bars stand for, said once above them. */
 function Legend({ seesFinancial }: { seesFinancial: boolean }) {
-  const { token } = theme.useToken();
   const colors = useProgressColors();
-  const swatch = (color: string) => <span aria-hidden style={{ display: 'inline-block', width: 12, height: 8, borderRadius: 4, background: color, marginInlineEnd: token.marginXXS }} />;
-  const item: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', fontSize: token.fontSizeSM, color: token.colorTextSecondary };
+  const swatch = (color: string) => <span aria-hidden style={{ display: 'inline-block', width: 12, height: 8, borderRadius: tk.radius.sm, background: color, marginInlineEnd: tk.space[1] }} />;
+  const item: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', fontSize: tk.type.caption.fontSize, color: tk.color.text.muted };
   return (
-    <Flex wrap gap={`${token.marginXXS}px ${token.marginMD}px`} style={{ marginBottom: token.marginSM }}>
+    <Flex wrap gap={`${tk.space[1]} ${tk.space[5]}`} style={{ marginBottom: tk.space[3] }}>
       <span style={item}>{swatch(colors.physical)}Physical: work done, by value</span>
       <span style={item}>
-        <span aria-hidden style={{ display: 'inline-block', width: 2, height: 12, borderRadius: 1, background: token.colorText, marginInlineEnd: token.marginXXS }} />
+        <span aria-hidden style={{ display: 'inline-block', width: 2, height: 12, borderRadius: 1, background: tk.color.text.base, marginInlineEnd: tk.space[1] }} />
         Planned by today
       </span>
       {seesFinancial && <span style={item}>{swatch(colors.financial)}Financial: approved RA bills against contract</span>}
@@ -93,29 +90,28 @@ function Legend({ seesFinancial }: { seesFinancial: boolean }) {
 
 /** One project: its name, its two bars and what they say together. The whole row opens the project. */
 function ProjectRow({ p, seesFinancial }: { p: ProjectProgressDto; seesFinancial: boolean }) {
-  const { token } = theme.useToken();
   const colors = useProgressColors();
   const notes = progressNotes(p);
   return (
-    <li style={{ borderTop: `${token.lineWidth}px ${token.lineType} ${token.colorSplit}` }}>
-      <Link href={`/projects/${p.projectId}`} style={{ display: 'block', minHeight: 44, padding: `${token.paddingSM}px 0`, color: 'inherit' }}>
-        <Flex align="center" justify="space-between" gap={token.marginXS} style={{ marginBottom: token.marginXS }}>
+    <li style={{ borderTop: tk.line('hairline') }}>
+      <Link href={`/projects/${p.projectId}`} style={{ display: 'block', minHeight: 44, padding: `${tk.space[3]} 0`, color: 'inherit' }}>
+        <Flex align="center" justify="space-between" gap={tk.space[2]} style={{ marginBottom: tk.space[2] }}>
           <Typography.Text ellipsis style={{ minWidth: 0 }}>
-            <span className="mono" translate="no" style={{ color: token.colorLink }}>
+            <span className="mono" translate="no" style={{ color: tk.color.text.link }}>
               {p.code}
             </span>{' '}
             <span translate="no">{p.name}</span>
           </Typography.Text>
           {p.status !== 'ACTIVE' && <ProjectStatusTag status={p.status} />}
         </Flex>
-        <Flex vertical gap={token.marginXXS}>
+        <Flex vertical gap={tk.space[1]}>
           <MeterLine label="Physical" pct={p.physicalPct} planned={p.plannedPct} color={colors.physical} />
           {seesFinancial && <MeterLine label="Financial" pct={p.financialPct} color={colors.financial} />}
         </Flex>
-        <div style={{ fontSize: token.fontSizeSM, marginTop: token.marginXXS, color: token.colorTextSecondary }}>
+        <div style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[1], color: tk.color.text.muted }}>
           {p.plannedPct === null ? 'No dated activities to plan against' : <>Planned by today <span translate="no">{formatPct(p.plannedPct)}</span></>}
           {notes.map((n) => (
-            <span key={n.key} style={{ color: token.colorWarningText }}>
+            <span key={n.key} style={{ color: tk.color.tone.pending.fg }}>
               {' · '}
               {n.text}
             </span>
@@ -159,7 +155,7 @@ function ProgressTable({ data }: { data: ModuleProgressDto }) {
     </span>
   );
   const sub = (children: React.ReactNode, color: string = token.colorTextSecondary) => (
-    <div style={{ fontSize: token.fontSizeSM, color, whiteSpace: 'nowrap' }}>{children}</div>
+    <div style={{ fontSize: tk.type.caption.fontSize, color, whiteSpace: 'nowrap' }}>{children}</div>
   );
   const columns: TableColumnsType<ProjectProgressDto> = [
     {
@@ -173,7 +169,7 @@ function ProgressTable({ data }: { data: ModuleProgressDto }) {
           <Link href={`/projects/${p.projectId}`} className="mono" translate="no" onClick={(e) => e.stopPropagation()}>
             {p.code}
           </Link>
-          <Typography.Text type="secondary" ellipsis={{ tooltip: p.name }} translate="no" style={{ display: 'block', maxWidth: 180, fontSize: token.fontSizeSM }}>
+          <Typography.Text type="secondary" ellipsis={{ tooltip: p.name }} translate="no" style={{ display: 'block', maxWidth: 180, fontSize: tk.type.caption.fontSize }}>
             {p.name}
           </Typography.Text>
         </div>
@@ -251,7 +247,7 @@ function ProgressTable({ data }: { data: ModuleProgressDto }) {
             ) : p.daysLeft === null ? (
               '–'
             ) : p.daysLeft < 0 ? (
-              <span style={{ color: token.colorErrorText, whiteSpace: 'nowrap' }}>
+              <span style={{ color: tk.color.tone.danger.fg, whiteSpace: 'nowrap' }}>
                 <span translate="no">{days(-p.daysLeft)}</span> over
               </span>
             ) : (
@@ -296,7 +292,6 @@ function ProgressTable({ data }: { data: ModuleProgressDto }) {
  * with Chart / Table to read the same figures as a table.
  */
 export function ProjectProgress({ data }: { data: ModuleProgressDto }) {
-  const { token } = theme.useToken();
   const [view, setView] = useState<View>('chart');
   const [all, setAll] = useState(false);
   if (!data.projects.length) return null;
@@ -323,13 +318,13 @@ export function ProjectProgress({ data }: { data: ModuleProgressDto }) {
       ) : (
         <>
           <Legend seesFinancial={data.seesFinancial} />
-          <ul aria-label="Projects" style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))', columnGap: token.marginXL }}>
+          <ul aria-label="Projects" style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))', columnGap: tk.space[8] }}>
             {shown.map((p) => (
               <ProjectRow key={p.projectId} p={p} seesFinancial={data.seesFinancial} />
             ))}
           </ul>
           {data.projects.length > FIRST && (
-            <Button type="link" onClick={() => setAll(!all)} style={{ paddingInline: 0, marginTop: token.marginXS }}>
+            <Button type="link" onClick={() => setAll(!all)} style={{ paddingInline: 0, marginTop: tk.space[2] }}>
               {all ? 'Show fewer' : `Show all ${data.projects.length} projects`}
             </Button>
           )}

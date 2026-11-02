@@ -15,7 +15,6 @@ import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@/components/common/icons';
 import { FormShell } from '@/components/form/FormShell';
 
-const srOnly: React.CSSProperties = { position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 };
 
 interface TemplateForm {
   name: string;
@@ -131,7 +130,7 @@ export function LetterTemplates() {
             ...(keeper
               ? [
                   {
-                    title: <span style={srOnly}>Actions</span>,
+                    title: <span className="visually-hidden">Actions</span>,
                     key: 'actions',
                     width: 96,
                     render: (_: unknown, t: LetterTemplateDto) => (

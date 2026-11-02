@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, App, Button, Checkbox, Form, Input, Space, Typography } from 'antd';
+import { tk } from '@/ds';
 import { formatPhone, MESSAGE_CHANNEL_LABELS, normalisePhone, type MessageChannel } from '@erp/shared';
 import { errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -66,7 +67,7 @@ export function MessagingSettingsModal({ open, onClose }: { open: boolean; onClo
         </Typography.Text>
         {notReady ? <Alert type="info" showIcon title="WhatsApp and SMS are not set up on this server yet" description="You can switch alerts on now; they start once your company's account is connected." /> : null}
         <Form<Values> form={form} layout="vertical" requiredMark={false} initialValues={{ phone: '', whatsapp: false, sms: false, email: true }}>
-          <Form.Item name="email" valuePropName="checked" style={{ marginBottom: 8 }}>
+          <Form.Item name="email" valuePropName="checked" style={{ marginBottom: tk.space[2] }}>
             <Checkbox>Email me what waits on me</Checkbox>
           </Form.Item>
           <Form.Item
@@ -77,10 +78,10 @@ export function MessagingSettingsModal({ open, onClose }: { open: boolean; onClo
           >
             <Input {...PHONE_INPUT} />
           </Form.Item>
-          <Form.Item name="whatsapp" valuePropName="checked" style={{ marginBottom: 4 }}>
+          <Form.Item name="whatsapp" valuePropName="checked" style={{ marginBottom: tk.space[1] }}>
             <Checkbox>Send my alerts on WhatsApp</Checkbox>
           </Form.Item>
-          <Form.Item name="sms" valuePropName="checked" style={{ marginBottom: 8 }}>
+          <Form.Item name="sms" valuePropName="checked" style={{ marginBottom: tk.space[2] }}>
             <Checkbox>Send my alerts by SMS</Checkbox>
           </Form.Item>
         </Form>

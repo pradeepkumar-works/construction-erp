@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Alert, App, Button, Card, Descriptions, Divider, Drawer, Form, Input, Segmented, Space, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { UseQueryResult } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { CHECK_LEVEL_LABELS, CHECK_LEVEL_SHARE, CHECK_OUTCOME_LABELS, isGuest, type CheckOutcome, type PortalMeasurementDto, type PortalMeasurementsDto } from '@erp/shared';
@@ -9,7 +10,6 @@ import { errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useCheckMeasurement } from '@/lib/queries';
 import { formatDate, formatQty } from '@/lib/format';
-import { themeFontSize } from '@/lib/theme';
 import { AppTag } from '@/components/common/AppTag';
 import { DatePicker } from '@/components/common/DatePicker';
 import { QueryError } from '@/components/common/QueryState';
@@ -38,7 +38,7 @@ export function PortalMeasurements({ measurements, openId, onOpen }: { measureme
     <>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {data ? (
-        <Card size="small" style={{ margin: 12 }}>
+        <Card size="small" style={{ margin: tk.space[3] }}>
           <Typography.Paragraph style={{ marginTop: 0 }}>
             {data.level
               ? `You check as ${CHECK_LEVEL_LABELS[data.level].toLowerCase()}: at least ${CHECK_LEVEL_SHARE[data.level]}% of the measurements by value before you certify a bill.`
@@ -48,7 +48,7 @@ export function PortalMeasurements({ measurements, openId, onOpen }: { measureme
         </Card>
       ) : null}
       {data?.level ? (
-        <div style={{ padding: '0 12px 8px' }}>
+        <div style={{ padding: `0 ${tk.space[3]} ${tk.space[2]}` }}>
           <Segmented
             aria-label="Sheets to show"
             value={show}
@@ -78,7 +78,7 @@ export function PortalMeasurements({ measurements, openId, onOpen }: { measureme
             render: (_, r) => (
               <div>
                 <span translate="no">{r.boqItemNo}</span> {r.boqItemDescription}
-                <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                   {r.location}
                 </div>
               </div>
@@ -161,7 +161,7 @@ function MeasurementDrawer({ data, level, onClose }: { data: PortalMeasurementDt
                 { title: 'By', key: 'by', render: (_, c) => `${c.checkedByName}, ${CHECK_LEVEL_LABELS[c.level].toLowerCase()}` },
                 { title: 'On', dataIndex: 'checkedOn', width: 110, render: (v: string) => formatDate(v) },
                 { title: 'Found', dataIndex: 'checkedQty', align: 'right', width: 110, render: (v: string) => formatQty(v) },
-                { title: 'Result', dataIndex: 'outcome', width: 160, render: (o: CheckOutcome, c) => <span><AppTag kind="checkOutcome" status={o}>{CHECK_OUTCOME_LABELS[o]}</AppTag>{c.note ? <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{c.note}</div> : null}</span> },
+                { title: 'Result', dataIndex: 'outcome', width: 160, render: (o: CheckOutcome, c) => <span><AppTag kind="checkOutcome" status={o}>{CHECK_OUTCOME_LABELS[o]}</AppTag>{c.note ? <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>{c.note}</div> : null}</span> },
               ]}
             />
           ) : (
@@ -204,7 +204,7 @@ function CheckForm({ sheet, mine }: { sheet: PortalMeasurementDto; mine: PortalM
       <Divider titlePlacement="start" plain>
         {mine ? 'Your check' : 'Record your check'}
       </Divider>
-      {problem ? <Alert type="error" showIcon role="alert" style={{ marginBottom: 8 }} title={problem} /> : null}
+      {problem ? <Alert type="error" showIcon role="alert" style={{ marginBottom: tk.space[2] }} title={problem} /> : null}
       <Form
         form={form}
         layout="vertical"

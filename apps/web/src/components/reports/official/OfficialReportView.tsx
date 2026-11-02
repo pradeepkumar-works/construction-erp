@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { App, Button, Card, Col, Dropdown, Form, Input, Row, Space, Typography, theme } from 'antd';
+import { App, Button, Card, Col, Dropdown, Form, Input, Row, Space, Typography } from 'antd';
+import { tk } from '@/ds';
 import dayjs, { type Dayjs } from 'dayjs';
 import { OFFICIAL_REPORTS, canIssueOfficialReport, canViewContract, type OfficialIssueDto, type OfficialReportDto, type OfficialReportKind } from '@erp/shared';
 import { DatePicker } from '@/components/common/DatePicker';
@@ -39,7 +40,6 @@ const FORMAT_WORDS: Record<Format, string> = {
  * with its number and revision in the register beside it.
  */
 export function OfficialReportView({ projectId, kind, picker }: { projectId: string | undefined; kind: OfficialReportKind; picker: React.ReactNode }) {
-  const { token } = theme.useToken();
   const { message } = App.useApp();
   const { user } = useAuth();
   const [anchor, setAnchor] = useState<Dayjs>(dayjs());
@@ -120,7 +120,7 @@ export function OfficialReportView({ projectId, kind, picker }: { projectId: str
 
   return (
     <>
-      <Card size="small" style={{ marginBottom: 12 }}>
+      <Card size="small" style={{ marginBottom: tk.space[3] }}>
         <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
           <Space wrap>
             {picker}
@@ -153,13 +153,13 @@ export function OfficialReportView({ projectId, kind, picker }: { projectId: str
               ) : null
             }
             styles={{
-              body: { padding: 0, background: token.colorFillSecondary },
+              body: { padding: 0, background: tk.color.tone.neutral.bg },
             }}
           >
             {data ? (
               <div
                 style={{
-                  padding: 12,
+                  padding: tk.space[3],
                   display: 'flex',
                   justifyContent: 'center',
                   opacity: isFetching ? 0.6 : 1,
@@ -172,13 +172,13 @@ export function OfficialReportView({ projectId, kind, picker }: { projectId: str
                     width: '100%',
                     maxWidth: 1000,
                     height: 1200,
-                    border: `1px solid ${token.colorBorder}`,
-                    background: token.colorWhite,
+                    border: `1px solid ${tk.color.line.base}`,
+                    background: tk.color.text.onAccent,
                   }}
                 />
               </div>
             ) : !projectId ? (
-              <Typography.Paragraph type="secondary" style={{ padding: 16, margin: 0 }}>
+              <Typography.Paragraph type="secondary" style={{ padding: tk.space[4], margin: 0 }}>
                 Choose a project to see its report.
               </Typography.Paragraph>
             ) : null}
@@ -186,11 +186,11 @@ export function OfficialReportView({ projectId, kind, picker }: { projectId: str
         </Col>
         <Col xs={24} xl={7}>
           <Card size="small" title="Issued to the client" loading={issues.isLoading}>
-            <Typography.Paragraph type="secondary" style={{ marginBottom: 8 }}>
+            <Typography.Paragraph type="secondary" style={{ marginBottom: tk.space[2] }}>
               {OFFICIAL_REPORTS[kind].description}
             </Typography.Paragraph>
             {ofKind.length && !mayOpenIssued ? (
-              <Typography.Paragraph type="secondary" style={{ marginBottom: 8 }}>
+              <Typography.Paragraph type="secondary" style={{ marginBottom: tk.space[2] }}>
                 Issued copies carry the contract’s figures. Ask your project manager for one.
               </Typography.Paragraph>
             ) : null}
@@ -201,17 +201,17 @@ export function OfficialReportView({ projectId, kind, picker }: { projectId: str
                     key={i.id}
                     style={{
                       display: 'flex',
-                      gap: 8,
+                      gap: tk.space[2],
                       alignItems: 'flex-start',
-                      padding: '8px 0',
-                      borderTop: `1px solid ${token.colorBorderSecondary}`,
+                      padding: `${tk.space[2]} 0`,
+                      borderTop: `1px solid ${tk.color.line.hairline}`,
                     }}
                   >
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <Typography.Text strong translate="no">
                         {i.docNo} · Rev {i.revision}
                       </Typography.Text>
-                      <Typography.Paragraph type="secondary" style={{ margin: 0, fontSize: token.fontSizeSM }}>
+                      <Typography.Paragraph type="secondary" style={{ margin: 0, fontSize: tk.type.caption.fontSize }}>
                         {formatDate(i.from)}
                         {i.to !== i.from ? ` to ${formatDate(i.to)}` : ''} · issued {formatDate(i.issuedAt.slice(0, 10))} by {i.issuedByName}
                         {i.note ? ` · ${i.note}` : ''}

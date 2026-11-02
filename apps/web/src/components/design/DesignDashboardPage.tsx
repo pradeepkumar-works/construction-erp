@@ -2,7 +2,8 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Card, Col, Flex, Row, Statistic, Table, Typography, theme } from 'antd';
+import { Card, Col, Flex, Row, Statistic, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { DesignDashboardDto, RecentRevisionDto } from '@erp/shared';
 import { useDesignDashboard } from '@/lib/queries';
 import { useProjectScope } from '@/lib/project-scope';
@@ -18,16 +19,14 @@ import { ImpactList } from './RevisionImpact';
 type ProjectRow = DesignDashboardDto['projects'][number];
 
 function CardTitle({ children }: { children: React.ReactNode }) {
-  const { token } = theme.useToken();
   return (
-    <Typography.Title level={2} style={{ fontSize: token.fontSize, margin: 0 }}>
+    <Typography.Title level={2} style={{ fontSize: tk.type.body.fontSize, margin: 0 }}>
       {children}
     </Typography.Title>
   );
 }
 
 function Body({ data }: { data: DesignDashboardDto }) {
-  const { token } = theme.useToken();
   const t = data.totals;
   const scope = (pid?: string) => (pid ? `&projectId=${pid}` : '');
   const stat = (title: string, value: number, note: string, href: string, tone?: 'danger' | 'warning') => (
@@ -36,16 +35,16 @@ function Body({ data }: { data: DesignDashboardDto }) {
         <Statistic
           title={<Link href={href}>{title}</Link>}
           value={value}
-          styles={{ content: { fontFamily: DISPLAY_FONT, fontSize: token.fontSizeHeading4, color: value && tone === 'danger' ? token.colorErrorText : value && tone === 'warning' ? token.colorWarningText : undefined } }}
+          styles={{ content: { fontFamily: DISPLAY_FONT, fontSize: tk.type.lead.fontSize, color: value && tone === 'danger' ? tk.color.tone.danger.fg : value && tone === 'warning' ? tk.color.tone.pending.fg : undefined } }}
         />
-        <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{note}</div>
+        <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{note}</div>
       </Card>
     </Col>
   );
   const n = (v: number, href: string) => (v ? <Link href={href}>{v}</Link> : <Typography.Text type="secondary">-</Typography.Text>);
   const withWork = data.recent.filter((r) => r.items.length);
   return (
-    <Flex vertical gap={token.marginMD}>
+    <Flex vertical gap={tk.space[5]}>
       <Row gutter={[12, 12]}>
         {stat('Drawings late', t.drawingsLate, `${t.drawingsAwaited} awaited in all`, '/drawing-schedule?state=LATE', 'danger')}
         {stat('Reviews past the reply date', t.reviewsLate, `${t.underReview} with the reviewer`, '/design-submissions?status=LATE', 'warning')}
@@ -72,7 +71,7 @@ function Body({ data }: { data: DesignDashboardDto }) {
                 <div>
                   <span translate="no">{`${r.projectCode} ${r.projectName}`}</span>
                   {r.notes.length ? (
-                    <Flex gap={4} wrap style={{ marginTop: 4 }}>
+                    <Flex gap={4} wrap style={{ marginTop: tk.space[1] }}>
                       {r.notes.slice(0, 3).map((x) => (
                         <AppTag key={x.text} kind="impact" status={x.tone}>
                           {x.text}
@@ -96,10 +95,10 @@ function Body({ data }: { data: DesignDashboardDto }) {
       </Card>
       <Card size="small" title={<CardTitle>What new revisions change</CardTitle>}>
         {withWork.length ? (
-          <Flex vertical gap={token.marginMD}>
+          <Flex vertical gap={tk.space[5]}>
             {withWork.map((r: RecentRevisionDto) => (
               <div key={r.documentId}>
-                <Flex gap={token.marginXS} wrap align="center" style={{ marginBottom: token.marginXXS }}>
+                <Flex gap={tk.space[2]} wrap align="center" style={{ marginBottom: tk.space[1] }}>
                   <Link href={`/documents?id=${r.documentId}`}>
                     <Typography.Text strong translate="no">{`${r.docNo} ${r.revision}`}</Typography.Text>
                   </Link>
@@ -123,13 +122,12 @@ function Body({ data }: { data: DesignDashboardDto }) {
  * RFIs by project, and what each revision of the last 30 days changes.
  */
 export function DesignDashboardPage() {
-  const { token } = theme.useToken();
   const [projectId, setProjectId] = useProjectScope();
   const { data, isLoading, error, refetch } = useDesignDashboard(projectId);
   return (
     <div className="page-container">
       <PageHeader title="Design dashboard" subtitle="Drawings late, approvals and comments, superseded copies on site and what new revisions change, by project." />
-      <Flex gap={token.marginSM} wrap align="center" style={{ marginBottom: token.margin }}>
+      <Flex gap={tk.space[3]} wrap align="center" style={{ marginBottom: tk.space[4] }}>
         <ProjectSelect value={projectId} onChange={(v) => setProjectId(v)} aria-label="Project" placeholder="All projects" style={{ minWidth: 240, maxWidth: '100%' }} />
       </Flex>
       {isLoading ? <PageSkeleton shape="home" header={false} /> : error || !data ? <QueryError error={error} onRetry={() => refetch()} /> : <Body data={data} />}

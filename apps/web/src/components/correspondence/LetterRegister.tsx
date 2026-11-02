@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Button, Checkbox, Select, Typography, theme } from 'antd';
+import { Button, Checkbox, Select, Typography } from 'antd';
+import { tk } from '@/ds';
 import { PlusOutlined } from '@/components/common/icons';
 import type { AiDraftDto, LetterDirection, LetterDto, LetterSortField, LetterStatus } from '@erp/shared';
 import { LETTER_ACTION_LABELS, LIST_SORT_FIELDS, LETTER_STATUS_LABELS, canViewLetters } from '@erp/shared';
@@ -26,8 +27,7 @@ const KEYS = ['status', 'category', 'mine', 'toSign', 'awaiting', 'overdue', 'pr
 const FLAG_LABELS = { mine: 'Marked to me', toSign: 'To sign', awaiting: 'Reply due', overdue: 'Overdue', proof: 'No proof of delivery', unmarked: 'Not marked', ho: 'Head office' };
 
 function Sub({ children }: { children: React.ReactNode }) {
-  const { token } = theme.useToken();
-  return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
+  return <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{children}</div>;
 }
 
 const STATUSES: Record<LetterDirection, LetterStatus[]> = { IN: ['OPEN', 'CLOSED'], OUT: ['DRAFT', 'AWAITING_APPROVAL', 'ISSUED'] };
@@ -92,7 +92,7 @@ export function LetterRegister({ direction, projectId: fixedProject, initialFilt
                 {r.subject}
               </RecordLink>
               {r.priority === 'URGENT' ? (
-                <AppTag meaning="failed" style={{ marginInlineStart: 6 }}>
+                <AppTag meaning="failed" style={{ marginInlineStart: tk.space[2] }}>
                   Urgent
                 </AppTag>
               ) : null}

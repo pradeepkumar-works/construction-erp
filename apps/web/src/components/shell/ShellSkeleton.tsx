@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useLayoutEffect, useState } from 'react';
-import { theme } from 'antd';
 import { tk } from '@/ds';
 import { AppearanceProvider } from '@/lib/appearance';
 import { readPref } from '@/lib/prefs';
@@ -38,10 +37,9 @@ function Frame({ rail, body }: { rail: boolean; body?: boolean }) {
 }
 
 function Body() {
-  const { token } = theme.useToken();
   return (
     <div style={{ flex: 1, minWidth: 0 }}>
-      <div style={{ height: 56, background: token.colorBgContainer, borderBottom: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}` }} />
+      <div style={{ height: 56, background: tk.color.surface.base, borderBottom: tk.line('hairline') }} />
       <div className="page-container">
         <PageSkeleton />
       </div>

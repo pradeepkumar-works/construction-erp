@@ -3,7 +3,8 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Alert, Button, Card, Col, Descriptions, Dropdown, Flex, Row, Space, Statistic, Table, Typography, theme } from 'antd';
+import { Alert, Button, Card, Col, Descriptions, Dropdown, Flex, Row, Space, Statistic, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { MenuProps } from 'antd';
 import {
   DESIGN_COMMENT_STATE_LABELS,
@@ -49,7 +50,6 @@ export function DesignSubmissionRecord({ id }: { id: string }) {
 }
 
 function SubmissionView({ s }: { s: DesignSubmissionDetailDto }) {
-  const { token } = theme.useToken();
   const router = useRouter();
   const notify = useNotify();
   const act = useDesignSubmissionAction<DesignSubmissionDetailDto>();
@@ -117,8 +117,8 @@ function SubmissionView({ s }: { s: DesignSubmissionDetailDto }) {
   const stat = (title: string, value: React.ReactNode, note?: React.ReactNode, tone?: 'danger') => (
     <Col xs={12} lg={6}>
       <Card size="small" style={{ height: '100%' }}>
-        <Statistic title={title} value={0} formatter={() => value} styles={{ content: { fontFamily: DISPLAY_FONT, fontSize: token.fontSizeHeading4, color: tone === 'danger' ? token.colorErrorText : undefined } }} />
-        {note ? <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{note}</div> : null}
+        <Statistic title={title} value={0} formatter={() => value} styles={{ content: { fontFamily: DISPLAY_FONT, fontSize: tk.type.lead.fontSize, color: tone === 'danger' ? tk.color.tone.danger.fg : undefined } }} />
+        {note ? <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{note}</div> : null}
       </Card>
     </Col>
   );
@@ -129,7 +129,7 @@ function SubmissionView({ s }: { s: DesignSubmissionDetailDto }) {
         type={s.status === 'REJECTED' ? 'error' : 'warning'}
         showIcon
         title={toAnswer ? `Back with us: answer the ${toAnswer === 1 ? 'comment' : `${toAnswer} comments`}, add the revised drawings to the register, then resubmit.` : 'Back with us: every comment is answered. Add the revised drawings to the register, then resubmit.'}
-        style={{ marginBottom: token.marginMD }}
+        style={{ marginBottom: tk.space[5] }}
       />
     ) : s.daysLate ? (
       <Alert
@@ -147,7 +147,7 @@ function SubmissionView({ s }: { s: DesignSubmissionDetailDto }) {
             'Call the reviewer and agree a date.'
           )
         }
-        style={{ marginBottom: token.marginMD }}
+        style={{ marginBottom: tk.space[5] }}
       />
     ) : null;
 
@@ -159,7 +159,7 @@ function SubmissionView({ s }: { s: DesignSubmissionDetailDto }) {
       render: (_: unknown, c: DesignCommentDto) => (
         <div>
           <span style={{ whiteSpace: 'pre-wrap' }}>{c.text}</span>
-          <Typography.Text type="secondary" translate="no" style={{ display: 'block', fontSize: token.fontSizeSM }}>
+          <Typography.Text type="secondary" translate="no" style={{ display: 'block', fontSize: tk.type.caption.fontSize }}>
             {[c.docNo, designRevisionLabel(c.round)].filter(Boolean).join(' · ')}
           </Typography.Text>
         </div>
@@ -172,7 +172,7 @@ function SubmissionView({ s }: { s: DesignSubmissionDetailDto }) {
         c.reply ? (
           <div>
             <span style={{ whiteSpace: 'pre-wrap' }}>{c.reply}</span>
-            <Typography.Text type="secondary" style={{ display: 'block', fontSize: token.fontSizeSM }}>
+            <Typography.Text type="secondary" style={{ display: 'block', fontSize: tk.type.caption.fontSize }}>
               {[c.repliedByName, c.repliedOn ? formatDate(c.repliedOn) : null].filter(Boolean).join(', ')}
             </Typography.Text>
           </div>
@@ -222,7 +222,7 @@ function SubmissionView({ s }: { s: DesignSubmissionDetailDto }) {
         docTitle={`Design submission ${s.submissionNo}`}
         crumbs={[{ title: 'Design submissions', href: '/design-submissions' }, { title: s.submissionNo }]}
         subtitle={
-          <Flex gap={token.marginXS} wrap align="center">
+          <Flex gap={tk.space[2]} wrap align="center">
             <DesignStatusTag status={s.status} purpose={s.purpose} daysLate={s.daysLate} />
             <span translate="no">{`${s.submissionNo}${s.status === 'DRAFT' ? '' : ` ${designRevisionLabel(s.revision)}`} · ${DESIGN_SUBMISSION_KIND_LABELS[s.kind]} · ${DESIGN_PURPOSE_LABELS[s.purpose].toLowerCase()} · ${s.projectCode} ${s.projectName}`}</span>
           </Flex>
@@ -230,7 +230,7 @@ function SubmissionView({ s }: { s: DesignSubmissionDetailDto }) {
         extra={actions}
       />
       {notice}
-      <Row gutter={[12, 12]} style={{ marginBottom: token.marginMD }}>
+      <Row gutter={[12, 12]} style={{ marginBottom: tk.space[5] }}>
         {stat('Submitted', s.submittedOn ? <span translate="no">{formatDate(s.submittedOn)}</span> : 'Not yet', again ? `${s.rounds.length} round${s.rounds.length === 1 ? '' : 's'}` : 'A draft')}
         {s.status === 'UNDER_REVIEW'
           ? stat('With the reviewer', `${s.daysOutstanding ?? 0} day${s.daysOutstanding === 1 ? '' : 's'}`, s.replyBy ? `Reply asked by ${formatDate(s.replyBy)}` : undefined, s.daysLate ? 'danger' : undefined)
@@ -252,12 +252,12 @@ function SubmissionView({ s }: { s: DesignSubmissionDetailDto }) {
               {s.rounds.length ? (
                 <Flex vertical>
                   {s.rounds.map((r, i) => (
-                    <div key={r.id} style={{ padding: `${token.paddingSM}px 0`, borderTop: i ? `1px solid ${token.colorSplit}` : undefined }}>
+                    <div key={r.id} style={{ padding: `${tk.space[3]} 0`, borderTop: i ? `1px solid ${tk.color.line.hairline}` : undefined }}>
                       <Flex gap={8} align="center" wrap justify="space-between">
                         <Typography.Text strong translate="no">{`${designRevisionLabel(r.revision)}, submitted ${formatDate(r.submittedOn)} by ${r.submittedByName}`}</Typography.Text>
                         {r.code ? <CodeTag code={r.code} purpose={s.purpose} /> : <DesignStatusTag status="UNDER_REVIEW" purpose={s.purpose} daysLate={i === 0 ? s.daysLate : null} />}
                       </Flex>
-                      <Typography.Text type="secondary" style={{ display: 'block', fontSize: token.fontSizeSM }} translate="no">
+                      <Typography.Text type="secondary" style={{ display: 'block', fontSize: tk.type.caption.fontSize }} translate="no">
                         {`Sent ${r.sent.map((x) => `${x.docNo} ${x.revision}`).join(', ')}`}
                         {r.letterId ? (
                           <>
@@ -266,8 +266,8 @@ function SubmissionView({ s }: { s: DesignSubmissionDetailDto }) {
                           </>
                         ) : null}
                       </Typography.Text>
-                      {r.submitNote ? <Typography.Paragraph style={{ margin: `${token.marginXXS}px 0 0` }}>{r.submitNote}</Typography.Paragraph> : null}
-                      <Typography.Text type="secondary" style={{ display: 'block', fontSize: token.fontSizeSM }}>
+                      {r.submitNote ? <Typography.Paragraph style={{ margin: `${tk.space[1]} 0 0` }}>{r.submitNote}</Typography.Paragraph> : null}
+                      <Typography.Text type="secondary" style={{ display: 'block', fontSize: tk.type.caption.fontSize }}>
                         {r.code ? [`Reviewed ${formatDate(r.reviewedOn!)}`, r.reviewerName, r.reviewRef, `${r.days} day${r.days === 1 ? '' : 's'}`].filter(Boolean).join(' · ') : `With the reviewer for ${r.days} day${r.days === 1 ? '' : 's'}`}
                       </Typography.Text>
                     </div>
@@ -286,11 +286,11 @@ function SubmissionView({ s }: { s: DesignSubmissionDetailDto }) {
           <Flex vertical gap={16}>
             <Card size="small" title={<CardTitle>Drawings and documents</CardTitle>}>
               {s.docs.length ? (
-                <Flex vertical gap={token.marginXS}>
+                <Flex vertical gap={tk.space[2]}>
                   {s.docs.map((d) => (
                     <div key={d.documentId}>
                       <Link href={`/documents?id=${d.documentId}`} className="text-link" translate="no">{`${d.docNo} ${d.title}`}</Link>
-                      <Typography.Text type="secondary" style={{ display: 'block', fontSize: token.fontSizeSM }} translate="no">
+                      <Typography.Text type="secondary" style={{ display: 'block', fontSize: tk.type.caption.fontSize }} translate="no">
                         {d.revision ? `${d.revision}, ${REVISION_STATUS_LABELS[d.revisionStatus!].toLowerCase()}` : 'No revision in the register yet'}
                       </Typography.Text>
                     </div>
@@ -328,9 +328,8 @@ function SubmissionView({ s }: { s: DesignSubmissionDetailDto }) {
 }
 
 function CardTitle({ children }: { children: React.ReactNode }) {
-  const { token } = theme.useToken();
   return (
-    <Typography.Title level={2} style={{ fontSize: token.fontSize, margin: 0 }}>
+    <Typography.Title level={2} style={{ fontSize: tk.type.body.fontSize, margin: 0 }}>
       {children}
     </Typography.Title>
   );

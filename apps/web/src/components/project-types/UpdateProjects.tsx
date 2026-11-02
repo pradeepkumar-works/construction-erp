@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, App, Button, Card, Checkbox, Flex, Form, Skeleton, Space, Typography, theme } from 'antd';
+import { Alert, App, Button, Card, Checkbox, Flex, Form, Skeleton, Space, Typography } from 'antd';
+import { tk } from '@/ds';
 import {
   PROJECT_STATUS_LABELS,
   activityItemKey,
@@ -86,24 +87,23 @@ function itemsOf(plan: ProjectUpdatePlan): { title: string; items: Item[] }[] {
 }
 
 function ProjectChoice({ row, value, onChange, defaultOn }: { row: ProjectUpdateRowDto; value: { on: boolean; skip: string[] } | undefined; onChange: (v: { on: boolean; skip: string[] }) => void; defaultOn: boolean }) {
-  const { token } = theme.useToken();
   const [open, setOpen] = useState(false);
   const v = value ?? { on: defaultOn, skip: [] };
   const groups = useMemo(() => itemsOf(row.plan), [row.plan]);
   const chosen = withoutItems(row.plan, v.skip);
   const listId = `update-items-${row.projectId}`;
   return (
-    <Card size="small" style={{ marginBottom: token.marginSM }}>
-      <Flex justify="space-between" align="center" gap={token.marginXS} wrap>
+    <Card size="small" style={{ marginBottom: tk.space[3] }}>
+      <Flex justify="space-between" align="center" gap={tk.space[2]} wrap>
         <Checkbox checked={v.on} onChange={(e) => onChange({ ...v, on: e.target.checked })}>
           <strong translate="no">{row.code}</strong> <span translate="no">{row.name}</span>
         </Checkbox>
-        <Space size={token.marginXXS} wrap>
+        <Flex gap={tk.space[1]} wrap>
           <AppTag kind="project" status={row.status as ProjectStatus}>{PROJECT_STATUS_LABELS[row.status as ProjectStatus] ?? row.status}</AppTag>
           {row.typeVersion === null ? <AppTag meaning="waiting">Older than its type</AppTag> : <AppTag variant="kind">Version {row.typeVersion}</AppTag>}
-        </Space>
+        </Flex>
       </Flex>
-      <Typography.Paragraph type="secondary" style={{ margin: `${token.marginXXS}px 0 0` }}>
+      <Typography.Paragraph type="secondary" style={{ margin: `${tk.space[1]} 0 0` }}>
         Gets {sizeText(chosen)}
         {v.skip.length ? ` (of ${sizeText(row.plan)})` : ''}. Progress{' '}
         <span translate="no">{pct(row.progressNow)}</span>
@@ -123,12 +123,12 @@ function ProjectChoice({ row, value, onChange, defaultOn }: { row: ProjectUpdate
       {open ? (
         <div id={listId}>
           {groups.map((g) => (
-            <div key={g.title} style={{ marginTop: token.marginXS }}>
+            <div key={g.title} style={{ marginTop: tk.space[2] }}>
               <Typography.Text strong>{g.title}</Typography.Text>
               <Checkbox.Group
                 aria-label={`${g.title} for ${row.code}`}
                 disabled={!v.on}
-                style={{ display: 'grid', gap: token.marginXXS, marginTop: token.marginXXS }}
+                style={{ display: 'grid', gap: tk.space[1], marginTop: tk.space[1] }}
                 value={g.items.map((i) => i.key).filter((k) => !v.skip.includes(k))}
                 onChange={(checked) => {
                   const mine = g.items.map((i) => i.key);
@@ -146,12 +146,11 @@ function ProjectChoice({ row, value, onChange, defaultOn }: { row: ProjectUpdate
 }
 
 function Chooser({ rows, value, onChange, defaultOn }: { rows: ProjectUpdateRowDto[]; value?: Choice; onChange?: (v: Choice) => void; defaultOn: (r: ProjectUpdateRowDto) => boolean }) {
-  const { token } = theme.useToken();
   const set = (next: Choice) => onChange?.(next);
   const all = (on: boolean) => set(Object.fromEntries(rows.map((r) => [r.projectId, { on, skip: value?.[r.projectId]?.skip ?? [] }])));
   return (
     <>
-      <Space wrap style={{ marginBottom: token.marginSM }}>
+      <Space wrap style={{ marginBottom: tk.space[3] }}>
         <Button size="small" onClick={() => all(true)}>
           Choose all
         </Button>
@@ -224,7 +223,7 @@ export function UpdateProjects({ what, code, name, open, onClose }: { what: 'typ
         <Alert
           type="info"
           showIcon
-          style={{ marginBottom: 16 }}
+          style={{ marginBottom: tk.space[4] }}
           title="Only adds what a project lacks"
           description={
             what === 'type'

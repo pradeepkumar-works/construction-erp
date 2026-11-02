@@ -4,6 +4,7 @@ import { DeleteInMenu } from '@/components/record/MoreActions';
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { App, Alert, Button, Descriptions, Divider, Drawer, Dropdown, Form, Input, Skeleton, Space, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { CheckOutlined, EditOutlined, MessageOutlined, MoreOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
@@ -191,10 +192,10 @@ export function RfiDrawer({ id, open, onClose }: { id: string | null; open: bool
       {data && (
         <>
           {data.status === 'OPEN' && data.age.overdue ? (
-            <Alert type="error" showIcon style={{ marginBottom: 12 }} title={`The answer was due on ${formatDate(data.replyBy)}`} description={`Waiting ${data.age.daysOpen} days. Chase ${data.toParty}, or record the answer if it came by letter.`} />
+            <Alert type="error" showIcon style={{ marginBottom: tk.space[3] }} title={`The answer was due on ${formatDate(data.replyBy)}`} description={`Waiting ${data.age.daysOpen} days. Chase ${data.toParty}, or record the answer if it came by letter.`} />
           ) : null}
           {answered && owner ? (
-            <Alert type="info" showIcon style={{ marginBottom: 12 }} title="Answered: act on it, then close the RFI" description={data.costImpact || data.timeImpact ? 'If the answer changes the work, raise a variation or record a delay from the More menu.' : undefined} />
+            <Alert type="info" showIcon style={{ marginBottom: tk.space[3] }} title="Answered: act on it, then close the RFI" description={data.costImpact || data.timeImpact ? 'If the answer changes the work, raise a variation or record a delay from the More menu.' : undefined} />
           ) : null}
           <Typography.Title level={5} style={{ marginTop: 0 }}>
             {data.subject}

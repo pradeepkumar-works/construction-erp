@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, App, Checkbox, Modal, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ApplyTemplateResultDto, ProjectDetail } from '@erp/shared';
@@ -47,7 +48,7 @@ export function ApplyTemplateModal({ open, onClose, project, existing }: { open:
       width={760}
       destroyOnHidden
     >
-      {!project.startDate ? <Alert type="info" showIcon style={{ marginBottom: 12 }} title="The project has no start date, so the activities are added without planned dates." /> : null}
+      {!project.startDate ? <Alert type="info" showIcon style={{ marginBottom: tk.space[3] }} title="The project has no start date, so the activities are added without planned dates." /> : null}
       <Table
         rowKey="name"
         size="small"
@@ -69,7 +70,7 @@ export function ApplyTemplateModal({ open, onClose, project, existing }: { open:
           { title: 'Planned finish', dataIndex: 'plannedEnd', width: 120, render: (v: string | null) => formatDate(v) },
         ]}
       />
-      <Typography.Paragraph type="secondary" style={{ marginTop: 12, marginBottom: 0 }}>
+      <Typography.Paragraph type="secondary" style={{ marginTop: tk.space[3], marginBottom: 0 }}>
         Planned quantities start at 0: set them, or link each activity to its BOQ item, so progress can be weighted.
       </Typography.Paragraph>
     </Modal>

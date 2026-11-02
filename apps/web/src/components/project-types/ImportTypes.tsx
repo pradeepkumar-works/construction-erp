@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Alert, App, Button, Checkbox, Flex, Modal, Space, Typography, Upload, theme } from 'antd';
+import { Alert, App, Button, Checkbox, Flex, Modal, Space, Typography, Upload } from 'antd';
+import { tk } from '@/ds';
 import type { UploadProps } from 'antd';
 import { IMPORT_ACTION_LABELS, MAX_BUNDLE_BYTES, bundleFileName, readBundle, type ImportRowDto, type TypeBundle } from '@erp/shared';
 import { InboxOutlined } from '@/components/common/icons';
@@ -24,7 +25,6 @@ export function saveBundle(bundle: TypeBundle, what: string) {
  * saved through the editors' own checks.
  */
 export function ImportTypes({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { token } = theme.useToken();
   const { message } = App.useApp();
   const preview = useImportPreview();
   const save = useImportTypes();
@@ -90,12 +90,12 @@ export function ImportTypes({ open, onClose }: { open: boolean; onClose: () => v
 
   const group = (title: string, list: ImportRowDto[]) =>
     list.length ? (
-      <div style={{ marginTop: token.marginSM }}>
+      <div style={{ marginTop: tk.space[3] }}>
         <Typography.Text strong>{title}</Typography.Text>
-        <div style={{ display: 'grid', gap: token.marginXS, marginTop: token.marginXXS }}>
+        <div style={{ display: 'grid', gap: tk.space[2], marginTop: tk.space[1] }}>
           {list.map((r) => (
             <div key={pickKey(r)}>
-              <Flex justify="space-between" align="center" gap={token.marginXS} wrap>
+              <Flex justify="space-between" align="center" gap={tk.space[2]} wrap>
                 <Checkbox
                   checked={picks.includes(pickKey(r))}
                   disabled={!importable(r)}
@@ -106,12 +106,12 @@ export function ImportTypes({ open, onClose }: { open: boolean; onClose: () => v
                 <AppTag kind="typeImport" status={r.problems.length ? 'REFUSED' : r.action}>{r.problems.length && r.action !== 'REFUSED' ? 'Cannot import' : IMPORT_ACTION_LABELS[r.action]}</AppTag>
               </Flex>
               {r.note ? (
-                <Typography.Paragraph type="secondary" style={{ margin: 0, paddingInlineStart: 24 }}>
+                <Typography.Paragraph type="secondary" style={{ margin: 0, paddingInlineStart: tk.space[6] }}>
                   {r.note}
                 </Typography.Paragraph>
               ) : null}
               {r.problems.length ? (
-                <ul style={{ margin: 0, paddingInlineStart: 42 }}>
+                <ul style={{ margin: 0, paddingInlineStart: `calc(${tk.space[6]} + ${tk.space[5]})` }}>
                   {r.problems.map((p) => (
                     <li key={p}>
                       <Typography.Text type="danger">{p}</Typography.Text>
@@ -141,7 +141,7 @@ export function ImportTypes({ open, onClose }: { open: boolean; onClose: () => v
         </Space>
       }
     >
-      {problem ? <Alert type="error" showIcon title={problem} style={{ marginBottom: 12 }} /> : null}
+      {problem ? <Alert type="error" showIcon title={problem} style={{ marginBottom: tk.space[3] }} /> : null}
       {!plan ? (
         <Upload.Dragger accept=".json,application/json" beforeUpload={beforeUpload} showUploadList={false} maxCount={1} disabled={preview.isPending}>
           <p className="ant-upload-drag-icon">

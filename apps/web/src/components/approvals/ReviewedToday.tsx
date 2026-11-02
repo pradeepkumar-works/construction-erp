@@ -2,7 +2,8 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Badge, Button, Empty, Flex, Popover, Skeleton, Typography, theme } from 'antd';
+import { Badge, Button, Empty, Flex, Popover, Skeleton, Typography } from 'antd';
+import { tk } from '@/ds';
 import { HistoryOutlined } from '@/components/common/icons';
 import type { ReviewedItemDto } from '@erp/shared';
 import { useReviewedToday } from '@/lib/queries';
@@ -13,7 +14,6 @@ import { RecordLink } from '@/components/record/RecordLink';
 
 /** "Reviewed today": what this user approved, rejected or asked to change since midnight, newest first. */
 export function ReviewedToday({ onOpen }: { onOpen: (item: ReviewedItemDto) => void }) {
-  const { token } = theme.useToken();
   const { data, isLoading } = useReviewedToday();
   const reviewed = data?.length ?? 0;
 
@@ -28,8 +28,8 @@ export function ReviewedToday({ onOpen }: { onOpen: (item: ReviewedItemDto) => v
           {data.map((r) => {
             const href = recordPage(r.type, r.id);
             return (
-              <li key={`${r.type}:${r.id}:${r.reviewedAt}`} style={{ padding: `${token.paddingXS}px 0`, borderBottom: `${token.lineWidth}px ${token.lineType} ${token.colorSplit}` }}>
-                <Flex gap={token.marginXS} align="baseline" justify="space-between">
+              <li key={`${r.type}:${r.id}:${r.reviewedAt}`} style={{ padding: `${tk.space[2]} 0`, borderBottom: tk.line('hairline') }}>
+                <Flex gap={tk.space[2]} align="baseline" justify="space-between">
                   {href ? (
                     <Link href={href} className="text-link" style={{ minWidth: 0 }}>
                       <Typography.Text ellipsis style={{ color: 'inherit' }}>
@@ -43,7 +43,7 @@ export function ReviewedToday({ onOpen }: { onOpen: (item: ReviewedItemDto) => v
                   )}
                   <StatusTag status={r.decision} />
                 </Flex>
-                <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+                <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
                   {r.projectName} · {formatDateTime(r.reviewedAt)}
                   {r.note ? ` · “${r.note}”` : ''}
                 </Typography.Text>
@@ -59,7 +59,7 @@ export function ReviewedToday({ onOpen }: { onOpen: (item: ReviewedItemDto) => v
     <Popover trigger="click" placement="bottomRight" title="Reviewed today" content={content}>
       <Button icon={<HistoryOutlined />}>
         Reviewed today{' '}
-        <Badge count={reviewed} showZero color={reviewed ? token.colorSuccess : token.colorTextQuaternary} style={{ boxShadow: 'none' }} />
+        <Badge count={reviewed} showZero color={reviewed ? tk.color.tone.success.solid : tk.color.text.faint} style={{ boxShadow: 'none' }} />
       </Button>
     </Popover>
   );

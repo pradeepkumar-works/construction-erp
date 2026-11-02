@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Input, Select, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import type { MessageChannel, OutboundMessageDto, OutboundMessageStatus } from '@erp/shared';
 import { formatPhone, MESSAGE_CHANNEL_LABELS, MESSAGE_CHANNELS, MESSAGE_TEMPLATE_LABELS, OUTBOUND_MESSAGE_STATUS_LABELS, OUTBOUND_MESSAGE_STATUSES } from '@erp/shared';
@@ -9,7 +10,6 @@ import { useMessageLog } from '@/lib/queries';
 import { formatDateTime } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { CardToolbar } from '@/components/common/CardToolbar';
-import { themeFontSize } from '@/lib/theme';
 
 
 /** Every WhatsApp and SMS the company sent, or tried to, newest first (admin and management). */
@@ -87,7 +87,7 @@ export function MessageLog() {
             render: (_, m) => (
               <>
                 <div>{m.userName ?? '-'}</div>
-                <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
                   {formatPhone(m.to)}
                 </Typography.Text>
               </>
@@ -99,10 +99,10 @@ export function MessageLog() {
             key: 'body',
             render: (_, m) => (
               <>
-                <Typography.Text strong style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                <Typography.Text strong style={{ fontSize: tk.type.caption.fontSize }}>
                   {MESSAGE_TEMPLATE_LABELS[m.template]}
                 </Typography.Text>
-                <div style={{ fontSize: themeFontSize('fontSize') }}>{m.body}</div>
+                <div style={{ fontSize: tk.type.body.fontSize }}>{m.body}</div>
               </>
             ),
           },
@@ -114,7 +114,7 @@ export function MessageLog() {
               <>
                 <AppTag kind="outboundMessage" status={m.status}>{OUTBOUND_MESSAGE_STATUS_LABELS[m.status]}</AppTag>
                 {m.error ? (
-                  <div style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                  <div style={{ fontSize: tk.type.caption.fontSize }}>
                     <Typography.Text type="secondary">{m.error}</Typography.Text>
                   </div>
                 ) : null}

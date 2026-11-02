@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-import { Button, Checkbox, Flex, Tooltip, Typography, theme } from 'antd';
+import { Button, Checkbox, Flex, Tooltip, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { CaretDownOutlined, CaretRightOutlined } from '@/components/common/icons';
 import type { PendingApprovalDto, SubmissionType } from '@erp/shared';
@@ -31,7 +32,6 @@ interface Props {
  * boxes pick entries of one type to approve together.
  */
 export function ApprovalQueue({ groups, current, onOpen, selected, selectedType, onSelect, collapsed, onToggleGroup }: Props) {
-  const { token } = theme.useToken();
   const currentRef = useRef<HTMLLIElement | null>(null);
 
   useEffect(() => {
@@ -50,15 +50,15 @@ export function ApprovalQueue({ groups, current, onOpen, selected, selectedType,
           <section key={g.type} aria-label={g.label}>
             <Flex
               align="center"
-              gap={token.marginXS}
+              gap={tk.space[2]}
               style={{
                 position: 'sticky',
                 top: 0,
                 zIndex: 1,
-                padding: `${token.paddingXS}px ${token.paddingSM}px`,
+                padding: `${tk.space[2]} ${tk.space[3]}`,
                 // The fill is see-through, so it sits on the container colour to hide the entries scrolling under it.
-                background: `linear-gradient(${token.colorFillQuaternary}, ${token.colorFillQuaternary}), ${token.colorBgContainer}`,
-                borderBottom: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}`,
+                background: `linear-gradient(${tk.color.surface.sunken}, ${tk.color.surface.sunken}), ${tk.color.surface.base}`,
+                borderBottom: tk.line('hairline'),
               }}
             >
               {bulk && (
@@ -78,7 +78,7 @@ export function ApprovalQueue({ groups, current, onOpen, selected, selectedType,
                 icon={isCollapsed ? <CaretRightOutlined aria-hidden /> : <CaretDownOutlined aria-hidden />}
                 onClick={() => onToggleGroup(g.type)}
                 aria-expanded={!isCollapsed}
-                style={{ fontWeight: token.fontWeightStrong, paddingInline: token.paddingXXS }}
+                style={{ fontWeight: tk.type.title.fontWeight, paddingInline: tk.space[1] }}
               >
                 {g.label}
               </Button>
@@ -100,12 +100,12 @@ export function ApprovalQueue({ groups, current, onOpen, selected, selectedType,
                       aria-current={isCurrent ? 'true' : undefined}
                       style={{
                         display: 'flex',
-                        gap: token.marginXS,
+                        gap: tk.space[2],
                         alignItems: 'flex-start',
-                        padding: `${token.paddingXS}px ${token.paddingSM}px`,
-                        borderBottom: `${token.lineWidth}px ${token.lineType} ${token.colorSplit}`,
-                        borderInlineStart: `${token.lineWidthBold}px solid ${isCurrent ? token.colorPrimary : 'transparent'}`,
-                        background: isCurrent ? token.controlItemBgActive : undefined,
+                        padding: `${tk.space[2]} ${tk.space[3]}`,
+                        borderBottom: tk.line('hairline'),
+                        borderInlineStart: `${tk.space.half} solid ${isCurrent ? tk.color.accent.solid : 'transparent'}`,
+                        background: isCurrent ? tk.color.accent.chosen : undefined,
                       }}
                     >
                       {bulk && (
@@ -114,7 +114,7 @@ export function ApprovalQueue({ groups, current, onOpen, selected, selectedType,
                           checked={selected.has(key)}
                           disabled={other}
                           onChange={(e) => onSelect([key], p.type, e.target.checked)}
-                          style={{ marginTop: token.marginXXS / 2 }}
+                          style={{ marginTop: tk.space.half }}
                         />
                       )}
                       <div
@@ -127,9 +127,9 @@ export function ApprovalQueue({ groups, current, onOpen, selected, selectedType,
                             onOpen(p);
                           }
                         }}
-                        style={{ flex: 1, minWidth: 0, cursor: 'pointer', outlineOffset: token.lineWidthFocus }}
+                        style={{ flex: 1, minWidth: 0, cursor: 'pointer', outlineOffset: tk.space.half }}
                       >
-                        <Flex justify="space-between" gap={token.marginXS} align="baseline">
+                        <Flex justify="space-between" gap={tk.space[2]} align="baseline">
                           <Typography.Text strong={isCurrent} ellipsis={{ tooltip: p.title }} style={{ minWidth: 0 }}>
                             {p.title}
                           </Typography.Text>
@@ -139,18 +139,18 @@ export function ApprovalQueue({ groups, current, onOpen, selected, selectedType,
                             </AppTag>
                           ) : (
                             p.amount !== null && (
-                              <Typography.Text className="mono" translate="no" style={{ whiteSpace: 'nowrap', fontSize: token.fontSizeSM }}>
+                              <Typography.Text className="mono" translate="no" style={{ whiteSpace: 'nowrap', fontSize: tk.type.caption.fontSize }}>
                                 {formatINR(p.amount)}
                               </Typography.Text>
                             )
                           )}
                         </Flex>
-                        <Flex justify="space-between" gap={token.marginXS} style={{ fontSize: token.fontSizeSM }}>
-                          <Typography.Text type="secondary" ellipsis style={{ minWidth: 0, fontSize: token.fontSizeSM }}>
+                        <Flex justify="space-between" gap={tk.space[2]} style={{ fontSize: tk.type.caption.fontSize }}>
+                          <Typography.Text type="secondary" ellipsis style={{ minWidth: 0, fontSize: tk.type.caption.fontSize }}>
                             {[p.projectName, p.submittedByName, p.levels ? `Level ${p.level} of ${p.levels}` : null, p.escalated ? 'Escalated' : null].filter(Boolean).join(' · ')}
                           </Typography.Text>
                           <Tooltip title={formatDateTime(p.submittedAt)}>
-                            <Typography.Text type="secondary" style={{ whiteSpace: 'nowrap', fontSize: token.fontSizeSM }}>
+                            <Typography.Text type="secondary" style={{ whiteSpace: 'nowrap', fontSize: tk.type.caption.fontSize }}>
                               {timeAgo(p.submittedAt)}
                             </Typography.Text>
                           </Tooltip>

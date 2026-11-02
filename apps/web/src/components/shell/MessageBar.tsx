@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Alert, Button, Flex, theme } from 'antd';
+import { Alert, Button, Flex } from 'antd';
+import { tk } from '@/ds';
 import { CustomerServiceOutlined, DisconnectOutlined } from '@/components/common/icons';
 import type { AuthUser } from '@erp/shared';
 import { BILLING_REMIND_DAYS, PRODUCT_NAME, canManageBilling, canManageCompanyData } from '@erp/shared';
@@ -130,7 +131,6 @@ function useShellMessages(user: AuthUser): ShellMessage[] {
  * alerts. The most serious message shows; the rest fold behind "N more" until opened.
  */
 export function MessageBar({ user }: { user: AuthUser }) {
-  const { token } = theme.useToken();
   const all = useShellMessages(user);
   const [dismissed, setDismissed] = useState<string[]>([]);
   const [expanded, setExpanded] = useState(false);
@@ -153,7 +153,7 @@ export function MessageBar({ user }: { user: AuthUser }) {
 
   return (
     <div className="page-container" style={{ paddingBottom: 0 }} role="region" aria-label="Messages">
-      <Flex vertical gap={token.marginXS}>
+      <Flex vertical gap={tk.space[2]}>
         {shown.map((m, i) => (
           <Alert
             key={m.key}
@@ -163,7 +163,7 @@ export function MessageBar({ user }: { user: AuthUser }) {
             title={m.title}
             closable={m.dismissible ? { onClose: () => dismiss(m.key), 'aria-label': 'Dismiss' } : false}
             action={
-              <Flex gap={token.marginXS} align="center">
+              <Flex gap={tk.space[2]} align="center">
                 {m.action}
                 {i === shown.length - 1 && more > 0 ? (
                   <Button size="small" type="text" onClick={() => setExpanded((v) => !v)} aria-expanded={expanded}>

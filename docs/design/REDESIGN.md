@@ -90,7 +90,7 @@ runs and is committed with the last PR.
   bill's print stays for PR 14. A `subhead` type (20 px) names the size antd's `fontSizeXL` and fourth heading had.
   How to run it: `npx tsx --tsconfig tsconfig.json scripts/codemods/to-tk.ts --write --prune <folders>`, then settle
   what it lists, lint, and take the screenshots.
-- [ ] PR 9 to PR 13. One department per PR: site work, materials and buying, money, people, insight and admin. Off-grid
+- [x] PR 9 to PR 13. One department per PR: site work, materials and buying, money, people, insight and admin. Off-grid
   values (3, 5, 6, 7, 14, 18 px) are decided by hand with a before and after screenshot.
   - [x] PR 9. Site work (daily reports, progress, attendance, measurements, delays, safety, quality and QA, inspections,
     expenses, structure, pipes, sectors, programme, workers, imprest): 80 files. By hand: a tag beside text sits on the
@@ -111,12 +111,23 @@ runs and is committed with the last PR.
   - [x] PR 12. People (staff, attendance and leave, overtime, service records, HR letters, payroll, salaries, loans,
     settlements, biometric devices): 26 files, with no value off the scale but one tag gap (the 8 step, as PR 9). The
     payslip and HR letter prints wait for PR 14.
+  - [x] PR 13. Insight and admin (approvals, home, My work, the launcher, modules and departments, management and
+    reports, notifications, correspondence, design control, documents, masters, project types and templates,
+    integrations, the client portal, users and settings, and the shared components): 114 files. By hand: a hairline
+    border is `tk.line`, a `Space` or `Row` with antd's numbers becomes a `Flex` gap or reads `useResolved()`, the
+    seven private screen-reader styles are the shared class, the `ResultMark` circle's icon sits on the 32 step, and
+    the progress tick and timeline bar take `xs` and `pill` corners. Thirteen files wait: the drawing viewer, markup and
+    take-off layers and the progress meters draw feature colours (PR 14); the shell's two-line labels need a tight
+    line height, the tab bars that tuck under a hairline need its width, and the root layout, icons and `/design`
+    page read the brand core (PR 15).
 
 ### Print, charts, and deleting the old surface (PR 14 and PR 15)
 
-- [ ] PR 14. Print and email templates read `resolveStatic('light')`. Charts and feature colours use `series`.
+- [ ] PR 14. Print and email templates read `resolveStatic('light')`. Charts and feature colours use `series`: the cost
+  heads, progress meters and drawing compare, markup and take-off inks.
 - [ ] PR 15. Delete `BRAND.colors`, `familyColors`, `themeColor`, `themeFontSize`, `cssVariablesFor`, the `--brand-*` and
-  mirrored `--ant-*` variables and `legacy-files.json`. Lint goes to error. Commit the decision trail.
+  mirrored `--ant-*` variables and `legacy-files.json`, after a tight line height and a hairline width join the
+  scales for the shell and the tucked tab bars. Lint goes to error. Commit the decision trail.
 
 ## Appendix A. The shape (from a two-runner arena, synthesized)
 

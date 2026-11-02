@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, App, Button, Card, Checkbox, Flex, InputNumber, Popconfirm, Select, Skeleton, Space, Switch, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -14,7 +15,6 @@ import { useApprovalMatrix } from '@/lib/queries';
 import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
 import { NoAccess } from '@/components/common/NoAccess';
-import { themeFontSize } from '@/lib/theme';
 
 /** One cell: may approve, and the limit (null = no limit). */
 type Cell = { on: boolean; max: number | null };
@@ -146,8 +146,8 @@ export default function ApprovalRulesPage() {
       width: 190,
       render: (v, r) => (
         <div>
-          <div style={{ fontWeight: 600 }}>{v}</div>
-          <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+          <div style={{ fontWeight: tk.type.title.fontWeight }}>{v}</div>
+          <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
             {r.users} active user{r.users === 1 ? '' : 's'}
           </div>
         </div>
@@ -157,7 +157,7 @@ export default function ApprovalRulesPage() {
       title: (
         <div>
           <div>{SUBMISSION_TYPE_LABELS[t]}</div>
-          {APPROVAL_AMOUNT_BASIS[t] ? <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM'), fontWeight: 400 }}>limit on {APPROVAL_AMOUNT_BASIS[t]}</div> : null}
+          {APPROVAL_AMOUNT_BASIS[t] ? <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize, fontWeight: tk.type.body.fontWeight }}>limit on {APPROVAL_AMOUNT_BASIS[t]}</div> : null}
         </div>
       ),
       key: t,
@@ -237,18 +237,18 @@ export default function ApprovalRulesPage() {
       />
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {data && !data.custom && !dirty ? (
-        <Alert type="info" showIcon style={{ marginBottom: 16 }} title="Using the standard rule: admin, management and project managers approve everything with no limit. Change a cell and save to set your own." />
+        <Alert type="info" showIcon style={{ marginBottom: tk.space[4] }} title="Using the standard rule: admin, management and project managers approve everything with no limit. Change a cell and save to set your own." />
       ) : null}
       {noApprover.length > 0 && data ? (
         <Alert
           type="warning"
           showIcon
-          style={{ marginBottom: 16 }}
+          style={{ marginBottom: tk.space[4] }}
           title={`Only admin can approve: ${noApprover.map((t) => SUBMISSION_TYPE_LABELS[t]).join(', ')}.`}
         />
       ) : null}
       <Card size="small">
-        {isLoading ? <Skeleton active style={{ padding: 16 }} /> : null}
+        {isLoading ? <Skeleton active style={{ padding: tk.space[4] }} /> : null}
         {data ? (
           <Table
             rowKey="roleKey"
@@ -259,7 +259,7 @@ export default function ApprovalRulesPage() {
             scroll={{ x: 190 + 170 * SUBMISSION_TYPES.length }}
             footer={() => (
               <Typography.Text type="secondary">
-                <AppTag variant="kind" style={{ marginRight: 8 }}>Admin</AppTag>approves everything with no limit and is always notified. Approvers still only see projects they have access to.
+                <AppTag variant="kind" style={{ marginRight: tk.space[2] }}>Admin</AppTag>approves everything with no limit and is always notified. Approvers still only see projects they have access to.
               </Typography.Text>
             )}
           />
@@ -267,7 +267,7 @@ export default function ApprovalRulesPage() {
       </Card>
       {data && higher ? <HigherLevels roles={rows} higher={higher} setLevel={setLevel} setTimes={setTimes} /> : null}
       {data ? (
-        <Card size="small" style={{ marginTop: 16 }}>
+        <Card size="small" style={{ marginTop: tk.space[4] }}>
           <Flex gap={12} align="flex-start">
             <Switch checked={data.paymentsNeedRequest} loading={payRule.isPending} onChange={(v) => payRule.mutate(v)} aria-labelledby="pay-request-rule" aria-describedby="pay-request-rule-note" />
             <div>
@@ -282,7 +282,7 @@ export default function ApprovalRulesPage() {
         </Card>
       ) : null}
       {data ? (
-        <Card size="small" style={{ marginTop: 16 }}>
+        <Card size="small" style={{ marginTop: tk.space[4] }}>
           <Flex gap={12} align="flex-start">
             <Switch checked={data.ordersNeedApprovedChoice} loading={choiceRule.isPending} onChange={(v) => choiceRule.mutate(v)} aria-labelledby="choice-rule" aria-describedby="choice-rule-note" />
             <div>
@@ -297,7 +297,7 @@ export default function ApprovalRulesPage() {
         </Card>
       ) : null}
       {data ? (
-        <Card size="small" style={{ marginTop: 16 }}>
+        <Card size="small" style={{ marginTop: tk.space[4] }}>
           <Flex gap={12} align="flex-start">
             <Switch checked={data.progressFromDpr} loading={dprRule.isPending} onChange={(v) => dprRule.mutate(v)} aria-labelledby="dpr-progress-rule" aria-describedby="dpr-progress-rule-note" />
             <div>
@@ -397,7 +397,7 @@ function HigherLevels({
     hours('escalate'),
   ];
   return (
-    <Card size="small" title="Higher approval levels and escalation" style={{ marginTop: 16 }}>
+    <Card size="small" title="Higher approval levels and escalation" style={{ marginTop: tk.space[4] }}>
       <Typography.Paragraph type="secondary">
         From the amount you set, an entry needs a second (and third) approval after the first: it stays waiting until the last level approves, and nobody approves two levels of one entry. Reminders go to whoever it waits with; once it has
         waited past the escalation time, the next level&apos;s roles (management above the last level) can decide it too and are told. Both are checked every hour.

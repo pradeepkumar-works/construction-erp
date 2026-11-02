@@ -3,6 +3,7 @@
 import React, { Suspense, useEffect, useState } from 'react';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Card } from 'antd';
+import { tk } from '@/ds';
 import { AppTabs } from '@/components/common/AppTabs';
 import { usePortalBills, usePortalInspections, usePortalMeasurements, usePortalProgramme, usePortalProject, usePortalRfis, usePortalSiteOrders } from '@/lib/queries';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -88,7 +89,7 @@ function PortalProject() {
             items={[
               { key: 'overview', label: 'Progress', children: <PortalOverview project={data} /> },
               { key: 'dprs', label: 'Daily reports', children: <PortalDprs projectId={data.id} /> },
-              { key: 'report', label: 'Progress report', children: <div style={{ padding: 12 }}><ProgressReportView projectId={data.id} portal /></div> },
+              { key: 'report', label: 'Progress report', children: <div style={{ padding: tk.space[3] }}><ProgressReportView projectId={data.id} portal /></div> },
               {
                 key: 'measurements',
                 label: 'Check measurement',

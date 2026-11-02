@@ -3,6 +3,7 @@
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import React, { useEffect, useState } from 'react';
 import { Flex, Form, Input, Select, Space } from 'antd';
+import { tk } from '@/ds';
 import dayjs from 'dayjs';
 import type { AttachmentDto, DocumentDetailDto, DocumentDiscipline, DocumentKind, RevisionStatus } from '@erp/shared';
 import { DOCUMENT_DISCIPLINES, DOCUMENT_DISCIPLINE_LABELS, DOCUMENT_KINDS, DOCUMENT_KIND_LABELS, disciplineOf, readText } from '@erp/shared';
@@ -98,7 +99,7 @@ export function DocumentFormModal({ open, onClose, projectId, doc, onSaved }: { 
     <FormShell open={open} onClose={onClose} form={form} layout="drawer" width={680} title={doc ? `Edit ${doc.docNo}` : 'New drawing or document'} okText="Save" onSubmit={(v) => mutation.mutateAsync(v)}>
       <Form form={form} layout="vertical">
         {!editing && !readState ? (
-          <Flex justify="flex-end" style={{ marginBottom: 8 }}>
+          <Flex justify="flex-end" style={{ marginBottom: tk.space[2] }}>
             <ReadDocumentButton kind="drawing" label="Fill from title block" onRead={applyRead} />
           </Flex>
         ) : null}

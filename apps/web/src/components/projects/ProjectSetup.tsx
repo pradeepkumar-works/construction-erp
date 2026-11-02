@@ -2,7 +2,8 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Button, Flex, Progress, Typography, theme } from 'antd';
+import { Button, Flex, Progress, Typography } from 'antd';
+import { tk } from '@/ds';
 import { CheckCircleOutlined, ExclamationCircleOutlined } from '@/components/common/icons';
 import { sectorStepOf, type ProjectDetail, type ProjectSetupDto, type SetupStepDto } from '@erp/shared';
 import { useHideProjectSetup, useProjectSetup } from '@/lib/queries';
@@ -10,7 +11,6 @@ import { useNotify } from '@/lib/notify';
 import { formatINRCompact, plural } from '@/lib/format';
 import { Section } from '@/components/common/Section';
 
-const srOnly: React.CSSProperties = { position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 };
 
 /** What a step asks for, and what is left or done, in words. */
 function stepText(s: SetupStepDto, project: ProjectDetail, setup: ProjectSetupDto): { title: string; detail: string; warn?: boolean } {
@@ -57,7 +57,6 @@ function stepText(s: SetupStepDto, project: ProjectDetail, setup: ProjectSetupDt
  * who edits the project hides it.
  */
 export function ProjectSetup({ project }: { project: ProjectDetail }) {
-  const { token } = theme.useToken();
   const notify = useNotify();
   const { data } = useProjectSetup(project.id);
   const hide = useHideProjectSetup(project.id);
@@ -67,7 +66,7 @@ export function ProjectSetup({ project }: { project: ProjectDetail }) {
   return (
     <Section
       title="Set up this project"
-      style={{ marginTop: token.margin }}
+      style={{ marginTop: tk.space[4] }}
       extra={
         <Button
           size="small"
@@ -81,9 +80,9 @@ export function ProjectSetup({ project }: { project: ProjectDetail }) {
         </Button>
       }
     >
-      <Flex align="center" gap={token.marginSM} style={{ marginBottom: token.marginXS }}>
+      <Flex align="center" gap={tk.space[3]} style={{ marginBottom: tk.space[2] }}>
         <Progress percent={Math.round((data.done / data.total) * 100)} size="small" showInfo={false} style={{ flex: 1, margin: 0 }} aria-label={`Setup ${data.done} of ${data.total} done`} />
-        <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM, whiteSpace: 'nowrap' }}>
+        <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize, whiteSpace: 'nowrap' }}>
           {data.done} of {data.total} done
         </Typography.Text>
       </Flex>
@@ -91,28 +90,28 @@ export function ProjectSetup({ project }: { project: ProjectDetail }) {
         {data.steps.map((s) => {
           const t = stepText(s, project, data);
           const icon = t.warn ? (
-            <ExclamationCircleOutlined aria-hidden style={{ color: token.colorWarningText, marginTop: 3 }} />
+            <ExclamationCircleOutlined aria-hidden style={{ color: tk.color.tone.pending.fg, marginTop: tk.space[1] }} />
           ) : s.done ? (
-            <CheckCircleOutlined aria-hidden style={{ color: token.colorSuccessText, marginTop: 3 }} />
+            <CheckCircleOutlined aria-hidden style={{ color: tk.color.tone.success.fg, marginTop: tk.space[1] }} />
           ) : (
-            <span aria-hidden style={{ display: 'inline-block', width: 14, height: 14, marginTop: 3, borderRadius: '50%', border: `${token.lineWidth * 1.5}px solid ${token.colorBorder}` }} />
+            <span aria-hidden style={{ display: 'inline-block', width: 14, height: 14, marginTop: tk.space[1], borderRadius: '50%', border: tk.line('base') }} />
           );
           return (
-            <li key={s.key} style={{ minHeight: 44, padding: `${token.paddingXXS + 2}px 0` }}>
-              <Flex gap={token.marginXS} align="flex-start">
+            <li key={s.key} style={{ minHeight: 44, padding: `${tk.space[1]} 0` }}>
+              <Flex gap={tk.space[2]} align="flex-start">
                 {icon}
                 <div style={{ minWidth: 0 }}>
                   {s.done && !t.warn ? (
                     <Typography.Text type="secondary">
-                      <span style={srOnly}>Done: </span>
+                      <span className="visually-hidden">Done: </span>
                       {t.title}
                     </Typography.Text>
                   ) : (
-                    <Link href={hrefOf(s)} style={{ fontWeight: token.fontWeightStrong }}>
+                    <Link href={hrefOf(s)} style={{ fontWeight: tk.type.title.fontWeight }}>
                       {t.title}
                     </Link>
                   )}
-                  <Typography.Text type={t.warn ? undefined : 'secondary'} style={{ display: 'block', fontSize: token.fontSizeSM, color: t.warn ? token.colorWarningText : undefined }}>
+                  <Typography.Text type={t.warn ? undefined : 'secondary'} style={{ display: 'block', fontSize: tk.type.caption.fontSize, color: t.warn ? tk.color.tone.pending.fg : undefined }}>
                     {t.detail}
                   </Typography.Text>
                 </div>

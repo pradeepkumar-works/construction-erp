@@ -2,7 +2,8 @@
 
 import React, { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Button, Card, Collapse, Flex, Typography, theme } from 'antd';
+import { Button, Card, Collapse, Flex, Typography } from 'antd';
+import { tk } from '@/ds';
 import { ExportOutlined, FileTextOutlined, LeftOutlined, RightOutlined } from '@/components/common/icons';
 import { fileUrl } from '@/lib/api';
 import { useDocumentPage } from '@/lib/queries';
@@ -20,7 +21,6 @@ function DocumentPageView() {
   const file = search.get('file');
   const page = Math.max(1, Number(search.get('page')) || 1);
   const { data, isLoading, error, refetch } = useDocumentPage(file, page);
-  const { token } = theme.useToken();
 
   if (!file) return <QueryError error={{ response: { status: 404 } }} />;
   if (isLoading) return <PageSkeleton shape="record" />;
@@ -35,7 +35,7 @@ function DocumentPageView() {
         subtitle={data.pages ? `Page ${page} of ${data.pages}` : `Page ${page}`}
         crumbs={[{ title: 'Drawings and documents', href: '/documents' }, { title: data.title, href: data.recordHref }, { title: `Page ${page}` }]}
         extra={
-          <Flex gap={token.marginXS} wrap>
+          <Flex gap={tk.space[2]} wrap>
             <LinkButton href={at(page - 1)} icon={<LeftOutlined />} disabled={page <= 1}>
               Previous page
             </LinkButton>
@@ -51,10 +51,10 @@ function DocumentPageView() {
           </Flex>
         }
       />
-      <Flex vertical gap={token.margin}>
+      <Flex vertical gap={tk.space[4]}>
         <Card size="small" styles={{ body: { padding: 0 } }}>
           {/* The key reloads the frame when the page changes: a new #page alone does not move an open viewer. */}
-          <iframe key={src} src={src} title={`${data.fileName}, page ${page}`} style={{ width: '100%', height: '75vh', border: 0, display: 'block', borderRadius: token.borderRadiusLG }} />
+          <iframe key={src} src={src} title={`${data.fileName}, page ${page}`} style={{ width: '100%', height: '75vh', border: 0, display: 'block', borderRadius: tk.radius.lg }} />
         </Card>
         <Collapse
           defaultActiveKey={['text']}

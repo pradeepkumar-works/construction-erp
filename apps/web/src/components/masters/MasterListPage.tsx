@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Button, Card, Flex, Form, Input, Switch, Table, Typography, theme } from 'antd';
+import { Button, Card, Flex, Form, Input, Switch, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { DeleteOutlined, DownloadOutlined, EditOutlined, PlusOutlined, UploadOutlined } from '@/components/common/icons';
 import { masterProblem, type MasterEntryDto, type MasterListDto } from '@erp/shared';
 import { useDeleteMasterEntry, useMasterList, useSaveMasterEntry } from '@/lib/queries';
@@ -14,7 +15,6 @@ import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 import { ExcelImportModal } from '@/components/common/ExcelImportModal';
 import { FormShell } from '@/components/form/FormShell';
 
-const srOnly: React.CSSProperties = { position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 };
 
 interface EntryForm {
   name: string;
@@ -69,7 +69,6 @@ function EntryDialog({ list, slug, editing, onClose }: { list: MasterListDto; sl
 
 /** A simple master list: the standard entries with the company's changes, then its own; add, rename, switch off. */
 export function MasterListPage({ slug }: { slug: string }) {
-  const { token } = theme.useToken();
   const { data, isLoading, error, refetch } = useMasterList(slug, true);
   const save = useSaveMasterEntry(slug);
   const remove = useDeleteMasterEntry(slug);
@@ -140,7 +139,7 @@ export function MasterListPage({ slug }: { slug: string }) {
         }
       />
       <Card>
-        <Flex gap={token.marginSM} wrap align="center" style={{ marginBottom: token.margin }}>
+        <Flex gap={tk.space[3]} wrap align="center" style={{ marginBottom: tk.space[4] }}>
           <Input.Search allowClear placeholder={`Find a ${list.singular}`} aria-label={`Find a ${list.singular}`} value={q} onChange={(e) => setQ(e.target.value)} style={{ maxWidth: 320 }} />
           <Typography.Text type="secondary">
             {list.entries.filter((e) => e.isActive).length} of {list.entries.length} in use. Forms suggest the ones in use; records keep their words.
@@ -157,7 +156,7 @@ export function MasterListPage({ slug }: { slug: string }) {
               title: 'Name',
               key: 'name',
               render: (_, e) => (
-                <Flex gap={token.marginXS} align="center" wrap>
+                <Flex gap={tk.space[2]} align="center" wrap>
                   <Typography.Text strong translate="no">
                     {e.name}
                   </Typography.Text>
@@ -176,7 +175,7 @@ export function MasterListPage({ slug }: { slug: string }) {
             ...(manage
               ? [
                   {
-                    title: <span style={srOnly}>Actions</span>,
+                    title: <span className="visually-hidden">Actions</span>,
                     key: 'actions',
                     width: 96,
                     render: (_: unknown, e: MasterEntryDto) => (
@@ -195,7 +194,7 @@ export function MasterListPage({ slug }: { slug: string }) {
           ]}
         />
         {!manage && (
-          <Typography.Paragraph type="secondary" style={{ marginTop: token.margin, marginBottom: 0 }}>
+          <Typography.Paragraph type="secondary" style={{ marginTop: tk.space[4], marginBottom: 0 }}>
             Ask an administrator to add or change {list.label.toLowerCase()}.
           </Typography.Paragraph>
         )}

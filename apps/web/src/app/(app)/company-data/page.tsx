@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Alert, App, Button, Card, Input, Modal, Progress, Skeleton, Space, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { CustomerServiceOutlined, DeleteOutlined, DownloadOutlined, StopOutlined, UndoOutlined } from '@/components/common/icons';
 import type { CompanyLogEntryDto } from '@erp/shared';
@@ -15,7 +16,6 @@ import { formatDate, formatDateTime, NO_VALUE, formatCount, formatBytes } from '
 import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
 import { NoAccess } from '@/components/common/NoAccess';
-import { themeFontSize } from '@/lib/theme';
 
 
 function ExportCard() {
@@ -44,7 +44,7 @@ function ExportCard() {
   };
 
   return (
-    <Card title="Export all data" style={{ marginBottom: 16 }}>
+    <Card title="Export all data" style={{ marginBottom: tk.space[4] }}>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {isLoading ? (
         <Skeleton active paragraph={{ rows: 2 }} />
@@ -61,7 +61,7 @@ function ExportCard() {
           {progress ? (
             <div style={{ maxWidth: 480 }}>
               <Progress percent={progress.percent} status="active" aria-label={`Export ${progress.percent}% built`} />
-              <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+              <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
                 {progress.step}
               </Typography.Text>
             </div>
@@ -179,7 +179,7 @@ function SupportAccessCard() {
   };
 
   return (
-    <Card title={`${PRODUCT_NAME} support access`} style={{ marginBottom: 16 }}>
+    <Card title={`${PRODUCT_NAME} support access`} style={{ marginBottom: tk.space[4] }}>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {isLoading ? (
         <Skeleton active paragraph={{ rows: 1 }} />
@@ -213,7 +213,7 @@ function SupportAccessCard() {
 function CompanyLogCard() {
   const { data, isLoading, error, refetch } = useCompanyLog();
   return (
-    <Card title="Company log" style={{ marginBottom: 16 }}>
+    <Card title="Company log" style={{ marginBottom: tk.space[4] }}>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <Table<CompanyLogEntryDto>
         rowKey="id"

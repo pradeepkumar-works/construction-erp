@@ -3,7 +3,8 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Badge, Button, Card, Select, theme } from 'antd';
+import { Badge, Button, Card, Select } from 'antd';
+import { tk } from '@/ds';
 import { PlusOutlined } from '@/components/common/icons';
 import type { ProjectSortField, ProjectStatus, ProjectSummary, ProjectType } from '@erp/shared';
 import { LIST_SORT_FIELDS, NO_VERTICAL, PROJECT_STATUSES, PROJECT_STATUS_LABELS, PROJECT_TYPES, PROJECT_TYPE_LABELS, canManageProjects, isGuest } from '@erp/shared';
@@ -24,13 +25,11 @@ import { DataTable, type ListColumn } from '@/components/list/DataTable';
 import { exportSelected } from '@/components/list/bulk';
 import { useListFrame } from '@/components/list/useListFrame';
 import { ProgressAgainstPlan } from '@/components/modules/ProjectProgress';
-import { BRAND } from '@/lib/brand';
 
 const KEYS = ['status', 'type'] as const;
 
 function Sub({ children }: { children: React.ReactNode }) {
-  const { token } = theme.useToken();
-  return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
+  return <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{children}</div>;
 }
 
 function projectColumns(sortOrderFor: (key: ProjectSortField) => 'ascend' | 'descend' | null, verticalName: (code: string | null) => string | null): ListColumn<ProjectSummary>[] {
@@ -78,7 +77,7 @@ function projectColumns(sortOrderFor: (key: ProjectSortField) => 'ascend' | 'des
       width: 80,
       align: 'center',
       fixed: 'right',
-      render: (v: number) => (v > 0 ? <Badge count={v} overflowCount={Infinity} color={BRAND.colors.pending} /> : <Sub>0</Sub>),
+      render: (v: number) => (v > 0 ? <Badge count={v} overflowCount={Infinity} color={tk.color.tone.pending.solid} /> : <Sub>0</Sub>),
     },
   ];
 }

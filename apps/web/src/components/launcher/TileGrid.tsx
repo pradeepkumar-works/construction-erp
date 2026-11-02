@@ -10,6 +10,7 @@ import { useProjectScope } from '@/lib/project-scope';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { TreeIcon } from '@/components/shell/nav-icons';
 import s from './TileGrid.module.css';
+import { tk } from '@/ds';
 
 /** What a tile shows: a node of the tree, or a place of its own (a pinned project or saved view) with its own name, icon
  *  and address. Every tile's icon is in the one ink; colour on a tile is only for what waits. */
@@ -219,7 +220,7 @@ export function TileGrid({ entries, label, menu, compact, headingLevel = 2 }: { 
   return (
     <div ref={root} role="group" aria-label={label}>
       {groups.map((g, gi) => (
-        <section key={g.title ?? gi} aria-label={g.title} style={{ marginTop: gi ? 'var(--ant-margin-lg)' : undefined }}>
+        <section key={g.title ?? gi} aria-label={g.title} style={{ marginTop: gi ? tk.space[6] : undefined }}>
           {g.title && <Heading className={s.groupTitle}>{g.title}</Heading>}
           <ul className={compact ? `${s.grid} ${s.compact}` : s.grid}>
             {g.items.map(({ entry, index }) => {

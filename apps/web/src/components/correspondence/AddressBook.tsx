@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Button, Card, Flex, Form, Input, Select, Switch, Table, Typography, theme } from 'antd';
+import { Button, Card, Flex, Form, Input, Select, Switch, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { LetterContactDto } from '@erp/shared';
 import { canViewLetters, contactLine } from '@erp/shared';
@@ -16,7 +17,6 @@ import { DeleteOutlined, EditOutlined, PlusOutlined } from '@/components/common/
 import { EMAIL_INPUT, PHONE_INPUT } from '@/components/form/inputs';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 
-const srOnly: React.CSSProperties = { position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 };
 
 interface ContactForm {
   name: string;
@@ -86,7 +86,6 @@ function ContactDialog({ editing, onClose }: { editing: LetterContactDto | 'new'
 
 /** The address book: offices and people letters come from and go to, picked on a letter's From or To. */
 export function AddressBook() {
-  const { token } = theme.useToken();
   const { user } = useAuth();
   const qc = useQueryClient();
   const notify = useNotify();
@@ -126,9 +125,9 @@ export function AddressBook() {
         }
       />
       <Card>
-        <Flex gap={token.marginSM} wrap align="center" style={{ marginBottom: token.margin }}>
+        <Flex gap={tk.space[3]} wrap align="center" style={{ marginBottom: tk.space[4] }}>
           <Input.Search allowClear placeholder="Find an office or person" aria-label="Find an office or person" value={q} onChange={(e) => setQ(e.target.value)} style={{ maxWidth: 320 }} />
-          <Flex gap={token.marginXS} align="center">
+          <Flex gap={tk.space[2]} align="center">
             <Switch size="small" checked={all} onChange={setAll} aria-label="Show those not in use" />
             <Typography.Text>Show those not in use</Typography.Text>
           </Flex>
@@ -165,7 +164,7 @@ export function AddressBook() {
             ...(keeper
               ? [
                   {
-                    title: <span style={srOnly}>Actions</span>,
+                    title: <span className="visually-hidden">Actions</span>,
                     key: 'actions',
                     width: 96,
                     render: (_: unknown, c: LetterContactDto) => (

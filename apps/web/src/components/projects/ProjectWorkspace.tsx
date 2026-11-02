@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Flex, Segmented, Tabs, Typography, theme } from 'antd';
+import { tk } from '@/ds';
 import { areaSummaryTab, isProjectArea } from '@erp/shared';
 import { AppstoreOutlined, CheckSquareOutlined, InboxOutlined, ScheduleOutlined, ToolOutlined, WalletOutlined } from '@/components/common/icons';
 import { StickyTopContext, useStickyTop } from '@/lib/sticky';
@@ -101,28 +102,28 @@ export function ProjectWorkspace({
           position: 'sticky',
           top: headerTop,
           zIndex: 5,
-          background: token.colorBgContainer,
-          borderBottom: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}`,
-          borderRadius: `${token.borderRadiusLG}px ${token.borderRadiusLG}px 0 0`,
-          padding: `0 ${token.paddingSM}px`,
+          background: tk.color.surface.base,
+          borderBottom: tk.line('hairline'),
+          borderRadius: `${tk.radius.lg} ${tk.radius.lg} 0 0`,
+          padding: `0 ${tk.space[3]}`,
         }}
       >
         {/* The compact title sits beside the tabs, not in antd's tab bar, whose role="tablist" may hold only tabs. */}
-        <Flex align="center" style={{ borderBottom: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}` }}>
+        <Flex align="center" style={{ borderBottom: tk.line('hairline') }}>
           {collapsed ? (
-            <Flex align="center" gap={token.marginXS} style={{ marginRight: token.marginLG, maxWidth: Math.min(420, Math.max(180, bar.width * 0.3)), minWidth: 0 }}>
+            <Flex align="center" gap={tk.space[2]} style={{ marginRight: tk.space[6], maxWidth: Math.min(420, Math.max(180, bar.width * 0.3)), minWidth: 0 }}>
               {compactTitle}
             </Flex>
           ) : null}
           <Tabs activeKey={current.group} onChange={openGroup} items={groups.map((g) => ({ key: g.key, label: g.label, icon: g.icon }))} tabBarStyle={{ marginBottom: -token.lineWidth }} style={{ flex: 1, minWidth: 0 }} />
         </Flex>
         {inGroup.length > 1 && (
-          <div style={{ padding: `${token.paddingXS}px 0`, overflowX: 'auto' }}>
+          <div style={{ padding: `${tk.space[2]} 0`, overflowX: 'auto' }}>
             <Segmented size="small" value={current.key} onChange={(v) => onChange(String(v))} options={inGroup.map((t) => ({ value: t.key, label: t.label }))} aria-label={`${groupLabel} tabs`} />
           </div>
         )}
       </div>
-      <div role="tabpanel" aria-label={isSummary(current) ? `${groupLabel} summary` : current.label} style={{ paddingTop: token.paddingSM }}>
+      <div role="tabpanel" aria-label={isSummary(current) ? `${groupLabel} summary` : current.label} style={{ paddingTop: tk.space[3] }}>
         <GroupTabsContext.Provider value={others}>
           <EmptyInline value>{current.children}</EmptyInline>
         </GroupTabsContext.Provider>

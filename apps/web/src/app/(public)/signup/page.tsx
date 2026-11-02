@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Alert, Button, Form, Input, Skeleton } from 'antd';
+import { tk } from '@/ds';
 import { MIN_PASSWORD_LENGTH, type LoginResponse } from '@erp/shared';
 import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -47,9 +48,9 @@ export default function SignupPage() {
     <AuthCard title="Create your company" subtitle="You become its admin and can invite your team next." width={440}>
       {isLoading ? <Skeleton active /> : null}
       {options && !options.signup ? (
-        <Alert type="info" showIcon title="Sign-up is closed." description={`Ask whoever runs your ${BRAND.name} to create your company, or sign in if you already have an account.`} style={{ marginBottom: 16 }} />
+        <Alert type="info" showIcon title="Sign-up is closed." description={`Ask whoever runs your ${BRAND.name} to create your company, or sign in if you already have an account.`} style={{ marginBottom: tk.space[4] }} />
       ) : null}
-      {error && <Alert type="error" showIcon title={error} style={{ marginBottom: 16 }} />}
+      {error && <Alert type="error" showIcon title={error} style={{ marginBottom: tk.space[4] }} />}
       {options?.signup ? (
         <Form<Values> layout="vertical" onFinish={onFinish} requiredMark={false}>
           <Form.Item name="organizationName" label="Company name" rules={[{ required: true, whitespace: true, min: 3, message: 'Enter your company name' }]}>

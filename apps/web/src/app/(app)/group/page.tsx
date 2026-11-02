@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { App, Button, Card, Form, Input, Result, Switch, Typography, theme } from 'antd';
+import { App, Button, Card, Form, Input, Result, Switch, Typography } from 'antd';
+import { tk } from '@/ds';
 import { COMPANY_KIND_LABELS, canSeeGroupCompanies, type GroupCompanyDto, type GroupDto, type GroupPersonDto } from '@erp/shared';
 import { EditOutlined, PlusOutlined, UserAddOutlined } from '@/components/common/icons';
 import { AppTabs } from '@/components/common/AppTabs';
@@ -20,8 +21,7 @@ import { useGroup, useMakeGroup, useSetGroupAdmin } from '@/lib/queries';
 import { NO_VALUE } from '@/lib/format';
 
 function Sub({ children }: { children: React.ReactNode }) {
-  const { token } = theme.useToken();
-  return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
+  return <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{children}</div>;
 }
 
 const code = (v: string | null) => (v ? <span translate="no">{v}</span> : <span className="text-muted">{NO_VALUE}</span>);
@@ -39,7 +39,7 @@ function CompaniesTab({ group, onEdit }: { group: GroupDto; onEdit: (c: GroupCom
           <div>
             <strong translate="no">{c.name}</strong>
             {c.current && (
-              <AppTag variant="kind" style={{ marginLeft: 8 }}>
+              <AppTag variant="kind" style={{ marginLeft: tk.space[2] }}>
                 You are here
               </AppTag>
             )}
@@ -122,7 +122,7 @@ function PeopleTab({ group, myEmail, onGive }: { group: GroupDto; myEmail: strin
         card: 'meta',
         cardText: (p) => p.places.map((pl) => `${pl.companyName} · ${pl.roleName}${pl.isActive ? '' : ' (off)'}`).join(', '),
         render: (_, p) => (
-          <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 4 }}>
+          <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: tk.space[1] }}>
             {p.places.map((pl) => (
               <AppTag key={pl.organizationId} {...(pl.isActive ? { variant: 'kind' as const } : { meaning: 'closed' as const })} style={{ margin: 0 }}>
                 <span translate="no">{pl.companyName}</span> · {pl.roleName}
@@ -170,7 +170,7 @@ function PeopleTab({ group, myEmail, onGive }: { group: GroupDto; myEmail: strin
   const choice = useColumnChoice('group-people', columns);
   return (
     <>
-      <Typography.Paragraph type="secondary" style={{ marginTop: 12 }}>
+      <Typography.Paragraph type="secondary" style={{ marginTop: tk.space[3] }}>
         Everyone with access to a company of the group. Access to another company uses the same sign-in. New people are added from Users in their own company.
       </Typography.Paragraph>
       <DataTable<PersonRow>

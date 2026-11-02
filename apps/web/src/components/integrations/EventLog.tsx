@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Button, Modal, Select, Space, Table } from 'antd';
+import { tk } from '@/ds';
 import type { TableProps } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import type { IntegrationEventDto, IntegrationEventStatus } from '@erp/shared';
@@ -38,8 +39,8 @@ export function EventLog() {
   ];
 
   return (
-    <div style={{ padding: 16 }}>
-      <Space wrap style={{ marginBottom: 12 }}>
+    <div style={{ padding: tk.space[4] }}>
+      <Space wrap style={{ marginBottom: tk.space[3] }}>
         <Select
           allowClear
           aria-label="Connection"
@@ -75,7 +76,7 @@ export function EventLog() {
       )}
       <Modal open={!!open} onCancel={() => setOpen(null)} title={open ? `Sent at ${formatDateTime(open.createdAt)}` : ''} width={640} footer={<Button type="primary" onClick={() => setOpen(null)}>Done</Button>}>
         {open && (
-          <pre translate="no" style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-all', fontSize: 12 }}>
+          <pre translate="no" style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-all', fontSize: tk.type.caption.fontSize }}>
             {JSON.stringify(open.detail, null, 2)}
           </pre>
         )}

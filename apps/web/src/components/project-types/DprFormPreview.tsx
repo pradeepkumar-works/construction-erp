@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Button, Flex, Form, Input, InputNumber, Select, Typography, theme } from 'antd';
+import { Button, Flex, Form, Input, InputNumber, Select, Typography } from 'antd';
+import { tk } from '@/ds';
 import {
   DPR_LINE_PART_LABELS,
   DPR_SECTIONS,
@@ -33,7 +34,6 @@ const WHERE: Record<WorkLocation, string> = { CHAINAGE: 'Chainage from, to', FLO
  * Hindi names under the company's own fields. Nothing in it saves; it shows what the definition asks for.
  */
 export function DprFormPreview({ def, mode, locations, progressFromDpr }: { def: DprFormDef; mode: PreviewMode; locations: WorkLocation[]; progressFromDpr: boolean }) {
-  const { token } = theme.useToken();
   const phone = mode === 'phone';
   const opts = { progressFromDpr };
   const Grid = ({ cols, children }: { cols: 2 | 3; children: React.ReactNode }) => (phone ? <>{children}</> : <FormGrid cols={cols}>{children}</FormGrid>);
@@ -56,8 +56,8 @@ export function DprFormPreview({ def, mode, locations, progressFromDpr }: { def:
       case 'lines':
         return (
           <Form.Item key={key} label={dprLabel(def, key)} required={dprRequires(def, key)}>
-            <div style={{ border: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}`, borderRadius: token.borderRadius, padding: token.paddingSM }}>
-              <Flex vertical={phone} wrap gap={token.marginXS}>
+            <div style={{ border: tk.line('hairline'), borderRadius: tk.radius.md, padding: tk.space[3] }}>
+              <Flex vertical={phone} wrap gap={tk.space[2]}>
                 {def.lines.picker === 'CASCADE' ? (
                   <>
                     <Select aria-label="Component" placeholder="Component" style={{ flex: '1 1 160px' }} />
@@ -70,7 +70,7 @@ export function DprFormPreview({ def, mode, locations, progressFromDpr }: { def:
                 <Input aria-label="Where" placeholder={where} style={{ flex: '1 1 160px' }} />
                 <InputNumber aria-label="Quantity today" placeholder="Today" style={{ flex: '0.7 1 110px', width: phone ? '100%' : undefined }} />
               </Flex>
-              <Typography.Paragraph type="secondary" style={{ margin: `${token.marginXS}px 0 0` }}>
+              <Typography.Paragraph type="secondary" style={{ margin: `${tk.space[2]} 0 0` }}>
                 {parts.length || lineOwn.length ? `Each line also takes ${[...parts, ...lineOwn.map((f) => f.label + (f.required ? ' (required)' : ''))].join(', ')}.` : 'Each line takes the activity, where and how much only.'}
               </Typography.Paragraph>
             </div>
@@ -79,7 +79,7 @@ export function DprFormPreview({ def, mode, locations, progressFromDpr }: { def:
       case 'manpower':
         return item(
           key,
-          <Flex gap={token.marginXS}>
+          <Flex gap={tk.space[2]}>
             <Select aria-label="Trade" placeholder="Trade" options={crew} style={{ flex: 1 }} />
             <InputNumber aria-label="Number" placeholder="Nos" style={{ width: 90 }} />
           </Flex>,
@@ -88,7 +88,7 @@ export function DprFormPreview({ def, mode, locations, progressFromDpr }: { def:
       case 'machinery':
         return item(
           key,
-          <Flex gap={token.marginXS}>
+          <Flex gap={tk.space[2]}>
             <Select aria-label="Machine" placeholder={def.lines.machineNames[0] ?? 'Machine'} options={def.lines.machineNames.map((m) => ({ value: m, label: m }))} style={{ flex: 1 }} />
             <InputNumber aria-label="Hours" placeholder="Hrs" style={{ width: 90 }} />
           </Flex>,
@@ -126,7 +126,7 @@ export function DprFormPreview({ def, mode, locations, progressFromDpr }: { def:
                   phone && f.labelHi ? (
                     <span>
                       {ownFieldLabel(f)}{' '}
-                      <span lang="hi" style={{ color: token.colorTextSecondary }}>
+                      <span lang="hi" style={{ color: tk.color.text.muted }}>
                         {f.labelHi}
                       </span>
                     </span>
@@ -159,7 +159,7 @@ export function DprFormPreview({ def, mode, locations, progressFromDpr }: { def:
     <div
       style={
         phone
-          ? { maxWidth: 380, margin: '0 auto', border: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}`, borderRadius: token.borderRadiusLG, padding: token.padding, background: token.colorBgContainer }
+          ? { maxWidth: 380, margin: '0 auto', border: tk.line('hairline'), borderRadius: tk.radius.lg, padding: tk.space[4], background: tk.color.surface.base }
           : undefined
       }
     >

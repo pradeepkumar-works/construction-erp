@@ -4,7 +4,8 @@ import React from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { Card, Col, Row, Skeleton, Table, Typography, theme } from 'antd';
+import { Card, Col, Row, Skeleton, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import {
   BILL_STAGE_LABELS,
   HEALTH_LABELS,
@@ -64,7 +65,6 @@ export default function Page() {
 }
 
 function Detail({ data }: { data: PortfolioProjectDetailDto }) {
-  const { token } = theme.useToken();
   const p = data.project;
   const m = p.money;
   const s = p.schedule;
@@ -95,7 +95,7 @@ function Detail({ data }: { data: PortfolioProjectDetailDto }) {
         crumbs={[{ title: 'Management dashboard', href: '/management' }, { title: p.code }]}
         subtitle={
           <>
-            <AppTag kind="health" status={p.health} style={{ marginInlineEnd: token.marginXS }}>
+            <AppTag kind="health" status={p.health} style={{ marginInlineEnd: tk.space[2] }}>
               {HEALTH_LABELS[p.health]}
             </AppTag>
             <span translate="no">{p.code}</span>
@@ -122,7 +122,7 @@ function Detail({ data }: { data: PortfolioProjectDetailDto }) {
         }
       />
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: token.margin }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: tk.space[4] }}>
         <Figures label={`${p.code} figures`} figures={figures} scope={{ projectId: p.projectId }} />
 
         <Row gutter={[16, 16]}>
@@ -162,8 +162,8 @@ function Detail({ data }: { data: PortfolioProjectDetailDto }) {
               <Typography.Paragraph
                 type="secondary"
                 style={{
-                  fontSize: token.fontSizeSM,
-                  margin: `${token.marginXXS}px 0 ${token.marginSM}px`,
+                  fontSize: tk.type.caption.fontSize,
+                  margin: `${tk.space[1]} 0 ${tk.space[3]}`,
                 }}
               >
                 The bar is the work done; the upright line is where the plan says it should be by today.
@@ -172,7 +172,7 @@ function Detail({ data }: { data: PortfolioProjectDetailDto }) {
                 style={{
                   display: 'grid',
                   gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
-                  gap: `${token.marginXS}px ${token.margin}px`,
+                  gap: `${tk.space[2]} ${tk.space[4]}`,
                   margin: 0,
                 }}
               >
@@ -180,8 +180,8 @@ function Detail({ data }: { data: PortfolioProjectDetailDto }) {
                   <div key={k}>
                     <dt
                       style={{
-                        color: token.colorTextSecondary,
-                        fontSize: token.fontSizeSM,
+                        color: tk.color.text.muted,
+                        fontSize: tk.type.caption.fontSize,
                       }}
                     >
                       {k}
@@ -215,7 +215,6 @@ function Detail({ data }: { data: PortfolioProjectDetailDto }) {
 }
 
 function CostHeads({ data }: { data: PortfolioProjectDetailDto }) {
-  const { token } = theme.useToken();
   const anyBudget = data.heads.some((h) => h.budget !== null);
   const scale = Math.max(
     1,
@@ -272,7 +271,7 @@ function CostHeads({ data }: { data: PortfolioProjectDetailDto }) {
             render: (_, h) => {
               const over = h.forecast !== null && h.budget !== null && toNumber(h.forecast) > toNumber(h.budget);
               return (
-                <span translate="no" style={{ color: over ? token.colorErrorText : undefined }}>
+                <span translate="no" style={{ color: over ? tk.color.tone.danger.fg : undefined }}>
                   {h.forecast === null ? NO_VALUE : formatINRCompact(h.forecast)}
                 </span>
               );
@@ -283,8 +282,8 @@ function CostHeads({ data }: { data: PortfolioProjectDetailDto }) {
       <Typography.Paragraph
         type="secondary"
         style={{
-          fontSize: token.fontSizeSM,
-          margin: `${token.marginXS}px 0 0`,
+          fontSize: tk.type.caption.fontSize,
+          margin: `${tk.space[2]} 0 0`,
         }}
       >
         {anyBudget

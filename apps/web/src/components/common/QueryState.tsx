@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Alert, Button, Flex, Result, Skeleton, theme } from 'antd';
+import { Alert, Button, Flex, Result, Skeleton } from 'antd';
+import { tk } from '@/ds';
 import { DisconnectOutlined, ReloadOutlined } from '@/components/common/icons';
 import { ResultMark } from '@/components/common/ResultMark';
 import { NoAccess } from '@/components/common/NoAccess';
@@ -70,7 +71,7 @@ export function QueryError({ error, onRetry }: { error: unknown; onRetry?: () =>
 /** Placeholder while a panel loads, shaped like a card of text rather than a spinner. */
 export function Loading({ tip }: { tip?: string }) {
   return (
-    <div style={{ padding: 24 }} aria-busy="true" aria-label={tip ?? 'Loading'}>
+    <div style={{ padding: tk.space[6] }} aria-busy="true" aria-label={tip ?? 'Loading'}>
       <Skeleton active paragraph={{ rows: 5 }} />
     </div>
   );
@@ -78,28 +79,27 @@ export function Loading({ tip }: { tip?: string }) {
 
 /** A page-shaped placeholder: header, a row of figures, and a table or record body. */
 export function PageSkeleton({ shape = 'list', header = true }: { shape?: 'list' | 'record' | 'home' | 'workspace'; header?: boolean }) {
-  const { token } = theme.useToken();
   const card = (children: React.ReactNode, flex: string | number = 1) => (
-    <div style={{ flex, minWidth: 220, background: token.colorBgContainer, border: `1px solid ${token.colorBorderSecondary}`, borderRadius: token.borderRadiusLG, padding: token.padding }}>{children}</div>
+    <div style={{ flex, minWidth: 220, background: tk.color.surface.base, border: `1px solid ${tk.color.line.hairline}`, borderRadius: tk.radius.lg, padding: tk.space[4] }}>{children}</div>
   );
   return (
     <div aria-busy="true" aria-label="Loading">
-      {header ? <Skeleton active title={{ width: 280 }} paragraph={{ rows: 1, width: 420 }} style={{ marginBottom: token.marginLG }} /> : null}
+      {header ? <Skeleton active title={{ width: 280 }} paragraph={{ rows: 1, width: 420 }} style={{ marginBottom: tk.space[6] }} /> : null}
       {shape === 'home' || shape === 'workspace' ? (
-        <Flex gap={token.margin} wrap style={{ marginBottom: token.margin }}>
+        <Flex gap={tk.space[4]} wrap style={{ marginBottom: tk.space[4] }}>
           {[0, 1, 2, 3].map((i) => (
             <React.Fragment key={i}>{card(<Skeleton active title={{ width: '50%' }} paragraph={{ rows: 1, width: '70%' }} />)}</React.Fragment>
           ))}
         </Flex>
       ) : null}
-      {shape === 'workspace' ? <Skeleton.Button active block style={{ height: 40, marginBottom: token.margin }} /> : null}
+      {shape === 'workspace' ? <Skeleton.Button active block style={{ height: 40, marginBottom: tk.space[4] }} /> : null}
       {shape === 'record' ? (
-        <Flex gap={token.margin} wrap>
+        <Flex gap={tk.space[4]} wrap>
           {card(<Skeleton active paragraph={{ rows: 8 }} />, 3)}
           {card(<Skeleton active paragraph={{ rows: 5 }} />, 1)}
         </Flex>
       ) : shape === 'home' ? (
-        <Flex gap={token.margin} wrap>
+        <Flex gap={tk.space[4]} wrap>
           {card(<Skeleton active paragraph={{ rows: 6 }} />, 2)}
           {card(<Skeleton active paragraph={{ rows: 6 }} />, 1)}
         </Flex>

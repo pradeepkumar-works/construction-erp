@@ -3,7 +3,8 @@
 import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Table, Typography, theme } from 'antd';
+import { Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { TableColumnsType } from 'antd';
 import { HEALTH_LABELS, PORTFOLIO_SCHEDULE_LABELS, type HealthLevel, type PortfolioProjectDto } from '@erp/shared';
 import { AppTag } from '@/components/common/AppTag';
@@ -16,7 +17,6 @@ export const byHealth = (a: PortfolioProjectDto, b: PortfolioProjectDto) => RANK
 
 /** Every contract project on one row each: health, progress against plan, and its money from contract to what clients owe. */
 export function ProjectsHealthTable({ projects }: { projects: PortfolioProjectDto[] }) {
-  const { token } = theme.useToken();
   const router = useRouter();
   const money = (v: string | null) => (
     <span className="mono" translate="no" style={{ whiteSpace: 'nowrap' }}>
@@ -26,8 +26,8 @@ export function ProjectsHealthTable({ projects }: { projects: PortfolioProjectDt
   const sub = (children: React.ReactNode, danger = false, wrap = false) => (
     <div
       style={{
-        fontSize: token.fontSizeSM,
-        color: danger ? token.colorErrorText : token.colorTextSecondary,
+        fontSize: tk.type.caption.fontSize,
+        color: danger ? tk.color.tone.danger.fg : tk.color.text.muted,
         whiteSpace: wrap ? undefined : 'nowrap',
       }}
     >
@@ -42,7 +42,7 @@ export function ProjectsHealthTable({ projects }: { projects: PortfolioProjectDt
       width: 210,
       render: (_, p) => (
         <div style={{ minWidth: 0 }}>
-          <Link href={`/management/projects/${p.projectId}`} onClick={(e) => e.stopPropagation()} translate="no" style={{ fontWeight: token.fontWeightStrong }}>
+          <Link href={`/management/projects/${p.projectId}`} onClick={(e) => e.stopPropagation()} translate="no" style={{ fontWeight: tk.type.title.fontWeight }}>
             {p.code}
           </Link>
           <Typography.Text
@@ -51,7 +51,7 @@ export function ProjectsHealthTable({ projects }: { projects: PortfolioProjectDt
             translate="no"
             style={{
               display: 'block',
-              fontSize: token.fontSizeSM,
+              fontSize: tk.type.caption.fontSize,
               maxWidth: 190,
             }}
           >
@@ -175,7 +175,7 @@ export function ProjectsHealthTable({ projects }: { projects: PortfolioProjectDt
           className="mono"
           translate="no"
           style={{
-            color: p.money.marginPct !== null && p.money.marginPct < 0 ? token.colorErrorText : undefined,
+            color: p.money.marginPct !== null && p.money.marginPct < 0 ? tk.color.tone.danger.fg : undefined,
           }}
         >
           {formatPct(p.money.marginPct)}

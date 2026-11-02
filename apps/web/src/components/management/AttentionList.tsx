@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Button, Typography, theme } from 'antd';
+import { Button, Typography } from 'antd';
+import { tk } from '@/ds';
 import { HEALTH_LABELS, type AttentionItemDto } from '@erp/shared';
 import { AppTag } from '@/components/common/AppTag';
 import { CheckCircleOutlined } from '@/components/common/icons';
@@ -19,22 +20,21 @@ export function AttentionList({
   empty?: string;
   oneProject?: boolean;
 }) {
-  const { token } = theme.useToken();
   const [all, setAll] = useState(false);
   if (!items.length)
     return (
       <Typography.Paragraph type="secondary" style={{ margin: 0 }}>
         <CheckCircleOutlined
           style={{
-            color: token.colorSuccessText,
-            marginInlineEnd: token.marginXS,
+            color: tk.color.tone.success.fg,
+            marginInlineEnd: tk.space[2],
           }}
         />
         {empty}
       </Typography.Paragraph>
     );
   const shown = all ? items : items.slice(0, FIRST);
-  const line = `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}`;
+  const line = tk.line('hairline');
   return (
     <>
       <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
@@ -43,14 +43,14 @@ export function AttentionList({
             key={`${a.projectId}-${a.key}-${i}`}
             style={{
               display: 'flex',
-              gap: token.marginSM,
+              gap: tk.space[3],
               alignItems: 'flex-start',
-              padding: `${token.paddingXS}px 0`,
+              padding: `${tk.space[2]} 0`,
               minHeight: 44,
               borderBlockStart: i ? line : undefined,
             }}
           >
-            <AppTag kind="health" status={a.level} style={{ flex: '0 0 auto', marginTop: 1 }}>
+            <AppTag kind="health" status={a.level} style={{ flex: '0 0 auto', marginTop: tk.space.half }}>
               {HEALTH_LABELS[a.level]}
             </AppTag>
             <p style={{ margin: 0, minWidth: 0 }}>
@@ -58,10 +58,10 @@ export function AttentionList({
                 <span translate="no">{a.text}</span>
               ) : (
                 <>
-                  <Link href={`/management/projects/${a.projectId}`} translate="no" style={{ fontWeight: token.fontWeightStrong }}>
+                  <Link href={`/management/projects/${a.projectId}`} translate="no" style={{ fontWeight: tk.type.title.fontWeight }}>
                     {a.projectCode}
                   </Link>
-                  <span style={{ color: token.colorTextSecondary }}>: </span>
+                  <span style={{ color: tk.color.text.muted }}>: </span>
                   <span translate="no">{a.text}</span>
                 </>
               )}

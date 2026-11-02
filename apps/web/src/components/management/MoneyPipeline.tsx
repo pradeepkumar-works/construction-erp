@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Grid, theme } from 'antd';
+import { Grid } from 'antd';
+import { tk } from '@/ds';
 import { formatINRCompact, toNumber } from '@/lib/format';
 
 export interface PipelineMoney {
@@ -19,7 +20,6 @@ export interface PipelineMoney {
  * they are words rather than colours.
  */
 export function MoneyPipeline({ money }: { money: PipelineMoney }) {
-  const { token } = theme.useToken();
   const wide = Grid.useBreakpoint().sm !== false;
   const contract = money.contractValue === null ? null : toNumber(money.contractValue);
   const done = toNumber(money.workDone);
@@ -86,16 +86,16 @@ export function MoneyPipeline({ money }: { money: PipelineMoney }) {
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: wide ? '96px minmax(0, 1fr) 104px' : 'minmax(0, 1fr) auto',
+              gridTemplateColumns: wide ? `calc(2 * ${tk.space[12]}) minmax(0, 1fr) 104px` : 'minmax(0, 1fr) auto',
               alignItems: 'center',
-              columnGap: token.marginSM,
-              rowGap: token.marginXXS,
+              columnGap: tk.space[3],
+              rowGap: tk.space[1],
               minHeight: 28,
             }}
           >
-            <span style={{ color: token.colorTextSecondary }}>{s.label}</span>
+            <span style={{ color: tk.color.text.muted }}>{s.label}</span>
             {wide ? <Bar share={s.value === null ? 0 : s.value / scale} /> : null}
-            <span className="mono" translate="no" style={{ textAlign: 'right', fontWeight: token.fontWeightStrong }}>
+            <span className="mono" translate="no" style={{ textAlign: 'right', fontWeight: tk.type.title.fontWeight }}>
               {s.value === null ? 'No contract value' : formatINRCompact(s.value)}
             </span>
             {wide ? null : (
@@ -107,10 +107,10 @@ export function MoneyPipeline({ money }: { money: PipelineMoney }) {
           {s.after ? (
             <p
               style={{
-                margin: `${token.marginXXS}px 0 ${token.marginXS}px`,
-                paddingInlineStart: wide ? 96 + token.marginSM : 0,
-                color: token.colorTextSecondary,
-                fontSize: token.fontSizeSM,
+                margin: `${tk.space[1]} 0 ${tk.space[2]}`,
+                paddingInlineStart: wide ? `calc(2 * ${tk.space[12]} + ${tk.space[3]})` : 0,
+                color: tk.color.text.muted,
+                fontSize: tk.type.caption.fontSize,
               }}
             >
               {s.after}
@@ -123,16 +123,14 @@ export function MoneyPipeline({ money }: { money: PipelineMoney }) {
 }
 
 function Money({ v }: { v: number }) {
-  const { token } = theme.useToken();
   return (
-    <span className="mono" translate="no" style={{ color: token.colorText, fontWeight: token.fontWeightStrong }}>
+    <span className="mono" translate="no" style={{ color: tk.color.text.base, fontWeight: tk.type.title.fontWeight }}>
       {formatINRCompact(v)}
     </span>
   );
 }
 
 function Bar({ share }: { share: number }) {
-  const { token } = theme.useToken();
   const w = Math.max(0, Math.min(1, share)) * 100;
   return (
     <span
@@ -140,8 +138,8 @@ function Bar({ share }: { share: number }) {
       style={{
         display: 'block',
         height: 8,
-        borderRadius: 4,
-        background: token.colorFillSecondary,
+        borderRadius: tk.radius.sm,
+        background: tk.color.tone.neutral.bg,
         overflow: 'hidden',
       }}
     >
@@ -151,8 +149,8 @@ function Bar({ share }: { share: number }) {
           height: '100%',
           width: `${w}%`,
           minWidth: w > 0 ? 4 : 0,
-          borderRadius: 4,
-          background: token.colorPrimary,
+          borderRadius: tk.radius.sm,
+          background: tk.color.accent.solid,
         }}
       />
     </span>
@@ -164,7 +162,6 @@ function Bar({ share }: { share: number }) {
  * Behind plan reads in the words beside it, not in the bar's colour.
  */
 export function ScheduleBullet({ done, planned, label }: { done: number; planned: number | null; label: string }) {
-  const { token } = theme.useToken();
   const d = Math.max(0, Math.min(100, done));
   const p = planned === null ? null : Math.max(0, Math.min(100, planned));
   return (
@@ -184,8 +181,8 @@ export function ScheduleBullet({ done, planned, label }: { done: number; planned
           insetInline: 0,
           top: 3,
           height: 8,
-          borderRadius: 4,
-          background: token.colorFillSecondary,
+          borderRadius: tk.radius.sm,
+          background: tk.color.tone.neutral.bg,
         }}
       />
       <span
@@ -196,8 +193,8 @@ export function ScheduleBullet({ done, planned, label }: { done: number; planned
           height: 8,
           width: `${d}%`,
           minWidth: d > 0 ? 4 : 0,
-          borderRadius: 4,
-          background: token.colorPrimary,
+          borderRadius: tk.radius.sm,
+          background: tk.color.accent.solid,
         }}
       />
       {p !== null ? (
@@ -208,8 +205,8 @@ export function ScheduleBullet({ done, planned, label }: { done: number; planned
             height: 14,
             width: 2,
             insetInlineStart: `calc(${p}% - 1px)`,
-            background: token.colorText,
-            borderRadius: 1,
+            background: tk.color.text.base,
+            borderRadius: tk.radius.xs,
           }}
         />
       ) : null}
@@ -234,7 +231,6 @@ export function BudgetTrack({
   scale?: number;
   label: string;
 }) {
-  const { token } = theme.useToken();
   // One scale for every head (`scale`), so the bars compare across rows; else the row's own largest figure.
   const scale = Math.max(shared ?? 0, budget ?? 0, actual, forecast ?? 0, 1);
   const within = budget === null ? actual : Math.min(actual, budget);
@@ -259,8 +255,8 @@ export function BudgetTrack({
             top: 3,
             height: 8,
             width: pct(budget),
-            borderRadius: 4,
-            background: token.colorFillSecondary,
+            borderRadius: tk.radius.sm,
+            background: tk.color.tone.neutral.bg,
           }}
         />
       ) : null}
@@ -272,8 +268,8 @@ export function BudgetTrack({
           height: 8,
           width: pct(within),
           minWidth: within > 0 ? 4 : 0,
-          borderRadius: 4,
-          background: token.colorPrimary,
+          borderRadius: tk.radius.sm,
+          background: tk.color.accent.solid,
         }}
       />
       {over > 0 ? (
@@ -284,8 +280,8 @@ export function BudgetTrack({
             top: 3,
             height: 8,
             width: `calc(${pct(over)} - 2px)`,
-            borderRadius: 4,
-            background: token.colorError,
+            borderRadius: tk.radius.sm,
+            background: tk.color.tone.danger.solid,
           }}
         />
       ) : null}
@@ -297,8 +293,8 @@ export function BudgetTrack({
             height: 14,
             width: 2,
             insetInlineStart: `calc(${pct(forecast)} - 1px)`,
-            background: token.colorText,
-            borderRadius: 1,
+            background: tk.color.text.base,
+            borderRadius: tk.radius.xs,
           }}
         />
       ) : null}

@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { Alert, App, Button, Card, Checkbox, Flex, Input, Table, Typography, theme } from 'antd';
+import { Alert, App, Button, Card, Checkbox, Flex, Input, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { NavLayout, NavLook, NavModuleSet, NavSettingsDto } from '@erp/shared';
 import { DEFAULT_NAV_SETTINGS, NAV_LAYOUT_LABELS, NAV_LOOK_LABELS, NAV_MODULE_SET_LABELS, NAV_NAME_MAX, canManageModules, navModuleDefs, type NavModuleDef } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
@@ -46,7 +47,6 @@ function tidy(v: NavSettingsDto): NavSettingsDto {
 
 function MenuForm({ saved }: { saved: NavSettingsDto }) {
   const { message } = App.useApp();
-  const { token } = theme.useToken();
   const { refresh } = useAuth();
   const notify = useNotify();
   const save = useSaveNavSettings();
@@ -71,7 +71,7 @@ function MenuForm({ saved }: { saved: NavSettingsDto }) {
       key: 'module',
       title: 'Module',
       render: (_: unknown, m: NavModuleDef) => (
-        <Flex align="center" gap={token.marginXS}>
+        <Flex align="center" gap={tk.space[2]}>
           <TreeIcon name={m.icon} />
           <span>{m.label}</span>
         </Flex>
@@ -105,12 +105,12 @@ function MenuForm({ saved }: { saved: NavSettingsDto }) {
   ];
 
   return (
-    <Flex vertical gap={token.margin}>
+    <Flex vertical gap={tk.space[4]}>
       <Card size="small" title="Where the menu sits">
         <ChoiceCards label="Where the menu sits" value={v.layout} onChange={(x) => set('layout', x)} choices={LAYOUTS} />
       </Card>
       <Card size="small" title="Look of the top bar">
-        <Flex vertical gap={token.marginSM}>
+        <Flex vertical gap={tk.space[3]}>
           {v.layout === 'SIDEBAR' && <Typography.Text type="secondary">Used when the menu is in the top bar.</Typography.Text>}
           <ChoiceCards label="Look of the top bar" value={v.look} onChange={(x) => set('look', x)} choices={LOOKS} />
           <Checkbox checked={v.personalLook} onChange={(e) => set('personalLook', e.target.checked)}>
@@ -119,7 +119,7 @@ function MenuForm({ saved }: { saved: NavSettingsDto }) {
         </Flex>
       </Card>
       <Card size="small" title="Modules and their names">
-        <Flex vertical gap={token.marginSM}>
+        <Flex vertical gap={tk.space[3]}>
           <ChoiceCards label="How pages are grouped into modules" value={v.moduleSet} onChange={(x) => set('moduleSet', x)} choices={SETS} />
           <Typography.Paragraph type="secondary" style={{ margin: 0 }}>
             Give a module the name your people use, up to {NAV_NAME_MAX} characters. Leave it empty to keep ours. Each person sees only the modules and pages their role opens.
@@ -128,7 +128,7 @@ function MenuForm({ saved }: { saved: NavSettingsDto }) {
         </Flex>
       </Card>
       {long && <Alert type="error" showIcon title={`Shorten the names in red to ${NAV_NAME_MAX} characters or fewer.`} />}
-      <Flex gap={token.marginSM} wrap>
+      <Flex gap={tk.space[3]} wrap>
         <Button type="primary" onClick={submit} disabled={!changed || long} loading={save.isPending}>
           Save menu
         </Button>

@@ -2,12 +2,12 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { theme } from 'antd';
+import {  } from 'antd';
+import { tk } from '@/ds';
 import { MANAGEMENT_REPORT_KEYS, MANAGEMENT_REPORTS } from '@erp/shared';
 
 /** The management reports, each a link with what it shows. */
 export function ReportsList() {
-  const { token } = theme.useToken();
   return (
     <ul
       style={{
@@ -16,18 +16,18 @@ export function ReportsList() {
         padding: 0,
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-        columnGap: token.marginLG,
+        columnGap: tk.space[6],
       }}
     >
       {MANAGEMENT_REPORT_KEYS.map((k) => (
-        <li key={k} style={{ padding: `${token.paddingXS}px 0`, minHeight: 44 }}>
-          <Link href={`/management/reports/${k}`} style={{ fontWeight: token.fontWeightStrong }}>
+        <li key={k} style={{ padding: `${tk.space[2]} 0`, minHeight: 44 }}>
+          <Link href={`/management/reports/${k}`} style={{ fontWeight: tk.type.title.fontWeight }}>
             {MANAGEMENT_REPORTS[k].title}
           </Link>
           <div
             style={{
-              color: token.colorTextSecondary,
-              fontSize: token.fontSizeSM,
+              color: tk.color.text.muted,
+              fontSize: tk.type.caption.fontSize,
             }}
           >
             {MANAGEMENT_REPORTS[k].description}

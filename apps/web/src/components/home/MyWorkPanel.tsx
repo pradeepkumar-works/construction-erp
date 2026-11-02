@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Card, Col, Flex, Grid, Row, Skeleton, Typography, theme } from 'antd';
+import { Card, Col, Flex, Grid, Row, Skeleton, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import {
   AuditOutlined,
@@ -32,6 +32,7 @@ import type { MyWorkCard, MyWorkDto } from '@erp/shared';
 import { rankWaiting } from '@erp/shared';
 import { formatINRCompact, toNumber } from '@/lib/format';
 import { tk } from '@/ds';
+import { useResolved } from '@/ds/react';
 import { QUEUE_TYPE_LABELS } from '@/components/approvals/queue';
 import { LinkButton } from '@/components/common/LinkButton';
 import type { MyWorkKey } from './layout';
@@ -125,10 +126,10 @@ export function myWorkOrder(data: MyWorkDto, order: MyWorkKey[], count: (k: MyWo
  * one "Nothing else waiting" line; when everything is clear one line says so.
  */
 export function MyWorkPanel({ data, loading, order }: { data: MyWorkDto | undefined; loading: boolean; order: MyWorkKey[] }) {
-  const { token } = theme.useToken();
+  const { space } = useResolved();
   if (loading) {
     return (
-      <Card title="My work" style={{ marginBottom: token.margin }}>
+      <Card title="My work" style={{ marginBottom: tk.space[4] }}>
         <Skeleton active paragraph={{ rows: 3 }} />
       </Card>
     );
@@ -141,15 +142,15 @@ export function MyWorkPanel({ data, loading, order }: { data: MyWorkDto | undefi
   if (!present.length) return null;
 
   return (
-    <Card title="My work" style={{ marginBottom: token.margin }} extra={busy.length === 0 ? <AppTag meaning="done">All caught up</AppTag> : undefined}>
+    <Card title="My work" style={{ marginBottom: tk.space[4] }} extra={busy.length === 0 ? <AppTag meaning="done">All caught up</AppTag> : undefined}>
       {busy.length === 0 ? (
-        <Flex align="center" gap={token.marginXS}>
-          <CheckCircleOutlined style={{ color: token.colorSuccess }} aria-hidden />
+        <Flex align="center" gap={tk.space[2]}>
+          <CheckCircleOutlined style={{ color: tk.color.tone.success.solid }} aria-hidden />
           <Typography.Text type="secondary">Nothing waits for you right now.</Typography.Text>
         </Flex>
       ) : (
         <>
-          <Row gutter={[token.margin, token.margin]}>
+          <Row gutter={[space[4], space[4]]}>
             {busy.map((k) => (
               <Col key={k} xs={24} md={12} xl={8}>
                 {k === 'approvals' ? <ApprovalsCard data={data} /> : <WorkCard k={k} card={data[k] as MyWorkCard} />}
@@ -157,8 +158,8 @@ export function MyWorkPanel({ data, loading, order }: { data: MyWorkDto | undefi
             ))}
           </Row>
           {clear.length > 0 && (
-            <Flex align="center" gap={token.marginXS} style={{ marginTop: token.margin }}>
-              <CheckCircleOutlined style={{ color: token.colorSuccess }} aria-hidden />
+            <Flex align="center" gap={tk.space[2]} style={{ marginTop: tk.space[4] }}>
+              <CheckCircleOutlined style={{ color: tk.color.tone.success.solid }} aria-hidden />
               <Typography.Text type="secondary">Nothing else waiting: {clear.map((k) => CLEAR[k]).join(', ')}.</Typography.Text>
             </Flex>
           )}
@@ -173,32 +174,31 @@ export function MyWorkPanel({ data, loading, order }: { data: MyWorkDto | undefi
  * without money leads with its count. A card past its own mark says Overdue in words, never by colour alone.
  */
 function Frame({ title, icon, href, count, unit, amount, daysLate, children }: { title: string; icon: React.ReactNode; href: string | null; count: number; unit: [string, string]; amount: string | null; daysLate: number; children: React.ReactNode }) {
-  const { token } = theme.useToken();
   const money = !!amount && count > 0;
   const late = count > 0 && daysLate > 0;
   return (
     <section
       aria-label={title}
       // A part of the My work card, so a hairline above it rather than a box around it (no cards inside cards).
-      style={{ height: '100%', paddingTop: token.paddingSM, borderTop: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}` }}
+      style={{ height: '100%', paddingTop: tk.space[3], borderTop: tk.line('hairline') }}
     >
-      <Flex align="center" gap={token.marginSM} style={{ marginBottom: token.marginXS }}>
+      <Flex align="center" gap={tk.space[3]} style={{ marginBottom: tk.space[2] }}>
         {/* A plain grey glyph rather than a tinted square: the figure and the words say what matters. */}
-        <span aria-hidden style={{ display: 'inline-flex', color: count === 0 ? token.colorSuccessText : token.colorTextTertiary, fontSize: token.fontSizeLG }}>
+        <span aria-hidden style={{ display: 'inline-flex', color: count === 0 ? tk.color.tone.success.fg : tk.color.text.faint, fontSize: tk.type.lead.fontSize }}>
           {count === 0 ? <CheckCircleOutlined /> : icon}
         </span>
         <div style={{ flex: 1, minWidth: 0 }}>
           {href ? (
-            <Link href={href} style={{ color: token.colorText, fontWeight: token.fontWeightStrong }}>
+            <Link href={href} style={{ color: tk.color.text.base, fontWeight: tk.type.title.fontWeight }}>
               {title}
             </Link>
           ) : (
             <Typography.Text strong>{title}</Typography.Text>
           )}
           {(money || late) && (
-            <Flex align="center" wrap gap={token.marginXS}>
+            <Flex align="center" wrap gap={tk.space[2]}>
               {money && (
-                <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+                <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
                   <span translate="no">{count.toLocaleString('en-IN')}</span> {count === 1 ? unit[0] : unit[1]}
                 </Typography.Text>
               )}
@@ -216,7 +216,6 @@ function Frame({ title, icon, href, count, unit, amount, daysLate, children }: {
 }
 
 function ApprovalsCard({ data }: { data: MyWorkDto }) {
-  const { token } = theme.useToken();
   const approvals = data.approvals ?? [];
   const waitingDays = data.approvalsWaitingDays ?? null;
   const total = approvals.reduce((n, a) => n + a.count, 0);
@@ -225,9 +224,9 @@ function ApprovalsCard({ data }: { data: MyWorkDto }) {
       {total === 0 ? (
         <Typography.Text type="secondary">Nothing to approve.</Typography.Text>
       ) : (
-        <Flex wrap gap={token.marginXXS}>
+        <Flex wrap gap={tk.space[1]}>
           {waitingDays !== null && (
-            <Typography.Text type="secondary" style={{ display: 'block', width: '100%', fontSize: token.fontSizeSM }}>
+            <Typography.Text type="secondary" style={{ display: 'block', width: '100%', fontSize: tk.type.caption.fontSize }}>
               {waitingDays === 0 ? 'All sent today' : `Oldest waiting ${waitingDays} day${waitingDays === 1 ? '' : 's'}`}
             </Typography.Text>
           )}
@@ -245,7 +244,6 @@ function ApprovalsCard({ data }: { data: MyWorkDto }) {
 }
 
 function WorkCard({ k, card }: { k: Exclude<MyWorkKey, 'approvals'>; card: MyWorkCard }) {
-  const { token } = theme.useToken();
   const meta = CARDS[k];
   // A card may point somewhere of the user's own (the store keeper's deliveries open Stock, not Purchase orders).
   const href = card.href ?? meta.href;
@@ -258,25 +256,25 @@ function WorkCard({ k, card }: { k: Exclude<MyWorkKey, 'approvals'>; card: MyWor
       ) : (
         <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
           {items.map((i) => (
-            <li key={`${i.href}-${i.label}`} style={{ padding: `${token.paddingXXS}px 0`, borderTop: `${token.lineWidth}px ${token.lineType} ${token.colorSplit}` }}>
-              <Flex justify="space-between" gap={token.marginXS} align="baseline">
+            <li key={`${i.href}-${i.label}`} style={{ padding: `${tk.space[1]} 0`, borderTop: tk.line('hairline') }}>
+              <Flex justify="space-between" gap={tk.space[2]} align="baseline">
                 <Link href={i.href} className="text-link" style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={i.label}>
                   {i.label}
                 </Link>
                 {i.amount ? (
-                  <Typography.Text className="mono" style={{ whiteSpace: 'nowrap', fontSize: token.fontSizeSM }}>
+                  <Typography.Text className="mono" style={{ whiteSpace: 'nowrap', fontSize: tk.type.caption.fontSize }}>
                     {formatINRCompact(i.amount)}
                   </Typography.Text>
                 ) : null}
               </Flex>
-              <Typography.Text type="secondary" ellipsis style={{ fontSize: token.fontSizeSM, display: 'block' }}>
+              <Typography.Text type="secondary" ellipsis style={{ fontSize: tk.type.caption.fontSize, display: 'block' }}>
                 {[i.note, i.projectName].filter(Boolean).join(' · ')}
               </Typography.Text>
             </li>
           ))}
           {card.count > items.length && href && (
-            <li style={{ paddingTop: token.paddingXXS }}>
-              <Link href={href} className="text-link" style={{ fontSize: token.fontSizeSM }}>
+            <li style={{ paddingTop: tk.space[1] }}>
+              <Link href={href} className="text-link" style={{ fontSize: tk.type.caption.fontSize }}>
                 {card.count - items.length} more
               </Link>
             </li>

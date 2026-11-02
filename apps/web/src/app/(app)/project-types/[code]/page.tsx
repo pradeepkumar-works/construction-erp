@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { App, Button, Card, Descriptions, Popconfirm, Result, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import {
   CONTRACT_MODEL_LABELS,
   PROJECT_TYPE_LABELS,
@@ -44,7 +45,7 @@ function Breakdown({ type, kinds }: { type: ProjectTypeDto; kinds: ComponentKind
   const kindOf = (code: string) => kinds.find((k) => k.code === code);
   if (!rows.length)
     return (
-      <Typography.Paragraph type="secondary" style={{ marginTop: 12 }}>
+      <Typography.Paragraph type="secondary" style={{ marginTop: tk.space[3] }}>
         No starting components. A new project of this type starts with its activities only; components are added on its Components tab.
       </Typography.Paragraph>
     );
@@ -184,7 +185,7 @@ export default function Page() {
                   <Descriptions
                     size="small"
                     column={{ xs: 1, sm: 2, lg: 3 }}
-                    style={{ margin: '12px 0 16px' }}
+                    style={{ margin: `${tk.space[3]} 0 ${tk.space[4]}` }}
                     items={[
                       { key: 'base', label: 'Based on', children: PROJECT_TYPE_LABELS[type.baseType] },
                       { key: 'code', label: 'Code', children: <span translate="no">{type.code}</span> },

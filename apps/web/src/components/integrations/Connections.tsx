@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Alert, App, Button, Descriptions, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Table, Typography } from 'antd';
+import { tk } from '@/ds';
 import type { TableProps } from 'antd';
 import { PlusOutlined } from '@/components/common/icons';
 import { AppTag } from '@/components/common/AppTag';
@@ -387,14 +388,14 @@ function SetUp({ c, onClose, onAddress }: { c: IntegrationConnectionDto | null; 
                 <span translate="no" style={{ wordBreak: 'break-all' }}>
                   {str(c.config.url) ?? NO_VALUE}
                 </span>
-                <Typography.Paragraph type="secondary" style={{ margin: '4px 0 0' }}>
+                <Typography.Paragraph type="secondary" style={{ margin: `${tk.space[1]} 0 0` }}>
                   Nirmaan reads it every hour. Match each machine it reports on under Devices.
                 </Typography.Paragraph>
               </Descriptions.Item>
             ) : (
               <Descriptions.Item label="Web address">
                 <span translate="no">{c.hookPathHint ? `${API_URL}${c.hookPathHint}` : NO_VALUE}</span>
-                <Typography.Paragraph type="secondary" style={{ margin: '4px 0 0' }}>
+                <Typography.Paragraph type="secondary" style={{ margin: `${tk.space[1]} 0 0` }}>
                   Only its last four characters are kept here. Lost it? Make a new one.
                 </Typography.Paragraph>
               </Descriptions.Item>
@@ -470,8 +471,8 @@ export function Connections() {
   ];
 
   return (
-    <div style={{ padding: 16 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
+    <div style={{ padding: tk.space[4] }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: tk.space[3], flexWrap: 'wrap', marginBottom: tk.space[3] }}>
         <Typography.Paragraph type="secondary" style={{ margin: 0, maxWidth: 680 }}>
           A service in the cloud (a GPS tracker’s, a sensor’s) posts to its connection’s own web address, and a machine maker’s feed is read by Nirmaan every hour. A device on a site’s network is read by a Connector on a computer there, which only calls out.
         </Typography.Paragraph>

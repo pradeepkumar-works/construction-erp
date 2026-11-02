@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { Alert, Button, Form, Modal, Select, Space, Table, Typography, Upload } from 'antd';
+import { tk } from '@/ds';
 import { StageBar } from '@/components/record/StageBar';
 import type { UploadProps } from 'antd';
 import { DownloadOutlined, InboxOutlined } from '@/components/common/icons';
@@ -170,8 +171,8 @@ export function ExcelImportModal({
         </Space>
       }
     >
-      <StageBar current={step} label="Import steps" items={[{ title: 'Choose the file' }, { title: 'Match the columns' }, { title: 'Check and import' }]} style={{ marginBottom: 16 }} />
-      {parseError && <Alert type="error" showIcon title={parseError} style={{ marginBottom: 12 }} />}
+      <StageBar current={step} label="Import steps" items={[{ title: 'Choose the file' }, { title: 'Match the columns' }, { title: 'Check and import' }]} style={{ marginBottom: tk.space[4] }} />
+      {parseError && <Alert type="error" showIcon title={parseError} style={{ marginBottom: tk.space[3] }} />}
       {raw.length === 0 ? (
         <Upload.Dragger accept=".xlsx,.xls,.csv" beforeUpload={beforeUpload} showUploadList={false} maxCount={1}>
           <p className="ant-upload-drag-icon">
@@ -187,9 +188,9 @@ export function ExcelImportModal({
             {`: ${raw.length} row${raw.length === 1 ? '' : 's'}. Match each field to a column of the sheet.`}
           </Typography.Paragraph>
           <Form layout="vertical" component="div">
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0 16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: `0 ${tk.space[4]}` }}>
               {fields.map((f) => (
-                <Form.Item key={f.key} label={f.label} required={f.required} style={{ marginBottom: 12 }} validateStatus={f.required && !mapping[f.key] ? 'error' : undefined}>
+                <Form.Item key={f.key} label={f.label} required={f.required} style={{ marginBottom: tk.space[3] }} validateStatus={f.required && !mapping[f.key] ? 'error' : undefined}>
                   <Select
                     allowClear
                     aria-label={`Column for ${f.label}`}
@@ -203,7 +204,7 @@ export function ExcelImportModal({
             </div>
           </Form>
           {extra}
-          {missingRequired.length > 0 && <Alert type="warning" showIcon title={`Choose the columns for ${missingRequired.map((f) => f.label).join(', ')}`} style={{ marginBottom: 12 }} />}
+          {missingRequired.length > 0 && <Alert type="warning" showIcon title={`Choose the columns for ${missingRequired.map((f) => f.label).join(', ')}`} style={{ marginBottom: tk.space[3] }} />}
           <Table<Row>
             size="small"
             rowKey="_key"
@@ -217,7 +218,7 @@ export function ExcelImportModal({
             ]}
           />
           {rows.length !== good.length && (
-            <Typography.Paragraph type="warning" style={{ marginTop: 8 }}>
+            <Typography.Paragraph type="warning" style={{ marginTop: tk.space[2] }}>
               {`${plural(rows.length - good.length)} with a problem will be left out. Fix them in the sheet to bring them in.`}
             </Typography.Paragraph>
           )}

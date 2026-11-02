@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, App, Checkbox, Form, Input, InputNumber, Radio, Segmented, Select, Switch, Typography } from 'antd';
+import { tk } from '@/ds';
 import {
   DPR_BUILT_INS,
   DPR_FIELD_KINDS,
@@ -215,7 +216,7 @@ export function DprFormEditor({
             <Form.Item
               name="minPhotos"
               label="Site photos a report needs"
-              style={{ marginTop: 16 }}
+              style={{ marginTop: tk.space[4] }}
               extra={next.fields.find((f) => f.key === 'photos')?.show ? 'A report cannot be sent with fewer.' : 'Photos are hidden, so none are asked for.'}
             >
               <InputNumber min={0} max={MAX_PHOTOS_REQUIRED} precision={0} disabled={!next.fields.find((f) => f.key === 'photos')?.show} style={{ width: '100%' }} />
@@ -304,7 +305,7 @@ export function DprFormEditor({
                   const kind = rows[f.name]?.kind;
                   if (kind === 'NUMBER')
                     return (
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 4 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: tk.space[1] }}>
                         <Form.Item name={[f.name, 'unit']} noStyle>
                           <Input aria-label={`Unit of field ${f.name + 1}`} maxLength={12} placeholder="Unit" />
                         </Form.Item>
@@ -340,7 +341,7 @@ export function DprFormEditor({
         </FormSection>
 
         {problems.length ? (
-          <Alert type="warning" showIcon style={{ marginBottom: 16 }} title="Fix these to save" description={<ul style={{ margin: 0, paddingInlineStart: 18 }}>{problems.map((p) => <li key={p}>{p}</li>)}</ul>} />
+          <Alert type="warning" showIcon style={{ marginBottom: tk.space[4] }} title="Fix these to save" description={<ul style={{ margin: 0, paddingInlineStart: tk.space[5] }}>{problems.map((p) => <li key={p}>{p}</li>)}</ul>} />
         ) : null}
 
         <FormSection title="Preview" extra={<Segmented size="small" aria-label="Preview as" value={mode} onChange={(m) => setMode(m as PreviewMode)} options={[{ value: 'web', label: 'Web' }, { value: 'phone', label: 'Phone' }]} />}>
