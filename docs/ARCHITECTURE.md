@@ -1047,6 +1047,16 @@ or set aside (a fresher's experience letter). Recording the offer and `GET /staf
 letter held for papers says which ones. An offer can be taken back while only the joining follows it. The HR dashboard
 lists active staff with papers outstanding (`documentsPending`). Keep `src/scripts/hr-documents-test.ts` passing.
 
+**Exit clearance (no dues).** Once someone's exit is recorded (an exit event or a last working day), each item of the
+company's `exitClearance` master (Masters › Exit clearance items: site records, tools and PPE, vehicle and fuel card,
+imprest, laptop and phone, drawings and passwords by default) is signed off as cleared, not applicable (with why), or dues
+(with the amount and what for), by `clearanceLineProblem`. HR, admins, accounts, stores and project managers sign items off
+(`canClearExit`, `PUT /staff/employees/:id/clearance/:code`; `PENDING` takes one back); each is one `ExitClearanceLine`,
+moved only through `ExitClearanceService`, and frozen once the full and final is approved. The settlement recovers
+`clearanceDues` as `clearanceRecovery`, and is approved only when `clearanceProblem` is null and the dues still match what
+it was worked out with. The person's Service and letters tab shows the list and prints the no dues certificate on the
+letterhead once nothing is left. Keep `src/scripts/exit-clearance-test.ts` passing.
+
 `GET /staff/hr-dashboard` (staff admins and payroll) gives head count by site, department and employment type, who joined
 and left this month, probation ending in 30 days or overdue, birthdays and work anniversaries to the end of next month,
 active staff with no PAN, UAN or bank account, and active staff with joining documents outstanding; the People home shows it under the module's figures.

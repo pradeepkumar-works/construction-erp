@@ -13,7 +13,7 @@ import * as P from './permissions';
  * new one and switch the old one off, as with units.
  */
 
-export const MASTER_LISTS = ['trade', 'designation', 'department', 'itemCategory', 'equipmentCategory', 'letterCategory', 'ncrCategory', 'ncrRootCause', 'instrumentKind', 'vertical', 'workTrade'] as const;
+export const MASTER_LISTS = ['trade', 'designation', 'department', 'itemCategory', 'equipmentCategory', 'letterCategory', 'ncrCategory', 'ncrRootCause', 'instrumentKind', 'vertical', 'workTrade', 'exitClearance'] as const;
 export type MasterList = (typeof MASTER_LISTS)[number];
 
 export interface MasterStandardEntry {
@@ -311,6 +311,24 @@ export const MASTER_LIST_DEFS: Record<MasterList, MasterListDef> = {
       ['Drainage', 'नाली'],
       ['Road marking', 'सड़क मार्किंग'],
       ['Landscaping', 'लैंडस्केपिंग'],
+    ),
+  },
+  exitClearance: {
+    key: 'exitClearance',
+    label: 'Exit clearance items',
+    singular: 'clearance item',
+    description: 'What someone who leaves hands back or settles before their full and final: the no-dues checklist.',
+    slug: 'exit-clearance',
+    node: 'people.exitClearance',
+    usedOn: 'exit clearances',
+    manage: (role) => P.canManageStaff(role),
+    standard: entries(
+      ['Site work and records handed over', 'साइट का काम और रिकॉर्ड सौंपे'],
+      ['Tools, PPE and store items returned', 'औज़ार, PPE और स्टोर का सामान लौटाया'],
+      ['Vehicle, fuel card and machine keys returned', 'गाड़ी, फ़्यूल कार्ड और मशीन की चाबियाँ लौटाईं'],
+      ['Imprest and advances settled', 'इम्प्रेस्ट और एडवांस का हिसाब हुआ'],
+      ['Laptop, phone, SIM and ID card returned', 'लैपटॉप, फ़ोन, SIM और ID कार्ड लौटाए'],
+      ['Drawings, files and passwords handed over', 'ड्रॉइंग, फ़ाइलें और पासवर्ड सौंपे'],
     ),
   },
 };

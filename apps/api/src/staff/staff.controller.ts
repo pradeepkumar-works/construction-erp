@@ -4,6 +4,7 @@ import { CurrentUser, RequestUser } from '../common/current-user';
 import { StaffService } from './staff.service';
 import { HrService } from './hr.service';
 import { EmployeeDocumentsService } from './employee-documents.service';
+import { ExitClearanceService } from './exit-clearance.service';
 import { todayIn } from '../notifications/time';
 import {
   ApplyLeaveDto,
@@ -25,6 +26,7 @@ import {
   RegisterQuery,
   RejectLeaveDto,
   SaveLeaveOpeningDto,
+  ClearExitDto,
   SaveRegisterDto,
   UpdateEmployeeDto,
   UsersQuery,
@@ -34,7 +36,12 @@ import {
 @ApiBearerAuth()
 @Controller('staff')
 export class StaffController {
-  constructor(private staff: StaffService, private hr: HrService, private docs: EmployeeDocumentsService) {}
+  constructor(
+    private staff: StaffService,
+    private hr: HrService,
+    private docs: EmployeeDocumentsService,
+    private clearance: ExitClearanceService,
+  ) {}
 
   @ApiOperation({ summary: 'Counts for the Staff page: leave waiting on the caller, employees, on leave today' })
   @Get('summary')
@@ -172,6 +179,18 @@ export class StaffController {
   @Put('employees/:id/leave-opening')
   saveLeaveOpening(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: SaveLeaveOpeningDto) {
     return this.staff.saveLeaveOpening(user, id, dto);
+  }
+
+  @ApiOperation({ summary: "Exit clearance (no dues): each item of the company's list, signed off or still to clear, and the dues the settlement recovers" })
+  @Get('employees/:id/clearance')
+  exitClearance(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    return this.clearance.get(user, id);
+  }
+
+  @ApiOperation({ summary: 'Sign an exit clearance item off as cleared, not applicable or dues to recover, or take it back (HR, accounts, stores, the site manager)' })
+  @Put('employees/:id/clearance/:code')
+  clearExit(@CurrentUser() user: RequestUser, @Param('id') id: string, @Param('code') code: string, @Body() dto: ClearExitDto) {
+    return this.clearance.clear(user, id, code, dto);
   }
 
   /* attendance */

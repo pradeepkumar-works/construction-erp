@@ -55,13 +55,13 @@ function PrepareModal({ who, onClose }: { who: { employeeId: string; name: strin
         initialValues={from ? { otherEarnings: Number(from.otherEarnings), otherDeductions: Number(from.otherDeductions), note: from.note ?? undefined } : undefined}
       >
         <Typography.Paragraph type="secondary">
-          The last month&apos;s salary, earned leave not taken, gratuity after five years (four years and nine months is enough), notice not served and loans still owed are worked out from their records.
+          The last month&apos;s salary, earned leave not taken, gratuity after five years (four years and nine months is enough), notice not served, loans still owed and dues found at exit clearance are worked out from their records.
         </Typography.Paragraph>
         <FormGrid cols={2}>
           <Form.Item name="otherEarnings" label="Anything else owed to them" extra="Bonus, reimbursements">
             <MoneyInput />
           </Form.Item>
-          <Form.Item name="otherDeductions" label="Anything else they owe" extra="Equipment not returned">
+          <Form.Item name="otherDeductions" label="Anything else they owe" extra="Dues not on the exit clearance">
             <MoneyInput />
           </Form.Item>
         </FormGrid>
@@ -182,10 +182,14 @@ function SettlementModal({ s, onClose, onRedo, onPay }: { s: FinalSettlementDto 
           <Descriptions.Item label="Loans and advances">
             <Money value={s.loanRecovery} />
           </Descriptions.Item>
+          <Descriptions.Item label="Dues found at exit clearance">
+            <Money value={s.clearanceRecovery} />
+          </Descriptions.Item>
           <Descriptions.Item label="Other deductions">
             <Money value={s.otherDeductions} />
           </Descriptions.Item>
         </Descriptions>
+        {s.clearanceProblem && <Alert type="warning" showIcon title="Waiting for the exit clearance" description={s.clearanceProblem} />}
         <Alert
           type={net >= 0 ? 'info' : 'warning'}
           showIcon
@@ -226,7 +230,17 @@ export function Settlements() {
     { title: 'Settlement', dataIndex: 'settlementNo', width: 140, render: (v: string) => <span translate="no">{v}</span> },
     { title: 'Employee', key: 'e', width: 220, render: (_, s) => <span translate="no">{`${s.employeeName} (${s.employeeCode})`}</span> },
     { title: 'Last day', dataIndex: 'lastWorkingDay', width: 120, render: (v: string) => formatDate(v) },
-    { title: 'Status', dataIndex: 'status', width: 150, render: (v: FinalSettlementDto['status']) => <SettlementStatusTag status={v} /> },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      width: 170,
+      render: (v: FinalSettlementDto['status'], r) => (
+        <span>
+          <SettlementStatusTag status={v} />
+          {r.clearanceProblem && <Typography.Text type="secondary" style={{ display: 'block' }}>Clearance open</Typography.Text>}
+        </span>
+      ),
+    },
     { title: 'Gratuity', dataIndex: 'gratuity', width: 120, align: 'right', render: (v: string) => (Number(v) ? <Money value={v} /> : NO_VALUE) },
     {
       title: 'Net',

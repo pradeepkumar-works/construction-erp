@@ -74,6 +74,7 @@ export * from './modules';
 export * from './hr';
 export * from './hr-documents';
 export * from './hr-reports';
+export * from './exit-clearance';
 export * from './payroll';
 export * from './biometric';
 export * from './books';

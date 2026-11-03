@@ -253,6 +253,8 @@ export const NAV: Record<string, string> = {
   'Confirmations, transfers, promotions, increments and exits, with their letters.': 'पुष्टि, तबादले, पदोन्नति, वेतन वृद्धि और नौकरी छोड़ना, उनके पत्रों के साथ।',
   Holidays: 'छुट्टियाँ',
   'Holidays by site.': 'साइट के अनुसार छुट्टियाँ।',
+  'Exit clearance items': 'निकास क्लीयरेंस की मदें',
+  'The no-dues checklist for someone who leaves.': 'नौकरी छोड़ने वाले के लिए बकाया-मुक्ति की सूची।',
   'Biometric devices': 'बायोमेट्रिक मशीनें',
   'Fingerprint and face devices, who is enrolled on them, and their punches marking attendance.': 'फ़िंगरप्रिंट और चेहरा पहचानने वाली मशीनें, उन पर कौन दर्ज है, और उनके पंच जिनसे हाज़िरी लगती है।',
   'Salary runs': 'वेतन रन',

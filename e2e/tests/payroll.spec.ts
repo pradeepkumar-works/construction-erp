@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { api, apiToken, localToday, signIn } from './helpers';
+import { api, apiToken, formPanel, localToday, signIn } from './helpers';
 
 type Payroll = { month: string; rows: { employeeCode: string; fullName: string; paidDays: number; calendarDays: number; lopDays: number }[] };
 
@@ -113,7 +113,7 @@ test('HR prepares the salary run, management approves it and staff see their pay
   await api(hr, `/payroll/runs/${run.id}`, { method: 'DELETE' });
 });
 
-type Settlement = { id: string; settlementNo: string; employeeCode: string; status: string; noticeShortDays: number; loanRecovery: string; net: string };
+type Settlement = { id: string; settlementNo: string; employeeCode: string; status: string; noticeShortDays: number; loanRecovery: string; clearanceRecovery: string; clearanceProblem: string | null; net: string; can: { approve: boolean } };
 
 /**
  * Full and final: once someone's resignation is recorded they are due a settlement; HR works it out on the page
@@ -153,6 +153,70 @@ test('HR works out a full and final settlement for someone who resigned', async 
   await page.goto('/payroll?tab=settings');
   await expect(page.getByText('Odisha')).toBeVisible();
   await expect(page.getByText(/HDFC Bank 50200012345678/)).toBeVisible();
+});
+
+test('The full and final waits for the exit clearance and recovers the dues found there', async ({ page }) => {
+  const hr = await apiToken('hr@demo.com');
+  const md = await apiToken('md@demo.com');
+  const se = await apiToken('engineer@demo.com');
+  type Employee = { id: string; employeeCode: string; fullName: string };
+  type Clearance = { lines: { code: string; name: string; state: string }[]; dues: string; problem: string | null; canClear: boolean };
+  const ramesh = (await api<{ items: Employee[] }>(hr, '/staff/employees?pageSize=100')).items.find((e) => e.employeeCode === 'EMP-008')!;
+  const exit = await api<{ id: string }>(hr, `/staff/employees/${ramesh.id}/events`, { method: 'POST', body: { type: 'RESIGNED', effectiveDate: localToday(), note: 'Joining another firm' } });
+  let draft: Settlement | null = null;
+  let codes: string[] = [];
+  try {
+    const before = await api<Clearance>(hr, `/staff/employees/${ramesh.id}/clearance`);
+    codes = before.lines.map((l) => l.code);
+    expect(before.lines.length).toBeGreaterThanOrEqual(6);
+    expect(before.problem).toMatch(/^Clear the exit first/);
+    await expect(api(se, `/staff/employees/${ramesh.id}/clearance/${before.lines[0].code}`, { method: 'PUT', body: { state: 'CLEARED' } })).rejects.toThrow(/403/);
+
+    // The settlement is worked out, but management cannot approve it while items are open.
+    const d = await api<Settlement>(hr, '/payroll/settlements', { method: 'POST', body: { employeeId: ramesh.id } });
+    draft = d;
+    expect((await api<Settlement[]>(md, '/payroll/settlements')).find((x) => x.id === d.id)!.can.approve).toBe(false);
+    await expect(api(md, `/payroll/settlements/${d.id}/approve`, { method: 'POST' })).rejects.toThrow(/400/);
+
+    // HR records dues for the tools from the person's Service and letters tab.
+    const tools = before.lines.find((l) => /Tools/.test(l.name))!;
+    await signIn(page, 'hr@demo.com');
+    const drawer = page.locator('.ant-drawer').filter({ hasText: ramesh.fullName });
+    const openService = async () => {
+      await page.goto('/staff?tab=service');
+      await page.getByRole('row', { name: new RegExp(`${ramesh.fullName}.*Resigned`) }).first().click();
+      await drawer.getByRole('tab', { name: 'Service and letters' }).click();
+    };
+    await openService();
+    await expect(drawer.getByText(`0 of ${before.lines.length} signed off`)).toBeVisible();
+    await drawer.getByRole('button', { name: `Sign off ${tools.name}` }).click();
+    const form = formPanel(page, tools.name);
+    await form.getByRole('radio', { name: 'Dues to recover' }).check();
+    await form.getByLabel('Amount to recover').fill('2500');
+    await form.getByRole('button', { name: 'Save' }).click();
+    await expect(form.locator('.ant-form-item-explain-error').filter({ hasText: 'Say what the dues are for' })).toBeVisible();
+    await form.getByLabel('What the dues are for').fill('Two safety helmets and a drill not returned');
+    await form.getByRole('button', { name: 'Save' }).click();
+    await expect(page.getByText(`${tools.name}: dues to recover`)).toBeVisible();
+    await expect(drawer.getByText(/1 of \d+ signed off; dues of ₹\s?2,500/)).toBeVisible();
+
+    // The rest are cleared; the settlement worked out again takes the dues off and can be approved.
+    for (const l of before.lines.filter((x) => x.code !== tools.code)) await api(hr, `/staff/employees/${ramesh.id}/clearance/${l.code}`, { method: 'PUT', body: { state: 'CLEARED' } });
+    await openService();
+    await expect(drawer.getByText(/^\d+ of \d+ signed off; .*Nothing is left to clear\./)).toBeVisible();
+    await expect(drawer.getByRole('button', { name: 'No dues certificate' })).toBeVisible();
+    const again = await api<Settlement>(hr, '/payroll/settlements', { method: 'POST', body: { employeeId: ramesh.id } });
+    expect(Number(again.clearanceRecovery)).toBe(2500);
+    expect(Number(again.net)).toBeCloseTo(Number(d.net) - 2500, 2);
+    const forMd = (await api<Settlement[]>(md, '/payroll/settlements')).find((x) => x.id === d.id)!;
+    expect(forMd.clearanceProblem).toBeNull();
+    expect(forMd.can.approve).toBe(true);
+  } finally {
+    // Put things back: the draft goes, the items return to clear and the exit is taken back.
+    if (draft) await api(hr, `/payroll/settlements/${draft.id}`, { method: 'DELETE' });
+    for (const code of codes) await api(hr, `/staff/employees/${ramesh.id}/clearance/${code}`, { method: 'PUT', body: { state: 'PENDING' } });
+    await api(hr, `/staff/events/${exit.id}`, { method: 'DELETE' });
+  }
 });
 
 test("HR sets the company's leave days and an employee's opening leave, and the balances follow", async ({ page }) => {

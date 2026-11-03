@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-exit-clearance',
+    date: '2026-11-03',
+    title: 'Exit clearance before the full and final',
+    points: [
+      'When someone leaves, their Service and letters tab lists what they hand back: site records, tools and PPE, vehicle keys, imprest, laptop and phone. HR, accounts, stores or the site manager signs each one off.',
+      'Dues found there come off the full and final settlement, which is approved only once every item is signed off. Then print the no dues certificate.',
+      'Change the list in Admin › Masters, under Exit clearance items.',
+    ],
+  },
+  {
     id: '2026-11-hr-reports',
     date: '2026-11-03',
     title: 'HR and payroll reports',

@@ -399,6 +399,9 @@ and the pre-delivery checklist.
 - Joining documents (ARCHITECTURE "HR records"): the papers are `EMPLOYEE_DOCUMENT_KINDS` (`@erp/shared/hr-documents.ts`), each
   person's an `EmployeeDocument` row moved only through `EmployeeDocumentsService` (`documentCheckProblem`); the offer and
   appointment letters go out only when `documentLetterProblem` is null. Keep `src/scripts/hr-documents-test.ts` passing.
+  Exit clearance is the `exitClearance` master signed off through `ExitClearanceService` (`clearanceLineProblem`); the full
+  and final recovers `clearanceDues` and waits for `clearanceProblem` (`@erp/shared/exit-clearance.ts`). Keep
+  `src/scripts/exit-clearance-test.ts` passing.
 - Biometric (item 101, `apps/api/src/biometric`, ARCHITECTURE "Biometric attendance"): ADMS (`/iclock`, outside `/api`), the
   webhook and punch files all go through `biometric-rules.ts` (tested in `src/scripts/biometric-test.ts`, CI runs it) and
   `BiometricService.ingest`, and a punch reaches attendance only through `applyDay` (a worker never at a site other than the device's).

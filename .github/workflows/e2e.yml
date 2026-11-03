@@ -278,6 +278,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/hr-reports-test.js
+      - name: Exit clearance holds the full and final until every item is signed off and recovers the dues
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/exit-clearance-test.js
       - name: Management figures count supply items and lump sums as work done, find late plans and say why a project needs action
         if: matrix.suite == 'flows'
         working-directory: apps/api

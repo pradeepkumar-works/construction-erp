@@ -13,6 +13,7 @@ import { useEmployeeEvents, useRemoveEmployeeEvent } from '@/lib/queries';
 import { formatDate, formatINR, NO_VALUE } from '@/lib/format';
 import { EmployeeEventModal } from './EmployeeEventModal';
 import { printHrLetter } from './hrLetterPrint';
+import { ExitClearance } from './ExitClearance';
 
 /** What changed, in a few words: posting, designation, pay or the notice date. */
 export function eventChange(ev: EmployeeEventDto): string {
@@ -118,6 +119,7 @@ export function EmployeeService({ employee }: { employee: EmployeeDto }) {
           },
         ]}
       />
+      {(!!employee.leftOn || events.some((e) => isExitEvent(e.type))) && <ExitClearance employee={employee} />}
       {admin && <EmployeeEventModal open={recording} onClose={() => setRecording(false)} employee={employee} />}
     </>
   );

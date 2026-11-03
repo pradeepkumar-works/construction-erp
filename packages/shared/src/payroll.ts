@@ -262,10 +262,14 @@ export interface FinalSettlementDto {
   noticeShortDays: number;
   noticeRecovery: string;
   loanRecovery: string;
+  /** Dues found at exit clearance */
+  clearanceRecovery: string;
   otherEarnings: string;
   otherDeductions: string;
   net: string;
   note: string | null;
+  /** Why it cannot be approved until the exit clearance is done, or null */
+  clearanceProblem: string | null;
   preparedByName: string;
   approvedByName: string | null;
   approvedAt: string | null;

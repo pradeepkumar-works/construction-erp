@@ -268,7 +268,7 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
       sub('payroll', 'Payroll', 'payroll.runs', 'payroll.inputs', 'payroll.loans', 'payroll.settings', 'payroll.statutory'),
       sub('letters', 'Letters and history', 'people.letters'),
       sub('exits', 'Full and final', 'payroll.settlement'),
-      sub('masters', 'Masters', 'people.departments', 'people.designations'),
+      sub('masters', 'Masters', 'people.departments', 'people.designations', 'people.exitClearance'),
       sub('reports', 'Reports', 'reports.headcount', 'reports.staffAttendance', 'reports.leaveRegister', 'reports.pfEsi', 'reports.settlements', 'reports.staffCost'),
     ],
   },

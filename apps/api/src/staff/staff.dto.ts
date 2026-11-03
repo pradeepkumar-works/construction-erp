@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsEmail, IsIn, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, Matches, Max, MaxLength, Min, ValidateIf, ValidateNested } from 'class-validator';
-import { EMPLOYEE_EVENT_TYPES, EMPLOYMENT_TYPES, ESI_PATTERN, GENDERS, IFSC_PATTERN, PAN_PATTERN, RECORDABLE_EVENT_TYPES, UAN_PATTERN, type EmployeeEventType, type EmploymentType, type Gender, LEAVE_STATUSES, LEAVE_TYPES, LIST_SORT_FIELDS, STAFF_ATTENDANCE_STATUSES, type EmployeeSortField, type LeaveSortField, type LeaveStatus, type LeaveType, type StaffAttendanceStatus } from '@erp/shared';
+import { CLEARANCE_STATES, type ClearanceState, EMPLOYEE_EVENT_TYPES, EMPLOYMENT_TYPES, ESI_PATTERN, GENDERS, IFSC_PATTERN, PAN_PATTERN, RECORDABLE_EVENT_TYPES, UAN_PATTERN, type EmployeeEventType, type EmploymentType, type Gender, LEAVE_STATUSES, LEAVE_TYPES, LIST_SORT_FIELDS, STAFF_ATTENDANCE_STATUSES, type EmployeeSortField, type LeaveSortField, type LeaveStatus, type LeaveType, type StaffAttendanceStatus } from '@erp/shared';
 import { PageQuery, QueryBool } from '../common/paging';
 
 const trim = () => Transform(({ value }) => (typeof value === 'string' ? value.trim() : value));
@@ -152,6 +152,12 @@ export class ListLeaveQuery extends PageQuery {
 export class BalanceQuery {
   @ApiPropertyOptional({ description: "Defaults to the caller's own record" }) @IsOptional() @IsUUID() employeeId?: string;
   @ApiPropertyOptional({ example: 2026 }) @IsOptional() @Type(() => Number) @IsInt() @Min(2000) @Max(2100) year?: number;
+}
+
+export class ClearExitDto {
+  @ApiProperty({ enum: CLEARANCE_STATES, description: 'PENDING takes the item back to be cleared' }) @IsIn(CLEARANCE_STATES) state: ClearanceState;
+  @ApiPropertyOptional({ example: 4500, description: 'Rupees to recover, for DUES' }) @IsOptional() @ValidateIf((_, v) => v !== null) @Type(() => Number) @IsNumber() @Min(0) @Max(100000000) amount?: number | null;
+  @ApiPropertyOptional({ example: 'Safety shoes and helmet not returned' }) @IsOptional() @IsString() @MaxLength(500) note?: string | null;
 }
 
 export class LeaveOpeningLineDto {

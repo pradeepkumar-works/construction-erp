@@ -1,6 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { canApprovePayroll, canPayPayroll, canRunPayroll, type FinalSettlementDto } from '@erp/shared';
+import { canApprovePayroll, canPayPayroll, canRunPayroll, clearanceDues, clearanceProblem, type FinalSettlementDto } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { AuditService } from '../common/audit.service';
@@ -9,6 +9,7 @@ import { inr } from '../common/submission-titles';
 import { NotificationsService } from '../notifications/notifications.service';
 import { tellPayroll, type PayrollNotice } from './payroll-notices';
 import { StaffService } from '../staff/staff.service';
+import { ExitClearanceService } from '../staff/exit-clearance.service';
 import { computeSettlement, structureGross } from './payroll-rules';
 import { SalaryService, toRulesStructure } from './salary.service';
 import type { PayRunDto, PrepareSettlementDto } from './payroll.dto';
@@ -33,6 +34,7 @@ export class SettlementService {
     private salary: SalaryService,
     private staff: StaffService,
     private notifications: NotificationsService,
+    private clearance: ExitClearanceService,
   ) {}
 
   /** Tells whoever acts next on a settlement (`tellPayroll`), linking to Full and final. */
@@ -40,7 +42,7 @@ export class SettlementService {
     return tellPayroll(this.prisma, this.notifications, user, { ...n, entityType: 'FINAL_SETTLEMENT', entityId: s.id, href: '/payroll?tab=settlements' });
   }
 
-  private toDto(s: Row, user: RequestUser): FinalSettlementDto {
+  private toDto(s: Row, user: RequestUser, problem: string | null = null): FinalSettlementDto {
     return {
       id: s.id,
       settlementNo: s.settlementNo,
@@ -60,10 +62,12 @@ export class SettlementService {
       noticeShortDays: s.noticeShortDays,
       noticeRecovery: money(s.noticeRecovery),
       loanRecovery: money(s.loanRecovery),
+      clearanceRecovery: money(s.clearanceRecovery),
       otherEarnings: money(s.otherEarnings),
       otherDeductions: money(s.otherDeductions),
       net: money(s.net),
       note: s.note,
+      clearanceProblem: s.status === 'DRAFT' ? problem : null,
       preparedByName: s.preparedBy.fullName,
       approvedByName: s.approvedBy?.fullName ?? null,
       approvedAt: iso(s.approvedAt),
@@ -72,7 +76,7 @@ export class SettlementService {
       createdAt: iso(s.createdAt),
       can: {
         edit: s.status === 'DRAFT' && canRunPayroll(user.roleKey),
-        approve: s.status === 'DRAFT' && canApprovePayroll(user.roleKey),
+        approve: s.status === 'DRAFT' && canApprovePayroll(user.roleKey) && !problem,
         pay: s.status === 'APPROVED' && canPayPayroll(user.roleKey),
       },
     };
@@ -81,7 +85,14 @@ export class SettlementService {
   async list(user: RequestUser): Promise<FinalSettlementDto[]> {
     this.salary.assertView(user);
     const rows = await this.prisma.finalSettlement.findMany({ where: { organizationId: user.organizationId }, include, orderBy: { lastWorkingDay: 'desc' } });
-    return rows.map((s) => this.toDto(s, user));
+    const problems = await Promise.all(rows.map((s) => (s.status === 'DRAFT' ? this.clearanceOf(user, s.employeeId).then((c) => c.problem) : null)));
+    return rows.map((s, i) => this.toDto(s, user, problems[i]));
+  }
+
+  /** The exit clearance's dues and what still stops approval. */
+  private async clearanceOf(user: RequestUser, employeeId: string) {
+    const { facts } = await this.clearance.factsFor(user.organizationId, employeeId);
+    return { dues: clearanceDues(facts), problem: clearanceProblem(facts) };
   }
 
   /** People who have left with no settlement yet, for HR to prepare. */
@@ -114,6 +125,7 @@ export class SettlementService {
     const exit = await this.prisma.employeeEvent.findFirst({ where: { employeeId: e.id, type: { in: ['RESIGNED', 'TERMINATED', 'RETIRED'] } }, orderBy: { effectiveDate: 'desc' }, select: { noticeGivenOn: true } });
     const balances = await this.staff.balancesFor(e.id, e.projectId, y);
     const loans = await this.salary.openLoans([e.id], '9999-12');
+    const clearance = await this.clearanceOf(user, e.id);
     const r = computeSettlement({
       joinedOn: dateOnly(e.joinedOn),
       lastWorkingDay: lwd,
@@ -125,6 +137,7 @@ export class SettlementService {
       noticeDays: e.noticeDays,
       noticeGivenOn: dateOnly(exit?.noticeGivenOn),
       loanBalance: loans.reduce((t, l) => t + l.balance, 0),
+      clearanceDues: clearance.dues,
       otherEarnings: dto.otherEarnings,
       otherDeductions: dto.otherDeductions,
     });
@@ -139,7 +152,7 @@ export class SettlementService {
       body: `${row.settlementNo}: ${Number(r.net) >= 0 ? `net payable ${inr(r.net)}` : `they owe ${inr(Math.abs(Number(r.net)))}`}, last working day ${formatDay(lwd)}. Worked out by ${user.fullName}.`,
       cta: 'Review the settlement',
     });
-    return this.toDto(row, user);
+    return this.toDto(row, user, clearance.problem);
   }
 
   private async rowFor(user: RequestUser, id: string) {
@@ -152,6 +165,9 @@ export class SettlementService {
     const s = await this.rowFor(user, id);
     if (!canApprovePayroll(user.roleKey)) throw new ForbiddenException('Only management or an admin approves a settlement');
     if (s.status !== 'DRAFT') throw new BadRequestException('This settlement is already approved');
+    const clearance = await this.clearanceOf(user, s.employeeId);
+    if (clearance.problem) throw new BadRequestException(clearance.problem);
+    if (Math.abs(clearance.dues - Number(s.clearanceRecovery)) > 0.005) throw new BadRequestException('The exit clearance changed after the settlement was worked out. Ask HR to work it out again.');
     const row = await this.prisma.finalSettlement.update({ where: { id }, data: { status: 'APPROVED', approvedById: user.id, approvedAt: new Date() }, include });
     await this.audit.log(user, 'EMPLOYEE', s.employeeId, 'APPROVED', `Full and final settlement ${s.settlementNo}`);
     await this.tell(user, s, {

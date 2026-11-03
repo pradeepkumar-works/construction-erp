@@ -343,6 +343,8 @@ import type {
   HolidayDto,
   LeaveBalanceDto,
   LeaveOpeningDto,
+  ExitClearanceDto,
+  ClearanceState,
   LeaveRequestDto,
   LeaveStatus,
   LeaveType,
@@ -2469,6 +2471,25 @@ export function useSaveLeaveOpening(employeeId: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['staff', 'leave-opening', employeeId] });
       qc.invalidateQueries({ queryKey: ['staff', 'balances'] });
+    },
+  });
+}
+
+export const useExitClearance = (employeeId: string, enabled = true) =>
+  useQuery({
+    queryKey: ['staff', 'clearance', employeeId],
+    queryFn: async () => (await api.get<ExitClearanceDto>(`/staff/employees/${employeeId}/clearance`)).data,
+    enabled,
+  });
+
+export function useClearExit(employeeId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ code, ...body }: { code: string; state: ClearanceState; amount?: number | null; note?: string | null }) =>
+      (await api.put<ExitClearanceDto>(`/staff/employees/${employeeId}/clearance/${encodeURIComponent(code)}`, body)).data,
+    onSuccess: (d) => {
+      qc.setQueryData(['staff', 'clearance', employeeId], d);
+      qc.invalidateQueries({ queryKey: ['payroll', 'settlements'] });
     },
   });
 }

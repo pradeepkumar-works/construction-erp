@@ -128,6 +128,9 @@ test('full and final: unpaid days, leave encashed, gratuity after five years, no
   assert.equal(short.gratuity, 0);
   assert.equal(short.noticeShortDays, 0);
   assert.equal(short.net, 0);
+  const owes = computeSettlement({ joinedOn: '2022-01-01', lastWorkingDay: '2025-06-30', basicDa: 20000, gross: 30000, unpaidDays: 0, calendarDays: 30, leaveDays: 0, noticeDays: 30, noticeGivenOn: null, loanBalance: 0, clearanceDues: 4500 });
+  assert.equal(owes.clearanceRecovery, 4500, 'dues found at exit clearance are recovered');
+  assert.equal(owes.net, -4500);
 });
 
 test('an increment to ₹6 lakh grows basic, DA, HRA and special together and lands the year within a few rupees', () => {
