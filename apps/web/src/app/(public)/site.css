@@ -2,8 +2,8 @@
  * The public pages: the product page (/welcome, with its own welcome.css) and privacy. Set by the taste skill's rules
  * (.claude/skills/design-taste-frontend): type does the work, whole fields of the Nirmaan colours separate the sections, the
  * app's real screens arrive large, and nothing is boxed, ruled, shadowed or graded outside the product's own fragments.
- * Archivo for the display face, Public Sans for text. The pages follow the visitor's light or dark setting: every colour is
- * an --lp-* token over the brand palette (lib/brand.ts, as --brand-* variables), set again for the night.
+ * Inter is the one face. The pages follow the visitor's light or dark setting: every colour is an --lp-* token over the
+ * raw palette (src/ds/source/palette.ts, as --p-* variables), set again for the night.
  */
 
 .lp {

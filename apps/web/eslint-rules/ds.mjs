@@ -1,7 +1,7 @@
 // @ts-check
 // The design system's lint rule (docs/design/REDESIGN.md): a screen names colours and sizes through `tk` from `@/ds`,
-// never a value of its own. Files not yet moved are listed in src/ds/legacy-files.json and skip this rule; the list only
-// shrinks (scripts/tokens-check.ts).
+// never a value of its own. Every file under src is held to it, except the token sources themselves and the PDF writer,
+// which sizes in pdfmake's points (eslint.config.mjs). The old names it names stay refused, so they never come back.
 
 const HEX = /(^|[\s(,:'"`])#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})(?![0-9a-zA-Z_-])/;
 const COLOR_FN = /\b(?:rgba?|hsla?|oklch|oklab)\(/;

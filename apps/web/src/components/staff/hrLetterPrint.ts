@@ -28,6 +28,20 @@ function body(l: EmployeeLetterDto, experience: boolean): { title: string; paras
       ],
     };
   switch (ev.type) {
+    case 'OFFERED':
+      return {
+        title: EMPLOYEE_EVENT_LETTERS.OFFERED,
+        paras: [
+          p(`Dear ${name},`),
+          p(`Further to our discussions, we are pleased to offer you the position of ${esc(ev.toDesignation ?? e.designation)}${e.department ? ` in ${esc(e.department)}` : ''} with ${firm}${e.postedAt ? `, to be posted at ${esc(e.postedAt)}` : ''}.`),
+          ...(ctc(ev.toCtc) ? [p(`Your cost to company will be ${ctc(ev.toCtc)}. The break-up is set out in the salary structure given with your appointment letter.`)] : []),
+          ...(e.joinedOn ? [p(`We expect you to join on ${esc(formatDate(e.joinedOn))}. Your appointment letter will be handed over on joining.`)] : []),
+          ...(e.probationEndsOn ? [p(`You will be on probation until ${esc(formatDate(e.probationEndsOn))}.`)] : []),
+          ...(e.noticeDays ? [p(`Either side may end the employment by giving ${e.noticeDays} days' notice in writing.`)] : []),
+          note,
+          p('This offer is made on the documents you have given us, which we have verified. Please sign and return a copy of this letter to accept it.'),
+        ],
+      };
     case 'JOINED':
       return {
         title: EMPLOYEE_EVENT_LETTERS.JOINED,

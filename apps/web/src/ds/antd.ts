@@ -1,7 +1,7 @@
 'use client';
 
 import { theme, type ConfigProviderProps, type ThemeConfig } from 'antd';
-import { colorVar } from './css';
+import { colorVar, typeVar } from './css';
 import { lineHeightOf, resolve, type Resolved } from './engine';
 import { FACES, TYPE, TYPE_SCALE, lineHeightPx, type Density } from './source/scales';
 
@@ -215,7 +215,7 @@ export const componentConfig: Pick<ConfigProviderProps, 'table' | 'statistic' | 
     styles: { label: { fontWeight: TYPE.strong.weight } },
     validateMessages: { required: 'Enter the ${label}', types: { email: 'Enter an email address, e.g. name@company.com', number: '${label} must be a number' } },
   },
-  table: { styles: { title: tabularNums, section: tabularNums, footer: tabularNums, header: { cell: { whiteSpace: 'nowrap', fontSize: 'var(--ant-font-size-sm)', fontWeight: 500 } } } },
+  table: { styles: { title: tabularNums, section: tabularNums, footer: tabularNums, header: { cell: { whiteSpace: 'nowrap', fontSize: `var(${typeVar('label')})`, fontWeight: TYPE.label.weight } } } },
   statistic: { styles: { content: { ...tabularNums, ...figureStyle } } },
   card: { styles: { title: titleStyle } },
   modal: { styles: { title: titleStyle } },

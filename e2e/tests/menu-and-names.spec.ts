@@ -50,6 +50,20 @@ test('a site engineer sees only the modules their role opens, under the companyâ
   await expect(page.getByRole('heading', { level: 1, name: 'Not in your menu' })).toBeVisible();
 });
 
+test('with the department menu, HR and payroll is one module whose overview is the HR dashboard', async ({ page }) => {
+  await api(await apiToken('admin@demo.com'), '/nav-settings', { method: 'PUT', body: { ...DEFAULT, moduleSet: 'DEPARTMENTS' } });
+  await signIn(page, 'hr@demo.com');
+  await page.goto('/modules/hr-payroll');
+  await expect(page.getByRole('heading', { level: 1, name: 'HR and payroll overview' })).toBeVisible();
+  await expect(page.getByText('Joining documents to verify')).toBeVisible();
+  for (const name of ['Employee master', 'Leave management', 'Salary master', 'Payroll', 'Full and final'])
+    await expect(page.getByRole('heading', { level: 2, name, exact: true })).toBeVisible();
+  // People and Payroll are no longer two sections of the sidebar.
+  const sidebar = page.getByRole('navigation', { name: 'Main' });
+  await expect(sidebar.getByRole('button', { name: 'HR and payroll', exact: true })).toBeVisible();
+  await expect(sidebar.getByRole('button', { name: 'People', exact: true })).toHaveCount(0);
+});
+
 test('an admin colours the menu and its header, and a colour too bright for its words is refused', async ({ page }) => {
   await api(await apiToken('admin@demo.com'), '/nav-settings', { method: 'PUT', body: DEFAULT });
   await signIn(page, 'admin@demo.com');

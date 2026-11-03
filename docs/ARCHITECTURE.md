@@ -453,7 +453,9 @@ A company chooses its menu in Admin › Menu and names (`/menu-and-names`, `GET`
   `DEPARTMENTS`, the fifteen a contractor's departments run (`DEPARTMENT_MODULES`: project management, quality (QA/QC),
   design and drawings, correspondence, planning and estimation, purchase, store and inventory, contractors, machinery,
   plant, accounts, labour, HR and payroll, reports and MIS, administration), each a list of sub-modules naming tree nodes,
-  with a Masters sub-module naming its masters (below). A department module's screen is `DepartmentHome` at
+  with a Masters sub-module naming its masters (below). HR and payroll follows the client's HR brief: My HR, Employee master (each record
+  holds its joining documents and history), Attendance, Leave management, Salary master, Payroll, Letters and history,
+  Full and final and Masters, and its screen carries the HR dashboard (`HrDashboard`), as People's does. A department module's screen is `DepartmentHome` at
   `/modules/<key>` (keys are kept forever, names hang on them). Item 135 took QA/QC, Design and drawings and
   Correspondence out of Project management, which keeps Safety; in the tree, Safety (`safety`) and Correspondence
   (`correspondence`) are modules of their own and the moved nodes keep their ids (`quality.incidents`, `documents.letters`).
@@ -971,18 +973,37 @@ notice days) that anyone who sees the person sees, and personal, statutory and b
 admins, payroll (`canViewEmployeePrivate`) and the person themselves get, as `EmployeeDto.private` (null otherwise;
 `StaffService.toEmployeeDto(e, user)` decides). Aadhaar is kept as its last four digits only.
 
-Each step of a person's service is an `EmployeeEvent` (`EMPLOYEE_EVENT_TYPES`: joined, confirmed, transferred, promoted,
+Each step of a person's service is an `EmployeeEvent` (`EMPLOYEE_EVENT_TYPES`: offered, joined, confirmed, transferred, promoted,
 increment, warning, resigned, terminated, retired) with a letter number `HR-<year>-0001` per organisation
 (`nextLetterNo`, under an advisory lock) and the before and after of posting, designation, department and CTC.
 `HrService.recordEvent` changes the staff record to match in the same transaction (an exit sets the last working day and
 marks them as left); `removeEvent` takes back only the latest event, never the joining, and puts the record back.
+An increment or a promotion with a new CTC also writes a `SalaryStructure` from its date, grown from the one in force
+before it by `structureForCtc` (`payroll-rules.ts`: basic, DA, HRA and special allowance in step, conveyance and other
+earnings kept, the special allowance taking the rounding), so payroll pays what the letter says. It is skipped when the
+person has no structure yet or one is already dated that day, refused when that month's salary is approved, noted with
+the letter number, and removed with the event unless a payslip used it.
 Creating a staff record with a joining date writes its JOINED event. `GET /staff/events/:id/letter` returns what the
 letter needs; the web prints it from `components/staff/hrLetterPrint.ts` (an exit also prints the experience certificate).
-Documents are attachments on `Attachment.employeeId` (`PUT /staff/employees/:id/documents`).
+Other documents are attachments on `Attachment.employeeId` (`PUT /staff/employees/:id/documents`); the joining documents
+below keep theirs out of that list.
+
+**Joining documents and the offer letter.** The papers HR collects are `EMPLOYEE_DOCUMENT_KINDS`
+(`@erp/shared/hr-documents.ts`): photo, Aadhaar, PAN, Class 10, Class 12 or diploma, degree and the last employer's
+experience letter are required; a postgraduate degree and the bank proof are not. Each kind a person has is one
+`EmployeeDocument` row (its file, `UPLOADED` → `VERIFIED` / `REJECTED` / `WAIVED`, the note, who checked and when);
+a kind with no row reads as not received. HR or the person files a paper (`PUT /staff/employees/:id/checklist/:kind`, a
+fresh copy replaces the last and waits again); only HR checks one (`POST …/:kind/check`: verify needs a file, sending back
+and setting aside need a reason, by `documentCheckProblem`) or takes it back (`DELETE`). `EmployeeDocumentsService` does
+all of it. The offer letter (`OFFERED`, recorded by hand on or before the joining date, one per person, with the offered
+CTC) and the appointment letter (`JOINED`) go out only when `documentLetterProblem` is null: every required kind verified
+or set aside (a fresher's experience letter). Recording the offer and `GET /staff/events/:id/letter` both ask it, so a
+letter held for papers says which ones. An offer can be taken back while only the joining follows it. The HR dashboard
+lists active staff with papers outstanding (`documentsPending`). Keep `src/scripts/hr-documents-test.ts` passing.
 
 `GET /staff/hr-dashboard` (staff admins and payroll) gives head count by site, department and employment type, who joined
-and left this month, probation ending in 30 days or overdue, birthdays and work anniversaries to the end of next month, and
-active staff with no PAN, UAN or bank account; the People home shows it under the module's figures.
+and left this month, probation ending in 30 days or overdue, birthdays and work anniversaries to the end of next month,
+active staff with no PAN, UAN or bank account, and active staff with joining documents outstanding; the People home shows it under the module's figures.
 
 ### Management view on the phone (v5 item 96)
 
@@ -1136,6 +1157,15 @@ card and the phone's My submissions). The web's buttons follow the stage on a re
 The Approvals inbox groups its queue by type (`groupQueue`, `components/approvals/queue.ts`) and orders the groups by
 `rankWaiting`: the rupees a group adds up to, then the days its oldest entry has waited, then the type's usual place. Each
 group's header says "7 · ₹14.20 L · oldest 3 days"; Oldest first or Newest first orders the entries inside a group.
+
+Decisions with an approval of their own (leave and overtime, salary runs, hand-made vouchers, outward letters to sign)
+are not submissions, but the inbox lists them too, under Also waiting for you: `GET /approvals/others`
+(`OtherDecisionsService`) reads each module's own list with the caller (`listLeave` and `overtimeToDecide`, the payroll
+runs the caller may approve, `vouchers({ toDecide })`, letters `{ toSign }`), so each module's access rules apply, and
+returns `OtherDecisionGroupDto`s (`OTHER_DECISION_KINDS`) in `rankWaiting` order. Each entry links to the page where it is
+decided (`/payroll?tab=runs&run=`, `/books?tab=vouchers&voucher=`, the leave or letter itself); a new kind is a key there
+and a block in the service. Someone who approves submissions sees them as one line of counts above the queue
+(`OtherDecisionsLine`), since the queue and pane fill the window; anyone else sees the groups and their oldest entries.
 
 `ApprovalEscalation` (per type: `remindAfterHours`, `escalateAfterHours`) drives `NotificationJobsService.approvalEscalation`,
 run hourly (`GET /notifications/jobs/approval-escalation`, the in-process scheduler on the hour, and inside both daily
@@ -4013,7 +4043,7 @@ days; it is claimed for delays in the register, or for the added work of a varia
   `/management/reports/[key]` (period and project in the address, `useProjectScope`; Print opens the brand's A4 page from
   `components/management/reportOutput.ts`, Excel writes a summary sheet and a sheet per section with numbers kept as
   numbers). A wide section reads its money in lakhs and crores on the screen; print and Excel keep rupees. The trend's
-  colours are `BRAND.colors.trend…`, checked for colour-blind separation in both themes. A new report is a key and an
+  colours are the `series.trend` roles (`src/ds`), checked for colour-blind separation in both themes. A new report is a key and an
   entry in `MANAGEMENT_REPORTS`, a builder in `ManagementReportsService`, and a node under Reports in the navigation tree.
 - **Not yet.** The phone, a scheduled email of the MIS, and a budget for the company as a whole.
 

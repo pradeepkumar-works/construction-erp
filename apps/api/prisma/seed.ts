@@ -17,6 +17,7 @@ import { seedTownBilling } from './seed-billing';
 import { seedEpc } from './seed-epc';
 import { seedConsultantChecks } from './seed-consultant-checks';
 import { seedProgramme } from './seed-programme';
+import { seedJoiningDocuments } from './seed-joining-documents';
 import { seedOm } from './seed-om';
 import { seedCorrespondence } from './seed-correspondence';
 import { seedQa } from './seed-qa';
@@ -1854,6 +1855,7 @@ async function modulesPass(organizationId: string, passwordHash: string) {
   await seedStaff(organizationId);
   await seedAttendanceExtras(organizationId);
   await seedHrRecords(organizationId);
+  await seedJoiningDocuments(prisma, organizationId);
   await seedPayroll(organizationId);
   await seedGuests(organizationId);
   await seedVariations(organizationId);

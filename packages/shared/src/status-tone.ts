@@ -48,6 +48,7 @@ import type { MixDesignStatus, RmcBatchStatus, RmcInvoiceStatus, RmcOrderStatus 
 import type { LookaheadReadiness, MilestoneState, ScheduleReading, ScheduleState } from './schedule';
 import type { EnquiryVendorState } from './small-purchase';
 import type { LeaveStatus, OvertimeStatus, StaffAttendanceStatus } from './staff';
+import type { EmployeeDocumentState } from './hr-documents';
 import type { FrontFlag, KitStatus, ReconExceptionKind } from './stock-against-dpr';
 import type { ScEnquiryStatus } from './subcontract-enquiries';
 import type { SupplierChangeStatus, SupplierDispatchStatus, SupplierInvoiceStage } from './supplier';
@@ -188,6 +189,7 @@ export const STATUS_TONES = {
   mixDesign: meanings<MixDesignStatus>({ DRAFT: 'inHand', APPROVED: 'done', RETIRED: 'closed' }),
   leave: meanings<LeaveStatus>({ PENDING: 'waiting', APPROVED: 'done', REJECTED: 'failed', CANCELLED: 'closed' }),
   overtime: meanings<OvertimeStatus>({ PENDING: 'waiting', APPROVED: 'done', REJECTED: 'failed' }),
+  employeeDocument: meanings<EmployeeDocumentState>({ MISSING: 'waiting', UPLOADED: 'waiting', VERIFIED: 'done', REJECTED: 'failed', WAIVED: 'closed' }),
   staffAttendance: meanings<StaffAttendanceStatus>({ PRESENT: 'done', HALF_DAY: 'done', ABSENT: 'failed' }),
   biometricCommand: meanings<BiometricCommandStatus>({ QUEUED: 'waiting', SENT: 'inHand', DONE: 'done', FAILED: 'failed', CANCELLED: 'closed' }),
   biometricPunch: meanings<BiometricPunchResult>({ APPLIED: 'done', UNMATCHED: 'waiting', LOCKED: 'closed', SKIPPED: 'closed' }),

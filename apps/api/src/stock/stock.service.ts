@@ -54,6 +54,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { dateOnly, dec, iso, money, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
 import { toOrderOf } from '../purchasing/purchase-math';
+import { receiptsAwaitingBill } from './receipt-billing';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import {
   CheckGrnDto,
@@ -438,7 +439,7 @@ export class StockService {
     if (q.itemId) where.lines = { some: { itemId: q.itemId } };
     if (q.qc) Object.assign(where, { type: 'RECEIPT', qcStatus: q.qc === 'PENDING' ? null : q.qc });
     if (q.waiting) {
-      const { type, ...rest } = this.waitingWhere(q.waiting, todayIn());
+      const { type, ...rest } = await this.waitingWhere(q.waiting, todayIn());
       Object.assign(where, rest);
       if (type) where.type = type;
     }
@@ -469,19 +470,50 @@ export class StockService {
   }
 
   /**
-   * Receipts waiting on a desk after the store (`RECEIPT_WAITS`): unchecked GRNs for QA/QC, GRNs against an order no
-   * live supplier bill covers for accounts, and rejected or returned material with no live debit note. The lists, My
+   * Receipts waiting on a desk after the store (`RECEIPT_WAITS`): unchecked GRNs for QA/QC, GRNs whose order quantity
+   * no supplier bill covers yet for accounts, and rejected or returned material with no live debit note. The lists, My
    * work and the hand-offs all read this one rule. Add the caller's project filter to it.
    */
-  waitingWhere(kind: ReceiptWait, today: string): Prisma.StockEntryWhereInput {
+  async waitingWhere(kind: ReceiptWait, today: string): Promise<Prisma.StockEntryWhereInput> {
     const since = (days: number) => ({ gte: new Date(parseDate(today).getTime() - days * 86_400_000) });
     if (kind === 'CHECK') return { type: 'RECEIPT', qcStatus: null, date: since(RECEIPT_CHECK_WITHIN_DAYS) };
-    if (kind === 'BILL') return { type: 'RECEIPT', purchaseOrderId: { not: null }, date: since(RECEIPT_BILL_WITHIN_DAYS), purchaseOrder: { vendorBills: { none: { status: { not: 'REJECTED' } } } } };
+    if (kind === 'BILL') return { type: 'RECEIPT', id: { in: await this.receiptsAwaitingBill(since(RECEIPT_BILL_WITHIN_DAYS)) } };
     return {
       type: { in: ['RECEIPT', 'RETURN_TO_VENDOR'] },
       OR: [{ type: 'RETURN_TO_VENDOR' }, { lines: { some: { rejectedQty: { gt: 0 } } } }],
       debitNotes: { none: { cancelledAt: null } },
     };
+  }
+
+  /**
+   * Receipts in the window that a supplier's bill does not yet cover: each order line's billed quantity (bills not
+   * rejected) covers its receipts oldest first (`receiptsAwaitingBill`). The company's own rows (row-level security).
+   */
+  private async receiptsAwaitingBill(date: Prisma.DateTimeFilter): Promise<string[]> {
+    const recent = await this.prisma.stockTxn.findMany({
+      where: { purchaseOrderLineId: { not: null }, entry: { type: 'RECEIPT', date } },
+      select: { purchaseOrderLineId: true },
+      distinct: ['purchaseOrderLineId'],
+    });
+    const lineIds = recent.map((t) => t.purchaseOrderLineId!);
+    if (!lineIds.length) return [];
+    const [receipts, billed] = await Promise.all([
+      this.prisma.stockTxn.findMany({
+        where: { purchaseOrderLineId: { in: lineIds }, entry: { type: 'RECEIPT' } },
+        select: { entryId: true, purchaseOrderLineId: true, quantity: true, rejectedQty: true, entry: { select: { date: true, createdAt: true } } },
+      }),
+      this.prisma.vendorBillLine.groupBy({ by: ['purchaseOrderLineId'], where: { purchaseOrderLineId: { in: lineIds }, bill: { status: { not: 'REJECTED' } } }, _sum: { quantity: true } }),
+    ]);
+    const waiting = receiptsAwaitingBill(
+      receipts.map((t) => ({
+        entryId: t.entryId,
+        order: `${iso(t.entry.date)}${iso(t.entry.createdAt)}`,
+        purchaseOrderLineId: t.purchaseOrderLineId!,
+        accepted: t.quantity.sub(t.rejectedQty ?? 0).toNumber(),
+      })),
+      new Map(billed.map((b) => [b.purchaseOrderLineId!, b._sum.quantity?.toNumber() ?? 0])),
+    );
+    return [...waiting];
   }
 
   async get(user: RequestUser, id: string): Promise<StockEntryDto> {

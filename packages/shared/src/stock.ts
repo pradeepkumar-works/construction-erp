@@ -66,8 +66,8 @@ export interface StockDestinationDto {
 
 /**
  * Receipts that wait on someone after the store (each desk's own queue, not a filter of the store register): QA/QC to
- * check the material (`CHECK`, Quality › Material to check), accounts to match the supplier's bill (`BILL`, a GRN against
- * an order no live bill covers, in the last `RECEIPT_BILL_WITHIN_DAYS`, Vendor bills › Received, not billed) and a
+ * check the material (`CHECK`, Quality › Material to check), accounts to match the supplier's bill (`BILL`, a GRN whose
+ * quantity no live bill on its order covers yet, oldest receipts billed first, in the last `RECEIPT_BILL_WITHIN_DAYS`, Vendor bills › Received, not billed) and a
  * debit note for what QA/QC rejected or went back to the supplier (`DEBIT_NOTE`, Debit notes › To raise).
  */
 export const RECEIPT_WAITS = ['CHECK', 'BILL', 'DEBIT_NOTE'] as const;

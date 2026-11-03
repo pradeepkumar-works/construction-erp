@@ -10,6 +10,7 @@ import { AuditService } from '../common/audit.service';
 import { UndoService } from '../common/undo.service';
 import { dateOnly, iso, parseDate, pct } from '../common/serialize';
 import { todayIn } from '../notifications/time';
+import { progressRollup } from '../common/progress';
 import { CreateLinkDto, CreateMilestoneDto, FreezeBaselineDto, ImportScheduleDto, UpdateLinkDto, UpdateMilestoneDto } from './schedule.dto';
 import { criticalPath, findCycle, linkProblem, lookaheadWeeks, moves, readiness, type NetLink } from './schedule-rules';
 import { parseMsProjectXml, parseXer, toMsProjectXml, toXer, type ScheduleFile } from './schedule-files';
@@ -58,24 +59,45 @@ export class ScheduleService {
         where: { projectId },
         orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
         include: {
-          boqItem: { select: { itemNo: true } },
+          boqItem: { select: { itemNo: true, rate: true } },
           responsible: { select: { fullName: true } },
           progressEntries: { where: { status: 'APPROVED' }, select: { date: true, quantity: true }, orderBy: [{ date: 'asc' }, { createdAt: 'asc' }] },
         },
       }),
       this.prisma.milestone.findMany({ where: { projectId }, orderBy: [{ dueDate: 'asc' }, { sortOrder: 'asc' }] }),
     ]);
+    const elements = await this.prisma.workElement.findMany({ where: { projectId }, select: { id: true, parentId: true, weightPct: true } });
     const links = await this.prisma.activityLink.findMany({ where: { projectId }, orderBy: { createdAt: 'asc' } });
     if (!project) throw new NotFoundException('Project not found');
 
+    // Own dates first; an activity with sub-activities then takes its progress from the roll-up and its dates from them.
+    const own = new Map(
+      activities.map((a) => {
+        let done = D(0);
+        let end: string | null = null;
+        for (const e of a.progressEntries) {
+          done = done.add(e.quantity);
+          if (!end && a.plannedQty.gt(0) && done.gte(a.plannedQty)) end = dateOnly(e.date);
+        }
+        return [a.id, { done, start: a.progressEntries.length ? dateOnly(a.progressEntries[0].date) : null, end }];
+      }),
+    );
+    const rolled = progressRollup(
+      activities.map((a) => ({ ...a, rate: a.boqItem?.rate ?? null, executed: own.get(a.id)!.done })),
+      elements,
+    );
+    const subsOf = new Map<string, string[]>();
+    for (const a of activities) if (a.parentActivityId && own.has(a.parentActivityId)) subsOf.set(a.parentActivityId, [...(subsOf.get(a.parentActivityId) ?? []), a.id]);
+    const leavesOf = (id: string): string[] => (subsOf.has(id) ? subsOf.get(id)!.flatMap(leavesOf) : [id]);
+    const dates = (xs: (string | null)[]) => xs.filter((x): x is string => !!x).sort();
+
     const rows: GanttActivityDto[] = activities.map((a) => {
-      let done = D(0);
-      let actualEnd: string | null = null;
-      for (const e of a.progressEntries) {
-        done = done.add(e.quantity);
-        if (!actualEnd && a.plannedQty.gt(0) && done.gte(a.plannedQty)) actualEnd = dateOnly(e.date);
-      }
-      const progressPct = pct(done, a.plannedQty);
+      const summary = rolled.summaries.has(a.id);
+      const leaves = summary ? leavesOf(a.id).map((id) => own.get(id)!) : [own.get(a.id)!];
+      const progressPct = summary ? (rolled.pct.get(a.id) ?? 0) : pct(own.get(a.id)!.done, a.plannedQty);
+      const actualStart = dates(leaves.map((l) => l.start))[0] ?? null;
+      const ends = leaves.map((l) => l.end);
+      const actualEnd = ends.every(Boolean) ? (dates(ends).at(-1) ?? null) : null;
       const plannedStart = dateOnly(a.plannedStart);
       const plannedEnd = dateOnly(a.plannedEnd);
       const baselineEnd = dateOnly(a.baselineEnd);
@@ -85,11 +107,12 @@ export class ScheduleService {
         unit: a.unit,
         boqItemNo: a.boqItem?.itemNo ?? null,
         responsibleName: a.responsible?.fullName ?? null,
+        isSummary: summary,
         plannedStart,
         plannedEnd,
         baselineStart: dateOnly(a.baselineStart),
         baselineEnd,
-        actualStart: a.progressEntries.length ? dateOnly(a.progressEntries[0].date) : null,
+        actualStart,
         actualEnd: progressPct >= 100 ? actualEnd : null,
         progressPct,
         expectedPct: expectedPct(plannedStart, plannedEnd, today),
@@ -312,7 +335,8 @@ export class ScheduleService {
       );
       return { id: a.id, name: a.name, responsibleName: a.responsibleName, plannedStart: a.plannedStart!, plannedEnd: a.plannedEnd!, progressPct: a.progressPct, state: a.state, critical: a.critical, totalFloat: a.totalFloat, linkStartsOn: a.linkStartsOn, ...r };
     };
-    const open = g.activities.filter((a) => a.plannedStart && a.plannedEnd && a.state !== 'DONE');
+    // The work itself: an activity with sub-activities is only their heading.
+    const open = g.activities.filter((a) => !a.isSummary && a.plannedStart && a.plannedEnd && a.state !== 'DONE');
     const order = (x: LookaheadActivityDto, y: LookaheadActivityDto) => x.plannedStart.localeCompare(y.plannedStart) || Number(y.critical) - Number(x.critical) || x.name.localeCompare(y.name);
     const weeks = lookaheadWeeks(g.today).map((w) => ({ ...w, activities: open.filter((a) => a.plannedStart! <= w.to && a.plannedEnd! >= w.from && a.plannedEnd! >= g.today).map(item).sort(order) }));
     return { projectId, today: g.today, weeks, overdue: open.filter((a) => a.plannedEnd! < g.today).map(item).sort(order) };

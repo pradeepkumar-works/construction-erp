@@ -32,7 +32,7 @@ const WORDS: Record<ReceiptWait, { search: string; empty: string; intro: string;
   BILL: {
     search: 'Search goods received',
     empty: "Nothing waiting. Every receipt against an order has the supplier's bill.",
-    intro: `Goods received against an order in the last ${RECEIPT_BILL_WITHIN_DAYS} days whose order has no vendor bill yet, oldest first. Record the bill when it comes; it starts from what was received at the order's rates.`,
+    intro: `Goods received against an order in the last ${RECEIPT_BILL_WITHIN_DAYS} days that no vendor bill covers yet, oldest first. Record the bill when it comes; it starts from what was received at the order's rates.`,
     action: 'Record vendor bill',
   },
   DEBIT_NOTE: {

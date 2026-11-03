@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { StaffService } from './staff.service';
 import { HrService } from './hr.service';
+import { EmployeeDocumentsService } from './employee-documents.service';
 import {
   ApplyLeaveDto,
   AttendanceQuery,
@@ -11,7 +12,9 @@ import {
   CheckOutDto,
   CreateEmployeeDto,
   CreateHolidayDto,
+  CheckEmployeeDocumentDto,
   EmployeeDocumentsDto,
+  FileEmployeeDocumentDto,
   ListEmployeeEventsQuery,
   RecordEmployeeEventDto,
   DecideLeaveDto,
@@ -29,7 +32,7 @@ import {
 @ApiBearerAuth()
 @Controller('staff')
 export class StaffController {
-  constructor(private staff: StaffService, private hr: HrService) {}
+  constructor(private staff: StaffService, private hr: HrService, private docs: EmployeeDocumentsService) {}
 
   @ApiOperation({ summary: 'Counts for the Staff page: leave waiting on the caller, employees, on leave today' })
   @Get('summary')
@@ -127,7 +130,31 @@ export class StaffController {
     return this.hr.documents(user, id);
   }
 
-  @ApiOperation({ summary: "Set the employee's documents (the complete list)" })
+  @ApiOperation({ summary: 'Joining documents: each kind with its file and check, what is still to verify, and whether the offer and appointment letters can go out' })
+  @Get('employees/:id/checklist')
+  checklist(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    return this.docs.checklist(user, id);
+  }
+
+  @ApiOperation({ summary: 'File a joining document (HR or the person); a fresh copy replaces the last and waits for a check again' })
+  @Put('employees/:id/checklist/:kind')
+  fileDocument(@CurrentUser() user: RequestUser, @Param('id') id: string, @Param('kind') kind: string, @Body() dto: FileEmployeeDocumentDto) {
+    return this.docs.file(user, id, kind, dto.attachmentId);
+  }
+
+  @ApiOperation({ summary: 'Verify a joining document, send it back for a fresh copy, or set it aside as not needed (HR)' })
+  @Post('employees/:id/checklist/:kind/check')
+  checkDocument(@CurrentUser() user: RequestUser, @Param('id') id: string, @Param('kind') kind: string, @Body() dto: CheckEmployeeDocumentDto) {
+    return this.docs.check(user, id, kind, dto);
+  }
+
+  @ApiOperation({ summary: 'Take a joining document back to not received (HR)' })
+  @Delete('employees/:id/checklist/:kind')
+  removeDocument(@CurrentUser() user: RequestUser, @Param('id') id: string, @Param('kind') kind: string) {
+    return this.docs.remove(user, id, kind);
+  }
+
+  @ApiOperation({ summary: "Set the employee's other documents (the complete list; joining documents are kept)" })
   @Put('employees/:id/documents')
   setDocuments(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: EmployeeDocumentsDto) {
     return this.hr.setDocuments(user, id, dto);

@@ -217,6 +217,40 @@ export function structureCost(s: RulesStructure, st: RulesSettings) {
   return { gross, employeePf: pf.employee, employerPf: pf.epf + pf.eps, employeeEsi: esi.employee, employerEsi: esi.employer, ctcAnnual: (gross + pf.epf + pf.eps + esi.employer) * 12 };
 }
 
+/**
+ * The salary structure for a new cost to company a year, for an increment or a promotion: basic, DA, HRA and special
+ * allowance grow in the same proportions, conveyance and other earnings stay as they are, and the special allowance
+ * takes the rounding so the year's cost lands within a few rupees of the figure. Null when there is nothing to grow
+ * or the figure is below the fixed parts.
+ */
+export function structureForCtc(current: RulesStructure, ctcAnnual: number, st: RulesSettings): RulesStructure | null {
+  const grows = current.basic + current.da + current.hra + current.special;
+  if (grows <= 0 || ctcAnnual <= 0) return null;
+  const at = (f: number): RulesStructure => ({ ...current, basic: current.basic * f, da: current.da * f, hra: current.hra * f, special: current.special * f });
+  let lo = 0;
+  let hi = 1;
+  while (structureCost(at(hi), st).ctcAnnual < ctcAnnual && hi < 1e4) hi *= 2;
+  if (structureCost(at(lo), st).ctcAnnual > ctcAnnual) return null;
+  for (let i = 0; i < 60; i++) {
+    const mid = (lo + hi) / 2;
+    if (structureCost(at(mid), st).ctcAnnual < ctcAnnual) lo = mid;
+    else hi = mid;
+  }
+  const scaled = at(hi);
+  const base: RulesStructure = { ...scaled, basic: r0(scaled.basic), da: r0(scaled.da), hra: r0(scaled.hra), special: r0(scaled.special) };
+  // Rounding and the rupee steps of PF and ESI: try the special allowance a little either way and keep the closest.
+  let best = base;
+  let gap = Math.abs(structureCost(base, st).ctcAnnual - ctcAnnual);
+  for (let d = -60; d <= 60; d++) {
+    const special = base.special + d;
+    if (special < 0) continue;
+    const s = { ...base, special };
+    const g = Math.abs(structureCost(s, st).ctcAnnual - ctcAnnual);
+    if (g < gap - 1e-9) [best, gap] = [s, g];
+  }
+  return best;
+}
+
 export interface SettlementInput {
   joinedOn: string | null;
   lastWorkingDay: string;

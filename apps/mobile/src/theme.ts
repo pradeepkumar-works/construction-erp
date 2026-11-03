@@ -177,7 +177,7 @@ const FAMILY_TINT_DARK: Record<NavFamily, { bg: string; fg: string }> = {
 export const familyTint = scheme === 'dark' ? FAMILY_TINT_DARK : FAMILY_TINT_LIGHT;
 
 /**
- * Drawing markup ink, as the web's `BRAND.colors.markup*`. Marks sit on the white of a drawing sheet in either
+ * Drawing markup ink, as the web's `sheet.markup` roles. Marks sit on the white of a drawing sheet in either
  * theme, so these do not change with it; a pin's number is `onInk` on its ink.
  */
 export const markupInk = { RED: '#D92D20', BLUE: '#1E63D6', GREEN: '#167A3E', ORANGE: '#C2410C', sheet: '#FFFFFF', onInk: '#FFFFFF' } as const;

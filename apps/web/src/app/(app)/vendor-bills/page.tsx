@@ -15,10 +15,10 @@ function VendorBillsPage() {
   const search = useSearchParams();
   const router = useRouter();
   const { user } = useAuth();
-  // Received, not billed: accounts' queue of goods received against an order with no supplier bill yet.
-  const recorder = !!user && canRecordVendorBill(user.roleKey);
-  const { data: unbilled } = useWaitingReceipts('BILL', { pageSize: 1 }, recorder);
-  const tab = recorder && search.get('tab') === 'to-bill' ? 'to-bill' : 'bills';
+  // Received, not billed: accounts' queue of goods received that no supplier bill covers yet. Everyone who sees the
+  // bills sees the queue; only those who record bills get its Record bill button (WaitingReceipts).
+  const { data: unbilled } = useWaitingReceipts('BILL', { pageSize: 1 }, !!user);
+  const tab = search.get('tab') === 'to-bill' ? 'to-bill' : 'bills';
   return (
     <div className="page-container">
       <PageHeader title="Vendor bills" subtitle="Suppliers' invoices matched against the purchase order and what was received, machine hire from the logs, workshop and other service bills, with the due date (45 days at most for micro and small enterprises)." />
@@ -30,7 +30,7 @@ function VendorBillsPage() {
           destroyOnHidden
           items={[
             { key: 'bills', label: 'Vendor bills', children: <VendorBillList openId={search.get('id')} /> },
-            ...(recorder ? [{ key: 'to-bill', label: 'Received, not billed', count: unbilled?.total, countLabel: 'waiting for a bill', attention: true, children: <WaitingReceipts waiting="BILL" /> }] : []),
+            { key: 'to-bill', label: 'Received, not billed', count: unbilled?.total, countLabel: 'waiting for a bill', attention: !!user && canRecordVendorBill(user.roleKey), children: <WaitingReceipts waiting="BILL" /> },
           ]}
         />
       </Card>
