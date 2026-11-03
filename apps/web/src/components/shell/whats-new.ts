@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-menu-colours',
+    date: '2026-11-03',
+    title: 'Colours and layouts for the menu',
+    points: [
+      'Admins can now pick the menu’s colours in Admin › Menu and names: Nirmaan’s quiet grey, six plain colours, five gradients, or a colour or gradient of the company’s own.',
+      'The sidebar has three looks: beside the page, sidebar and header in one colour, or floating on the page.',
+      'Every colour reads in the light and the dark theme. A colour too bright for the menu’s words is offered a readable shade.',
+    ],
+  },
+  {
     id: '2026-11-hr-payroll-module',
     date: '2026-11-03',
     title: 'HR and payroll as one module',

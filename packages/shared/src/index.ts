@@ -106,6 +106,7 @@ export * from './project-setup';
 export * from './project-code';
 export * from './purchase-queue';
 export * from './nav-menu';
+export * from './nav-colours';
 export * from './group';
 export * from './masters';
 export * from './correspondence';

@@ -16,7 +16,7 @@
 }
 
 .lookNavy {
-  --tb-bg: var(--c-chrome-bg);
+  --tb-bg: var(--c-chrome-fill);
   --tb-fg: var(--c-chrome-ink);
   --tb-muted: color-mix(in srgb, var(--c-chrome-ink) 66%, transparent);
   --tb-hover: color-mix(in srgb, var(--c-chrome-ink) 10%, transparent);
@@ -39,6 +39,11 @@
   background: var(--tb-bg);
   color: var(--tb-fg);
   border-bottom: 1px solid var(--tb-rule);
+}
+
+/* A gradient is laid over the window, so the bar and the menu drawer show one sweep. */
+.lookNavy .bar {
+  background-attachment: fixed;
 }
 
 .lookBar .bar {
@@ -308,37 +313,73 @@
   flex-shrink: 0;
 }
 
-/* The navy bar's own controls (search, Ask, help, the bell, the account) read white on the navy. Only what sits in the
-   bar: their menus and drawers open on the page's own surfaces. */
-.lookNavy .bar :global(.ant-btn-variant-text),
-.lookNavy .bar :global(.ant-btn-variant-filled) {
+/* A bar in the menu's colours (the coloured top bar, the header of Sidebar and header): its own controls (search, the
+   project, Ask, help, the bell, the account) are drawn in the chrome's ink. Only what sits in the bar: their menus and
+   drawers open on the page's own surfaces. */
+.onChrome :global(.ant-btn-variant-text),
+.onChrome :global(.ant-btn-variant-filled) {
   color: color-mix(in srgb, var(--c-chrome-ink) 88%, transparent);
 }
 
-.lookNavy .bar :global(.ant-btn-variant-filled) {
+.onChrome :global(.ant-btn-variant-filled) {
   background: color-mix(in srgb, var(--c-chrome-ink) 8%, transparent);
   border-color: color-mix(in srgb, var(--c-chrome-ink) 16%, transparent);
 }
 
-.lookNavy .bar :global(.ant-btn-variant-text:not(:disabled):hover),
-.lookNavy .bar :global(.ant-btn-variant-filled:not(:disabled):hover) {
+.onChrome :global(.ant-btn-variant-text:not(:disabled):hover),
+.onChrome :global(.ant-btn-variant-filled:not(:disabled):hover) {
   color: var(--c-chrome-ink);
   background: color-mix(in srgb, var(--c-chrome-ink) 12%, transparent);
 }
 
-.lookNavy .bar :global(.ant-btn-variant-filled .ant-typography),
-.lookNavy .bar :global(.ant-btn-variant-filled kbd),
-.lookNavy .bar :global(.text-muted) {
+.onChrome :global(.ant-btn-variant-filled .ant-typography),
+.onChrome :global(.ant-btn-variant-filled kbd),
+.onChrome :global(.text-muted) {
   color: color-mix(in srgb, var(--c-chrome-ink) 70%, transparent);
 }
 
-.lookNavy .bar :global(.ant-btn .ant-badge) {
+.onChrome :global(.ant-btn .ant-badge) {
   color: inherit;
 }
 
-.lookNavy .bar :global(.ant-btn-variant-filled kbd) {
+.onChrome :global(.ant-btn-variant-filled kbd) {
   background: transparent;
   border-color: color-mix(in srgb, var(--c-chrome-ink) 22%, transparent);
+}
+
+/* The project and its trail, in the header of Sidebar and header. */
+.onChrome :global(.ant-select-filled) {
+  color: var(--c-chrome-ink);
+  background: color-mix(in srgb, var(--c-chrome-ink) 8%, transparent);
+  border-color: color-mix(in srgb, var(--c-chrome-ink) 16%, transparent);
+}
+
+.onChrome :global(.ant-select-filled:hover) {
+  background: color-mix(in srgb, var(--c-chrome-ink) 12%, transparent);
+}
+
+.onChrome :global(.ant-select-filled .ant-select-prefix),
+.onChrome :global(.ant-select-filled .ant-select-suffix) {
+  color: color-mix(in srgb, var(--c-chrome-ink) 70%, transparent);
+}
+
+.onChrome :global(.ant-breadcrumb),
+.onChrome :global(.ant-breadcrumb .ant-breadcrumb-separator) {
+  color: color-mix(in srgb, var(--c-chrome-ink) 66%, transparent);
+}
+
+.onChrome :global(.ant-breadcrumb a) {
+  color: color-mix(in srgb, var(--c-chrome-ink) 80%, transparent);
+}
+
+.onChrome :global(.ant-breadcrumb a:hover) {
+  color: var(--c-chrome-ink);
+  background: color-mix(in srgb, var(--c-chrome-ink) 10%, transparent);
+}
+
+.onChrome :global(.ant-breadcrumb li:last-child),
+.onChrome :global(.ant-breadcrumb li:last-child .ant-breadcrumb-link) {
+  color: var(--c-chrome-ink);
 }
 
 @media (pointer: coarse) {

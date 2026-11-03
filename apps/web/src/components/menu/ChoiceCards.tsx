@@ -12,9 +12,9 @@ export interface Choice<T extends string> {
 }
 
 /** A choice drawn as cards (Menu and names): a radio group, each card its picture, name and what it gives. */
-export function ChoiceCards<T extends string>({ value, onChange, choices, label, disabled }: { value: T; onChange: (v: T) => void; choices: Choice<T>[]; label: string; disabled?: boolean }) {
+export function ChoiceCards<T extends string>({ value, onChange, choices, label, disabled, compact }: { value: T; onChange: (v: T) => void; choices: Choice<T>[]; label: string; disabled?: boolean; compact?: boolean }) {
   return (
-    <Radio.Group value={value} onChange={(e) => onChange(e.target.value as T)} aria-label={label} disabled={disabled} className={s.cards}>
+    <Radio.Group value={value} onChange={(e) => onChange(e.target.value as T)} aria-label={label} disabled={disabled} className={compact ? `${s.cards} ${s.compact}` : s.cards}>
       {choices.map((c) => (
         <Radio key={c.value} value={c.value} className={s.card}>
           {c.picture}
@@ -34,14 +34,27 @@ const blocks = (top: number, left: number) => (
   </>
 );
 
-/** A small picture of the menu each choice gives: the sidebar, and the top bar in its three looks. */
-export function MenuPicture({ kind }: { kind: 'SIDEBAR' | 'NAVY' | 'FRAME' | 'BAR' }) {
+/** A small picture of the menu each choice gives: the sidebar in its three looks, and the top bar in its three. */
+export function MenuPicture({ kind }: { kind: 'SIDEBAR' | 'HEADER' | 'FLOATING' | 'NAVY' | 'FRAME' | 'BAR' }) {
   return (
     <span className={s.pic} aria-hidden>
       {kind === 'SIDEBAR' && (
         <>
           <i className={s.side} />
           {blocks(12, 44)}
+        </>
+      )}
+      {kind === 'HEADER' && (
+        <>
+          <i className={s.side} />
+          <i className={s.navy} />
+          {blocks(24, 44)}
+        </>
+      )}
+      {kind === 'FLOATING' && (
+        <>
+          <i className={`${s.side} ${s.floating}`} />
+          {blocks(12, 50)}
         </>
       )}
       {kind === 'NAVY' && (
@@ -68,6 +81,24 @@ export function MenuPicture({ kind }: { kind: 'SIDEBAR' | 'NAVY' | 'FRAME' | 'BA
           {blocks(30, 10)}
         </>
       )}
+    </span>
+  );
+}
+
+/**
+ * A picture of the menu in a palette's colours: the rail with its words, the chosen page and a count, beside the page.
+ * `style` carries the palette's chrome variables (`chromeStyle`), so the picture is drawn exactly as the menu will be.
+ */
+export function ColourPicture({ style }: { style?: React.CSSProperties }) {
+  return (
+    <span className={s.pic} style={style} aria-hidden>
+      <i className={s.rail} />
+      <i className={s.ink} style={{ top: 10, width: 26 }} />
+      <i className={`${s.ink} ${s.inkQuiet}`} style={{ top: 24, width: 18 }} />
+      <i className={s.chosen} />
+      <i className={s.ink} style={{ top: 50, width: 22 }} />
+      <i className={s.ink} style={{ top: 62, width: 16 }} />
+      {blocks(12, 76)}
     </span>
   );
 }

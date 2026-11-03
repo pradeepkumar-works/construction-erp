@@ -194,9 +194,12 @@ and the pre-delivery checklist.
   A controlled copy is issued only through `DesignControlService.issue` (`issueCopiesProblem`, `copyNumbersFor`) and stands
   by `copyState`; what a revision changes is only `revisionImpact`, and the dashboard reads the schedule and submissions
   through their services (`@erp/shared/design-control.ts`). Keep `src/scripts/design-control-test.ts` passing.
-- Menu and names (ARCHITECTURE "Menu and names"): the company's menu (sidebar or top bar, its look, the module set and names)
+- Menu and names (ARCHITECTURE "Menu and names"): the company's menu (sidebar or top bar, each one's look, the colours, the module set and names)
   is pure in `@erp/shared/nav-menu.ts` (`navMenuFor`, `navMenuPlace`, `navSettingsOf`) and drawn by `components/shell/TopBar.tsx`
-  over `components/shell/menu.ts`; a new page of the tree also gets a place in `DEPARTMENT_MODULES`. Keep
+  over `components/shell/menu.ts`; a new page of the tree also gets a place in `DEPARTMENT_MODULES`.
+  The menu's colours (ARCHITECTURE "Menu colours") are a palette (fills in `ds/source/chrome.ts`, both themes) or the
+  company's own `NavFill`, which reads only by `navFillProblem` (`@erp/shared/nav-colours.ts`); the shell paints
+  `--c-chrome-fill` (a solid or a gradient) and mixes everything else from `--c-chrome-bg` and the ink. Keep
   `src/scripts/nav-menu-test.ts` passing. A department's screen (item 168, ARCHITECTURE "Department screens") shows the area
   modules' figures picked by `DEPARTMENT_FIGURES` and pipelines (`DEPARTMENT_PIPELINES`, `pipelineOf` in
   `@erp/shared/department-home.ts`) read through the modules' own list services in `DepartmentHomeService`, never a query of

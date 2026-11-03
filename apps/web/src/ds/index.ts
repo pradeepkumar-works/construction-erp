@@ -51,3 +51,6 @@ export const tk = {
   line: (role: keyof Roles['line']) => `${v(HAIRLINE_VAR)} solid ${v(colorVar(['line', role]))}`,
   neg: (step: SpaceStep) => `calc(-1 * ${v(spaceVar(String(step)))})`,
 } as const;
+
+export { chromeCss, chromeFillOf, chromeStyle, type ChromeChoice } from './chrome';
+export { CHROME_START_FILL } from './source/chrome';

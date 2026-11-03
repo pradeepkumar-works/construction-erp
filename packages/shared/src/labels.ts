@@ -1,4 +1,4 @@
-import type { ContractModel, WorkElementLevel, WorkElementType, PipeNodeKind, PipeMaterial, PipeScope, PipeStage, LdPeriod, GrnQcStatus, ComplianceDocKind, ComplianceDocStatus, DefectPhase, DefectPriority, DefectStatus, ImprestEntryKind, ImprestEntryStatus, WorkerIdType, WorkerSkill, EquipmentDocType, MaintenanceKind, MaintenanceStatus, BillStage, ReceiptKind, VendorKind, MsmeCategory, EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, WorkLocation, DelayParty, PasswordTokenPurpose, RiskCategory, RiskKind, RiskStatus, RoleKey, SafetyIncidentStatus, SafetyIncidentType, StockEntryType, SubmissionStatus, SubmissionType, Weather, WorkPermitStatus, WorkPermitType, PpeKind, PpeIssueStatus, RfiStatus, RfiPriority, PaymentRequestKind, FundPurpose, VendorBillKind, HireFuelBy, DebitNoteReason, BoqResourceKind, StockAdjustmentReason, FuelNormUnit, EquipmentPartKind, ApprovalStepAction, MarkupKind, MarkupStatus, MarkupColor, NavPinKind, NavVisitKind, AccessRequestStatus, NavLayout, NavLook, NavModuleSet, CompanyKind, CheckLevel, SiteOrderStatus, ProgrammeStatus, EotBasis, EotStatus } from './enums';
+import type { ContractModel, WorkElementLevel, WorkElementType, PipeNodeKind, PipeMaterial, PipeScope, PipeStage, LdPeriod, GrnQcStatus, ComplianceDocKind, ComplianceDocStatus, DefectPhase, DefectPriority, DefectStatus, ImprestEntryKind, ImprestEntryStatus, WorkerIdType, WorkerSkill, EquipmentDocType, MaintenanceKind, MaintenanceStatus, BillStage, ReceiptKind, VendorKind, MsmeCategory, EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, WorkLocation, DelayParty, PasswordTokenPurpose, RiskCategory, RiskKind, RiskStatus, RoleKey, SafetyIncidentStatus, SafetyIncidentType, StockEntryType, SubmissionStatus, SubmissionType, Weather, WorkPermitStatus, WorkPermitType, PpeKind, PpeIssueStatus, RfiStatus, RfiPriority, PaymentRequestKind, FundPurpose, VendorBillKind, HireFuelBy, DebitNoteReason, BoqResourceKind, StockAdjustmentReason, FuelNormUnit, EquipmentPartKind, ApprovalStepAction, MarkupKind, MarkupStatus, MarkupColor, NavPinKind, NavVisitKind, AccessRequestStatus, NavLayout, NavLook, NavModuleSet, NavSidebarLook, NavPalette, CompanyKind, CheckLevel, SiteOrderStatus, ProgrammeStatus, EotBasis, EotStatus } from './enums';
 
 export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
   ROAD: 'Road or infrastructure',
@@ -581,9 +581,31 @@ export const NAV_LAYOUT_LABELS: Record<NavLayout, string> = {
 };
 
 export const NAV_LOOK_LABELS: Record<NavLook, string> = {
-  NAVY: 'Navy bar',
+  NAVY: 'Coloured bar',
   FRAME: 'Light frame',
   BAR: 'One bar',
+};
+
+export const NAV_SIDEBAR_LOOK_LABELS: Record<NavSidebarLook, string> = {
+  RAIL: 'Beside the page',
+  HEADER: 'Sidebar and header',
+  FLOATING: 'Floating',
+};
+
+export const NAV_PALETTE_LABELS: Record<NavPalette, string> = {
+  QUIET: 'Quiet',
+  NAVY: 'Blueprint',
+  GRAPHITE: 'Graphite',
+  FOREST: 'Forest',
+  PLUM: 'Plum',
+  SAND: 'Sand',
+  SKY: 'Sky',
+  DUSK: 'Dusk',
+  OCEAN: 'Ocean',
+  EMBER: 'Ember',
+  MIDNIGHT: 'Midnight',
+  DAWN: 'Dawn',
+  CUSTOM: 'Your own',
 };
 
 export const NAV_MODULE_SET_LABELS: Record<NavModuleSet, string> = {

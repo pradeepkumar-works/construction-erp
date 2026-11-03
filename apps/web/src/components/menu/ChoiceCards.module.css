@@ -7,6 +7,11 @@
   width: 100%;
 }
 
+/* Smaller cards, for a choice of many (the menu's colours). */
+.cards.compact {
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+}
+
 .card:global(.ant-radio-wrapper) {
   display: flex;
   flex-direction: column;
@@ -79,13 +84,13 @@
 .side {
   inset: 0 auto 0 0;
   width: 2.125rem;
-  background: var(--c-chrome-bg);
+  background: var(--c-chrome-fill);
 }
 
 .navy {
   inset: 0 0 auto 0;
   height: 0.875rem;
-  background: var(--c-chrome-bg);
+  background: var(--c-chrome-fill);
 }
 
 .row {
@@ -139,4 +144,36 @@
 .pillOff {
   left: 3.875rem;
   background: color-mix(in srgb, var(--c-text-base) 10%, transparent);
+}
+
+.floating {
+  inset: 0.3125rem auto 0.3125rem 0.3125rem;
+  border-radius: var(--r-sm);
+}
+
+/* The colour pictures: a wider rail, with its words drawn in the palette's ink. */
+.rail {
+  inset: 0 auto 0 0;
+  width: 4rem;
+  background: var(--c-chrome-fill);
+}
+
+.ink {
+  left: 0.625rem;
+  height: 0.25rem;
+  border-radius: var(--r-xs);
+  background: color-mix(in srgb, var(--c-chrome-ink) 72%, transparent);
+}
+
+.inkQuiet {
+  background: color-mix(in srgb, var(--c-chrome-ink) 45%, transparent);
+}
+
+.chosen {
+  top: 2.125rem;
+  left: 0.375rem;
+  width: 3.25rem;
+  height: 0.75rem;
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--c-chrome-ink) 14%, transparent);
 }
