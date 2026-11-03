@@ -99,7 +99,7 @@ export class CheckOutDto {
 }
 
 export class RegisterQuery {
-  @ApiProperty() @IsUUID() projectId: string;
+  @ApiPropertyOptional({ description: 'The site; left out for the head office register' }) @IsOptional() @IsUUID() projectId?: string;
   @ApiProperty({ example: '2026-10-14' }) @IsDateString() date: string;
 }
 
@@ -111,7 +111,7 @@ export class RegisterEntryDto {
 }
 
 export class SaveRegisterDto {
-  @ApiProperty() @IsUUID() projectId: string;
+  @ApiPropertyOptional({ description: 'The site; null for the head office register' }) @IsOptional() @opt() @IsUUID() projectId?: string | null;
   @ApiProperty({ example: '2026-10-14' }) @IsDateString() date: string;
   @ApiProperty({ type: [RegisterEntryDto] }) @IsArray() @ArrayMaxSize(500) @ValidateNested({ each: true }) @Type(() => RegisterEntryDto) entries: RegisterEntryDto[];
 }

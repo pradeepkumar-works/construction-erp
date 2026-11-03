@@ -97,6 +97,25 @@ test.describe.serial('staff attendance and leave', () => {
     expect(laxmidhar.attendance?.status).toBe('ABSENT');
     await api(tl, '/staff/register', { method: 'PUT', body: { projectId, date: todayIst(), entries: [{ employeeId: laxmidhar.employee.id, status: null }] } });
 
+    // Head office staff are posted at no site: only HR (or an admin) marks their register.
+    await expect(api(tl, `/staff/register?date=${todayIst()}`)).rejects.toThrow(/403/);
+    const hrToken = await apiToken('hr@demo.com');
+    const office = await api<Register & { projectId: string | null }>(hrToken, `/staff/register?date=${todayIst()}`);
+    expect(office.projectId).toBeNull();
+    expect(office.rows.length).toBeGreaterThan(0);
+    const someone = office.rows[0].employee;
+    const hrDesk = await (await browser.newContext()).newPage();
+    await signIn(hrDesk, 'hr@demo.com');
+    await hrDesk.goto('/staff?tab=register');
+    await chooseOption(hrDesk.getByLabel('Register for'), 'Head office');
+    await hrDesk.getByRole('row', { name: new RegExp(someone.fullName) }).getByText('Half day', { exact: true }).click();
+    await hrDesk.getByRole('button', { name: /^Save/ }).click();
+    await expect(hrDesk.getByText(/Register saved for/)).toBeVisible();
+    const marked = await api<Register>(hrToken, `/staff/register?date=${todayIst()}`);
+    expect(marked.rows.find((r) => r.employee.id === someone.id)?.attendance?.status).toBe('HALF_DAY');
+    await api(hrToken, '/staff/register', { method: 'PUT', body: { projectId: null, date: todayIst(), entries: [{ employeeId: someone.id, status: null }] } });
+    await hrDesk.context().close();
+
     const name = `E2E Surveyor ${Date.now()}`;
     const hrPage = await (await browser.newContext()).newPage();
     await signIn(hrPage, 'hr@demo.com');

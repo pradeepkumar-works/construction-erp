@@ -9,6 +9,12 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-head-office-register',
+    date: '2026-11-03',
+    title: 'A register for head office',
+    points: ['HR marks head office staff in the Staff register: pick Head office in Register for. Staff posted at no site had no register before.'],
+  },
+  {
     id: '2026-11-payroll-notices',
     date: '2026-11-03',
     title: 'Salary runs tell the next person',

@@ -2322,11 +2322,12 @@ export const useStaffAttendance = (employeeId: string | undefined, from: string,
     enabled: !!employeeId,
   });
 
-export const useStaffRegister = (projectId: string | undefined, date: string) =>
+/** A site's staff register for a day; `null` is the head office register (staff posted at no site). */
+export const useStaffRegister = (projectId: string | null | undefined, date: string) =>
   useQuery({
     queryKey: ['staff', 'register', projectId, date],
-    queryFn: async () => (await api.get<StaffRegisterDto>('/staff/register', { params: { projectId, date } })).data,
-    enabled: !!projectId,
+    queryFn: async () => (await api.get<StaffRegisterDto>('/staff/register', { params: { projectId: projectId ?? undefined, date } })).data,
+    enabled: projectId !== undefined,
   });
 
 export interface LeaveFilters extends PageParams {

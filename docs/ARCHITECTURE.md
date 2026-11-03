@@ -2133,7 +2133,10 @@ flow, not `SubmissionLifecycleService`: it is a person's request, not site data 
   unpaid without limit. Waiting and approved requests both count. Applying or approving beyond the balance, or
   overlapping other waiting or approved leave, is refused; an advisory lock per employee serialises the check.
 - **Who.** `STAFF_ADMIN_ROLES` (admin, management, HR) keep the staff master and holidays, see everyone and decide
-  anyone's leave. Attendance recorders (`canMarkStaff`) see and mark the staff posted at their projects. Leave is
+  anyone's leave. Attendance recorders (`canMarkStaff`) see and mark the staff posted at their projects. The head office
+  register (`GET|PUT /staff/register` with no `projectId`, Head office first in the web's Register for picker) is the
+  staff posted at no site, marked only by staff admins (`canManageStaff`), so head office days are marked like a site's
+  instead of paid unmarked. Leave is
   decided by a staff admin or the manager of the employee's posting project, never by the employee
   (`ProjectAccessService.canDecideLeave` / `leaveDeciderWhere`). Everyone checks in and applies for their own leave
   once HR links their login; a staff admin can apply for someone else. The employee (before it starts) or a staff

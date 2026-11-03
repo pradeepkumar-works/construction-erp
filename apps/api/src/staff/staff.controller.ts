@@ -165,7 +165,7 @@ export class StaffController {
   @ApiOperation({ summary: "A site's staff register for a day, with leave and holidays" })
   @Get('register')
   register(@CurrentUser() user: RequestUser, @Query() q: RegisterQuery) {
-    return this.staff.register(user, q.projectId, q.date);
+    return this.staff.register(user, q.projectId ?? null, q.date);
   }
 
   @ApiOperation({ summary: 'Mark the register: each entry sets or clears one employee’s day' })

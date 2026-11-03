@@ -572,8 +572,14 @@ export class StaffService {
   // Attendance
 
   /** A site's staff for a day: everyone posted there (and anyone marked there that day), with leave covering the day. */
-  async register(user: RequestUser, projectId: string, date: string): Promise<StaffRegisterDto> {
-    await this.access.assertCanMarkStaff(user, projectId);
+  /** Who may mark a register: a site's markers for a site; HR and admins for head office (staff posted nowhere). */
+  private async assertMayMark(user: RequestUser, projectId: string | null) {
+    if (projectId) return this.access.assertCanMarkStaff(user, projectId);
+    if (!canManageStaff(user.roleKey)) throw new ForbiddenException('Only HR or an admin marks the head office register');
+  }
+
+  async register(user: RequestUser, projectId: string | null, date: string): Promise<StaffRegisterDto> {
+    await this.assertMayMark(user, projectId);
     const day = parseDate(date);
     const employees = await this.prisma.employee.findMany({
       where: {
@@ -614,7 +620,8 @@ export class StaffService {
 
   /** Save the register: each entry sets or clears one employee's day; self check-in times are kept. */
   async saveRegister(user: RequestUser, dto: SaveRegisterDto): Promise<StaffRegisterDto> {
-    await this.access.assertCanMarkStaff(user, dto.projectId);
+    const projectId = dto.projectId ?? null;
+    await this.assertMayMark(user, projectId);
     if (dto.date > todayIn()) throw new BadRequestException('Attendance cannot be marked for a future day');
     const day = parseDate(dto.date);
     const ids = [...new Set(dto.entries.map((e) => e.employeeId))];
@@ -623,7 +630,7 @@ export class StaffService {
       where: {
         id: { in: ids },
         organizationId: user.organizationId,
-        OR: [{ projectId: dto.projectId, isActive: true }, { attendance: { some: { date: day, projectId: dto.projectId } } }, ...(canManageStaff(user.roleKey) ? [{ isActive: true }] : [])],
+        OR: [{ projectId, isActive: true }, { attendance: { some: { date: day, projectId } } }, ...(canManageStaff(user.roleKey) ? [{ isActive: true }] : [])],
       },
       select: { id: true, userId: true, project: { select: { projectManagerId: true } }, attendance: { where: { date: day }, select: { overtimeHours: true, overtimeStatus: true } } },
     });
@@ -642,7 +649,7 @@ export class StaffService {
         const otChanged = e.overtimeHours !== undefined && Number(e.overtimeHours ?? 0) !== Number(was?.overtimeHours ?? 0);
         const data = {
           status: e.status,
-          projectId: dto.projectId,
+          projectId,
           note: e.note === undefined ? undefined : e.note || null,
           overtimeHours: e.overtimeHours === undefined ? undefined : e.overtimeHours,
           ...(otChanged
@@ -662,8 +669,8 @@ export class StaffService {
         marked += 1;
       }
     });
-    await this.audit.log(user, 'STAFF_REGISTER', dto.projectId, 'SAVED', `${dto.date}: ${marked} marked`);
-    return this.register(user, dto.projectId, dto.date);
+    await this.audit.log(user, 'STAFF_REGISTER', projectId ?? user.organizationId, 'SAVED', `${projectId ? '' : 'Head office, '}${dto.date}: ${marked} marked`);
+    return this.register(user, projectId, dto.date);
   }
 
   /** One employee's days between two dates (at most 62): themselves, or someone who can see them. */

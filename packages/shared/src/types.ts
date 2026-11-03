@@ -3160,7 +3160,8 @@ export interface StaffRegisterRowDto {
 /** One site's staff for one day. */
 export interface StaffRegisterDto {
   date: string;
-  projectId: string;
+  /** Null for the head office register: staff posted at no site */
+  projectId: string | null;
   /** Holiday name when the day is a holiday at this site */
   holiday: string | null;
   weeklyOff: boolean;

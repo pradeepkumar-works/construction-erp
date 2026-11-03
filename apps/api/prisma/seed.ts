@@ -1855,6 +1855,7 @@ async function modulesPass(organizationId: string, passwordHash: string) {
   await seedStaff(organizationId);
   await seedAttendanceExtras(organizationId);
   await seedHrRecords(organizationId);
+  await seedHeadOfficeAttendance(organizationId);
   await seedJoiningDocuments(prisma, organizationId);
   await seedPayroll(organizationId);
   await seedGuests(organizationId);
@@ -3394,6 +3395,32 @@ const DEMO_CTC: Record<string, number> = {
  * increment). Two people have a birthday in the coming weeks and the newest site engineer's probation ends soon.
  * Bikash Swain has no PAN or bank account yet, so the dashboard's "details missing" has an entry.
  */
+/**
+ * Head office staff marked by HR in the head office register (staff posted at no site): the last 30 working days,
+ * present, leaving out Sundays, the company's holidays and approved leave. Writes only when head office has no attendance.
+ */
+async function seedHeadOfficeAttendance(organizationId: string) {
+  if (await prisma.staffAttendance.count({ where: { organizationId, projectId: null } })) return;
+  const [staff, hr, holidays] = await Promise.all([
+    prisma.employee.findMany({ where: { organizationId, projectId: null, isActive: true }, select: { id: true, joinedOn: true, leave: { where: { status: 'APPROVED' }, select: { fromDate: true, toDate: true } } } }),
+    prisma.user.findFirst({ where: { organizationId, role: { key: 'HR_MANAGER' } }, select: { id: true } }),
+    prisma.holiday.findMany({ where: { organizationId, projectId: null }, select: { date: true } }),
+  ]);
+  if (!staff.length || !hr) return;
+  const off = new Set(holidays.map((h) => h.date.toISOString().slice(0, 10)));
+  const rows: Prisma.StaffAttendanceCreateManyInput[] = [];
+  for (const e of staff) {
+    for (let i = 30; i >= 1; i--) {
+      const date = day(-i);
+      const d = date.toISOString().slice(0, 10);
+      if (isWeeklyOff(d) || off.has(d) || (e.joinedOn && e.joinedOn > date)) continue;
+      if (e.leave.some((l) => l.fromDate <= date && l.toDate >= date)) continue;
+      rows.push({ organizationId, employeeId: e.id, date, projectId: null, status: 'PRESENT', markedById: hr.id, createdAt: date });
+    }
+  }
+  await prisma.staffAttendance.createMany({ data: rows, skipDuplicates: true });
+}
+
 async function seedHrRecords(organizationId: string) {
   if ((await prisma.employeeEvent.count({ where: { organizationId } })) > 0) return;
   const staff = await prisma.employee.findMany({ where: { organizationId }, orderBy: { employeeCode: 'asc' } });
