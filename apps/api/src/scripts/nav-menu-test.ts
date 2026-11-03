@@ -158,6 +158,10 @@ test('what waits in a module: approvals whose list is one of its pages, and the 
     const toOrder = holding('purchases.toOrder');
     assert.ok(dpr.length && toOrder.length, `${settings.moduleSet}: Daily reports and Requests to order have a module`);
     for (const m of menu) assert.equal(waiting[m.key] ?? 0, (dpr.includes(m.key) ? 3 : 0) + (toOrder.includes(m.key) ? 2 : 0), `${settings.moduleSet} › ${m.key}`);
+    // Inspections to approve counted once, though both the approval and the Inspections page's own badge hold them.
+    const inspections = holding('quality.inspections');
+    const both = menuWaiting(menu, [{ type: 'INSPECTION', count: 4 }], { 'quality.inspections': 4 });
+    for (const m of menu) assert.equal(both[m.key] ?? 0, inspections.includes(m.key) ? 4 : 0, `${settings.moduleSet} › ${m.key}: inspections once`);
   }
   assert.deepEqual(menuWaiting(navMenuFor(engineer, DEFAULT_NAV_SETTINGS), undefined, undefined), {});
 });

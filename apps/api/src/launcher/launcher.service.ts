@@ -24,6 +24,9 @@ import { RequestUser } from '../common/current-user';
 import { iso } from '../common/serialize';
 import { configuredWebUrl } from '../common/web-url';
 import { HomeService } from '../dashboard/home.service';
+import { CorrespondenceService } from '../correspondence/correspondence.service';
+import { parseDate } from '../common/serialize';
+import { todayIn } from '../notifications/time';
 import { CreatePinDto, ImportDto, VisitDto } from './launcher.dto';
 import { flagDto, myRequestDto } from './home-tiles.service';
 
@@ -41,6 +44,7 @@ export class LauncherService {
     private prisma: PrismaService,
     private access: ProjectAccessService,
     private home: HomeService,
+    private letters: CorrespondenceService,
   ) {}
 
   /** Pins and the latest places, with project names as they are now; and for Discover, the company's marks, the
@@ -170,7 +174,7 @@ export class LauncherService {
 
   /** What waits on the caller, on the tiles that lead to it: Approvals, each module (its entries to approve), My work and Watch list. */
   async badges(user: RequestUser): Promise<LauncherBadgesDto> {
-    const work = await this.home.myWork(user);
+    const [work, own] = await Promise.all([this.home.myWork(user), this.ownMoves(user)]);
     const nodes: Record<string, number> = {};
     const words: Record<string, string> = {};
     // A count and what it counts go on together, so a tile says "53 to approve" rather than a bare number.
@@ -179,6 +183,8 @@ export class LauncherService {
       nodes[id] = (nodes[id] ?? 0) + n;
       words[id] = word;
     };
+    // Two kinds of work on one tile: the word of the one there is, or "waiting" for both.
+    const addEither = (id: string, a: [number, string], b: [number, string]) => add(id, a[0] + b[0], a[0] && b[0] ? 'waiting' : a[0] ? a[1] : b[1]);
     const approvals = work.approvals ?? [];
     add('approvals', approvals.reduce((t, a) => t + a.count, 0), 'to approve');
     for (const key of MODULE_KEYS) {
@@ -193,8 +199,29 @@ export class LauncherService {
     add('quality.audits', work.findingsToClose?.count, 'to close');
     add('purchases.toBill', work.toMatch?.count, 'to match');
     add('accounts.debitNotes', work.toDebit?.count, 'to debit');
+    // Inspections to approve on their own page, as well as on Quality.
+    add('quality.inspections', approvals.filter((a) => a.type === 'INSPECTION').reduce((t, a) => t + a.count, 0), 'to approve');
+    // NCRs, RFIs and letters that wait on the user: theirs to put right or close, to chase or close, to answer or sign.
+    addEither('quality.ncrs', [own.ncrsToRectify, 'to put right'], [own.ncrsToClose, 'to close']);
+    addEither('documents.rfis', [own.rfisToChase, 'to chase'], [own.rfisToClose, 'to close']);
+    add('documents.letters', own.lettersToAnswer, 'to answer');
+    add('correspondence.outward', own.lettersToSign, 'to sign');
     // Warnings are there to read; everything else counted here waits on the user's own move.
     const info = ['watch'].filter((id) => nodes[id]);
     return { nodes, words, info, approvals: approvals.filter((a) => a.count > 0) };
+  }
+
+  /** Counts of NCRs, RFIs and letters whose next move is the user's, in the projects they can see. */
+  private async ownMoves(user: RequestUser) {
+    const seen = this.access.submissionWhere(user);
+    const today = parseDate(todayIn());
+    const [ncrsToRectify, ncrsToClose, rfisToChase, rfisToClose, letters] = await Promise.all([
+      this.prisma.ncr.count({ where: { ...seen, actionById: user.id, status: 'OPEN' } }),
+      this.prisma.ncr.count({ where: { ...seen, raisedById: user.id, status: 'ACTION_TAKEN' } }),
+      this.prisma.rfi.count({ where: { ...seen, raisedById: user.id, status: 'OPEN', replyBy: { lt: today } } }),
+      this.prisma.rfi.count({ where: { ...seen, raisedById: user.id, status: 'ANSWERED' } }),
+      this.letters.countsForMe(user),
+    ]);
+    return { ncrsToRectify, ncrsToClose, rfisToChase, rfisToClose, lettersToAnswer: letters.toAnswer, lettersToSign: letters.toSign };
   }
 }

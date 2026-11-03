@@ -50,7 +50,7 @@ test('the MD sees every contract project, opens one and the Monthly MIS', async 
   expect((await download).suggestedFilename()).toMatch(/^monthly-mis-\d{4}-\d{2}-\d{2}\.xlsx$/);
 });
 
-test('every report answers, and only those who see project cost get them', async () => {
+test('every report answers, for those who see project cost and for the desk it belongs to', async () => {
   const accounts = await apiToken('accounts@demo.com');
   for (const key of ['mis', 'profit-loss', 'wip', 'receivables', 'payables', 'procurement', 'labour', 'stock', 'approvals']) {
     const r = await api<Report>(accounts, `/management/reports/${key}`);
@@ -61,4 +61,11 @@ test('every report answers, and only those who see project cost get them', async
   const engineer = await apiToken('engineer@demo.com');
   await expect(api(engineer, '/management/portfolio')).rejects.toThrow(/403/);
   await expect(api(engineer, '/management/reports/mis')).rejects.toThrow(/403/);
+  // Each desk reads its own report and no other.
+  for (const [email, own] of [['procurement@demo.com', 'procurement'], ['store@demo.com', 'stock'], ['hr@demo.com', 'labour']] as const) {
+    const token = await apiToken(email);
+    expect((await api<Report>(token, `/management/reports/${own}`)).sections.length).toBeGreaterThan(0);
+    await expect(api(token, '/management/reports/mis')).rejects.toThrow(/403/);
+    await expect(api(token, '/management/portfolio')).rejects.toThrow(/403/);
+  }
 });

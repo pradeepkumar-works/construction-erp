@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-module-figures',
+    date: '2026-11-03',
+    title: 'Figures on every department, and counts on more pages',
+    points: [
+      'Contractor management shows work orders placed and retention kept from subcontractors, Planning and estimation the tenders to submit and bids awaiting a result, HR and payroll the last salary run’s net pay, and Administration who can sign in, access requests and failing connections.',
+      'Quality shows failed tests and late results beside open NCRs. Safety incidents no longer count near misses, which show on their own.',
+      'Inspections, NCRs, RFIs and the inward and outward registers show what waits on you there: to approve, to put right, to chase, to answer or to sign.',
+      'The procurement, store and HR managers can open Procurement spend, Stock position and Labour and attendance.',
+    ],
+  },
+  {
     id: '2026-11-departments-menu',
     date: '2026-11-03',
     title: 'The menu is grouped by department',

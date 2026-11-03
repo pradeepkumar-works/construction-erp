@@ -22,17 +22,17 @@ export const DEPARTMENT_FIGURES: Record<string, DepartmentFigureSource[]> = {
   'quality-control': [{ module: 'quality' }, { module: 'safety' }],
   'design-drawings': [{ module: 'documents' }],
   correspondence: [{ module: 'correspondence' }],
-  'planning-estimation': [{ module: 'site', ids: ['openRisks'] }],
+  'planning-estimation': [{ module: 'tenders' }, { module: 'site', ids: ['openRisks'] }],
   'purchase-management': [{ module: 'materials', ids: ['materialRequestsToApprove'] }, { module: 'purchases' }],
   'store-inventory': [{ module: 'materials' }, { module: 'purchases', ids: ['lateDeliveries'] }],
-  'contractor-management': [],
+  'contractor-management': [{ module: 'subcontracts' }],
   'machinery-vehicles': [{ module: 'plant' }],
   'plant-production': [{ module: 'rmc' }],
   'accounts-finance': [{ module: 'accounts' }, { module: 'billing', ids: ['clientsOwe', 'billsNotSent'] }],
   'labour-management': [{ module: 'site', ids: ['labour', 'dailyReports'] }],
-  'hr-payroll': [{ module: 'people' }],
+  'hr-payroll': [{ module: 'people', ids: ['staffPresent', 'staffOnLeave', 'leaveToDecide', 'overtimeToDecide', 'salaryRunsWaiting'] }, { module: 'payroll', ids: ['netPayLastRun'] }, { module: 'people', ids: ['staffJoined'] }],
   'reports-mis': [],
-  administration: [],
+  administration: [{ module: 'admin' }],
 };
 
 /** At most this many figures in the strip (the strip's own limit), in the order of `DEPARTMENT_FIGURES`. */

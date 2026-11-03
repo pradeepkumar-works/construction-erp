@@ -7,7 +7,7 @@
  *   node dist/scripts/management-test.js
  */
 import assert from 'node:assert/strict';
-import { APPROVAL_OLD_DAYS, FORECAST_MIN_DONE_PCT, UNBILLED_WATCH_DAYS, type PortfolioScheduleDto } from '@erp/shared';
+import { APPROVAL_OLD_DAYS, FORECAST_MIN_DONE_PCT, MANAGEMENT_REPORT_KEYS, UNBILLED_WATCH_DAYS, canReadReport, type PortfolioScheduleDto } from '@erp/shared';
 import {
   approvalAgeing,
   billedMarginPct,
@@ -226,6 +226,17 @@ test('attention is sorted act before watch, then schedule, cost, billing, collec
 });
 
 // Periods
+
+test('each desk reads its own report, and those who see the dashboard read them all', () => {
+  for (const key of MANAGEMENT_REPORT_KEYS) {
+    assert.equal(canReadReport('MANAGEMENT', key), true, key);
+    assert.equal(canReadReport('SITE_ENGINEER', key), false, key);
+  }
+  const desk = (role: Parameters<typeof canReadReport>[0]) => MANAGEMENT_REPORT_KEYS.filter((k) => canReadReport(role, k));
+  assert.deepEqual(desk('PROCUREMENT_MANAGER'), ['procurement']);
+  assert.deepEqual(desk('STORE_MANAGER'), ['stock']);
+  assert.deepEqual(desk('HR_MANAGER'), ['labour']);
+});
 
 test('months between two dates, the last twelve, a month’s first and last day and the financial year', () => {
   assert.deepEqual(monthsBetween('2026-11-15', '2027-02-01'), ['2026-11', '2026-12', '2027-01', '2027-02']);

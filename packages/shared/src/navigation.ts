@@ -9,7 +9,7 @@ import { canUseWhatsappCapture } from './whatsapp';
 import { canSeeLeakage } from './leakage';
 import { canSeeCashForecast } from './cash-forecast';
 import { canSeeAttendanceCheck } from './attendance-check';
-import { canSeeManagement } from './management';
+import { canReadReport, canSeeManagement } from './management';
 import { canSeeGroupCompanies, type AuthGroupDto } from './group';
 import { canManageModules, pathIsOff } from './module-switches';
 import { MASTER_LISTS, canManageMaster } from './masters';
@@ -154,6 +154,9 @@ export const NAV_ACCESS = {
   cashForecast: (u: NavUser) => canSeeCashForecast(u.roleKey),
   attendanceCheck: (u: NavUser) => canSeeAttendanceCheck(u.roleKey),
   management: (u: NavUser) => canSeeManagement(u.roleKey),
+  reportProcurement: (u: NavUser) => canReadReport(u.roleKey, 'procurement'),
+  reportLabour: (u: NavUser) => canReadReport(u.roleKey, 'labour'),
+  reportStock: (u: NavUser) => canReadReport(u.roleKey, 'stock'),
   subscription: (u: NavUser) => !!u.billing && P.canManageBilling(u.roleKey),
   platform: (u: NavUser) => !!u.platformAdmin,
   books: (u: NavUser) => P.canKeepBooks(u.roleKey),
@@ -377,9 +380,9 @@ export const NAV_TREE: NavNode[] = [
   { id: 'reports.wip', parent: 'reports', label: 'Work in progress', icon: 'hourglass', route: '/management/reports/wip', access: 'management', status: 'live', newUntil: '2027-01-31', description: 'Work done and not billed, billed and not certified, certified and not paid.', keywords: 'wip unbilled work billing lag certification' },
   { id: 'reports.receivablesAgeing', parent: 'reports', label: 'Receivables ageing', icon: 'hand-coins', route: '/management/reports/receivables', access: 'management', status: 'live', newUntil: '2027-01-31', description: 'What clients owe by age, client by client and bill by bill.', keywords: 'debtors outstanding collection retention' },
   { id: 'reports.payablesAgeing', parent: 'reports', label: 'Payables ageing', icon: 'wallet', route: '/management/reports/payables', access: 'management', status: 'live', newUntil: '2027-01-31', description: 'What is owed to vendors and subcontractors by how far past due.', keywords: 'creditors overdue msme' },
-  { id: 'reports.procurementSpend', parent: 'reports', label: 'Procurement spend', icon: 'shopping-cart', route: '/management/reports/procurement', access: 'management', status: 'live', newUntil: '2027-01-31', description: 'Orders by vendor, material and project, rates paid, and how long orders take.', keywords: 'purchase spend vendor rates cycle time on time delivery' },
-  { id: 'reports.labour', parent: 'reports', label: 'Labour and attendance', icon: 'users', route: '/management/reports/labour', access: 'management', status: 'live', newUntil: '2027-01-31', description: 'Man-days by project, trade and contractor, and labour cost.', keywords: 'manpower man days muster headcount' },
-  { id: 'reports.stockPosition', parent: 'reports', label: 'Stock position', icon: 'boxes', route: '/management/reports/stock', access: 'management', status: 'live', newUntil: '2027-01-31', description: 'Stock value by project and store, items below minimum, stock lying idle.', keywords: 'inventory value closing stock' },
+  { id: 'reports.procurementSpend', parent: 'reports', label: 'Procurement spend', icon: 'shopping-cart', route: '/management/reports/procurement', access: 'reportProcurement', status: 'live', newUntil: '2027-01-31', description: 'Orders by vendor, material and project, rates paid, and how long orders take.', keywords: 'purchase spend vendor rates cycle time on time delivery' },
+  { id: 'reports.labour', parent: 'reports', label: 'Labour and attendance', icon: 'users', route: '/management/reports/labour', access: 'reportLabour', status: 'live', newUntil: '2027-01-31', description: 'Man-days by project, trade and contractor, and labour cost.', keywords: 'manpower man days muster headcount' },
+  { id: 'reports.stockPosition', parent: 'reports', label: 'Stock position', icon: 'boxes', route: '/management/reports/stock', access: 'reportStock', status: 'live', newUntil: '2027-01-31', description: 'Stock value by project and store, items below minimum, stock lying idle.', keywords: 'inventory value closing stock' },
   { id: 'reports.approvalsWaiting', parent: 'reports', label: 'Approvals waiting', icon: 'clock', route: '/management/reports/approvals', access: 'management', status: 'live', newUntil: '2027-01-31', description: 'Entries waiting for a decision by type and project, the oldest first.', keywords: 'pending approvals ageing bottleneck' },
   { id: 'reports.progress', parent: 'reports', label: 'Progress reports', icon: 'file-text', route: '/reports', access: 'reports', status: 'live', description: 'Daily, weekly and monthly progress reports for the client, as PDF, Word or Excel.', keywords: 'pdf word excel mpr dpr wpr mis daily monthly weekly client official', concord: ['p9-status', 'p11-projdash'] },
   { id: 'reports.cost', parent: 'reports', label: 'Project cost', icon: 'chart-pie', route: '/cost', access: 'cost', status: 'live', description: 'Budget against actual by cost head, margin per BOQ item.', keywords: 'budget cash flow margin job cost', concord: ['p9-budget', 'p9-jobcost', 'p9-cumbudget', 'p9-clientsub'] },

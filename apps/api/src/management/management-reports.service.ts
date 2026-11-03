@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import {
   APPROVAL_OLD_DAYS,
@@ -7,6 +7,7 @@ import {
   COST_HEAD_LABELS,
   HEALTH_LABELS,
   MANAGEMENT_REPORTS,
+  canReadReport,
   MAX_PAGE_SIZE,
   MSME_CATEGORY_LABELS,
   PORTFOLIO_SCHEDULE_LABELS,
@@ -119,7 +120,7 @@ export class ManagementReportsService {
   ) {}
 
   async report(user: RequestUser, key: ManagementReportKey, q: ManagementReportQuery): Promise<ManagementReportDto> {
-    this.management.assertSee(user);
+    if (!canReadReport(user.roleKey, key)) throw new ForbiddenException('This report is for management, accounts and project managers, and for the desk it belongs to');
     const info = MANAGEMENT_REPORTS[key];
     const today = todayIn();
     const period = this.period(info.period, q, today);

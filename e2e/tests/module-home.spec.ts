@@ -30,9 +30,16 @@ test('each module has a screen with its tiles, figures and what waits', async ({
   const weOwe = money.figures.find((f) => f.id === 'weOwe');
   expect(weOwe?.versus?.part?.id).toBe('weOweOverdue');
   const quality = await api<ModuleHome>(pm, '/dashboard/modules/quality');
-  expect(quality.figures.map((f) => f.id)).toEqual(expect.arrayContaining(['openNcrs']));
+  expect(quality.figures.map((f) => f.id)).toEqual(['testsFailed', 'testResultsOverdue', 'openNcrs']);
   const safety = await api<ModuleHome>(pm, '/dashboard/modules/safety');
   expect(safety.figures.map((f) => f.id)).toEqual(expect.arrayContaining(['safetyIncidents']));
+  // Subcontracts, Tenders, Payroll and Admin have figures of their own now, for those who see them.
+  const md = await apiToken('md@demo.com');
+  for (const [key, ids] of [['subcontracts', ['workOrdersPlaced']], ['tenders', ['tendersToSubmit', 'bidsAwaitingResult']], ['payroll', ['salaryRunsWaiting']]] as const) {
+    expect((await api<ModuleHome>(md, `/dashboard/modules/${key}`)).figures.map((f) => f.id), key).toEqual(expect.arrayContaining([...ids]));
+  }
+  const admin = await apiToken('admin@demo.com');
+  expect((await api<ModuleHome>(admin, '/dashboard/modules/admin')).figures.map((f) => f.id)).toEqual(['peopleWithLogin', 'accessRequestsOpen', 'connectionsFailing']);
   const accountsSite = await api<ModuleHome>(accounts, '/dashboard/modules/site');
   expect(accountsSite.figures.map((f) => f.id)).not.toContain('dailyReports');
   await expect(api(pm, '/dashboard/modules/nowhere')).rejects.toThrow(/404/);

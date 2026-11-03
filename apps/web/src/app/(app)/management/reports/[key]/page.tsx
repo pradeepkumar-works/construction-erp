@@ -5,7 +5,7 @@ import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigat
 import { App, Button, Flex, Result, Spin, Typography } from 'antd';
 import { tk } from '@/ds';
 import dayjs, { type Dayjs } from 'dayjs';
-import { MANAGEMENT_REPORTS, MANAGEMENT_REPORT_KEYS, canSeeManagement, reportingMonth, type ManagementReportDto, type ManagementReportKey } from '@erp/shared';
+import { MANAGEMENT_REPORTS, MANAGEMENT_REPORT_KEYS, canReadReport, reportingMonth, type ManagementReportDto, type ManagementReportKey } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useManagementReport, useProjects } from '@/lib/queries';
 import { useProjectScope, useVerticalScope } from '@/lib/project-scope';
@@ -39,7 +39,7 @@ export default function Page() {
         <Result icon={<ResultMark kind="not-found" />} title="There is no such report" subTitle="Choose a report from the management dashboard." />
       </div>
     );
-  if (user && !canSeeManagement(user.roleKey))
+  if (user && !canReadReport(user.roleKey, key))
     return (
       <div className="page-container">
         <PageHeader title={MANAGEMENT_REPORTS[key].title} crumbs={crumbs} />
