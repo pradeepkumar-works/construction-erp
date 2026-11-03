@@ -36,10 +36,20 @@ export class ApprovalRightsService {
   }
 
   async rightsFor(organizationId: string, roleKey: RoleKey): Promise<ApprovalRightDto[]> {
+    if (roleKey === 'ADMIN' || isGuest(roleKey)) return this.rightsFrom(roleKey, []);
+    return this.rightsFrom(roleKey, await this.rules(organizationId));
+  }
+
+  /** Every role's rights, reading the matrix once. */
+  async rightsByRole(organizationId: string): Promise<Map<RoleKey, ApprovalRightDto[]>> {
+    const rules = await this.rules(organizationId);
+    return new Map(ROLE_KEYS.map((k) => [k, this.rightsFrom(k, rules)]));
+  }
+
+  private rightsFrom(roleKey: RoleKey, rules: LevelRule[]): ApprovalRightDto[] {
     // Admin decides every level of everything, so nothing is ever left without an approver.
     if (roleKey === 'ADMIN') return ALL_APPROVAL_RIGHTS.flatMap((r) => Array.from({ length: MAX_APPROVAL_LEVELS }, (_, i) => (i ? { ...r, level: i + 1 } : r)));
     if (isGuest(roleKey)) return [];
-    const rules = await this.rules(organizationId);
     if (!rules.length) return defaultApprovalRights(roleKey);
     return rules
       .filter((r) => r.roleKey === roleKey)

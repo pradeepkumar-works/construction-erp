@@ -455,8 +455,12 @@ module to ask for still fits. A tile opens a drawer with the module's line and i
 `FormShell` modal with a note). **Requests** are `AccessRequest` rows (`HomeTilesService`, `POST /launcher/access-requests`):
 one waiting per person and module, refused for a module the role already opens or cannot ask for; each is audited and sends
 `ACCESS_REQUEST` to the company's admins, linking to Admin › Home tiles (`/home-tiles?request=<id>`). There is no grant of its
-own: an admin changes the person's role (Users) or turns the module on (Modules), then marks the request granted, or declines
+own: an admin changes the person's role or turns the module on (Modules), then marks the request granted, or declines
 it with a reason; the person gets an `ACCESS_REQUEST` notification (entity `ACCESS_DECISION`, opening Home) either way.
+Granted says "You can open it now", so it has to be true: each open request carries `grant`, `accessGrantCheck`
+(`@erp/shared/launcher.ts`) over the person's role, its approval rights (`ApprovalRightsService.rightsByRole`) and the company's
+modules, with the roles that would open it (narrowest first, Admin only when nothing else does). `decide` refuses Granted with
+`accessGrantProblem`'s words until the check passes, and the Grant dialog changes the role in place (`PATCH /users/:id`).
 
 **Admin › Home tiles** (`app/(app)/home-tiles`, `canManageUsers`) answers requests, holds the Discover switch, and marks
 each tile New (optionally until a day) or Featured, or back to as shipped (`PUT /launcher/flags/:nodeId`). Changes are

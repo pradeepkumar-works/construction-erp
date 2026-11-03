@@ -2,9 +2,11 @@
  * The launcher Home (ARCHITECTURE "Launcher Home"): pins and Recent, kept per user on the server so they follow
  * them to every browser and the phone. The tiles themselves come from the navigation tree (`navigation.ts`).
  */
-import type { AccessRequestStatus, NavPinKind, NavVisitKind, RoleKey, SubmissionType } from './enums';
+import { ROLE_KEYS, type AccessRequestStatus, type NavPinKind, type NavVisitKind, type RoleKey, type SubmissionType } from './enums';
+import { ROLE_LABELS } from './labels';
 import { NAV_TREE, canSeeNav, type NavNode, type NavUser } from './navigation';
 import { pathIsOff } from './module-switches';
+import { isGuest, isSupplier } from './permissions';
 
 /** Pinned holds at most this many. */
 export const LAUNCHER_PIN_MAX = 12;
@@ -60,6 +62,8 @@ export interface AccessRequestDto extends MyAccessRequestDto {
   roleKey: RoleKey;
   note: string | null;
   decidedByName: string | null;
+  /** While open: whether marking it granted would let them in, and what to change if not */
+  grant: AccessGrantCheck | null;
 }
 
 /** `GET /launcher`: everything Home needs from the server, in one call. */
@@ -167,6 +171,44 @@ export function navModuleOn(node: NavNode, modulesOff: readonly string[] | undef
 /** A module the user's role cannot open, that they could ask for: on for the company, and not Admin itself. */
 export const canRequestNav = (user: NavUser, node: NavNode): boolean =>
   node.parent === null && !node.route && node.id !== 'admin' && node.status === 'live' && !canSeeNav(user, node) && navModuleOn(node, user.modulesOff);
+
+/**
+ * Whether an access request can be marked granted: the person opens the module now, or what still stands in the way (the
+ * module is off for the company, their role does not open it) and which roles would. `asRole` is the person with another
+ * role and every module on. Admin is offered only when no other role opens it.
+ */
+export interface AccessGrantCheck {
+  openNow: boolean;
+  /** No page of the module is on for the company */
+  moduleOff: boolean;
+  /** With the module on, their own role still does not open it */
+  roleBlocks: boolean;
+  /** Roles that open it once the module is on, the narrowest first (Site engineer before Management) */
+  rolesThatOpen: RoleKey[];
+}
+
+export function accessGrantCheck(person: NavUser, node: NavNode, asRole: (role: RoleKey) => NavUser): AccessGrantCheck {
+  if (canSeeNav(person, node)) return { openNow: true, moduleOff: false, roleBlocks: false, rolesThatOpen: [] };
+  const staff = [...ROLE_KEYS].reverse().filter((r) => !isGuest(r) && !isSupplier(r) && canSeeNav(asRole(r), node));
+  const others = staff.filter((r) => r !== 'ADMIN');
+  return {
+    openNow: false,
+    moduleOff: !navModuleOn(node, person.modulesOff),
+    roleBlocks: !canSeeNav(asRole(person.roleKey), node),
+    rolesThatOpen: others.length ? others : staff,
+  };
+}
+
+/** What an admin is told when they mark a request granted that would not let the person in; null when it would. */
+export function accessGrantProblem(check: AccessGrantCheck, personName: string, roleKey: RoleKey, label: string): string | null {
+  if (check.openNow) return null;
+  const roles = check.rolesThatOpen.map((r) => ROLE_LABELS[r]);
+  const roleLine = check.roleBlocks
+    ? `${personName}'s role, ${ROLE_LABELS[roleKey]}, does not open ${label}${roles.length ? `; ${roles.length > 1 ? 'these do' : 'this does'}: ${roles.join(', ')}` : ''}. Change their role in Users`
+    : '';
+  if (check.moduleOff) return `${label} is turned off for the company. Turn it on in Modules${roleLine ? `. ${roleLine}` : ''}, then mark it granted.`;
+  return roleLine ? `${roleLine}, then mark it granted.` : `${personName} still cannot open ${label}. Check their role in Users, then mark it granted.`;
+}
 
 /**
  * Discover on Home: modules marked New (until the user opens them) or Featured, then modules the user

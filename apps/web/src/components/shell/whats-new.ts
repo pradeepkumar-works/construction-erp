@@ -9,6 +9,14 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-access-grant',
+    date: '2026-11-03',
+    title: 'Granting access lets the person in',
+    points: [
+      'Grant on an access request now shows whether the person can open the module yet. If their role does not open it, pick one that does and change it from the same dialog; if the module is off, turn it on in Modules. It is marked granted only once they can really open it.',
+    ],
+  },
+  {
     id: '2026-11-new-and-search',
     date: '2026-11-03',
     title: 'More to start from New, more to find in Search',

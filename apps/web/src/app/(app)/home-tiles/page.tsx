@@ -4,7 +4,7 @@ import React, { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import dayjs from 'dayjs';
-import { Button, Card, Empty, Flex, Form, Input, Switch, Typography } from 'antd';
+import { Button, Card, Empty, Flex, Form, Input, Select, Switch, Typography } from 'antd';
 import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
@@ -12,17 +12,19 @@ import {
   ACCESS_REQUEST_STATUS_LABELS,
   LAUNCHER_FLAG_NODES,
   ROLE_LABELS,
+  accessGrantProblem,
   canManageUsers,
   launcherMarks,
   type AccessRequestDto,
   type HomeTilesDto,
   type LauncherFlagDto,
   type NavNode,
+  type RoleKey,
 } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useNotify } from '@/lib/notify';
 import { formatDate, formatDateTime, todayDate } from '@/lib/format';
-import { useDecideAccess, useHomeTiles, useSetHomeTilesSettings, useSetLauncherFlag } from '@/lib/queries';
+import { useChangeRoleForRequest, useDecideAccess, useHomeTiles, useSetHomeTilesSettings, useSetLauncherFlag } from '@/lib/queries';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { FormShell } from '@/components/form/FormShell';
@@ -31,12 +33,72 @@ import { TreeIcon } from '@/components/shell/nav-icons';
 
 type Decision = { request: AccessRequestDto; status: 'GRANTED' | 'DECLINED' };
 
-/** Grant (after changing the role or turning the module on) or decline, with a line for the person. */
-function DecideDialog({ decision, onClose }: { decision: Decision | null; onClose: () => void }) {
+/**
+ * What stands between the person and the module, read live from the request: their role (changed here, to one that opens
+ * it) and the company's modules (turned on in Modules). Grant waits until both let them in, so "You can open it now" is true.
+ */
+function GrantCheck({ r }: { r: AccessRequestDto }) {
+  const change = useChangeRoleForRequest();
+  const notify = useNotify();
+  const g = r.grant;
+  const [role, setRole] = useState<RoleKey | undefined>(g?.rolesThatOpen[0]);
+  if (!g) return null;
+  if (g.openNow)
+    return (
+      <Typography.Paragraph>
+        <span translate="no">{r.userName}</span>&apos;s role, {ROLE_LABELS[r.roleKey]}, opens {r.nodeLabel} now. Mark the request granted so they know.
+      </Typography.Paragraph>
+    );
+  return (
+    <Flex vertical gap={tk.space[3]} style={{ marginBottom: tk.space[4] }}>
+      {g.moduleOff && (
+        <p style={{ margin: 0 }}>
+          {r.nodeLabel} is turned off for the company. Turn it on in <Link href="/company-modules">Modules</Link> first.
+        </p>
+      )}
+      {g.roleBlocks && (
+        <p style={{ margin: 0 }}>
+          <span translate="no">{r.userName}</span>&apos;s role, {ROLE_LABELS[r.roleKey]}, does not open {r.nodeLabel}.{' '}
+          {g.rolesThatOpen.length ? 'Give them one that does:' : <>Change their role in <Link href="/users">Users</Link>.</>}
+        </p>
+      )}
+      {g.roleBlocks && g.rolesThatOpen.length > 0 && (
+        <Flex gap={tk.space[2]} wrap align="center">
+          <Select<RoleKey>
+            aria-label={`New role for ${r.userName}`}
+            value={role}
+            onChange={setRole}
+            options={g.rolesThatOpen.map((k) => ({ value: k, label: ROLE_LABELS[k] }))}
+            style={{ minWidth: 220 }}
+          />
+          <Button
+            disabled={!role}
+            loading={change.isPending}
+            onClick={() =>
+              role &&
+              change.mutate(
+                { userId: r.userId, roleKey: role },
+                { onSuccess: () => notify.saved(`${r.userName} is ${ROLE_LABELS[role]} now`), onError: (e) => notify.failed(e) },
+              )
+            }
+          >
+            Change role
+          </Button>
+        </Flex>
+      )}
+      {!g.moduleOff && !g.roleBlocks && <Typography.Paragraph style={{ margin: 0 }}>{accessGrantProblem(g, r.userName, r.roleKey, r.nodeLabel)}</Typography.Paragraph>}
+      <Typography.Text type="secondary">Mark it granted once they can open it, so what they are told is true.</Typography.Text>
+    </Flex>
+  );
+}
+
+/** Grant (once their role and the company's modules let them in) or decline, with a line for the person. */
+function DecideDialog({ decision, requests, onClose }: { decision: Decision | null; requests: AccessRequestDto[]; onClose: () => void }) {
   const [form] = Form.useForm<{ reply?: string }>();
   const decide = useDecideAccess();
   const notify = useNotify();
-  const r = decision?.request;
+  // The row as it is now: changing their role here refetches the requests with a fresh check.
+  const r = decision ? (requests.find((x) => x.id === decision.request.id) ?? decision.request) : undefined;
   const granting = decision?.status === 'GRANTED';
   return (
     <FormShell
@@ -45,8 +107,9 @@ function DecideDialog({ decision, onClose }: { decision: Decision | null; onClos
       form={form}
       layout="modal"
       projectDefault={false}
-      title={r ? (granting ? `Mark ${r.nodeLabel} granted for ${r.userName}` : `Decline ${r.nodeLabel} for ${r.userName}`) : ''}
+      title={r ? (granting ? `Grant ${r.nodeLabel} to ${r.userName}` : `Decline ${r.nodeLabel} for ${r.userName}`) : ''}
       okText={granting ? 'Mark granted' : 'Decline'}
+      okDisabled={granting && !!r?.grant && !r.grant.openNow}
       onSubmit={async (v) => {
         if (!decision) return;
         await decide.mutateAsync({ id: decision.request.id, status: decision.status, reply: v.reply });
@@ -54,12 +117,7 @@ function DecideDialog({ decision, onClose }: { decision: Decision | null; onClos
       }}
     >
       <Form form={form} layout="vertical">
-        {r && granting && (
-          <Typography.Paragraph>
-            First give <span translate="no">{r.userName}</span> a role that opens {r.nodeLabel} in <Link href="/users">Users</Link>, or turn the module on in{' '}
-            <Link href="/company-modules">Modules</Link>. Then mark the request granted so they know.
-          </Typography.Paragraph>
-        )}
+        {r && granting && <GrantCheck key={r.id} r={r} />}
         <Form.Item
           name="reply"
           label={granting ? 'A line for them' : 'Why not'}
@@ -139,7 +197,7 @@ function Requests({ requests }: { requests: AccessRequestDto[] }) {
       ) : (
         <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No requests yet. People ask from Discover on their Home when their role does not open a module." />
       )}
-      <DecideDialog decision={decision} onClose={() => setDecision(null)} />
+      <DecideDialog decision={decision} requests={requests} onClose={() => setDecision(null)} />
     </Card>
   );
 }

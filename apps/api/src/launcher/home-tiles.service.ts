@@ -2,6 +2,8 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException 
 import type { AccessRequest, LauncherFlag } from '@prisma/client';
 import {
   LAUNCHER_FLAG_NODES,
+  accessGrantCheck,
+  accessGrantProblem,
   canManageUsers,
   canRequestNav,
   canSeeNav,
@@ -10,7 +12,10 @@ import {
   type HomeTilesDto,
   type LauncherFlagDto,
   type MyAccessRequestDto,
+  type NavUser,
+  type RoleKey,
 } from '@erp/shared';
+import { ApprovalRightsService } from '../common/approval-rights.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../common/audit.service';
 import { RequestUser } from '../common/current-user';
@@ -24,7 +29,10 @@ export const myRequestDto = (r: AccessRequest): MyAccessRequestDto => ({ id: r.i
 const requestInclude = { user: { select: { fullName: true, role: { select: { key: true } } } }, decidedBy: { select: { fullName: true } } } as const;
 type RequestRow = AccessRequest & { user: { fullName: string; role: { key: string } }; decidedBy: { fullName: string } | null };
 
-const requestDto = (r: RequestRow): AccessRequestDto => ({
+/** Whether a request's person opens its module now: their role and approval rights, the company's modules as they are. */
+type GrantChecker = (r: RequestRow) => AccessRequestDto['grant'];
+
+const requestDto = (r: RequestRow, grant: GrantChecker = () => null): AccessRequestDto => ({
   ...myRequestDto(r),
   nodeLabel: navNode(r.nodeId)?.label ?? r.nodeId,
   userId: r.userId,
@@ -32,6 +40,7 @@ const requestDto = (r: RequestRow): AccessRequestDto => ({
   roleKey: r.user.role.key as AccessRequestDto['roleKey'],
   note: r.note,
   decidedByName: r.decidedBy?.fullName ?? null,
+  grant: r.status === 'OPEN' ? grant(r) : null,
 });
 
 /** Answered requests Admin › Home tiles keeps showing under the waiting ones. */
@@ -48,7 +57,19 @@ export class HomeTilesService {
     private prisma: PrismaService,
     private audit: AuditService,
     private notifications: NotificationsService,
+    private rights: ApprovalRightsService,
   ) {}
+
+  /** Checks requests against each role's rights (the matrix read once) and the company's modules as they are now. */
+  private async grantChecker(user: RequestUser): Promise<GrantChecker> {
+    const rights = await this.rights.rightsByRole(user.organizationId);
+    const as = (roleKey: RoleKey, modulesOff?: readonly string[]): NavUser => ({ roleKey, approvalRights: rights.get(roleKey) ?? [], modulesOff });
+    return (r) => {
+      const node = navNode(r.nodeId);
+      const roleKey = r.user.role.key as RoleKey;
+      return node ? accessGrantCheck(as(roleKey, user.modulesOff), node, (k) => as(k)) : null;
+    };
+  }
 
   private guard(user: RequestUser) {
     if (!canManageUsers(user.roleKey)) throw new ForbiddenException('Only admins manage Home tiles');
@@ -63,7 +84,8 @@ export class HomeTilesService {
       this.prisma.accessRequest.findMany({ where: { ...where, status: 'OPEN' }, include: requestInclude, orderBy: { createdAt: 'asc' } }),
       this.prisma.accessRequest.findMany({ where: { ...where, status: { not: 'OPEN' } }, include: requestInclude, orderBy: { decidedAt: 'desc' }, take: ANSWERED_SHOWN }),
     ]);
-    return { flags: flags.map(flagDto), discoverLocked: org.discoverLocked, requests: [...open, ...answered].map(requestDto) };
+    const grant = await this.grantChecker(user);
+    return { flags: flags.map(flagDto), discoverLocked: org.discoverLocked, requests: [...open, ...answered].map((r) => requestDto(r, grant)) };
   }
 
   async setFlag(user: RequestUser, nodeId: string, dto: LauncherFlagSetDto): Promise<LauncherFlagDto> {
@@ -121,15 +143,21 @@ export class HomeTilesService {
     if (row.status !== 'OPEN') throw new BadRequestException('That request has been answered');
     const reply = dto.reply?.trim() || null;
     if (dto.status === 'DECLINED' && !reply) throw new BadRequestException('Say why, so they know what to do');
-    const done = await this.prisma.accessRequest.update({ where: { id }, data: { status: dto.status, reply, decidedById: user.id, decidedAt: new Date() }, include: requestInclude });
     const label = navNode(row.nodeId)?.label ?? row.nodeId;
+    // Granted tells them they can open it, so it has to be true: their role and the company's modules must let them in.
+    if (dto.status === 'GRANTED') {
+      const check = (await this.grantChecker(user))(row);
+      const problem = check && accessGrantProblem(check, row.user.fullName, row.user.role.key as RoleKey, label);
+      if (problem) throw new BadRequestException(problem);
+    }
+    const done = await this.prisma.accessRequest.update({ where: { id }, data: { status: dto.status, reply, decidedById: user.id, decidedAt: new Date() }, include: requestInclude });
     await this.audit.log(user, 'ACCESS_REQUEST', id, dto.status, `${label} for ${row.user.fullName}${reply ? `: ${reply}` : ''}`);
     await this.notifications.notify({
       organizationId: user.organizationId,
       userIds: [row.userId],
       type: 'ACCESS_REQUEST',
       title: dto.status === 'GRANTED' ? `You can open ${label} now` : `Your request to open ${label} was declined`,
-      body: reply ?? (dto.status === 'GRANTED' ? 'Sign out and in again if it is not on Home yet.' : `${user.fullName} declined it.`),
+      body: reply ?? (dto.status === 'GRANTED' ? 'It is on your Home now. Reload the page if you do not see it yet.' : `${user.fullName} declined it.`),
       entityType: 'ACCESS_DECISION',
       entityId: id,
     });
