@@ -10,6 +10,9 @@ import {
   AREA_MODULES,
   DEFAULT_NAV_SETTINGS,
   DEPARTMENT_MODULES,
+  NAV_LAYOUTS,
+  NAV_LAYOUT_PARTS,
+  NAV_PAINTS,
   HOME_TABS,
   NAV_MODULE_NAME_KEYS,
   NAV_NAME_MAX,
@@ -26,6 +29,8 @@ import {
   navNamesProblem,
   navNode,
   navNodeForPath,
+  navPaintWords,
+  navPainted,
   navSettingsFrom,
   navSettingsOf,
   contrastOf,
@@ -213,7 +218,47 @@ test('menu colours: a company colour is kept only with its own palette, and only
   assert.equal(readNavFill({ kind: 'GRADIENT', from: '#0B1F3A', to: '#3B2566', angle: 45 }), null);
   assert.equal(readNavFill({ kind: 'SOLID', color: '#0B1F3' }), null);
   assert.ok(!isDefaultNav({ ...DEFAULT_NAV_SETTINGS, palette: 'FOREST' }));
-  assert.ok(!isDefaultNav({ ...DEFAULT_NAV_SETTINGS, sidebarLook: 'HEADER' }));
+  assert.ok(!isDefaultNav({ ...DEFAULT_NAV_SETTINGS, sidebarLook: 'FLOATING' }));
+});
+
+test('layouts: the colours go on the parts the company chose, and the top bar layout keeps its look', () => {
+  const paint = (layout: (typeof NAV_LAYOUTS)[number], p: (typeof NAV_PAINTS)[number], look: 'NAVY' | 'FRAME' | 'BAR' = 'NAVY') => navPainted({ layout, paint: p, look });
+  for (const layout of NAV_LAYOUTS.filter((l) => NAV_LAYOUT_PARTS[l])) {
+    assert.deepEqual(paint(layout, 'SIDE'), { side: true, top: false }, `${layout} side`);
+    assert.deepEqual(paint(layout, 'TOP'), { side: false, top: true }, `${layout} top`);
+    assert.deepEqual(paint(layout, 'BOTH'), { side: true, top: true }, `${layout} both`);
+    assert.deepEqual(paint(layout, 'NONE'), { side: false, top: false }, `${layout} none`);
+  }
+  // The top bar layout has one bar: the coloured look paints it whatever the paint says, the light looks never do.
+  assert.deepEqual(paint('TOP_BAR', 'NONE', 'NAVY'), { side: true, top: true });
+  assert.deepEqual(paint('TOP_BAR', 'BOTH', 'FRAME'), { side: true, top: false });
+  assert.equal(navPaintWords('TOP_AND_SIDE', 'SIDE'), 'The sidebar in colour, the top bar plain.');
+  assert.equal(navPaintWords('TWO_BARS', 'TOP'), 'The first bar in colour, the second bar plain.');
+  assert.equal(navPaintWords('SIDEBAR', 'BOTH'), 'The sidebar and the header in colour.');
+  assert.equal(navPaintWords('TOP_BAR', 'BOTH'), '');
+});
+
+test('layouts: a stored layout and paint read back, and anything unknown (the old sidebar and header) is the default', () => {
+  assert.deepEqual(navSettingsFrom({ navLayout: 'TWO_SIDEBARS', navPaint: 'BOTH' }), { ...DEFAULT_NAV_SETTINGS, layout: 'TWO_SIDEBARS', paint: 'BOTH' });
+  assert.deepEqual(navSettingsFrom({ navSidebarLook: 'HEADER', navPaint: 'PURPLE' }), DEFAULT_NAV_SETTINGS);
+  assert.ok(!isDefaultNav({ ...DEFAULT_NAV_SETTINGS, paint: 'TOP' }));
+  assert.ok(!isDefaultNav({ ...DEFAULT_NAV_SETTINGS, layout: 'TWO_BARS' }));
+});
+
+test('menu colours: a gradient through a third colour is drawn and checked along all three', () => {
+  const lagoon: NavFill = { kind: 'GRADIENT', from: '#012833', via: { color: '#016582', at: 55 }, to: '#008FAC', angle: 90 };
+  // The light end is what the captions sit on too: three stops are checked, not the two ends alone.
+  assert.ok(weakestContrast(lagoon, 'light') < 4.5);
+  assert.ok(navFillProblem(lagoon));
+  assert.equal(navFillProblem(readableFill(lagoon)), null);
+  assert.deepEqual(readNavFill({ kind: 'GRADIENT', from: '#012833', via: { color: '#013544', at: 55 }, to: '#004a59', angle: 90 }), {
+    kind: 'GRADIENT',
+    from: '#012833',
+    to: '#004A59',
+    angle: 90,
+    via: { color: '#013544', at: 55 },
+  });
+  assert.equal(readNavFill({ kind: 'GRADIENT', from: '#012833', via: { color: '#013544', at: 100 }, to: '#004A59', angle: 90 }), null);
 });
 
 test('menu colours: the ink is the one that keeps the captions at 4.5:1 over the whole fill', () => {
