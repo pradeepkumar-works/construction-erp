@@ -15,6 +15,8 @@ import { submissionMetaItems } from '@/components/common/SubmitterInfo';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
 import { submissionLifecycle } from '@/components/record/lifecycle';
 import { tk } from '@/ds';
+import { usePrintPaper } from '@/components/print/usePrintPaper';
+import { openMeasurementPrint } from './measurementPrint';
 
 const dim = (v: string | null) => (v === null ? '' : formatQty(v));
 
@@ -29,6 +31,7 @@ interface RecordProps {
 export function MeasurementRecord({ id, mode, open, onClose, onEdit }: RecordProps & { mode: RecordMode }) {
   const { data, isLoading, error, refetch } = useMeasurement(id ?? undefined);
   const checks = useMeasurementChecks(data?.status === 'APPROVED' ? data.id : undefined);
+  const print = usePrintPaper();
   const where = data ? [data.location, sectorLocation(data)].filter((x, i, a) => x && a.indexOf(x) === i).join(' · ') : '';
   return (
     <RecordFrame
@@ -45,6 +48,7 @@ export function MeasurementRecord({ id, mode, open, onClose, onEdit }: RecordPro
         data && {
           href: `/measurements/${data.id}`,
           title: `Measurement · ${data.mbNo}`,
+          print: () => print((l) => openMeasurementPrint(data, l)),
           tags: <StatusTag status={data.status} />,
           context: { label: data.projectName, href: `/projects/${data.projectId}` },
           headline: [figure('measuredValue', data.amount)],

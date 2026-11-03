@@ -3,7 +3,9 @@
 import React, { useState } from 'react';
 import { App, Button, Descriptions, Drawer, Popconfirm, Space, Table, Typography } from 'antd';
 import { tk } from '@/ds';
-import { CarOutlined, CheckOutlined, EditOutlined, FileDoneOutlined, StopOutlined } from '@/components/common/icons';
+import { CarOutlined, CheckOutlined, EditOutlined, FileDoneOutlined, PrinterOutlined, StopOutlined } from '@/components/common/icons';
+import { usePrintPaper } from '@/components/print/usePrintPaper';
+import { openRmcQuotationPrint } from './rmcPrint';
 import type { RmcBatchDto, RmcOrderDto } from '@erp/shared';
 import { canBillRmc } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
@@ -25,6 +27,7 @@ export function OrderDrawer({ id, onClose, onBatch }: { id: string | null; onClo
   const [editing, setEditing] = useState(false);
   const [dispatching, setDispatching] = useState(false);
   const [billing, setBilling] = useState(false);
+  const print = usePrintPaper();
   const { data: order, error, refetch } = useRmcOrder(id);
   const { data: batches, isLoading } = useRmcBatches({ orderId: id ?? undefined, pageSize: 100 }, !!id);
   const run = async (path: string, done: string) => {
@@ -45,6 +48,9 @@ export function OrderDrawer({ id, onClose, onBatch }: { id: string | null; onClo
       extra={
         o ? (
           <Space wrap>
+            <Button size="small" icon={<PrinterOutlined />} onClick={() => print((l) => openRmcQuotationPrint(o, l))}>
+              {o.status === 'QUOTED' ? 'Print quotation' : 'Print'}
+            </Button>
             {o.canEdit && (
               <Button size="small" icon={<EditOutlined />} onClick={() => setEditing(true)}>
                 Change

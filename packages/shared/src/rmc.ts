@@ -147,6 +147,11 @@ export interface RmcInvoiceDto {
   clientId: string;
   customer: string;
   gstin: string | null;
+  /** The customer's billing address and GST state (place of supply), for the printed invoice */
+  customerAddress: string | null;
+  customerStateCode: string | null;
+  /** Where the plant is, printed as the place the goods left from */
+  plantAddress: string | null;
   orderNo: string | null;
   status: RmcInvoiceStatus;
   quantity: string;

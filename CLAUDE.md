@@ -152,6 +152,9 @@ and the pre-delivery checklist.
   the decision"): `context` (its project, linked), a `headline` of one to three registry figures (`figure()`, never a
   label of its own), the deciding facts with reference ones in `details`, Checks first, and a section with nothing in it
   marked `empty`; the status, who submitted and who reviewed are the tag and History, never facts.
+- Printed papers (ARCHITECTURE "Printed papers"): a paper that leaves the company prints through `printDocHtml`
+  (`components/print/printDoc.ts`) on the letterhead (`GET /company-data/letterhead`, read with `usePrintPaper`); its builder
+  writes only the body, and a note kept for the company stays off it.
 - Approvals inbox (`app/(app)/approvals`): the picked entry shows as `<XRecord mode="pane">` (no actions; the inbox has the
   decision bar). Every submission type has a page; a new type adds one line in `RECORD_PAGES` and one in `ApprovalPane`
   (`components/approvals/`), or the pane falls back to a summary with Open details. A decision with an approval of its own

@@ -4,7 +4,9 @@ import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Button, Descriptions, Divider, Drawer, Dropdown, Skeleton, Space, Table, Typography } from 'antd';
 import { tk } from '@/ds';
-import { FileTextOutlined, ImportOutlined, MoreOutlined, SafetyCertificateOutlined } from '@/components/common/icons';
+import { FileTextOutlined, ImportOutlined, MoreOutlined, PrinterOutlined, SafetyCertificateOutlined } from '@/components/common/icons';
+import { usePrintPaper } from '@/components/print/usePrintPaper';
+import { openStockEntryPrint } from './stockEntryPrint';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { StockEntryDto, StockLineDto } from '@erp/shared';
 import { STOCK_ADJUSTMENT_REASON_LABELS, canAdjustStock, canCheckGrn, canKeepStock, canRaiseDebitNote } from '@erp/shared';
@@ -46,6 +48,7 @@ export function StockEntryDrawer({ id, onClose }: { id: string | null; onClose: 
     meta: FAIL_NOTICE,
   });
   const mayDelete = !!user && canAdjustStock(user.roleKey);
+  const print = usePrintPaper();
   const [askDelete, deleteDialog] = useConfirmDelete();
   const [receiving, setReceiving] = useState(false);
   const [checking, setChecking] = useState(false);
@@ -65,6 +68,11 @@ export function StockEntryDrawer({ id, onClose }: { id: string | null; onClose: 
       title={data ? <Space>{data.entryNo}<StockTypeTag type={data.type} /></Space> : 'Stock entry'}
       extra={
         <Space>
+          {data ? (
+            <Button size="small" icon={<PrinterOutlined />} onClick={() => print((l) => openStockEntryPrint(data, l))}>
+              Print
+            </Button>
+          ) : null}
           {mayCheck ? (
             <Button type={data!.qcStatus ? 'default' : 'primary'} size="small" icon={<SafetyCertificateOutlined />} onClick={() => setChecking(true)}>
               {data!.qcStatus ? 'Change QA/QC check' : 'QA/QC check'}

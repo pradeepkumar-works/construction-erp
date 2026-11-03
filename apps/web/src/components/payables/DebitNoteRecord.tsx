@@ -14,6 +14,8 @@ import { useDebitNote } from '@/lib/queries';
 import { formatDate, formatDateTime, formatINR, formatPct, formatQty, NO_VALUE } from '@/lib/format';
 import { FormShell } from '@/components/form/FormShell';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
+import { usePrintPaper } from '@/components/print/usePrintPaper';
+import { openDebitNotePrint } from './debitNotePrint';
 import { projectContext } from '@/components/record/RecordParts';
 import { Money } from '@/components/common/Money';
 
@@ -71,6 +73,7 @@ export function DebitNoteRecord({ id, mode, open, onClose }: RecordProps & { mod
   const [cancelling, setCancelling] = useState(false);
   const { data, isLoading, error, refetch } = useDebitNote(id ?? undefined);
   const raiser = !!user && canRaiseDebitNote(user.roleKey);
+  const print = usePrintPaper();
 
   return (
     <>
@@ -87,6 +90,7 @@ export function DebitNoteRecord({ id, mode, open, onClose }: RecordProps & { mod
         record={
           data && {
             href: `/debit-notes/${data.id}`,
+            print: () => print((l) => openDebitNotePrint(data, l)),
             title: `${data.noteNo} · ${data.vendorName}`,
             context: projectContext(data),
             tags: <DebitNoteTag note={data} />,
