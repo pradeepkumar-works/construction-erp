@@ -102,7 +102,7 @@ export class AddMemberDto {
 }
 
 export class MemberLevelDto {
-  @ApiPropertyOptional({ enum: CHECK_LEVELS, nullable: true, description: "A client guest's level on the project (item 172); null clears it" })
+  @ApiPropertyOptional({ enum: CHECK_LEVELS, nullable: true, description: "A client guest's level on the project; null clears it" })
   @IsOptional()
   @IsIn(CHECK_LEVELS as unknown as string[])
   checkLevel: CheckLevel | null;

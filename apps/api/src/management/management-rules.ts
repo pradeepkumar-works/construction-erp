@@ -1,5 +1,5 @@
 import type { ApprovalAgeingDto, HealthLevel, HealthReasonDto, PortfolioScheduleDto, PortfolioScheduleState, SubmissionType } from '@erp/shared';
-import { APPROVAL_OLD_DAYS, FORECAST_MIN_DONE_PCT, UNBILLED_WATCH_DAYS } from '@erp/shared';
+import { APPROVAL_OLD_DAYS, FORECAST_MIN_DONE_PCT, UNBILLED_WATCH_DAYS, projectScheduleStatus, timeElapsedPct, type ProjectScheduleState } from '@erp/shared';
 import { rupees } from '../briefs/brief-rules';
 import { formatDay } from '../common/serialize';
 
@@ -67,7 +67,7 @@ export function forecastCost(actual: number, budget: number | null, donePct: num
   return actual + budget * (1 - Math.min(100, donePct) / 100);
 }
 
-// Schedule (until the fixes thread's `projectScheduleStatus` lands in @erp/shared; the facts carry the same names)
+// Schedule: the shared rule (`projectScheduleStatus`), the same one behind the project page's chip and the watch list
 
 export interface ScheduleFacts {
   status: string;
@@ -82,40 +82,35 @@ export interface ScheduleFacts {
   today: string;
 }
 
-/** Points a project may trail its plan (or the time gone) before it is behind. */
-export const BEHIND_BY = 10;
-
 /** Share of the time from start to completion gone by on `today`, 0 to 100. */
 export function elapsedPct(start: string | null, end: string | null, today: string): number | null {
-  if (!start || !end) return null;
-  const total = daysBetween(start, end);
-  if (total <= 0) return null;
-  return round1(Math.min(100, Math.max(0, (daysBetween(start, today) / total) * 100)));
+  const pct = timeElapsedPct(start, end, today);
+  return pct === null ? null : round1(pct);
 }
 
+const PORTFOLIO_STATE: Record<ProjectScheduleState, PortfolioScheduleState> = {
+  COMPLETED: 'DONE',
+  ON_HOLD: 'ON_HOLD',
+  OVERRUN: 'LATE',
+  FINISH_LATE: 'LATE',
+  BEHIND: 'BEHIND',
+  NO_PLAN: 'NO_PLAN',
+  ON_TRACK: 'ON_TRACK',
+};
+
 /**
- * Where a project stands: complete; finishing late when its plan ends after the completion date (or the date has passed
- * unfinished); behind when progress trails what the plan expects by today (or the time gone, without a plan) by
- * BEHIND_BY points; no plan without dated activities or dates.
+ * Where a project stands, read through `projectScheduleStatus` so the portfolio and the project page agree. Late is
+ * by the worse of the days past the completion date and the days the plan ends after it.
  */
 export function scheduleOf(f: ScheduleFacts): PortfolioScheduleDto {
   const elapsed = elapsedPct(f.startDate, f.completionDate, f.today);
   const base = { done: f.done, planned: f.planned, elapsed, lateActivities: f.late, completionDate: f.completionDate, plannedFinish: f.plannedFinish };
-  if (f.status === 'COMPLETED' || f.done >= 100) return { ...base, state: 'DONE', daysLate: null };
-  let daysLate: number | null = null;
-  if (f.completionDate) {
-    const overrun = daysBetween(f.completionDate, f.today);
-    const planLate = f.plannedFinish ? daysBetween(f.completionDate, f.plannedFinish) : 0;
-    const worst = Math.max(overrun, planLate);
-    if (worst > 0) daysLate = worst;
-  }
-  let state: PortfolioScheduleState;
-  const mark = f.planned ?? elapsed;
-  if (daysLate !== null) state = 'LATE';
-  else if (!f.scheduled && elapsed === null) state = 'NO_PLAN';
-  else if (mark !== null && f.done <= mark - BEHIND_BY) state = 'BEHIND';
-  else state = 'ON_TRACK';
-  return { ...base, state, daysLate };
+  if (f.done >= 100 && f.status !== 'ON_HOLD') return { ...base, state: 'DONE', daysLate: null };
+  const s = projectScheduleStatus({ status: f.status, done: f.done, planned: f.planned, elapsed, late: f.late, scheduled: f.scheduled, completionDate: f.completionDate, plannedFinish: f.plannedFinish, today: f.today });
+  const state = PORTFOLIO_STATE[s.state];
+  if (state !== 'LATE') return { ...base, state, daysLate: null };
+  const overrun = s.overrun && f.completionDate ? daysBetween(f.completionDate, f.today) : 0;
+  return { ...base, state, daysLate: Math.max(overrun, s.finishLateDays ?? 0) };
 }
 
 // Approvals
