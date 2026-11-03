@@ -29,7 +29,7 @@ test("an accountant's sidebar has no site-only module", async ({ page }) => {
 
 test('a closed section stays closed after a reload, and opens itself on one of its pages', async ({ page }) => {
   await signIn(page, 'pm@demo.com');
-  const purchases = () => sidebar(page).getByRole('button', { name: 'Purchases', exact: true });
+  const purchases = () => sidebar(page).getByRole('button', { name: 'Purchase management', exact: true });
   await expect(purchases()).toHaveAttribute('aria-expanded', 'true');
   await purchases().click();
   await expect(purchases()).toHaveAttribute('aria-expanded', 'false');

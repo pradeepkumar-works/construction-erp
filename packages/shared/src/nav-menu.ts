@@ -35,8 +35,8 @@ export interface NavSettingsDto {
   personalLook: boolean;
 }
 
-/** A company that has not chosen keeps the sidebar it had; the top bar starts in the navy look. */
-export const DEFAULT_NAV_SETTINGS: NavSettingsDto = { layout: 'SIDEBAR', look: 'NAVY', sidebarLook: 'RAIL', palette: 'QUIET', fill: null, moduleSet: 'AREAS', names: {}, personalLook: false };
+/** A company that has not chosen gets the sidebar grouped by departments (the standard, Pradeep's pick); the top bar starts in the navy look. */
+export const DEFAULT_NAV_SETTINGS: NavSettingsDto = { layout: 'SIDEBAR', look: 'NAVY', sidebarLook: 'RAIL', palette: 'QUIET', fill: null, moduleSet: 'DEPARTMENTS', names: {}, personalLook: false };
 
 export const NAV_NAME_MAX = 40;
 

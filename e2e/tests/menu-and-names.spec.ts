@@ -7,7 +7,7 @@ import { api, apiToken, homeHeading, signIn } from './helpers';
  * shipped menu (the sidebar) back.
  */
 
-const DEFAULT = { layout: 'SIDEBAR', look: 'NAVY', sidebarLook: 'RAIL', palette: 'QUIET', fill: null, moduleSet: 'AREAS', names: {}, personalLook: false };
+const DEFAULT = { layout: 'SIDEBAR', look: 'NAVY', sidebarLook: 'RAIL', palette: 'QUIET', fill: null, moduleSet: 'DEPARTMENTS', names: {}, personalLook: false };
 
 test.afterEach(async () => {
   await api(await apiToken('admin@demo.com'), '/nav-settings', { method: 'PUT', body: DEFAULT });

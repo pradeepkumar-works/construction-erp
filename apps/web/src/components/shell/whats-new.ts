@@ -9,6 +9,15 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-departments-menu',
+    date: '2026-11-03',
+    title: 'The menu is grouped by department',
+    points: [
+      'The sidebar now groups pages the way a contractor’s departments work: Project management, Quality, Design and drawings, Purchase management, Store and inventory, Contractor management, Accounts and finance, HR and payroll, Reports and MIS and the rest, each with its own sub-modules and overview.',
+      'An admin can still group the menu by work area instead, in Admin › Menu and names.',
+    ],
+  },
+  {
     id: '2026-11-opening-cost',
     date: '2026-11-03',
     title: 'Opening cost for projects that ran before Nirmaan',

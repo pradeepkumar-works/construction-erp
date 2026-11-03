@@ -19,16 +19,21 @@ async function clearPins(email: string) {
 const modules = (page: Page) => page.getByRole('group', { name: 'All modules' });
 const pinned = (page: Page) => page.getByRole('group', { name: 'Pinned' });
 
-test('Home shows every module the role can open, with what waits in its own word, and My work is one of them', async ({ page }) => {
-  const token = await apiToken('pm@demo.com');
-  const pending = await api<unknown[]>(token, '/approvals/pending');
+test('Home shows every department the role can open, with what waits there, and My work leads the sidebar', async ({ page }) => {
   await signIn(page, 'pm@demo.com');
   await expect(page).toHaveTitle('Home · Nirmaan');
   await expect(homeHeading(page)).toBeVisible();
-  for (const name of ['My work', 'Projects', 'Site', 'Materials', 'Purchases']) await expect(modules(page).getByRole('link', { name: new RegExp(`^${name}`) })).toBeVisible();
-  if (pending.length) await expect(modules(page).getByRole('link', { name: `Approvals, ${pending.length} to approve` })).toBeVisible();
+  // The department menu is the standard: Home's tiles are the company's department modules.
+  for (const name of ['Project management', 'Quality', 'Purchase management', 'Store and inventory', 'Accounts and finance', 'HR and payroll']) {
+    await expect(modules(page).getByRole('link', { name: new RegExp(`^${name}`) })).toBeVisible();
+  }
+  await expect(modules(page).getByRole('link', { name: /^Purchase management, \d+ waiting$/ })).toBeVisible();
 
-  await modules(page).getByRole('link', { name: /^My work/ }).click();
+  await modules(page).getByRole('link', { name: /^Purchase management/ }).click();
+  await expect(page).toHaveURL(/\/modules\/purchase-management$/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Purchase management' })).toBeVisible();
+
+  await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'My work', exact: true }).click();
   await expect(page).toHaveURL(/\/my-work$/);
   await expect(page.getByRole('heading', { level: 1, name: 'My work' })).toBeVisible();
 });
@@ -38,10 +43,10 @@ test('a page pinned from its tile is on Home on every browser, can be moved, and
   await signIn(page, 'pm@demo.com');
   await expect(page.getByText('Keep the pages you use every day here')).toBeVisible();
 
-  // Pin Site from its tile's menu, then Daily reports from its page.
-  await modules(page).getByRole('button', { name: 'More for Site' }).click();
+  // Pin Correspondence from its tile's menu, then Daily reports from its page.
+  await modules(page).getByRole('button', { name: 'More for Correspondence' }).click();
   await page.getByRole('menuitem', { name: 'Pin to Home' }).click();
-  await expect(pinned(page).getByRole('link', { name: /^Site/ })).toBeVisible();
+  await expect(pinned(page).getByRole('link', { name: /^Correspondence/ })).toBeVisible();
   await page.goto('/dpr');
   await page.getByRole('button', { name: 'Pin to Home' }).click();
   await expect(page.getByRole('button', { name: 'Pin to Home' })).toHaveAttribute('aria-pressed', 'true');
@@ -49,7 +54,7 @@ test('a page pinned from its tile is on Home on every browser, can be moved, and
   // Another browser signed in as the same person has them too, in the same order.
   const other = await browser.newPage();
   await signIn(other, 'pm@demo.com');
-  await expect(pinned(other).getByRole('link')).toHaveText([/^Site/, /^Daily reports/]);
+  await expect(pinned(other).getByRole('link')).toHaveText([/^Correspondence/, /^Daily reports/]);
   await other.close();
 
   // Move Daily reports first, with the keyboard way.
@@ -57,16 +62,16 @@ test('a page pinned from its tile is on Home on every browser, can be moved, and
   await page.getByRole('button', { name: 'Edit pins' }).click();
   await page.getByRole('button', { name: 'Move Daily reports left' }).click();
   await page.getByRole('button', { name: 'Done' }).click();
-  await expect(pinned(page).getByRole('link')).toHaveText([/^Daily reports/, /^Site/]);
+  await expect(pinned(page).getByRole('link')).toHaveText([/^Daily reports/, /^Correspondence/]);
   await page.reload();
-  await expect(pinned(page).getByRole('link')).toHaveText([/^Daily reports/, /^Site/]);
+  await expect(pinned(page).getByRole('link')).toHaveText([/^Daily reports/, /^Correspondence/]);
 
   // Unpin from the menu; Undo puts it back where it was.
   await pinned(page).getByRole('button', { name: 'More for Daily reports' }).click();
   await page.getByRole('menuitem', { name: 'Unpin' }).click();
-  await expect(pinned(page).getByRole('link')).toHaveText([/^Site/]);
+  await expect(pinned(page).getByRole('link')).toHaveText([/^Correspondence/]);
   await page.getByRole('button', { name: 'Undo' }).click();
-  await expect(pinned(page).getByRole('link')).toHaveText([/^Daily reports/, /^Site/]);
+  await expect(pinned(page).getByRole('link')).toHaveText([/^Daily reports/, /^Correspondence/]);
   await clearPins('pm@demo.com');
 });
 

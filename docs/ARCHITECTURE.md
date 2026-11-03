@@ -449,8 +449,10 @@ A company chooses its menu in Admin › Menu and names (`/menu-and-names`, `GET`
   Home listing each module with its sub-modules) or `BAR` (one white bar holding the module and its menu, Home grouping the
   modules by `navMenuGroup`). `navPersonalLook` lets each person pick their own (`User.navLook`, the account menu's Top bar
   look, `PUT /nav-settings/own-look`); `navSettingsOf(user)` decides which applies.
-- **The modules** (`navModuleSet`): `AREAS`, the tree's own modules (`AREA_MODULES`, built from `NAV_TREE`), or
-  `DEPARTMENTS`, the fifteen a contractor's departments run (`DEPARTMENT_MODULES`: project management, quality (QA/QC),
+- **The modules** (`navModuleSet`): `DEPARTMENTS`, the standard (Pradeep's pick, November 2026: every company was moved
+  onto it by `20270706090000_departments_menu_standard` and a new one starts there), or `AREAS`, the tree's own modules
+  (`AREA_MODULES`, built from `NAV_TREE`), which a company can still choose in Admin › Menu and names. `DEPARTMENTS` is
+  the fifteen a contractor's departments run (`DEPARTMENT_MODULES`: project management, quality (QA/QC),
   design and drawings, correspondence, planning and estimation, purchase, store and inventory, contractors, machinery,
   plant, accounts, labour, HR and payroll, reports and MIS, administration), each a list of sub-modules naming tree nodes,
   with a Masters sub-module naming its masters (below). HR and payroll follows the client's HR brief: My HR, Employee master (each record
@@ -468,7 +470,9 @@ Everything is in `@erp/shared/nav-menu.ts` and pure: `navMenuFor(user, settings)
 `navMenuPlace` its module and sub-module (a page in two modules stays in the one the user came from). The signed-in user
 carries `navigation` (left out while it is the default) and `ownLook`, so the shell draws without another request. The web
 reads it through `components/shell/menu.ts` (`useNavMenu`, `useMenuPlace`, `moduleWaiting` for a module's count) and draws
-it in `TopBar.tsx`; the sidebar's sections follow the same set and names in `navFor`. A page added to the tree needs a place
+it in `TopBar.tsx`; the sidebar's sections follow the same set and names in `navFor` (with departments, a page several
+modules name is drawn once, in the module that names most of its tabs: Payroll under HR and payroll). The work-area
+module screens (`/modules/site`…) still open by their address under the department menu. A page added to the tree needs a place
 in `DEPARTMENT_MODULES`: `src/scripts/nav-menu-test.ts` (CI) fails on a live page with none. The phone keeps its launcher.
 
 ### Menu colours

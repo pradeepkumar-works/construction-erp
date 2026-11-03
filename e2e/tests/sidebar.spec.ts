@@ -20,16 +20,17 @@ test('quick-jump opens a page or a project from the keyboard', async ({ page }) 
 
 test('sections fold and stay folded, and the rail opens a section beside it', async ({ page }) => {
   await signIn(page, 'pm@demo.com');
-  const site = page.getByRole('button', { name: 'Site', exact: true });
+  // The department menu is the standard: Daily reports are Project management's.
+  const site = page.getByRole('button', { name: 'Project management', exact: true });
   await expect(site).toHaveAttribute('aria-expanded', 'true');
   await site.click();
   await expect(site).toHaveAttribute('aria-expanded', 'false');
   await expect(page.getByRole('link', { name: 'Daily reports', exact: true })).toHaveCount(0);
   await page.reload();
-  await expect(page.getByRole('button', { name: 'Site', exact: true })).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.getByRole('button', { name: 'Project management', exact: true })).toHaveAttribute('aria-expanded', 'false');
 
   await page.getByRole('button', { name: 'Collapse sidebar' }).click();
-  await page.getByRole('button', { name: 'Site', exact: true }).click();
+  await page.getByRole('button', { name: 'Project management', exact: true }).click();
   await page.getByRole('link', { name: 'Daily reports', exact: true }).click();
   await expect(page).toHaveURL(/\/dpr$/);
   await page.reload();
