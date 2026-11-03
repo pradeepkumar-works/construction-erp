@@ -130,3 +130,44 @@ export function mayApproveType(user: { roleKey: RoleKey; approvalRights?: Approv
   if (right.maxAmount === null || amount === undefined || amount === null || !hasAmount(type)) return true;
   return Number(amount) <= Number(right.maxAmount);
 }
+
+/**
+ * Decisions that wait on the caller outside the submission queue: each has its own approval in its module (leave and
+ * overtime under Staff, a salary run under Payroll, a voucher in the Books, an outward letter's signature under
+ * Correspondence). The Approvals inbox lists them so one page holds everything waiting on someone; deciding opens the
+ * module's own page.
+ */
+export const OTHER_DECISION_KINDS = ['LEAVE', 'OVERTIME', 'PAYROLL_RUN', 'VOUCHER', 'LETTER'] as const;
+export type OtherDecisionKind = (typeof OTHER_DECISION_KINDS)[number];
+export const OTHER_DECISION_LABELS: Record<OtherDecisionKind, string> = {
+  LEAVE: 'Leave',
+  OVERTIME: 'Overtime',
+  PAYROLL_RUN: 'Salary runs',
+  VOUCHER: 'Vouchers',
+  LETTER: 'Letters to sign',
+};
+
+export interface OtherDecisionDto {
+  id: string;
+  /** e.g. "Arun Sharma · Casual leave", "PR-2026-10-01 · October 2026" */
+  title: string;
+  /** e.g. "3 Nov to 5 Nov, 3 days" */
+  note: string;
+  projectName: string | null;
+  /** Rupees, where it means something */
+  amount: string | null;
+  /** YYYY-MM-DD: when it started waiting */
+  since: string;
+  /** Web path that opens it where it is decided */
+  href: string;
+}
+
+export interface OtherDecisionGroupDto {
+  kind: OtherDecisionKind;
+  count: number;
+  amount: string | null;
+  /** The module's list of these, filtered to what waits on the caller */
+  href: string;
+  /** Oldest first, at most ten */
+  items: OtherDecisionDto[];
+}

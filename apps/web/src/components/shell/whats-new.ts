@@ -9,6 +9,15 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-other-decisions',
+    date: '2026-11-03',
+    title: 'Every decision waiting on you in Approvals',
+    points: [
+      'Approvals now also lists the leave and overtime you decide, salary runs and vouchers waiting for your approval, and letters waiting for your signature, under Also waiting for you.',
+      'Each one opens where it is decided: the leave request, the salary run, the voucher or the letter.',
+    ],
+  },
+  {
     id: '2026-11-increment-pay',
     date: '2026-11-02',
     title: 'An increment changes the pay',

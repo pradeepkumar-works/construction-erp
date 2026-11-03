@@ -1133,6 +1133,14 @@ The Approvals inbox groups its queue by type (`groupQueue`, `components/approval
 `rankWaiting`: the rupees a group adds up to, then the days its oldest entry has waited, then the type's usual place. Each
 group's header says "7 · ₹14.20 L · oldest 3 days"; Oldest first or Newest first orders the entries inside a group.
 
+Decisions with an approval of their own (leave and overtime, salary runs, hand-made vouchers, outward letters to sign)
+are not submissions, but the inbox lists them too, under Also waiting for you: `GET /approvals/others`
+(`OtherDecisionsService`) reads each module's own list with the caller (`listLeave` and `overtimeToDecide`, the payroll
+runs the caller may approve, `vouchers({ toDecide })`, letters `{ toSign }`), so each module's access rules apply, and
+returns `OtherDecisionGroupDto`s (`OTHER_DECISION_KINDS`) in `rankWaiting` order. Each entry links to the page where it is
+decided (`/payroll?tab=runs&run=`, `/books?tab=vouchers&voucher=`, the leave or letter itself); a new kind is a key there
+and a block in the service.
+
 `ApprovalEscalation` (per type: `remindAfterHours`, `escalateAfterHours`) drives `NotificationJobsService.approvalEscalation`,
 run hourly (`GET /notifications/jobs/approval-escalation`, the in-process scheduler on the hour, and inside both daily
 crons): once per level it reminds the level's approvers (a `REMINDED` step), and after the escalation time it records

@@ -9,7 +9,7 @@ import type { PendingApprovalDto, ReviewDecision, SubmissionType } from '@erp/sh
 import { APPROVAL_AMOUNT_BASIS, SUBMISSION_TYPE_LABELS, approvalRightsOf, mayApprove } from '@erp/shared';
 import { useProjectScope } from '@/lib/project-scope';
 import { useUrlParam } from '@/lib/url-state';
-import { approvalTypeParam, usePendingApprovals } from '@/lib/queries';
+import { approvalTypeParam, useOtherDecisions, usePendingApprovals } from '@/lib/queries';
 import { useAuth } from '@/lib/auth';
 import { approveTheme } from '@/lib/theme';
 import { formatINR, inSentence } from '@/lib/format';
@@ -24,6 +24,7 @@ import { singleKeysOn } from '@/lib/shortcuts';
 import { ApprovalQueue } from '@/components/approvals/ApprovalQueue';
 import { ApprovalPane } from '@/components/approvals/ApprovalPane';
 import { ReviewedToday } from '@/components/approvals/ReviewedToday';
+import { OtherDecisions } from '@/components/approvals/OtherDecisions';
 import { decidedInPlace, groupQueue, QUEUE_TYPE_LABELS, QUEUE_TYPES, queueKey, recordPage } from '@/components/approvals/queue';
 import { ProgressDrawer } from '@/components/progress/ProgressDrawer';
 import { DprDrawer } from '@/components/dpr/DprDrawer';
@@ -58,6 +59,7 @@ export default function ApprovalsPage() {
   const limited = rights.filter((r) => r.maxAmount !== null && APPROVAL_AMOUNT_BASIS[r.type]);
   const { data, isLoading, error, refetch } = usePendingApprovals(approver);
   const approveMany = useApproveMany();
+  const others = useOtherDecisions().data ?? [];
 
   // The search, type and order are in the URL: a reload or a link sent on opens the same queue.
   const [typeParam, setTypeParam] = useUrlParam('type');
@@ -221,7 +223,7 @@ export default function ApprovalsPage() {
     ),
   }));
   const limitLine = limited.length > 0 ? ` Your approval limit: ${limited.map((r) => `${inSentence(SUBMISSION_TYPE_LABELS[r.type])} up to ${formatINR(r.maxAmount)}`).join(', ')}; anything above goes to a higher approver.` : '';
-  const subtitle = !approver ? 'Entries waiting for approval' : `${data ? `${data.length} waiting` : 'Entries waiting'} for your approval.${limitLine}`;
+  const subtitle = !approver ? (others.length ? 'Decisions waiting for you in their own modules' : 'Entries waiting for approval') : `${data ? `${data.length} waiting` : 'Entries waiting'} for your approval.${limitLine}`;
 
   const queue = (
     <>
@@ -254,7 +256,7 @@ export default function ApprovalsPage() {
           <Skeleton active paragraph={{ rows: 8 }} />
         </div>
       ) : total === 0 ? (
-        <EmptyArt art="approved" title={!approver ? 'No pending approvals' : (data?.length ?? 0) > 0 ? 'Nothing matches these filters' : 'Nothing waiting for approval. Great work!'} />
+        <EmptyArt art="approved" title={!approver ? 'No pending approvals' : (data?.length ?? 0) > 0 ? 'Nothing matches these filters' : others.length ? 'No submission waiting for approval' : 'Nothing waiting for approval. Great work!'} />
       ) : (
         <ApprovalQueue
           groups={groups}
@@ -282,23 +284,25 @@ export default function ApprovalsPage() {
   return (
     <div className="page-container">
       <PageHeader title="Approvals" subtitle={subtitle} extra={approver ? <ReviewedToday onOpen={(r) => setDrawer({ type: r.type, id: r.id })} /> : undefined} />
-      {!approver && <Alert type="info" showIcon title="Your role cannot approve submissions. Submissions you create appear in the project pages with their current status." style={{ marginBottom: tk.space[4] }} />}
+      {!approver && !others.length && <Alert type="info" showIcon title="Nothing waits on you here. Submissions are approved by the managers; leave, overtime and letters to sign that wait on you show here." style={{ marginBottom: tk.space[4] }} />}
       {!!error && <QueryError error={error} onRetry={() => refetch()} />}
-      <Flex wrap gap={tk.space[3]} align="center" style={{ marginBottom: tk.space[3] }}>
-        <Input.Search allowClear placeholder="Search the queue" aria-label="Search the queue" value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: screens.md ? 240 : '100%' }} />
-        <Select<SubmissionType> allowClear placeholder="All types" aria-label="Type" value={type} onChange={setType} options={typeOptions} style={{ minWidth: 200, width: screens.md ? undefined : '100%' }} popupMatchSelectWidth={false} />
-        <ProjectSelect value={projectId} onChange={(v) => setProjectId(v)} style={{ minWidth: 260, width: screens.md ? undefined : '100%' }} />
-        <Segmented<'old' | 'new'>
-          aria-label="Order"
-          value={newestFirst ? 'new' : 'old'}
-          onChange={(v) => setNewestFirst(v === 'new')}
-          options={[
-            { value: 'old', label: 'Oldest first' },
-            { value: 'new', label: 'Newest first' },
-          ]}
-        />
-      </Flex>
-      {split ? (
+      {approver && (
+        <Flex wrap gap={tk.space[3]} align="center" style={{ marginBottom: tk.space[3] }}>
+          <Input.Search allowClear placeholder="Search the queue" aria-label="Search the queue" value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: screens.md ? 240 : '100%' }} />
+          <Select<SubmissionType> allowClear placeholder="All types" aria-label="Type" value={type} onChange={setType} options={typeOptions} style={{ minWidth: 200, width: screens.md ? undefined : '100%' }} popupMatchSelectWidth={false} />
+          <ProjectSelect value={projectId} onChange={(v) => setProjectId(v)} style={{ minWidth: 260, width: screens.md ? undefined : '100%' }} />
+          <Segmented<'old' | 'new'>
+            aria-label="Order"
+            value={newestFirst ? 'new' : 'old'}
+            onChange={(v) => setNewestFirst(v === 'new')}
+            options={[
+              { value: 'old', label: 'Oldest first' },
+              { value: 'new', label: 'Newest first' },
+            ]}
+          />
+        </Flex>
+      )}
+      {!approver && others.length ? null : split ? (
         <div ref={splitRef} style={{ ...frame, height }}>
           <Splitter style={{ height: '100%' }}>
             <Splitter.Panel defaultSize="38%" min={320} max="60%" style={{ overflowY: 'auto' }}>
@@ -318,6 +322,7 @@ export default function ApprovalsPage() {
       ) : (
         <div style={frame}>{queue}</div>
       )}
+      <OtherDecisions groups={others} />
       {currentItem && decidedInPlace(currentItem.type) && (
         <ReviewDialog type={approvalTypeParam[currentItem.type]} id={currentItem.id} decision={decision} onClose={() => setDecision(null)} />
       )}

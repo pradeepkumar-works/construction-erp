@@ -7,6 +7,7 @@ import { PlusOutlined } from '@/components/common/icons';
 import type { BookVoucherDto, BookVoucherStatus, BookVoucherType } from '@erp/shared';
 import { canApproveVouchers } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
+import { useUrlParam } from '@/lib/url-state';
 import { useBookVouchers } from '@/lib/queries';
 import { useNewIntent } from '@/lib/new-intent';
 import { formatDate } from '@/lib/format';
@@ -26,7 +27,10 @@ export function Vouchers() {
   const [status, setStatus] = useState<BookVoucherStatus | undefined>();
   const [q, setQ] = useState('');
   const [page, setPage] = useState(1);
-  const [open, setOpen] = useState<string | null>(null);
+  // ?voucher= opens one, as the Approvals inbox links to it.
+  const [openParam, setOpenParam] = useUrlParam('voucher');
+  const open = openParam ?? null;
+  const setOpen = (id: string | null) => setOpenParam(id ?? undefined);
   const [creating, setCreating] = useState(false);
   useNewIntent('voucher', true, () => setCreating(true));
   const filters = view === 'decide' ? { toDecide: true } : view === 'open' ? { status: status ?? ('DRAFT' as const) } : { status };
