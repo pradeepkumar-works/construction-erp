@@ -1,6 +1,6 @@
 /** The company's leave rules: days a year, pro rata for joiners, earned leave carried forward. Run: node dist/scripts/leave-policy-test.js */
 import assert from 'node:assert/strict';
-import { DEFAULT_LEAVE_POLICY, leaveEntitlement, type LeavePolicy } from '@erp/shared';
+import { DEFAULT_LEAVE_POLICY, leaveEntitlement, leaveOpeningProblem, type LeavePolicy } from '@erp/shared';
 
 const policy = (p: Partial<LeavePolicy>): LeavePolicy => ({ ...DEFAULT_LEAVE_POLICY, ...p });
 
@@ -37,6 +37,18 @@ const cases: [string, () => void][] = [
     assert.equal(leaveEntitlement('EARNED', p, 2026, '2022-01-01', 14), 25);
     assert.equal(leaveEntitlement('EARNED', p, 2026, '2022-01-01', -3), 15);
     assert.equal(leaveEntitlement('CASUAL', p, 2026, '2022-01-01', 6), 12);
+  }],
+  ['earned leave brought forward from the old records stands in for the carry, as entered', () => {
+    assert.equal(leaveEntitlement('EARNED', DEFAULT_LEAVE_POLICY, 2026, '2019-06-01', 0, 22), 37);
+    assert.equal(leaveEntitlement('EARNED', policy({ earnedCarryMax: 10 }), 2026, '2019-06-01', 6, 0), 15, 'brought forward 0 means none, not the carry');
+    assert.equal(leaveEntitlement('CASUAL', DEFAULT_LEAVE_POLICY, 2026, null, 0, 5), 12, 'only earned leave is brought forward');
+  }],
+  ['opening leave: half days, earned only brought forward, each type once', () => {
+    assert.equal(leaveOpeningProblem([{ type: 'CASUAL', takenBefore: 3.5, broughtForward: null }, { type: 'EARNED', takenBefore: 0, broughtForward: 18 }]), null);
+    assert.match(leaveOpeningProblem([{ type: 'CASUAL', takenBefore: 1.25, broughtForward: null }])!, /whole or half days/);
+    assert.match(leaveOpeningProblem([{ type: 'SICK', takenBefore: 0, broughtForward: 4 }])!, /Only earned leave/);
+    assert.match(leaveOpeningProblem([{ type: 'UNPAID', takenBefore: 2, broughtForward: null }])!, /no yearly balance/);
+    assert.match(leaveOpeningProblem([{ type: 'CASUAL', takenBefore: 1, broughtForward: null }, { type: 'CASUAL', takenBefore: 2, broughtForward: null }])!, /once/);
   }],
   ['a joiner has no earlier year to carry from', () => assert.equal(leaveEntitlement('EARNED', policy({ earnedCarryMax: 10 }), 2026, '2026-03-01', 6), 15)],
 ];

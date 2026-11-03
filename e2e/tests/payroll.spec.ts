@@ -155,7 +155,7 @@ test('HR works out a full and final settlement for someone who resigned', async 
   await expect(page.getByText(/HDFC Bank 50200012345678/)).toBeVisible();
 });
 
-test("HR sets the company's leave days and the balances follow", async ({ page }) => {
+test("HR sets the company's leave days and an employee's opening leave, and the balances follow", async ({ page }) => {
   const hr = await apiToken('hr@demo.com');
   type Employee = { id: string; employeeCode: string };
   type Balance = { type: string; entitled: number | null };
@@ -174,7 +174,29 @@ test("HR sets the company's leave days and the balances follow", async ({ page }
     await expect(page.getByText('10 casual, 12 sick, 15 earned')).toBeVisible();
     await expect(page.getByText('Up to 30 days')).toBeVisible();
     expect(await casual()).toBe(10);
+
+    // Leave taken before Nirmaan counts as taken; earned leave brought forward adds to the year.
+    const year = Number(new Date().toISOString().slice(0, 4));
+    const left = async (type: string) => (await api<(Balance & { left: number | null; takenBefore: number })[]>(hr, `/staff/leave/balances?employeeId=${emp.id}&year=${year}`)).find((b) => b.type === type)!;
+    const before = await left('CASUAL');
+    await page.goto(`/staff?tab=staff&employee=${emp.id}`);
+    const staffDrawer = page.getByRole('dialog', { name: /EMP-008/ });
+    await staffDrawer.getByRole('tab', { name: 'Attendance and leave', exact: true }).click();
+    await staffDrawer.getByRole('button', { name: 'Opening leave' }).click();
+    const modal = page.getByRole('dialog', { name: /Opening leave for/ });
+    await modal.getByLabel('Casual leave taken').fill('2');
+    await modal.getByLabel(/Earned leave brought forward/).fill('20');
+    await modal.getByRole('button', { name: /Save opening leave/ }).click();
+    await expect(page.getByText(/Opening leave for .* saved/)).toBeVisible();
+    await expect(page.getByText('Taken counts 2 days from before Nirmaan.')).toBeVisible();
+    const after = await left('CASUAL');
+    expect(after.takenBefore).toBe(2);
+    expect(after.left).toBe(before.left! - 2);
+    expect((await left('EARNED')).entitled).toBe(15 + 20); // in place of the 15 the carry of 30 would bring
+    await expect(api(await apiToken('pm@demo.com'), `/staff/employees/${emp.id}/leave-opening`, { method: 'PUT', body: { year, lines: [] } })).rejects.toThrow(/403/);
   } finally {
     await api(hr, '/payroll/settings', { method: 'PUT', body: { casualLeaveDays: 12, earnedCarryMax: 0 } });
+    const year = Number(new Date().toISOString().slice(0, 4));
+    await api(hr, `/staff/employees/${emp.id}/leave-opening`, { method: 'PUT', body: { year, lines: ['CASUAL', 'SICK', 'EARNED'].map((type) => ({ type, takenBefore: 0, broughtForward: null })) } });
   }
 });

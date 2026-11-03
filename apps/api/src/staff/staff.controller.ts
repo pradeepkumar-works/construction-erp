@@ -4,6 +4,7 @@ import { CurrentUser, RequestUser } from '../common/current-user';
 import { StaffService } from './staff.service';
 import { HrService } from './hr.service';
 import { EmployeeDocumentsService } from './employee-documents.service';
+import { todayIn } from '../notifications/time';
 import {
   ApplyLeaveDto,
   AttendanceQuery,
@@ -23,6 +24,7 @@ import {
   ListLeaveQuery,
   RegisterQuery,
   RejectLeaveDto,
+  SaveLeaveOpeningDto,
   SaveRegisterDto,
   UpdateEmployeeDto,
   UsersQuery,
@@ -158,6 +160,18 @@ export class StaffController {
   @Put('employees/:id/documents')
   setDocuments(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: EmployeeDocumentsDto) {
     return this.hr.setDocuments(user, id, dto);
+  }
+
+  @ApiOperation({ summary: "The employee's leave before Nirmaan for a year: days taken and earned leave brought forward" })
+  @Get('employees/:id/leave-opening')
+  leaveOpening(@CurrentUser() user: RequestUser, @Param('id') id: string, @Query() q: BalanceQuery) {
+    return this.staff.leaveOpening(user, id, q.year ?? Number(todayIn().slice(0, 4)));
+  }
+
+  @ApiOperation({ summary: "Set the employee's leave before Nirmaan for a year (HR); the balances count it at once" })
+  @Put('employees/:id/leave-opening')
+  saveLeaveOpening(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: SaveLeaveOpeningDto) {
+    return this.staff.saveLeaveOpening(user, id, dto);
   }
 
   /* attendance */

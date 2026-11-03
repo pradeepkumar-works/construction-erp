@@ -3200,10 +3200,22 @@ export interface LeaveBalanceDto {
   type: LeaveType;
   /** Days for the year; comp-off = weekly offs and holidays worked; null = no limit */
   entitled: number | null;
+  /** Approved, with the days taken before Nirmaan (`takenBefore`) */
   taken: number;
+  /** Of `taken`, the days taken that year before Nirmaan (the employee's opening leave) */
+  takenBefore: number;
   pending: number;
   /** null = no limit */
   left: number | null;
+}
+
+/** An employee's leave before Nirmaan for one year: what HR entered per type. */
+export interface LeaveOpeningDto {
+  employeeId: string;
+  year: number;
+  lines: { type: LeaveType; takenBefore: number; broughtForward: number | null }[];
+  updatedByName: string | null;
+  updatedAt: string | null;
 }
 
 export interface HolidayDto {

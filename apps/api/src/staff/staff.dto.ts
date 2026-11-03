@@ -154,6 +154,24 @@ export class BalanceQuery {
   @ApiPropertyOptional({ example: 2026 }) @IsOptional() @Type(() => Number) @IsInt() @Min(2000) @Max(2100) year?: number;
 }
 
+export class LeaveOpeningLineDto {
+  @ApiProperty({ enum: LEAVE_TYPES }) @IsIn(LEAVE_TYPES) type: LeaveType;
+  @ApiProperty({ example: 4, description: 'Days taken that year before Nirmaan' }) @Type(() => Number) @IsNumber() @Min(0) @Max(366) takenBefore: number;
+  @ApiPropertyOptional({ example: 18, description: 'Earned leave only: days brought forward; null = the carry Nirmaan works out' })
+  @IsOptional()
+  @ValidateIf((_, v) => v !== null)
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  @Max(300)
+  broughtForward?: number | null;
+}
+
+export class SaveLeaveOpeningDto {
+  @ApiProperty({ example: 2026 }) @Type(() => Number) @IsInt() @Min(2000) @Max(2100) year: number;
+  @ApiProperty({ type: [LeaveOpeningLineDto] }) @IsArray() @ArrayMaxSize(10) @ValidateNested({ each: true }) @Type(() => LeaveOpeningLineDto) lines: LeaveOpeningLineDto[];
+}
+
 export class CreateHolidayDto {
   @ApiProperty({ example: '2026-10-20' }) @IsDateString() date: string;
   @ApiProperty({ example: 'Dussehra' }) @trim() @IsString() @IsNotEmpty() @MaxLength(100) name: string;

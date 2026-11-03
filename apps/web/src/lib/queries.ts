@@ -342,6 +342,7 @@ import type {
   EmployeeDto,
   HolidayDto,
   LeaveBalanceDto,
+  LeaveOpeningDto,
   LeaveRequestDto,
   LeaveStatus,
   LeaveType,
@@ -2452,6 +2453,25 @@ export const useLeaveBalances = (employeeId: string | undefined, year?: number, 
     queryFn: async () => (await api.get<LeaveBalanceDto[]>('/staff/leave/balances', { params: clean({ employeeId, year }) })).data,
     enabled,
   });
+
+/** An employee's leave before Nirmaan for a year. */
+export const useLeaveOpening = (employeeId: string, year: number, enabled = true) =>
+  useQuery({
+    queryKey: ['staff', 'leave-opening', employeeId, year],
+    queryFn: async () => (await api.get<LeaveOpeningDto>(`/staff/employees/${employeeId}/leave-opening`, { params: { year } })).data,
+    enabled,
+  });
+
+export function useSaveLeaveOpening(employeeId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: { year: number; lines: LeaveOpeningDto['lines'] }) => (await api.put<LeaveOpeningDto>(`/staff/employees/${employeeId}/leave-opening`, body)).data,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['staff', 'leave-opening', employeeId] });
+      qc.invalidateQueries({ queryKey: ['staff', 'balances'] });
+    },
+  });
+}
 
 export const useHolidays = (year?: number, projectId?: string) =>
   useQuery({

@@ -2132,7 +2132,10 @@ flow, not `SubmissionLifecycleService`: it is a person's request, not site data 
   company's days a year from Payroll settings (`PayrollSettings` casual, sick and earned days, standard 12, 12 and 15),
   read by `leaveEntitlement` (`@erp/shared/staff.ts`, tested in `src/scripts/leave-policy-test.ts`): someone who joined
   that year gets the months left from their joining month when the company gives pro rata (rounded down to a half day),
-  and earned leave the year before left untaken carries in up to `earnedCarryMax` (0 = none); comp-off = weekly offs and holidays worked (half a day earns half),
+  and earned leave the year before left untaken carries in up to `earnedCarryMax` (0 = none). Someone whose leave was
+  kept elsewhere before Nirmaan has a `LeaveOpening` per year and type (HR's Opening leave on the staff record, `GET|PUT
+  /staff/employees/:id/leave-opening`, checked by `leaveOpeningProblem`): its days taken count as taken (`takenBefore` on
+  the balance) and earned leave brought forward stands in for the carry; comp-off = weekly offs and holidays worked (half a day earns half),
   unpaid without limit. Waiting and approved requests both count. Applying or approving beyond the balance, or
   overlapping other waiting or approved leave, is refused; an advisory lock per employee serialises the check.
 - **Who.** `STAFF_ADMIN_ROLES` (admin, management, HR) keep the staff master and holidays, see everyone and decide

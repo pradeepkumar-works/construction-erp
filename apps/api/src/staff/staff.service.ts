@@ -3,6 +3,9 @@ import { Prisma } from '@prisma/client';
 import {
   DEFAULT_LEAVE_POLICY,
   leaveEntitlement,
+  leaveOpeningProblem,
+  OPENING_LEAVE_TYPES,
+  type LeaveOpeningDto,
   type LeavePolicy,
   LEAVE_TYPE_LABELS,
   LEAVE_TYPES,
@@ -56,6 +59,7 @@ import {
   ListEmployeesQuery,
   ListLeaveQuery,
   RejectLeaveDto,
+  SaveLeaveOpeningDto,
   SaveRegisterDto,
   UpdateEmployeeDto,
 } from './staff.dto';
@@ -754,10 +758,6 @@ export class StaffService {
 
   // Leave
 
-  /**
-   * Days a year per type: fixed for casual, sick and earned; comp-off is earned by working a weekly off or holiday
-   * (a half day earns half); unpaid has no limit. Leave counts in the year it starts.
-   */
   /** The company's leave rules (Payroll settings), as shipped until HR sets them. */
   private async leavePolicy(organizationId: string, db: Prisma.TransactionClient = this.prisma): Promise<LeavePolicy> {
     const s = await db.payrollSettings.findUnique({ where: { organizationId }, select: { casualLeaveDays: true, sickLeaveDays: true, earnedLeaveDays: true, earnedCarryMax: true, leaveProRata: true } });
@@ -766,11 +766,17 @@ export class StaffService {
       : DEFAULT_LEAVE_POLICY;
   }
 
+  /**
+   * Days a year per type: the company's leave rules (`leaveEntitlement`) with the employee's opening leave (days taken
+   * before Nirmaan count as taken; earned leave brought forward stands in for the carry); comp-off is earned by working a
+   * weekly off or holiday (a half day earns half); unpaid has no limit. Leave counts in the year it starts.
+   */
   async balancesFor(employeeId: string, projectId: string | null, year: number, db: Prisma.TransactionClient = this.prisma, excludeId?: string): Promise<LeaveBalanceDto[]> {
     const range = yearRange(year);
-    const [rows, worked] = await Promise.all([
+    const [rows, worked, openings] = await Promise.all([
       db.leaveRequest.groupBy({ by: ['type', 'status'], where: { employeeId, status: { in: [...LIVE_LEAVE] }, fromDate: range, ...(excludeId ? { id: { not: excludeId } } : {}) }, _sum: { days: true } }),
       db.staffAttendance.findMany({ where: { employeeId, date: range, status: { in: ['PRESENT', 'HALF_DAY'] } }, select: { date: true, status: true, projectId: true } }),
+      db.leaveOpening.findMany({ where: { employeeId, year }, select: { type: true, takenBefore: true, broughtForward: true } }),
     ]);
     const emp = await db.employee.findUnique({ where: { id: employeeId }, select: { organizationId: true, joinedOn: true } });
     const [holidays, policy] = emp
@@ -780,8 +786,13 @@ export class StaffService {
     // Earned leave the year before left, for what carries: that year's own days (no carry of its own) less taken and waiting.
     let earnedLeftLastYear = 0;
     if (policy.earnedCarryMax > 0) {
-      const last = await db.leaveRequest.aggregate({ where: { employeeId, type: 'EARNED', status: { in: [...LIVE_LEAVE] }, fromDate: yearRange(year - 1) }, _sum: { days: true } });
-      earnedLeftLastYear = (leaveEntitlement('EARNED', { ...policy, earnedCarryMax: 0 }, year - 1, joinedOn) ?? 0) - num(last._sum.days ?? 0);
+      const [last, lastOpening] = await Promise.all([
+        db.leaveRequest.aggregate({ where: { employeeId, type: 'EARNED', status: { in: [...LIVE_LEAVE] }, fromDate: yearRange(year - 1) }, _sum: { days: true } }),
+        db.leaveOpening.findUnique({ where: { employeeId_year_type: { employeeId, year: year - 1, type: 'EARNED' } }, select: { takenBefore: true, broughtForward: true } }),
+      ]);
+      const lastBrought = lastOpening?.broughtForward ? lastOpening.broughtForward.toNumber() : null;
+      earnedLeftLastYear =
+        (leaveEntitlement('EARNED', { ...policy, earnedCarryMax: 0 }, year - 1, joinedOn, 0, lastBrought) ?? 0) - num(last._sum.days ?? 0) - (lastOpening ? lastOpening.takenBefore.toNumber() : 0);
     }
     const isOff = (d: Date, p: string | null) => {
       const s = dateOnly(d);
@@ -790,10 +801,13 @@ export class StaffService {
     const compOff = worked.filter((a) => isOff(a.date, a.projectId)).reduce((n, a) => n + (a.status === 'HALF_DAY' ? 0.5 : 1), 0);
     const sum = (type: LeaveType, status: 'PENDING' | 'APPROVED') => num(rows.find((r) => r.type === type && r.status === status)?._sum.days ?? 0);
     return LEAVE_TYPES.map((type) => {
-      const entitled = type === 'COMP_OFF' ? compOff : leaveEntitlement(type, policy, year, joinedOn, earnedLeftLastYear);
-      const taken = sum(type, 'APPROVED');
+      const opening = openings.find((o) => o.type === type);
+      const broughtForward = opening?.broughtForward ? opening.broughtForward.toNumber() : null;
+      const entitled = type === 'COMP_OFF' ? compOff : leaveEntitlement(type, policy, year, joinedOn, earnedLeftLastYear, broughtForward);
+      const takenBefore = opening ? opening.takenBefore.toNumber() : 0;
+      const taken = sum(type, 'APPROVED') + takenBefore;
       const pending = sum(type, 'PENDING');
-      return { type, entitled, taken, pending, left: entitled === null ? null : entitled - taken - pending };
+      return { type, entitled, taken, takenBefore, pending, left: entitled === null ? null : entitled - taken - pending };
     });
   }
 
@@ -801,6 +815,49 @@ export class StaffService {
     const e = q.employeeId ? await this.visibleEmployee(user, q.employeeId) : await this.ownEmployee(user);
     if (!e) throw new NotFoundException('Your login is not linked to a staff record');
     return this.balancesFor(e.id, e.projectId, q.year ?? yearOf(todayIn()));
+  }
+
+  /** An employee's leave before Nirmaan for a year: days taken and earned leave brought forward (HR and the people who see the record). */
+  async leaveOpening(user: RequestUser, employeeId: string, year: number): Promise<LeaveOpeningDto> {
+    const e = await this.visibleEmployee(user, employeeId);
+    const rows = await this.prisma.leaveOpening.findMany({ where: { employeeId: e.id, year }, include: { updatedBy: { select: { fullName: true } } }, orderBy: { updatedAt: 'desc' } });
+    return {
+      employeeId: e.id,
+      year,
+      lines: OPENING_LEAVE_TYPES.map((type) => {
+        const r = rows.find((x) => x.type === type);
+        return { type, takenBefore: r ? r.takenBefore.toNumber() : 0, broughtForward: r?.broughtForward ? r.broughtForward.toNumber() : null };
+      }),
+      updatedByName: rows[0]?.updatedBy.fullName ?? null,
+      updatedAt: rows[0] ? iso(rows[0].updatedAt) : null,
+    };
+  }
+
+  /** HR sets an employee's leave before Nirmaan for a year; a line of nothing taken and nothing brought forward is removed. */
+  async saveLeaveOpening(user: RequestUser, employeeId: string, dto: SaveLeaveOpeningDto): Promise<LeaveOpeningDto> {
+    if (!canManageStaff(user.roleKey)) throw new ForbiddenException('Only HR or an admin sets opening leave');
+    const e = await this.visibleEmployee(user, employeeId);
+    const lines = dto.lines.map((l) => ({ type: l.type, takenBefore: l.takenBefore, broughtForward: l.broughtForward ?? null }));
+    const problem = leaveOpeningProblem(lines);
+    if (problem) throw new BadRequestException(problem);
+    await this.prisma.$transaction(async (tx) => {
+      await this.lockEmployee(tx, e.id);
+      for (const l of lines) {
+        const key = { employeeId_year_type: { employeeId: e.id, year: dto.year, type: l.type } };
+        if (!l.takenBefore && l.broughtForward === null) {
+          await tx.leaveOpening.deleteMany({ where: { employeeId: e.id, year: dto.year, type: l.type } });
+          continue;
+        }
+        const data = { takenBefore: l.takenBefore, broughtForward: l.broughtForward, updatedById: user.id };
+        await tx.leaveOpening.upsert({ where: key, create: { organizationId: user.organizationId, employeeId: e.id, year: dto.year, type: l.type, ...data }, update: data });
+      }
+    });
+    const words = lines
+      .filter((l) => l.takenBefore || l.broughtForward !== null)
+      .map((l) => `${LEAVE_TYPE_LABELS[l.type]}: ${l.takenBefore} taken${l.broughtForward !== null ? `, ${l.broughtForward} brought forward` : ''}`)
+      .join('; ');
+    await this.audit.log(user, 'EMPLOYEE', e.id, 'UPDATED', `Opening leave ${dto.year}: ${words || 'none'}`);
+    return this.leaveOpening(user, e.id, dto.year);
   }
 
   private leaveWhere(user: RequestUser): Prisma.LeaveRequestWhereInput {

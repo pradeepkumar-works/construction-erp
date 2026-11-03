@@ -1024,6 +1024,7 @@ model Organization {
   tenderBids           TenderBid[]
   staffAttendance      StaffAttendance[]
   leaveRequests        LeaveRequest[]
+  leaveOpenings        LeaveOpening[]
   holidays             Holiday[]
   outboundMessages     OutboundMessage[]
   billingPayments      BillingPayment[]
@@ -1339,6 +1340,7 @@ model User {
   closeoutItemsDone       CloseoutItem[]
   leaveDecided            LeaveRequest[]             @relation("LeaveDecider")
   leaveApplied            LeaveRequest[]             @relation("LeaveApplicant")
+  leaveOpeningsSet        LeaveOpening[]             @relation("LeaveOpeningBy")
   raisedRisks             Risk[]                     @relation("RiskRaiser")
   ownedRisks              Risk[]                     @relation("RiskOwner")
   mixDesignsApproved      MixDesign[]                @relation("MixDesignApprover")
@@ -5537,6 +5539,7 @@ model Employee {
 
   attendance       StaffAttendance[]
   leave            LeaveRequest[]
+  leaveOpenings    LeaveOpening[]
   events           EmployeeEvent[]
   attachments      Attachment[]
   salaryStructures SalaryStructure[]
@@ -5747,6 +5750,29 @@ model LeaveRequest {
 
   @@index([organizationId, status])
   @@index([employeeId, fromDate])
+}
+
+/// Leave an employee had before Nirmaan, for one year and type: days already taken that year and, for earned leave,
+/// days brought forward from the old records (in place of the carry Nirmaan works out). HR keeps it on the staff record.
+model LeaveOpening {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  employeeId     String
+  employee       Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  year           Int
+  type           LeaveType
+  /// Days taken that year before Nirmaan
+  takenBefore    Decimal      @default(0) @db.Decimal(5, 1)
+  /// Earned leave only: days brought forward from the year before, null = the carry Nirmaan works out
+  broughtForward Decimal?     @db.Decimal(5, 1)
+  updatedById    String
+  updatedBy      User         @relation("LeaveOpeningBy", fields: [updatedById], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([employeeId, year, type])
+  @@index([organizationId])
 }
 
 /// A holiday for every site (projectId null) or one site.

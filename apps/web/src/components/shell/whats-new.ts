@@ -14,6 +14,7 @@ export const WHATS_NEW: WhatsNew[] = [
     title: 'Your own leave rules',
     points: [
       "Payroll settings now hold the company's leave: casual, sick and earned days a year, how much unused earned leave carries into the next year, and whether someone who joins during the year gets a share for the months left. Balances follow them at once.",
+      'Opening leave on a staff record (Attendance and leave) takes the days someone took this year before Nirmaan and the earned leave they bring forward, so balances start right.',
     ],
   },
   {
