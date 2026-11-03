@@ -29,7 +29,7 @@ export function newEntriesFor(user: AuthUser): NewEntry[][] {
     { kind: 'progress', label: 'Progress entry', action: 'New progress entry', href: '/progress', icon: <LineChartOutlined /> },
     { kind: 'material-request', label: 'Indent', action: 'New indent', keywords: 'material request mr', href: '/material-requests', icon: <ShoppingCartOutlined /> },
     ...(canRecordAttendance(role) ? [{ kind: 'head-count' as const, label: 'Attendance', action: 'Record attendance', keywords: 'head count labour manpower', href: '/attendance', icon: <TeamOutlined /> }] : []),
-    ...(canMeasure(role) ? [{ kind: 'measurement' as const, label: 'Measurement', action: 'New measurement', keywords: 'mb measurement book', href: '/measurements', icon: <ColumnWidthOutlined /> }] : []),
+    ...(canMeasure(role) ? [{ kind: 'measurement' as const, label: 'Measurement', action: 'New measurement', keywords: 'measurement book', href: '/measurements', icon: <ColumnWidthOutlined /> }] : []),
     ...(canSubmitExpense(role) ? [{ kind: 'expense' as const, label: 'Site expense', action: 'New site expense', href: '/expenses', icon: <WalletOutlined /> }] : []),
     ...(canRaiseRisk(role) ? [{ kind: 'risk' as const, label: 'Delay or risk', action: 'Record delay or risk', href: '/risks', icon: <AlertOutlined /> }] : []),
     ...(canRecordMeetings(role) ? [{ kind: 'meeting' as const, label: 'Meeting', action: 'Record meeting', href: '/meetings', icon: <CommentOutlined /> }] : []),
