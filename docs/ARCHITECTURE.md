@@ -471,13 +471,30 @@ audited on the company. `LauncherFlag` and `AccessRequest` are tenant tables (mi
 A company chooses its menu in Admin › Menu and names (`/menu-and-names`, `GET`/`PUT /nav-settings`, admins through
 `canManageModules`, audited as `MENU` on the company):
 
-- **Where it sits** (`Organization.navLayout`): `SIDEBAR` (the default, as before) or `TOP_BAR`. With the top bar, Home's
-  first section is the company's modules; a module's screen and every page in it carry the module's bar under the top bar:
-  the module's name (a menu of every module), Overview, then its sub-modules, a sub-module of several pages opening as a
-  menu of them. Sub-modules that do not fit go under More on a wide screen; a phone's bar scrolls sideways.
-- **The sidebar's look** (`navSidebarLook`): `RAIL` (the rail beside the page, a white header; the default), `HEADER` (the
-  rail and the header in the menu's colours, one frame round the page; the header's controls take the chrome ink through
-  `TopBar.module.css`'s `onChrome`) or `FLOATING` (the rail inset and rounded on the page's canvas, the header on the canvas).
+- **Where it sits** (`Organization.navLayout`), that is, where the modules and a module's sub-modules go:
+  - `SIDEBAR` (the default): every module and its pages down the left.
+  - `TOP_BAR`: Home's first section is the company's modules; a module's screen and every page in it carry the module's bar
+    under the top bar: the module's name (a menu of every module), Overview, then its sub-modules, a sub-module of several
+    pages opening as a menu of them.
+  - `TOP_AND_SIDE`: the modules across the top bar, the module on screen with its Overview, sub-modules and pages down the
+    left (`moduleSections` in `nav.ts`, drawn by `Sidebar`); with no module open the side holds the top links and the pins.
+  - `TWO_BARS`: the modules across a first bar, the module's sub-modules across a second (Home's links there when no module
+    is open).
+  - `TWO_SIDEBARS`: the top links and the modules in a column of icons with their names (`ModuleRail`), the module's
+    sub-modules and pages in a column beside it, which `[` hides and shows.
+
+  Modules or sub-modules that do not fit a bar go under More on a wide screen (the module on screen keeps its place);
+  a phone's bar scrolls sideways. A phone has no room for the modules across the top, so `TOP_AND_SIDE` and `TWO_BARS`
+  draw as the top bar there and `TWO_SIDEBARS` as the sidebar, all with the menu drawer. The portals keep the sidebar.
+- **Where the colours go** (`navPaint`): `SIDE`, `TOP`, `BOTH` or `NONE`, over the layout's two parts named in
+  `NAV_LAYOUT_PARTS` (the sidebar and the header, the top bar and the sidebar, the first and second bar, the two sidebars
+  and the header). `navPainted(settings)` is the one reading of it; `TOP_BAR` has no paint, its look decides. A plain part
+  is drawn on the page's own surface by `.plain` (`Sidebar.module.css`), which sets the chrome roles to the page's, so
+  everything in the menu keeps reading the chrome roles. A coloured bar's controls take the chrome ink through
+  `TopBar.module.css`'s `onChrome`. `20270712090000_nav_layouts_and_paint` moved the old `HEADER` sidebar look onto
+  `BOTH`.
+- **The sidebar's look** (`navSidebarLook`, the sidebar layouts): `RAIL` (beside the page; the default) or `FLOATING` (inset
+  and rounded on the page's canvas, the header on the canvas).
 - **The top bar's look** (`navLook`): `NAVY` (a bar in the menu's colours over a white module bar, the default), `FRAME` (a light frame round the page,
   Home listing each module with its sub-modules) or `BAR` (one white bar holding the module and its menu, Home grouping the
   modules by `navMenuGroup`). `navPersonalLook` lets each person pick their own (`User.navLook`, the account menu's Top bar
@@ -510,10 +527,14 @@ in `DEPARTMENT_MODULES`: `src/scripts/nav-menu-test.ts` (CI) fails on a live pag
 
 ### Menu colours
 
-The sidebar, the header in `HEADER` and the `NAVY` top bar are painted in one fill: a plain colour or a two-stop gradient
-(`NavFill`, `@erp/shared/nav-colours.ts`). A company picks one of the curated palettes (`NAV_PALETTES`: `QUIET`, the chrome
-roles as they are and the default, six plain colours and five gradients, each with its own fill for the night, kept as design
-tokens in `ds/source/chrome.ts`) or `CUSTOM` with its own `navFill`. A palette is only its fill: the words, captions, hovers
+The parts of the menu in colour (`navPainted`) and the `NAVY` top bar are painted in one fill: a plain colour or a gradient
+of two stops or three (`NavFill` with an optional `via`, `@erp/shared/nav-colours.ts`). A company picks one of the curated
+palettes (`NAV_PALETTES`: `QUIET`, the chrome roles as they are and the default, six plain colours and six gradients, each
+with its own fill for the night, kept as design tokens in `ds/source/chrome.ts`) or `CUSTOM` with its own `navFill`. The
+curated set follows the taste skill (`.claude/skills/design-taste-frontend`, `references/colour.md`): no violet or indigo, no
+rust; warmth from oxblood, walnut and a bone stone; a gradient stays in one hue and a few steps of lightness, so the menu reads
+as one colour with depth. Plum became Oxblood and Ember became Walnut in `20270712090000_nav_layouts_and_paint`. Lagoon is
+Pradeep's deep-sea teal across the bar through three stops, taken down to the shade where the captions read. A palette is only its fill: the words, captions, hovers
 and edges are mixed from the ink that reads on it (`inkFor`, near-black or white), so every palette draws the same menu.
 
 One rule holds a fill: the menu's captions (its ink at `QUIET_SHARE`) keep 4.5:1 against every part of it, in both themes
