@@ -517,7 +517,11 @@ export function menuWaiting(menu: NavMenuModule[], approvals: { type: Submission
   for (const m of menu) {
     const ids = new Set(m.subs.flatMap((x) => x.nodes.map((n) => n.shortcutOf ?? n.id)));
     let n = 0;
-    for (const a of approvals ?? []) if (ids.has(listNode.get(a.type) ?? '')) n += a.count;
+    // An approval counts on its list's page, unless that page has a badge of its own, which already holds it.
+    for (const a of approvals ?? []) {
+      const node = listNode.get(a.type) ?? '';
+      if (ids.has(node) && nodeBadges?.[node] === undefined) n += a.count;
+    }
     for (const [id, count] of Object.entries(nodeBadges ?? {})) if (id.includes('.') && ids.has(id)) n += count;
     if (n > 0) out[m.key] = n;
   }

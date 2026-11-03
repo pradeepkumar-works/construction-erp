@@ -1,6 +1,6 @@
 import type { RoleKey, SubmissionType } from './enums';
 import type { Because, Figure } from './figures/figure';
-import { canViewCost } from './permissions';
+import { canManageStaff, canManageStore, canPurchase, canViewCost, canViewLabourSummary } from './permissions';
 
 /**
  * Management dashboard and reports (ARCHITECTURE "Management dashboard and reports"): the portfolio for the MD, one
@@ -263,6 +263,17 @@ export const MANAGEMENT_REPORTS: Record<ManagementReportKey, ManagementReportInf
   stock: { key: 'stock', title: 'Stock position', description: 'Stock value by project and store, items below their minimum, and stock lying idle.', period: 'asOf' },
   approvals: { key: 'approvals', title: 'Approvals waiting', description: 'Entries waiting for a decision by type and project, and the ones waiting longest.', period: 'asOf' },
 };
+
+/** The desks that read one report of their own beside those who see the dashboard: the procurement manager reads
+ *  procurement spend, the store manager the stock position, and HR the labour and attendance report. */
+export const REPORT_DESKS: Partial<Record<ManagementReportKey, (role: RoleKey) => boolean>> = {
+  procurement: canPurchase,
+  stock: canManageStore,
+  labour: (role) => canManageStaff(role) || canViewLabourSummary(role),
+};
+
+/** Who may open a management report: anyone who sees the dashboard, and each desk its own (`REPORT_DESKS`). */
+export const canReadReport = (role: RoleKey, key: ManagementReportKey) => canSeeManagement(role) || !!REPORT_DESKS[key]?.(role);
 
 export type ReportColumnKind = 'text' | 'money' | 'qty' | 'pct' | 'date' | 'days' | 'count';
 export type ReportCell = string | number | null;

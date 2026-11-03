@@ -387,6 +387,16 @@ export class CorrespondenceService {
     };
   }
 
+  /** How many letters wait on this user: received ones marked to them still open, and outward ones for them to sign or seal. */
+  async countsForMe(user: RequestUser): Promise<{ toAnswer: number; toSign: number }> {
+    const org = { organizationId: user.organizationId };
+    const [toAnswer, toSign] = await Promise.all([
+      this.prisma.letter.count({ where: { ...org, markedToId: user.id, status: 'OPEN' } }),
+      this.prisma.letter.count({ where: { ...org, ...this.toSignWhere(user) } }),
+    ]);
+    return { toAnswer, toSign };
+  }
+
   /** Staff a letter can be marked to, and who may sign one (for the project, or head office). */
   async people(user: RequestUser, projectId?: string) {
     this.assertRegister(user);

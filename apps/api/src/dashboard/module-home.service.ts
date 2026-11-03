@@ -12,6 +12,10 @@ import {
   canBillRmc,
   canViewRmc,
   canManageStaff,
+  canManageUsers,
+  canManageIntegrations,
+  canViewTenders,
+  canViewWorkOrders,
   canPurchase,
   canReportSafety,
   canViewCompliance,
@@ -55,9 +59,11 @@ import { ProjectsService } from '../projects/projects.service';
 import { plannedProgress } from '../common/progress';
 import { CorrespondenceService } from '../correspondence/correspondence.service';
 import { DesignControlService } from '../design/design-control.service';
+import { QualityService } from '../quality/quality.service';
 
 type D = Prisma.Decimal;
 const ZERO = new Prisma.Decimal(0);
+const plusDays = (day: string, n: number) => new Date(Date.parse(`${day}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
 const daysBetween = (from: string, to: string) => Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000);
 
 /**
@@ -83,6 +89,7 @@ export class ModuleHomeService {
     private projects: ProjectsService,
     private letters: CorrespondenceService,
     private designControl: DesignControlService,
+    private quality_: QualityService,
   ) {}
 
   async home(user: RequestUser, key: string, projectId?: string): Promise<ModuleHomeDto> {
@@ -238,8 +245,16 @@ export class ModuleHomeService {
         return [...(await this.accounts(user, projectId)), ...(await this.bookFigures(user))];
       case 'people':
         return this.people(user, today, projectId);
+      case 'subcontracts':
+        return this.subcontracts(user, projectId);
+      case 'tenders':
+        return this.tenders(user, today);
+      case 'payroll':
+        return this.payroll(user, projectId);
+      case 'admin':
+        return this.admin(user);
       default:
-        // Projects, Subcontracts, Payroll, Reports and Admin show their pages and what waits, no figures yet.
+        // Projects has its progress; Reports is the list of reports, each with its own figures.
         return [];
     }
   }
@@ -275,16 +290,84 @@ export class ModuleHomeService {
     ];
   }
 
+  /** Quality's register in figures: what failed, what is late and what is open (`QualityService.summary`). */
   private async quality(user: RequestUser, projectId?: string): Promise<FigureInput[]> {
     if (!canReportSafety(user.roleKey)) return [];
-    return [figure('openNcrs', await this.prisma.ncr.count({ where: { ...this.where(user, projectId), status: { not: 'CLOSED' } } }))];
+    const q = await this.quality_.summary(user, projectId);
+    return [
+      figure('testsFailed', q.testsFailed),
+      figure('testResultsOverdue', q.testsOverdue),
+      figure('openNcrs', q.ncrsOpen, { versus: { part: figure('ncrsOverdue', q.ncrsOverdue) } }),
+    ];
   }
 
+  /** Incidents in the month, with near misses apart: a near miss hurt no one, and a site that reports them is watching. */
   private async safety(user: RequestUser, today: string, projectId?: string): Promise<FigureInput[]> {
     if (!canReportSafety(user.roleKey) || !moduleOn(user, 'safety')) return [];
-    const monthStart = parseDate(`${today.slice(0, 7)}-01`);
-    const incidents = await this.prisma.safetyIncident.count({ where: { ...this.where(user, projectId), date: { gte: monthStart, lte: parseDate(today) } } });
-    return [figure('safetyIncidents', incidents, { when: { month: today.slice(0, 7) } })];
+    const month = today.slice(0, 7);
+    const rows = await this.prisma.safetyIncident.groupBy({
+      by: ['type'],
+      where: { ...this.where(user, projectId), date: { gte: parseDate(`${month}-01`), lte: parseDate(today) } },
+      _count: { _all: true },
+    });
+    const near = rows.find((r) => r.type === 'NEAR_MISS')?._count._all ?? 0;
+    const incidents = rows.reduce((t, r) => t + r._count._all, 0) - near;
+    return [figure('safetyIncidents', incidents, { when: { month }, versus: { part: figure('nearMisses', near) } })];
+  }
+
+  /** Work orders placed and retention kept back from subcontractors, for those who see work orders. */
+  private async subcontracts(user: RequestUser, projectId?: string): Promise<FigureInput[]> {
+    if (!canViewWorkOrders(user.roleKey)) return [];
+    const where = this.where(user, projectId);
+    const [orders, retention] = await Promise.all([
+      this.prisma.workOrder.aggregate({ where: { ...where, status: 'APPROVED' }, _sum: { value: true }, _count: { _all: true } }),
+      this.prisma.subcontractBill.aggregate({ where: { ...where, status: 'APPROVED' }, _sum: { retentionAmount: true } }),
+    ]);
+    return [
+      figure('workOrdersPlaced', money(orders._sum.value ?? ZERO), { count: orders._count._all }),
+      canViewPayables(user.roleKey) && figure('retentionFromSubcontractors', money(retention._sum.retentionAmount ?? ZERO)),
+    ];
+  }
+
+  /** Tenders being priced, those due within a week, and bids waiting for the result. Tenders are the company's. */
+  private async tenders(user: RequestUser, today: string): Promise<FigureInput[]> {
+    if (!canViewTenders(user.roleKey) || !moduleOn(user, 'tenders')) return [];
+    const org = { organizationId: user.organizationId };
+    const [preparing, dueSoon, submitted] = await Promise.all([
+      this.prisma.tender.count({ where: { ...org, status: 'PREPARING' } }),
+      this.prisma.tender.count({ where: { ...org, status: 'PREPARING', submitBy: { gte: parseDate(today), lte: parseDate(plusDays(today, 7)) } } }),
+      this.prisma.tender.count({ where: { ...org, status: 'SUBMITTED' } }),
+    ]);
+    return [figure('tendersToSubmit', preparing, { versus: { part: figure('bidsDueThisWeek', dueSoon) } }), figure('bidsAwaitingResult', submitted)];
+  }
+
+  /** The salary runs waiting on the caller, and what the last paid run came to. Payroll is the company's. */
+  private async payroll(user: RequestUser, projectId?: string): Promise<FigureInput[]> {
+    if (!canViewPayroll(user.roleKey) || !moduleOn(user, 'payroll') || projectId) return [];
+    const [runs, last] = await Promise.all([
+      this.payrollRuns.waiting(user),
+      this.prisma.payrollRun.findFirst({ where: { organizationId: user.organizationId, status: 'PAID' }, orderBy: { month: 'desc' }, select: { month: true, net: true } }),
+    ]);
+    return [
+      figure('salaryRunsWaiting', runs.length),
+      last && figure('netPayLastRun', money(last.net), { when: { month: last.month } }),
+    ];
+  }
+
+  /** Who can sign in, who is asking for a page, and outside connections that are failing. */
+  private async admin(user: RequestUser): Promise<FigureInput[]> {
+    if (!canManageUsers(user.roleKey)) return [];
+    const org = { organizationId: user.organizationId };
+    const [users, requests, connections] = await Promise.all([
+      this.prisma.user.count({ where: { ...org, isActive: true } }),
+      this.prisma.accessRequest.count({ where: { ...org, status: 'OPEN' } }),
+      canManageIntegrations(user.roleKey)
+        ? this.prisma.integrationConnection.findMany({ where: { ...org, isActive: true }, select: { lastSuccessAt: true, lastErrorAt: true } })
+        : null,
+    ]);
+    // Failing as the Connections page says it: the last thing it did failed.
+    const failing = connections?.filter((c) => c.lastErrorAt && (!c.lastSuccessAt || c.lastErrorAt > c.lastSuccessAt)).length;
+    return [figure('peopleWithLogin', users), figure('accessRequestsOpen', requests), failing !== undefined && figure('connectionsFailing', failing)];
   }
 
   /** The design dashboard's totals (`DesignControlService.dashboard`). */

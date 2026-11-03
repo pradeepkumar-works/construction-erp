@@ -100,7 +100,11 @@ export const MEASURES = {
   openDelays: { label: 'Open delays', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'No open delays' }, items: ['delay holding up work', 'delays holding up work'], list: '/risks', define: 'Delays in the register, not closed.' },
   // Quality and safety
   openNcrs: { label: 'Open NCRs', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'No NCR open' }, items: ['NCR', 'NCRs'], list: '/inspections?tab=ncrs', define: 'Non-conformance reports waiting for action or closing.' },
-  safetyIncidents: { label: 'Safety incidents', kind: 'count', better: 'down', flag: { level: 'act', clear: 'No safety incident this month' }, items: ['incident', 'incidents'], list: '/safety', define: 'Incidents reported in the month.' },
+  ncrsOverdue: { label: 'NCRs past the due date', kind: 'count', better: 'down', asPart: 'past the due date', items: ['NCR past the due date', 'NCRs past the due date'], list: '/inspections?tab=ncrs', define: 'Open NCRs whose date to put right has passed.' },
+  testsFailed: { label: 'Failed tests', kind: 'count', better: 'down', flag: { level: 'act', clear: 'No test failed' }, items: ['failed test', 'failed tests'], list: '/inspections?tab=tests', define: 'Material and concrete tests whose result failed the specification.' },
+  testResultsOverdue: { label: 'Test results overdue', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'No test result overdue' }, items: ['test', 'tests'], list: '/inspections?tab=tests', define: 'Tests with a reading due (a 7 or 28 day cube, a lab report) and not yet entered.' },
+  safetyIncidents: { label: 'Safety incidents', kind: 'count', better: 'down', flag: { level: 'act', clear: 'No safety incident this month' }, items: ['incident', 'incidents'], list: '/safety', define: 'Injuries, damage and fatalities reported in the month. Near misses are counted on their own.' },
+  nearMisses: { label: 'Near misses', kind: 'count', better: 'either', asPart: 'near misses', items: ['near miss', 'near misses'], list: '/safety', define: 'Near misses reported in the month: no one hurt, nothing damaged. A site that reports them is watching.' },
   // Design and drawings
   drawingsLate: { label: 'Drawings late', kind: 'count', better: 'down', flag: { level: 'act', clear: 'No drawing late' }, items: ['drawing', 'drawings'], list: '/drawing-schedule?state=LATE', define: 'Drawings on the schedule past the date they are needed by.' },
   drawingsAwaited: { label: 'Drawings awaited', kind: 'count', better: 'down', items: ['drawing awaited', 'drawings awaited'], list: '/drawing-schedule', define: 'Drawings on the schedule not yet received.' },
@@ -161,12 +165,24 @@ export const MEASURES = {
   leakageFlags: { label: 'Leakage flags', kind: 'count', better: 'down', flag: { level: 'act', clear: 'No leakage flagged' }, list: '/leakage', define: 'What the leakage checks flagged in the month.' },
   // Staff
   staffPresent: { label: 'Staff present', kind: 'count', better: 'either', list: '/staff?tab=register', define: 'Staff marked present or on half day.' },
+  // Subcontracts
+  workOrdersPlaced: { label: 'Work orders placed', kind: 'money', better: 'either', items: ['work order', 'work orders'], list: '/work-orders', define: 'Approved work orders with subcontractors, by value before GST.' },
+  retentionFromSubcontractors: { label: 'Retention kept from subcontractors', kind: 'money', better: 'either', list: '/subcontract-bills', define: 'Retention kept back on approved subcontractor bills, to be released at the end of the defects period.' },
+  // Tenders
+  tendersToSubmit: { label: 'Tenders to submit', kind: 'count', better: 'either', items: ['tender', 'tenders'], list: '/tenders', define: 'Tenders being priced, not yet submitted.' },
+  bidsDueThisWeek: { label: 'Bids due in 7 days', kind: 'count', better: 'down', asPart: 'due in 7 days', flag: { level: 'watch', clear: 'No bid due in 7 days' }, items: ['bid', 'bids'], list: '/tenders', define: 'Tenders being priced whose last date to submit is within 7 days.' },
+  bidsAwaitingResult: { label: 'Bids awaiting result', kind: 'count', better: 'either', items: ['bid', 'bids'], list: '/tenders', define: 'Tenders submitted and not yet won, lost or cancelled.' },
+  // Admin
+  peopleWithLogin: { label: 'People with a login', kind: 'count', better: 'either', items: ['person', 'people'], list: '/users', define: 'Users of this company whose login is active.' },
+  accessRequestsOpen: { label: 'Access requests to answer', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'No access request waiting' }, items: ['request', 'requests'], list: '/home-tiles', define: 'Requests from people to open a page their role does not show, waiting for an admin.' },
+  connectionsFailing: { label: 'Connections failing', kind: 'count', better: 'down', flag: { level: 'act', clear: 'No connection failing' }, items: ['connection', 'connections'], list: '/connections', define: 'Connected devices and services whose last message failed.' },
   staffOnRoll: { label: 'Staff on the roll', kind: 'count', better: 'either', items: ['person on the roll', 'people on the roll'], list: '/staff?tab=staff', define: 'Staff in employment on the day.' },
   staffOnLeave: { label: 'Staff on leave', kind: 'count', better: 'either', list: '/staff?tab=leave', define: 'Staff on approved leave.' },
   staffAbsent: { label: 'Staff absent', asPart: 'absent besides', kind: 'count', better: 'down', list: '/staff?tab=register', define: 'Staff marked absent.' },
   staffJoined: { label: 'Staff joined', kind: 'count', better: 'either', list: '/staff?tab=staff', define: 'Staff who joined in the month.' },
   leaveToDecide: { label: 'Leave to decide', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'No leave to decide' }, items: ['request', 'requests'], list: '/staff?tab=leave', define: 'Leave requests waiting for your decision.' },
   overtimeToDecide: { label: 'Overtime to decide', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'No overtime to decide' }, items: ['claim', 'claims'], list: '/staff?tab=overtime', define: 'Overtime claims waiting for your decision.' },
+  netPayLastRun: { label: 'Net pay, last run', kind: 'money', better: 'either', list: '/payroll?tab=runs', define: 'Net pay of the latest salary run paid.' },
   salaryRunsWaiting: { label: 'Salary runs waiting', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'No salary run waiting on you' }, items: ['run', 'runs'], list: '/payroll?tab=runs', define: 'Salary runs at your step: in draft for HR, sent for approval for management, approved and not paid for accounts.' },
   // Approvals
   approvalsWaiting: { label: 'Waiting for approval', kind: 'count', better: 'down', items: ['entry', 'entries'], list: '/approvals', define: 'Entries sent for approval and not yet decided, whoever decides them.' },

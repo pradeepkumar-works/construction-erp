@@ -398,7 +398,12 @@ bill, valued at the order's rates). Purchase and HR have layouts of their own. T
   rows are kept for Discover (phase 3). Home shows the latest `LAUNCHER_RECENT_SHOWN` (5); Search shows them before you type.
 - **Badges** (`GET /launcher/badges`) come from `HomeService.myWork`, so they never count what My work would not show:
   approvals waiting for the person on the Approvals tile and on each module by `MODULE_SUBMISSION_TYPES`, approvals plus
-  entries sent back plus missing daily reports on My work, and the watch list's count on Watch list.
+  entries sent back plus missing daily reports on My work, and the watch list's count on Watch list. A page's own queue sits
+  on its tile with its word: requests to order, receipts to check, findings to close, inspections to approve, NCRs the
+  person is to put right or close, RFIs they raised to chase (past the reply date) or close (answered), letters marked to
+  them to answer (Inward register) and letters to sign or seal (Outward register). NCRs, RFIs and letters are read in
+  `LauncherService.ownMoves` over the projects the person sees. A module's count (`menuWaiting`) takes an approval on its
+  list's page only when that page has no badge of its own, so inspections are counted once.
 - **Old favourites.** The localStorage favourites and recent pages from before are sent once to `POST /launcher/import`.
 - **Waiting for you** (finding 8 of the October review, `components/launcher/WaitingForYou.tsx`) is Home's first section:
   the three most pressing of the person's My work cards, in My work's own order (`myWorkOrder` over `homeLayout(role)`),
@@ -569,8 +574,12 @@ A department's screen (`DepartmentHome`) opens, under what waits for the user, w
 
 - **Figures.** The area modules' own (`ModuleHomeService.figures`, `Figure[]`), picked per department by measure id in
   `DEPARTMENT_FIGURES` and `departmentFigures` (`@erp/shared/department-home.ts`, at most `MAX_FIGURES`), drawn by `<Figures>`: purchase shows requests to approve and orders to
-  receive, the store its stock and late deliveries, accounts its books and what clients owe. Project management keeps the
-  Projects figures and progress by project it had.
+  receive, the store its stock and late deliveries, accounts its books and what clients owe, quality its failed tests,
+  late results and open NCRs with safety incidents (near misses counted apart), contractor management its work orders and
+  the retention kept from subcontractors, planning and estimation the tenders to submit and bids awaiting a result, HR and
+  payroll its people with the last salary run's net pay, and administration who can sign in, access requests and failing
+  connections. Project management keeps the Projects figures and progress by project it had; Reports and MIS is the list
+  of reports, each with figures of its own.
 - **Pipelines** (`DEPARTMENT_PIPELINES`): the work in flight through the department, read from the modules' own services
   so their rights hold. Indents (purchase): material requests waiting for approval (`MaterialRequestsService.list`), the
   approved ones still to order at their order stage (`RequestsToOrderService.rows`) and orders still to arrive
@@ -4042,7 +4051,8 @@ days; it is claimed for delays in the register, or for the added work of a varia
 - **What it is.** Item 132, asked by Pradeep on 26 Oct 2026 from the end-to-end test report's BI review: one place for
   the MD and management to see every contract project, and the reports they print or send each month. For those who see
   project cost (`canSeeManagement`, which is `canViewCost`: admin, management, accounts, and a project manager for their
-  own projects). A store or yard (`STORE`) and an RMC plant (`PLANT`) have no contract, so they stay out
+  own projects). Each desk also reads its own report (`REPORT_DESKS`, `canReadReport`): the procurement manager
+  procurement spend, the store manager the stock position, and HR labour and attendance. A store or yard (`STORE`) and an RMC plant (`PLANT`) have no contract, so they stay out
   (`ManagementService.contractProjects`), except from the stock position.
 - **Reads, never its own rules.** Every figure comes through the modules' own services: projects and their access
   (`ProjectsService.listAll`), progress and measurement at BOQ rates, approved RA bills and their receipts, client bills
