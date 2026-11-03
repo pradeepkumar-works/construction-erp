@@ -9,6 +9,15 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-new-and-search',
+    date: '2026-11-03',
+    title: 'More to start from New, more to find in Search',
+    points: [
+      'New in the header now starts a project, a measurement, attendance, an inspection, a material test, an NCR, an incident, a permit to work, a drawing, an RFI and a variation from any page, for whoever may make one. Each module’s overview offers its own.',
+      'Search (Ctrl K) finds projects by code or name, material tests and NCRs by number, and variations.',
+    ],
+  },
+  {
     id: '2026-11-books-export',
     date: '2026-11-03',
     title: 'Books, tenders and registers to Excel and print',

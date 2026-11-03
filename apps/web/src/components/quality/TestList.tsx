@@ -22,6 +22,7 @@ import { RecordLink } from '@/components/record/RecordLink';
 import { ReadingsSummary, TestResultTag } from './qualityUi';
 import { TestDrawer } from './TestDrawer';
 import { TestFormModal } from './TestFormModal';
+import { useNewIntent } from '@/lib/new-intent';
 
 const KEYS = ['kind', 'result', 'overdue', 'from', 'to'] as const;
 
@@ -100,6 +101,8 @@ export function TestList({ projectId: fixedProject, initialOpenId, onOpenNcr }: 
   const filters = { page: page.params.page, pageSize: page.params.pageSize, q: page.params.q, sortBy: page.params.sortBy, sortOrder: page.params.sortOrder, from: page.params.from, to: page.params.to, projectId: frame.projectId, kind, result, overdue: overdue || undefined };
   const { data, isLoading, isFetching, error, refetch } = useQualityTests(filters);
   const filtered = !!(kind || result || overdue || page.params.q || page.params.from || page.params.to);
+
+  useNewIntent('test', !!user && canRecordTest(user.roleKey), () => setFormOpen(true));
 
   const newButton = user && canRecordTest(user.roleKey) ? (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>

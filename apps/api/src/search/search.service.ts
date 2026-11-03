@@ -25,6 +25,9 @@ import { TendersService } from '../tenders/tenders.service';
 import { MeetingsService } from '../meetings/meetings.service';
 import { MaterialApprovalsService } from '../material-approvals/material-approvals.service';
 import { ScEnquiriesService } from '../subcontracts/sc-enquiries.service';
+import { ProjectsService } from '../projects/projects.service';
+import { QualityService } from '../quality/quality.service';
+import { VariationsService } from '../variations/variations.service';
 
 /** Hits per kind: enough to spot the one meant, few enough to keep the palette short. */
 const PER_KIND = 4;
@@ -66,8 +69,12 @@ export class SearchService {
     meetings: MeetingsService,
     materialApprovals: MaterialApprovalsService,
     letters: CorrespondenceService,
+    projects: ProjectsService,
+    quality: QualityService,
+    variations: VariationsService,
   ) {
     const sources: Source<any>[] = [
+      { kind: 'project', list: (u, q) => projects.list(u, { q, page: 1, pageSize: PER_KIND }), hit: (r) => ({ id: r.id, title: r.code, subtitle: join(r.name, r.clientName), href: `/projects/${r.id}`, status: null }) },
       { kind: 'material_request', list: (u, q) => materialRequests.list(u, { q, page: 1, pageSize: PER_KIND }), hit: (r) => ({ id: r.id, title: r.requestNo, subtitle: join(r.title, r.projectName), href: `/material-requests/${r.id}`, status: r.status }) },
       { kind: 'purchase_order', list: (u, q) => purchaseOrders.list(u, { q, page: 1, pageSize: PER_KIND }), hit: (r) => ({ id: r.id, title: r.poNo, subtitle: join(r.vendorName, r.projectName), href: `/purchase-orders/${r.id}`, status: r.status }) },
       { kind: 'vendor_bill', list: (u, q) => vendorBills.list(u, { q, page: 1, pageSize: PER_KIND }), hit: (r) => ({ id: r.id, title: r.billNo, subtitle: join(r.vendorName, r.invoiceNo ? `invoice ${r.invoiceNo}` : null, r.projectName), href: `/vendor-bills/${r.id}`, status: r.status }) },
@@ -90,9 +97,12 @@ export class SearchService {
         hit: (r) => ({ id: r.id, title: r.requestNo, subtitle: join(r.vendorName, r.targetLabel, r.projectName), href: `/payment-requests/${r.id}`, status: r.status }),
       },
       { kind: 'ra_bill', list: (u, q) => raBills.list(u, { q, page: 1, pageSize: PER_KIND }), hit: (r) => ({ id: r.id, title: r.billLabel, subtitle: r.projectName, href: `/bills/${r.id}`, status: r.status }) },
+      { kind: 'variation', list: (u, q) => variations.list(u, { q, page: 1, pageSize: PER_KIND }), hit: (r) => ({ id: r.id, title: `${r.label} ${r.projectCode}`, subtitle: join(r.title, r.projectName), href: `/variations?id=${r.id}`, status: null }) },
       { kind: 'measurement', list: (u, q) => measurements.list(u, { q, page: 1, pageSize: PER_KIND }), hit: (r) => ({ id: r.id, title: r.mbNo, subtitle: join(r.contractorName, r.projectName), href: `/measurements/${r.id}`, status: r.status }) },
       { kind: 'expense', list: (u, q) => expenses.list(u, { q, page: 1, pageSize: PER_KIND }), hit: (r) => ({ id: r.id, title: r.expenseNo, subtitle: join(r.description, r.projectName), href: `/expenses/${r.id}`, status: r.status }) },
       { kind: 'inspection', list: (u, q) => inspections.list(u, { q, page: 1, pageSize: PER_KIND }), hit: (r) => ({ id: r.id, title: r.inspectionNo, subtitle: join(r.activityName, r.projectName), href: `/inspections/${r.id}`, status: r.status }) },
+      { kind: 'quality_test', list: (u, q) => quality.listTests(u, { q, page: 1, pageSize: PER_KIND }), hit: (r) => ({ id: r.id, title: r.testNo, subtitle: join(r.title, r.projectName), href: `/inspections?tab=tests&id=${r.id}`, status: null }) },
+      { kind: 'ncr', list: (u, q) => quality.listNcrs(u, { q, page: 1, pageSize: PER_KIND }), hit: (r) => ({ id: r.id, title: r.ncrNo, subtitle: join(r.title, r.projectName), href: `/inspections?tab=ncrs&id=${r.id}`, status: null }) },
       { kind: 'risk', list: (u, q) => risks.list(u, { q, page: 1, pageSize: PER_KIND }), hit: (r) => ({ id: r.id, title: r.riskNo, subtitle: join(r.title, r.projectName), href: `/risks?id=${r.id}`, status: null }) },
       { kind: 'document', list: (u, q) => documents.listDocuments(u, { q, page: 1, pageSize: PER_KIND }), hit: (r) => ({ id: r.id, title: r.docNo, subtitle: join(r.title, r.projectName), href: `/documents?id=${r.id}`, status: null }) },
       { kind: 'rfi', list: (u, q) => rfis.list(u, { q, page: 1, pageSize: PER_KIND }), hit: (r) => ({ id: r.id, title: r.rfiNo, subtitle: join(r.subject, r.projectName), href: `/documents?tab=rfis&rfi=${r.id}`, status: null }) },

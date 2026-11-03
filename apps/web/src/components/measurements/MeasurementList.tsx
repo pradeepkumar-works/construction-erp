@@ -22,6 +22,7 @@ import { measurementColumns } from './MeasurementTable';
 import { MeasurementDrawer } from './MeasurementDrawer';
 import { MeasurementFormModal, type MeasurementPrefill } from './MeasurementFormModal';
 import { MeasureFromProgressModal, progressPrefill } from './MeasureFromProgressModal';
+import { useNewIntent } from '@/lib/new-intent';
 
 const KEYS = ['status', 'mine', 'from', 'to', 'boqItemId'] as const;
 
@@ -64,6 +65,8 @@ export function MeasurementList({ projectId: fixedProject }: { projectId?: strin
     await downloadXlsx(exportFileName('measurement-book'), 'measurements', MEASUREMENT_EXPORT, measurementExportRows(rows));
     return rows.length;
   };
+
+  useNewIntent('measurement', mayMeasure, () => setFormOpen(true));
 
   const newButton = mayMeasure ? (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>

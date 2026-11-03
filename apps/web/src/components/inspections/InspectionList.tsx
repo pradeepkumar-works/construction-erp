@@ -25,6 +25,7 @@ import { RecordLink } from '@/components/record/RecordLink';
 import { useListFrame } from '@/components/list/useListFrame';
 import { InspectionDrawer } from './InspectionDrawer';
 import { InspectionFormModal } from './InspectionFormModal';
+import { useNewIntent } from '@/lib/new-intent';
 
 const KEYS = ['status', 'mine', 'from', 'to', 'activityId'] as const;
 
@@ -122,6 +123,8 @@ export function InspectionList({ projectId: fixedProject }: { projectId?: string
   const { page } = frame;
   const activityId = frame.projectId ? page.filters.activityId : undefined;
   const { data, isLoading, isFetching, error, refetch } = useInspections({ ...page.params, projectId: frame.projectId, status: frame.status, activityId });
+
+  useNewIntent('inspection', !!user && canRequestInspection(user.roleKey), () => setFormOpen(true));
 
   const newButton = user && canRequestInspection(user.roleKey) ? (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>

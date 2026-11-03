@@ -25,6 +25,7 @@ import { DataTable, type ListColumn } from '@/components/list/DataTable';
 import { exportSelected } from '@/components/list/bulk';
 import { useListFrame } from '@/components/list/useListFrame';
 import { ProgressAgainstPlan } from '@/components/modules/ProjectProgress';
+import { useNewIntent } from '@/lib/new-intent';
 
 const KEYS = ['status', 'type'] as const;
 
@@ -121,6 +122,8 @@ export default function ProjectsPage() {
     await downloadXlsx(exportFileName('projects'), 'Projects', PROJECT_EXPORT, rows);
     return rows.length;
   };
+
+  useNewIntent('project', !!canCreate, () => setCreateOpen(true));
 
   const newButton = canCreate ? (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>

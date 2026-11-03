@@ -20,6 +20,7 @@ import { useListFrame } from '@/components/list/useListFrame';
 import { RecordLink } from '@/components/record/RecordLink';
 import { FileLinks, RevisionStatusTag, ViewDrawingLink } from './docUi';
 import { DocumentFormModal } from './DocumentFormModal';
+import { useNewIntent } from '@/lib/new-intent';
 
 const KEYS = ['kind', 'discipline', 'status'] as const;
 
@@ -107,6 +108,8 @@ export function DocumentList({ projectId: fixedProject, onOpen }: { projectId?: 
   const status = page.filters.status as RevisionStatus | undefined;
   const filters = { q: page.params.q, sortBy: page.params.sortBy, sortOrder: page.params.sortOrder, projectId: frame.projectId, kind, discipline, status };
   const { data, isLoading, isFetching, error, refetch } = useDocuments({ ...filters, page: page.params.page, pageSize: page.params.pageSize });
+
+  useNewIntent('document', !!user && canManageDocuments(user.roleKey), () => setFormOpen(true));
 
   const newButton = user && canManageDocuments(user.roleKey) ? (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>

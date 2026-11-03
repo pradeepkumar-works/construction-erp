@@ -19,6 +19,7 @@ import { RecordLink } from '@/components/record/RecordLink';
 import { VariationDrawer, VariationStatusTag } from './VariationDrawer';
 import { VariationFormModal } from './VariationFormModal';
 import { FigureBlock } from '@/components/common/Section';
+import { useNewIntent } from '@/lib/new-intent';
 
 type SortField = 'varNo' | 'createdAt' | 'claimedAmount';
 const KEYS = ['status'] as const;
@@ -98,6 +99,8 @@ export function VariationsPanel({ projectId: fixedProject, openId }: { projectId
   const manage = !!user && canManageVariations(user.roleKey);
   const sum = (k: 'approved' | 'pending' | 'contractValue' | 'revisedContractValue') => (summary ?? []).reduce((acc, p) => acc + toNumber(p[k]), 0);
   const extras = (summary ?? []).reduce((acc, p) => acc + p.unapprovedExtraItems, 0);
+
+  useNewIntent('variation', manage, () => setCreating(true));
 
   const newButton = manage ? (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreating(true)}>

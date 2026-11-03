@@ -21,6 +21,7 @@ import { DueCell } from '@/components/list/DueCell';
 import { RecordLink } from '@/components/record/RecordLink';
 import { NcrStatusTag, SeverityTag } from './qualityUi';
 import { NcrFormModal } from './NcrFormModal';
+import { useNewIntent } from '@/lib/new-intent';
 
 const KEYS = ['status', 'severity', 'active', 'mine'] as const;
 
@@ -116,6 +117,8 @@ export function NcrList({ projectId: fixedProject, onOpen }: { projectId?: strin
   };
   const { data, isLoading, isFetching, error, refetch } = useNcrs({ ...listFilters, page: page.params.page, pageSize: page.params.pageSize });
   const filtered = !!(status || severity || active || mine || page.params.q);
+
+  useNewIntent('ncr', !!user && canRaiseNcr(user.roleKey), () => setFormOpen(true));
 
   const newButton = user && canRaiseNcr(user.roleKey) ? (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>

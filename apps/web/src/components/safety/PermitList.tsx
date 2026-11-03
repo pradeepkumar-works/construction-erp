@@ -21,6 +21,7 @@ import { RecordLink } from '@/components/record/RecordLink';
 import { PermitDrawer } from './PermitDrawer';
 import { PermitFormModal } from './PermitFormModal';
 import { PermitStatusTag, permitTypeLabel, permitWindow } from './safetyUi';
+import { useNewIntent } from '@/lib/new-intent';
 
 const EXPORT: ExportColumn<WorkPermitDto>[] = [
   { header: 'No.', value: (r) => r.permitNo, width: 15 },
@@ -94,6 +95,8 @@ export function PermitList({ projectId: fixedProject, initialOpenId }: { project
   const type = page.filters.type as WorkPermitType | undefined;
   const filters = { page: page.params.page, pageSize: page.params.pageSize, q: page.params.q, sortOrder: page.params.sortOrder, projectId: frame.projectId, type, active: view === 'ACTIVE' || undefined, status: view === 'ACTIVE' || view === 'ALL' ? undefined : view };
   const { data, isLoading, isFetching, error, refetch } = useWorkPermits(filters);
+
+  useNewIntent('permit', !!user && canReportSafety(user.roleKey), () => setFormOpen(true));
 
   const newButton = user && canReportSafety(user.roleKey) ? (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>

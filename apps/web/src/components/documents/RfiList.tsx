@@ -19,6 +19,7 @@ import { DataTable, type ListColumn } from '@/components/list/DataTable';
 import { useListFrame } from '@/components/list/useListFrame';
 import { RecordLink } from '@/components/record/RecordLink';
 import { RfiStatusTag, UrgentTag, ageText } from './rfiUi';
+import { useNewIntent } from '@/lib/new-intent';
 
 const KEYS = ['status', 'overdue'] as const;
 
@@ -128,6 +129,8 @@ export function RfiList({ projectId: fixedProject, onOpen, onNew }: { projectId?
   const { data, isLoading, isFetching, error, refetch } = useRfis(filters);
   const { data: summary } = useRfiSummary(frame.projectId);
   const mayRaise = !!user && canRaiseRfi(user.roleKey);
+
+  useNewIntent('rfi', mayRaise, onNew);
 
   const newButton = mayRaise ? (
     <Button type="primary" icon={<PlusOutlined />} onClick={onNew}>

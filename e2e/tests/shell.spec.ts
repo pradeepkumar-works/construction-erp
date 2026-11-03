@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { chooseOption, signIn, formPanel, menuSettled, openNewMenu } from './helpers';
+import { api, apiToken, chooseOption, signIn, formPanel, menuSettled, openNewMenu } from './helpers';
 
 /** The header: project switcher, + New, favourites, recent pages in Search, Help. */
 test('the project picked in the header filters every list and is kept after a reload', async ({ page }) => {
@@ -36,6 +36,28 @@ test('+ New opens the form from any page, and on the list already open', async (
   await page.getByRole('menuitem', { name: 'Indent' }).click();
   await expect(page).toHaveURL(/\/material-requests$/);
   await expect(formPanel(page, 'New indent')).toBeVisible();
+});
+
+test('+ New starts quality and safety entries, and Search finds tests, NCRs and projects by number', async ({ page }) => {
+  await signIn(page, 'qaqc@demo.com');
+  await openNewMenu(page);
+  await page.getByRole('menuitem', { name: / NCR$/ }).click();
+  await expect(page).toHaveURL(/\/inspections\?tab=ncrs$/);
+  await expect(formPanel(page, 'New NCR')).toBeVisible();
+  await page.keyboard.press('Escape');
+
+  const token = await apiToken('qaqc@demo.com');
+  const ncrs = await api<{ items: { ncrNo: string }[] }>(token, '/quality/ncrs?pageSize=1');
+  const tests = await api<{ items: { testNo: string }[] }>(token, '/quality/tests?pageSize=1');
+  const projects = await api<{ items: { code: string }[] }>(token, '/projects?pageSize=1');
+  for (const [q, kind] of [
+    [ncrs.items[0].ncrNo, 'ncr'],
+    [tests.items[0].testNo, 'quality_test'],
+    [projects.items[0].code, 'project'],
+  ] as const) {
+    const found = await api<{ hits: { kind: string; title: string }[] }>(token, `/search?q=${encodeURIComponent(q)}`);
+    expect(found.hits.some((h) => h.kind === kind && h.title === q)).toBe(true);
+  }
 });
 
 test('a page pinned to Home is under Pinned, and the last pages opened lead Search', async ({ page }) => {

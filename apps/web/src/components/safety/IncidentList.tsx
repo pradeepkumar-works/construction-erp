@@ -22,6 +22,7 @@ import { RecordLink } from '@/components/record/RecordLink';
 import { IncidentDrawer } from './IncidentDrawer';
 import { IncidentFormModal } from './IncidentFormModal';
 import { IncidentStatusTag, IncidentTypeTag } from './safetyUi';
+import { useNewIntent } from '@/lib/new-intent';
 
 const EXPORT: ExportColumn<SafetyIncidentDto>[] = [
   { header: 'No.', value: (r) => r.incidentNo, width: 15 },
@@ -95,6 +96,8 @@ export function IncidentList({ projectId: fixedProject, initialOpenId }: { proje
   const filters = { page: page.params.page, pageSize: page.params.pageSize, q: page.params.q, sortOrder: page.params.sortOrder, projectId: frame.projectId, type: type === 'INCIDENTS' ? undefined : type, incidentsOnly: type === 'INCIDENTS' || undefined, status };
   const { data, isLoading, isFetching, error, refetch } = useSafetyIncidents(filters);
   const mayReport = !!user && canReportSafety(user.roleKey);
+
+  useNewIntent('incident', mayReport, () => setForm({ nearMiss: false }));
 
   const newButton = mayReport ? (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setForm({ nearMiss: false })}>
