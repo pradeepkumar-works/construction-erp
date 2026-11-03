@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Tour } from 'antd';
 import type { TourProps } from 'antd';
 import type { AuthUser } from '@erp/shared';
-import { PRODUCT_NAME, isGuest, isSupplier, mayApprove } from '@erp/shared';
+import { PRODUCT_NAME, isGuest, isSupplier, mayApprove, navSettingsOf } from '@erp/shared';
 import { readPref, writePref } from '@/lib/prefs';
 import { searchShortcut } from './Sidebar';
 
@@ -26,6 +26,9 @@ interface Step {
   description: string;
   placement?: TourProps['placement'];
 }
+
+/** Whether the company's menu has the modules across the top bar (Top bar and sidebar, Two top bars). */
+const modulesOnTop = (user: AuthUser) => ['TOP_AND_SIDE', 'TWO_BARS'].includes(navSettingsOf(user).layout);
 
 function stepsFor(user: AuthUser, mobile: boolean): Step[] {
   const guest = isGuest(user.roleKey);
@@ -50,7 +53,9 @@ function stepsFor(user: AuthUser, mobile: boolean): Step[] {
     !mobile && {
       target: 'modules',
       title: 'Your pages',
-      description: 'Home holds every module your role uses. In a module, its pages run along the bar at the top.',
+      description: modulesOnTop(user)
+        ? 'Every module your role uses runs along the top bar. Open one and its pages are beside it.'
+        : 'Home holds every module your role uses. In a module, its pages run along the bar at the top.',
       placement: 'bottom',
     },
     mayApprove(user) && {
