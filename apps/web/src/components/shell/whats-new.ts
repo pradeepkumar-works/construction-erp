@@ -9,6 +9,15 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-cost-booked',
+    date: '2026-11-03',
+    title: 'Budget and earned value say when cost is missing',
+    points: [
+      'When the cost booked on a project is far below the budget for the work done, Budget and cash flow and Earned value say so first: subcontractor bills, labour or hire are probably not booked yet, so the cost index and the margin read too well.',
+      'The two forecasts now say what they assume: Budget’s is spent so far plus the budget for the work left, Earned value’s is the budget at the cost index so far.',
+    ],
+  },
+  {
     id: '2026-11-watch-list-rollup',
     date: '2026-11-03',
     title: 'A slipping project is one line on the watch list',

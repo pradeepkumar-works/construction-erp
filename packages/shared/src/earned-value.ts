@@ -75,3 +75,25 @@ export interface EarnedValueDto {
   /** Behind first */
   activities: EarnedValueActivityDto[];
 }
+
+/**
+ * Below this share of the earned budget, the actual cost booked is too low to be the whole cost: real work rarely earns
+ * more than about twice what it costs, so a cost index above 1 / this share means bills (subcontract, labour, hire) are
+ * not all booked yet. The cost index, the estimates at completion and the margin then read too well.
+ */
+export const COST_BOOKED_MIN_SHARE = 0.4;
+
+/** The actual cost as a share of the earned budget when it is too low to trust (`COST_BOOKED_MIN_SHARE`), else null. */
+export function costLooksIncomplete(actualCost: number, earned: number | null): number | null {
+  if (earned === null || earned <= 0) return null;
+  const share = actualCost / earned;
+  return share < COST_BOOKED_MIN_SHARE ? Math.round(share * 1000) / 1000 : null;
+}
+
+/** What each screen's estimate at completion assumes, so the two can be told apart. */
+export const EAC_METHOD_NOTES = {
+  /** Budget and cash flow: actual cost so far plus the budget for the work left. */
+  BUDGET: 'Spent so far plus the budget for the work left',
+  /** Earned value: the budget at completion at the cost index so far. */
+  EARNED_VALUE: 'The budget at the cost index so far',
+} as const;
