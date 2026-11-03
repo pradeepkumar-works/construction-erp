@@ -5,7 +5,8 @@ import { Alert, Button, Col, Empty, Progress, Row, Skeleton, Statistic, Table, T
 import { tk } from '@/ds';
 import { EditOutlined } from '@/components/common/icons';
 import type { BudgetBoqItemDto, BudgetHeadDto } from '@erp/shared';
-import { COST_HEAD_LABELS, canSetBudget, unitLabel } from '@erp/shared';
+import { COST_HEAD_LABELS, EAC_METHOD_NOTES, canSetBudget, unitLabel } from '@erp/shared';
+import { CostBookedNote } from './EarnedValuePanel';
 import { useAuth } from '@/lib/auth';
 import { useProjectBudget } from '@/lib/queries';
 import { formatDateTime, formatINR, formatPct, formatQty, toNumber, NO_VALUE } from '@/lib/format';
@@ -66,6 +67,7 @@ export function ProjectBudgetPanel({ projectId }: { projectId: string }) {
               description="The cost-head budget is used for the forecast. Bring them in line, or remove the cost-head budget to forecast from the BOQ."
             />
           ) : null}
+          <CostBookedNote actual={toNumber(data.actualCost)} earned={data.earnedBudget === null ? null : toNumber(data.earnedBudget)} />
           <Row gutter={[16, 16]}>
             <Col xs={12} md={8} lg={4}>
               <Statistic title="Budget at completion" value={data.budgetAtCompletion ? formatINR(data.budgetAtCompletion) : NO_VALUE} styles={{ content: { fontSize: tk.type.subhead.fontSize } }} />
@@ -99,6 +101,11 @@ export function ProjectBudgetPanel({ projectId }: { projectId: string }) {
               {data.forecastToComplete ? (
                 <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
                   {formatINR(data.forecastToComplete)} still to spend
+                </div>
+              ) : null}
+              {data.forecastAtCompletion ? (
+                <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
+                  {EAC_METHOD_NOTES.BUDGET}
                 </div>
               ) : null}
             </Col>

@@ -2328,6 +2328,13 @@ the cost run up before: their margin then reads as nearly all of their billing (
   (BAC − EV) ÷ (CPI × SPI), ETC = EAC − AC, VAC = BAC − EAC, TCPI = (BAC − EV) ÷ (BAC − AC). No index while its divisor is
   zero. Earned schedule = the first day the plan had the earned share done; SPI(t) = earned schedule ÷ days elapsed, and the
   forecast finish stretches the planned duration by it.
+- **Two estimates, named.** Budget and cash flow's Forecast at completion is AC + the budget for the work left (what the
+  rest costs if it goes to budget); Earned value's Estimate at completion is BAC ÷ CPI (if it goes the way the work so far
+  has). Each says which under its figure (`EAC_METHOD_NOTES`, `@erp/shared/earned-value.ts`), so a gap between them reads
+  as the cost index, not as an error.
+- **Cost not booked.** When the actual cost is under `COST_BOOKED_MIN_SHARE` (40%) of the earned budget (`costLooksIncomplete`,
+  a cost index above 2.5), both tabs lead with a warning that costs are probably not all booked (subcontract bills,
+  labour, hire, issues), since the cost index, the estimates and the margin then read too well (`CostBookedNote`).
 - **Curve.** Month ends from the start to the later of the planned finish and today (at most 48); the current month is cut
   at today; EV and AC are left out after it. Activities with value and dates are listed by schedule variance, most behind first.
 - **Roles.** Cost viewers (`COST_VIEW_ROLES`) on projects they can open.

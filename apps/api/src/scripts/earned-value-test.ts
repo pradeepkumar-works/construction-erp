@@ -5,6 +5,7 @@
  *   node dist/scripts/earned-value-test.js
  */
 import assert from 'node:assert/strict';
+import { COST_BOOKED_MIN_SHARE, costLooksIncomplete } from '@erp/shared';
 import { earnedScheduleDate, forecastFinish, indices, monthEnds, plannedShare, type PlannedSlice } from '../cost/earned-value-rules';
 
 const cases: [string, () => void][] = [];
@@ -67,6 +68,14 @@ test('variances, indices and forecasts follow the usual formulas', () => {
   assert.equal(indices({ bac: 1000, pv: 100, ev: 120, ac: 100 }).spi, 1.2);
 });
 
+test('an actual cost far below the earned budget is called incomplete, a believable one is not', () => {
+  assert.equal(costLooksIncomplete(20.5, 293), 0.07); // RD on the demo: CPI 14
+  assert.equal(costLooksIncomplete(80, 100), null); // CPI 1.25
+  assert.equal(costLooksIncomplete(COST_BOOKED_MIN_SHARE * 100, 100), null); // on the line is believable
+  assert.equal(costLooksIncomplete(0, 100), 0);
+  assert.equal(costLooksIncomplete(10, 0), null); // nothing earned yet
+  assert.equal(costLooksIncomplete(10, null), null); // no budget
+});
 test('the pace so far stretches the planned duration into a forecast finish', () => {
   // 100 days planned, 50 days gone, the work of day 40 done: SPI(t) 0.8, so 125 days, 25 late.
   const f = forecastFinish('2026-01-01', '2026-04-11', '2026-02-20', '2026-02-10');

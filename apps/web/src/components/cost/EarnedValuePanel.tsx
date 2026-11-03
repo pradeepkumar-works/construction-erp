@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import { Alert, Col, Descriptions, Flex, Row, Segmented, Skeleton, Statistic, Table, Typography } from 'antd';
 import { tk } from '@/ds';
 import type { EarnedValueActivityDto, EarnedValueDto, EarnedValuePointDto, EvBasis } from '@erp/shared';
-import { EV_BAC_SOURCE_LABELS, EV_BASIS_LABELS, EV_BASES } from '@erp/shared';
+import { EAC_METHOD_NOTES, EV_BAC_SOURCE_LABELS, EV_BASIS_LABELS, EV_BASES, costLooksIncomplete } from '@erp/shared';
 import { useEarnedValue } from '@/lib/queries';
 import { formatDate, formatINR, formatPct, toNumber, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
@@ -57,6 +57,22 @@ function CurveTable({ data }: { data: EarnedValuePointDto[] }) {
  * budget, in money and in time, the forecasts from it, the S-curve of planned value, earned value and actual cost, and
  * the activities furthest behind. Earned from approved progress or, switched, from measured work.
  */
+/** Actual cost far below the earned budget is cost not yet booked, not a project earning many times its cost: say so
+ *  before the cost index and the estimates are read (`costLooksIncomplete`). Shared with Budget and cash flow. */
+export function CostBookedNote({ actual, earned }: { actual: number; earned: number | null }) {
+  const share = costLooksIncomplete(actual, earned);
+  if (share === null) return null;
+  return (
+    <Alert
+      type="warning"
+      showIcon
+      style={{ marginBottom: tk.space[3] }}
+      title={`The cost booked so far is only ${formatPct(share * 100)} of the budget for the work done`}
+      description="Some costs are probably not booked yet: subcontractor bills, labour, hire or materials issued to the site. Until they are, the cost index, the estimate at completion and the margin read better than they are."
+    />
+  );
+}
+
 export function EarnedValuePanel({ projectId }: { projectId: string }) {
   const [basis, setBasis] = useState<EvBasis>('PROGRESS');
   const { data, isLoading, error, refetch } = useEarnedValue(projectId, basis);
@@ -89,6 +105,7 @@ export function EarnedValuePanel({ projectId }: { projectId: string }) {
                 .join(' ')}
             />
           ) : null}
+          <CostBookedNote actual={toNumber(data.ac)} earned={toNumber(data.ev)} />
           <Row gutter={[16, 16]}>
             <Col xs={12} md={6}>
               <Statistic title="Schedule index (SPI)" value={data.spi ?? NO_VALUE} precision={data.spi === null ? undefined : 2} styles={big(indexColor(data.spi))} />
@@ -113,6 +130,11 @@ export function EarnedValuePanel({ projectId }: { projectId: string }) {
               <div className="text-muted" style={small}>
                 {data.vac === null ? `Budget ${formatINR(data.bac)}` : toNumber(data.vac) < 0 ? `${formatINR(-toNumber(data.vac))} over the budget of ${formatINR(data.bac)}` : `${formatINR(data.vac)} under the budget of ${formatINR(data.bac)}`}
               </div>
+              {data.eac ? (
+                <div className="text-muted" style={small}>
+                  {EAC_METHOD_NOTES.EARNED_VALUE}
+                </div>
+              ) : null}
             </Col>
           </Row>
           {(data.spi !== null && data.spi < 0.95) || (data.cpi !== null && data.cpi < 0.95) ? (
