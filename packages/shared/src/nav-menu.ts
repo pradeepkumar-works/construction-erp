@@ -269,6 +269,7 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
       sub('letters', 'Letters and history', 'people.letters'),
       sub('exits', 'Full and final', 'payroll.settlement'),
       sub('masters', 'Masters', 'people.departments', 'people.designations'),
+      sub('reports', 'Reports', 'reports.headcount', 'reports.staffAttendance', 'reports.leaveRegister', 'reports.pfEsi', 'reports.settlements', 'reports.staffCost'),
     ],
   },
   {
@@ -283,6 +284,7 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
       sub('projects', 'Projects', 'reports.progress', 'reports.cost', 'reports.cashflow', 'reports.estimate'),
       sub('operations', 'Operations', 'reports.procurementSpend', 'reports.labour', 'reports.stockPosition', 'reports.approvalsWaiting'),
       sub('finance', 'Finance', 'reports.receivablesAgeing', 'reports.payablesAgeing', 'reports.pl', 'reports.tb'),
+      sub('hr', 'HR and payroll', 'reports.headcount', 'reports.staffAttendance', 'reports.leaveRegister', 'reports.pfEsi', 'reports.settlements', 'reports.staffCost'),
     ],
   },
   {

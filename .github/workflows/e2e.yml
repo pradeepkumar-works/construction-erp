@@ -274,6 +274,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/leave-policy-test.js
+      - name: HR reports balance the head count, date the PF and ESI deposit and keep pay to the people who see payroll
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/hr-reports-test.js
       - name: Management figures count supply items and lump sums as work done, find late plans and say why a project needs action
         if: matrix.suite == 'flows'
         working-directory: apps/api

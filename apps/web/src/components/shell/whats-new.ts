@@ -9,6 +9,15 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-hr-reports',
+    date: '2026-11-03',
+    title: 'HR and payroll reports',
+    points: [
+      'HR and payroll › Reports has six reports with Print and Excel: head count and attrition, staff attendance person by person, the leave register, PF and ESI for the month, full and final settlements, and staff cost by site.',
+      'They are for HR, accounts and management; a site manager does not see pay or leave across the company.',
+    ],
+  },
+  {
     id: '2026-11-leave-policy',
     date: '2026-11-03',
     title: 'Your own leave rules',

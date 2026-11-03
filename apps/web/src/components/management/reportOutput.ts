@@ -1,8 +1,12 @@
-import { presentFigures, type FiguresView, type FigureView, type ManagementReportDto, type ReportSectionDto } from '@erp/shared';
+import { isHrReport, presentFigures, type FiguresView, type FigureView, type ManagementReportDto, type ReportSectionDto } from '@erp/shared';
 import { formatDateTime } from '@/lib/format';
 import { exportFileName, downloadWorkbook, workbookSheet, type ExportColumn } from '@/lib/exportExcel';
 import { AUTO_PRINT_SCRIPT, PRINT_BRAND_CSS, PRINT_FONT_LINKS, brandFooter, PRINT, PRINT_FACE } from '@/components/print/printBrand';
 import { cellExcel, cellText, isNegative, isNumeric } from './report-format';
+
+/** What a report covers, in words: its one project or site, a vertical, or all of them. */
+export const scopeWords = (r: ManagementReportDto) =>
+  r.projectName ?? (r.verticalName ? `Every project in ${r.verticalName}` : isHrReport(r.key) ? 'Every site and head office' : 'Every contract project');
 
 /**
  * A management report printed (A4, landscape when a section is wide) and exported to Excel: the same figures, sections,
@@ -83,7 +87,7 @@ export function buildManagementReportHtml(r: ManagementReportDto, organizationNa
   ${PRINT_BRAND_CSS}
 </style></head><body>
   <div class="head">
-    <div><div class="brand">${esc(organizationName)}</div><h1>${esc(r.title)}</h1><div class="org">${esc(r.projectName ?? (r.verticalName ? `Every project in ${r.verticalName}` : 'Every contract project'))}</div></div>
+    <div><div class="brand">${esc(organizationName)}</div><h1>${esc(r.title)}</h1><div class="org">${esc(scopeWords(r))}</div></div>
     <div class="period"><b>${esc(r.period)}</b>Made ${esc(formatDateTime(r.generatedAt))}</div>
   </div>
   ${r.commentary ? `<p class="commentary">${esc(r.commentary)}</p>` : ''}
@@ -114,7 +118,7 @@ export async function exportManagementReport(r: ManagementReportDto) {
   const summaryRows: Row[] = [
     { a: 'Report', b: r.title },
     { a: 'Period', b: r.period },
-    { a: 'Projects', b: r.projectName ?? (r.verticalName ? `Every project in ${r.verticalName}` : 'Every contract project') },
+    { a: isHrReport(r.key) ? 'Staff' : 'Projects', b: scopeWords(r) },
     { a: 'Made', b: formatDateTime(r.generatedAt) },
     ...(r.commentary ? [{ a: '', b: '' }, { a: r.commentary, b: '' }] : []),
     { a: '', b: '' },

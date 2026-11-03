@@ -1,5 +1,4 @@
 import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import {
   APPROVAL_OLD_DAYS,
   BILL_STAGE_LABELS,
@@ -8,6 +7,7 @@ import {
   HEALTH_LABELS,
   MANAGEMENT_REPORTS,
   canReadReport,
+  isHrReport,
   MAX_PAGE_SIZE,
   MSME_CATEGORY_LABELS,
   PORTFOLIO_SCHEDULE_LABELS,
@@ -25,8 +25,6 @@ import {
   type ManagementReportDto,
   type ManagementReportKey,
   type ProjectSummary,
-  type ReportColumnDto,
-  type ReportColumnKind,
   type ReportRowDto,
   type ReportSectionDto,
   type SubmissionType,
@@ -43,36 +41,18 @@ import { CostService, total, type Acc } from '../cost/cost.service';
 import { ManagementService } from './management.service';
 import { MastersService } from '../masters/masters.service';
 import { ManagementReportQuery } from './management.dto';
+import { HrReportsService } from '../payroll/hr-reports.service';
+import { N, col, r1, r2, section, totalRow } from './report-kit';
 import { approvalAgeing, billedMarginPct, byUrgency, daysBetween, financialYearStart, misCommentary, monthName, monthSpan, monthsBetween, pctOf, type MisFlow } from './management-rules';
 
-const N = (v: Prisma.Decimal | number | string | null | undefined) => Number(v ?? 0);
-const r2 = (n: number) => Math.round(n * 100) / 100;
-const r1 = (n: number) => Math.round(n * 10) / 10;
-const col = (key: string, label: string, kind: ReportColumnKind = 'money'): ReportColumnDto => ({ key, label, kind });
 const projectCol = col('project', 'Project', 'text');
 const projectHref = (id: string) => `/management/projects/${id}`;
 const projectCell = (p: { code: string; name: string }) => `${p.code} · ${p.name}`;
 const avg = (xs: number[]) => (xs.length ? r1(xs.reduce((s, x) => s + x, 0) / xs.length) : null);
 const key = (s: string) => s.trim().toLowerCase();
 
-/** A total row: the sum of each money, quantity or count column, the label in the first. */
-function totalRow(columns: ReportColumnDto[], rows: ReportRowDto[], label = 'Total'): ReportRowDto {
-  const out: ReportRowDto = {};
-  columns.forEach((c, i) => {
-    if (i === 0) out[c.key] = label;
-    else if (c.kind === 'money' || c.kind === 'qty' || c.kind === 'count') out[c.key] = r2(rows.reduce((s, r) => s + (typeof r[c.key] === 'number' ? (r[c.key] as number) : 0), 0));
-    else out[c.key] = null;
-  });
-  return out;
-}
-
-const section = (s: Omit<ReportSectionDto, 'total'> & { totals?: boolean | string }): ReportSectionDto => {
-  const { totals, ...rest } = s;
-  return totals && s.rows.length > 1 ? { ...rest, total: totalRow(s.columns, s.rows, typeof totals === 'string' ? totals : 'Total') } : rest;
-};
-
 /** Reports read by project from their own services, which a vertical does not narrow. */
-const OWN_SCOPE = new Set<ManagementReportKey>(['receivables', 'payables', 'stock']);
+const OWN_SCOPE = new Set<ManagementReportKey>(['receivables', 'payables', 'stock', 'headcount', 'staff-attendance', 'leave-register', 'pf-esi', 'settlements', 'staff-cost']);
 
 /**
  * The MIS's "where each project stands" added up by vertical (`byVertical`), put after it; left out when every project
@@ -117,6 +97,7 @@ export class ManagementReportsService {
     private stock: StockService,
     private lifecycle: SubmissionLifecycleService,
     private masters: MastersService,
+    private hr: HrReportsService,
   ) {}
 
   async report(user: RequestUser, key: ManagementReportKey, q: ManagementReportQuery): Promise<ManagementReportDto> {
@@ -125,11 +106,11 @@ export class ManagementReportsService {
     const today = todayIn();
     const period = this.period(info.period, q, today);
     const projects = await this.management.contractProjects(user, q.projectId, q.vertical);
-    if (q.projectId && !projects.length && key !== 'stock') throw new BadRequestException('Choose one of your contract projects, or every project');
-    const projectName = q.projectId ? (projects[0] ? projectCell(projects[0]) : null) : null;
+    if (q.projectId && !projects.length && key !== 'stock' && !isHrReport(key)) throw new BadRequestException('Choose one of your contract projects, or every project');
+    const projectName = q.projectId ? (projects[0] ? projectCell(projects[0]) : isHrReport(key) ? await this.placeName(q.projectId) : null) : null;
     const verticals = await this.masters.entriesFor(user.organizationId, 'vertical');
     const verticalName = q.vertical ? (q.vertical === NO_VERTICAL ? 'No vertical' : (verticals.find((v) => v.code === q.vertical)?.name ?? q.vertical)) : null;
-    const body = await this.build(key, user, projects, period, today, q.projectId);
+    const body = isHrReport(key) ? await this.hr.build(key, user, period, q.projectId) : await this.build(key, user, projects, period, today, q.projectId);
     // Receivables, payables and stock read their own services by project, so a vertical does not narrow them.
     const notes = q.vertical && !q.projectId && OWN_SCOPE.has(key) ? [...body.notes, 'This report covers every vertical: it is read by project, not by vertical.'] : body.notes;
     // The monthly MIS over every vertical adds up where each vertical stands.
@@ -170,7 +151,16 @@ export class ManagementReportsService {
         return this.stockReport(user, projectId);
       case 'approvals':
         return this.approvals(user, projects, today);
+      default:
+        throw new BadRequestException('There is no such report');
     }
+  }
+
+  /** A store's or site's name for an HR report limited to the staff posted there. */
+  private async placeName(projectId: string) {
+    const p = await this.prisma.project.findFirst({ where: { id: projectId }, select: { code: true, name: true } });
+    if (!p) throw new BadRequestException('Choose a site, or every site');
+    return projectCell(p);
   }
 
   // Monthly MIS

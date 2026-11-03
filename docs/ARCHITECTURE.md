@@ -4150,6 +4150,16 @@ days; it is claimed for delays in the register, or for the added work of a varia
   numbers). A wide section reads its money in lakhs and crores on the screen; print and Excel keep rupees. The trend's
   colours are the `series.trend` roles (`src/ds`), checked for colour-blind separation in both themes. A new report is a key and an
   entry in `MANAGEMENT_REPORTS`, a builder in `ManagementReportsService`, and a node under Reports in the navigation tree.
+- **HR and payroll reports.** Six more keys on the same page, Print and Excel (`HR_REPORT_KEYS`, read only by the people who
+  see payroll, `canViewPayroll`, never a site manager): head count and attrition (by site and department, who joined and
+  who left; `headcountMoves` keeps start + joined − left = end, and someone whose last day is the period's last has left),
+  staff attendance (each person's month from `PayrollService.staffMonth`, with check-ins, `attendancePct`), the leave
+  register (each person's `StaffService.balancesFor` and the leave in the period), PF and ESI (person by person from the
+  month's approved and paid salary runs, due by `statutoryDueOn`), full and final settlements (with who left and has none)
+  and staff cost by site (gross pay plus the company's PF, pension and ESI by the posting on the payslip). They are built in
+  `HrReportsService` (`apps/api/src/payroll`), which `ManagementReportsService` hands them to; the arithmetic is pure in
+  `@erp/shared/hr-reports.ts` (tested in `src/scripts/hr-reports-test.ts`). A project filter is the staff posted there, so a
+  store takes one too; a vertical does not narrow them. They sit under HR and payroll › Reports and Reports and MIS › HR and payroll.
 - **Not yet.** The phone, a scheduled email of the MIS, and a budget for the company as a whole.
 
 ## Official progress reports
