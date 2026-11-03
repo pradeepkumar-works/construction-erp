@@ -236,8 +236,10 @@ and the pre-delivery checklist.
   `@erp/shared/project-progress.ts` (`portfolioProgress`, `progressNotes`). Keep `src/scripts/project-progress-test.ts` passing.
 - Work breakdown (item 125, ARCHITECTURE "Work breakdown"): project progress is `rollUp` in `@erp/shared/wbs.ts` (through
   `physicalProgress` in `src/common/progress.ts`), never a sum of its own; an activity with sub-activities takes no
-  progress. A new kind of component is a `WorkElementType` (schema + shared + label + Hindi) and its steps in
-  `element-templates.ts`; keep `src/scripts/wbs-rollup-test.ts` passing.
+  progress. A lump-sum item that prices a component earns by its progress through `lumpSumShares`; executed value is read
+  only through `activityBoqOf` (`src/common/boq-links.ts`), never `activity.boqItem.rate` on its own. A new kind of
+  component is a `WorkElementType` (schema + shared + label + Hindi) and its steps in `element-templates.ts`; keep
+  `src/scripts/wbs-rollup-test.ts` passing.
 - Purchase (ARCHITECTURE "Small purchase items"): the split of a request between the vendors who quoted lowest per item is
   `awardLowestPerItem` (`@erp/shared/purchase-award.ts`), shared by the preview and `PurchaseOrdersService.awardLowest`,
   which raises each draft order through its own `create`; where an order is delivered with no address of its own is

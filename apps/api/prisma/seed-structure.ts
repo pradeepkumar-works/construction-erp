@@ -200,6 +200,30 @@ export async function seedElementTree(prisma: PrismaClient, { organizationId, pr
 
 export async function seedWorkBreakdown(prisma: PrismaClient, organizationId: string) {
   if (await seedTownProject(prisma, organizationId)) await seedHospitalSections(prisma, organizationId);
+  await linkTownUnitRateItems(prisma, organizationId);
+}
+
+/**
+ * The town scheme's unit-rate items, linked as a planner picks them from the offers (ARCHITECTURE "Linking activities to
+ * BOQ items"): road restoration by its two surfaces, and a house connection counted once it is tested and handed over.
+ * Its price-break items need no link: a lump sum earns by its component's progress (`lumpSumShares`). The HT line's items
+ * are in Km and per substation, its activities in Rmt and stages, so they stay for the planner. Links only what is unlinked.
+ */
+const TOWN_LINKS: [component: string, activity: string, itemNo: string][] = [
+  ['Road restoration', 'Bituminous road', '10.01'],
+  ['Road restoration', 'Cement concrete road', '10.02'],
+  ['House service connections', 'Tested and handed over', '11.01'],
+];
+
+async function linkTownUnitRateItems(prisma: PrismaClient, organizationId: string) {
+  const project = await prisma.project.findFirst({ where: { organizationId, code: 'WS-2026-04' }, select: { id: true } });
+  if (!project) return;
+  for (const [component, name, itemNo] of TOWN_LINKS) {
+    const item = await prisma.boqItem.findFirst({ where: { projectId: project.id, itemNo }, select: { id: true, _count: { select: { activities: true } } } });
+    if (!item || item._count.activities) continue;
+    const activity = await prisma.activity.findFirst({ where: { projectId: project.id, name, boqItemId: null, workElement: { name: component } }, select: { id: true } });
+    if (activity) await prisma.activity.update({ where: { id: activity.id }, data: { boqItemId: item.id } });
+  }
 }
 
 /** The Devgarh town scheme alone: its components, sub-components and activities. False when it is already there. */

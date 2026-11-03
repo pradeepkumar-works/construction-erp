@@ -2,6 +2,7 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException 
 import { Prisma } from '@prisma/client';
 import type { CostHeadsDto, CostMonthDto, ExpenseCategory, LabourRatesDto, ProjectCostDto, ProjectCostSummaryDto } from '@erp/shared';
 import { canSetLabourRates, canViewCost, machineryLogCost } from '@erp/shared';
+import { activityBoqOf } from '../common/boq-links';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -186,8 +187,8 @@ export class CostService {
     if (!projectIds.length) return out;
     const scope = { organizationId, projectId: { in: projectIds }, ...(date ? { date } : {}) };
     const inProjects = { organizationId, projectId: { in: projectIds } };
-    const [progress, measurements, expenses, issues, logs, attendance, rates, bills, receipts, subBills, vendorBills, payments, subVendors, otherBills, debitNotes, openings] = await Promise.all([
-      this.prisma.progressEntry.findMany({ where: { ...scope, status: 'APPROVED' }, select: { projectId: true, date: true, quantity: true, activity: { select: { boqItem: { select: { rate: true } } } } } }),
+    const [progress, measurements, expenses, issues, logs, attendance, rates, bills, receipts, subBills, vendorBills, payments, subVendors, otherBills, debitNotes, openings, boqOf] = await Promise.all([
+      this.prisma.progressEntry.findMany({ where: { ...scope, status: 'APPROVED' }, select: { projectId: true, date: true, quantity: true, activityId: true } }),
       this.prisma.measurementSheet.findMany({ where: { ...scope, status: 'APPROVED' }, select: { projectId: true, totalQty: true, boqItem: { select: { rate: true } } } }),
       this.prisma.expense.findMany({ where: { ...scope, status: 'APPROVED' }, select: { projectId: true, date: true, category: true, totalAmount: true } }),
       // Material issued to a subcontractor and recovered in their approved bill is in that bill's work value instead.
@@ -236,6 +237,8 @@ export class CostService {
       }),
       // What a project had spent and done when it came on Nirmaan, counted on that day (ARCHITECTURE "Opening cost").
       this.prisma.projectOpening.findMany({ where: { ...inProjects, ...(date ? { asOf: date } : {}) } }),
+      // An entry's BOQ item: its own link, or its share of the lump sum its component is priced by.
+      activityBoqOf(this.prisma, projectIds),
     ]);
     for (const b of vendorBills) out.get(b.projectId)!.payableBilled = b._sum.total ?? ZERO;
     for (const p of payments) out.get(p.projectId)!.cashOut = p._sum.amount ?? ZERO;
@@ -255,10 +258,10 @@ export class CostService {
     };
 
     for (const p of progress) {
-      const rate = p.activity.boqItem?.rate;
-      if (!rate) continue;
+      const boq = boqOf.get(p.activityId);
+      if (!boq) continue;
       const acc = out.get(p.projectId)!;
-      const v = p.quantity.mul(rate);
+      const v = p.quantity.mul(boq.perUnit).mul(boq.rate);
       acc.executed = acc.executed.plus(v);
       const m = month(acc, p.date);
       m.executed = m.executed.plus(v);

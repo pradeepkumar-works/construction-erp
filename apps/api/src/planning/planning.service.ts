@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable,
 import { Prisma } from '@prisma/client';
 import type { ActivityDto, BoqItemDto, BoqLinkSuggestion } from '@erp/shared';
 import { boqLinkSuggestions, canEditProjects } from '@erp/shared';
+import { activityBoqOf } from '../common/boq-links';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -30,17 +31,26 @@ export class PlanningService {
 
   async listBoq(user: RequestUser, projectId: string): Promise<BoqItemDto[]> {
     await this.access.assertCanAccessProject(user, projectId);
-    const items = await this.prisma.boqItem.findMany({
-      where: { projectId },
-      include: {
-        activities: { include: { progressEntries: { where: { status: 'APPROVED' }, select: { quantity: true } } } },
-        measurements: { where: { status: { in: ['APPROVED', 'SUBMITTED'] } }, select: { status: true, totalQty: true } },
-        workElement: { select: { code: true, name: true } },
-      },
-      orderBy: [{ sortOrder: 'asc' }, { itemNo: 'asc' }],
-    });
+    const [items, progress, boqOf] = await Promise.all([
+      this.prisma.boqItem.findMany({
+        where: { projectId },
+        include: {
+          measurements: { where: { status: { in: ['APPROVED', 'SUBMITTED'] } }, select: { status: true, totalQty: true } },
+          workElement: { select: { code: true, name: true } },
+        },
+        orderBy: [{ sortOrder: 'asc' }, { itemNo: 'asc' }],
+      }),
+      this.prisma.progressEntry.groupBy({ by: ['activityId'], where: { projectId, status: 'APPROVED' }, _sum: { quantity: true } }),
+      activityBoqOf(this.prisma, [projectId]),
+    ]);
+    // Each item's executed quantity: its activities' approved quantity, or for a lump sum its component's progress.
+    const executedOf = new Map<string, Prisma.Decimal>();
+    for (const g of progress) {
+      const boq = boqOf.get(g.activityId);
+      if (boq) executedOf.set(boq.boqItemId, (executedOf.get(boq.boqItemId) ?? D(0)).add((g._sum.quantity ?? D(0)).mul(boq.perUnit)));
+    }
     return items.map((i) => {
-      const executed = i.activities.flatMap((a) => a.progressEntries).reduce((s, e) => s.add(e.quantity), D(0));
+      const executed = (executedOf.get(i.id) ?? D(0)).toDecimalPlaces(3);
       const effectiveQty = i.revisedQty ?? i.originalQty;
       const measured = i.measurements.filter((m) => m.status === 'APPROVED').reduce((s, m) => s.add(m.totalQty), D(0));
       const pendingMeasured = i.measurements.filter((m) => m.status === 'SUBMITTED').reduce((s, m) => s.add(m.totalQty), D(0));
@@ -231,11 +241,11 @@ export class PlanningService {
     await this.access.assertCanAccessProject(user, projectId);
     const [activities, items] = await Promise.all([
       this.prisma.activity.findMany({ where: { projectId }, select: { id: true, name: true, unit: true, plannedQty: true, boqItemId: true }, orderBy: { sortOrder: 'asc' } }),
-      this.prisma.boqItem.findMany({ where: { projectId }, select: { id: true, itemNo: true, description: true, section: true, unit: true, originalQty: true, revisedQty: true, _count: { select: { activities: true } } }, orderBy: { sortOrder: 'asc' } }),
+      this.prisma.boqItem.findMany({ where: { projectId }, select: { id: true, itemNo: true, description: true, section: true, unit: true, originalQty: true, revisedQty: true, workElementId: true, _count: { select: { activities: true } } }, orderBy: { sortOrder: 'asc' } }),
     ]);
     return boqLinkSuggestions(
       activities.map((a) => ({ id: a.id, name: a.name, unit: a.unit, plannedQty: dec(a.plannedQty), boqItemId: a.boqItemId })),
-      items.map((i) => ({ id: i.id, itemNo: i.itemNo, description: i.description, section: i.section, unit: i.unit, quantity: dec(i.revisedQty ?? i.originalQty), linked: i._count.activities })),
+      items.map((i) => ({ id: i.id, itemNo: i.itemNo, description: i.description, section: i.section, unit: i.unit, quantity: dec(i.revisedQty ?? i.originalQty), linked: i._count.activities, workElementId: i.workElementId })),
     );
   }
 

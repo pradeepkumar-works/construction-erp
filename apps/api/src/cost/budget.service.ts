@@ -2,6 +2,7 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException 
 import { Prisma } from '@prisma/client';
 import type { BudgetBoqItemDto, BudgetHeadDto, CostHead, ProjectBudgetDto } from '@erp/shared';
 import { COST_HEADS, canSetBudget, canViewCost } from '@erp/shared';
+import { activityBoqOf } from '../common/boq-links';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -101,17 +102,16 @@ export class BudgetService {
       select: { id: true, code: true, name: true, contractValue: true, budget: { select: { notes: true, updatedAt: true, updatedBy: { select: { fullName: true } } } } },
     });
     if (!p) throw new NotFoundException('Project not found');
-    const [f, items, progress, activities] = await Promise.all([
+    const [f, items, progress, boqOf] = await Promise.all([
       this.forecasts(user.organizationId, [p]).then((m) => m.get(p.id)!),
       this.prisma.boqItem.findMany({ where: { projectId }, orderBy: [{ sortOrder: 'asc' }, { itemNo: 'asc' }] }),
       this.prisma.progressEntry.groupBy({ by: ['activityId'], where: { projectId, status: 'APPROVED' }, _sum: { quantity: true } }),
-      this.prisma.activity.findMany({ where: { projectId, boqItemId: { not: null } }, select: { id: true, boqItemId: true } }),
+      activityBoqOf(this.prisma, [projectId]),
     ]);
-    const boqOfActivity = new Map(activities.map((a) => [a.id, a.boqItemId!]));
     const executedQty = new Map<string, D>();
     for (const g of progress) {
-      const id = boqOfActivity.get(g.activityId);
-      if (id) executedQty.set(id, (executedQty.get(id) ?? ZERO).plus(g._sum.quantity ?? ZERO));
+      const boq = boqOf.get(g.activityId);
+      if (boq) executedQty.set(boq.boqItemId, (executedQty.get(boq.boqItemId) ?? ZERO).plus((g._sum.quantity ?? ZERO).mul(boq.perUnit)));
     }
     const boqItems: BudgetBoqItemDto[] = items.map((b) => {
       const qty = qtyOf(b);

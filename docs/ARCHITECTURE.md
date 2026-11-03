@@ -1276,9 +1276,17 @@ weighs each by its billing share.
   and out. The BOQ tab filters by section and shows section totals; the activity form takes the component, the parent
   activity and the weight; the progress form offers only activities without parts. Phone: project › Structure, read
   only (`app/structure.tsx`).
+- **Lump-sum items earn by their component.** A lump-sum contract prices each component as one sum (a BOQ item in `LS`,
+  tied to the component by `workElementId`, with no activity of its own), while the work is done in the Cum and Rmt
+  activities under it. `lumpSumShares` (`wbs.ts`) gives each leaf under the component its share of the item, the effective
+  weights down from the component as the roll-up weighs them, spread over its planned quantity (`perUnit`); a leaf linked to
+  an item of its own keeps it. `activityBoqOf` (`src/common/boq-links.ts`) joins the direct links (`perUnit` 1) and these
+  shares, and is the one place executed value is read from: `CostService.compute`, the BOQ list (and the dashboard's
+  executed value), the budget's executed quantities and earned value. So a lump-sum item's executed quantity is its
+  component's progress. Such an item is never offered as a link (`boqLinkSuggestions`).
 - **Demo.** `prisma/seed-structure.ts`: WS-2026-04, a lump-sum town water scheme in month 9 (twelve components by
-  billing share, 23 elements, about 390 activities with approved progress), and the hospital's BOQ in sections with
-  three components weighed by BOQ value.
+  billing share, 23 elements, about 390 activities with approved progress, its road restoration and house connections
+  linked to their unit-rate items), and the hospital's BOQ in sections with three components weighed by BOQ value.
 
 ### Structured DPR
 
@@ -1521,7 +1529,8 @@ scores two names over a normaliser that drops "works", "item", "part", "section"
 pair is offered above `min` (0.6). An activity is matched against the BOQ's section names first (reason
 `section`, the section's largest item by amount) and then against the item descriptions (reason `description`);
 duplicate offers for the same pair merge, keeping `section`. Each activity and each item is offered once, best
-score first.
+score first. A lump sum that prices a component (`LS` with a `workElementId`) is never offered: it earns by its
+component's progress (Work breakdown, "Lump-sum items earn by their component").
 
 `GET /projects/:projectId/activities/boq-links` returns the offers for the project's unlinked activities,
 `POST` the same route takes the ones the user kept (`canEditProjects`). Linking sets `Activity.boqItemId` and,

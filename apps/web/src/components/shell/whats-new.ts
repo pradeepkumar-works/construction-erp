@@ -9,6 +9,14 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-lump-sum-earned',
+    date: '2026-11-03',
+    title: 'Lump-sum contracts show the work done',
+    points: [
+      'On a lump-sum contract, each price-break item now earns by its component’s progress, so executed value, earned value, the budget and the cost margin read the work done instead of zero. Linking activities to such an item is no longer offered.',
+    ],
+  },
+  {
     id: '2026-11-access-grant',
     date: '2026-11-03',
     title: 'Granting access lets the person in',
