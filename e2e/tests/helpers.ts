@@ -3,7 +3,8 @@ import path from 'node:path';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, type BrowserContext, type Locator, type Page } from '@playwright/test';
 import { ROLE_KEYS } from '../../packages/shared/src/enums';
-import { navSidebar } from '../../packages/shared/src/navigation';
+import { DEFAULT_NAV_SETTINGS, navMenuFor } from '../../packages/shared/src/nav-menu';
+import { moduleScreenHref, navPageLink, navSidebar } from '../../packages/shared/src/navigation';
 
 export const API_URL = process.env.E2E_API_URL ?? 'http://localhost:4000/api';
 export const PASSWORD = 'password123';
@@ -223,12 +224,22 @@ export function measureTargets(min: number): { targets: SizeFinding[]; text: Siz
 const webSource = (file: string) => fs.readFileSync(path.resolve(__dirname, '../../apps/web/src', file), 'utf8');
 
 /**
- * Every page the sidebar can link to, for any role: the tree's sidebar (`navSidebar`) for each role, with and without
- * approval rights and as a platform admin on a billed server, plus the guests' links written out in nav.ts.
+ * Every page the sidebar can link to, for any role, under the standard menu (the department modules, `DEFAULT_NAV_SETTINGS`):
+ * the tree's top links (`navSidebar` sections with no module), then each department's overview and its pages
+ * (`navMenuFor`, as nav.ts draws them), for each role with and without approval rights and as a platform admin on a billed
+ * server, plus the guests' links written out in nav.ts.
  */
 export function navHrefs(): string[] {
   const variants = [{}, { approvalRights: [] }, { platformAdmin: true, billing: {} }];
-  const tree = ROLE_KEYS.flatMap((roleKey) => variants.flatMap((v) => navSidebar({ roleKey, ...v }).flatMap((s) => s.links.map((l) => l.href))));
+  const tree = ROLE_KEYS.flatMap((roleKey) => variants.flatMap((v) => {
+    const user = { roleKey, ...v };
+    const top = navSidebar(user).filter((s) => !s.module).flatMap((s) => s.links.map((l) => l.href));
+    const departments = navMenuFor(user, DEFAULT_NAV_SETTINGS).flatMap((m) => [
+      moduleScreenHref(m.key),
+      ...m.subs.flatMap((sub) => sub.nodes).flatMap((n) => navPageLink(n)?.href ?? []),
+    ]);
+    return [...top, ...departments];
+  }));
   const guests = [...webSource('components/shell/nav.ts').matchAll(/href:\s*(['"`])(\/[^'"`$]*)\1/g)].map((m) => m[2]);
   return [...new Set([...tree, ...guests])];
 }
