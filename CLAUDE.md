@@ -154,7 +154,9 @@ and the pre-delivery checklist.
   marked `empty`; the status, who submitted and who reviewed are the tag and History, never facts.
 - Approvals inbox (`app/(app)/approvals`): the picked entry shows as `<XRecord mode="pane">` (no actions; the inbox has the
   decision bar). Every submission type has a page; a new type adds one line in `RECORD_PAGES` and one in `ApprovalPane`
-  (`components/approvals/`), or the pane falls back to a summary with Open details.
+  (`components/approvals/`), or the pane falls back to a summary with Open details. A decision with an approval of its own
+  (leave, overtime, salary run, voucher, letter to sign) is an `OTHER_DECISION_KINDS` key read through its module's own list
+  in `OtherDecisionsService` (`GET /approvals/others`), shown under Also waiting for you and decided on its own page.
 - Forms: a create/edit form sits in `FormShell` (`components/form/`): `layout="drawer"` for long ones (with `FormSection`,
   `FormGrid`), `"modal"` for short; pass `onSubmit={(v) => mutation.mutateAsync(v)}` (the shell closes on success, so
   `onSuccess` does not call `onClose`), and `draftKey` for new entries only. Lines are a `LineTable` over `Form.List`.

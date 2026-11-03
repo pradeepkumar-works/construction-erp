@@ -6,6 +6,7 @@ import { SubmissionLifecycleService } from '../common/submission-lifecycle.servi
 import { AuditService } from '../common/audit.service';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { ReviewDto } from './approvals.dto';
+import { OtherDecisionsService } from './other-decisions.service';
 
 /** Fewest characters a reason to reject or send back may have (the web and the phone ask the same). */
 const MIN_REASON_LENGTH = 5;
@@ -14,12 +15,18 @@ const MIN_REASON_LENGTH = 5;
 @ApiBearerAuth()
 @Controller('approvals')
 export class ApprovalsController {
-  constructor(private lifecycle: SubmissionLifecycleService, private audit: AuditService) {}
+  constructor(private lifecycle: SubmissionLifecycleService, private audit: AuditService, private others: OtherDecisionsService) {}
 
   /** Everything waiting for the current user's decision. */
   @Get('pending')
   pending(@CurrentUser() user: RequestUser) {
     return this.lifecycle.pending(user);
+  }
+
+  @ApiOperation({ summary: 'Other decisions waiting on me', description: 'Leave and overtime to decide, salary runs and vouchers to approve, letters to sign: each module\'s own list with the caller, grouped by kind in waiting order, each linking to where it is decided.' })
+  @Get('others')
+  otherDecisions(@CurrentUser() user: RequestUser) {
+    return this.others.forUser(user);
   }
 
   @ApiOperation({ summary: 'My entries waiting for approval', description: 'Waiting with others: each one\'s level, the roles whose queue it is in and since when, longest waiting first.' })

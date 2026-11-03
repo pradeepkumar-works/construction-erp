@@ -274,6 +274,7 @@ import type {
   NotificationTab,
   Paginated,
   PendingApprovalDto,
+  OtherDecisionGroupDto,
   ApprovalStageDto,
   ReviewResultDto,
   ReviewedItemDto,
@@ -3462,6 +3463,14 @@ export const usePendingApprovals = (enabled = true) =>
     queryFn: async () => (await api.get<PendingApprovalDto[]>('/approvals/pending')).data,
     enabled,
     refetchInterval: 30_000,
+  });
+
+/** Leave, overtime, salary runs, vouchers and letters waiting on the caller: the Approvals inbox's other decisions. */
+export const useOtherDecisions = () =>
+  useQuery({
+    queryKey: ['approvals', 'others'],
+    queryFn: async () => (await api.get<OtherDecisionGroupDto[]>('/approvals/others')).data,
+    refetchInterval: 60_000,
   });
 
 /** What the current user reviewed since local midnight: the Approvals inbox's "reviewed today". */

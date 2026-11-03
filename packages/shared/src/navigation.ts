@@ -103,7 +103,8 @@ const roles = (...keys: RoleKey[]) => (u: NavUser) => keys.includes(u.roleKey);
 /** Who may open each node: the helper each page checks (the same rules the sidebar used before the tree). */
 export const NAV_ACCESS = {
   internal: (u: NavUser) => !P.isGuest(u.roleKey),
-  approvals: (u: NavUser) => mayApprove(u),
+  // Submissions to approve, or the leave, overtime and letters to sign the inbox also lists (`OTHER_DECISION_KINDS`).
+  approvals: (u: NavUser) => mayApprove(u) || P.canManageStaff(u.roleKey) || P.canSignLetters(u.roleKey),
   watchList: (u: NavUser) => canSeeWatchList(u.roleKey),
   onSite,
   attendance: (u: NavUser) => onSite(u) || P.canViewWorkers(u.roleKey),
