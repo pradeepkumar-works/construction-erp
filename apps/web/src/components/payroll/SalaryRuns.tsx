@@ -10,6 +10,7 @@ import dayjs from 'dayjs';
 import type { PayrollRunDetailDto, PayrollRunDto } from '@erp/shared';
 import { canRunPayroll } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
+import { useUrlParam } from '@/lib/url-state';
 import { usePayrollAction, usePayrollRuns } from '@/lib/queries';
 import { formatDate, NO_VALUE, MONTH_PICKER_FORMAT } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
@@ -56,7 +57,10 @@ function NewRunModal({ open, onClose, onCreated }: { open: boolean; onClose: () 
 export function SalaryRuns() {
   const { user } = useAuth();
   const { data, isLoading, error, refetch } = usePayrollRuns();
-  const [open, setOpen] = useState<string | null>(null);
+  // ?run= opens one, as the Approvals inbox links to it.
+  const [openParam, setOpenParam] = useUrlParam('run');
+  const open = openParam ?? null;
+  const setOpen = (id: string | null) => setOpenParam(id ?? undefined);
   const [creating, setCreating] = useState(false);
   const runs = !!user && canRunPayroll(user.roleKey);
 

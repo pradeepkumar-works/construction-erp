@@ -68,7 +68,8 @@ export function DesignSubmissionsPage() {
     sortOrder: 'desc',
     sortFields: SORT_FIELDS,
     initialProject: params.get('projectId') ?? undefined,
-    initialFilters: params.get('status') ? { status: params.get('status')! } : undefined,
+    // The dashboard's links: a status, or only those with comments to answer.
+    initialFilters: params.get('status') || params.get('toAnswer') === 'true' ? { ...(params.get('status') ? { status: params.get('status')! } : {}), ...(params.get('toAnswer') === 'true' ? { toAnswer: 'true' } : {}) } : undefined,
     chipLabels: {
       status: (v) => STATUS_FILTERS.find((s) => s.value === v)?.label ?? v,
       purpose: (v) => DESIGN_PURPOSE_LABELS[v as DesignPurpose] ?? v,

@@ -71,6 +71,15 @@ test('a user sees only the pages they may open, and a module with none is left o
   assert.ok(navMenuFor(admin, departments).some((m) => m.key === 'administration'));
 });
 
+test('HR and payroll is one module with the brief’s sub-modules, and a site engineer has no salaries or payroll in it', () => {
+  const subs = (u: NavUser) => navMenuFor(u, departments).find((m) => m.key === 'hr-payroll')?.subs.map((s) => s.label);
+  assert.deepEqual(subs({ roleKey: 'HR_MANAGER' }), ['My HR', 'Employee master', 'Attendance', 'Leave management', 'Salary master', 'Payroll', 'Letters and history', 'Full and final', 'Masters']);
+  assert.deepEqual(subs(engineer), ['My HR', 'Employee master', 'Attendance', 'Leave management']);
+  const hr = navMenuFor({ roleKey: 'HR_MANAGER' }, departments).find((m) => m.key === 'hr-payroll')!;
+  for (const id of ['people.employees', 'people.leave', 'payroll.structures', 'payroll.runs', 'people.letters', 'payroll.settlement'])
+    assert.ok(hr.subs.some((s) => s.nodes.some((n) => n.id === id)), `${id} is in HR and payroll`);
+});
+
 test('a module turned off leaves the menu', () => {
   const on = navMenuFor(admin, departments).find((m) => m.key === 'plant-production');
   const off = navMenuFor({ ...admin, modulesOff: ['rmc'] }, departments).find((m) => m.key === 'plant-production');

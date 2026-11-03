@@ -186,6 +186,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/reconciliation-test.js
+      - name: Received, not billed covers an order line's receipts with its bills oldest first
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/receipt-billing-test.js
       - name: Stage billing shares the lump sum, reads each stage's evidence, bills it pro rata and withholds for milestone slippage
         if: matrix.suite == 'flows'
         working-directory: apps/api
@@ -258,6 +262,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/payroll-test.js
+      - name: Joining documents hold the offer and appointment letters until every required paper is verified or set aside
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/hr-documents-test.js
       - name: Management figures count supply items and lump sums as work done, find late plans and say why a project needs action
         if: matrix.suite == 'flows'
         working-directory: apps/api

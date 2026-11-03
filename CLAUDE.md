@@ -154,7 +154,9 @@ and the pre-delivery checklist.
   marked `empty`; the status, who submitted and who reviewed are the tag and History, never facts.
 - Approvals inbox (`app/(app)/approvals`): the picked entry shows as `<XRecord mode="pane">` (no actions; the inbox has the
   decision bar). Every submission type has a page; a new type adds one line in `RECORD_PAGES` and one in `ApprovalPane`
-  (`components/approvals/`), or the pane falls back to a summary with Open details.
+  (`components/approvals/`), or the pane falls back to a summary with Open details. A decision with an approval of its own
+  (leave, overtime, salary run, voucher, letter to sign) is an `OTHER_DECISION_KINDS` key read through its module's own list
+  in `OtherDecisionsService` (`GET /approvals/others`), shown under Also waiting for you and decided on its own page.
 - Forms: a create/edit form sits in `FormShell` (`components/form/`): `layout="drawer"` for long ones (with `FormSection`,
   `FormGrid`), `"modal"` for short; pass `onSubmit={(v) => mutation.mutateAsync(v)}` (the shell closes on success, so
   `onSuccess` does not call `onClose`), and `draftKey` for new entries only. Lines are a `LineTable` over `Form.List`.
@@ -383,7 +385,11 @@ and the pre-delivery checklist.
   Keep `src/scripts/management-test.ts` passing.
 - Payroll (item 100, `apps/api/src/payroll`, ARCHITECTURE "Payroll"): every figure is a pure function in `payroll-rules.ts`
   with a test in `src/scripts/payroll-test.ts` (CI runs it); a run has its own approval (prepare, approve, pay), not
-  `SubmissionLifecycleService`. Professional tax per state is `PT_RULES` in `packages/shared/src/payroll.ts`.
+  `SubmissionLifecycleService`. Professional tax per state is `PT_RULES` in `packages/shared/src/payroll.ts`. An increment
+  or promotion's new pay is a `SalaryStructure` made by `HrService.recordEvent` through `structureForCtc`, never a CTC alone.
+- Joining documents (ARCHITECTURE "HR records"): the papers are `EMPLOYEE_DOCUMENT_KINDS` (`@erp/shared/hr-documents.ts`), each
+  person's an `EmployeeDocument` row moved only through `EmployeeDocumentsService` (`documentCheckProblem`); the offer and
+  appointment letters go out only when `documentLetterProblem` is null. Keep `src/scripts/hr-documents-test.ts` passing.
 - Biometric (item 101, `apps/api/src/biometric`, ARCHITECTURE "Biometric attendance"): ADMS (`/iclock`, outside `/api`), the
   webhook and punch files all go through `biometric-rules.ts` (tested in `src/scripts/biometric-test.ts`, CI runs it) and
   `BiometricService.ingest`, and a punch reaches attendance only through `applyDay` (a worker never at a site other than the device's).

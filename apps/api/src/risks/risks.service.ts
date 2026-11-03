@@ -190,13 +190,17 @@ export class RisksService {
     return s;
   }
 
-  /** Delayed activities (past planned end, approved progress short of plan) on active projects with no open delay entry. */
+  /**
+   * Delayed activities (past planned end, approved progress short of plan) on active projects with no open delay entry.
+   * Only activities that carry work: one with sub-activities is late through them, and they are suggested themselves.
+   */
   async suggestions(user: RequestUser, q: RiskSuggestionsQuery): Promise<DelaySuggestionDto[]> {
     const today = parseDate(todayIn());
     const activities = await this.prisma.activity.findMany({
       where: {
         project: { ...this.access.projectWhere(user), status: 'ACTIVE', ...(q.projectId ? { id: q.projectId } : {}) },
         plannedEnd: { lt: today },
+        subActivities: { none: {} },
         risks: { none: { kind: 'DELAY', status: { not: 'CLOSED' } } },
       },
       include: { project: { select: { name: true } }, progressEntries: { where: { status: 'APPROVED' }, select: { quantity: true } } },

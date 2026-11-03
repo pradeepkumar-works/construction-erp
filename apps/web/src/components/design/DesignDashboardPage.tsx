@@ -48,7 +48,7 @@ function Body({ data }: { data: DesignDashboardDto }) {
       <Row gutter={[12, 12]}>
         {stat('Drawings late', t.drawingsLate, `${t.drawingsAwaited} awaited in all`, '/drawing-schedule?state=LATE', 'danger')}
         {stat('Reviews past the reply date', t.reviewsLate, `${t.underReview} with the reviewer`, '/design-submissions?status=LATE', 'warning')}
-        {stat('Comments to answer', t.commentsToAnswer, `${t.withUs} submission${t.withUs === 1 ? '' : 's'} to revise`, '/design-submissions?status=WITH_US', 'warning')}
+        {stat('Comments to answer', t.commentsToAnswer, `${t.withUs} submission${t.withUs === 1 ? '' : 's'} to revise`, '/design-submissions?toAnswer=true', 'warning')}
         {stat('Copies to recall', t.copiesToRecall, t.recallsLate ? `${t.recallsLate} out longer than a week` : 'Superseded prints on site', '/controlled-copies?state=TO_RECALL', t.recallsLate ? 'danger' : 'warning')}
         {stat('As-built due', t.asBuiltDue, 'Built from, no as-built revision', '/drawing-schedule?tab=as-built')}
         {stat('Open RFIs', t.rfisOpen, `${t.revisionsRecent} revisions in 30 days`, '/documents?tab=rfis')}
@@ -86,7 +86,7 @@ function Body({ data }: { data: DesignDashboardDto }) {
             { title: 'Awaited', key: 'awaited', align: 'right', width: 90, render: (_, r) => n(r.drawingsAwaited, `/drawing-schedule?projectId=${r.projectId}`) },
             { title: 'With reviewer', key: 'review', align: 'right', width: 110, render: (_, r) => n(r.underReview, `/design-submissions?status=UNDER_REVIEW${scope(r.projectId)}`) },
             { title: 'Reply late', key: 'rlate', align: 'right', width: 100, render: (_, r) => n(r.reviewsLate, `/design-submissions?status=LATE${scope(r.projectId)}`) },
-            { title: 'Comments', key: 'comments', align: 'right', width: 100, render: (_, r) => n(r.commentsToAnswer, `/design-submissions?status=WITH_US${scope(r.projectId)}`) },
+            { title: 'Comments', key: 'comments', align: 'right', width: 100, render: (_, r) => n(r.commentsToAnswer, `/design-submissions?toAnswer=true${scope(r.projectId)}`) },
             { title: 'To recall', key: 'recall', align: 'right', width: 90, render: (_, r) => n(r.copiesToRecall, `/controlled-copies?state=TO_RECALL${scope(r.projectId)}`) },
             { title: 'As-built due', key: 'asbuilt', align: 'right', width: 100, render: (_, r) => n(r.asBuiltDue, `/drawing-schedule?tab=as-built${scope(r.projectId)}`) },
             { title: 'Open RFIs', key: 'rfis', align: 'right', width: 90, render: (_, r) => n(r.rfisOpen, '/documents?tab=rfis') },

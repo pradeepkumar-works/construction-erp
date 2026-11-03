@@ -101,6 +101,8 @@ export interface GanttActivityDto {
   unit: string;
   boqItemNo: string | null;
   responsibleName: string | null;
+  /** Has sub-activities: its progress and actual dates are theirs, rolled up */
+  isSummary: boolean;
   plannedStart: string | null;
   plannedEnd: string | null;
   baselineStart: string | null;

@@ -7,7 +7,7 @@ import { Button, Card, Flex, Typography } from 'antd';
 import { tk } from '@/ds';
 import { CheckSquareOutlined } from '@/components/common/icons';
 import type { NavNode, SubmissionType } from '@erp/shared';
-import { SUBMISSION_TYPE_PLURAL_LABELS, mayApprove, navDestination, navNodeForPath, projectTabHref, submissionListHref } from '@erp/shared';
+import { SUBMISSION_TYPE_PLURAL_LABELS, canManageStaff, canViewEmployeePrivate, mayApprove, navDestination, navNodeForPath, projectTabHref, submissionListHref } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useLauncherBadges, usePendingApprovals } from '@/lib/queries';
 import { requestNew } from '@/lib/new-intent';
@@ -22,10 +22,13 @@ import { TreeIcon } from '@/components/shell/nav-icons';
 import { ProjectFiguresPanel, ProjectProgressPanel } from './ProjectProgress';
 import { DepartmentFigures, DepartmentPipelines } from './DepartmentPanel';
 import { NotInYourMenu } from './ModuleHome';
+import { HrDashboard } from '@/components/staff/HrDashboard';
 import s from './DepartmentHome.module.css';
 
 /** The department that holds the projects shows their figures and progress above its pages. */
 const PROJECTS_DEPARTMENT = 'project-management';
+/** HR and payroll's screen is the HR dashboard (head count, joining documents, who joins and leaves), as People's is. */
+const HR_DEPARTMENT = 'hr-payroll';
 
 /** One page of a sub-module: its icon in ink, its name, what waits there (with its word, in full), and the line on what it is for.
  *  A project tab with no project chosen in the header asks for the project. */
@@ -146,6 +149,7 @@ export function DepartmentHome({ moduleKey }: { moduleKey: string }) {
         )}
         {moduleKey === PROJECTS_DEPARTMENT && <ProjectProgressPanel />}
         <DepartmentPipelines department={moduleKey} />
+        {moduleKey === HR_DEPARTMENT && (canManageStaff(user.roleKey) || canViewEmployeePrivate(user.roleKey)) && <HrDashboard />}
         {/* The pages last: the sidebar and the bar under the top bar list them too, so the screen leads with the answer. */}
         <div className={s.subs}>
           {mod.subs.map((sub) => (

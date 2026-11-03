@@ -9,6 +9,43 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-hr-payroll-module',
+    date: '2026-11-03',
+    title: 'HR and payroll as one module',
+    points: [
+      'With the department menu, HR and payroll is one module in the order HR works: My HR, Employee master, Attendance, Leave management, Salary master, Payroll, Letters and history, Full and final, and the department and designation masters.',
+      "Its overview is the HR dashboard: head count by site and department, who joined and left, probation ending, and joining documents to verify.",
+    ],
+  },
+  {
+    id: '2026-11-other-decisions',
+    date: '2026-11-03',
+    title: 'Every decision waiting on you in Approvals',
+    points: [
+      'Approvals now also lists the leave and overtime you decide, salary runs and vouchers waiting for your approval, and letters waiting for your signature, under Also waiting for you.',
+      'Each one opens where it is decided: the leave request, the salary run, the voucher or the letter.',
+    ],
+  },
+  {
+    id: '2026-11-increment-pay',
+    date: '2026-11-02',
+    title: 'An increment changes the pay',
+    points: [
+      "Recording an increment or a promotion with a new cost to company now gives the person a new salary structure from that date: basic, DA, HRA and special allowance grow in step, conveyance stays, and payroll pays the new figure.",
+      'Taking the increment back removes that structure too, unless a salary run has already used it.',
+    ],
+  },
+  {
+    id: '2026-11-joining-documents',
+    date: '2026-11-02',
+    title: 'Joining documents and the offer letter',
+    points: [
+      "A person's Documents tab lists the papers HR collects: photo, Aadhaar, PAN, Class 10, Class 12 or diploma, degree and the last experience letter, with the postgraduate degree and bank proof if they have them.",
+      'HR verifies each one against the original, sends it back with what is wrong, or sets it aside with a reason (a fresher has no experience letter). The person can upload their own copies.',
+      'Record › Offered makes the offer letter. The offer and the appointment letter go out only once every required paper is verified or set aside, and the HR dashboard lists who still has papers to verify.',
+    ],
+  },
+  {
     id: '2026-11-project-summaries',
     date: '2026-11-02',
     title: 'A summary for each part of a project',
