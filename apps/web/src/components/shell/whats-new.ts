@@ -9,6 +9,14 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-leave-policy',
+    date: '2026-11-03',
+    title: 'Your own leave rules',
+    points: [
+      "Payroll settings now hold the company's leave: casual, sick and earned days a year, how much unused earned leave carries into the next year, and whether someone who joins during the year gets a share for the months left. Balances follow them at once.",
+    ],
+  },
+  {
     id: '2026-11-head-office-register',
     date: '2026-11-03',
     title: 'A register for head office',

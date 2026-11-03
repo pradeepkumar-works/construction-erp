@@ -154,3 +154,27 @@ test('HR works out a full and final settlement for someone who resigned', async 
   await expect(page.getByText('Odisha')).toBeVisible();
   await expect(page.getByText(/HDFC Bank 50200012345678/)).toBeVisible();
 });
+
+test("HR sets the company's leave days and the balances follow", async ({ page }) => {
+  const hr = await apiToken('hr@demo.com');
+  type Employee = { id: string; employeeCode: string };
+  type Balance = { type: string; entitled: number | null };
+  const emp = (await api<{ items: Employee[] }>(hr, '/staff/employees?pageSize=100')).items.find((e) => e.employeeCode === 'EMP-008')!;
+  const casual = async () => (await api<Balance[]>(hr, `/staff/leave/balances?employeeId=${emp.id}`)).find((b) => b.type === 'CASUAL')!.entitled;
+  expect(await casual()).toBe(12);
+  try {
+    await signIn(page, 'hr@demo.com');
+    await page.goto('/payroll?tab=settings');
+    await expect(page.getByText('12 casual, 12 sick, 15 earned')).toBeVisible();
+    await page.getByRole('button', { name: /Change settings/ }).click();
+    const drawer = page.getByRole('dialog', { name: /Payroll settings/ });
+    await drawer.getByLabel('Casual leave a year').fill('10');
+    await drawer.getByLabel('Earned leave carried into next year').fill('30');
+    await drawer.getByRole('button', { name: /Save settings/ }).click();
+    await expect(page.getByText('10 casual, 12 sick, 15 earned')).toBeVisible();
+    await expect(page.getByText('Up to 30 days')).toBeVisible();
+    expect(await casual()).toBe(10);
+  } finally {
+    await api(hr, '/payroll/settings', { method: 'PUT', body: { casualLeaveDays: 12, earnedCarryMax: 0 } });
+  }
+});

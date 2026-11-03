@@ -1,7 +1,9 @@
 import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import {
-  LEAVE_ENTITLEMENT,
+  DEFAULT_LEAVE_POLICY,
+  leaveEntitlement,
+  type LeavePolicy,
   LEAVE_TYPE_LABELS,
   LEAVE_TYPES,
   ROLE_LABELS,
@@ -756,14 +758,31 @@ export class StaffService {
    * Days a year per type: fixed for casual, sick and earned; comp-off is earned by working a weekly off or holiday
    * (a half day earns half); unpaid has no limit. Leave counts in the year it starts.
    */
+  /** The company's leave rules (Payroll settings), as shipped until HR sets them. */
+  private async leavePolicy(organizationId: string, db: Prisma.TransactionClient = this.prisma): Promise<LeavePolicy> {
+    const s = await db.payrollSettings.findUnique({ where: { organizationId }, select: { casualLeaveDays: true, sickLeaveDays: true, earnedLeaveDays: true, earnedCarryMax: true, leaveProRata: true } });
+    return s
+      ? { casual: s.casualLeaveDays.toNumber(), sick: s.sickLeaveDays.toNumber(), earned: s.earnedLeaveDays.toNumber(), earnedCarryMax: s.earnedCarryMax.toNumber(), proRata: s.leaveProRata }
+      : DEFAULT_LEAVE_POLICY;
+  }
+
   async balancesFor(employeeId: string, projectId: string | null, year: number, db: Prisma.TransactionClient = this.prisma, excludeId?: string): Promise<LeaveBalanceDto[]> {
     const range = yearRange(year);
     const [rows, worked] = await Promise.all([
       db.leaveRequest.groupBy({ by: ['type', 'status'], where: { employeeId, status: { in: [...LIVE_LEAVE] }, fromDate: range, ...(excludeId ? { id: { not: excludeId } } : {}) }, _sum: { days: true } }),
       db.staffAttendance.findMany({ where: { employeeId, date: range, status: { in: ['PRESENT', 'HALF_DAY'] } }, select: { date: true, status: true, projectId: true } }),
     ]);
-    const emp = await db.employee.findUnique({ where: { id: employeeId }, select: { organizationId: true } });
-    const holidays = emp ? await db.holiday.findMany({ where: { organizationId: emp.organizationId, date: range }, select: { date: true, projectId: true } }) : [];
+    const emp = await db.employee.findUnique({ where: { id: employeeId }, select: { organizationId: true, joinedOn: true } });
+    const [holidays, policy] = emp
+      ? await Promise.all([db.holiday.findMany({ where: { organizationId: emp.organizationId, date: range }, select: { date: true, projectId: true } }), this.leavePolicy(emp.organizationId, db)])
+      : [[], DEFAULT_LEAVE_POLICY];
+    const joinedOn = emp?.joinedOn ? dateOnly(emp.joinedOn) : null;
+    // Earned leave the year before left, for what carries: that year's own days (no carry of its own) less taken and waiting.
+    let earnedLeftLastYear = 0;
+    if (policy.earnedCarryMax > 0) {
+      const last = await db.leaveRequest.aggregate({ where: { employeeId, type: 'EARNED', status: { in: [...LIVE_LEAVE] }, fromDate: yearRange(year - 1) }, _sum: { days: true } });
+      earnedLeftLastYear = (leaveEntitlement('EARNED', { ...policy, earnedCarryMax: 0 }, year - 1, joinedOn) ?? 0) - num(last._sum.days ?? 0);
+    }
     const isOff = (d: Date, p: string | null) => {
       const s = dateOnly(d);
       return isWeeklyOff(s) || holidays.some((h) => dateOnly(h.date) === s && (h.projectId === null || h.projectId === (p ?? projectId)));
@@ -771,7 +790,7 @@ export class StaffService {
     const compOff = worked.filter((a) => isOff(a.date, a.projectId)).reduce((n, a) => n + (a.status === 'HALF_DAY' ? 0.5 : 1), 0);
     const sum = (type: LeaveType, status: 'PENDING' | 'APPROVED') => num(rows.find((r) => r.type === type && r.status === status)?._sum.days ?? 0);
     return LEAVE_TYPES.map((type) => {
-      const entitled = type === 'COMP_OFF' ? compOff : LEAVE_ENTITLEMENT[type];
+      const entitled = type === 'COMP_OFF' ? compOff : leaveEntitlement(type, policy, year, joinedOn, earnedLeftLastYear);
       const taken = sum(type, 'APPROVED');
       const pending = sum(type, 'PENDING');
       return { type, entitled, taken, pending, left: entitled === null ? null : entitled - taken - pending };

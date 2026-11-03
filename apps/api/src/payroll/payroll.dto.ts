@@ -29,6 +29,11 @@ export class PayrollSettingsDto {
   @ApiPropertyOptional({ example: 2 }) @IsOptional() @IsNumber({ maxDecimalPlaces: 2 }) @Min(1) @Max(4) overtimeMultiplier?: number;
   @ApiPropertyOptional() @IsOptional() @trim() @opt() @Matches(/^\d{6,18}$/, { message: 'The account number is 6 to 18 digits' }) debitAccountNo?: string | null;
   @ApiPropertyOptional() @IsOptional() @trim() @IsString() @MaxLength(80) debitBankName?: string | null;
+  @ApiPropertyOptional({ example: 12 }) @IsOptional() @IsNumber({ maxDecimalPlaces: 1 }, { message: 'Days in whole or half days' }) @Min(0) @Max(60) casualLeaveDays?: number;
+  @ApiPropertyOptional({ example: 12 }) @IsOptional() @IsNumber({ maxDecimalPlaces: 1 }, { message: 'Days in whole or half days' }) @Min(0) @Max(60) sickLeaveDays?: number;
+  @ApiPropertyOptional({ example: 15 }) @IsOptional() @IsNumber({ maxDecimalPlaces: 1 }, { message: 'Days in whole or half days' }) @Min(0) @Max(60) earnedLeaveDays?: number;
+  @ApiPropertyOptional({ example: 30, description: 'Earned leave carried into the next year, at most; 0 = none' }) @IsOptional() @IsNumber({ maxDecimalPlaces: 1 }) @Min(0) @Max(300) earnedCarryMax?: number;
+  @ApiPropertyOptional({ description: 'A joiner gets the year’s leave for the months left' }) @IsOptional() @IsBoolean() leaveProRata?: boolean;
 }
 
 export class CreateSalaryStructureDto {

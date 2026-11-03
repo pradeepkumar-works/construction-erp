@@ -6908,6 +6908,14 @@ model PayrollSettings {
   /// The company account salaries are paid from, for the bank file
   debitAccountNo     String?
   debitBankName      String?
+  /// Leave days a year: casual, sick and earned (the other types have no yearly limit)
+  casualLeaveDays    Decimal       @default(12) @db.Decimal(4, 1)
+  sickLeaveDays      Decimal       @default(12) @db.Decimal(4, 1)
+  earnedLeaveDays    Decimal       @default(15) @db.Decimal(4, 1)
+  /// Earned leave not taken that carries into the next year, at most this many days (0 = none carries)
+  earnedCarryMax     Decimal       @default(0) @db.Decimal(4, 1)
+  /// Someone who joins during the year gets the year's leave for the months left
+  leaveProRata       Boolean       @default(false)
   updatedAt          DateTime      @updatedAt
 }
 

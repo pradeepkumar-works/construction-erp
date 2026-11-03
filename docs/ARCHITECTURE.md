@@ -2128,8 +2128,11 @@ flow, not `SubmissionLifecycleService`: it is a person's request, not site data 
 - **Calendar.** Sunday is the weekly off everywhere; leave days skip Sundays and the employee's site holidays
   (`leaveDays` in `packages/shared/src/staff.ts`, also used by the web and app forms). A standard day is 9 hours:
   check-out records overtime past it in half hours, and under half a day marks a half day.
-- **Balances** are per calendar year (leave counts in the year it starts; a request cannot span two years): casual
-  12, sick 12, earned 15 (`LEAVE_ENTITLEMENT`), comp-off = weekly offs and holidays worked (half a day earns half),
+- **Balances** are per calendar year (leave counts in the year it starts; a request cannot span two years): the
+  company's days a year from Payroll settings (`PayrollSettings` casual, sick and earned days, standard 12, 12 and 15),
+  read by `leaveEntitlement` (`@erp/shared/staff.ts`, tested in `src/scripts/leave-policy-test.ts`): someone who joined
+  that year gets the months left from their joining month when the company gives pro rata (rounded down to a half day),
+  and earned leave the year before left untaken carries in up to `earnedCarryMax` (0 = none); comp-off = weekly offs and holidays worked (half a day earns half),
   unpaid without limit. Waiting and approved requests both count. Applying or approving beyond the balance, or
   overlapping other waiting or approved leave, is refused; an advisory lock per employee serialises the check.
 - **Who.** `STAFF_ADMIN_ROLES` (admin, management, HR) keep the staff master and holidays, see everyone and decide
@@ -2165,7 +2168,7 @@ flow, not `SubmissionLifecycleService`: it is a person's request, not site data 
   the web's staff register and My attendance (`FacePhotos`). There is no face matching: the photo is the evidence a
   manager looks at. The web's own Mark in sends no photo.
 - **On duty and tour.** `LeaveType` `ON_DUTY` and `TOUR` are requested and decided like leave but have no balance
-  (`LEAVE_ENTITLEMENT` null) and count present and paid in payroll (`countsAsPresent`), each still shown in its own
+  (no yearly limit in `leaveEntitlement`) and count present and paid in payroll (`countsAsPresent`), each still shown in its own
   column.
 - **Overtime approval.** `StaffAttendance.overtimeStatus` (`OvertimeStatus` PENDING / APPROVED / REJECTED, with who and
   when, and a note). Overtime from a check-out waits; overtime typed in the register is approved when the person

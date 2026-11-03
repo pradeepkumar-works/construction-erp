@@ -113,6 +113,12 @@ export interface PayrollSettingsDto {
   overtimeMultiplier: string;
   debitAccountNo: string | null;
   debitBankName: string | null;
+  /** Leave days a year by type, earned leave carried (0 = none), and pro rata for joiners */
+  casualLeaveDays: string;
+  sickLeaveDays: string;
+  earnedLeaveDays: string;
+  earnedCarryMax: string;
+  leaveProRata: boolean;
 }
 
 export interface SalaryStructureDto {

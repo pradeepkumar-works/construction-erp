@@ -16,11 +16,36 @@ export const LEAVE_TYPE_LABELS: Record<LeaveType, string> = {
   TOUR: 'Tour',
 };
 
+/** A company's leave rules (Payroll settings): days a year by type, earned leave carried, pro rata for joiners. */
+export interface LeavePolicy {
+  casual: number;
+  sick: number;
+  earned: number;
+  /** Earned leave not taken that carries into the next year, at most this many days; 0 = none */
+  earnedCarryMax: number;
+  /** A joiner gets the year's leave for the months left, from their joining month */
+  proRata: boolean;
+}
+
+export const DEFAULT_LEAVE_POLICY: LeavePolicy = { casual: 12, sick: 12, earned: 15, earnedCarryMax: 0, proRata: false };
+
+/** Rounded down to a half day. */
+const halfDays = (n: number) => Math.floor(n * 2) / 2;
+
 /**
- * Days a year for each leave type; null = no yearly limit (comp-off is earned by working an off day, unpaid is unpaid,
- * on duty and tour are work away from the site).
+ * The days of a leave type someone is entitled to in a year (null = no yearly limit): the company's days, for the months
+ * left from their joining month when they joined that year and the company gives pro rata (rounded down to a half day),
+ * and for earned leave what the earlier year left, up to the carry limit. Comp-off is earned by working, so it is not here.
  */
-export const LEAVE_ENTITLEMENT: Record<LeaveType, number | null> = { CASUAL: 12, SICK: 12, EARNED: 15, COMP_OFF: null, UNPAID: null, ON_DUTY: null, TOUR: null };
+export function leaveEntitlement(type: LeaveType, policy: LeavePolicy, year: number, joinedOn: string | null, earnedLeftLastYear = 0): number | null {
+  const days = type === 'CASUAL' ? policy.casual : type === 'SICK' ? policy.sick : type === 'EARNED' ? policy.earned : null;
+  if (days === null) return null;
+  const joinYear = joinedOn ? Number(joinedOn.slice(0, 4)) : null;
+  if (joinYear !== null && joinYear > year) return 0;
+  const base = policy.proRata && joinYear === year ? halfDays((days * (13 - Number(joinedOn!.slice(5, 7)))) / 12) : days;
+  const carry = type === 'EARNED' && policy.earnedCarryMax > 0 && (joinYear === null || joinYear < year) ? Math.min(policy.earnedCarryMax, Math.max(0, earnedLeftLastYear)) : 0;
+  return base + carry;
+}
 
 /** Attendance extras: away on company work; approved like leave but counted present and paid. */
 export const PRESENT_LEAVE_TYPES: readonly LeaveType[] = ['ON_DUTY', 'TOUR'];

@@ -1,6 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, type PayrollSettings, type SalaryStructure } from '@prisma/client';
-import { canRunPayroll, canViewPayroll, type PayrollSettingsDto, type SalaryStructureDto, type StaffLoanDto } from '@erp/shared';
+import { DEFAULT_LEAVE_POLICY, canRunPayroll, canViewPayroll, type PayrollSettingsDto, type SalaryStructureDto, type StaffLoanDto } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { AuditService } from '../common/audit.service';
@@ -94,6 +94,11 @@ export class SalaryService {
       overtimeMultiplier: String(r.overtimeMultiplier),
       debitAccountNo: s?.debitAccountNo ?? null,
       debitBankName: s?.debitBankName ?? null,
+      casualLeaveDays: String(s ? s.casualLeaveDays.toNumber() : DEFAULT_LEAVE_POLICY.casual),
+      sickLeaveDays: String(s ? s.sickLeaveDays.toNumber() : DEFAULT_LEAVE_POLICY.sick),
+      earnedLeaveDays: String(s ? s.earnedLeaveDays.toNumber() : DEFAULT_LEAVE_POLICY.earned),
+      earnedCarryMax: String(s ? s.earnedCarryMax.toNumber() : DEFAULT_LEAVE_POLICY.earnedCarryMax),
+      leaveProRata: s?.leaveProRata ?? DEFAULT_LEAVE_POLICY.proRata,
     };
   }
 
