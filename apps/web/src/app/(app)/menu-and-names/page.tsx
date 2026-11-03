@@ -3,12 +3,16 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, App, Button, Card, Checkbox, ColorPicker, Flex, Input, Segmented, Table, Typography } from 'antd';
 import { CHROME_START_FILL, chromeStyle, tk } from '@/ds';
-import type { NavFill, NavGradientAngle, NavLayout, NavLook, NavModuleSet, NavPalette, NavSettingsDto, NavSidebarLook } from '@erp/shared';
+import type { NavFill, NavGradientAngle, NavLayout, NavLook, NavModuleSet, NavPaint, NavPalette, NavSettingsDto, NavSidebarLook } from '@erp/shared';
 import {
   DEFAULT_NAV_SETTINGS,
   GRADIENT_PALETTES,
+  NAV_LAYOUTS,
   NAV_LAYOUT_LABELS,
+  NAV_LAYOUT_PARTS,
   NAV_LOOK_LABELS,
+  NAV_PAINTS,
+  NAV_PAINT_LABELS,
   NAV_MODULE_SET_LABELS,
   NAV_NAME_MAX,
   NAV_PALETTES,
@@ -17,6 +21,8 @@ import {
   canManageModules,
   navFillProblem,
   navModuleDefs,
+  navPaintWords,
+  navPainted,
   readableFill,
   type NavModuleDef,
 } from '@erp/shared';
@@ -26,19 +32,25 @@ import { useNotify } from '@/lib/notify';
 import { useNavSettings, useSaveNavSettings } from '@/lib/queries';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
-import { ChoiceCards, ColourPicture, MenuPicture, type Choice } from '@/components/menu/ChoiceCards';
+import { ChoiceCards, ColourPicture, MenuPicture, type Choice, type MenuPictureKind } from '@/components/menu/ChoiceCards';
 import { setChromePreview } from '@/components/shell/ShellColours';
 import { NoAccess } from '@/components/common/NoAccess';
 import { TreeIcon } from '@/components/shell/nav-icons';
 
-const LAYOUTS: Choice<NavLayout>[] = [
-  { value: 'TOP_BAR', label: NAV_LAYOUT_LABELS.TOP_BAR, description: 'Home holds the modules as tiles; a module opens with its sub-modules in a bar across the top.', picture: <MenuPicture kind="NAVY" /> },
-  { value: 'SIDEBAR', label: NAV_LAYOUT_LABELS.SIDEBAR, description: 'Every module and page in a menu down the left, folded to icons when you need the room.', picture: <MenuPicture kind="SIDEBAR" /> },
-];
+/** What each layout puts where, in a line; its picture is drawn with the parts in colour the company chose. */
+const LAYOUT_WORDS: Record<NavLayout, string> = {
+  SIDEBAR: 'Every module and page in a menu down the left, folded to icons when you need the room.',
+  TOP_BAR: 'Home holds the modules as tiles; a module opens with its sub-modules in a bar across the top.',
+  TOP_AND_SIDE: 'The modules across a bar at the top; the module you open has its sub-modules and pages down the left.',
+  TWO_BARS: 'The modules across a first bar; the module you open has its sub-modules across a second bar under it.',
+  TWO_SIDEBARS: 'The modules in a narrow column of icons; the module you open has its sub-modules and pages in a column beside it.',
+};
+const LAYOUT_PICTURE: Record<NavLayout, MenuPictureKind> = { SIDEBAR: 'SIDEBAR', TOP_BAR: 'NAVY', TOP_AND_SIDE: 'TOP_AND_SIDE', TWO_BARS: 'TWO_BARS', TWO_SIDEBARS: 'TWO_SIDEBARS' };
+// Layouts read best in the order people know them: everything down the side, everything on top, then the mixes.
+const LAYOUT_ORDER: NavLayout[] = ['SIDEBAR', 'TOP_BAR', 'TOP_AND_SIDE', 'TWO_BARS', 'TWO_SIDEBARS'];
 
 const SIDEBAR_LOOKS: Choice<NavSidebarLook>[] = [
-  { value: 'RAIL', label: NAV_SIDEBAR_LOOK_LABELS.RAIL, description: 'The menu down the left in its colour, a white header over the page.', picture: <MenuPicture kind="SIDEBAR" /> },
-  { value: 'HEADER', label: NAV_SIDEBAR_LOOK_LABELS.HEADER, description: 'The menu and the header in one colour, framing the page on two sides.', picture: <MenuPicture kind="HEADER" /> },
+  { value: 'RAIL', label: NAV_SIDEBAR_LOOK_LABELS.RAIL, description: 'The menu down the left against the page’s edge.', picture: <MenuPicture kind="SIDEBAR" /> },
   { value: 'FLOATING', label: NAV_SIDEBAR_LOOK_LABELS.FLOATING, description: 'The menu as a rounded panel standing on the page, with room round it.', picture: <MenuPicture kind="FLOATING" /> },
 ];
 
@@ -59,14 +71,15 @@ const PALETTE_WORDS: Record<NavPalette, string> = {
   NAVY: 'Blueprint navy with white words.',
   GRAPHITE: 'Near-black, calm beside any page.',
   FOREST: 'A deep green, for the outdoors trades.',
-  PLUM: 'A dark violet with white words.',
-  SAND: 'Warm paper with near-black words.',
+  OXBLOOD: 'A deep red-brown with white words.',
+  SAND: 'A bone stone with near-black words.',
   SKY: 'A pale blue with near-black words.',
-  DUSK: 'Navy into violet, down the menu.',
-  OCEAN: 'Deep blue into teal.',
-  EMBER: 'Dark rust into brick.',
-  MIDNIGHT: 'Graphite into a deep navy.',
-  DAWN: 'Light grey into a pale blue.',
+  LAGOON: 'Deep-sea teal across the bar, lighter to the right.',
+  DUSK: 'Navy deepening into slate.',
+  OCEAN: 'A deep teal, a shade lighter at the foot.',
+  WALNUT: 'A dark brown with the grain of a lighter one.',
+  MIDNIGHT: 'Graphite with a hint of navy.',
+  DAWN: 'Light grey into the palest blue.',
   CUSTOM: 'Your company’s own colour.',
 };
 
@@ -87,6 +100,7 @@ const same = (a: NavSettingsDto, b: NavSettingsDto) =>
   a.layout === b.layout &&
   a.look === b.look &&
   a.sidebarLook === b.sidebarLook &&
+  a.paint === b.paint &&
   a.palette === b.palette &&
   sameFill(a.fill, b.fill) &&
   a.moduleSet === b.moduleSet &&
@@ -150,7 +164,8 @@ function ColoursCard({ v, set }: { v: NavSettingsDto; set: (patch: Partial<NavSe
     <Card size="small" title="Colours of the menu">
       <Flex vertical gap={tk.space[3]}>
         <Typography.Paragraph type="secondary" style={{ margin: 0 }}>
-          The sidebar, the header in Sidebar and header, and the coloured top bar take these colours, in the light and the dark theme. The menu on this screen shows your choice as you pick; no one else sees it until you save.
+          The parts of the menu you put in colour take these, in the light and the dark theme; the gradients stay in one hue, so the menu reads as one colour with depth. The menu on this screen shows your choice as you pick; no one else sees it until you save.
+          {NAV_LAYOUT_PARTS[v.layout] && v.paint === 'NONE' && ' With both parts plain, these colours show only in the pictures until you put a part in colour.'}
         </Typography.Paragraph>
         <Segmented<ColourKind>
           aria-label="Plain colours or gradients"
@@ -214,6 +229,19 @@ function MenuForm({ saved }: { saved: NavSettingsDto }) {
   useEffect(() => setChromePreview({ palette: v.palette, fill: v.fill }), [v.palette, v.fill]);
   useEffect(() => () => setChromePreview(null), []);
   const modules = useMemo(() => navModuleDefs(v.moduleSet), [v.moduleSet]);
+  // Each layout pictured with the parts in colour this company chose, and each paint pictured in the chosen layout.
+  const layouts: Choice<NavLayout>[] = LAYOUT_ORDER.filter((l) => NAV_LAYOUTS.includes(l)).map((l) => ({
+    value: l,
+    label: NAV_LAYOUT_LABELS[l],
+    description: LAYOUT_WORDS[l],
+    picture: <MenuPicture kind={LAYOUT_PICTURE[l]} paint={navPainted({ ...v, layout: l })} />,
+  }));
+  const paints: Choice<NavPaint>[] = NAV_PAINTS.map((p) => ({
+    value: p,
+    label: NAV_PAINT_LABELS[p],
+    description: navPaintWords(v.layout, p),
+    picture: <MenuPicture kind={LAYOUT_PICTURE[v.layout]} paint={navPainted({ ...v, paint: p })} />,
+  }));
   const long = Object.values(v.names).some((n) => n.trim().length > NAV_NAME_MAX);
 
   const submit = () =>
@@ -267,13 +295,18 @@ function MenuForm({ saved }: { saved: NavSettingsDto }) {
   return (
     <Flex vertical gap={tk.space[4]}>
       <Card size="small" title="Where the menu sits">
-        <ChoiceCards label="Where the menu sits" value={v.layout} onChange={(x) => set('layout', x)} choices={LAYOUTS} />
+        <ChoiceCards label="Where the menu sits" value={v.layout} onChange={(x) => set('layout', x)} choices={layouts} />
       </Card>
+      {NAV_LAYOUT_PARTS[v.layout] && (
+        <Card size="small" title="Where the colours go">
+          <ChoiceCards label="Where the colours go" value={v.paint} onChange={(x) => set('paint', x)} choices={paints} compact />
+        </Card>
+      )}
       {v.layout === 'SIDEBAR' ? (
         <Card size="small" title="Look of the sidebar">
           <ChoiceCards label="Look of the sidebar" value={v.sidebarLook} onChange={(x) => set('sidebarLook', x)} choices={SIDEBAR_LOOKS} />
         </Card>
-      ) : (
+      ) : v.layout !== 'TOP_BAR' ? null : (
         <Card size="small" title="Look of the top bar">
           <Flex vertical gap={tk.space[3]}>
             <ChoiceCards label="Look of the top bar" value={v.look} onChange={(x) => set('look', x)} choices={LOOKS} />

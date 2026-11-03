@@ -177,3 +177,30 @@
   border-radius: var(--r-sm);
   background: color-mix(in srgb, var(--c-chrome-ink) 14%, transparent);
 }
+
+/* The layout pictures: a part in the menu's colours, or plain with a hairline where it meets the page. */
+.fill {
+  background: var(--c-chrome-fill);
+}
+
+.plainPart {
+  background: var(--c-surface-base);
+}
+
+.edgeR {
+  border-right: 1px solid var(--c-line-hairline);
+}
+
+.edgeB {
+  border-bottom: 1px solid var(--c-line-hairline);
+}
+
+.markOn {
+  border-radius: var(--r-xs);
+  background: color-mix(in srgb, var(--c-chrome-ink) 45%, transparent);
+}
+
+.markOff {
+  border-radius: var(--r-xs);
+  background: color-mix(in srgb, var(--c-text-base) 22%, transparent);
+}
