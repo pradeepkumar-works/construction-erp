@@ -1139,7 +1139,8 @@ are not submissions, but the inbox lists them too, under Also waiting for you: `
 runs the caller may approve, `vouchers({ toDecide })`, letters `{ toSign }`), so each module's access rules apply, and
 returns `OtherDecisionGroupDto`s (`OTHER_DECISION_KINDS`) in `rankWaiting` order. Each entry links to the page where it is
 decided (`/payroll?tab=runs&run=`, `/books?tab=vouchers&voucher=`, the leave or letter itself); a new kind is a key there
-and a block in the service.
+and a block in the service. Someone who approves submissions sees them as one line of counts above the queue
+(`OtherDecisionsLine`), since the queue and pane fill the window; anyone else sees the groups and their oldest entries.
 
 `ApprovalEscalation` (per type: `remindAfterHours`, `escalateAfterHours`) drives `NotificationJobsService.approvalEscalation`,
 run hourly (`GET /notifications/jobs/approval-escalation`, the in-process scheduler on the hour, and inside both daily

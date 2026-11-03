@@ -24,7 +24,7 @@ import { singleKeysOn } from '@/lib/shortcuts';
 import { ApprovalQueue } from '@/components/approvals/ApprovalQueue';
 import { ApprovalPane } from '@/components/approvals/ApprovalPane';
 import { ReviewedToday } from '@/components/approvals/ReviewedToday';
-import { OtherDecisions } from '@/components/approvals/OtherDecisions';
+import { OtherDecisions, OtherDecisionsLine } from '@/components/approvals/OtherDecisions';
 import { decidedInPlace, groupQueue, QUEUE_TYPE_LABELS, QUEUE_TYPES, queueKey, recordPage } from '@/components/approvals/queue';
 import { ProgressDrawer } from '@/components/progress/ProgressDrawer';
 import { DprDrawer } from '@/components/dpr/DprDrawer';
@@ -302,6 +302,7 @@ export default function ApprovalsPage() {
           />
         </Flex>
       )}
+      {approver && <OtherDecisionsLine groups={others} />}
       {!approver && others.length ? null : split ? (
         <div ref={splitRef} style={{ ...frame, height }}>
           <Splitter style={{ height: '100%' }}>
@@ -322,7 +323,7 @@ export default function ApprovalsPage() {
       ) : (
         <div style={frame}>{queue}</div>
       )}
-      <OtherDecisions groups={others} />
+      {!approver && <OtherDecisions groups={others} />}
       {currentItem && decidedInPlace(currentItem.type) && (
         <ReviewDialog type={approvalTypeParam[currentItem.type]} id={currentItem.id} decision={decision} onClose={() => setDecision(null)} />
       )}

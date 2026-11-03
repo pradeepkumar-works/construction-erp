@@ -25,7 +25,7 @@ export function OtherDecisions({ groups }: { groups: OtherDecisionGroupDto[] }) 
       <Flex vertical gap={tk.space[4]}>
         {groups.map((g) => (
           <section key={g.kind} aria-label={OTHER_DECISION_LABELS[g.kind]}>
-            <Flex align="baseline" gap={tk.space[3]} wrap style={{ paddingBottom: tk.space[1], borderBottom: tk.line('hairline') }}>
+            <Flex align="baseline" gap={tk.space[3]} wrap className="link-row" style={{ paddingBottom: tk.space[1], borderBottom: tk.line('hairline') }}>
               <Typography.Text strong>{OTHER_DECISION_LABELS[g.kind]}</Typography.Text>
               <span className="text-muted" translate="no">
                 {[`${g.count} waiting`, g.amount !== null ? formatINR(g.amount) : null].filter(Boolean).join(' · ')}
@@ -69,5 +69,23 @@ export function OtherDecisions({ groups }: { groups: OtherDecisionGroupDto[] }) 
         ))}
       </Flex>
     </Section>
+  );
+}
+
+/**
+ * The same decisions in one line above the inbox, for an approver, whose queue and review pane fill the window: how many
+ * of each and the rupees at stake, each linking to where they are decided.
+ */
+export function OtherDecisionsLine({ groups }: { groups: OtherDecisionGroupDto[] }) {
+  if (!groups.length) return null;
+  return (
+    <Flex component="section" aria-label="Also waiting for you" wrap align="center" gap={tk.space[4]} className="link-row" style={{ marginBottom: tk.space[3] }}>
+      <Typography.Text type="secondary">Also waiting for you</Typography.Text>
+      {groups.map((g) => (
+        <Link key={g.kind} href={g.href} className="text-link" translate="no">
+          {[OTHER_DECISION_LABELS[g.kind], String(g.count), g.amount !== null ? formatINR(g.amount) : null].filter(Boolean).join(' · ')}
+        </Link>
+      ))}
+    </Flex>
   );
 }

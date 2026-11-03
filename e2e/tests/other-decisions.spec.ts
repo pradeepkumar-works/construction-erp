@@ -33,3 +33,12 @@ test('Approvals lists leave, overtime and vouchers waiting on the caller, each o
   await others.getByRole('link', { name: leave!.items[0].title }).click();
   await expect(page).toHaveURL(new RegExp(`/staff\\?tab=leave&leave=${leave!.items[0].id}`));
 });
+
+/** Someone who approves submissions has the queue and pane filling the window, so the same decisions are one line above it. */
+test('an approver sees the other decisions as one line above the queue', async ({ page }) => {
+  await signIn(page, 'md@demo.com');
+  await page.goto('/approvals');
+  const line = page.getByRole('region', { name: 'Also waiting for you' });
+  await expect(line.getByRole('link', { name: /^Vouchers · \d+ · ₹/ })).toHaveAttribute('href', '/books?tab=vouchers');
+  await expect(page.getByRole('region', { name: 'Approval queue' })).toBeVisible();
+});
