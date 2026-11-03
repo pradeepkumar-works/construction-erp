@@ -23,7 +23,7 @@ pnpm typecheck                        # all packages, must pass before committin
 cd apps/web && npx next build         # web must build clean
 cd apps/web && npx tsx --tsconfig tsconfig.json scripts/nav-check.ts   # navigation tree: routes, icons, access, Concord
 cd apps/web && npx tsx --tsconfig tsconfig.json scripts/copy-check.ts  # shared labels and menu names against docs/WRITING.md
-cd apps/web && npx tsx --tsconfig tsconfig.json scripts/tokens-check.ts # design tokens: contrast, and the not-yet-moved list only shrinks
+cd apps/web && npx tsx --tsconfig tsconfig.json scripts/tokens-check.ts # design tokens: contrast, and CSS files read the tokens
 pnpm --filter @erp/web lint           # ESLint (typescript-eslint, hooks, Next, jsx-a11y) on the web; 0 errors, CI runs it
 pnpm --filter @erp/api lint           # ESLint (typescript-eslint, no today in UTC) on the API; 0 errors, CI runs it
 cd apps/mobile && npx tsc --noEmit && CI=1 npx expo export --platform android
@@ -58,8 +58,8 @@ and the pre-delivery checklist.
   `apps/web/scripts/nav-check.ts` (CI) checks routes, icons, access keys and the Concord items. The product name (Nirmaan) is `PRODUCT_NAME` in
   `packages/shared/src/brand.ts`; web colours and sizes live only in `src/ds/source/` (the design tokens, read through
   `tk` from `@/ds`; `docs/design/REDESIGN.md`), plus `BrandMark` and `app/icon.svg`, mobile ones in `src/theme.ts`. New code
-  uses `tk` instead of hex or px literals (ESLint's `ds/no-raw-style` refuses them, `theme.useToken()`, `themeColor` and
-  `BRAND.colors` outside the files in `src/ds/legacy-files.json`; a file you move onto `tk` leaves that list). A CSS file reads
+  uses `tk` instead of hex or px literals (ESLint's `ds/no-raw-style` refuses them, `theme.useToken()` and antd's or the
+  old brand's CSS variables, in every file; `tokens-check.ts` holds the CSS files to the same). A CSS file reads
   the same variables (the colour roles, `--s-<n>`, `--t-<type>`; the website's own stage the raw palette, `--p-<colour>`), a size
   off the scale in `rem`. A component's look is its
   tokens in `antdTheme` and `componentConfig` (`src/ds/antd.ts`, both modes), never CSS of a page's own. Data drawn by kind (cost
@@ -194,9 +194,12 @@ and the pre-delivery checklist.
   A controlled copy is issued only through `DesignControlService.issue` (`issueCopiesProblem`, `copyNumbersFor`) and stands
   by `copyState`; what a revision changes is only `revisionImpact`, and the dashboard reads the schedule and submissions
   through their services (`@erp/shared/design-control.ts`). Keep `src/scripts/design-control-test.ts` passing.
-- Menu and names (ARCHITECTURE "Menu and names"): the company's menu (sidebar or top bar, its look, the module set and names)
+- Menu and names (ARCHITECTURE "Menu and names"): the company's menu (sidebar or top bar, each one's look, the colours, the module set and names)
   is pure in `@erp/shared/nav-menu.ts` (`navMenuFor`, `navMenuPlace`, `navSettingsOf`) and drawn by `components/shell/TopBar.tsx`
-  over `components/shell/menu.ts`; a new page of the tree also gets a place in `DEPARTMENT_MODULES`. Keep
+  over `components/shell/menu.ts`; a new page of the tree also gets a place in `DEPARTMENT_MODULES`.
+  The menu's colours (ARCHITECTURE "Menu colours") are a palette (fills in `ds/source/chrome.ts`, both themes) or the
+  company's own `NavFill`, which reads only by `navFillProblem` (`@erp/shared/nav-colours.ts`); the shell paints
+  `--c-chrome-fill` (a solid or a gradient) and mixes everything else from `--c-chrome-bg` and the ink. Keep
   `src/scripts/nav-menu-test.ts` passing. A department's screen (item 168, ARCHITECTURE "Department screens") shows the area
   modules' figures picked by `DEPARTMENT_FIGURES` and pipelines (`DEPARTMENT_PIPELINES`, `pipelineOf` in
   `@erp/shared/department-home.ts`) read through the modules' own list services in `DepartmentHomeService`, never a query of

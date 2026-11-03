@@ -173,7 +173,7 @@ export function FundRequestFormModal({ open, onClose, request, projectId: fixedP
           <Form.Item name="neededBy" label="Needed by">
             <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isBefore(dayjs(), 'day')} />
           </Form.Item>
-          <Form.Item name="mode" label="Pay by">
+          <Form.Item name="mode" label="Payment mode">
             <Select options={RECEIPT_MODES.map((m) => ({ value: m, label: RECEIPT_MODE_LABELS[m] }))} />
           </Form.Item>
         </FormGrid>

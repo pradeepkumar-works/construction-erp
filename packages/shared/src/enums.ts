@@ -359,7 +359,7 @@ export const MARKUP_KINDS = ['PIN', 'CLOUD', 'RECT', 'ARROW', 'TEXT', 'PEN'] as 
 export type MarkupKind = (typeof MARKUP_KINDS)[number];
 export const MARKUP_STATUSES = ['OPEN', 'RESOLVED'] as const;
 export type MarkupStatus = (typeof MARKUP_STATUSES)[number];
-/** Each app maps these to its own palette (web `BRAND.colors`, phone `theme.ts`). */
+/** Each app maps these to its own palette (web: the `sheet.markup` roles in `src/ds`, phone `theme.ts`). */
 export const MARKUP_COLORS = ['RED', 'BLUE', 'GREEN', 'ORANGE'] as const;
 export type MarkupColor = (typeof MARKUP_COLORS)[number];
 
@@ -383,3 +383,11 @@ export const NAV_LOOKS = ['NAVY', 'FRAME', 'BAR'] as const;
 export type NavLook = (typeof NAV_LOOKS)[number];
 export const NAV_MODULE_SETS = ['AREAS', 'DEPARTMENTS'] as const;
 export type NavModuleSet = (typeof NAV_MODULE_SETS)[number];
+/** How the sidebar sits (`nav-colours.ts`): a rail beside the page, a rail and header in one colour round the page, or a
+ *  rail floating on the page's canvas. */
+export const NAV_SIDEBAR_LOOKS = ['RAIL', 'HEADER', 'FLOATING'] as const;
+export type NavSidebarLook = (typeof NAV_SIDEBAR_LOOKS)[number];
+/** The menu's colours (`nav-colours.ts`): Nirmaan's own, a plain colour or a gradient from the curated set, or the
+ *  company's own (`CUSTOM`, with its `NavFill`). The colours themselves are design tokens (web `ds/source/chrome.ts`). */
+export const NAV_PALETTES = ['QUIET', 'NAVY', 'GRAPHITE', 'FOREST', 'PLUM', 'SAND', 'SKY', 'DUSK', 'OCEAN', 'EMBER', 'MIDNIGHT', 'DAWN', 'CUSTOM'] as const;
+export type NavPalette = (typeof NAV_PALETTES)[number];

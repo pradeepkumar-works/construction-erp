@@ -95,7 +95,7 @@ export default function ProjectScreen() {
         <EmptyState title={t('No activities')} subtitle={t('Activities are set up by the planning team on the web.')} icon="list-outline" />
       ) : (
         activities.map((a) => (
-          // An activity made of parts takes its progress through them (item 125), so only a plain one opens the form.
+          // An activity made of parts takes its progress through them, so only a plain one opens the form.
           <Card
             key={a.id}
             onPress={a.isSummary ? undefined : () => router.push(`/progress/new?projectId=${project.id}&activityId=${a.id}`)}

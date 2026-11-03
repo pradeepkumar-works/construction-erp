@@ -43,13 +43,14 @@ export interface HealthReasonDto {
   text: string;
 }
 
-export type PortfolioScheduleState = 'NO_PLAN' | 'ON_TRACK' | 'BEHIND' | 'LATE' | 'DONE';
+export type PortfolioScheduleState = 'NO_PLAN' | 'ON_TRACK' | 'BEHIND' | 'LATE' | 'DONE' | 'ON_HOLD';
 export const PORTFOLIO_SCHEDULE_LABELS: Record<PortfolioScheduleState, string> = {
   NO_PLAN: 'No plan',
   ON_TRACK: 'On track',
   BEHIND: 'Behind plan',
   LATE: 'Finishing late',
   DONE: 'Complete',
+  ON_HOLD: 'On hold',
 };
 
 export interface PortfolioScheduleDto {

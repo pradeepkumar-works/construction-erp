@@ -57,7 +57,7 @@ export function TopBar({ user, look, mobile, menu, place, pendingCount, tools, o
   const inBar = look === 'BAR' && !mobile && !!place;
   return (
     <div className={cx(s.top, LOOK_CLASS[look], mobile && s.mobile)}>
-      <header className={s.bar}>
+      <header className={cx(s.bar, look === 'NAVY' && s.onChrome)}>
         {mobile ? (
           <>
             <Button type="text" icon={<MenuOutlined />} onClick={onOpenMenu} aria-label="Open menu" data-tour="menu" />

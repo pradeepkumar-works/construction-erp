@@ -129,6 +129,12 @@ test('complete, and no plan at all', () => {
   assert.equal(none.elapsed, null);
 });
 
+test('the same rule as the project page: on hold, and no dated plan that keeps up with the time gone', () => {
+  assert.equal(scheduleOf(facts({ status: 'ON_HOLD', done: 10 })).state, 'ON_HOLD');
+  // No dated activities and keeping up with the time gone: no plan to be on track with, as on the project page.
+  assert.equal(scheduleOf(facts({ planned: null, scheduled: 0, plannedFinish: null, done: 50 })).state, 'NO_PLAN');
+});
+
 test('elapsed share of the time and whole days between dates', () => {
   assert.equal(elapsedPct('2026-01-01', '2026-01-11', '2026-01-06'), 50);
   assert.equal(elapsedPct('2026-01-01', '2026-01-11', '2027-01-01'), 100);

@@ -1,8 +1,10 @@
 'use client';
 
 import React from 'react';
-import { Alert, Button, Card, Col, ConfigProvider, Descriptions, Empty, Flex, Input, InputNumber, Progress, Row, Segmented, Select, Space, Statistic, Table, Typography, theme } from 'antd';
+import { Alert, Button, Card, Col, ConfigProvider, Descriptions, Empty, Flex, Input, InputNumber, Progress, Row, Segmented, Select, Statistic, Table, Typography } from 'antd';
 import { tk } from '@/ds';
+import { useResolved } from '@/ds/react';
+import { TYPE, type TypeName } from '@/ds/source/scales';
 import { DatePicker } from '@/components/common/DatePicker';
 import { StageBar } from '@/components/record/StageBar';
 import { AppTag } from '@/components/common/AppTag';
@@ -18,35 +20,33 @@ import { formatINR, formatINRCompact } from '@/lib/format';
 import { useAppearance, type Density, type ThemeMode } from '@/lib/appearance';
 import { Money } from '@/components/common/Money';
 
-/** Semantic tokens worth seeing side by side in each mode. */
-const TOKENS = [
-  'colorPrimary',
-  'colorLink',
-  'colorSuccess',
-  'colorWarning',
-  'colorError',
-  'colorText',
-  'colorTextSecondary',
-  'colorTextTertiary',
-  'colorBgLayout',
-  'colorBgContainer',
-  'colorBgElevated',
-  'colorBorder',
-  'colorBorderSecondary',
-  'colorFillSecondary',
+/** The colour roles worth seeing side by side in each mode, by their place in `tk.color`. */
+const SWATCHES = [
+  { group: 'Surface', roles: ['surface.canvas', 'surface.base', 'surface.sunken', 'surface.inverse'] },
+  { group: 'Text', roles: ['text.strong', 'text.base', 'text.muted', 'text.faint', 'text.link'] },
+  { group: 'Line', roles: ['line.hairline', 'line.base', 'line.focus'] },
+  { group: 'Action, accent and AI', roles: ['action.solid', 'accent.solid', 'accent.soft', 'ai.mark'] },
+  { group: 'Tones (text)', roles: ['tone.info.fg', 'tone.pending.fg', 'tone.success.fg', 'tone.danger.fg', 'tone.violet.fg'] },
+  { group: 'Shell', roles: ['chrome.bg', 'chrome.ink'] },
 ] as const;
 
-/** The type scale: every size on screen is one of these, 12 px the floor, in either density. */
-const TYPE_SCALE = [
-  { token: 'fontSizeHeading1', alias: '', use: 'The largest heading, used sparingly (the sign-in title)' },
-  { token: 'fontSizeHeading2', alias: '', use: "A page's title (its h1) and the KPI figures on Home" },
-  { token: 'fontSizeXL', alias: 'fontSizeHeading3', use: 'Figures inside a tab, such as cost or safety totals' },
-  { token: 'fontSizeLG', alias: 'fontSizeHeading4', use: 'Card, section and dialog titles; a total that leads a block' },
-  { token: 'fontSize', alias: 'fontSizeHeading5', use: 'Body text, table cells, fields and buttons' },
-  { token: 'fontSizeSM', alias: '', use: 'Captions, secondary lines under a figure, tags and hints. Nothing is smaller' },
-] as const;
+/** A role's value by its dotted place in a colour tree (`tk.color` gives the CSS variable, `useResolved().color` the hex). */
+const roleAt = (tree: object, role: string) => role.split('.').reduce<unknown>((node, key) => (node as Record<string, unknown>)[key], tree) as string;
 
-const kebab = (key: string) => key.replace(/([a-z])([A-Z0-9])/g, '$1-$2').toLowerCase();
+/** Where each style of the type scale is used. Twelve px is the floor, in either density. */
+const TYPE_USE: Record<TypeName, string> = {
+  display: 'The largest title, used sparingly (the sign-in title)',
+  heading: "A page's title (its h1)",
+  figure: 'A headline figure (tabular)',
+  subhead: "A card's figure or a panel's lead line",
+  title: 'Card, section and dialog titles',
+  lead: 'A lead paragraph; a total that leads a block',
+  strong: 'Body text that needs weight: a label beside its value',
+  body: 'Body text, table cells, fields and buttons',
+  label: 'Field labels, table headers, tags',
+  caption: 'Captions, secondary lines under a figure and hints. Nothing is smaller',
+};
+const TYPE_ORDER: TypeName[] = ['display', 'heading', 'figure', 'subhead', 'title', 'lead', 'strong', 'body', 'label', 'caption'];
 
 /** A control with its height as drawn, measured in the page. */
 function Measured({ children }: { children: React.ReactNode }) {
@@ -60,7 +60,7 @@ function Measured({ children }: { children: React.ReactNode }) {
     return () => ro.disconnect();
   }, []);
   return (
-    <Flex align="center" gap={8}>
+    <Flex align="center" gap={tk.space[2]}>
       <span ref={ref} style={{ display: 'inline-flex' }}>
         {children}
       </span>
@@ -86,7 +86,7 @@ function TargetSample({ label }: { label: string }) {
         <Button type="primary">Middle button</Button>
       </Measured>
       <Measured>
-        <Input placeholder="Field" aria-label={`${label} field`} style={{ width: 200 }} />
+        <Input placeholder="Field" aria-label={`${label} field`} style={{ width: '12.5rem' }} />
       </Measured>
       <Measured>
         <Segmented size="small" options={['Small', 'Segmented']} aria-label={`${label} small segmented`} />
@@ -105,7 +105,8 @@ const rows = [
 ];
 
 /**
- * The design reference: every colour token, the type scale and the main components in the current appearance.
+ * The design reference: the colour roles, the type scale and the main components in the current appearance, all read
+ * from the design tokens (`@/ds`, docs/design/REDESIGN.md).
  * Not in the sidebar; staff open /design to check a theme change in light, dark and compact before it ships.
  */
 export default function DesignPage() {
@@ -122,14 +123,14 @@ export default function DesignPage() {
 }
 
 function DesignReference() {
-  const { token } = theme.useToken();
+  const r = useResolved();
   const { prefs, setPrefs, dark } = useAppearance();
 
   return (
     <div className="page-container">
       <PageHeader
         title="Design reference"
-        subtitle={`The ${BRAND.name} theme: colour tokens, type and components in the appearance you have chosen`}
+        subtitle={`The ${BRAND.name} design tokens: colour roles, type and components in the appearance you have chosen`}
         extra={
           <>
             <Segmented<ThemeMode>
@@ -152,64 +153,80 @@ function DesignReference() {
           </>
         }
       />
-      <Space orientation="vertical" size={token.marginLG} style={{ width: '100%' }}>
-        <Card title="Colour tokens" size="small">
-          <Row gutter={[token.marginSM, token.marginSM]}>
-            {TOKENS.map((k) => (
-              <Col key={k} xs={12} sm={8} md={6} lg={4}>
-                <div data-token={k} style={{ height: 48, borderRadius: tk.radius.md, background: token[k], border: tk.line('hairline') }} />
-                <Typography.Text style={{ fontSize: tk.type.caption.fontSize, display: 'block', marginTop: tk.space[1] }}>{k}</Typography.Text>
-                <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
-                  {String(token[k])}
+      <Flex vertical gap={tk.space[6]}>
+        <Card title="Colour roles" size="small">
+          <Typography.Paragraph type="secondary">
+            Every colour is a role in <Typography.Text code>tk.color</Typography.Text>, which follows the theme with no hook. A canvas or an antd
+            number reads <Typography.Text code>useResolved()</Typography.Text>; print and email read <Typography.Text code>PRINT</Typography.Text>.
+          </Typography.Paragraph>
+          <Flex vertical gap={tk.space[4]}>
+            {SWATCHES.map(({ group, roles }) => (
+              <div key={group}>
+                <Typography.Text strong style={{ display: 'block', marginBottom: tk.space[2] }}>
+                  {group}
                 </Typography.Text>
-              </Col>
+                <Row gutter={[r.space[3], r.space[3]]}>
+                  {roles.map((role) => (
+                    <Col key={role} xs={12} sm={8} md={6} lg={4}>
+                      <div data-token={role} style={{ height: tk.space[12], borderRadius: tk.radius.md, background: roleAt(tk.color, role), border: tk.line('hairline') }} />
+                      <Typography.Text className="mono" translate="no" style={{ ...tk.type.caption, display: 'block', marginTop: tk.space[1] }}>
+                        {role}
+                      </Typography.Text>
+                      <Typography.Text type="secondary" className="mono" translate="no" style={tk.type.caption}>
+                        {roleAt(r.color, role)}
+                      </Typography.Text>
+                    </Col>
+                  ))}
+                </Row>
+              </div>
             ))}
-          </Row>
+          </Flex>
         </Card>
 
         <Card title="Type scale" size="small">
           <Typography.Paragraph type="secondary">
-            Six sizes, 12 px the floor. Compact keeps them; only heights and spacing shrink. In code use the token (
-            <Typography.Text code>token.fontSizeSM</Typography.Text>) or, outside a component and in CSS, its variable (
-            <Typography.Text code>var(--ant-font-size-sm)</Typography.Text>), never a number.
+            Inter in ten styles, 12 px the floor. Compact keeps them; only heights and spacing shrink. In code spread the style (
+            <Typography.Text code>{'...tk.type.label'}</Typography.Text>) or take its size (<Typography.Text code>tk.type.label.fontSize</Typography.Text>);
+            in CSS read its variable (<Typography.Text code>var(--t-label)</Typography.Text>). Never a number.
           </Typography.Paragraph>
           <Table
             size="small"
             pagination={false}
-            rowKey="token"
-            dataSource={TYPE_SCALE.map((t) => ({ ...t, px: token[t.token] }))}
+            rowKey="name"
+            scroll={{ x: 'max-content' }}
+            dataSource={TYPE_ORDER.map((name) => ({ name, ...TYPE[name], use: TYPE_USE[name] }))}
             columns={[
-              { title: 'Size', dataIndex: 'px', width: 70, align: 'right', render: (v: number) => <span className="mono" translate="no">{v} px</span> },
+              { title: 'Size', dataIndex: 'size', width: 70, align: 'right', render: (v: number) => <span className="mono" translate="no">{v} px</span> },
+              { title: 'Weight', dataIndex: 'weight', width: 70, align: 'right', render: (v: number) => <span className="mono" translate="no">{v}</span> },
               {
-                title: 'Token',
-                dataIndex: 'token',
-                width: 260,
-                render: (k: string, t) => (
+                title: 'Style',
+                dataIndex: 'name',
+                width: 200,
+                render: (name: TypeName) => (
                   <>
-                    <Typography.Text code>{k}</Typography.Text>
-                    {t.alias ? <Typography.Text code>{t.alias}</Typography.Text> : null}
-                    <div className="text-muted mono" translate="no" style={{ fontSize: tk.type.caption.fontSize }}>
-                      var(--ant-{kebab(k)})
+                    <Typography.Text code>tk.type.{name}</Typography.Text>
+                    <div className="text-muted mono" translate="no" style={tk.type.caption}>
+                      var(--t-{name})
                     </div>
                   </>
                 ),
               },
               { title: 'Use', dataIndex: 'use' },
-              { title: 'Sample', key: 'sample', render: (_, t) => <span style={{ fontSize: t.px, lineHeight: 1.3 }}>Hospital Block B</span> },
+              { title: 'Sample', key: 'sample', render: (_, t) => <span style={tk.type[t.name]}>Hospital Block B</span> },
             ]}
           />
           <Typography.Paragraph style={{ marginTop: tk.space[4], marginBottom: 0 }}>
             Headings: level 1 is {tk.type.display.fontSize} px, 2 is {tk.type.heading.fontSize}, 3 is {tk.type.subhead.fontSize}, 4 is {tk.type.lead.fontSize} and 5 is{' '}
             {tk.type.body.fontSize}. A page title is an h1 drawn at {tk.type.heading.fontSize} px.
           </Typography.Paragraph>
-          <Space size={token.marginLG} wrap style={{ marginTop: tk.space[3] }}>
+          <Flex gap={tk.space[6]} wrap style={{ marginTop: tk.space[3] }}>
             <Typography.Text type="secondary">Secondary</Typography.Text>
             <Typography.Text type="success">Success</Typography.Text>
             <Typography.Text type="warning">Warning</Typography.Text>
             <Typography.Text type="danger">Danger</Typography.Text>
             <Typography.Link href="/design">Link</Typography.Link>
             <Money value={'18650000'} />
-          </Space>
+          </Flex>
         </Card>
 
         <Card title="Targets" size="small">
@@ -217,7 +234,7 @@ function DesignReference() {
             Every control is at least 24 px high (WCAG 2.5.8) in both densities, and 44 px on a touch screen. Icon buttons side by side keep a gap
             between them.
           </Typography.Paragraph>
-          <Row gutter={[token.marginLG, token.margin]}>
+          <Row gutter={[r.space[6], r.space[4]]}>
             <Col xs={24} md={12}>
               <ConfigProvider theme={makeTheme({ dark, compact: false })}>
                 <TargetSample label="Comfortable" />
@@ -234,17 +251,16 @@ function DesignReference() {
         <Card title="Colour for exceptions" size="small">
           <Typography.Paragraph type="secondary">
             Numbers are neutral text. Colour marks only an exception: late, overdue, over budget, rejected, a fall that matters. A figure that is just a
-            total or a count stays neutral. Tags keep their status colours, since they carry a word too. Coloured text uses the text tokens (
-            <Typography.Text code>colorErrorText</Typography.Text>), never <Typography.Text code>colorWarning</Typography.Text> or{' '}
-            <Typography.Text code>colorSuccess</Typography.Text>.
+            total or a count stays neutral. Tags keep their status colours, since they carry a word too. Coloured text is a tone's text role (
+            <Typography.Text code>tk.color.tone.danger.fg</Typography.Text>), never its <Typography.Text code>solid</Typography.Text> fill.
           </Typography.Paragraph>
-          <Row gutter={[token.marginLG, token.margin]}>
+          <Row gutter={[r.space[6], r.space[4]]}>
             <Col xs={24} md={12}>
               <Flex align="center" gap={tk.space[2]} style={{ marginBottom: tk.space[3] }}>
                 <CheckCircleFilled style={{ color: tk.color.tone.success.solid }} aria-hidden />
                 <Typography.Text strong>Correct</Typography.Text>
               </Flex>
-              <Row gutter={[token.margin, token.margin]}>
+              <Row gutter={[r.space[4], r.space[4]]}>
                 <Col span={8}>
                   <Statistic title="Contract value" value={formatINRCompact(592700000)} styles={{ content: { fontSize: tk.type.subhead.fontSize } }} />
                 </Col>
@@ -264,7 +280,7 @@ function DesignReference() {
                 <CloseCircleFilled style={{ color: tk.color.tone.danger.solid }} aria-hidden />
                 <Typography.Text strong>Incorrect</Typography.Text>
               </Flex>
-              <Row gutter={[token.margin, token.margin]}>
+              <Row gutter={[r.space[4], r.space[4]]}>
                 <Col span={8}>
                   <Statistic title="Contract value" value={formatINRCompact(592700000)} styles={{ content: { fontSize: tk.type.subhead.fontSize, color: tk.color.tone.success.fg } }} />
                 </Col>
@@ -284,12 +300,12 @@ function DesignReference() {
 
         <Card title="No cards inside cards" size="small">
           <Typography.Paragraph type="secondary">
-            A card is one surface. Its parts are sections: a hairline in <Typography.Text code>colorBorderSecondary</Typography.Text> above, a title
+            A card is one surface. Its parts are sections: a hairline (<Typography.Text code>tk.line('hairline')</Typography.Text>) above, a title
             and the content (<Typography.Text code>Section</Typography.Text> and <Typography.Text code>FigureBlock</Typography.Text> in
             components/common/Section.tsx). A project tab and a record are already a surface, so the blocks in them are sections, never cards of their
             own.
           </Typography.Paragraph>
-          <Row gutter={[token.marginLG, token.margin]}>
+          <Row gutter={[r.space[6], r.space[4]]}>
             <Col xs={24} md={12}>
               <Flex vertical gap={tk.space[4]}>
                 <Section title="Agreement" extra={<Button size="small">Edit</Button>}>
@@ -334,7 +350,7 @@ function DesignReference() {
           </Flex>
         </Card>
 
-        <Row gutter={[token.margin, token.margin]}>
+        <Row gutter={[r.space[4], r.space[4]]}>
           <Col xs={24} md={8}>
             <Card size="small">
               <Statistic title="Total contract value" value={formatINRCompact(592700000)} />
@@ -354,7 +370,7 @@ function DesignReference() {
         </Row>
 
         <Card title="Form" size="small">
-          <Row gutter={[token.margin, token.margin]}>
+          <Row gutter={[r.space[4], r.space[4]]}>
             <Col xs={24} md={8}>
               <Input placeholder="Search work, issues, people" aria-label="Search" />
             </Col>
@@ -383,7 +399,7 @@ function DesignReference() {
           />
         </Card>
 
-        <Row gutter={[token.margin, token.margin]}>
+        <Row gutter={[r.space[4], r.space[4]]}>
           <Col xs={24} md={12}>
             <Card title="Record" size="small">
               <StageBar
@@ -396,16 +412,16 @@ function DesignReference() {
           </Col>
           <Col xs={24} md={12}>
             <Card title="Messages and empty" size="small">
-              <Space orientation="vertical" style={{ width: '100%' }}>
+              <Flex vertical gap={tk.space[2]}>
                 <Alert type="info" showIcon title="1 transfer on the way" />
                 <Alert type="warning" showIcon title="2 activities are delayed" />
                 <Alert type="error" showIcon title={`Vendor payable ${formatINRCompact(1326000)} overdue`} />
                 <Empty description="No entries yet" />
-              </Space>
+              </Flex>
             </Card>
           </Col>
         </Row>
-      </Space>
+      </Flex>
     </div>
   );
 }

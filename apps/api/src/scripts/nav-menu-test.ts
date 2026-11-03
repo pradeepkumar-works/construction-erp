@@ -28,6 +28,15 @@ import {
   navNodeForPath,
   navSettingsFrom,
   navSettingsOf,
+  contrastOf,
+  inkFor,
+  mixHex,
+  navFillProblem,
+  nightFillOf,
+  readNavFill,
+  readableFill,
+  weakestContrast,
+  type NavFill,
   type NavUser,
 } from '@erp/shared';
 
@@ -180,6 +189,51 @@ test("the phone's Home tabs: every module has one, each page a user may open is 
     ['Safety', 'QC'],
     "a module's part takes its sub-module's name, a whole module the company's",
   );
+});
+
+test('menu colours: a company colour is kept only with its own palette, and only when it reads back', () => {
+  const fill = { kind: 'GRADIENT', from: '#0b1f3a', to: '#3B2566', angle: 135 };
+  assert.deepEqual(navSettingsFrom({ navPalette: 'CUSTOM', navFill: fill, navSidebarLook: 'FLOATING' }), {
+    ...DEFAULT_NAV_SETTINGS,
+    sidebarLook: 'FLOATING',
+    palette: 'CUSTOM',
+    fill: { kind: 'GRADIENT', from: '#0B1F3A', to: '#3B2566', angle: 135 },
+  });
+  // A palette of ours drops any stored fill; a company colour that no longer reads back is Nirmaan's own again.
+  assert.equal(navSettingsFrom({ navPalette: 'NAVY', navFill: fill }).fill, null);
+  assert.deepEqual(navSettingsFrom({ navPalette: 'CUSTOM', navFill: { kind: 'GRADIENT', from: '#0B1F3A', to: 'red', angle: 135 } }), DEFAULT_NAV_SETTINGS);
+  assert.equal(readNavFill({ kind: 'GRADIENT', from: '#0B1F3A', to: '#3B2566', angle: 45 }), null);
+  assert.equal(readNavFill({ kind: 'SOLID', color: '#0B1F3' }), null);
+  assert.ok(!isDefaultNav({ ...DEFAULT_NAV_SETTINGS, palette: 'FOREST' }));
+  assert.ok(!isDefaultNav({ ...DEFAULT_NAV_SETTINGS, sidebarLook: 'HEADER' }));
+});
+
+test('menu colours: the ink is the one that keeps the captions at 4.5:1 over the whole fill', () => {
+  assert.equal(contrastOf('#000000', '#FFFFFF').toFixed(1), '21.0');
+  assert.equal(mixHex('#000000', '#FFFFFF', 0.5), '#808080');
+  assert.equal(inkFor({ kind: 'SOLID', color: '#0B1F3A' }), 'light');
+  assert.equal(inkFor({ kind: 'SOLID', color: '#F3EEE4' }), 'dark');
+  // Nirmaan blue is too bright for white captions and too dark for black ones: refused, with a readable shade offered.
+  const blue: NavFill = { kind: 'SOLID', color: '#1E63D6' };
+  assert.equal(inkFor(blue), null);
+  assert.match(navFillProblem(blue) ?? '', /hard to read/);
+  const fixed = readableFill(blue);
+  assert.equal(navFillProblem(fixed), null);
+  assert.ok(weakestContrast(fixed, inkFor(fixed)!) >= 4.5);
+  // Black into white has no ink for both ends; the words say to pick two of a kind.
+  const apart: NavFill = { kind: 'GRADIENT', from: '#000000', to: '#FFFFFF', angle: 90 };
+  assert.match(navFillProblem(apart) ?? '', /too far apart/);
+  assert.equal(navFillProblem(readableFill(apart)), null);
+  assert.match(navFillProblem({ kind: 'SOLID' }) ?? '', /Choose a colour/);
+});
+
+test('menu colours: a light company colour is a tinted near-black on the night, a dark one a step deeper', () => {
+  const sand = nightFillOf({ kind: 'SOLID', color: '#F3EEE4' });
+  assert.equal(inkFor(sand), 'light');
+  assert.ok(contrastOf(sand.kind === 'SOLID' ? sand.color : '', '#000000') < 2);
+  const navy = nightFillOf({ kind: 'GRADIENT', from: '#0B1F3A', to: '#3B2566', angle: 180 });
+  assert.deepEqual(navy, { kind: 'GRADIENT', from: mixHex('#0B1F3A', '#000000', 0.8), to: mixHex('#3B2566', '#000000', 0.8), angle: 180 });
+  assert.equal(navFillProblem({ kind: 'GRADIENT', from: '#0B1F3A', to: '#3B2566', angle: 180 }), null);
 });
 
 let failed = 0;

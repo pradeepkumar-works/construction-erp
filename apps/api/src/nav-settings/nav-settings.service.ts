@@ -1,17 +1,34 @@
 import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
-import { NAV_LAYOUT_LABELS, NAV_LOOK_LABELS, NAV_MODULE_SET_LABELS, canManageModules, cleanNavNames, navNamesProblem, navSettingsFrom, type NavLook, type NavSettingsDto } from '@erp/shared';
+import {
+  NAV_LAYOUT_LABELS,
+  NAV_LOOK_LABELS,
+  NAV_MODULE_SET_LABELS,
+  NAV_PALETTE_LABELS,
+  NAV_SIDEBAR_LOOK_LABELS,
+  canManageModules,
+  cleanNavNames,
+  navFillProblem,
+  navNamesProblem,
+  navSettingsFrom,
+  readNavFill,
+  type NavLook,
+  type NavSettingsDto,
+} from '@erp/shared';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../common/audit.service';
 import { RequestUser } from '../common/current-user';
 import { SaveNavSettingsDto } from './nav-settings.dto';
 
-const NAV_SELECT = { navLayout: true, navLook: true, navModuleSet: true, navNames: true, navPersonalLook: true } as const;
+const NAV_SELECT = { navLayout: true, navLook: true, navSidebarLook: true, navPalette: true, navFill: true, navModuleSet: true, navNames: true, navPersonalLook: true } as const;
 
 /** What changed, for the audit log ("Top bar, Light frame; 2 module names"). */
 function changeNote(before: NavSettingsDto, after: NavSettingsDto): string {
   const parts: string[] = [];
   if (before.layout !== after.layout) parts.push(`menu ${NAV_LAYOUT_LABELS[after.layout].toLowerCase()}`);
   if (before.look !== after.look) parts.push(`look ${NAV_LOOK_LABELS[after.look]}`);
+  if (before.sidebarLook !== after.sidebarLook) parts.push(`sidebar ${NAV_SIDEBAR_LOOK_LABELS[after.sidebarLook].toLowerCase()}`);
+  if (before.palette !== after.palette || JSON.stringify(before.fill) !== JSON.stringify(after.fill)) parts.push(`colours ${NAV_PALETTE_LABELS[after.palette]}`);
   if (before.moduleSet !== after.moduleSet) parts.push(`modules ${NAV_MODULE_SET_LABELS[after.moduleSet].toLowerCase()}`);
   if (JSON.stringify(before.names) !== JSON.stringify(after.names)) parts.push(`${Object.keys(after.names).length} module names of the company's own`);
   if (before.personalLook !== after.personalLook) parts.push(after.personalLook ? 'people choose their own look' : 'one look for everyone');
@@ -34,11 +51,34 @@ export class NavSettingsService {
     if (!canManageModules(user.roleKey)) throw new ForbiddenException('Only admins change the menu and its names');
     const problem = navNamesProblem(dto.names);
     if (problem) throw new BadRequestException(problem);
+    const palette = dto.palette ?? 'QUIET';
+    if (palette === 'CUSTOM') {
+      const fillProblem = navFillProblem(dto.fill);
+      if (fillProblem) throw new BadRequestException(fillProblem);
+    }
     const before = await this.get(user);
-    const after: NavSettingsDto = { layout: dto.layout, look: dto.look, moduleSet: dto.moduleSet, names: cleanNavNames(dto.names), personalLook: dto.personalLook };
+    const after: NavSettingsDto = {
+      layout: dto.layout,
+      look: dto.look,
+      sidebarLook: dto.sidebarLook ?? 'RAIL',
+      palette,
+      fill: palette === 'CUSTOM' ? readNavFill(dto.fill) : null,
+      moduleSet: dto.moduleSet,
+      names: cleanNavNames(dto.names),
+      personalLook: dto.personalLook,
+    };
     await this.prisma.organization.update({
       where: { id: user.organizationId },
-      data: { navLayout: after.layout, navLook: after.look, navModuleSet: after.moduleSet, navNames: after.names, navPersonalLook: after.personalLook },
+      data: {
+        navLayout: after.layout,
+        navLook: after.look,
+        navSidebarLook: after.sidebarLook,
+        navPalette: after.palette,
+        navFill: after.fill ?? Prisma.DbNull,
+        navModuleSet: after.moduleSet,
+        navNames: after.names,
+        navPersonalLook: after.personalLook,
+      },
     });
     await this.audit.log(user, 'COMPANY', user.organizationId, 'MENU', changeNote(before, after));
     return after;
