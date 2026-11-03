@@ -72,6 +72,35 @@ test('a site engineer asks for Correspondence from Discover, and the admin decli
   expect(launcher.requests.find((r) => r.nodeId === 'correspondence')).toMatchObject({ status: 'DECLINED', reply: 'Ask the project manager for copies instead' });
 });
 
+test('Grant waits until the person can really open the module, and their role is changed from the same dialog', async ({ page }) => {
+  const admin = await reset();
+  const email = `asks-payroll-${Date.now()}@e2e.test`;
+  const person = await api<{ id: string }>(admin, '/users', { method: 'POST', body: { email, fullName: 'Meena Asks', roleKey: 'SITE_ENGINEER', password: 'password123' } });
+  const meena = await apiToken(email);
+  const asked = await api<{ id: string }>(meena, '/launcher/access-requests', { method: 'POST', body: { nodeId: 'payroll', note: 'I run the site wages' } });
+  // Marking it granted while her role still does not open Payroll would tell her something untrue.
+  await expect(api(admin, `/launcher/access-requests/${asked.id}`, { method: 'PATCH', body: { status: 'GRANTED' } })).rejects.toThrow(/role, Site engineer, does not open Payroll/);
+
+  await signIn(page, 'admin@demo.com');
+  await page.goto('/home-tiles');
+  const row = page.getByRole('listitem').filter({ hasText: 'Meena Asks' }).filter({ has: page.getByRole('button', { name: 'Decline' }) });
+  await row.getByRole('button', { name: /^Grant/ }).click();
+  const grant = page.getByRole('dialog', { name: 'Grant Payroll to Meena Asks' });
+  await expect(grant).toContainText("Meena Asks's role, Site engineer, does not open Payroll. Give them one that does:");
+  await expect(grant.getByRole('button', { name: 'Mark granted' })).toBeDisabled();
+  await grant.getByRole('combobox', { name: 'New role for Meena Asks' }).click();
+  await page.locator('.ant-select-item-option').filter({ hasText: 'HR manager' }).click();
+  await grant.getByRole('button', { name: 'Change role' }).click();
+  await expect(grant).toContainText('opens Payroll now');
+  await grant.getByRole('button', { name: 'Mark granted' }).click();
+  await expect(grant).toBeHidden();
+
+  const told = await api<Notifications>(await apiToken(email), '/notifications?limit=20&typesVersion=6');
+  expect(told.items.some((n) => n.title === 'You can open Payroll now')).toBe(true);
+  const users = await api<{ items: { id: string; roleKey: string }[] }>(admin, `/users?search=${encodeURIComponent(email)}`);
+  expect(users.items.find((u) => u.id === person.id)?.roleKey).toBe('HR_MANAGER');
+});
+
 test('an admin features a module for everyone, and can keep locked modules out of Discover', async ({ page }) => {
   const admin = await reset();
   try {

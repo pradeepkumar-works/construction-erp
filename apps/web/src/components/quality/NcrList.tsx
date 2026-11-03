@@ -12,6 +12,8 @@ import { useNcrs } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
+import { ExportButton } from '@/components/common/ExportButton';
+import { downloadXlsx, exportFileName, fetchAllPages, type ExportColumn } from '@/lib/exportExcel';
 import { EmptyArt } from '@/components/common/EmptyArt';
 import { DataTable, type ListColumn } from '@/components/list/DataTable';
 import { useListFrame } from '@/components/list/useListFrame';
@@ -19,6 +21,7 @@ import { DueCell } from '@/components/list/DueCell';
 import { RecordLink } from '@/components/record/RecordLink';
 import { NcrStatusTag, SeverityTag } from './qualityUi';
 import { NcrFormModal } from './NcrFormModal';
+import { useNewIntent } from '@/lib/new-intent';
 
 const KEYS = ['status', 'severity', 'active', 'mine'] as const;
 
@@ -27,6 +30,26 @@ function Sub({ children }: { children: React.ReactNode }) {
 }
 
 /** Non-conformance reports, on the Quality page and a project's Quality tab. The drawer is the parent's, so tests can open NCRs too. */
+/** The NCR register for the client's audit: each one with its cause, actions and how it closed. */
+const EXPORT: ExportColumn<NcrDto>[] = [
+  { header: 'NCR', value: (n) => n.ncrNo, width: 16 },
+  { header: 'Project', value: (n) => n.projectName, width: 26 },
+  { header: 'Raised on', value: (n) => n.raisedOn, width: 12 },
+  { header: 'Title', value: (n) => n.title, width: 36 },
+  { header: 'Location', value: (n) => n.location, width: 22 },
+  { header: 'Severity', value: (n) => NCR_SEVERITY_LABELS[n.severity], width: 10 },
+  { header: 'Status', value: (n) => NCR_STATUS_LABELS[n.status], width: 14 },
+  { header: 'Raised by', value: (n) => (n.raisedByClient ? `${n.raisedByName} (client)` : n.raisedByName), width: 20 },
+  { header: 'Activity', value: (n) => n.activityName, width: 24 },
+  { header: 'Action by', value: (n) => n.actionByName, width: 20 },
+  { header: 'Due', value: (n) => n.dueDate, width: 12 },
+  { header: 'Cause', value: (n) => n.cause, width: 30 },
+  { header: 'Corrective action', value: (n) => n.correctiveAction, width: 30 },
+  { header: 'Preventive action', value: (n) => n.preventiveAction, width: 30 },
+  { header: 'Closed on', value: (n) => n.closedAt?.slice(0, 10), width: 12 },
+  { header: 'Rework cost', value: (n) => (n.reworkCost === null ? null : Number(n.reworkCost)), width: 12 },
+];
+
 export function NcrList({ projectId: fixedProject, onOpen }: { projectId?: string; onOpen: (id: string) => void }) {
   const { user } = useAuth();
   const [formOpen, setFormOpen] = useState(false);
@@ -82,9 +105,7 @@ export function NcrList({ projectId: fixedProject, onOpen }: { projectId?: strin
   const severity = page.filters.severity as NcrSeverity | undefined;
   const active = page.filters.active === '1';
   const mine = page.filters.mine === '1';
-  const { data, isLoading, isFetching, error, refetch } = useNcrs({
-    page: page.params.page,
-    pageSize: page.params.pageSize,
+  const listFilters = {
     q: page.params.q,
     sortBy: page.params.sortBy,
     sortOrder: page.params.sortOrder,
@@ -93,8 +114,11 @@ export function NcrList({ projectId: fixedProject, onOpen }: { projectId?: strin
     severity,
     active: active || undefined,
     mine: mine || undefined,
-  });
+  };
+  const { data, isLoading, isFetching, error, refetch } = useNcrs({ ...listFilters, page: page.params.page, pageSize: page.params.pageSize });
   const filtered = !!(status || severity || active || mine || page.params.q);
+
+  useNewIntent('ncr', !!user && canRaiseNcr(user.roleKey), () => setFormOpen(true));
 
   const newButton = user && canRaiseNcr(user.roleKey) ? (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
@@ -113,7 +137,18 @@ export function NcrList({ projectId: fixedProject, onOpen }: { projectId?: strin
         onSearch={page.setSearch}
         searchPlaceholder="Search no., title, location"
         searchLabel="Search NCRs"
-        extra={newButton}
+        extra={
+          <>
+            <ExportButton
+              onExport={async () => {
+                const rows = await fetchAllPages<NcrDto>('/quality/ncrs', listFilters);
+                await downloadXlsx(exportFileName('ncrs'), 'NCRs', EXPORT, rows);
+                return rows.length;
+              }}
+            />
+            {newButton}
+          </>
+        }
       >
         <Select<NcrStatus> allowClear placeholder="All statuses" aria-label="Status" value={status} onChange={(v) => page.setFilter('status', v)} style={{ width: 150 }} options={NCR_STATUSES.map((s) => ({ value: s, label: NCR_STATUS_LABELS[s] }))} />
         <Select<NcrSeverity> allowClear placeholder="Any severity" aria-label="Severity" value={severity} onChange={(v) => page.setFilter('severity', v)} style={{ width: 140 }} options={NCR_SEVERITIES.map((s) => ({ value: s, label: NCR_SEVERITY_LABELS[s] }))} />

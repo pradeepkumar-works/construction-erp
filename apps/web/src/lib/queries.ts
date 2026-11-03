@@ -4726,6 +4726,15 @@ export function useDecideAccess() {
   });
 }
 
+/** Gives someone who asked for a module a role that opens it, from the request itself (admins; audited by Users). */
+export function useChangeRoleForRequest() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (d: { userId: string; roleKey: RoleKey }) => (await api.patch(`/users/${d.userId}`, { roleKey: d.roleKey })).data,
+    onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: HOME_TILES_KEY }), qc.invalidateQueries({ queryKey: ['users'] })]),
+  });
+}
+
 /** Management dashboard: every contract project the caller sees, with its money from work done to cash and its health. */
 export const useManagementPortfolio = (enabled = true, vertical?: string) =>
   useQuery({ queryKey: ['management', 'portfolio', vertical ?? null], queryFn: async () => (await api.get<PortfolioDto>('/management/portfolio', { params: vertical ? { vertical } : {} })).data, enabled, placeholderData: keepPreviousData });

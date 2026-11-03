@@ -9,6 +9,33 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-access-grant',
+    date: '2026-11-03',
+    title: 'Granting access lets the person in',
+    points: [
+      'Grant on an access request now shows whether the person can open the module yet. If their role does not open it, pick one that does and change it from the same dialog; if the module is off, turn it on in Modules. It is marked granted only once they can really open it.',
+    ],
+  },
+  {
+    id: '2026-11-new-and-search',
+    date: '2026-11-03',
+    title: 'More to start from New, more to find in Search',
+    points: [
+      'New in the header now starts a project, a measurement, attendance, an inspection, a material test, an NCR, an incident, a permit to work, a drawing, an RFI and a variation from any page, for whoever may make one. Each module’s overview offers its own.',
+      'Search (Ctrl K) finds projects by code or name, material tests and NCRs by number, and variations.',
+    ],
+  },
+  {
+    id: '2026-11-books-export',
+    date: '2026-11-03',
+    title: 'Books, tenders and registers to Excel and print',
+    points: [
+      'The day book exports every voucher line to Excel. A cash book, bank book or ledger prints and exports for its period; a vendor’s or client’s ledger prints as a statement of account asking them to confirm the balance. A voucher prints for signatures.',
+      'A tender prints its priced BOQ for submission, and exports the priced BOQ, the rate analysis and the summary to Excel. The costs and margin stay off the print.',
+      'The drawing register, NCRs, tests, inspections and the inward and outward letters export to Excel.',
+    ],
+  },
+  {
     id: '2026-11-papers',
     date: '2026-11-03',
     title: 'Print the papers that leave the company',

@@ -386,6 +386,12 @@ GSTIN (its own, else its billing GSTIN), PAN, CIN and GST state. Anyone signed i
 hand out. `usePrintPaper` loads it with the record, so the click opens the window at once, and falls back to the name alone.
 A tax invoice carries what GST asks of one: both GSTINs, the place of supply (the customer's state), the HSN, CGST and SGST
 or IGST, the total in words and reverse charge. A note kept for the company (an RMC order's notes) stays off the paper.
+The books print too (`books/booksPrint.ts`): a voucher for signatures, and a ledger for the period as a cash book, bank book,
+ledger or, for a party (sundry creditors and debtors), a statement of account that asks the party to confirm the closing
+balance. A tender prints its priced BOQ for submission (`tenders/tenderPapers.ts`); its rate analysis, overheads and margin
+are the company's and go only to the Excel workbook (priced BOQ with each item's cost, the analysis line by line, the
+summary). The day book exports one row per voucher line; the drawing register, NCRs, tests, inspections and the inward and
+outward letters export every row the filters match, as the RFI list does.
 The older prints (RA bill, purchase order, work order and subcontractor bill, DPR, letter, transmittal, payslip) keep their
 own frames for now; a new one uses `printDocHtml`.
 
@@ -449,8 +455,12 @@ module to ask for still fits. A tile opens a drawer with the module's line and i
 `FormShell` modal with a note). **Requests** are `AccessRequest` rows (`HomeTilesService`, `POST /launcher/access-requests`):
 one waiting per person and module, refused for a module the role already opens or cannot ask for; each is audited and sends
 `ACCESS_REQUEST` to the company's admins, linking to Admin › Home tiles (`/home-tiles?request=<id>`). There is no grant of its
-own: an admin changes the person's role (Users) or turns the module on (Modules), then marks the request granted, or declines
+own: an admin changes the person's role or turns the module on (Modules), then marks the request granted, or declines
 it with a reason; the person gets an `ACCESS_REQUEST` notification (entity `ACCESS_DECISION`, opening Home) either way.
+Granted says "You can open it now", so it has to be true: each open request carries `grant`, `accessGrantCheck`
+(`@erp/shared/launcher.ts`) over the person's role, its approval rights (`ApprovalRightsService.rightsByRole`) and the company's
+modules, with the roles that would open it (narrowest first, Admin only when nothing else does). `decide` refuses Granted with
+`accessGrantProblem`'s words until the check passes, and the Grant dialog changes the role in place (`PATCH /users/:id`).
 
 **Admin › Home tiles** (`app/(app)/home-tiles`, `canManageUsers`) answers requests, holds the Discover switch, and marks
 each tile New (optionally until a day) or Featured, or back to as shipped (`PUT /launcher/flags/:nodeId`). Changes are

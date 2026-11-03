@@ -13,6 +13,7 @@ import {
   EditOutlined,
   MoreOutlined,
   PlusOutlined,
+  PrinterOutlined,
   RollbackOutlined,
   StopOutlined,
   ThunderboltOutlined,
@@ -54,6 +55,9 @@ import {
 } from "@/components/tenders/TenderDialogs";
 import { todayDate } from '@/lib/format';
 import { Money } from '@/components/common/Money';
+import { ExportButton } from '@/components/common/ExportButton';
+import { usePrintPaper } from '@/components/print/usePrintPaper';
+import { downloadTenderWorkbook, openPricedBoqPrint } from '@/components/tenders/tenderPapers';
 
 type Tab = "boq" | "bids" | "details";
 const pctNote = (pct: string | null | undefined) =>
@@ -101,6 +105,7 @@ function TenderView({ tender }: { tender: TenderDetailDto }) {
   const [returning, setReturning] = useState(false);
   const [making, setMaking] = useState(false);
   const [importing, setImporting] = useState(false);
+  const print = usePrintPaper();
   const [itemOpen, setItemOpen] = useState<{
     item: TenderItemDto | null;
   } | null>(null);
@@ -265,6 +270,14 @@ function TenderView({ tender }: { tender: TenderDetailDto }) {
         <Button icon={<EditOutlined />} onClick={() => setEditing(true)}>
           Edit
         </Button>
+      ) : null}
+      {t.items.length ? (
+        <>
+          <Button icon={<PrinterOutlined />} onClick={() => print((l) => openPricedBoqPrint(t, l))}>
+            Print priced BOQ
+          </Button>
+          <ExportButton onExport={() => downloadTenderWorkbook(t)} />
+        </>
       ) : null}
       {more.length ? (
         <Dropdown menu={{ items: more }} trigger={["click"]}>

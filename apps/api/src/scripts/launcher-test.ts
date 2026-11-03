@@ -8,6 +8,8 @@ import assert from 'node:assert/strict';
 import {
   DISCOVER_SHOWN,
   LAUNCHER_FLAG_NODES,
+  accessGrantCheck,
+  accessGrantProblem,
   byPosition,
   canRequestNav,
   discoverFor,
@@ -105,6 +107,28 @@ test('Discover holds at most six, and a request rides on its tile', () => {
   const request = { id: 'r1', nodeId: 'correspondence', status: 'OPEN' as const, reply: null, createdAt: `${TODAY}T05:00:00.000Z`, decidedAt: null };
   const entries = discoverFor({ roleKey: 'SITE_ENGINEER' }, { ...none, requests: [request] }, TODAY);
   assert.equal(entries.find((e) => e.node.id === 'correspondence')!.request, request);
+});
+
+test('Grant lets someone in only when their role and the company\'s modules open the module', () => {
+  const payroll = navNode('payroll')!;
+  // Their role does not open it: say which roles do, and never offer Admin when another role will do.
+  const blocked = accessGrantCheck({ roleKey: 'SITE_ENGINEER' }, payroll, (r) => ({ roleKey: r }));
+  assert.equal(blocked.openNow, false);
+  assert.equal(blocked.roleBlocks, true);
+  assert.equal(blocked.moduleOff, false);
+  assert.ok(blocked.rolesThatOpen.length > 0 && !blocked.rolesThatOpen.includes('ADMIN') && !blocked.rolesThatOpen.includes('SUPPLIER'), blocked.rolesThatOpen.join());
+  assert.equal(blocked.rolesThatOpen[0], 'HR_MANAGER', 'the narrowest role that opens it comes first');
+  assert.match(accessGrantProblem(blocked, 'Ravi', 'SITE_ENGINEER', 'Payroll')!, /^Ravi's role, Site engineer, does not open Payroll; .*Change their role in Users, then mark it granted\.$/);
+  // Once their role opens it, Grant goes through.
+  const hr = accessGrantCheck({ roleKey: 'HR_MANAGER' }, payroll, (r) => ({ roleKey: r }));
+  assert.equal(hr.openNow, true);
+  assert.equal(accessGrantProblem(hr, 'Ravi', 'HR_MANAGER', 'Payroll'), null);
+  // The module is off: turn it on first, even for a role that would open it.
+  const off = accessGrantCheck({ roleKey: 'HR_MANAGER', modulesOff: ['payroll'] }, payroll, (r) => ({ roleKey: r }));
+  assert.deepEqual([off.openNow, off.moduleOff, off.roleBlocks], [false, true, false]);
+  assert.equal(accessGrantProblem(off, 'Ravi', 'HR_MANAGER', 'Payroll'), 'Payroll is turned off for the company. Turn it on in Modules, then mark it granted.');
+  const both = accessGrantCheck({ roleKey: 'SITE_ENGINEER', modulesOff: ['payroll'] }, payroll, (r) => ({ roleKey: r }));
+  assert.match(accessGrantProblem(both, 'Ravi', 'SITE_ENGINEER', 'Payroll')!, /^Payroll is turned off for the company\. Turn it on in Modules\. Ravi's role, Site engineer, does not open Payroll.*Change their role in Users, then mark it granted\.$/);
 });
 
 let failed = 0;

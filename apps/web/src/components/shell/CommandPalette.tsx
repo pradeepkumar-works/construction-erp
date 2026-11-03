@@ -5,12 +5,15 @@ import { useRouter } from 'next/navigation';
 import { Modal } from 'antd';
 import {
   AlertOutlined,
+  AuditOutlined,
   BankOutlined,
   BellOutlined,
+  ExperimentOutlined,
   FileTextOutlined,
   FolderOpenOutlined,
   HistoryOutlined,
   InboxOutlined,
+  IssuesCloseOutlined,
   LoadingOutlined,
   ProjectOutlined,
   MailOutlined,
@@ -48,7 +51,7 @@ interface Target {
   go: () => void;
 }
 
-const KIND_ICONS: Partial<Record<SearchKind, NavIcon>> = { risk: AlertOutlined, document: FolderOpenOutlined, rfi: QuestionCircleOutlined, letter: MailOutlined, vendor: ShopOutlined, client: BankOutlined, item: InboxOutlined, person: UserOutlined };
+const KIND_ICONS: Partial<Record<SearchKind, NavIcon>> = { project: ProjectOutlined, quality_test: ExperimentOutlined, ncr: IssuesCloseOutlined, variation: AuditOutlined, risk: AlertOutlined, document: FolderOpenOutlined, rfi: QuestionCircleOutlined, letter: MailOutlined, vendor: ShopOutlined, client: BankOutlined, item: InboxOutlined, person: UserOutlined };
 const STATUSES = new Set<string>(SUBMISSION_STATUSES);
 /** How many recently opened records and pages lead the list before anything is typed. */
 const RECENT_SHOWN = 8;

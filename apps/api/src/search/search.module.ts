@@ -20,9 +20,12 @@ import { MaterialApprovalsModule } from '../material-approvals/material-approval
 import { CorrespondenceModule } from '../correspondence/correspondence.module';
 import { SearchController } from './search.controller';
 import { SearchService } from './search.service';
+import { ProjectsModule } from '../projects/projects.module';
+import { QualityModule } from '../quality/quality.module';
+import { VariationsModule } from '../variations/variations.module';
 
 @Module({
-  imports: [MaterialRequestsModule, PurchasingModule, SubcontractsModule, RaBillsModule, MeasurementsModule, ExpensesModule, InspectionsModule, RisksModule, DocumentsModule, RfisModule, VendorsModule, ClientsModule, StockModule, StaffModule, PayablesModule, TendersModule, MeetingsModule, MaterialApprovalsModule, CorrespondenceModule],
+  imports: [MaterialRequestsModule, PurchasingModule, SubcontractsModule, RaBillsModule, MeasurementsModule, ExpensesModule, InspectionsModule, RisksModule, DocumentsModule, RfisModule, VendorsModule, ClientsModule, StockModule, StaffModule, PayablesModule, TendersModule, MeetingsModule, MaterialApprovalsModule, CorrespondenceModule, ProjectsModule, QualityModule, VariationsModule],
   controllers: [SearchController],
   providers: [SearchService],
   exports: [SearchService],

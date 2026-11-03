@@ -7,7 +7,7 @@ import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { ACCOUNT_GROUP_LABELS, isMoneyGroup } from '@erp/shared';
-import { useLedger, useLedgerAccounts } from '@/lib/queries';
+import { useLedger, useLedgerAccounts, useProject } from '@/lib/queries';
 import { useProjectScope } from '@/lib/project-scope';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { LedgerView } from './LedgerView';
@@ -35,6 +35,7 @@ export function Ledgers({ money = false }: { money?: boolean }) {
   const [projectId, setProjectId] = useProjectScope();
   const choices = (accounts ?? []).filter((a) => (money ? isMoneyGroup(a.group) : true));
   const accountId = picked ?? (money ? (choices.find((a) => a.group === 'CASH_IN_HAND') ?? choices[0])?.id : undefined);
+  const project = useProject(money ? undefined : projectId);
   const ledger = useLedger({ accountId, from: range[0].format('YYYY-MM-DD'), to: range[1].format('YYYY-MM-DD'), projectId: money ? undefined : projectId });
   return (
     <div style={{ padding: tk.space[4] }}>
@@ -68,6 +69,7 @@ export function Ledgers({ money = false }: { money?: boolean }) {
         error={ledger.error}
         refetch={() => void ledger.refetch()}
         emptyText={accountId ? 'No entries in this period' : 'Choose an account to see its ledger'}
+        projectName={!money && projectId ? project.data?.name : null}
       />
     </div>
   );

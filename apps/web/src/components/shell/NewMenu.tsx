@@ -4,9 +4,9 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Dropdown } from 'antd';
 import type { MenuProps } from 'antd';
-import { AccountBookOutlined, AlertOutlined, BankOutlined, CarOutlined, CommentOutlined, ContainerOutlined, CopyOutlined, FileDoneOutlined, FileProtectOutlined, FileSearchOutlined, FileTextOutlined, LineChartOutlined, MailOutlined, PlusOutlined, SafetyCertificateOutlined, ShoppingCartOutlined, TrophyOutlined, WalletOutlined } from '@/components/common/icons';
+import { AccountBookOutlined, AlertOutlined, AuditOutlined, BankOutlined, CarOutlined, CheckSquareOutlined, ColumnWidthOutlined, CommentOutlined, ContainerOutlined, CopyOutlined, ExperimentOutlined, FileAddOutlined, FileDoneOutlined, FileProtectOutlined, FileSearchOutlined, FileTextOutlined, IssuesCloseOutlined, LineChartOutlined, MailOutlined, PlusOutlined, ProjectOutlined, QuestionCircleOutlined, SafetyCertificateOutlined, SafetyOutlined, ShoppingCartOutlined, TeamOutlined, TrophyOutlined, WalletOutlined, WarningOutlined } from '@/components/common/icons';
 import type { AuthUser } from '@erp/shared';
-import { canKeepBooks, canManageMachineLoans, canSellRmc, canPrepareBill, canPurchase, canRaiseRisk, canRequestFunds, canRequestPayment, canSubmitExpense, canManageTenders, canRunSubcontractEnquiries, canRecordMeetings, canRaiseMaterialApprovals, canManageDocuments, canViewLetters, canViewPayables, isGuest, pathIsOff } from '@erp/shared';
+import { canKeepBooks, canManageMachineLoans, canManageProjects, canManageVariations, canMeasure, canRaiseNcr, canRaiseRfi, canRecordAttendance, canRecordTest, canReportSafety, canRequestInspection, canSellRmc, canPrepareBill, canPurchase, canRaiseRisk, canRequestFunds, canRequestPayment, canSubmitExpense, canManageTenders, canRunSubcontractEnquiries, canRecordMeetings, canRaiseMaterialApprovals, canManageDocuments, canViewLetters, canViewPayables, isGuest, pathIsOff } from '@erp/shared';
 import { requestNew, type NewKind } from '@/lib/new-intent';
 
 export interface NewEntry {
@@ -28,19 +28,37 @@ export function newEntriesFor(user: AuthUser): NewEntry[][] {
     { kind: 'dpr', label: 'Daily report', action: 'New daily report (DPR)', href: '/dpr', icon: <FileTextOutlined /> },
     { kind: 'progress', label: 'Progress entry', action: 'New progress entry', href: '/progress', icon: <LineChartOutlined /> },
     { kind: 'material-request', label: 'Indent', action: 'New indent', keywords: 'material request mr', href: '/material-requests', icon: <ShoppingCartOutlined /> },
+    ...(canRecordAttendance(role) ? [{ kind: 'head-count' as const, label: 'Attendance', action: 'Record attendance', keywords: 'head count labour manpower', href: '/attendance', icon: <TeamOutlined /> }] : []),
+    ...(canMeasure(role) ? [{ kind: 'measurement' as const, label: 'Measurement', action: 'New measurement', keywords: 'measurement book', href: '/measurements', icon: <ColumnWidthOutlined /> }] : []),
     ...(canSubmitExpense(role) ? [{ kind: 'expense' as const, label: 'Site expense', action: 'New site expense', href: '/expenses', icon: <WalletOutlined /> }] : []),
     ...(canRaiseRisk(role) ? [{ kind: 'risk' as const, label: 'Delay or risk', action: 'Record delay or risk', href: '/risks', icon: <AlertOutlined /> }] : []),
     ...(canRecordMeetings(role) ? [{ kind: 'meeting' as const, label: 'Meeting', action: 'Record meeting', href: '/meetings', icon: <CommentOutlined /> }] : []),
     ...(canRaiseMaterialApprovals(role) ? [{ kind: 'material-approval' as const, label: 'Material approval', action: 'Request material approval', href: '/material-approvals', icon: <SafetyCertificateOutlined /> }] : []),
     ...(canRequestFunds(role) ? [{ kind: 'fund-request' as const, label: 'Fund request', action: 'Request funds', href: '/imprest?tab=funds', icon: <BankOutlined /> }] : []),
   ];
+  // Quality, safety and drawings: the same helpers as the lists' own New buttons.
+  const checks: NewEntry[] = [
+    ...(canRequestInspection(role) ? [{ kind: 'inspection' as const, label: 'Inspection', action: 'Request inspection', keywords: 'qa qc hold point', href: '/inspections?tab=inspections', icon: <CheckSquareOutlined /> }] : []),
+    ...(canRecordTest(role) ? [{ kind: 'test' as const, label: 'Material test', action: 'Record test', keywords: 'cube slump qa qc', href: '/inspections?tab=tests', icon: <ExperimentOutlined /> }] : []),
+    ...(canRaiseNcr(role) ? [{ kind: 'ncr' as const, label: 'NCR', action: 'New NCR', keywords: 'non conformance', href: '/inspections?tab=ncrs', icon: <IssuesCloseOutlined /> }] : []),
+    ...(canReportSafety(role)
+      ? [
+          { kind: 'incident' as const, label: 'Incident', action: 'Report incident', keywords: 'near miss accident safety', href: '/safety?tab=incidents', icon: <WarningOutlined /> },
+          { kind: 'permit' as const, label: 'Permit to work', action: 'Request permit', keywords: 'ptw height hot work confined', href: '/safety?tab=permits', icon: <SafetyOutlined /> },
+        ]
+      : []),
+    ...(canManageDocuments(role) ? [{ kind: 'document' as const, label: 'Drawing or document', action: 'New drawing or document', keywords: 'drawing register revision', href: '/documents?tab=register', icon: <FileAddOutlined /> }] : []),
+    ...(canRaiseRfi(role) ? [{ kind: 'rfi' as const, label: 'RFI', action: 'New RFI', keywords: 'request for information question designer', href: '/documents?tab=rfis', icon: <QuestionCircleOutlined /> }] : []),
+  ];
   const office: NewEntry[] = [
+    ...(canManageProjects(role) ? [{ kind: 'project' as const, label: 'Project', action: 'New project', keywords: 'site contract', href: '/projects', icon: <ProjectOutlined /> }] : []),
     ...(canPurchase(role) ? [{ kind: 'purchase-order' as const, label: 'Purchase order', action: 'New purchase order (PO)', href: '/purchase-orders', icon: <ContainerOutlined /> }] : []),
     ...(canManageTenders(role) ? [{ kind: 'tender' as const, label: 'Tender', action: 'Record tender', href: '/tenders', icon: <TrophyOutlined /> }] : []),
     ...(canManageDocuments(role) ? [{ kind: 'design-submission' as const, label: 'Design submission', action: 'New design submission', href: '/design-submissions', icon: <FileProtectOutlined /> }] : []),
     ...(canManageDocuments(role) ? [{ kind: 'controlled-copy' as const, label: 'Controlled copy', action: 'Issue controlled copies', href: '/controlled-copies', icon: <CopyOutlined /> }] : []),
     ...(canRunSubcontractEnquiries(role) ? [{ kind: 'subcontract-enquiry' as const, label: 'Subcontract enquiry', action: 'New subcontract enquiry', href: '/subcontract-enquiries', icon: <FileSearchOutlined /> }] : []),
     ...(canPrepareBill(role) ? [{ kind: 'ra-bill' as const, label: 'RA bill', action: 'New RA bill', href: '/bills', icon: <FileDoneOutlined /> }] : []),
+    ...(canManageVariations(role) ? [{ kind: 'variation' as const, label: 'Variation', action: 'New variation', keywords: 'extra item deviation claim', href: '/variations', icon: <AuditOutlined /> }] : []),
     ...(canRequestPayment(role) && canViewPayables(role) ? [{ kind: 'payment-request' as const, label: 'Payment request', action: 'Request payment', href: '/payables?tab=requests', icon: <BankOutlined /> }] : []),
     ...(canSellRmc(role) ? [{ kind: 'rmc-order' as const, label: 'RMC quote', action: 'New RMC quote', href: '/rmc?tab=orders', icon: <FileDoneOutlined /> }] : []),
     ...(canKeepBooks(role) ? [{ kind: 'voucher' as const, label: 'Voucher', action: 'New voucher', href: '/books?tab=vouchers', icon: <AccountBookOutlined /> }] : []),
@@ -53,7 +71,7 @@ export function newEntriesFor(user: AuthUser): NewEntry[][] {
       : []),
   ];
   // Nothing from a module the company has turned off.
-  return [site, office].map((g) => g.filter((e) => !pathIsOff(e.href, user.modulesOff))).filter((g) => g.length > 0);
+  return [site, checks, office].map((g) => g.filter((e) => !pathIsOff(e.href, user.modulesOff))).filter((g) => g.length > 0);
 }
 
 /**

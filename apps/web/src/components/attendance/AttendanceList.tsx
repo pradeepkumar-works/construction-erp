@@ -24,6 +24,7 @@ import { useListFrame } from '@/components/list/useListFrame';
 import { RecordLink } from '@/components/record/RecordLink';
 import { SiteDayGrid, gridDays, useFilingSites } from '@/components/site-days/SiteDayGrid';
 import { AttendanceFormModal } from './AttendanceFormModal';
+import { useNewIntent } from '@/lib/new-intent';
 
 const KEYS = ['from', 'to'] as const;
 
@@ -113,6 +114,8 @@ export function AttendanceList({ projectId: fixedProject }: { projectId?: string
     await downloadXlsx(exportFileName('attendance'), 'attendance', ATTENDANCE_EXPORT, lines);
     return lines.length;
   };
+
+  useNewIntent('head-count', canRecord, () => setFormOpen(true));
 
   const newButton = canRecord ? (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>

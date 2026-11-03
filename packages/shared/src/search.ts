@@ -1,5 +1,6 @@
 /** Search everything: what `GET /search` can find, in the order the palette lists them. */
 export const SEARCH_KINDS = [
+  'project',
   'material_request',
   'purchase_order',
   'vendor_bill',
@@ -8,9 +9,12 @@ export const SEARCH_KINDS = [
   'subcontract_bill',
   'payment_request',
   'ra_bill',
+  'variation',
   'measurement',
   'expense',
   'inspection',
+  'quality_test',
+  'ncr',
   'risk',
   'document',
   'rfi',
@@ -26,6 +30,7 @@ export const SEARCH_KINDS = [
 export type SearchKind = (typeof SEARCH_KINDS)[number];
 
 export const SEARCH_KIND_LABELS: Record<SearchKind, string> = {
+  project: 'Projects',
   material_request: 'Indents',
   purchase_order: 'Purchase orders',
   vendor_bill: 'Vendor bills',
@@ -34,9 +39,12 @@ export const SEARCH_KIND_LABELS: Record<SearchKind, string> = {
   subcontract_bill: 'Subcontractor bills',
   payment_request: 'Payment requests',
   ra_bill: 'RA bills',
+  variation: 'Variations',
   measurement: 'Measurement book',
   expense: 'Site expenses',
   inspection: 'Inspections',
+  quality_test: 'Material tests',
+  ncr: 'NCRs',
   risk: 'Delays and risks',
   document: 'Drawings and documents',
   rfi: 'RFIs',

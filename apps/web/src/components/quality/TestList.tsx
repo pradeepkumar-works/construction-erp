@@ -12,6 +12,8 @@ import { useQualityTests } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
+import { ExportButton } from '@/components/common/ExportButton';
+import { downloadXlsx, exportFileName, fetchAllPages, type ExportColumn } from '@/lib/exportExcel';
 import { EmptyArt } from '@/components/common/EmptyArt';
 import { DataTable, type ListColumn } from '@/components/list/DataTable';
 import { DateRangeFilter } from '@/components/list/DateRangeFilter';
@@ -20,6 +22,7 @@ import { RecordLink } from '@/components/record/RecordLink';
 import { ReadingsSummary, TestResultTag } from './qualityUi';
 import { TestDrawer } from './TestDrawer';
 import { TestFormModal } from './TestFormModal';
+import { useNewIntent } from '@/lib/new-intent';
 
 const KEYS = ['kind', 'result', 'overdue', 'from', 'to'] as const;
 
@@ -28,6 +31,25 @@ function Sub({ children }: { children: React.ReactNode }) {
 }
 
 /** Quality tests, on the Quality page and a project's Quality tab. */
+/** The test register: what was sampled, against what specification, and the result. */
+const EXPORT: ExportColumn<QualityTestDto>[] = [
+  { header: 'Test', value: (t) => t.testNo, width: 16 },
+  { header: 'Project', value: (t) => t.projectName, width: 26 },
+  { header: 'Sampled on', value: (t) => t.sampledOn, width: 12 },
+  { header: 'Kind', value: (t) => TEST_KIND_LABELS[t.kind], width: 16 },
+  { header: 'Title', value: (t) => t.title, width: 34 },
+  { header: 'Location', value: (t) => t.location, width: 22 },
+  { header: 'Activity', value: (t) => t.activityName, width: 24 },
+  { header: 'Specification', value: (t) => t.specification, width: 22 },
+  { header: 'Range', value: (t) => specRange(t.specMin, t.specMax, t.unit), width: 16 },
+  { header: 'Readings', value: (t) => t.readings.length, width: 10 },
+  { header: 'Result', value: (t) => TEST_RESULT_LABELS[t.result], width: 12 },
+  { header: 'Next reading due', value: (t) => t.nextDueOn, width: 14 },
+  { header: 'Lab', value: (t) => t.labName, width: 20 },
+  { header: 'Lab report', value: (t) => t.labReportNo, width: 16 },
+  { header: 'Open NCRs', value: (t) => t.openNcrs, width: 10 },
+];
+
 export function TestList({ projectId: fixedProject, initialOpenId, onOpenNcr }: { projectId?: string; initialOpenId?: string; onOpenNcr?: (id: string) => void }) {
   const { user } = useAuth();
   const [openId, setOpenId] = useState<string | null>(initialOpenId ?? null);
@@ -80,6 +102,8 @@ export function TestList({ projectId: fixedProject, initialOpenId, onOpenNcr }: 
   const { data, isLoading, isFetching, error, refetch } = useQualityTests(filters);
   const filtered = !!(kind || result || overdue || page.params.q || page.params.from || page.params.to);
 
+  useNewIntent('test', !!user && canRecordTest(user.roleKey), () => setFormOpen(true));
+
   const newButton = user && canRecordTest(user.roleKey) ? (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
       Record test
@@ -97,7 +121,18 @@ export function TestList({ projectId: fixedProject, initialOpenId, onOpenNcr }: 
         onSearch={page.setSearch}
         searchPlaceholder="Search no., sample, location"
         searchLabel="Search tests"
-        extra={newButton}
+        extra={
+          <>
+            <ExportButton
+              onExport={async () => {
+                const rows = await fetchAllPages<QualityTestDto>('/quality/tests', { ...filters, page: undefined, pageSize: undefined });
+                await downloadXlsx(exportFileName('quality-tests'), 'Tests', EXPORT, rows);
+                return rows.length;
+              }}
+            />
+            {newButton}
+          </>
+        }
       >
         <Select<TestKind> allowClear placeholder="All tests" aria-label="Test" value={kind} onChange={(v) => page.setFilter('kind', v)} style={{ width: 200 }} options={TEST_KINDS.map((k) => ({ value: k, label: TEST_KIND_LABELS[k] }))} />
         <Select<TestResult> allowClear placeholder="Any result" aria-label="Result" value={result} onChange={(v) => page.setFilter('result', v)} style={{ width: 130 }} options={TEST_RESULTS.map((k) => ({ value: k, label: TEST_RESULT_LABELS[k] }))} />

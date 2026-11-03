@@ -2,7 +2,9 @@
 
 import React, { useState } from 'react';
 import { App, Alert, Button, Descriptions, Drawer, Form, Input, Modal, Space, Table, Typography } from 'antd';
-import { CheckOutlined, EditOutlined, RollbackOutlined, SendOutlined, StopOutlined } from '@/components/common/icons';
+import { CheckOutlined, EditOutlined, PrinterOutlined, RollbackOutlined, SendOutlined, StopOutlined } from '@/components/common/icons';
+import { usePrintPaper } from '@/components/print/usePrintPaper';
+import { openVoucherPrint } from './booksPrint';
 import type { BookLineDto, BookVoucherDto } from '@erp/shared';
 import { useBookVoucher, useBooksAction } from '@/lib/queries';
 import { errorMessage } from '@/lib/api';
@@ -59,6 +61,7 @@ export function VoucherDrawer({ id, onClose }: { id: string | null; onClose: () 
   const act = useBooksAction<BookVoucherDto>();
   const [editing, setEditing] = useState(false);
   const [asking, setAsking] = useState<'reject' | 'cancel' | null>(null);
+  const print = usePrintPaper();
   const run = async (path: string, done: (r: BookVoucherDto) => string, body?: unknown) => {
     try {
       const r = await act.mutateAsync({ path, body });
@@ -77,6 +80,9 @@ export function VoucherDrawer({ id, onClose }: { id: string | null; onClose: () 
       extra={
         v ? (
           <Space wrap>
+            <Button size="small" icon={<PrinterOutlined />} onClick={() => print((l) => openVoucherPrint(v, l))}>
+              Print
+            </Button>
             {v.canEdit && (
               <Button size="small" icon={<EditOutlined />} onClick={() => setEditing(true)}>
                 Change
