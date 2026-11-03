@@ -14,6 +14,8 @@ import { useActivities, useInspections } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
+import { ExportButton } from '@/components/common/ExportButton';
+import { downloadXlsx, exportFileName, fetchAllPages, type ExportColumn } from '@/lib/exportExcel';
 import { EmptyArt } from '@/components/common/EmptyArt';
 import { StatusTag } from '@/components/common/StatusTag';
 import { DataTable, type ListColumn } from '@/components/list/DataTable';
@@ -81,6 +83,23 @@ function inspectionColumns({ showProject, onOpen, onEdit, sortOrderFor }: { show
 }
 
 /** Inspection requests, on the Inspections page and as a project tab. */
+/** The inspection register: each request, the work it covers and how it stands. */
+const EXPORT: ExportColumn<InspectionDto>[] = [
+  { header: 'Inspection', value: (i) => i.inspectionNo, width: 16 },
+  { header: 'Project', value: (i) => i.projectName, width: 26 },
+  { header: 'Ready on', value: (i) => i.date, width: 12 },
+  { header: 'Activity', value: (i) => i.activityName, width: 30 },
+  { header: 'Location', value: (i) => i.location, width: 26 },
+  { header: 'Hold point', value: (i) => (i.holdPoint ? 'Yes' : ''), width: 10 },
+  { header: 'Hidden work', value: (i) => (i.hiddenWork ? 'Yes' : ''), width: 10 },
+  { header: 'Checklist', value: (i) => i.checklistName, width: 24 },
+  { header: 'Checks passed', value: (i) => { const c = checklistCounts(i.checklist); return c.total ? `${c.pass} of ${c.total}` : ''; }, width: 12 },
+  { header: 'Status', value: (i) => INSPECTION_STATUS_LABELS[i.status], width: 16 },
+  { header: 'Requested by', value: (i) => i.submittedByName, width: 20 },
+  { header: 'Reviewed by', value: (i) => i.reviewedByName, width: 20 },
+  { header: 'Remarks', value: (i) => i.remarks, width: 30 },
+];
+
 export function InspectionList({ projectId: fixedProject }: { projectId?: string }) {
   const { user } = useAuth();
   const [openId, setOpenId] = useState<string | null>(null);
@@ -128,7 +147,18 @@ export function InspectionList({ projectId: fixedProject }: { projectId?: string
         onSearch={page.setSearch}
         searchPlaceholder="Search no., location, activity"
         searchLabel="Search inspections"
-        extra={newButton}
+        extra={
+          <>
+            <ExportButton
+              onExport={async () => {
+                const rows = await fetchAllPages<InspectionDto>('/inspections', { ...page.params, page: undefined, pageSize: undefined, projectId: frame.projectId, status: frame.status, activityId });
+                await downloadXlsx(exportFileName('inspections'), 'Inspections', EXPORT, rows);
+                return rows.length;
+              }}
+            />
+            {newButton}
+          </>
+        }
       >
         <Select
           allowClear

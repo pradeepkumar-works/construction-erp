@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-books-export',
+    date: '2026-11-03',
+    title: 'Books, tenders and registers to Excel and print',
+    points: [
+      'The day book exports every voucher line to Excel. A cash book, bank book or ledger prints and exports for its period; a vendor’s or client’s ledger prints as a statement of account asking them to confirm the balance. A voucher prints for signatures.',
+      'A tender prints its priced BOQ for submission, and exports the priced BOQ, the rate analysis and the summary to Excel. The costs and margin stay off the print.',
+      'The drawing register, NCRs, tests, inspections and the inward and outward letters export to Excel.',
+    ],
+  },
+  {
     id: '2026-11-papers',
     date: '2026-11-03',
     title: 'Print the papers that leave the company',

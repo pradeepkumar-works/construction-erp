@@ -12,6 +12,8 @@ import { useDocuments } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
+import { ExportButton } from '@/components/common/ExportButton';
+import { downloadXlsx, exportFileName, fetchAllPages, type ExportColumn } from '@/lib/exportExcel';
 import { EmptyArt } from '@/components/common/EmptyArt';
 import { DataTable, type ListColumn } from '@/components/list/DataTable';
 import { useListFrame } from '@/components/list/useListFrame';
@@ -26,6 +28,22 @@ function Sub({ children }: { children: React.ReactNode }) {
 }
 
 /** The register: each drawing or document with its current revision and file. */
+/** The drawing register as the client and the site ask for it: each drawing's current revision and where it stands. */
+const EXPORT: ExportColumn<DocumentDto>[] = [
+  { header: 'Project', value: (d) => d.projectName, width: 28 },
+  { header: 'Number', value: (d) => d.docNo, width: 22 },
+  { header: 'Title', value: (d) => d.title, width: 44 },
+  { header: 'Type', value: (d) => DOCUMENT_KIND_LABELS[d.kind], width: 14 },
+  { header: 'Discipline', value: (d) => DOCUMENT_DISCIPLINE_LABELS[d.discipline], width: 14 },
+  { header: 'Current revision', value: (d) => d.current?.revision, width: 10 },
+  { header: 'Issued on', value: (d) => d.current?.issuedOn, width: 12 },
+  { header: 'Status', value: (d) => (d.current ? REVISION_STATUS_LABELS[d.current.status] : 'No revision yet'), width: 22 },
+  { header: 'Received from', value: (d) => d.current?.receivedFrom, width: 22 },
+  { header: 'Revisions', value: (d) => d.revisionCount, width: 10 },
+  { header: 'Open marks', value: (d) => d.openMarkups, width: 10 },
+  { header: 'Remarks', value: (d) => d.remarks, width: 30 },
+];
+
 export function DocumentList({ projectId: fixedProject, onOpen }: { projectId?: string; onOpen: (id: string) => void }) {
   const { user } = useAuth();
   const [formOpen, setFormOpen] = useState(false);
@@ -87,7 +105,8 @@ export function DocumentList({ projectId: fixedProject, onOpen }: { projectId?: 
   const kind = page.filters.kind as DocumentKind | undefined;
   const discipline = page.filters.discipline as DocumentDiscipline | undefined;
   const status = page.filters.status as RevisionStatus | undefined;
-  const { data, isLoading, isFetching, error, refetch } = useDocuments({ page: page.params.page, pageSize: page.params.pageSize, q: page.params.q, sortBy: page.params.sortBy, sortOrder: page.params.sortOrder, projectId: frame.projectId, kind, discipline, status });
+  const filters = { q: page.params.q, sortBy: page.params.sortBy, sortOrder: page.params.sortOrder, projectId: frame.projectId, kind, discipline, status };
+  const { data, isLoading, isFetching, error, refetch } = useDocuments({ ...filters, page: page.params.page, pageSize: page.params.pageSize });
 
   const newButton = user && canManageDocuments(user.roleKey) ? (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
@@ -106,7 +125,18 @@ export function DocumentList({ projectId: fixedProject, onOpen }: { projectId?: 
         onSearch={page.setSearch}
         searchPlaceholder="Search number or title"
         searchLabel="Search documents"
-        extra={newButton}
+        extra={
+          <>
+            <ExportButton
+              onExport={async () => {
+                const rows = await fetchAllPages<DocumentDto>('/documents', filters);
+                await downloadXlsx(exportFileName('drawing-register'), 'Drawing register', EXPORT, rows);
+                return rows.length;
+              }}
+            />
+            {newButton}
+          </>
+        }
       >
         <Select<DocumentKind> allowClear placeholder="All types" aria-label="Type" value={kind} onChange={(v) => page.setFilter('kind', v)} style={{ width: 150 }} options={DOCUMENT_KINDS.map((k) => ({ value: k, label: DOCUMENT_KIND_LABELS[k] }))} />
         <Select<DocumentDiscipline> allowClear placeholder="All disciplines" aria-label="Discipline" value={discipline} onChange={(v) => page.setFilter('discipline', v)} style={{ width: 170 }} options={DOCUMENT_DISCIPLINES.map((k) => ({ value: k, label: DOCUMENT_DISCIPLINE_LABELS[k] }))} />

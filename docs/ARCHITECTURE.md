@@ -386,6 +386,12 @@ GSTIN (its own, else its billing GSTIN), PAN, CIN and GST state. Anyone signed i
 hand out. `usePrintPaper` loads it with the record, so the click opens the window at once, and falls back to the name alone.
 A tax invoice carries what GST asks of one: both GSTINs, the place of supply (the customer's state), the HSN, CGST and SGST
 or IGST, the total in words and reverse charge. A note kept for the company (an RMC order's notes) stays off the paper.
+The books print too (`books/booksPrint.ts`): a voucher for signatures, and a ledger for the period as a cash book, bank book,
+ledger or, for a party (sundry creditors and debtors), a statement of account that asks the party to confirm the closing
+balance. A tender prints its priced BOQ for submission (`tenders/tenderPapers.ts`); its rate analysis, overheads and margin
+are the company's and go only to the Excel workbook (priced BOQ with each item's cost, the analysis line by line, the
+summary). The day book exports one row per voucher line; the drawing register, NCRs, tests, inspections and the inward and
+outward letters export every row the filters match, as the RFI list does.
 The older prints (RA bill, purchase order, work order and subcontractor bill, DPR, letter, transmittal, payslip) keep their
 own frames for now; a new one uses `printDocHtml`.
 

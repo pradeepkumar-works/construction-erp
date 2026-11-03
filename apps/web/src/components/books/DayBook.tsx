@@ -11,7 +11,9 @@ import { BOOK_SOURCES, BOOK_SOURCE_LABELS, BOOK_VOUCHER_TYPES, BOOK_VOUCHER_TYPE
 import { useBooksAction, useBooksStatus, useDayBook } from '@/lib/queries';
 import { useProjectScope } from '@/lib/project-scope';
 import { errorMessage } from '@/lib/api';
-import { formatDate, formatDateTime } from '@/lib/format';
+import { formatDate, formatDateTime, toNumber } from '@/lib/format';
+import { ExportButton } from '@/components/common/ExportButton';
+import { downloadXlsx, fetchAllPages, type ExportColumn } from '@/lib/exportExcel';
 import { QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { VoucherTypeTag, sourceLabel } from './booksUi';
@@ -72,6 +74,23 @@ function PostingLine() {
   );
 }
 
+/** One row per voucher line, as an auditor reads a day book in Excel: each voucher's debits and credits in full. */
+type DayBookRow = { v: BookVoucherDto; line: BookVoucherDto['lines'][number] };
+const amount = (v: string | null) => (v === null ? null : toNumber(v));
+const DAY_BOOK_EXPORT: ExportColumn<DayBookRow>[] = [
+  { header: 'Date', value: (r) => r.v.date, width: 12 },
+  { header: 'Voucher', value: (r) => r.v.voucherNo, width: 20 },
+  { header: 'Type', value: (r) => BOOK_VOUCHER_TYPE_LABELS[r.v.type], width: 12 },
+  { header: 'From', value: (r) => BOOK_SOURCE_LABELS[r.v.source], width: 18 },
+  { header: 'Reference', value: (r) => r.v.reference, width: 18 },
+  { header: 'Party', value: (r) => r.v.party, width: 28 },
+  { header: 'Narration', value: (r) => r.line.narration ?? r.v.narration, width: 40 },
+  { header: 'Account', value: (r) => r.line.accountName, width: 30 },
+  { header: 'Project', value: (r) => r.line.projectCode, width: 14 },
+  { header: 'Debit', value: (r) => amount(r.line.debit), width: 14 },
+  { header: 'Credit', value: (r) => amount(r.line.credit), width: 14 },
+];
+
 /** Every approved voucher in a period, from the modules and made by hand, with its lines on expand. */
 export function DayBook() {
   const [range, setRange] = useState<[dayjs.Dayjs, dayjs.Dayjs]>(() => [dayjs().startOf('month'), dayjs()]);
@@ -81,7 +100,8 @@ export function DayBook() {
   const [page, setPage] = useState(1);
   const [projectId, setProjectId] = useProjectScope();
   const [open, setOpen] = useState<string | null>(null);
-  const { data, isLoading, isFetching, error, refetch } = useDayBook({ from: range[0].format('YYYY-MM-DD'), to: range[1].format('YYYY-MM-DD'), type, source, projectId, q: q || undefined, page, pageSize: 50 });
+  const filters = { from: range[0].format('YYYY-MM-DD'), to: range[1].format('YYYY-MM-DD'), type, source, projectId, q: q || undefined };
+  const { data, isLoading, isFetching, error, refetch } = useDayBook({ ...filters, page, pageSize: 50 });
   const reset = () => setPage(1);
   return (
     <div style={{ padding: tk.space[4] }}>
@@ -101,6 +121,14 @@ export function DayBook() {
         <Select allowClear placeholder="From anywhere" aria-label="From" value={source} onChange={(v) => (setSource(v), reset())} style={{ minWidth: 180 }} options={BOOK_SOURCES.map((s) => ({ value: s, label: BOOK_SOURCE_LABELS[s] }))} />
         <ProjectSelect allowClear placeholder="All projects" value={projectId} onChange={(v) => (setProjectId(v), reset())} aria-label="Project" style={{ minWidth: 220 }} />
         <Input.Search allowClear placeholder="Number, party or narration" aria-label="Search the day book" onSearch={(v) => (setQ(v.trim()), reset())} style={{ width: 240 }} />
+        <ExportButton
+          onExport={async () => {
+            const vouchers = await fetchAllPages<BookVoucherDto>('/books/day-book', filters);
+            const rows = vouchers.flatMap((v) => v.lines.map((line) => ({ v, line })));
+            await downloadXlsx(`day-book-${filters.from}-to-${filters.to}.xlsx`, 'Day book', DAY_BOOK_EXPORT, rows);
+            return rows.length;
+          }}
+        />
       </Space>
       {error ? (
         <QueryError error={error} onRetry={() => refetch()} />

@@ -6,13 +6,15 @@ import { Button, Checkbox, Select, Typography } from 'antd';
 import { tk } from '@/ds';
 import { PlusOutlined } from '@/components/common/icons';
 import type { AiDraftDto, LetterDirection, LetterDto, LetterSortField, LetterStatus } from '@erp/shared';
-import { LETTER_ACTION_LABELS, LIST_SORT_FIELDS, LETTER_STATUS_LABELS, canViewLetters } from '@erp/shared';
+import { LETTER_ACTION_LABELS, LETTER_MODE_LABELS, LIST_SORT_FIELDS, LETTER_STATUS_LABELS, canViewLetters } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useLetters, useMasterList } from '@/lib/queries';
 import { useNewIntent } from '@/lib/new-intent';
 import { formatDate } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
+import { ExportButton } from '@/components/common/ExportButton';
+import { downloadXlsx, exportFileName, fetchAllPages, type ExportColumn } from '@/lib/exportExcel';
 import { EmptyArt } from '@/components/common/EmptyArt';
 import { AppTag } from '@/components/common/AppTag';
 import { DataTable, type ListColumn } from '@/components/list/DataTable';
@@ -37,6 +39,25 @@ const STATUSES: Record<LetterDirection, LetterStatus[]> = { IN: ['OPEN', 'CLOSED
  * letter and by when, replies due, letters to sign and proof of delivery. On its own page with views in the URL, or in a
  * project's tab (`projectId`).
  */
+/** The inward or outward register as it is kept on paper: number, dates, party, subject, and where the reply stands. */
+const EXPORT: ExportColumn<LetterDto>[] = [
+  { header: 'Number', value: (l) => l.letterNo ?? 'Draft', width: 24 },
+  { header: 'Their reference', value: (l) => l.theirRef, width: 20 },
+  { header: 'Letter date', value: (l) => l.letterDate, width: 12 },
+  { header: 'Received on', value: (l) => l.receivedOn, width: 12 },
+  { header: 'Project', value: (l) => l.projectName ?? 'Head office', width: 26 },
+  { header: 'Party', value: (l) => l.party, width: 28 },
+  { header: 'Subject', value: (l) => l.subject, width: 44 },
+  { header: 'Category', value: (l) => l.categoryName, width: 18 },
+  { header: 'Mode', value: (l) => (l.mode ? LETTER_MODE_LABELS[l.mode] : null), width: 12 },
+  { header: 'Status', value: (l) => LETTER_STATUS_LABELS[l.status], width: 18 },
+  { header: 'Reply by', value: (l) => l.replyBy, width: 12 },
+  { header: 'Awaiting reply', value: (l) => (l.awaitingReply ? (l.overdue ? 'Overdue' : 'Yes') : ''), width: 12 },
+  { header: 'Marked to', value: (l) => l.markedToName, width: 20 },
+  { header: 'Action', value: (l) => (l.action ? LETTER_ACTION_LABELS[l.action] : null), width: 16 },
+  { header: 'Action due', value: (l) => l.actionDue, width: 12 },
+];
+
 export function LetterRegister({ direction, projectId: fixedProject, initialFilters }: { direction: LetterDirection; projectId?: string; initialFilters?: Record<string, string> }) {
   const { user } = useAuth();
   const isIn = direction === 'IN';
@@ -175,9 +196,7 @@ export function LetterRegister({ direction, projectId: fixedProject, initialFilt
   const f = page.filters;
   const flag = (k: string) => f[k] === '1' || undefined;
   const status = (STATUSES[direction] as string[]).includes(f.status ?? '') ? (f.status as LetterStatus) : undefined;
-  const { data, isLoading, isFetching, error, refetch } = useLetters({
-    page: page.params.page,
-    pageSize: page.params.pageSize,
+  const listFilters = {
     q: page.params.q,
     sortBy: page.params.sortBy,
     sortOrder: page.params.sortOrder,
@@ -191,7 +210,8 @@ export function LetterRegister({ direction, projectId: fixedProject, initialFilt
     overdue: flag('overdue'),
     proofMissing: flag('proof'),
     unmarked: flag('unmarked'),
-  });
+  };
+  const { data, isLoading, isFetching, error, refetch } = useLetters({ ...listFilters, page: page.params.page, pageSize: page.params.pageSize });
   const filtered = !!(status || f.category || KEYS.some((k) => k !== 'status' && k !== 'category' && f[k] === '1') || page.params.q);
 
   const newButton = keeper ? (
@@ -213,7 +233,18 @@ export function LetterRegister({ direction, projectId: fixedProject, initialFilt
         onSearch={page.setSearch}
         searchPlaceholder="Search no., reference, party, subject"
         searchLabel={isIn ? 'Search inward letters' : 'Search outward letters'}
-        extra={newButton}
+        extra={
+          <>
+            <ExportButton
+              onExport={async () => {
+                const rows = await fetchAllPages<LetterDto>('/letters', listFilters);
+                await downloadXlsx(exportFileName(`letters-${isIn ? 'inward' : 'outward'}`), isIn ? 'Inward letters' : 'Outward letters', EXPORT, rows);
+                return rows.length;
+              }}
+            />
+            {newButton}
+          </>
+        }
       >
         <Select<LetterStatus> allowClear placeholder="Any status" aria-label="Status" value={status} onChange={(v) => page.setFilter('status', v)} style={{ width: 170 }} options={STATUSES[direction].map((s) => ({ value: s, label: LETTER_STATUS_LABELS[s] }))} />
         <Select
