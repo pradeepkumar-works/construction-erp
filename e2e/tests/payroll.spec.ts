@@ -75,6 +75,13 @@ test('HR prepares the salary run, management approves it and staff see their pay
   await expect(api(hr, `/payroll/runs/${run.id}/approve`, { method: 'POST', body: {} })).rejects.toThrow(/403/);
   const approved = await api<Run>(md, `/payroll/runs/${run.id}/approve`, { method: 'POST', body: {} });
   expect(approved.status).toBe('APPROVED');
+  // Each step tells whoever acts next: management to approve, then accounts to pay and HR that it went through.
+  type Notice = { title: string; entityType: string | null; entityId: string | null };
+  const told = async (token: string, title: RegExp) =>
+    (await api<{ items: Notice[] }>(token, '/notifications?limit=30&typesVersion=8')).items.some((n) => n.entityType === 'PAYROLL_RUN' && n.entityId === run.id && title.test(n.title));
+  expect(await told(md, new RegExp(`^Salary run SAL-${month} for .+ waits for your approval$`))).toBe(true);
+  expect(await told(await apiToken('accounts@demo.com'), new RegExp(`^Salary run SAL-${month} for .+ approved: pay ₹`))).toBe(true);
+  expect(await told(hr, /approved: pay/)).toBe(true);
 
   const bank = await api<File>(hr, `/payroll/runs/${run.id}/bank-file`);
   expect(bank.fileName).toBe(`SAL-${month}-bank.csv`);

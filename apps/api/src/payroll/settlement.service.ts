@@ -4,8 +4,10 @@ import { canApprovePayroll, canPayPayroll, canRunPayroll, type FinalSettlementDt
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { AuditService } from '../common/audit.service';
-import { dateOnly, iso, money, parseDate } from '../common/serialize';
+import { dateOnly, formatDay, iso, money, parseDate } from '../common/serialize';
 import { inr } from '../common/submission-titles';
+import { NotificationsService } from '../notifications/notifications.service';
+import { tellPayroll, type PayrollNotice } from './payroll-notices';
 import { StaffService } from '../staff/staff.service';
 import { computeSettlement, structureGross } from './payroll-rules';
 import { SalaryService, toRulesStructure } from './salary.service';
@@ -25,7 +27,18 @@ type Row = Prisma.FinalSettlementGetPayload<{ include: typeof include }>;
  */
 @Injectable()
 export class SettlementService {
-  constructor(private prisma: PrismaService, private audit: AuditService, private salary: SalaryService, private staff: StaffService) {}
+  constructor(
+    private prisma: PrismaService,
+    private audit: AuditService,
+    private salary: SalaryService,
+    private staff: StaffService,
+    private notifications: NotificationsService,
+  ) {}
+
+  /** Tells whoever acts next on a settlement (`tellPayroll`), linking to Full and final. */
+  private tell(user: RequestUser, s: { id: string }, n: Omit<PayrollNotice, 'entityType' | 'entityId' | 'href'>) {
+    return tellPayroll(this.prisma, this.notifications, user, { ...n, entityType: 'FINAL_SETTLEMENT', entityId: s.id, href: '/payroll?tab=settlements' });
+  }
 
   private toDto(s: Row, user: RequestUser): FinalSettlementDto {
     return {
@@ -120,6 +133,12 @@ export class SettlementService {
       ? await this.prisma.finalSettlement.update({ where: { id: e.settlement.id }, data, include })
       : await this.prisma.finalSettlement.create({ data: { organizationId: user.organizationId, employeeId: e.id, settlementNo: `FNF-${e.employeeCode}`, ...data }, include });
     await this.audit.log(user, 'EMPLOYEE', e.id, 'UPDATED', `Full and final settlement worked out: net ${inr(r.net)}`);
+    await this.tell(user, row, {
+      roles: ['MANAGEMENT'],
+      title: `Full and final for ${e.fullName} waits for your approval`,
+      body: `${row.settlementNo}: ${Number(r.net) >= 0 ? `net payable ${inr(r.net)}` : `they owe ${inr(Math.abs(Number(r.net)))}`}, last working day ${formatDay(lwd)}. Worked out by ${user.fullName}.`,
+      cta: 'Review the settlement',
+    });
     return this.toDto(row, user);
   }
 
@@ -135,6 +154,13 @@ export class SettlementService {
     if (s.status !== 'DRAFT') throw new BadRequestException('This settlement is already approved');
     const row = await this.prisma.finalSettlement.update({ where: { id }, data: { status: 'APPROVED', approvedById: user.id, approvedAt: new Date() }, include });
     await this.audit.log(user, 'EMPLOYEE', s.employeeId, 'APPROVED', `Full and final settlement ${s.settlementNo}`);
+    await this.tell(user, s, {
+      roles: ['ACCOUNTS_MANAGER'],
+      users: [s.preparedById],
+      title: `Full and final for ${s.employee.fullName} approved: pay ${inr(s.net)}`,
+      body: `${s.settlementNo}, approved by ${user.fullName}. Pay it, then mark it paid.`,
+      cta: 'Pay the settlement',
+    });
     return this.toDto(row, user);
   }
 
@@ -144,6 +170,12 @@ export class SettlementService {
     if (s.status !== 'APPROVED') throw new BadRequestException('Only an approved settlement can be paid');
     const row = await this.prisma.finalSettlement.update({ where: { id }, data: { status: 'PAID', paidOn: parseDate(dto.paidOn), paymentRef: dto.paymentRef ?? null }, include });
     await this.audit.log(user, 'EMPLOYEE', s.employeeId, 'PAID', `Full and final settlement ${s.settlementNo} on ${dto.paidOn}`);
+    await this.tell(user, s, {
+      users: [s.preparedById, s.approvedById],
+      title: `Full and final for ${s.employee.fullName} paid`,
+      body: `${s.settlementNo}, paid by ${user.fullName} on ${formatDay(dto.paidOn)}${dto.paymentRef ? `, reference ${dto.paymentRef}` : ''}.`,
+      cta: 'Open Full and final',
+    });
     return this.toDto(row, user);
   }
 

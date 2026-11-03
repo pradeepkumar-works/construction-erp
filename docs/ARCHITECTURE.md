@@ -1007,6 +1007,11 @@ service (15/26 of the last basic + DA per year, capped at 25 lakh), notice not s
 day) and loans still owed. HR prepares it, management approves, accounts pays; the exit cannot be taken back while one
 exists. The web prints the statement with the lines to sign.
 
+Each step of a run or a settlement tells whoever acts next, with an email, through `tellPayroll`
+(`src/payroll/payroll-notices.ts`, a `HANDOFF` with entity `PAYROLL_RUN` or `FINAL_SETTLEMENT`): submitted or worked out,
+management; approved, accounts (and HR); sent back, HR with the reason; paid, HR and the approver. Payroll is company-wide,
+so the role's holders are the company's (admins only when nobody holds it), never the person who acted.
+
 ### HR records (v6 item 99)
 
 `Employee` carries the whole HR record: job and terms (employment type, grade, reports to, probation end, confirmation,

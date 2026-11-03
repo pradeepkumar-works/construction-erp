@@ -12,11 +12,14 @@ import {
   type PayrollRunDto,
   type PayslipCode,
   type PayslipDto,
+  type RoleKey,
 } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { AuditService } from '../common/audit.service';
-import { dec, iso, money, dateOnly, parseDate } from '../common/serialize';
+import { dec, iso, money, dateOnly, formatDay, parseDate } from '../common/serialize';
+import { NotificationsService } from '../notifications/notifications.service';
+import { tellPayroll } from './payroll-notices';
 import { inr } from '../common/submission-titles';
 import { PayrollService } from '../staff/payroll.service';
 import { computePayslip } from './payroll-rules';
@@ -50,6 +53,7 @@ export class PayrollRunService {
     private audit: AuditService,
     private salary: SalaryService,
     private inputs: PayrollService,
+    private notifications: NotificationsService,
   ) {}
 
   private toRunDto(r: RunRow, user: RequestUser): PayrollRunDto {
@@ -120,6 +124,16 @@ export class PayrollRunService {
     const r = await this.prisma.payrollRun.findFirst({ where: { id, organizationId: user.organizationId }, include: runInclude });
     if (!r) throw new NotFoundException('Salary run not found');
     return r;
+  }
+
+  /** Tells whoever acts next on the run (`tellPayroll`), linking to it. */
+  private tell(user: RequestUser, r: RunRow, to: { roles?: RoleKey[]; users?: (string | null | undefined)[] }, title: string, body: string, cta: string) {
+    return tellPayroll(this.prisma, this.notifications, user, { ...to, title, body, cta, projectId: r.projectId, entityType: 'PAYROLL_RUN', entityId: r.id, href: `/payroll?tab=runs&run=${r.id}` });
+  }
+
+  /** "PR-2026-10-01 for Oct 2026", with its site when it is one site's run. */
+  private runWords(r: RunRow) {
+    return `${r.runNo} for ${formatDay(`${r.month}-01`).replace(/^\d+ /, '')}${r.project ? ` (${r.project.name})` : ''}`;
   }
 
   async list(user: RequestUser, q: RunQuery): Promise<PayrollRunDto[]> {
@@ -256,7 +270,9 @@ export class PayrollRunService {
     if (!this.toRunDto(r, user).can.submit) throw new BadRequestException(r.status !== 'DRAFT' ? 'This run has already been submitted' : r._count.payslips ? 'Only HR or an admin submits the salary run' : 'No payslips in this run. Add salary structures first.');
     await this.prisma.payrollRun.update({ where: { id }, data: { status: 'SUBMITTED', submittedAt: new Date(), reviewNote: null } });
     await this.audit.log(user, 'PAYROLL_RUN', id, 'SUBMITTED', r.runNo);
-    return this.detail(user, id);
+    const done = await this.detail(user, id);
+    await this.tell(user, r, { roles: ['MANAGEMENT'] }, `Salary run ${this.runWords(r)} waits for your approval`, `${done.employees} ${done.employees === 1 ? 'person' : 'people'}, net pay ${inr(done.net)}. Prepared by ${user.fullName}.`, 'Review the run');
+    return done;
   }
 
   async approve(user: RequestUser, id: string, note?: string) {
@@ -265,7 +281,9 @@ export class PayrollRunService {
     if (r.status !== 'SUBMITTED') throw new BadRequestException('Only a submitted run can be approved');
     await this.prisma.payrollRun.update({ where: { id }, data: { status: 'APPROVED', approvedById: user.id, approvedAt: new Date(), reviewNote: note ?? null } });
     await this.audit.log(user, 'PAYROLL_RUN', id, 'APPROVED', note ?? r.runNo);
-    return this.detail(user, id);
+    const done = await this.detail(user, id);
+    await this.tell(user, r, { roles: ['ACCOUNTS_MANAGER'], users: [r.preparedById] }, `Salary run ${this.runWords(r)} approved: pay ${inr(done.net)}`, `${user.fullName} approved it${note ? `: ${note}` : ''}. Download the bank file from the run, pay it, then mark it paid.`, 'Pay the run');
+    return done;
   }
 
   async sendBack(user: RequestUser, id: string, note: string) {
@@ -275,6 +293,7 @@ export class PayrollRunService {
     if (r.tallyExportId) throw new BadRequestException('Its salary journal has gone to Tally. Undo that Tally export first, then send the run back.');
     await this.prisma.payrollRun.update({ where: { id }, data: { status: 'DRAFT', reviewNote: note, approvedById: null, approvedAt: null, submittedAt: null } });
     await this.audit.log(user, 'PAYROLL_RUN', id, 'CHANGES_REQUESTED', note);
+    await this.tell(user, r, { users: [r.preparedById] }, `Salary run ${this.runWords(r)} sent back`, `${user.fullName}: ${note}`, 'Change the run');
     return this.detail(user, id);
   }
 
@@ -284,6 +303,7 @@ export class PayrollRunService {
     if (r.status !== 'APPROVED') throw new BadRequestException('Only an approved run can be paid');
     await this.prisma.payrollRun.update({ where: { id }, data: { status: 'PAID', paidById: user.id, paidOn: parseDate(dto.paidOn), paymentRef: dto.paymentRef ?? null } });
     await this.audit.log(user, 'PAYROLL_RUN', id, 'PAID', `${dto.paidOn}${dto.paymentRef ? ` (${dto.paymentRef})` : ''}`);
+    await this.tell(user, r, { users: [r.preparedById, r.approvedById] }, `Salary run ${this.runWords(r)} paid`, `${user.fullName} paid it on ${formatDay(dto.paidOn)}${dto.paymentRef ? `, reference ${dto.paymentRef}` : ''}. PF and ESI returns are next, by the 15th.`, 'Open the run');
     return this.detail(user, id);
   }
 

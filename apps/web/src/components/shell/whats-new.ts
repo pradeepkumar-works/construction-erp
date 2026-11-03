@@ -9,6 +9,15 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-payroll-notices',
+    date: '2026-11-03',
+    title: 'Salary runs tell the next person',
+    points: [
+      'Submitting a salary run tells management, with an email, that it waits for approval. Approving it tells accounts what to pay and HR that it went through; sending it back tells HR why; paying it tells HR and the approver.',
+      'A full and final settlement does the same: management when it is worked out, accounts once approved, and HR when it is paid.',
+    ],
+  },
+  {
     id: '2026-11-lump-sum-earned',
     date: '2026-11-03',
     title: 'Lump-sum contracts show the work done',
