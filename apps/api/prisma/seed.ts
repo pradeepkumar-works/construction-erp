@@ -3578,6 +3578,7 @@ async function seedPayroll(organizationId: string) {
     await prisma.payslip.create({
       data: {
         organizationId, runId: run.id, employeeId: e.id, structureId: s.id, employeeCode: e.employeeCode, employeeName: e.fullName, designation: e.designation,
+        projectId: e.projectId,
         projectName: e.projectId ? (await prisma.project.findUnique({ where: { id: e.projectId }, select: { name: true } }))?.name ?? null : null,
         pan: e.pan, uan: e.uan, esiNumber: e.esiNumber, bankName: e.bankName, bankAccountNo: e.bankAccountNo, bankIfsc: e.bankIfsc,
         monthDays: slip.monthDays, paidDays: slip.paidDays, lopDays: slip.lopDays, overtimeHours: e.employeeCode === 'EMP-016' ? 6 : 0,

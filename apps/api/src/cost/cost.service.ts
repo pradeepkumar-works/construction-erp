@@ -1,7 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import type { CostHeadsDto, CostMonthDto, ExpenseCategory, LabourRatesDto, ProjectCostDto, ProjectCostSummaryDto } from '@erp/shared';
-import { canSetLabourRates, canViewCost, machineryLogCost } from '@erp/shared';
+import type { CostExpenseCategory, CostHeadsDto, CostMonthDto, LabourRatesDto, ProjectCostDto, ProjectCostSummaryDto } from '@erp/shared';
+import { SITE_STAFF, canSetLabourRates, canViewCost, machineryLogCost, staffCostDate } from '@erp/shared';
 import { activityBoqOf } from '../common/boq-links';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
@@ -138,7 +138,7 @@ export class CostService {
       to: q.to ?? null,
       months,
       expensesByCategory: [...acc.expenses.entries()]
-        .map(([category, v]) => ({ category: category as ExpenseCategory, count: v.count, amount: v.amount }))
+        .map(([category, v]) => ({ category: category as CostExpenseCategory, count: v.count, amount: v.amount }))
         .sort(sortAmount)
         .map((v) => ({ ...v, amount: money(v.amount) })),
       materialByItem: [...acc.material.entries()]
@@ -310,7 +310,7 @@ export class CostService {
       acc.machinery.set(m.id, { ...r, amount: r.amount.plus(amount) });
     };
     const workshop = (vendorId: string, name: string): Machine => ({ id: `workshop:${vendorId}`, code: 'Workshop', name, rate: null, rateUnit: 'MONTH' });
-    const expense = (acc: Acc, d: Date, category: ExpenseCategory, amount: D, count: number) => {
+    const expense = (acc: Acc, d: Date, category: CostExpenseCategory, amount: D, count: number) => {
       add(acc, d, 'expenses', amount);
       const c = acc.expenses.get(category) ?? { count: 0, amount: ZERO };
       acc.expenses.set(category, { count: c.count + count, amount: c.amount.plus(amount) });
@@ -333,6 +333,17 @@ export class CostService {
       } else if (vb?.kind === 'HIRE' && vb.equipment) machine(acc, n.date, vb.equipment, amount);
       else if (vb?.kind === 'SERVICE') machine(acc, n.date, workshop(n.vendorId, n.vendor.name), amount);
       else if (vb) expense(acc, n.date, vb.expenseCategory ?? 'OTHER', amount, 0);
+    }
+    // Site staff: each approved or paid payslip is its site's cost on the month's last day, gross plus the company's PF
+    // and ESI (ARCHITECTURE "Cost and margin", Site staff salaries).
+    const slips = await this.prisma.payslip.findMany({
+      where: { organizationId, projectId: { in: projectIds }, run: { status: { in: ['APPROVED', 'PAID'] } } },
+      select: { projectId: true, gross: true, employerCost: true, run: { select: { month: true } } },
+    });
+    for (const s of slips) {
+      const on = staffCostDate(s.run.month);
+      if (date && ((date.gte && on < (date.gte as Date)) || (date.lte && on > (date.lte as Date)))) continue;
+      expense(out.get(s.projectId!)!, on, SITE_STAFF, s.gross.plus(s.employerCost), 1);
     }
     for (const o of openings) {
       const acc = out.get(o.projectId)!;

@@ -9,6 +9,15 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-site-staff-cost',
+    date: '2026-11-03',
+    title: 'Site staff salaries in project cost',
+    points: [
+      "A project's cost now counts the salaries of the staff posted at it, with the company's PF and ESI, under site expenses as Site staff salaries.",
+      'A company-wide salary run goes into the books and Tally split by site, so each site carries its own staff cost.',
+    ],
+  },
+  {
     id: '2026-11-letter-templates',
     date: '2026-11-03',
     title: 'Your own words for HR letters',

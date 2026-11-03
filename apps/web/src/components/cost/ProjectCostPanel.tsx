@@ -6,8 +6,8 @@ import { Alert, Button, Col, Empty, Row, Skeleton, Statistic, Table, Typography 
 import { tk } from '@/ds';
 import { AppTabs } from '@/components/common/AppTabs';
 import { TeamOutlined } from '@/components/common/icons';
-import type { ProjectCostDto } from '@erp/shared';
-import { COST_HEADS, EQUIPMENT_RATE_UNIT_LABELS, EXPENSE_CATEGORY_LABELS, unitLabel } from '@erp/shared';
+import type { CostExpenseCategory, ProjectCostDto } from '@erp/shared';
+import { COST_HEADS, EQUIPMENT_RATE_UNIT_LABELS, COST_EXPENSE_LABELS, unitLabel } from '@erp/shared';
 import { useProjectCost } from '@/lib/queries';
 import { formatDate, formatINR, formatPct, formatQty, toNumber, formatMonth, inSentence } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
@@ -135,7 +135,7 @@ export function ProjectCostPanel({ projectId }: { projectId: string }) {
                       pagination={false}
                       dataSource={data.expensesByCategory}
                       columns={[
-                        { title: 'Category', dataIndex: 'category', render: (c: keyof typeof EXPENSE_CATEGORY_LABELS) => EXPENSE_CATEGORY_LABELS[c] },
+                        { title: 'Category', dataIndex: 'category', render: (c: CostExpenseCategory) => COST_EXPENSE_LABELS[c] },
                         { title: 'Bills', dataIndex: 'count', width: 80, align: 'right' },
                         { title: 'Amount (incl. GST)', dataIndex: 'amount', width: 160, align: 'right', render: (v) => <Money value={v} /> },
                       ]}

@@ -264,3 +264,21 @@ test("HR sets the company's leave days and an employee's opening leave, and the 
     await api(hr, `/staff/employees/${emp.id}/leave-opening`, { method: 'PUT', body: { year, lines: ['CASUAL', 'SICK', 'EARNED'].map((type) => ({ type, takenBefore: 0, broughtForward: null })) } });
   }
 });
+
+test("A site's staff salaries count in its project cost", async () => {
+  const md = await apiToken('md@demo.com');
+  type Run = { id: string; status: string };
+  type Slip = { projectName: string | null; gross: string; employerCost: string };
+  type Project = { id: string; name: string };
+  type Cost = { expensesByCategory: { category: string; amount: string }[] };
+  const runs = await api<Run[] | { items: Run[] }>(md, '/payroll/runs');
+  const settled = (Array.isArray(runs) ? runs : runs.items).filter((r) => r.status === 'APPROVED' || r.status === 'PAID');
+  expect(settled.length).toBeGreaterThan(0);
+  const slips = (await Promise.all(settled.map((r) => api<{ payslips: Slip[] }>(md, `/payroll/runs/${r.id}`)))).flatMap((d) => d.payslips);
+  const projects = await api<{ items: Project[] }>(md, '/projects?pageSize=100');
+  const highway = projects.items.find((p) => p.name.startsWith('Bhubaneswar - Puri'))!;
+  const expected = slips.filter((s) => s.projectName === highway.name).reduce((t, s) => t + Number(s.gross) + Number(s.employerCost), 0);
+  expect(expected).toBeGreaterThan(0);
+  const cost = await api<Cost>(md, `/cost/projects/${highway.id}`);
+  expect(Number(cost.expensesByCategory.find((c) => c.category === 'SITE_STAFF')?.amount)).toBeCloseTo(expected, 2);
+});

@@ -18,7 +18,7 @@ import type { BillingUnit } from './billing';
 import type { ProgressNarrativeDto } from './briefs';
 import type { DocumentDiscipline, DocumentKind, LetterDirection, RevisionStatus, TransmittalPurpose } from './documents';
 import type { LeaveStatus, LeaveType, OvertimeStatus, StaffAttendanceStatus } from './staff';
-import type { CostHead } from './cost';
+import type { CostExpenseCategory, CostHead } from './cost';
 import type { PoLineRateCheckDto } from './leakage';
 import type { SupplierDispatchStatus, SupplierNoticeEntity } from './supplier';
 import type { SwitchableModule } from './module-switches';
@@ -1111,7 +1111,7 @@ export interface ProjectCostDto extends ProjectCostSummaryDto {
   from: string | null;
   to: string | null;
   months: CostMonthDto[];
-  expensesByCategory: { category: ExpenseCategory; count: number; amount: string }[];
+  expensesByCategory: { category: CostExpenseCategory; count: number; amount: string }[];
   materialByItem: { itemId: string; name: string; unit: string; quantity: string; rate: string | null; amount: string }[];
   machineryByEquipment: { equipmentId: string; code: string; name: string; rateUnit: EquipmentRateUnit; rate: string | null; days: number; hours: string; amount: string }[];
   labourByTrade: { category: string; manDays: number; dailyRate: string | null; amount: string }[];

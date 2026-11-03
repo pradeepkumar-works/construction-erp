@@ -1640,6 +1640,7 @@ model Project {
   eotApplications      EotApplication[]
   /// Days between programme updates as the contract sets them; null for PROGRAMME_UPDATE_DAYS
   programmeUpdateDays  Int?
+  payslips             Payslip[]                 @relation("PayslipSite")
 
   @@unique([organizationId, code])
   @@index([organizationId, status])
@@ -7112,6 +7113,9 @@ model Payslip {
   employeeCode   String
   employeeName   String
   designation    String
+  /// The site they were posted at when the run was prepared; none is head office. Their salary is that site's cost.
+  projectId      String?
+  project        Project?         @relation("PayslipSite", fields: [projectId], references: [id], onDelete: SetNull)
   projectName    String?
   pan            String?
   uan            String?
@@ -7137,6 +7141,7 @@ model Payslip {
   lines PayslipLine[]
 
   @@unique([runId, employeeId])
+  @@index([projectId])
   @@index([organizationId, employeeId])
 }
 

@@ -224,6 +224,7 @@ export class PayrollRunService {
             employeeCode: row.employeeCode,
             employeeName: row.fullName,
             designation: row.designation,
+            projectId: row.projectId,
             projectName: row.projectName,
             pan: e.pan,
             uan: e.uan,

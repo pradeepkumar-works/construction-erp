@@ -840,8 +840,9 @@ The books are kept from the same postings the Tally export sends. `PostingServic
 module's records into vouchers of keyed ledger lines: certified RA bills are sales, money received is a receipt, approved
 vendor bills are purchases, subcontractor bills journals, payments to vendors and site expenses payments (a journal when
 bought on credit), debit notes debit notes, an approved salary run a journal on the month's last day (salaries and the
-company's PF and ESI against each deduction's payable and salaries payable) and its payment a payment, and a loan or
-advance to staff a payment. The Tally export calls it for records not yet exported in its date range (`unexported`,
+company's PF and ESI against each deduction's payable and salaries payable; a company-wide run splits the salaries
+and the company's PF and ESI by each payslip's site, each line carrying its own cost centre through `Line.site`, head
+office last) and its payment a payment, and a loan or advance to staff a payment. The Tally export calls it for records not yet exported in its date range (`unexported`,
 marked by `tallyExportId`; a run's salary journal and payment are marked apart); the books call it for every record.
 
 `LedgerAccount` is the chart of accounts: one row per ledger key (`PURCHASE`, `VENDOR:<id>`, `CLIENT:<id>`,
@@ -3123,6 +3124,10 @@ no ledger of its own.
   subcontractors (work value of `APPROVED` subcontractor bills, by bill date). Where a subcontractor bill exists the
   actual bill replaces the estimate: issues recovered on an approved subcontractor bill drop out of material, and
   attendance of a contractor with an approved work order on the project drops out of labour.
+  Site staff salaries are site expenses too (`SITE_STAFF` beside the expense categories, `COST_EXPENSE_LABELS`): every
+  payslip of an approved or paid salary run counts its gross and the company's PF and ESI against `Payslip.projectId`, the
+  site the person was posted at when the run was prepared, on the month's last day (`staffCostDate`). Head office staff
+  are no project's cost.
 - **Cash.** Billed and cash in from receivables; vendor and subcontractor bills (approved, with GST, by bill date)
   and cash out (payments by date) from payables.
 - **Value.** Executed value = `APPROVED` progress quantity × BOQ rate (by progress date); measured value =

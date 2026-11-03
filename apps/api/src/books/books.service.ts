@@ -173,7 +173,7 @@ export class BooksService {
             reference: v.reference,
             narration: v.narration,
             projectId: v.projectId,
-            lines: v.lines.map((l) => ({ key: l.ledgerKey, projectId: v.projectId, amount: l.amount.toFixed(2) })),
+            lines: v.lines.map((l) => ({ key: l.ledgerKey, projectId: l.site ? l.site.projectId : v.projectId, amount: l.amount.toFixed(2) })),
           });
           if (was?.hash === hash) continue;
           if (was && (locked(wasDay!) || locked(day))) {
@@ -196,7 +196,7 @@ export class BooksService {
               organizationId,
               voucherId: id,
               accountId: accounts.get(l.ledgerKey)!,
-              projectId: v.projectId,
+              projectId: l.site ? l.site.projectId : v.projectId,
               debit: l.amount.gt(0) ? l.amount : 0,
               credit: l.amount.lt(0) ? l.amount.neg() : 0,
               sortOrder: i,
