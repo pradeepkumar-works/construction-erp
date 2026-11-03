@@ -126,6 +126,9 @@ import {
   overuseStep,
   planFinishLate,
   scheduleWarns,
+  scheduleRollUp,
+  lateWeight,
+  SCHEDULE_ROLLUP_AT,
   stockRunout,
   vendorTrend,
   headsBehind,
@@ -381,6 +384,8 @@ export class WarningsService {
       orderBy: [{ projectId: 'asc' }, { sortOrder: 'asc' }],
     });
     const out: (Draft & { slip: number })[] = [];
+    // Each project's late activities; many on one project become one warning for it (`scheduleRollUp`).
+    const lateOf = new Map<string, { name: string; slipDays: number | null; stalled: boolean; stalledFor: string; draft: Draft & { slip: number } }[]>();
     for (const a of activities) {
       const f = activityForecast(
         {
@@ -400,7 +405,7 @@ export class WarningsService {
       const stalledFor = sinceStart >= 28 ? '4 weeks' : plural(sinceStart, 'day');
       const daysToTarget = daysBetween(today, f.target);
       const need = daysToTarget > 0 ? left / daysToTarget : null;
-      out.push({
+      const draft: Draft & { slip: number } = {
         key: f.stalled ? `schedule:${a.id}:stalled` : `schedule:${a.id}:${Math.floor(f.slipDays! / 14)}`,
         kind: 'SCHEDULE',
         title: f.stalled ? `${a.name} on ${p.code} has had no progress for ${stalledFor}` : `${a.name} on ${p.code} heads for ${plural(f.slipDays!, 'day')} late`,
@@ -432,7 +437,44 @@ export class WarningsService {
         ],
         projectId: p.id,
         projectName: p.name,
-        slip: f.stalled ? 10_000 : f.slipDays!,
+        slip: lateWeight(f),
+      };
+      lateOf.set(p.id, [...(lateOf.get(p.id) ?? []), { name: a.name, slipDays: f.slipDays, stalled: f.stalled, stalledFor, draft }]);
+    }
+    for (const [projectId, late] of lateOf) {
+      const r = scheduleRollUp(late);
+      if (!r) {
+        out.push(...late.map((l) => l.draft));
+        continue;
+      }
+      const p = byId.get(projectId)!;
+      const said = (l: (typeof late)[number]) => (l.stalled ? `no progress for ${l.stalledFor}` : `${plural(l.slipDays!, 'day')} late`);
+      const shown = r.items.slice(0, 8);
+      const parts = [r.late ? `${r.late} ${r.late === 1 ? 'activity heads' : 'activities head'} past ${r.late === 1 ? 'its' : 'their'} finish` : '', r.stalled ? `${r.stalled} ${r.stalled === 1 ? 'has' : 'have'} had no progress for two weeks or more` : ''].filter(Boolean);
+      out.push({
+        key: `schedule:${projectId}:project:${r.keyPart}`,
+        kind: 'SCHEDULE',
+        title: `${r.items.length} activities on ${p.code} are late or stalled`,
+        detail: `${parts.join(' and ')}. The worst is ${r.items[0].name}: ${said(r.items[0])}.`,
+        action: r.stalled ? `Go through ${p.code}'s schedule with the site team: restart or re-plan the stalled work first, then add crews where the pace is short` : `Go through ${p.code}'s schedule with the site team and add crews or re-sequence where the pace is short`,
+        impact: r.worstSlip !== null ? { text: `Up to ${plural(r.worstSlip, 'day')} late`, inr: null, days: r.worstSlip } : { text: `${r.stalled} stalled`, inr: null, days: null },
+        working: [
+          ...shown.map((l) => `${l.name}: ${said(l)}`),
+          ...(r.items.length > shown.length ? [`and ${r.items.length - shown.length} more on the schedule`] : []),
+          `From ${SCHEDULE_ROLLUP_AT} late or stalled activities on a project, they are one warning for the project. A slip of ${SLIP_GRACE_DAYS} days or less is not flagged`,
+        ],
+        facts: [
+          { label: 'Heading late', value: String(r.late) },
+          { label: 'Stalled', value: String(r.stalled) },
+          { label: 'Worst slip', value: r.worstSlip !== null ? plural(r.worstSlip, 'day') : 'none forecast' },
+        ],
+        links: [
+          { label: 'Schedule', href: `/projects/${p.id}?tab=schedule` },
+          { label: 'Progress entries', href: `/projects/${p.id}?tab=progress` },
+        ],
+        projectId: p.id,
+        projectName: p.name,
+        slip: lateWeight(r.items[0]),
       });
     }
     out.push(...(await this.planFinishes(projects)));

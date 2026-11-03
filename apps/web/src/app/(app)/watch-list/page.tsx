@@ -37,6 +37,8 @@ import type { ListColumn } from '@/components/list/DataTable';
 import { MoreActions } from '@/components/record/MoreActions';
 import type { RecordMenuAction } from '@/components/record/RecordFrame';
 import { tk } from '@/ds';
+import { ExportButton } from '@/components/common/ExportButton';
+import { downloadXlsx, exportFileName, type ExportColumn } from '@/lib/exportExcel';
 
 type DismissForm = { outcome: WarningOutcome; reason?: string };
 
@@ -118,6 +120,20 @@ function WarningTable({ list, rows, empty, dismissed, onOpen, actions }: { list:
  * Wrong too often pauses until management resumes it. The header's project narrows the list to that project and the
  * company-wide ones.
  */
+/** The open warnings as a sheet: what is at stake, what to do and the working behind it, in the table's order. */
+const EXPORT: ExportColumn<WarningDto>[] = [
+  { header: 'Kind', value: (w) => WARNING_KIND_LABELS[w.kind], width: 18 },
+  { header: 'Project', value: (w) => w.projectName ?? '', width: 30 },
+  { header: 'Warning', value: (w) => w.title, width: 50 },
+  { header: 'What the figures say', value: (w) => w.detail, width: 60 },
+  { header: 'At stake', value: (w) => w.impact?.text ?? '', width: 22 },
+  { header: 'Rupees at stake', value: (w) => w.impact?.inr ?? '', width: 16 },
+  { header: 'Days at stake', value: (w) => w.impact?.days ?? '', width: 12 },
+  { header: 'What to do', value: (w) => w.action, width: 50 },
+  { header: 'Confidence', value: (w) => WARNING_CONFIDENCE_LABELS[w.confidence], width: 14 },
+  { header: 'Working', value: (w) => w.working.join('\n'), width: 80 },
+];
+
 export default function Page() {
   const { user } = useAuth();
   const allowed = !!user && canSeeWatchList(user.roleKey);
@@ -309,6 +325,16 @@ export default function Page() {
       <PageHeader
         title="Watch list"
         subtitle={`Early warnings as of ${formatDate(data.asOf)}: what to do, what it costs, and the working behind it. Say what became of one when you dismiss it, so each check keeps its track record.`}
+        extra={
+          open.length ? (
+            <ExportButton
+              onExport={async () => {
+                await downloadXlsx(exportFileName('watch-list'), 'watch list', EXPORT, open);
+                return open.length;
+              }}
+            />
+          ) : null
+        }
       />
       {insights.data?.checks.length ? (
         <div style={{ marginBottom: tk.space[4] }}>

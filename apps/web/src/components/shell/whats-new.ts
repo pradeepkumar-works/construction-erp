@@ -9,6 +9,15 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-watch-list-rollup',
+    date: '2026-11-03',
+    title: 'A slipping project is one line on the watch list',
+    points: [
+      'When four or more activities on a project are late or stalled, the watch list shows one warning for the project, with the worst first under Why, instead of one per activity. Cash, stock, vendors and the rest no longer sink under them.',
+      'The watch list exports to Excel, with what to do and the working for each warning.',
+    ],
+  },
+  {
     id: '2026-11-module-figures',
     date: '2026-11-03',
     title: 'Figures on every department, and counts on more pages',
