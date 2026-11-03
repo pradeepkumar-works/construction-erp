@@ -1030,7 +1030,14 @@ earnings kept, the special allowance taking the rounding), so payroll pays what 
 person has no structure yet or one is already dated that day, refused when that month's salary is approved, noted with
 the letter number, and removed with the event unless a payslip used it.
 Creating a staff record with a joining date writes its JOINED event. `GET /staff/events/:id/letter` returns what the
-letter needs; the web prints it from `components/staff/hrLetterPrint.ts` (an exit also prints the experience certificate).
+letter needs, with the words in force (`template`, and `experienceTemplate` for an exit); the web prints it from
+`components/staff/hrLetterPrint.ts` (an exit also prints the experience certificate).
+The words are templates (`@erp/shared/hr-letters.ts`): `STANDARD_HR_LETTERS` per `HR_LETTER_KINDS` (each event type and
+EXPERIENCE), overlaid by the company's `HrLetterTemplate` rows, which staff admins edit at HR and payroll › Letter
+templates (`GET|PUT /staff/letter-templates`, `LetterTemplatesService`; empty or the standard words remove the row). A
+template is paragraphs split by a blank line, `{field}` for a `LETTER_FIELDS` fact and `[ … ]` around words that print
+only when every field inside has a value; a paragraph with an empty field outside brackets is left out. It is checked by
+`letterTemplateProblem`, filled by `fillLetter` over `hrLetterValues`. Keep `src/scripts/hr-letters-test.ts` passing.
 Other documents are attachments on `Attachment.employeeId` (`PUT /staff/employees/:id/documents`); the joining documents
 below keep theirs out of that list.
 

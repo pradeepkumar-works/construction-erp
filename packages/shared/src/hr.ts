@@ -123,6 +123,9 @@ export interface EmployeeLetterDto {
   };
   /** Who signs: the person who recorded it, and their role */
   signedBy: { name: string; title: string };
+  /** The company's words for this letter (`STANDARD_HR_LETTERS` unless it changed them), and for an exit the experience certificate's */
+  template: string;
+  experienceTemplate: string | null;
 }
 
 export interface HeadcountRowDto {

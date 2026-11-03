@@ -9,6 +9,15 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-letter-templates',
+    date: '2026-11-03',
+    title: 'Your own words for HR letters',
+    points: [
+      'HR and payroll › Letter templates holds the words of every letter, from the offer and appointment to the relieving letter and the experience certificate.',
+      "Change a letter's words, put in the person's facts such as their name, designation or cost to company, and see a preview before you save. The standard words stay a click away.",
+    ],
+  },
+  {
     id: '2026-11-exit-clearance',
     date: '2026-11-03',
     title: 'Exit clearance before the full and final',

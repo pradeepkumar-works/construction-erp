@@ -345,6 +345,8 @@ import type {
   LeaveOpeningDto,
   ExitClearanceDto,
   ClearanceState,
+  HrLetterTemplateDto,
+  HrLetterKind,
   LeaveRequestDto,
   LeaveStatus,
   LeaveType,
@@ -2491,6 +2493,17 @@ export function useClearExit(employeeId: string) {
       qc.setQueryData(['staff', 'clearance', employeeId], d);
       qc.invalidateQueries({ queryKey: ['payroll', 'settlements'] });
     },
+  });
+}
+
+export const useHrLetterTemplates = () =>
+  useQuery({ queryKey: ['staff', 'letter-templates'], queryFn: async () => (await api.get<HrLetterTemplateDto[]>('/staff/letter-templates')).data });
+
+export function useSaveHrLetterTemplate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ kind, body }: { kind: HrLetterKind; body: string | null }) => (await api.put<HrLetterTemplateDto[]>(`/staff/letter-templates/${kind}`, { body })).data,
+    onSuccess: (d) => qc.setQueryData(['staff', 'letter-templates'], d),
   });
 }
 

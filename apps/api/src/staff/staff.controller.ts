@@ -1,10 +1,12 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseEnumPipe, Patch, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { StaffService } from './staff.service';
 import { HrService } from './hr.service';
 import { EmployeeDocumentsService } from './employee-documents.service';
 import { ExitClearanceService } from './exit-clearance.service';
+import { LetterTemplatesService } from './letter-templates.service';
+import { HR_LETTER_KINDS, type HrLetterKind } from '@erp/shared';
 import { todayIn } from '../notifications/time';
 import {
   ApplyLeaveDto,
@@ -27,6 +29,7 @@ import {
   RejectLeaveDto,
   SaveLeaveOpeningDto,
   ClearExitDto,
+  SaveLetterTemplateDto,
   SaveRegisterDto,
   UpdateEmployeeDto,
   UsersQuery,
@@ -41,6 +44,7 @@ export class StaffController {
     private hr: HrService,
     private docs: EmployeeDocumentsService,
     private clearance: ExitClearanceService,
+    private letters: LetterTemplatesService,
   ) {}
 
   @ApiOperation({ summary: 'Counts for the Staff page: leave waiting on the caller, employees, on leave today' })
@@ -179,6 +183,18 @@ export class StaffController {
   @Put('employees/:id/leave-opening')
   saveLeaveOpening(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: SaveLeaveOpeningDto) {
     return this.staff.saveLeaveOpening(user, id, dto);
+  }
+
+  @ApiOperation({ summary: "HR letter templates: the words each letter prints, the company's own or the standard" })
+  @Get('letter-templates')
+  letterTemplates(@CurrentUser() user: RequestUser) {
+    return this.letters.list(user);
+  }
+
+  @ApiOperation({ summary: "Save the company's words for one HR letter; empty puts the standard words back" })
+  @Put('letter-templates/:kind')
+  saveLetterTemplate(@CurrentUser() user: RequestUser, @Param('kind', new ParseEnumPipe(Object.fromEntries(HR_LETTER_KINDS.map((k) => [k, k])))) kind: HrLetterKind, @Body() dto: SaveLetterTemplateDto) {
+    return this.letters.save(user, kind, dto.body ?? null);
   }
 
   @ApiOperation({ summary: "Exit clearance (no dues): each item of the company's list, signed off or still to clear, and the dues the settlement recovers" })

@@ -282,6 +282,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/exit-clearance-test.js
+      - name: HR letters print the company's own words, leave out empty parts and refuse fields that do not exist
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/hr-letters-test.js
       - name: Management figures count supply items and lump sums as work done, find late plans and say why a project needs action
         if: matrix.suite == 'flows'
         working-directory: apps/api

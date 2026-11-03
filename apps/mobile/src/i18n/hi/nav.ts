@@ -255,6 +255,7 @@ export const NAV: Record<string, string> = {
   'Holidays by site.': 'साइट के अनुसार छुट्टियाँ।',
   'Exit clearance items': 'निकास क्लीयरेंस की मदें',
   'The no-dues checklist for someone who leaves.': 'नौकरी छोड़ने वाले के लिए बकाया-मुक्ति की सूची।',
+  'The words of each HR letter, from the offer to the experience certificate.': 'हर एचआर पत्र के शब्द, प्रस्ताव पत्र से अनुभव प्रमाण पत्र तक।',
   'Biometric devices': 'बायोमेट्रिक मशीनें',
   'Fingerprint and face devices, who is enrolled on them, and their punches marking attendance.': 'फ़िंगरप्रिंट और चेहरा पहचानने वाली मशीनें, उन पर कौन दर्ज है, और उनके पंच जिनसे हाज़िरी लगती है।',
   'Salary runs': 'वेतन रन',

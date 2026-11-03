@@ -402,6 +402,9 @@ and the pre-delivery checklist.
   Exit clearance is the `exitClearance` master signed off through `ExitClearanceService` (`clearanceLineProblem`); the full
   and final recovers `clearanceDues` and waits for `clearanceProblem` (`@erp/shared/exit-clearance.ts`). Keep
   `src/scripts/exit-clearance-test.ts` passing.
+  An HR letter's words come only from `fillLetter` over the company's template or `STANDARD_HR_LETTERS`
+  (`@erp/shared/hr-letters.ts`, checked by `letterTemplateProblem`), never a sentence of a printer's own. Keep
+  `src/scripts/hr-letters-test.ts` passing.
 - Biometric (item 101, `apps/api/src/biometric`, ARCHITECTURE "Biometric attendance"): ADMS (`/iclock`, outside `/api`), the
   webhook and punch files all go through `biometric-rules.ts` (tested in `src/scripts/biometric-test.ts`, CI runs it) and
   `BiometricService.ingest`, and a punch reaches attendance only through `applyDay` (a worker never at a site other than the device's).

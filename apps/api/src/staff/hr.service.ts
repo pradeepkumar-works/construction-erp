@@ -8,6 +8,7 @@ import {
   canManageStaff,
   canViewEmployeePrivate,
   isExitEvent,
+  letterTemplateFor,
   type AttachmentDto,
   type EmployeeEventDto,
   type EmployeeLetterDto,
@@ -28,6 +29,7 @@ import { pageArgs, paginated } from '../common/paging';
 import { EmployeeDocumentsDto, ListEmployeeEventsQuery, RecordEmployeeEventDto } from './staff.dto';
 import { nextLetterNo } from './staff.service';
 import { EmployeeDocumentsService } from './employee-documents.service';
+import { LetterTemplatesService } from './letter-templates.service';
 import { structureForCtc } from '../payroll/payroll-rules';
 import { toRulesSettings, toRulesStructure } from '../payroll/salary.service';
 
@@ -60,6 +62,7 @@ export class HrService {
     private audit: AuditService,
     private attachments: AttachmentsService,
     private docs: EmployeeDocumentsService,
+    private templates: LetterTemplatesService,
   ) {}
 
   private toEventDto(e: EventRow, user: RequestUser): EmployeeEventDto {
@@ -265,9 +268,11 @@ export class HrService {
     if (!ev) throw new NotFoundException('Letter not found');
     const held = await this.docs.letterProblem(ev.employeeId, ev.type);
     if (held) throw new BadRequestException(held);
-    const [org, e] = await Promise.all([
+    const exit = isExitEvent(ev.type);
+    const [org, e, own] = await Promise.all([
       this.prisma.organization.findUnique({ where: { id: user.organizationId }, select: { name: true, billingAddress: true } }),
       this.prisma.employee.findUnique({ where: { id: ev.employeeId }, include: { project: { select: { name: true } } } }),
+      this.templates.ownFor(user.organizationId, exit ? [ev.type, 'EXPERIENCE'] : [ev.type]),
     ]);
     return {
       event: this.toEventDto(ev, user),
@@ -286,6 +291,8 @@ export class HrService {
         noticeDays: e!.noticeDays,
       },
       signedBy: { name: ev.createdBy.fullName, title: ROLE_LABELS[ev.createdBy.role.key as RoleKey] ?? 'Authorised signatory' },
+      template: letterTemplateFor(ev.type, own),
+      experienceTemplate: exit ? letterTemplateFor('EXPERIENCE', own) : null,
     };
   }
 

@@ -1033,6 +1033,7 @@ model Organization {
   leaveRequests        LeaveRequest[]
   leaveOpenings        LeaveOpening[]
   exitClearanceLines   ExitClearanceLine[]
+  hrLetterTemplates    HrLetterTemplate[]
   holidays             Holiday[]
   outboundMessages     OutboundMessage[]
   billingPayments      BillingPayment[]
@@ -1350,6 +1351,7 @@ model User {
   leaveApplied            LeaveRequest[]             @relation("LeaveApplicant")
   leaveOpeningsSet        LeaveOpening[]             @relation("LeaveOpeningBy")
   exitClearancesSigned    ExitClearanceLine[]        @relation("ExitClearedBy")
+  hrLetterTemplatesSet    HrLetterTemplate[]         @relation("HrLetterTemplateBy")
   raisedRisks             Risk[]                     @relation("RiskRaiser")
   ownedRisks              Risk[]                     @relation("RiskOwner")
   mixDesignsApproved      MixDesign[]                @relation("MixDesignApprover")
@@ -5764,6 +5766,21 @@ model LeaveRequest {
 
 /// One item of someone's exit clearance (no dues), by the code of the company's `exitClearance` master entry: cleared,
 /// not applicable, or dues the full and final recovers. An item not yet signed off has no row.
+/// The company's own words for an HR letter (`HR_LETTER_KINDS`), over `STANDARD_HR_LETTERS`; no row means the standard
+model HrLetterTemplate {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  /// An `HR_LETTER_KINDS` key: an event type or EXPERIENCE
+  kind           String
+  body           String
+  updatedById    String
+  updatedBy      User         @relation("HrLetterTemplateBy", fields: [updatedById], references: [id])
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, kind])
+}
+
 model ExitClearanceLine {
   id             String         @id @default(uuid())
   organizationId String

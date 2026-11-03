@@ -154,6 +154,14 @@ export class BalanceQuery {
   @ApiPropertyOptional({ example: 2026 }) @IsOptional() @Type(() => Number) @IsInt() @Min(2000) @Max(2100) year?: number;
 }
 
+export class SaveLetterTemplateDto {
+  @ApiPropertyOptional({ description: "The letter's words with {fields} and [optional parts]; empty or null puts the standard words back" })
+  @IsOptional()
+  @IsString()
+  @MaxLength(6000)
+  body?: string | null;
+}
+
 export class ClearExitDto {
   @ApiProperty({ enum: CLEARANCE_STATES, description: 'PENDING takes the item back to be cleared' }) @IsIn(CLEARANCE_STATES) state: ClearanceState;
   @ApiPropertyOptional({ example: 4500, description: 'Rupees to recover, for DUES' }) @IsOptional() @ValidateIf((_, v) => v !== null) @Type(() => Number) @IsNumber() @Min(0) @Max(100000000) amount?: number | null;
