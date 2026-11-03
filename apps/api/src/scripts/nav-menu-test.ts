@@ -46,6 +46,7 @@ const test = (name: string, fn: () => void) => cases.push([name, fn]);
 const admin: NavUser = { roleKey: 'ADMIN' };
 const engineer: NavUser = { roleKey: 'SITE_ENGINEER' };
 const departments = { moduleSet: 'DEPARTMENTS' as const, names: {} };
+const areas = { moduleSet: 'AREAS' as const, names: {} };
 
 test('every node a department module names is in the tree', () => {
   for (const m of DEPARTMENT_MODULES) for (const s of m.subs) for (const id of s.nodes) assert.ok(navNode(id), `${m.key} › ${s.label}: ${id} is not a node`);
@@ -135,6 +136,9 @@ test('settings from the database fall back to the default, and the default is le
   assert.deepEqual(navSettingsFrom({}), DEFAULT_NAV_SETTINGS);
   assert.deepEqual(navSettingsFrom({ navLayout: 'SIDEWAYS', navLook: 'BAR', navNames: ['x'] }), { ...DEFAULT_NAV_SETTINGS, look: 'BAR' });
   assert.ok(isDefaultNav(DEFAULT_NAV_SETTINGS));
+  // The department menu is the standard (Pradeep's pick); the work-area set is a company's choice.
+  assert.equal(DEFAULT_NAV_SETTINGS.moduleSet, 'DEPARTMENTS');
+  assert.ok(!isDefaultNav({ ...DEFAULT_NAV_SETTINGS, moduleSet: 'AREAS' }));
   assert.ok(!isDefaultNav({ ...DEFAULT_NAV_SETTINGS, layout: 'TOP_BAR' }));
 });
 
@@ -146,7 +150,7 @@ test('a person’s own look counts only when the company lets people choose', ()
 });
 
 test('what waits in a module: approvals whose list is one of its pages, and the queues on its pages', () => {
-  for (const settings of [DEFAULT_NAV_SETTINGS, { ...DEFAULT_NAV_SETTINGS, ...departments }]) {
+  for (const settings of [{ ...DEFAULT_NAV_SETTINGS, ...areas }, { ...DEFAULT_NAV_SETTINGS, ...departments }]) {
     const menu = navMenuFor(admin, settings);
     const waiting = menuWaiting(menu, [{ type: 'DPR', count: 3 }], { 'purchases.toOrder': 2, approvals: 5, 'my-work': 9 });
     const holding = (id: string) => menu.filter((m) => m.subs.some((s) => s.nodes.some((n) => (n.shortcutOf ?? n.id) === id))).map((m) => m.key);
@@ -161,7 +165,7 @@ test('what waits in a module: approvals whose list is one of its pages, and the 
 test("the phone's Home tabs: every module has one, each page a user may open is in one tab, masters stay out", () => {
   const named = new Set(NAV_MODULE_NAME_KEYS);
   for (const key of named) assert.ok(HOME_TABS.some((t) => t.key === homeTabOf({ key, family: 'work' })), key);
-  for (const settings of [DEFAULT_NAV_SETTINGS, { ...DEFAULT_NAV_SETTINGS, ...departments }])
+  for (const settings of [{ ...DEFAULT_NAV_SETTINGS, ...areas }, { ...DEFAULT_NAV_SETTINGS, ...departments }])
     for (const user of [admin, engineer]) {
       const menu = navMenuFor(user, settings);
       const tabs = homeTabsFor(menu);

@@ -844,7 +844,7 @@ model Organization {
   navSidebarLook           NavSidebarLook     @default(RAIL)
   navPalette               NavPalette         @default(QUIET)
   navFill                  Json?
-  navModuleSet             NavModuleSet       @default(AREAS)
+  navModuleSet             NavModuleSet       @default(DEPARTMENTS)
   navNames                 Json               @default("{}")
   /// People may choose their own look (User.navLook)
   navPersonalLook          Boolean            @default(false)

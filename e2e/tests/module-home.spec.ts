@@ -38,9 +38,8 @@ test('each module has a screen with its tiles, figures and what waits', async ({
   await expect(api(pm, '/dashboard/modules/nowhere')).rejects.toThrow(/404/);
 
   await signIn(page, 'pm@demo.com');
-  const nav = page.getByRole('navigation', { name: /main/i }).or(page.locator('nav').first());
-  await nav.getByRole('link', { name: 'Site overview' }).first().click();
-  await expect(page).toHaveURL(/\/modules\/site$/);
+  // The work-area module screens stay open by their address under the department menu (the standard).
+  await page.goto('/modules/site');
   await expect(page.getByRole('heading', { level: 1, name: 'Site overview' })).toBeVisible();
   await expect(page).toHaveTitle(/^Site overview/);
   await expect(page.getByText('Daily reports today')).toBeVisible();
@@ -65,7 +64,7 @@ test('each module has a screen with its tiles, figures and what waits', async ({
   const dialog = page.getByRole('dialog', { name: /^Choose the project for/ });
   await expect(dialog).toBeVisible();
   await dialog.getByRole('combobox', { name: 'Project' }).click();
-  await page.locator('.ant-select-item-option').first().click();
+  await page.locator('.ant-select-dropdown:visible .ant-select-item-option').first().click();
   await dialog.getByRole('button', { name: 'Open' }).click();
   await expect(page).toHaveURL(/\/projects\/[\w-]+\?tab=boq$/);
 
