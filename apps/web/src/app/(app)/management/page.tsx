@@ -71,7 +71,10 @@ function Dashboard({ data }: { data: PortfolioDto }) {
     figure('orderBook', t.orderBook, { versus: { of: figure('contractValue', t.contractValue) } }),
     figure('workNotBilled', t.unbilled, billing && { attention: billing }),
     figure('clientsOwe', t.outstanding, { versus: { part: figure('clientsOweOver90', t.over90) } }),
-    figure('marginToDate', t.margin, { versus: { of: figure('workDone', t.workDone) } }),
+    figure('marginToDate', t.margin, {
+      versus: { of: figure('workDone', t.workDone) },
+      caveat: t.openingMissing ? `${t.openingMissing === 1 ? '1 project has' : `${t.openingMissing} projects have`} no opening cost, so it reads high` : undefined,
+    }),
     cash &&
       (cash.firstShort
         ? figure('bankAndCash', cash.today, { attention: { level: 'act', because: `Short in the week of ${day(cash.firstShort)}` } })

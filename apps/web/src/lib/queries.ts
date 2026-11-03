@@ -214,6 +214,7 @@ import type {
   CashFlowDto,
   CashFlowGranularity,
   ProjectCostSummaryDto,
+  ProjectOpeningDto,
   ProgressReportDto,
   PaymentMode,
   ItemDto,
@@ -3167,6 +3168,14 @@ export const useProjectBudget = (projectId: string | undefined) =>
   useQuery({
     queryKey: ['cost', 'budget', projectId],
     queryFn: async () => (await api.get<ProjectBudgetDto>(`/cost/projects/${projectId}/budget`)).data,
+    enabled: !!projectId,
+  });
+
+/** A project's opening cost: what it had spent and done when it came on Nirmaan (ARCHITECTURE "Opening cost"). */
+export const useProjectOpening = (projectId: string | undefined) =>
+  useQuery({
+    queryKey: ['cost', 'opening', projectId],
+    queryFn: async () => (await api.get<ProjectOpeningDto>(`/cost/projects/${projectId}/opening`)).data,
     enabled: !!projectId,
   });
 

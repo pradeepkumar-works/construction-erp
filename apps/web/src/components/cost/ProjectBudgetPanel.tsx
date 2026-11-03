@@ -13,6 +13,7 @@ import { QueryError } from '@/components/common/QueryState';
 import { HEAD_COLORS } from './CostBar';
 import { BudgetFormModal } from './BudgetFormModal';
 import { CashFlowPanel } from './CashFlowPanel';
+import { OpeningSection } from './OpeningSection';
 import { AskButton } from '@/components/ai/AskButton';
 import { Section, SectionStack } from '@/components/common/Section';
 import { Money } from '@/components/common/Money';
@@ -115,6 +116,8 @@ export function ProjectBudgetPanel({ projectId }: { projectId: string }) {
             </Col>
           </Row>
 
+          <OpeningSection projectId={projectId} />
+
           <Section style={{ marginTop: tk.space[4] }} title="By cost head">
             {data.hasHeadBudget ? (
               <Table<BudgetHeadDto>
@@ -174,7 +177,7 @@ export function ProjectBudgetPanel({ projectId }: { projectId: string }) {
             <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[2], marginBottom: 0 }}>
               Work done is approved progress at BOQ rates over the BOQ value. Earned is the budget for the work done (budget × work done); variance is
               earned less actual, red when over budget. Forecast is the actual cost so far plus the budget for the work left. Actual cost is the cost view&apos;s,
-              from the start of the project.
+              from the start of the project, with its opening cost where it has one.
             </Typography.Paragraph>
           </Section>
 

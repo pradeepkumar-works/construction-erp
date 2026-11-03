@@ -2266,12 +2266,40 @@ Nirmaan hands the payroll provider its inputs; PF, ESI, professional tax and sal
   deposit held at the release date, and work still to bill (revised contract value − approved bills' work value) spread
   evenly to the revised completion date, paid the payment days later, × (1 + GST − retention − SD − TDS − GST TDS − cess).
   Out: open vendor and subcontractor bills (payables summary) by due date, and the forecast to complete spread evenly
-  to completion. Anything due before today goes in the first period. A project with no budget has no "cost still to
-  spend"; one past or without a completion date is spread over the next 91 days. Completed and closed projects only
-  contribute their open bills.
+  to completion. Anything due before today goes in the first period. A project with no budget spends its billing still
+  to come at its cost to date over its billing to date (`spendBasis`, opening cost included, `projectsAtCostRatio`);
+  where that says nothing (nothing billed, no opening cost though it ran before Nirmaan, cost over 1.5 times billing)
+  neither its billing nor its spending to come is forecast (`projectsWithoutBudget` with `why`), so the forecast never
+  shows money in with nothing going out. One past or without a completion date is spread over the next 91 days.
+  Completed and closed projects, stores and plants only contribute their open bills.
 - **Roles.** Seen by cost viewers (`COST_VIEW_ROLES`); set by `BUDGET_ROLES` (admin, management, PM).
 - **API.** `GET /cost/projects/:id/budget`, `PUT /cost/projects/:id/budget` (`heads` null removes the cost-head
   budget; `items` sets BOQ budget rates, the rest keep theirs), `GET /cost/cash-flow?projectId&granularity=MONTH|WEEK`.
+
+## Opening cost
+
+A company that moves running projects onto Nirmaan enters their contract, BOQ and the RA bills raised so far, but not
+the cost run up before: their margin then reads as nearly all of their billing (the portfolio showed 93.9%).
+
+- **Table.** `ProjectOpening` (one per project): `asOf` (the day the figures stand at, usually the day the project came
+  on), an amount per cost head as in `ProjectBudget`, `workDone` (value of the work done by then, null when not known),
+  notes, who set it. Tenant table with its `tenant_isolation` policy.
+- **Counted once, in the cost view.** `CostService.compute` adds the heads on `asOf` (and `workDone` to the executed
+  value) when `asOf` is in the period asked for, and says so in `Acc.opening` / `ProjectCostSummaryDto.opening`. So cost
+  to date, the budget forecast and earned value, the management dashboard's margin, the P&L and monthly reports and the
+  cash flow's cost ratio all read it with no rules of their own. The management dashboard's work done takes the opening
+  work done plus progress since where that is more than its BOQ or stage count (`withOpeningWork`).
+- **When one is needed** (`@erp/shared/project-opening.ts`, tested in `src/scripts/project-opening-test.ts`). A project ran
+  before Nirmaan when it started more than `OPENING_GRACE_DAYS` (30) before it was entered (`ranBeforeNirmaan` over
+  `startDate` and `createdAt`); `openingMissing` when it ran before and has none (never a store or plant). A project
+  entered late whose history is all keyed in records an opening of zero at its start. The checks on one are
+  `openingProblem` (a date from the start to today, amounts of zero or more).
+- **Flagged.** The Overview's `dataProblems` (`openingMissing`, for `canViewCost` only, marking cost and margin); the
+  management dashboard's health reason (cost, watch) and `PortfolioTotalsDto.openingMissing`, which puts a caveat on the
+  margin; the Money summary's margin; the P&L report's caveat and note; the cash flow leaves the project's billing out.
+- **Screens and API.** The Budget tab's Opening cost section (`OpeningSection`, `OpeningFormModal`), shown where the
+  project ran before or has one; the cost page notes it under the heads. `GET|PUT|DELETE /cost/projects/:id/opening`,
+  seen by cost viewers, set by `BUDGET_ROLES`, audited. The demo projects get theirs in `seedProjectOpenings`.
 
 ## Earned value (v6 item 115)
 

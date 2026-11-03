@@ -6,14 +6,21 @@ import { Alert, Segmented, Statistic, Table, Typography } from 'antd';
 import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
-import type { CashFlowGranularity, CashFlowPeriodDto } from '@erp/shared';
+import type { CashFlowDto, CashFlowGranularity, CashFlowPeriodDto } from '@erp/shared';
 import { DEFAULT_CLIENT_PAYMENT_DAYS } from '@erp/shared';
 import { useProjectScope } from '@/lib/project-scope';
 import { useCashFlow } from '@/lib/queries';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
-import { formatINR, toNumber, formatMonth, formatDayMonth } from '@/lib/format';
+import { formatINR, formatPct, toNumber, formatMonth, formatDayMonth } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { Money } from '@/components/common/Money';
+
+/** Why a project with no budget is left out of the forecast (`spendBasis`). */
+const WITHOUT_BUDGET_WHY: Record<CashFlowDto['projectsWithoutBudget'][number]['why'], string> = {
+  noBilling: 'nothing billed yet',
+  openingMissing: 'no opening cost',
+  ratioOff: 'cost far above billing',
+};
 
 const RED = tk.color.tone.danger.fg;
 const GREEN = tk.color.tone.success.fg;
@@ -108,7 +115,7 @@ export function CashFlowPanel({ projectId: fixedProject }: { projectId?: string 
               />
             ) : null}
           </div>
-          {data.projectsWithoutBudget.length || data.projectsWithoutEndDate.length ? (
+          {data.projectsWithoutBudget.length || data.projectsWithoutEndDate.length || data.projectsAtCostRatio.length ? (
             <Alert
               type="warning"
               showIcon
@@ -117,19 +124,37 @@ export function CashFlowPanel({ projectId: fixedProject }: { projectId?: string 
               description={
                 <>
                   {data.projectsWithoutBudget.length ? (
-                    <div>
-                      No budget, so the cost still to spend is left out:{' '}
+                    <p style={{ margin: 0 }}>
+                      No budget, so neither their billing nor their spending still to come is in the forecast:{' '}
                       {data.projectsWithoutBudget.map((p, i) => (
                         <React.Fragment key={p.projectId}>
                           {i ? ', ' : ''}
-                          <Link className="text-link" href={`/projects/${p.projectId}?tab=budget`}>{p.projectCode}</Link>
+                          <Link className="text-link" href={`/projects/${p.projectId}?tab=budget`} translate="no">
+                            {p.projectCode}
+                          </Link>{' '}
+                          ({WITHOUT_BUDGET_WHY[p.why]})
                         </React.Fragment>
                       ))}
                       .
-                    </div>
+                    </p>
+                  ) : null}
+                  {data.projectsAtCostRatio.length ? (
+                    <p style={{ margin: 0 }}>
+                      No budget, so their spending still to come is their billing still to come at their cost so far:{' '}
+                      {data.projectsAtCostRatio.map((p, i) => (
+                        <React.Fragment key={p.projectId}>
+                          {i ? ', ' : ''}
+                          <Link className="text-link" href={`/projects/${p.projectId}?tab=budget`} translate="no">
+                            {p.projectCode}
+                          </Link>{' '}
+                          ({formatPct(p.costPct)} of billing)
+                        </React.Fragment>
+                      ))}
+                      .
+                    </p>
                   ) : null}
                   {data.projectsWithoutEndDate.length ? (
-                    <div>
+                    <p style={{ margin: 0 }}>
                       Past or without a completion date, so the work left is spread over the next three months:{' '}
                       {data.projectsWithoutEndDate.map((p, i) => (
                         <React.Fragment key={p.projectId}>
@@ -138,7 +163,7 @@ export function CashFlowPanel({ projectId: fixedProject }: { projectId?: string 
                         </React.Fragment>
                       ))}
                       .
-                    </div>
+                    </p>
                   ) : null}
                 </>
               }

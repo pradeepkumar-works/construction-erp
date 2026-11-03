@@ -36,7 +36,7 @@ import { seedDemoGroup, seedGroupCompanies } from './seed-group';
 import { seedGroupModules } from './seed-group-modules';
 import { seedProjectTypes } from './seed-project-types';
 import { DEFAULT_SETTINGS, computePayslip, structureCost, type RulesStructure } from '../src/payroll/payroll-rules';
-import { COMPANY_KIND_INFO, DEFAULT_CLOSEOUT_ITEMS, PAYSLIP_CODES, PERMIT_PRECAUTIONS, ROLE_KEYS, ROLE_LABELS, STANDARD_CHECKLISTS, gstinCheckChar, isWeeklyOff, leaveDays, ppeReplaceBy, scaleFrom, takeoffValue, VERTICAL_OF_TYPE, type MarkupPoint, type ProjectType, type PpeKind, type TakeoffKind } from '@erp/shared';
+import { COMPANY_KIND_INFO, DEFAULT_CLOSEOUT_ITEMS, PAYSLIP_CODES, PERMIT_PRECAUTIONS, ROLE_KEYS, ROLE_LABELS, STANDARD_CHECKLISTS, gstinCheckChar, isWeeklyOff, leaveDays, ppeReplaceBy, ranBeforeNirmaan, scaleFrom, takeoffValue, VERTICAL_OF_TYPE, type MarkupPoint, type ProjectType, type PpeKind, type TakeoffKind } from '@erp/shared';
 import { day } from './seed-clock';
 
 const prisma = new PrismaClient();
@@ -1913,6 +1913,79 @@ async function modulesPass(organizationId: string, passwordHash: string) {
   await seedVerticals(organizationId);
   await seedConsultantChecks(prisma, organizationId);
   await seedProgramme(prisma, organizationId);
+  await seedProjectOpenings(organizationId);
+}
+
+/**
+ * Opening cost (ARCHITECTURE "Opening cost"): the demo projects carry more work and bills than cost records, as a
+ * company that moved running work onto Nirmaan would. Each demo project of the group that ran before it was entered and
+ * has no opening cost gets one: what brings its cost to about 78% of its work done (each BOQ item at the larger of its
+ * approved progress and measurement), by the usual split of heads, as of the day before its first cost record. One whose
+ * records already cost that much came on at its start with nothing spent. Writes only what is missing.
+ */
+async function seedProjectOpenings(demoOrgId: string) {
+  /** The child companies' demo projects (`seed-group.ts`), so a project set up by hand on the live demo gets no opening of the seed's. */
+  const GROUP_DEMO_PROJECT_CODES = ['BC-2026-01', 'BC-2026-02', 'DC-2026-01', 'DC-2026-02', 'DC-2026-03', 'LAB-01', 'LAB-02', 'LAB-03', 'LAB-04'];
+  const { groupId } = await prisma.organization.findUniqueOrThrow({ where: { id: demoOrgId }, select: { groupId: true } });
+  const orgs = groupId ? await prisma.organization.findMany({ where: { groupId }, select: { id: true } }) : [{ id: demoOrgId }];
+  const split = { material: 0.44, subcontract: 0.2, machinery: 0.16, labour: 0.12, expenses: 0.08 };
+  for (const { id: organizationId } of orgs) {
+    const maker = await prisma.user.findFirst({ where: { organizationId, isActive: true, role: { key: { in: ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'] } } }, orderBy: { createdAt: 'asc' }, select: { id: true } });
+    if (!maker) continue;
+    const projects = await prisma.project.findMany({
+      where: { organizationId, code: { in: [...DEMO_PROJECT_CODES, ...GROUP_DEMO_PROJECT_CODES] }, opening: null, type: { notIn: ['STORE', 'PLANT'] }, contractValue: { not: null } },
+      select: { id: true, type: true, startDate: true, createdAt: true },
+    });
+    for (const p of projects) {
+      const startDate = p.startDate ? p.startDate.toISOString().slice(0, 10) : null;
+      if (!startDate || !ranBeforeNirmaan(startDate, p.createdAt.toISOString().slice(0, 10))) continue;
+      // Work done, roughly as the management dashboard counts it, and the cost already recorded, roughly as the cost view does.
+      const [items, progress, measured, expenses, subBills, issues, lines, rates] = await Promise.all([
+        prisma.boqItem.findMany({ where: { projectId: p.id }, select: { id: true, rate: true } }),
+        prisma.progressEntry.findMany({ where: { projectId: p.id, status: 'APPROVED', activity: { boqItemId: { not: null } } }, select: { quantity: true, activity: { select: { boqItemId: true } } } }),
+        prisma.measurementSheet.groupBy({ by: ['boqItemId'], where: { projectId: p.id, status: 'APPROVED' }, _sum: { totalQty: true } }),
+        prisma.expense.aggregate({ where: { projectId: p.id, status: 'APPROVED' }, _sum: { totalAmount: true } }),
+        prisma.subcontractBill.aggregate({ where: { projectId: p.id, status: 'APPROVED' }, _sum: { grossAmount: true } }),
+        prisma.stockTxn.findMany({ where: { projectId: p.id, type: { in: ['ISSUE', 'RETURN_FROM_SITE'] } }, select: { quantity: true, item: { select: { rate: true } } } }),
+        prisma.attendanceLine.findMany({ where: { sheet: { projectId: p.id } }, select: { category: true, count: true } }),
+        prisma.labourRate.findMany({ where: { organizationId }, select: { category: true, dailyRate: true } }),
+      ]);
+      const progressQty = new Map<string, Prisma.Decimal>();
+      for (const e of progress) progressQty.set(e.activity.boqItemId!, (progressQty.get(e.activity.boqItemId!) ?? D(0)).add(e.quantity));
+      const measuredQty = new Map(measured.map((m) => [m.boqItemId, m._sum.totalQty ?? D(0)]));
+      const boqWork = items.reduce((t, b) => t.add(Prisma.Decimal.max(progressQty.get(b.id) ?? D(0), measuredQty.get(b.id) ?? D(0)).mul(b.rate)), D(0));
+      // A lump-sum or EPC contract is valued by its stages, not its BOQ: what it has billed stands for its work there.
+      const billed = await prisma.raBill.aggregate({ where: { projectId: p.id, status: 'APPROVED' }, _sum: { grossAmount: true, pvAmount: true } });
+      const workDone = Prisma.Decimal.max(boqWork, (billed._sum.grossAmount ?? D(0)).add(billed._sum.pvAmount ?? D(0)));
+      const rateOf = new Map(rates.map((r) => [r.category.trim().toLowerCase(), r.dailyRate]));
+      const recorded = (expenses._sum.totalAmount ?? D(0))
+        .add(subBills._sum.grossAmount ?? D(0))
+        .add(issues.reduce((t, i) => t.add(i.item.rate ? i.quantity.neg().mul(i.item.rate) : 0), D(0)))
+        .add(lines.reduce((t, l) => t.add((rateOf.get(l.category.trim().toLowerCase()) ?? D(0)).mul(l.count)), D(0)));
+      const gap = workDone.mul(0.78).sub(recorded);
+      const amount = gap.gt(workDone.mul(0.01)) ? gap : D(0);
+      const firsts = await Promise.all([
+        prisma.expense.findFirst({ where: { projectId: p.id }, orderBy: { date: 'asc' }, select: { date: true } }),
+        prisma.stockTxn.findFirst({ where: { projectId: p.id, type: 'ISSUE' }, orderBy: { date: 'asc' }, select: { date: true } }),
+        prisma.subcontractBill.findFirst({ where: { projectId: p.id }, orderBy: { billDate: 'asc' }, select: { billDate: true } }),
+        prisma.attendanceSheet.findFirst({ where: { projectId: p.id }, orderBy: { date: 'asc' }, select: { date: true } }),
+      ]);
+      const first = firsts.map((f) => (f ? ('date' in f ? f.date : f.billDate) : null)).filter((d): d is Date => !!d).sort((a, b) => a.getTime() - b.getTime())[0];
+      const dayBefore = first ? new Date(first.getTime() - 86_400_000) : p.createdAt;
+      const asOf = amount.gt(0) && dayBefore > p.startDate! ? new Date(`${dayBefore.toISOString().slice(0, 10)}T00:00:00Z`) : p.startDate!;
+      const heads = Object.fromEntries(Object.entries(split).map(([k, f]) => [k, amount.gt(0) && asOf > p.startDate! ? amount.mul(f).toDecimalPlaces(0) : D(0)])) as Record<keyof typeof split, Prisma.Decimal>;
+      await prisma.projectOpening.create({
+        data: {
+          organizationId,
+          projectId: p.id,
+          asOf,
+          ...heads,
+          notes: heads.material.gt(0) ? 'From the books up to the day before the first cost entered here.' : 'On Nirmaan from its start: nothing spent before.',
+          updatedById: maker.id,
+        },
+      });
+    }
+  }
 }
 
 main()

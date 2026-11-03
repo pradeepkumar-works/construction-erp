@@ -82,6 +82,8 @@ function caveatOf(p: DataProblemDto, gap: BoqContractGap | null): string {
       return `${plural(p.count ?? 0, 'BOQ item')} with no activity, not counted`;
     case 'activitiesUndated':
       return `${plural(p.count ?? 0, 'activity', 'activities')} with no dates left out of the plan`;
+    case 'openingMissing':
+      return 'No opening cost: leaves out what was spent before Nirmaan';
   }
 }
 
@@ -112,6 +114,13 @@ function checkOf(p: DataProblemDto, gap: BoqContractGap | null, projectId: strin
         title: `${plural(p.count ?? 0, 'activity has', 'activities have')} no planned start or finish`,
         detail: 'What is planned by today leaves them out, so progress against the plan is off.',
         links: [{ label: 'Give them dates on the Schedule tab', href }],
+      };
+    case 'openingMissing':
+      return {
+        ...base,
+        title: 'The project ran before it came on Nirmaan and has no opening cost',
+        detail: 'Cost counts only what was recorded since, so cost reads low and margin high until the cost run up before is recorded.',
+        links: [{ label: 'Record it on the Budget tab', href }],
       };
   }
 }
@@ -161,7 +170,7 @@ export function ProjectOverview({ project }: { project: ProjectDetail }) {
       cost &&
         (executed > 0
           ? figure('cost', cost.cost.total, { when: 'toDate', versus: { of: figure('workDone', executed) }, attention: verdict('cost'), caveat: caveat('cost') })
-          : figure('cost', cost.cost.total, { when: 'toDate' })),
+          : figure('cost', cost.cost.total, { when: 'toDate', caveat: caveat('cost') })),
       dash.activitiesTotal > 0 && figure('delayedActivities', dash.activitiesDelayed, { versus: { of: dash.activitiesTotal } }),
     ];
   })();

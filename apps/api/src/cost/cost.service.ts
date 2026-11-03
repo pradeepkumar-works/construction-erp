@@ -6,7 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
-import { dec, money, parseDate } from '../common/serialize';
+import { dateOnly, dec, money, parseDate } from '../common/serialize';
 import { CostQuery, SetLabourRatesDto } from './cost.dto';
 
 type D = Prisma.Decimal;
@@ -22,9 +22,9 @@ export interface Heads {
   labour: D;
   subcontract: D;
 }
-const emptyHeads = (): Heads => ({ expenses: ZERO, material: ZERO, machinery: ZERO, labour: ZERO, subcontract: ZERO });
+export const emptyHeads = (): Heads => ({ expenses: ZERO, material: ZERO, machinery: ZERO, labour: ZERO, subcontract: ZERO });
 export const total = (h: Heads) => h.expenses.plus(h.material).plus(h.machinery).plus(h.labour).plus(h.subcontract);
-const headsDto = (h: Heads): CostHeadsDto => ({
+export const headsDto = (h: Heads): CostHeadsDto => ({
   expenses: money(h.expenses),
   material: money(h.material),
   machinery: money(h.machinery),
@@ -51,6 +51,8 @@ export interface Acc {
   unpricedItems: Set<string>;
   unpricedLogs: number;
   unpricedManDays: number;
+  /** The opening cost counted in the period: what the project had spent, and done, when it came on Nirmaan */
+  opening: { asOf: Date; heads: Heads; workDone: D | null } | null;
 }
 
 const newAcc = (): Acc => ({
@@ -70,6 +72,7 @@ const newAcc = (): Acc => ({
   unpricedItems: new Set(),
   unpricedLogs: 0,
   unpricedManDays: 0,
+  opening: null,
 });
 
 /**
@@ -173,6 +176,7 @@ export class CostService {
       payableBilled: money(acc.payableBilled),
       cashOut: money(acc.cashOut),
       unpriced: { materialItems: acc.unpricedItems.size, machineryLogs: acc.unpricedLogs, labourManDays: acc.unpricedManDays },
+      opening: acc.opening ? { asOf: dateOnly(acc.opening.asOf)!, cost: headsDto(acc.opening.heads), workDone: money(acc.opening.workDone) } : null,
     };
   }
 
@@ -182,7 +186,7 @@ export class CostService {
     if (!projectIds.length) return out;
     const scope = { organizationId, projectId: { in: projectIds }, ...(date ? { date } : {}) };
     const inProjects = { organizationId, projectId: { in: projectIds } };
-    const [progress, measurements, expenses, issues, logs, attendance, rates, bills, receipts, subBills, vendorBills, payments, subVendors, otherBills, debitNotes] = await Promise.all([
+    const [progress, measurements, expenses, issues, logs, attendance, rates, bills, receipts, subBills, vendorBills, payments, subVendors, otherBills, debitNotes, openings] = await Promise.all([
       this.prisma.progressEntry.findMany({ where: { ...scope, status: 'APPROVED' }, select: { projectId: true, date: true, quantity: true, activity: { select: { boqItem: { select: { rate: true } } } } } }),
       this.prisma.measurementSheet.findMany({ where: { ...scope, status: 'APPROVED' }, select: { projectId: true, totalQty: true, boqItem: { select: { rate: true } } } }),
       this.prisma.expense.findMany({ where: { ...scope, status: 'APPROVED' }, select: { projectId: true, date: true, category: true, totalAmount: true } }),
@@ -230,6 +234,8 @@ export class CostService {
           subcontractBill: { select: { workOrderId: true, workOrder: { select: { woNo: true } } } },
         },
       }),
+      // What a project had spent and done when it came on Nirmaan, counted on that day (ARCHITECTURE "Opening cost").
+      this.prisma.projectOpening.findMany({ where: { ...inProjects, ...(date ? { asOf: date } : {}) } }),
     ]);
     for (const b of vendorBills) out.get(b.projectId)!.payableBilled = b._sum.total ?? ZERO;
     for (const p of payments) out.get(p.projectId)!.cashOut = p._sum.amount ?? ZERO;
@@ -324,6 +330,17 @@ export class CostService {
       } else if (vb?.kind === 'HIRE' && vb.equipment) machine(acc, n.date, vb.equipment, amount);
       else if (vb?.kind === 'SERVICE') machine(acc, n.date, workshop(n.vendorId, n.vendor.name), amount);
       else if (vb) expense(acc, n.date, vb.expenseCategory ?? 'OTHER', amount, 0);
+    }
+    for (const o of openings) {
+      const acc = out.get(o.projectId)!;
+      const heads: Heads = { expenses: o.expenses, material: o.material, machinery: o.machinery, labour: o.labour, subcontract: o.subcontract };
+      for (const h of Object.keys(heads) as (keyof Heads)[]) add(acc, o.asOf, h, heads[h]);
+      if (o.workDone) {
+        acc.executed = acc.executed.plus(o.workDone);
+        const m = month(acc, o.asOf);
+        m.executed = m.executed.plus(o.workDone);
+      }
+      acc.opening = { asOf: o.asOf, heads, workDone: o.workDone };
     }
     const rateOf = new Map(rates.map((r) => [key(r.category), r.dailyRate]));
     for (const a of attendance) {

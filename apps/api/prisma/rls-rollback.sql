@@ -681,4 +681,8 @@ ALTER TABLE "EmployeeDocument" NO FORCE ROW LEVEL SECURITY;
 ALTER TABLE "EmployeeDocument" DISABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON "EmployeeDocument";
 
+ALTER TABLE "ProjectOpening" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "ProjectOpening" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "ProjectOpening";
+
 DROP FUNCTION IF EXISTS app_current_org();

@@ -183,7 +183,7 @@ export class ProjectAreasService {
       figure('moneyReceived', m.received, { when: 'toDate' }),
       figure('clientsOwe', m.outstanding, { versus: { part: figure('clientsOweOver90', m.over90) } }),
       figure('workNotBilled', m.unbilled, unbilled ? { attention: unbilled } : undefined),
-      canViewCost(user.roleKey) && figure('marginToDate', m.margin, { versus: { of: figure('workDone', m.workDone) } }),
+      canViewCost(user.roleKey) && figure('marginToDate', m.margin, { versus: { of: figure('workDone', m.workDone) }, caveat: m.openingMissing ? 'No opening cost: leaves out what was spent before Nirmaan' : undefined }),
     ];
   }
 }

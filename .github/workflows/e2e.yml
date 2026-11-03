@@ -230,6 +230,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/project-setup-test.js
+      - name: Opening cost for projects that ran before Nirmaan, in the margin and the cash-flow forecast
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/project-opening-test.js
       - name: Pipe networks read from EPANET and Excel, segments held to their length, zone sheets and working fronts
         if: matrix.suite == 'flows'
         working-directory: apps/api

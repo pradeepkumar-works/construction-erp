@@ -1097,6 +1097,8 @@ export interface ProjectCostSummaryDto {
   /** Paid to vendors and subcontractors in the period */
   cashOut: string;
   unpriced: UnpricedDto;
+  /** The opening cost counted in the period (in `cost` and `executedValue`): what the project had spent and done when it came on Nirmaan */
+  opening: { asOf: string; cost: CostHeadsDto; workDone: string | null } | null;
 }
 
 export interface CostMonthDto extends CostHeadsDto {
@@ -1226,8 +1228,14 @@ export interface CashFlowDto {
   /** Amounts due before today, already counted in the first period */
   overdueIn: string;
   overdueOut: string;
-  /** Projects whose remaining work is not in the forecast because they have no budget */
-  projectsWithoutBudget: { projectId: string; projectCode: string }[];
+  /**
+   * Projects with no budget whose cost ratio says nothing either (`spendBasis`): neither their billing nor their spending
+   * still to come is in the forecast. `why`: nothing billed yet, no opening cost though they ran before Nirmaan, or cost
+   * far above billing.
+   */
+  projectsWithoutBudget: { projectId: string; projectCode: string; why: 'noBilling' | 'openingMissing' | 'ratioOff' }[];
+  /** Projects with no budget whose spending still to come is their billing still to come at their cost to date, as % of billed */
+  projectsAtCostRatio: { projectId: string; projectCode: string; costPct: number }[];
   /** Projects past (or without) a completion date: their remaining billing and budget are spread over the next 3 months */
   projectsWithoutEndDate: { projectId: string; projectCode: string }[];
 }

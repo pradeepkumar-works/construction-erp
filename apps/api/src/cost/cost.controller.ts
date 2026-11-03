@@ -1,9 +1,10 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CostService } from './cost.service';
 import { BudgetService } from './budget.service';
 import { CashFlowService } from './cash-flow.service';
-import { CashFlowQuery, CostQuery, EarnedValueQuery, SetBudgetDto, SetLabourRatesDto } from './cost.dto';
+import { CashFlowQuery, CostQuery, EarnedValueQuery, SetBudgetDto, SetLabourRatesDto, SetOpeningDto } from './cost.dto';
+import { OpeningService } from './opening.service';
 import { EarnedValueService } from './earned-value.service';
 import { CurrentUser, RequestUser } from '../common/current-user';
 
@@ -16,7 +17,29 @@ export class CostController {
     private budget: BudgetService,
     private cashFlow: CashFlowService,
     private earnedValue: EarnedValueService,
+    private opening: OpeningService,
   ) {}
+
+  @ApiOperation({
+    summary: "One project's opening cost: what it had spent by head, and done, on the day it came on Nirmaan",
+    description: 'Approvers and accounts. `missing` is true when the project started more than 30 days before it was entered and has none.',
+  })
+  @Get('projects/:id/opening')
+  getOpening(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string) {
+    return this.opening.get(user, id);
+  }
+
+  @ApiOperation({ summary: "Record a project's opening cost", description: 'Admin, management or the project manager. Cost to date counts it from its date.' })
+  @Put('projects/:id/opening')
+  setOpening(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: SetOpeningDto) {
+    return this.opening.set(user, id, dto);
+  }
+
+  @ApiOperation({ summary: "Remove a project's opening cost", description: 'Admin, management or the project manager.' })
+  @Delete('projects/:id/opening')
+  removeOpening(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string) {
+    return this.opening.remove(user, id);
+  }
 
   @ApiOperation({
     summary: 'Cash-flow forecast by month (six) or week (twelve)',

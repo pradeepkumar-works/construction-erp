@@ -44,6 +44,14 @@ export function contractWorkDone(model: string, boqWork: number, donePct: number
   return Math.max(boqWork, (lumpSum * Math.min(100, Math.max(0, donePct))) / 100);
 }
 
+/**
+ * Work done with what was done before the project came on Nirmaan (its opening work done): the opening plus progress
+ * since, where that is more than the BOQ or stage count, which may not reach back that far.
+ */
+export function withOpeningWork(workDone: number, executedWithOpening: number, openingWork: number | null): number {
+  return openingWork && openingWork > 0 ? Math.max(workDone, executedWithOpening) : workDone;
+}
+
 /** The share of a bill's work value the client has settled: settled ÷ invoice, at most all of it. */
 export function paidWork(workValue: number, invoice: number, settled: number): number {
   if (invoice <= 0) return 0;
@@ -153,11 +161,13 @@ export interface HealthFacts {
   approvalsWaiting: number;
   approvalsOldestDays: number | null;
   highRisks: number;
+  /** It ran before it came on Nirmaan and has no opening cost, so its cost leaves out what was spent before */
+  openingMissing?: boolean;
 }
 
 /**
  * Why a project needs attention, each reason with its figure: a plan finishing after the completion date or progress
- * behind it; cost above the work done or a forecast loss; work left unbilled; client money over 90 days; approvals
+ * behind it; cost above the work done, no opening cost or a forecast loss; work left unbilled; client money over 90 days; approvals
  * left waiting; high risks open. Act now is money or time already lost; watch is where it is heading.
  */
 export function healthOf(f: HealthFacts): { level: HealthLevel; reasons: HealthReasonDto[] } {
@@ -178,6 +188,8 @@ export function healthOf(f: HealthFacts): { level: HealthLevel; reasons: HealthR
   }
   if (f.workDone > 0 && f.cost > f.workDone) {
     reasons.push({ key: 'cost', level: 'act', text: `Cost of ${rupees(f.cost)} is above the ${rupees(f.workDone)} of work done` });
+  } else if (f.openingMissing) {
+    reasons.push({ key: 'cost', level: 'watch', text: 'No opening cost: it ran before it came on Nirmaan, so cost and margin leave out what was spent before' });
   } else if (f.forecastMargin !== null && f.forecastMargin < 0) {
     reasons.push({ key: 'cost', level: 'act', text: `Forecast cost is ${rupees(-f.forecastMargin)} above the contract value` });
   } else if (f.workDone > 0 && f.cost / f.workDone > 1 - THIN_MARGIN_PCT / 100) {
