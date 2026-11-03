@@ -143,7 +143,7 @@ test('the dashboard adds the projects up and notes the worst first', () => {
   assert.equal(t.drawingsAwaited, 6);
   assert.equal(t.drawingsLate, 2);
   assert.equal(t.commentsToAnswer, 4);
-  assert.deepEqual(designNotes(t).map((n) => n.text), ['2 drawings late', '1 superseded copy still on site', '1 review past the reply date', '4 comments to answer', '2 copies to recall']);
+  assert.deepEqual(designNotes(t).map((n) => n.text), ['2 drawings late', '1 superseded copy still on site', '1 review past the reply date', '4 comments to answer', '2 copies to withdraw']);
   assert.equal(designRowHasWork(row({})), false);
   assert.equal(designRowHasWork(row({ revisionsRecent: 1 })), true);
   assert.equal(designRowHasWork(row({ asBuiltDue: 1 })), true);

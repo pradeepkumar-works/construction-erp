@@ -188,7 +188,11 @@ export interface DrawingScheduleDto {
   counts: ReturnType<typeof scheduleCounts>;
 }
 
-/** A drawing site builds from that has no as-built revision yet, for the handover. */
+/** The as-built register's two lists: drawings still owing their as-built revision, and those that have it. */
+export const AS_BUILT_STATES = ['DUE', 'RECEIVED'] as const;
+export type AsBuiltState = (typeof AS_BUILT_STATES)[number];
+
+/** A drawing site builds from that has no as-built revision yet, for the handover; or, received, one that has it. */
 export interface AsBuiltDueDto {
   documentId: string;
   projectId: string;

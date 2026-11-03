@@ -43,7 +43,7 @@ export function DesignSubmissionRecord({ id }: { id: string }) {
   if (error || !data)
     return (
       <div className="page-container">
-        <QueryError error={error ?? new Error('Design submission not found')} onRetry={() => refetch()} />
+        <QueryError error={error ?? new Error('Submittal not found')} onRetry={() => refetch()} />
       </div>
     );
   return <SubmissionView s={data} />;
@@ -219,8 +219,8 @@ function SubmissionView({ s }: { s: DesignSubmissionDetailDto }) {
     <div className="page-container">
       <PageHeader
         title={s.title}
-        docTitle={`Design submission ${s.submissionNo}`}
-        crumbs={[{ title: 'Design submissions', href: '/design-submissions' }, { title: s.submissionNo }]}
+        docTitle={`Submittal ${s.submissionNo}`}
+        crumbs={[{ title: 'Submittals', href: '/design-submissions' }, { title: s.submissionNo }]}
         subtitle={
           <Flex gap={tk.space[2]} wrap align="center">
             <DesignStatusTag status={s.status} purpose={s.purpose} daysLate={s.daysLate} />
@@ -284,7 +284,7 @@ function SubmissionView({ s }: { s: DesignSubmissionDetailDto }) {
         </Col>
         <Col xs={24} lg={8}>
           <Flex vertical gap={16}>
-            <Card size="small" title={<CardTitle>Drawings and documents</CardTitle>}>
+            <Card size="small" title={<CardTitle>Drawings</CardTitle>}>
               {s.docs.length ? (
                 <Flex vertical gap={tk.space[2]}>
                   {s.docs.map((d) => (

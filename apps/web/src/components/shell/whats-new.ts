@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-drawings',
+    date: '2026-11-03',
+    title: 'Drawings, with shorter names and an as-built register',
+    points: [
+      'Design and drawings is now Drawings. Its pages are the Drawing register, Drawing schedule, Submittals (once Design submissions), Controlled copies, As-built drawings, Transmittals, RFIs and the Dashboard.',
+      'As-built drawings is a page of its own: the drawings site built from that still owe their as-built revision, and those that have it.',
+      'Submittals, Controlled copies and the Dashboard lead with the same figures as the Drawings overview, which now counts as-builts due and open RFIs too.',
+    ],
+  },
+  {
     id: '2026-11-access-grant',
     date: '2026-11-03',
     title: 'Granting access lets the person in',

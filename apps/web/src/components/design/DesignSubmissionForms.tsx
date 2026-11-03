@@ -114,7 +114,7 @@ export function DesignSubmissionForm({
       form={form}
       layout="drawer"
       width={760}
-      title={submission ? `Edit ${submission.submissionNo}` : 'New design submission'}
+      title={submission ? `Edit ${submission.submissionNo}` : 'New submittal'}
       okText={submission ? 'Save' : 'Save draft'}
       draftKey={submission ? undefined : 'design-submission:new'}
       onSubmit={async (v) => {
@@ -156,7 +156,7 @@ export function DesignSubmissionForm({
           </FormGrid>
           <Form.Item
             name="documentIds"
-            label="Drawings and documents"
+            label="Drawings"
             extra={docsLocked ? 'The drawings change only while it is a draft or back with us.' : 'From the register. Each goes at its current revision when the submission is sent.'}
           >
             <Select

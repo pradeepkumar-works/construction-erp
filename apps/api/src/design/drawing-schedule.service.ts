@@ -311,12 +311,12 @@ export class DrawingScheduleService {
     return { docNo: nextDrawingNo(project.code, q.discipline, [...docs.map((d) => d.docNo), ...needs.map((n) => n.docNo!)]) };
   }
 
-  /** Drawings site builds from that have no as-built revision yet: what the handover still owes. */
+  /** Drawings site builds from that have no as-built revision yet (what the handover still owes), or those that have it. */
   async asBuiltDue(user: RequestUser, q: AsBuiltQuery): Promise<AsBuiltDueDto[]> {
     this.assertView(user);
     if (q.projectId) await this.access.assertCanAccessProject(user, q.projectId);
     const rows = await this.prisma.document.findMany({
-      where: { ...this.access.submissionWhere(user), ...(q.projectId ? { projectId: q.projectId } : {}), kind: 'DRAWING', currentRevision: { status: { in: BUILDABLE_STATUSES } } },
+      where: { ...this.access.submissionWhere(user), ...(q.projectId ? { projectId: q.projectId } : {}), kind: 'DRAWING', currentRevision: { status: q.state === 'RECEIVED' ? 'AS_BUILT' : { in: BUILDABLE_STATUSES } } },
       include: { project: { select: { name: true } }, currentRevision: { select: { revision: true, status: true, issuedOn: true } } },
       orderBy: [{ project: { name: 'asc' } }, { docNo: 'asc' }],
     });

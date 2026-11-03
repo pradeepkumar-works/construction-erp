@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Button, Card, Checkbox, Col, Row, Select, Statistic, Typography } from 'antd';
+import { Button, Card, Checkbox, Select, Typography } from 'antd';
 import { tk } from '@/ds';
 import {
   DESIGN_PURPOSE_LABELS,
@@ -12,6 +12,7 @@ import {
   DESIGN_SUBMISSION_STATUS_LABELS,
   canManageDocuments,
   designRevisionLabel,
+  figure,
   type DesignPurpose,
   type DesignSubmissionDto,
   type DesignSubmissionKind,
@@ -29,7 +30,7 @@ import { PlusOutlined } from '@/components/common/icons';
 import { DataTable, type ListColumn } from '@/components/list/DataTable';
 import { useListFrame } from '@/components/list/useListFrame';
 import { RecordLink } from '@/components/record/RecordLink';
-import { DISPLAY_FONT } from '@/lib/theme';
+import { Figures } from '@/components/figures';
 import { CodeTag, DesignStatusTag, DesignSubmissionForm } from './DesignSubmissionForms';
 
 const KEYS = ['status', 'purpose', 'kind', 'toAnswer'] as const;
@@ -44,7 +45,7 @@ const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
 ];
 
 /**
- * Design submissions: drawings and designs sent for approval or vetting, the code each round came back
+ * Submittals (design submissions): drawings and designs sent for approval or vetting, the code each round came back
  * with, and the comments still to answer. Late reviews come first.
  */
 export function DesignSubmissionsPage() {
@@ -79,7 +80,7 @@ export function DesignSubmissionsPage() {
     columns: (): ListColumn<DesignSubmissionDto>[] => [
       {
         key: 'title',
-        title: 'Submission',
+        title: 'Submittal',
         locked: true,
         width: 320,
         card: 'title',
@@ -153,31 +154,26 @@ export function DesignSubmissionsPage() {
   const { data, isLoading, isFetching, error, refetch } = useDesignSubmissions({ page: page.params.page, pageSize: page.params.pageSize, q: page.params.q, projectId: frame.projectId, status, purpose, kind, toAnswer: toAnswer || undefined });
   const newButton = may ? (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setAdding(true)}>
-      New design submission
+      New submittal
     </Button>
   ) : null;
   const s = data?.summary;
-  const stat = (title: string, value: React.ReactNode, note: React.ReactNode, tone?: 'danger') => (
-    <Col xs={12} lg={6}>
-      <Card size="small" style={{ height: '100%' }}>
-        <Statistic title={title} value={0} formatter={() => value} styles={{ content: { fontFamily: DISPLAY_FONT, fontSize: tk.type.lead.fontSize, color: tone === 'danger' ? tk.color.tone.danger.fg : undefined } }} />
-        <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{note}</div>
-      </Card>
-    </Col>
-  );
+  const figures = s && [
+    figure('underReview', s.underReview, { versus: { part: figure('reviewsLate', s.late) } }),
+    figure('submittalsBack', s.withUs),
+    figure('commentsToAnswer', s.toAnswer),
+    figure('daysToCode', s.avgDaysToCode ?? { none: 'No code in the last 90 days' }),
+  ];
 
   return (
     <div className="page-container">
-      <PageHeader title="Design submissions" subtitle="Drawings and designs sent for approval or vetting, the codes they came back with and our replies to the comments." />
+      <PageHeader title="Submittals" subtitle="Drawings and designs sent for approval or vetting, the codes they came back with and the comments answered." />
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      {s ? (
-        <Row gutter={[12, 12]} style={{ marginBottom: tk.space[5] }}>
-          {stat('With the reviewer', s.underReview, s.late ? `${s.late} past the reply date` : 'None past its reply date', s.late ? 'danger' : undefined)}
-          {stat('Back with us', s.withUs, 'Code C or D, to revise and resubmit')}
-          {stat('Comments to answer', s.toAnswer, 'Before the next submission')}
-          {stat('Days to a code', s.avgDaysToCode ?? '-', 'Average over the last 90 days')}
-        </Row>
-      ) : null}
+      {figures && (
+        <div style={{ marginBottom: tk.space[4] }}>
+          <Figures label="Submittal figures" figures={figures} scope={{ projectId: frame.projectId }} />
+        </div>
+      )}
       <Card size="small">
         <ListToolbar
           filters={frame.filterState}
@@ -186,7 +182,7 @@ export function DesignSubmissionsPage() {
           search={page.search}
           onSearch={page.setSearch}
           searchPlaceholder="Search number, title, drawing or reviewer"
-          searchLabel="Search design submissions"
+          searchLabel="Search submittals"
           extra={newButton}
         >
           <Select<StatusFilter> allowClear placeholder="Any status" aria-label="Status" value={status} onChange={(v) => page.setFilter('status', v)} style={{ width: 190 }} options={STATUS_FILTERS} />
@@ -208,7 +204,7 @@ export function DesignSubmissionsPage() {
           chips={frame.chips}
           empty={frame.empty}
           failed={!!error}
-          emptyText={<EmptyArt art="entries" title={status || purpose || kind || toAnswer || page.params.q ? 'No submission matches these filters' : 'No design submission yet'} />}
+          emptyText={<EmptyArt art="entries" title={status || purpose || kind || toAnswer || page.params.q ? 'No submittal matches these filters' : 'No submittal yet'} />}
           emptyAction={newButton}
         />
       </Card>

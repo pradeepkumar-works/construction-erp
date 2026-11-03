@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsDateString, IsIn, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength, ValidateIf, ValidateNested } from 'class-validator';
-import { DOCUMENT_DISCIPLINES, DRAWING_SOURCES, type DocumentDiscipline, type DrawingNeedState, type DrawingSource } from '@erp/shared';
+import { AS_BUILT_STATES, DOCUMENT_DISCIPLINES, DRAWING_SOURCES, type AsBuiltState, type DocumentDiscipline, type DrawingNeedState, type DrawingSource } from '@erp/shared';
 import { PageQuery, QueryBool } from '../common/paging';
 import { CLIENT_ID_DOC } from '../common/idempotency';
 
@@ -50,4 +50,8 @@ export class NextDrawingNoQuery {
 
 export class AsBuiltQuery {
   @ApiPropertyOptional() @IsOptional() @IsUUID() projectId?: string;
+  @ApiPropertyOptional({ enum: AS_BUILT_STATES, description: 'DUE (the default): built from, no as-built revision yet; RECEIVED: the current revision is as built' })
+  @IsOptional()
+  @IsIn(list(AS_BUILT_STATES))
+  state?: AsBuiltState;
 }

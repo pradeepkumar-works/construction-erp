@@ -706,6 +706,9 @@ Part 2 (`QaRegistersService`, rules pure in `@erp/shared/qa-registers.ts`, teste
 
 ### Design and drawings (item 138)
 
+On screen the module is **Drawings** (`docs/WRITING.md`): the Drawing register, Drawing schedule, Submittals (design
+submissions in the code), Controlled copies, As-built drawings, Transmittals, RFIs and the Dashboard.
+
 The drawings a project waits for, chased until they arrive, beside the document register (`DrawingScheduleService`,
 `apps/api/src/design`, routes under `/design`; its own module because `CorrespondenceModule` imports `DocumentsModule`).
 The rules are pure in `@erp/shared/drawing-schedule.ts`, tested in `src/scripts/drawing-schedule-test.ts` (CI runs it).
@@ -732,7 +735,9 @@ The rules are pure in `@erp/shared/drawing-schedule.ts`, tested in `src/scripts/
   that have no as-built revision yet; what the handover still owes.
 - **Watch list.** `DRAWING_LATE` (drawings awaited past their day, one warning per project and party from `lateDrawingGroups`), for the
   roles that `canManageDocuments`.
-- **Clients.** Web: `/drawing-schedule` (Schedule and As-built check tabs, `?projectId=`, `?state=LATE`, `?id=`). The phone
+- **Clients.** Web: `/drawing-schedule` (`?projectId=`, `?state=LATE`, `?id=`; an old `?tab=as-built` goes to `/as-built`) and
+  `/as-built` (As-built drawings: due, or `?state=RECEIVED` for those whose current revision is as built, through
+  `GET /design/as-built-due?state=`). The phone
   reads drawings from the register; the schedule on the phone is later.
 
 **Design submissions (part 2).** Drawings and designs sent to the client's side for approval, or to an institution for

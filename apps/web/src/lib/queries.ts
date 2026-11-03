@@ -426,7 +426,7 @@ import type {
   ApplyUpdatesResultDto,
   ImportRowDto,
   ProjectUpdatesDto,
-  TypeBundle, CalibrationRegisterDto, CertificateMissingDto, LabSamplesDto, QaInstrumentDto, QaLabDto, QaAuditDto, QaAuditKind, QaReportDto, DrawingNeedState, DrawingNeedDto, DrawingSource, DrawingScheduleDto, AsBuiltDueDto, DesignSubmissionListDto, DesignSubmissionDetailDto, DesignSubmissionStatus, DesignPurpose, DesignSubmissionKind, CopyState, ControlledCopyListDto, RevisionImpactDto, DesignDashboardDto, BillMeasureChecksDto, CheckLevel, MeasurementCheckDto, PortalMeasurementDto, PortalMeasurementsDto, SiteOrderDto, ProgrammeRegisterDto, ProgrammeSubmissionDto, EotRegisterDto, EotApplicationDto, EotBasis, EotDelayDto } from '@erp/shared';
+  TypeBundle, CalibrationRegisterDto, CertificateMissingDto, LabSamplesDto, QaInstrumentDto, QaLabDto, QaAuditDto, QaAuditKind, QaReportDto, DrawingNeedState, DrawingNeedDto, DrawingSource, DrawingScheduleDto, AsBuiltDueDto, AsBuiltState, DesignSubmissionListDto, DesignSubmissionDetailDto, DesignSubmissionStatus, DesignPurpose, DesignSubmissionKind, CopyState, ControlledCopyListDto, RevisionImpactDto, DesignDashboardDto, BillMeasureChecksDto, CheckLevel, MeasurementCheckDto, PortalMeasurementDto, PortalMeasurementsDto, SiteOrderDto, ProgrammeRegisterDto, ProgrammeSubmissionDto, EotRegisterDto, EotApplicationDto, EotBasis, EotDelayDto } from '@erp/shared';
 import { CAD_MIME_TYPES, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, NOTIFICATION_TYPES_VERSION, SEARCH_MIN_LENGTH, lastRateKey } from '@erp/shared';
 import { api } from './api';
 import { useModuleOn } from './modules';
@@ -1695,11 +1695,11 @@ export const useDrawingNeed = (id: string | null | undefined) =>
     enabled: !!id,
   });
 
-export const useAsBuiltDue = (projectId?: string, enabled = true) =>
+/** The as-built register: drawings built from with no as-built revision yet, or (RECEIVED) those that have one. */
+export const useAsBuiltDue = (projectId?: string, state: AsBuiltState = 'DUE') =>
   useQuery({
-    queryKey: ['documents', 'as-built-due', projectId ?? null],
-    queryFn: async () => (await api.get<AsBuiltDueDto[]>('/design/as-built-due', { params: clean({ projectId }) })).data,
-    enabled,
+    queryKey: ['documents', 'as-built-due', projectId ?? null, state],
+    queryFn: async () => (await api.get<AsBuiltDueDto[]>('/design/as-built-due', { params: clean({ projectId, state: state === 'DUE' ? undefined : state }) })).data,
   });
 
 export interface DesignSubmissionFilters extends PageParams {

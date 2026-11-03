@@ -23,7 +23,7 @@ export class DrawingScheduleController {
     return this.schedule.nextNo(user, q);
   }
 
-  @ApiOperation({ summary: 'Drawings site builds from that have no as-built revision yet' })
+  @ApiOperation({ summary: 'Drawings site builds from that have no as-built revision yet, or (state RECEIVED) those whose current revision is as built' })
   @Get('as-built-due')
   asBuilt(@CurrentUser() user: RequestUser, @Query() q: AsBuiltQuery) {
     return this.schedule.asBuiltDue(user, q);

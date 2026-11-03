@@ -78,7 +78,7 @@ test('a drawing goes for approval, comes back with comments and is approved on t
 
   await signIn(page, 'docs@demo.com');
   await page.goto('/design-submissions');
-  await expect(page.getByRole('heading', { name: 'Design submissions', level: 1 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Submittals', level: 1 })).toBeVisible();
   await page.goto(`/design-submissions/${created.id}`);
   await expect(page.getByRole('heading', { name: `E2E staircase ${stamp}`, level: 1 })).toBeVisible();
   await expect(page.getByText('Give the lap length at the waist slab.')).toBeVisible();

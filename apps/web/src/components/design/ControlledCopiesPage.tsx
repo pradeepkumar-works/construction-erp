@@ -2,9 +2,9 @@
 
 import React, { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Button, Card, Col, Flex, Row, Select, Statistic, Typography } from 'antd';
+import { Button, Card, Flex, Select, Typography } from 'antd';
 import { tk } from '@/ds';
-import { canManageDocuments, copyLabel, type ControlledCopyDto, type CopyState } from '@erp/shared';
+import { canManageDocuments, copyLabel, figure, type ControlledCopyDto, type CopyState } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useControlledCopies } from '@/lib/queries';
 import { useNewIntent } from '@/lib/new-intent';
@@ -17,7 +17,7 @@ import { PlusOutlined } from '@/components/common/icons';
 import { DataTable, type ListColumn } from '@/components/list/DataTable';
 import { useListFrame } from '@/components/list/useListFrame';
 import { RecordLink } from '@/components/record/RecordLink';
-import { DISPLAY_FONT } from '@/lib/theme';
+import { Figures } from '@/components/figures';
 import { CopyStateTag, IssueCopiesDialog, ReissueDialog, TakeBackDialog } from './ControlledCopies';
 
 const KEYS = ['state'] as const;
@@ -25,7 +25,7 @@ const SORT_FIELDS = ['issuedOn'] as const;
 type SortField = (typeof SORT_FIELDS)[number];
 type StateFilter = CopyState | 'LATE';
 const STATE_FILTERS: { value: StateFilter; label: string }[] = [
-  { value: 'TO_RECALL', label: 'Superseded, to recall' },
+  { value: 'TO_RECALL', label: 'Superseded, to withdraw' },
   { value: 'LATE', label: 'Out more than a week' },
   { value: 'IN_FORCE', label: 'In force' },
   { value: 'CLOSED', label: 'Withdrawn' },
@@ -162,32 +162,27 @@ export function ControlledCopiesPage() {
     </Button>
   ) : null;
   const c = data?.counts;
-  const stat = (title: string, value: React.ReactNode, note: React.ReactNode, tone?: 'danger') => (
-    <Col xs={12} lg={8}>
-      <Card size="small" style={{ height: '100%' }}>
-        <Statistic title={title} value={0} formatter={() => value} styles={{ content: { fontFamily: DISPLAY_FONT, fontSize: tk.type.lead.fontSize, color: tone === 'danger' ? tk.color.tone.danger.fg : undefined } }} />
-        <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{note}</div>
-      </Card>
-    </Col>
-  );
+  const figures = c && [
+    figure('copiesToRecall', c.toRecall, { versus: { part: figure('recallsLate', c.recallsLate) } }),
+    figure('copiesInForce', c.inForce),
+    figure('copyHolders', c.holders),
+  ];
   const docNo = documentId ? data?.items[0]?.docNo : undefined;
 
   return (
     <div className="page-container">
       <PageHeader
         title="Controlled copies"
-        subtitle={docNo ? `Every copy of ${docNo} issued, in force and taken back.` : 'Numbered prints of drawings on site, and the superseded ones to take back.'}
+        subtitle={docNo ? `Every copy of ${docNo} issued, in force and withdrawn.` : 'Numbered prints on site, and the superseded ones to withdraw.'}
         crumbs={documentId ? [{ title: 'Controlled copies', href: '/controlled-copies' }, { title: docNo ?? 'Drawing' }] : undefined}
         extra={newButton}
       />
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      {c && !documentId ? (
-        <Row gutter={[12, 12]} style={{ marginBottom: tk.space[5] }}>
-          {stat('To withdraw', c.toRecall, c.recallsLate ? `${c.recallsLate} out more than a week` : 'Superseded, still on site', c.recallsLate ? 'danger' : undefined)}
-          {stat('In force', c.inForce, 'Copies of the current revision')}
-          {stat('Holders', c.holders, 'Offices, gangs and people with a copy')}
-        </Row>
-      ) : null}
+      {figures && !documentId && (
+        <div style={{ marginBottom: tk.space[4] }}>
+          <Figures label="Copy figures" figures={figures} scope={{ projectId: frame.projectId }} />
+        </div>
+      )}
       <Card size="small">
         <ListToolbar
           filters={frame.filterState}

@@ -54,7 +54,7 @@ export function newEntriesFor(user: AuthUser): NewEntry[][] {
     ...(canManageProjects(role) ? [{ kind: 'project' as const, label: 'Project', action: 'New project', keywords: 'site contract', href: '/projects', icon: <ProjectOutlined /> }] : []),
     ...(canPurchase(role) ? [{ kind: 'purchase-order' as const, label: 'Purchase order', action: 'New purchase order (PO)', href: '/purchase-orders', icon: <ContainerOutlined /> }] : []),
     ...(canManageTenders(role) ? [{ kind: 'tender' as const, label: 'Tender', action: 'Record tender', href: '/tenders', icon: <TrophyOutlined /> }] : []),
-    ...(canManageDocuments(role) ? [{ kind: 'design-submission' as const, label: 'Design submission', action: 'New design submission', href: '/design-submissions', icon: <FileProtectOutlined /> }] : []),
+    ...(canManageDocuments(role) ? [{ kind: 'design-submission' as const, label: 'Submittal', action: 'New submittal', href: '/design-submissions', icon: <FileProtectOutlined /> }] : []),
     ...(canManageDocuments(role) ? [{ kind: 'controlled-copy' as const, label: 'Controlled copy', action: 'Issue controlled copies', href: '/controlled-copies', icon: <CopyOutlined /> }] : []),
     ...(canRunSubcontractEnquiries(role) ? [{ kind: 'subcontract-enquiry' as const, label: 'Subcontract enquiry', action: 'New subcontract enquiry', href: '/subcontract-enquiries', icon: <FileSearchOutlined /> }] : []),
     ...(canPrepareBill(role) ? [{ kind: 'ra-bill' as const, label: 'RA bill', action: 'New RA bill', href: '/bills', icon: <FileDoneOutlined /> }] : []),

@@ -199,9 +199,9 @@ export function designNotes(r: DesignTotals): { tone: ImpactTone; text: string }
   if (r.drawingsLate) out.push({ tone: 'danger', text: `${n(r.drawingsLate, 'drawing')} late` });
   if (r.recallsLate) out.push({ tone: 'danger', text: `${n(r.recallsLate, 'superseded copy', 'superseded copies')} still on site` });
   if (r.reviewsLate) out.push({ tone: 'warning', text: `${n(r.reviewsLate, 'review')} past the reply date` });
-  if (r.withUs) out.push({ tone: 'warning', text: `${n(r.withUs, 'submission')} to revise` });
+  if (r.withUs) out.push({ tone: 'warning', text: `${n(r.withUs, 'submittal')} to revise` });
   if (r.commentsToAnswer) out.push({ tone: 'warning', text: `${n(r.commentsToAnswer, 'comment')} to answer` });
-  if (r.copiesToRecall > r.recallsLate) out.push({ tone: 'info', text: `${n(r.copiesToRecall - r.recallsLate, 'copy', 'copies')} to recall` });
+  if (r.copiesToRecall > r.recallsLate) out.push({ tone: 'info', text: `${n(r.copiesToRecall - r.recallsLate, 'copy', 'copies')} to withdraw` });
   if (r.asBuiltDue) out.push({ tone: 'info', text: `${n(r.asBuiltDue, 'as-built')} due` });
   return out;
 }

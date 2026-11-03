@@ -40,7 +40,8 @@ last column's words stay out of every label; an old name may stay as a Search ke
 | Staff records | Staff | Employees |
 | The tenant | Company | Organisation, Organization |
 | The quality module | Quality | Quality (QA/QC) |
-| The drawings register | Drawings and documents (module "Design and drawings") | – |
+| The drawings register | Drawing register (module "Drawings") | Drawings and documents |
+| A drawing or design sent for approval or vetting | Submittal, Submittals | Design submission |
 | Deduction on each RA bill | Security deposit (retention only where the contract keeps it apart) | – |
 | Money from the client | Money received (button "Record money received") | Receipts from clients |
 | Money to a vendor | Payment (button "Record payment") | – |
