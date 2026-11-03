@@ -17,9 +17,10 @@ export const EMPLOYMENT_TYPE_LABELS: Record<EmploymentType, string> = {
   CONSULTANT: 'Consultant',
 };
 
-export const EMPLOYEE_EVENT_TYPES = ['JOINED', 'CONFIRMED', 'TRANSFERRED', 'PROMOTED', 'INCREMENT', 'WARNING', 'RESIGNED', 'TERMINATED', 'RETIRED'] as const;
+export const EMPLOYEE_EVENT_TYPES = ['OFFERED', 'JOINED', 'CONFIRMED', 'TRANSFERRED', 'PROMOTED', 'INCREMENT', 'WARNING', 'RESIGNED', 'TERMINATED', 'RETIRED'] as const;
 export type EmployeeEventType = (typeof EMPLOYEE_EVENT_TYPES)[number];
 export const EMPLOYEE_EVENT_LABELS: Record<EmployeeEventType, string> = {
+  OFFERED: 'Offered',
   JOINED: 'Joined',
   CONFIRMED: 'Confirmed',
   TRANSFERRED: 'Transferred',
@@ -32,6 +33,7 @@ export const EMPLOYEE_EVENT_LABELS: Record<EmployeeEventType, string> = {
 };
 /** The letter each event prints. An exit prints the relieving letter; the experience letter is printed from it too. */
 export const EMPLOYEE_EVENT_LETTERS: Record<EmployeeEventType, string> = {
+  OFFERED: 'Offer letter',
   JOINED: 'Appointment letter',
   CONFIRMED: 'Confirmation letter',
   TRANSFERRED: 'Transfer order',
@@ -45,8 +47,9 @@ export const EMPLOYEE_EVENT_LETTERS: Record<EmployeeEventType, string> = {
 /** Events that end the service: they set the last working day and mark the person as left. */
 export const EXIT_EVENT_TYPES: readonly EmployeeEventType[] = ['RESIGNED', 'TERMINATED', 'RETIRED'];
 export const isExitEvent = (t: EmployeeEventType) => EXIT_EVENT_TYPES.includes(t);
-/** Events HR records by hand (joining is recorded with the staff record). */
-export const RECORDABLE_EVENT_TYPES: readonly EmployeeEventType[] = ['CONFIRMED', 'TRANSFERRED', 'PROMOTED', 'INCREMENT', 'WARNING', 'RESIGNED', 'TERMINATED', 'RETIRED'];
+/** Events HR records by hand (joining is recorded with the staff record). An offer comes before the joining date and waits,
+ * with the appointment letter, for the joining documents (`documentLetterProblem`, hr-documents.ts). */
+export const RECORDABLE_EVENT_TYPES: readonly EmployeeEventType[] = ['OFFERED', 'CONFIRMED', 'TRANSFERRED', 'PROMOTED', 'INCREMENT', 'WARNING', 'RESIGNED', 'TERMINATED', 'RETIRED'];
 
 /** PAN and IFSC patterns are `PAN_PATTERN` and `IFSC_PATTERN` (contract.ts), shared with vendors. */
 /** UAN (EPFO): twelve digits. */
@@ -155,4 +158,6 @@ export interface HrDashboardDto {
   anniversaries: HrPersonRowDto[];
   /** Active staff with no PAN, UAN or bank account recorded (payroll needs them) */
   missingDetails: { employeeId: string; fullName: string; employeeCode: string; missing: string[] }[];
+  /** Active staff whose required joining documents are not all verified or set aside, with what is outstanding */
+  documentsPending: { employeeId: string; fullName: string; employeeCode: string; missing: string[] }[];
 }

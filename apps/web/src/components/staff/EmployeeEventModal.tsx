@@ -8,7 +8,7 @@ import type { EmployeeDto, EmployeeEventDto, EmployeeEventType } from '@erp/shar
 import { EMPLOYEE_EVENT_LABELS, EMPLOYEE_EVENT_LETTERS, RECORDABLE_EVENT_TYPES, canViewEmployeePrivate, isExitEvent } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useRecordEmployeeEvent } from '@/lib/queries';
-import { formatINR } from '@/lib/format';
+import { formatDate, formatINR } from '@/lib/format';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
@@ -26,6 +26,7 @@ interface FormValues {
 
 const DATE = { style: { width: '100%' }, format: 'DD MMM YYYY' } as const;
 const NOTE_LABEL: Partial<Record<EmployeeEventType, string>> = {
+  OFFERED: 'Terms to add to the offer letter',
   WARNING: 'What the warning is about',
   RESIGNED: 'Reason for leaving',
   TERMINATED: 'Reason',
@@ -33,8 +34,8 @@ const NOTE_LABEL: Partial<Record<EmployeeEventType, string>> = {
 };
 
 /**
- * Record a step in someone's service: confirmation, transfer, promotion, increment, warning or exit. The
- * staff record changes to match, and the event gets its letter number.
+ * Record a step in someone's service: the offer, confirmation, transfer, promotion, increment, warning or exit. The
+ * staff record changes to match, and the event gets its letter number. The offer waits for the joining documents.
  */
 export function EmployeeEventModal({ open, onClose, employee, onSaved }: { open: boolean; onClose: () => void; employee: EmployeeDto; onSaved?: (ev: EmployeeEventDto) => void }) {
   const [form] = Form.useForm<FormValues>();
@@ -50,8 +51,8 @@ export function EmployeeEventModal({ open, onClose, employee, onSaved }: { open:
     form.setFieldsValue({ type: employee.confirmedOn ? 'TRANSFERRED' : 'CONFIRMED', effectiveDate: dayjs() });
   }, [open, employee, form]);
 
-  // A confirmation only once; an increment only for those who see pay.
-  const types = RECORDABLE_EVENT_TYPES.filter((t) => (t !== 'CONFIRMED' || !employee.confirmedOn) && (money || t !== 'INCREMENT'));
+  // A confirmation only once; an offer or an increment only for those who see pay.
+  const types = RECORDABLE_EVENT_TYPES.filter((t) => (t !== 'CONFIRMED' || !employee.confirmedOn) && (money || (t !== 'INCREMENT' && t !== 'OFFERED')));
   const exit = !!type && isExitEvent(type);
   const ctcNow = employee.private?.ctcAnnual ?? null;
 
@@ -60,8 +61,8 @@ export function EmployeeEventModal({ open, onClose, employee, onSaved }: { open:
       type: v.type,
       effectiveDate: v.effectiveDate.format('YYYY-MM-DD'),
       ...(v.type === 'TRANSFERRED' ? { toProjectId: v.toProjectId ?? null } : {}),
-      ...(v.type === 'TRANSFERRED' || v.type === 'PROMOTED' ? { toDesignation: v.toDesignation?.trim() || null, toDepartment: v.toDepartment?.trim() || null } : {}),
-      ...((v.type === 'INCREMENT' || v.type === 'PROMOTED') && v.toCtc != null ? { toCtc: v.toCtc } : {}),
+      ...(v.type === 'TRANSFERRED' || v.type === 'PROMOTED' || v.type === 'OFFERED' ? { toDesignation: v.toDesignation?.trim() || null, toDepartment: v.toDepartment?.trim() || null } : {}),
+      ...((v.type === 'INCREMENT' || v.type === 'PROMOTED' || v.type === 'OFFERED') && v.toCtc != null ? { toCtc: v.toCtc } : {}),
       ...(v.type === 'RESIGNED' && v.noticeGivenOn ? { noticeGivenOn: v.noticeGivenOn.format('YYYY-MM-DD') } : {}),
       note: v.note?.trim() || null,
     });
@@ -77,7 +78,11 @@ export function EmployeeEventModal({ open, onClose, employee, onSaved }: { open:
           <Form.Item name="type" label="What happened" rules={[{ required: true, message: 'Choose what to record' }]}>
             <Select options={types.map((t) => ({ value: t, label: EMPLOYEE_EVENT_LABELS[t] }))} />
           </Form.Item>
-          <Form.Item name="effectiveDate" label={exit ? 'Last working day' : 'From'} rules={[{ required: true, message: 'Choose the date it takes effect' }]}>
+          <Form.Item
+            name="effectiveDate"
+            label={exit ? 'Last working day' : type === 'OFFERED' ? 'Offered on' : 'From'}
+            extra={type === 'OFFERED' && employee.joinedOn ? `On or before joining, ${formatDate(employee.joinedOn)}` : undefined}
+            rules={[{ required: true, message: 'Choose the date it takes effect' }]}>
             <DatePicker {...DATE} />
           </Form.Item>
         </FormGrid>
@@ -85,6 +90,16 @@ export function EmployeeEventModal({ open, onClose, employee, onSaved }: { open:
           <Form.Item name="toProjectId" label="Transfer to" extra={`Now at ${employee.projectName ?? 'head office'}. Leave blank for head office.`}>
             <ProjectSelect placeholder="Head office" style={{ width: '100%' }} aria-label="Transfer to" />
           </Form.Item>
+        )}
+        {type === 'OFFERED' && (
+          <FormGrid cols={2}>
+            <Form.Item name="toDesignation" label="Position offered" extra={`On the record: ${employee.designation}`}>
+              <Input maxLength={80} placeholder={employee.designation} />
+            </Form.Item>
+            <Form.Item name="toCtc" label="Cost to company a year" rules={[{ required: true, message: 'Enter the cost to company a year that is offered' }]}>
+              <MoneyInput />
+            </Form.Item>
+          </FormGrid>
         )}
         {(type === 'TRANSFERRED' || type === 'PROMOTED') && (
           <FormGrid cols={2}>
@@ -105,7 +120,7 @@ export function EmployeeEventModal({ open, onClose, employee, onSaved }: { open:
           <Form.Item
             name="toCtc"
             label="New cost to company a year"
-            extra={ctcNow ? `Now ${formatINR(ctcNow)} a year` : 'No CTC recorded yet'}
+            extra={`${ctcNow ? `Now ${formatINR(ctcNow)} a year` : 'No CTC recorded yet'}. From this date their salary grows to match: basic, DA, HRA and special allowance in step.`}
             rules={type === 'INCREMENT' ? [{ required: true, message: 'Enter the new cost to company a year' }] : []}
           >
             <MoneyInput />
@@ -125,6 +140,7 @@ export function EmployeeEventModal({ open, onClose, employee, onSaved }: { open:
             <Input.TextArea rows={3} maxLength={1000} />
           </Form.Item>
         )}
+        {type === 'OFFERED' && <Typography.Text type="secondary">The offer goes out only once every required joining document is verified or set aside.</Typography.Text>}
         {exit && <Typography.Text type="secondary">This marks them as left, with this as their last working day. Payroll settles their dues.</Typography.Text>}
       </Form>
     </FormShell>

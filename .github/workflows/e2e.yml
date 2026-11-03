@@ -262,6 +262,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/payroll-test.js
+      - name: Joining documents hold the offer and appointment letters until every required paper is verified or set aside
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/hr-documents-test.js
       - name: Management figures count supply items and lump sums as work done, find late plans and say why a project needs action
         if: matrix.suite == 'flows'
         working-directory: apps/api

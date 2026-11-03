@@ -2,6 +2,7 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException 
 import { Prisma } from '@prisma/client';
 import {
   EMPLOYEE_EVENT_LABELS,
+  EMPLOYEE_EVENT_LETTERS,
   EMPLOYMENT_TYPE_LABELS,
   ROLE_LABELS,
   canManageStaff,
@@ -26,6 +27,9 @@ import { dateOnly, money, parseDate } from '../common/serialize';
 import { pageArgs, paginated } from '../common/paging';
 import { EmployeeDocumentsDto, ListEmployeeEventsQuery, RecordEmployeeEventDto } from './staff.dto';
 import { nextLetterNo } from './staff.service';
+import { EmployeeDocumentsService } from './employee-documents.service';
+import { structureForCtc } from '../payroll/payroll-rules';
+import { toRulesSettings, toRulesStructure } from '../payroll/salary.service';
 
 const eventInclude = {
   employee: { select: { fullName: true, employeeCode: true, userId: true } },
@@ -35,6 +39,8 @@ const eventInclude = {
 } satisfies Prisma.EmployeeEventInclude;
 type EventRow = Prisma.EmployeeEventGetPayload<{ include: typeof eventInclude }>;
 
+/** The note on a salary structure an increment or promotion made: how it is found again when the event is taken back. */
+const payNote = (type: 'INCREMENT' | 'PROMOTED', letterNo: string) => `${EMPLOYEE_EVENT_LETTERS[type]} ${letterNo}`;
 const addDays = (d: string, n: number) => new Date(Date.parse(`${d}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
 const monthEnd = (d: string, plus = 0) => {
   const [y, m] = d.split('-').map(Number);
@@ -53,6 +59,7 @@ export class HrService {
     private access: ProjectAccessService,
     private audit: AuditService,
     private attachments: AttachmentsService,
+    private docs: EmployeeDocumentsService,
   ) {}
 
   private toEventDto(e: EventRow, user: RequestUser): EmployeeEventDto {
@@ -113,11 +120,19 @@ export class HrService {
     const e = await this.employeeFor(user, employeeId);
     if (!e.isActive) throw new BadRequestException(`${e.fullName} has left. Bring them back on the staff record before recording anything else.`);
     const joined = dateOnly(e.joinedOn);
-    if (joined && dto.effectiveDate < joined) throw new BadRequestException(`The date is before ${e.fullName} joined (${joined}). Check the date.`);
+    if (joined && dto.effectiveDate < joined && dto.type !== 'OFFERED') throw new BadRequestException(`The date is before ${e.fullName} joined (${joined}). Check the date.`);
     const toCtc = dto.toCtc === undefined || dto.toCtc === null ? null : new Prisma.Decimal(dto.toCtc);
     const change: Prisma.EmployeeUncheckedUpdateInput = {};
     const event: Partial<Prisma.EmployeeEventUncheckedCreateInput> = {};
     switch (dto.type) {
+      case 'OFFERED': {
+        if (joined && dto.effectiveDate > joined) throw new BadRequestException(`The offer must be made on or before the joining date (${joined}). Check the date.`);
+        if (await this.prisma.employeeEvent.findFirst({ where: { employeeId, type: 'OFFERED' }, select: { id: true } })) throw new BadRequestException(`${e.fullName} already has an offer letter. Take it back first to make a fresh offer.`);
+        if (!toCtc) throw new BadRequestException('Enter the cost to company a year that is offered');
+        const problem = await this.docs.letterProblem(employeeId, 'OFFERED');
+        if (problem) throw new BadRequestException(problem);
+        break;
+      }
       case 'CONFIRMED':
         if (e.confirmedOn) throw new BadRequestException(`${e.fullName} was already confirmed on ${dateOnly(e.confirmedOn)}`);
         change.confirmedOn = parseDate(dto.effectiveDate);
@@ -161,10 +176,12 @@ export class HrService {
       Object.assign(event, { fromDepartment: e.department, toDepartment: dto.toDepartment || null });
       change.department = dto.toDepartment || null;
     }
-    if (toCtc && (dto.type === 'INCREMENT' || dto.type === 'PROMOTED')) {
+    if (toCtc && (dto.type === 'INCREMENT' || dto.type === 'PROMOTED' || dto.type === 'OFFERED')) {
       Object.assign(event, { fromCtc: e.ctcAnnual, toCtc });
       change.ctcAnnual = toCtc;
     }
+    // An increment or a promotion with a new CTC changes the pay too, so payroll pays what the letter says.
+    const pay = toCtc && (dto.type === 'INCREMENT' || dto.type === 'PROMOTED') ? await this.payFor(user.organizationId, e, dto.type, dto.effectiveDate, toCtc) : null;
     const created = await this.prisma.$transaction(async (tx) => {
       const row = await tx.employeeEvent.create({
         data: {
@@ -181,10 +198,32 @@ export class HrService {
       });
       // A future transfer or exit still changes the record now: the register and payroll read the dates.
       if (Object.keys(change).length) await tx.employee.update({ where: { id: employeeId }, data: change });
+      if (pay) await tx.salaryStructure.create({ data: { ...pay, organizationId: user.organizationId, createdById: user.id, note: payNote(dto.type as 'INCREMENT' | 'PROMOTED', row.letterNo) } });
       return row;
     });
-    await this.audit.log(user, 'EMPLOYEE', employeeId, isExitEvent(dto.type) ? 'LEFT' : 'UPDATED', `${EMPLOYEE_EVENT_LABELS[dto.type]} from ${dto.effectiveDate} (${created.letterNo})`);
+    await this.audit.log(user, 'EMPLOYEE', employeeId, isExitEvent(dto.type) ? 'LEFT' : 'UPDATED', `${EMPLOYEE_EVENT_LABELS[dto.type]} from ${dto.effectiveDate} (${created.letterNo})${pay ? `, salary structure from the same date` : ''}`);
     return this.toEventDto(created, user);
+  }
+
+  /**
+   * The salary structure an increment or a promotion brings from its date, grown from the one in force before it
+   * (`structureForCtc`). None when they have no structure yet or HR already made one for that date in Salaries; refused
+   * when that month's salary is already approved, as a structure made by hand would be.
+   */
+  private async payFor(orgId: string, e: { id: string; fullName: string }, type: 'INCREMENT' | 'PROMOTED', date: string, toCtc: Prisma.Decimal) {
+    const from = parseDate(date);
+    const [same, current, locked, settings] = await Promise.all([
+      this.prisma.salaryStructure.findUnique({ where: { employeeId_effectiveFrom: { employeeId: e.id, effectiveFrom: from } }, select: { id: true } }),
+      this.prisma.salaryStructure.findFirst({ where: { employeeId: e.id, effectiveFrom: { lt: from } }, orderBy: { effectiveFrom: 'desc' } }),
+      this.prisma.payslip.findFirst({ where: { employeeId: e.id, run: { status: { in: ['APPROVED', 'PAID'] }, month: { gte: date.slice(0, 7) } } }, select: { run: { select: { month: true } } } }),
+      this.prisma.payrollSettings.findUnique({ where: { organizationId: orgId } }),
+    ]);
+    if (same || !current) return null;
+    if (locked) throw new BadRequestException(`${e.fullName}'s salary for ${locked.run.month} is already approved. Record the ${EMPLOYEE_EVENT_LABELS[type].toLowerCase()} from a later month.`);
+    const next = structureForCtc(toRulesStructure(current), toCtc.toNumber(), toRulesSettings(settings));
+    if (!next) return null;
+    const { declaredDeductions, otherIncome, ...parts } = next;
+    return { employeeId: e.id, effectiveFrom: from, ...parts, declaredDeductions, otherIncome } satisfies Omit<Prisma.SalaryStructureUncheckedCreateInput, 'organizationId' | 'createdById'>;
   }
 
   /** Undo the latest event of a person, when it was recorded by mistake: the staff record goes back as it was. */
@@ -192,11 +231,18 @@ export class HrService {
     this.access.assertCanManageStaff(user);
     const ev = await this.prisma.employeeEvent.findFirst({ where: { id, organizationId: user.organizationId }, include: eventInclude });
     if (!ev) throw new NotFoundException('Event not found');
-    const latest = await this.prisma.employeeEvent.findFirst({ where: { employeeId: ev.employeeId }, orderBy: [{ effectiveDate: 'desc' }, { createdAt: 'desc' }], select: { id: true } });
+    // The joining is recorded with the staff record, so an offer counts as the latest while only the joining follows it.
+    const latest = await this.prisma.employeeEvent.findFirst({ where: { employeeId: ev.employeeId, ...(ev.type === 'OFFERED' ? { type: { not: 'JOINED' } } : {}) }, orderBy: [{ effectiveDate: 'desc' }, { createdAt: 'desc' }], select: { id: true } });
     if (latest?.id !== ev.id) throw new BadRequestException('Only the latest event can be taken back. Take back the later ones first.');
     if (ev.type === 'JOINED') throw new BadRequestException('The joining cannot be taken back. Change the joining date on the staff record.');
     if (isExitEvent(ev.type) && (await this.prisma.finalSettlement.findUnique({ where: { employeeId: ev.employeeId }, select: { id: true } })))
       throw new BadRequestException('Their full and final settlement is worked out. Delete it under Payroll first.');
+    // The salary structure the increment or promotion made goes with it, unless salary has been worked out on it.
+    const pay =
+      ev.type === 'INCREMENT' || ev.type === 'PROMOTED'
+        ? await this.prisma.salaryStructure.findFirst({ where: { employeeId: ev.employeeId, effectiveFrom: ev.effectiveDate, note: payNote(ev.type, ev.letterNo) }, select: { id: true, _count: { select: { payslips: true } } } })
+        : null;
+    if (pay?._count.payslips) throw new BadRequestException(`Salary has been worked out on the pay from this ${EMPLOYEE_EVENT_LABELS[ev.type].toLowerCase()}. Delete that salary run under Payroll first.`);
     const back: Prisma.EmployeeUncheckedUpdateInput = {};
     if (ev.type === 'CONFIRMED') back.confirmedOn = null;
     if (ev.type === 'TRANSFERRED') back.projectId = ev.fromProjectId;
@@ -204,7 +250,11 @@ export class HrService {
     if (ev.fromDepartment !== null || ev.toDepartment !== null) back.department = ev.fromDepartment;
     if (ev.toCtc) back.ctcAnnual = ev.fromCtc;
     if (isExitEvent(ev.type)) Object.assign(back, { leftOn: null, isActive: true, exitReason: null });
-    await this.prisma.$transaction([this.prisma.employeeEvent.delete({ where: { id } }), this.prisma.employee.update({ where: { id: ev.employeeId }, data: back })]);
+    await this.prisma.$transaction([
+      this.prisma.employeeEvent.delete({ where: { id } }),
+      this.prisma.employee.update({ where: { id: ev.employeeId }, data: back }),
+      ...(pay ? [this.prisma.salaryStructure.delete({ where: { id: pay.id } })] : []),
+    ]);
     await this.audit.log(user, 'EMPLOYEE', ev.employeeId, 'UPDATED', `${EMPLOYEE_EVENT_LABELS[ev.type]} ${ev.letterNo} taken back`);
     return { ok: true };
   }
@@ -213,6 +263,8 @@ export class HrService {
   async letter(user: RequestUser, id: string): Promise<EmployeeLetterDto> {
     const ev = await this.prisma.employeeEvent.findFirst({ where: { id, ...this.eventWhere(user) }, include: eventInclude });
     if (!ev) throw new NotFoundException('Letter not found');
+    const held = await this.docs.letterProblem(ev.employeeId, ev.type);
+    if (held) throw new BadRequestException(held);
     const [org, e] = await Promise.all([
       this.prisma.organization.findUnique({ where: { id: user.organizationId }, select: { name: true, billingAddress: true } }),
       this.prisma.employee.findUnique({ where: { id: ev.employeeId }, include: { project: { select: { name: true } } } }),
@@ -240,14 +292,16 @@ export class HrService {
   async documents(user: RequestUser, employeeId: string): Promise<AttachmentDto[]> {
     const e = await this.employeeFor(user, employeeId);
     if (!canManageStaff(user.roleKey) && !canViewEmployeePrivate(user.roleKey) && e.userId !== user.id) throw new ForbiddenException('Only HR, payroll and the person themselves see their documents');
-    const rows = await this.prisma.attachment.findMany({ where: { employeeId, organizationId: user.organizationId }, select: ATTACHMENT_FIELDS, orderBy: { createdAt: 'asc' } });
+    const rows = await this.prisma.attachment.findMany({ where: { employeeId, organizationId: user.organizationId, joiningDocument: null }, select: ATTACHMENT_FIELDS, orderBy: { createdAt: 'asc' } });
     return rows.map((a) => this.attachments.toDto(a));
   }
 
   async setDocuments(user: RequestUser, employeeId: string, dto: EmployeeDocumentsDto): Promise<AttachmentDto[]> {
     this.access.assertCanManageStaff(user);
     await this.employeeFor(user, employeeId);
-    await this.attachments.sync(user, 'employeeId', employeeId, dto.attachmentIds);
+    // The joining documents' files stay: they leave only through the checklist.
+    const joining = await this.prisma.employeeDocument.findMany({ where: { employeeId, attachmentId: { not: null } }, select: { attachmentId: true } });
+    await this.attachments.sync(user, 'employeeId', employeeId, [...new Set([...dto.attachmentIds, ...joining.map((j) => j.attachmentId!)])]);
     await this.audit.log(user, 'EMPLOYEE', employeeId, 'UPDATED', `Documents: ${dto.attachmentIds.length}`);
     return this.documents(user, employeeId);
   }
@@ -295,6 +349,7 @@ export class HrService {
       if (a && years > 0) anniversaries.push(row(e, a, years));
     }
     const soon = addDays(today, 30);
+    const papers = await this.docs.outstandingFor(org, active.map((e) => e.id));
     return {
       date: today,
       active: active.length,
@@ -312,6 +367,7 @@ export class HrService {
       missingDetails: active
         .map((e) => ({ employeeId: e.id, fullName: e.fullName, employeeCode: e.employeeCode, missing: [!e.pan && 'PAN', !e.uan && 'UAN', !e.bankAccountNo && 'bank account'].filter((x): x is string => !!x) }))
         .filter((m) => m.missing.length > 0),
+      documentsPending: active.filter((e) => papers.has(e.id)).map((e) => ({ employeeId: e.id, fullName: e.fullName, employeeCode: e.employeeCode, missing: papers.get(e.id)! })),
     };
   }
 }

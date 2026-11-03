@@ -2,6 +2,9 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
 import type {
+  DocumentCheckDecision,
+  EmployeeDocumentKind,
+  EmployeeDocumentsChecklistDto,
   OfficialIssueDto,
   OfficialReportDto,
   OfficialReportKind,
@@ -2399,6 +2402,31 @@ export function useRemoveEmployeeEvent() {
   return useMutation({
     mutationFn: async (id: string) => (await api.delete(`/staff/events/${id}`)).data,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['staff'] }),
+  });
+}
+
+/** Joining documents: each kind with its file and check, what is outstanding, and whether the letters can go out. */
+export const useEmployeeChecklist = (employeeId: string | undefined, enabled = true) =>
+  useQuery({
+    queryKey: ['staff', 'checklist', employeeId],
+    queryFn: async () => (await api.get<EmployeeDocumentsChecklistDto>(`/staff/employees/${employeeId}/checklist`)).data,
+    enabled: !!employeeId && enabled,
+  });
+
+/** File, check or take back a joining document; the checklist, the HR dashboard and the person's letters follow. */
+export function useEmployeeChecklistAction(employeeId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (a: { kind: EmployeeDocumentKind; file: string } | { kind: EmployeeDocumentKind; decision: DocumentCheckDecision; note?: string } | { kind: EmployeeDocumentKind; remove: true }) => {
+      const url = `/staff/employees/${employeeId}/checklist/${a.kind}`;
+      if ('file' in a) return (await api.put<EmployeeDocumentsChecklistDto>(url, { attachmentId: a.file })).data;
+      if ('remove' in a) return (await api.delete<EmployeeDocumentsChecklistDto>(url)).data;
+      return (await api.post<EmployeeDocumentsChecklistDto>(`${url}/check`, { decision: a.decision, note: a.note })).data;
+    },
+    onSuccess: (data) => {
+      qc.setQueryData(['staff', 'checklist', employeeId], data);
+      qc.invalidateQueries({ queryKey: ['staff', 'hr-dashboard'] });
+    },
   });
 }
 

@@ -465,7 +465,43 @@ enum EmploymentType {
 }
 
 /// What happened in an employee's service: each is dated, numbered and can print its letter.
+/// Joining documents: one line per kind (`EMPLOYEE_DOCUMENT_KINDS`, @erp/shared/hr-documents.ts) for a person, with its file
+/// and HR's check. The offer and appointment letters wait until every required kind is verified or set aside.
+model EmployeeDocument {
+  id             String                 @id @default(uuid())
+  organizationId String
+  organization   Organization           @relation(fields: [organizationId], references: [id])
+  employeeId     String
+  employee       Employee               @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  /// A key of EMPLOYEE_DOCUMENT_KINDS
+  kind           String
+  status         EmployeeDocumentStatus
+  /// The file; none when the kind is set aside (WAIVED)
+  attachmentId   String?                @unique
+  attachment     Attachment?            @relation(fields: [attachmentId], references: [id], onDelete: SetNull)
+  /// Why it was sent back or set aside
+  note           String?
+  checkedById    String?
+  checkedBy      User?                  @relation("EmployeeDocumentChecks", fields: [checkedById], references: [id], onDelete: SetNull)
+  checkedAt      DateTime?
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+  @@unique([employeeId, kind])
+  @@index([organizationId])
+}
+
+/// A joining document's state: filed and waiting for HR's check, verified against the original, sent back for a
+/// fresh copy, or set aside as not needed for this person.
+enum EmployeeDocumentStatus {
+  UPLOADED
+  VERIFIED
+  REJECTED
+  WAIVED
+}
+
 enum EmployeeEventType {
+  OFFERED
   JOINED
   CONFIRMED
   TRANSFERRED
@@ -1028,6 +1064,7 @@ model Organization {
   inboundMessages      InboundMessage[]
   cashSnapshots        CashForecastSnapshot[]
   hindranceChecks      HindranceCheck[]
+  employeeDocuments    EmployeeDocument[]
 }
 
 model Role {
@@ -1340,6 +1377,7 @@ model User {
   eotsForwarded           EotApplication[]           @relation("EotForwarder")
   eotsDecided             EotApplication[]           @relation("EotDecider")
   siteOrdersClosed        SiteOrder[]                @relation("SiteOrderCloser")
+  employeeDocumentChecks  EmployeeDocument[]         @relation("EmployeeDocumentChecks")
 
   @@unique([organizationId, email])
   @@index([loginId])
@@ -4441,6 +4479,8 @@ model Attachment {
   staffMarkIns    StaffAttendance[] @relation("StaffMarkInPhoto")
   staffMarkOuts   StaffAttendance[] @relation("StaffMarkOutPhoto")
 
+  joiningDocument EmployeeDocument?
+
   @@index([organizationId])
   // Every record lists its files: one index per parent column.
   @@index([progressEntryId])
@@ -5496,6 +5536,7 @@ model Employee {
   payslips         Payslip[]
   settlement       FinalSettlement?
   biometricUsers   BiometricUser[]
+  joiningDocuments EmployeeDocument[]
 
   @@unique([organizationId, employeeCode])
   @@index([organizationId, projectId])

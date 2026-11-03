@@ -141,6 +141,24 @@ export function HrDashboard() {
             </Card>
           </Col>
         )}
+        {data.documentsPending.length > 0 && (
+          <Col xs={24}>
+            <Card size="small" title="Joining documents to verify">
+              <ul style={{ listStyle: 'none', margin: 0, padding: 0, columns: '18rem' }}>
+                {data.documentsPending.map((m) => (
+                  <li key={m.employeeId} style={{ breakInside: 'avoid' }}>
+                    <Link href={employeeHref(m.employeeId)} className="text-link">
+                      <Flex align="center" justify="space-between" gap={tk.space[3]} style={row}>
+                        <span translate="no">{m.fullName}</span>
+                        <span style={{ fontSize: tk.type.caption.fontSize, color: tk.color.tone.pending.fg }}>{m.missing.length === 1 ? m.missing[0] : `${m.missing.length} papers`}</span>
+                      </Flex>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          </Col>
+        )}
       </Row>
     </section>
   );
