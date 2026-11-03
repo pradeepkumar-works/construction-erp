@@ -97,15 +97,26 @@ export function navFor(user: AuthUser): NavSection[] {
 }
 
 /** The department modules (Menu and names): the top links as ever, then each module with its screen and its pages, a page
- *  listed once, under the first module that has it. */
+ *  listed once, under the module that has most of its tabs (the first of those on a tie): Payroll under HR and payroll,
+ *  not under Contractor management, which has only its labour contractors' tab. */
 function departmentSections(user: AuthUser, settings: NavSettingsDto, top: NavSection[]): NavSection[] {
   const seen = new Set(top.flatMap((sec) => sec.items.map((i) => i.href)));
   const sections: NavSection[] = [...top];
-  for (const m of navMenuFor(user, settings)) {
+  const menu = navMenuFor(user, settings);
+  const home = new Map<string, { module: string; tabs: number }>();
+  for (const m of menu) {
+    const nodes = m.subs.flatMap((x) => x.nodes);
+    const tabs = new Map<string, number>();
+    for (const n of nodes) if (n.route && !n.shortcutOf) tabs.set(n.route.split('?')[0], (tabs.get(n.route.split('?')[0]) ?? 0) + 1);
+    // Only a module that draws the page's link can be its home.
+    const linked = new Set(nodes.map((n) => navPageLink(n)?.href).filter(Boolean));
+    for (const [path, count] of tabs) if (linked.has(path) && count > (home.get(path)?.tabs ?? 0)) home.set(path, { module: m.key, tabs: count });
+  }
+  for (const m of menu) {
     const items: NavItem[] = [{ href: moduleScreenHref(m.key), label: `${m.label} overview`, icon: navIcon('layout-dashboard'), keywords: `module home summary ${m.defaultLabel}`, overview: true }];
     for (const n of m.subs.flatMap((x) => x.nodes)) {
       const link = navPageLink(n);
-      if (!link || seen.has(link.href)) continue;
+      if (!link || seen.has(link.href) || (home.get(link.href)?.module ?? m.key) !== m.key) continue;
       seen.add(link.href);
       items.push({ href: link.href, label: link.label, icon: navIcon(n.icon), keywords: n.keywords, node: n });
     }

@@ -450,7 +450,9 @@ A company chooses its menu in Admin › Menu and names (`/menu-and-names`, `GET`
   `DEPARTMENTS`, the fifteen a contractor's departments run (`DEPARTMENT_MODULES`: project management, quality (QA/QC),
   design and drawings, correspondence, planning and estimation, purchase, store and inventory, contractors, machinery,
   plant, accounts, labour, HR and payroll, reports and MIS, administration), each a list of sub-modules naming tree nodes,
-  with a Masters sub-module naming its masters (below). A department module's screen is `DepartmentHome` at
+  with a Masters sub-module naming its masters (below). HR and payroll follows the client's HR brief: My HR, Employee master (each record
+  holds its joining documents and history), Attendance, Leave management, Salary master, Payroll, Letters and history,
+  Full and final and Masters, and its screen carries the HR dashboard (`HrDashboard`), as People's does. A department module's screen is `DepartmentHome` at
   `/modules/<key>` (keys are kept forever, names hang on them). Item 135 took QA/QC, Design and drawings and
   Correspondence out of Project management, which keeps Safety; in the tree, Safety (`safety`) and Correspondence
   (`correspondence`) are modules of their own and the moved nodes keep their ids (`quality.incidents`, `documents.letters`).
