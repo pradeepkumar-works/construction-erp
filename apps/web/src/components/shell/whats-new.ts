@@ -15,6 +15,7 @@ export const WHATS_NEW: WhatsNew[] = [
     points: [
       "A project's cost now counts the salaries of the staff posted at it, with the company's PF and ESI, under site expenses as Site staff salaries.",
       'A company-wide salary run goes into the books and Tally split by site, so each site carries its own staff cost.',
+      'The People and HR and payroll screens show each site today: who is present, on leave, absent or not marked, last month’s staff cost and papers still to verify.',
     ],
   },
   {

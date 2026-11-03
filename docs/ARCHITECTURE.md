@@ -1065,9 +1065,12 @@ moved only through `ExitClearanceService`, and frozen once the full and final is
 it was worked out with. The person's Service and letters tab shows the list and prints the no dues certificate on the
 letterhead once nothing is left. Keep `src/scripts/exit-clearance-test.ts` passing.
 
-`GET /staff/hr-dashboard` (staff admins and payroll) gives head count by site, department and employment type, who joined
+`GET /staff/hr-dashboard` (staff admins and payroll) gives each site today (`sites`: on the rolls, present, on approved
+leave, absent and not marked by where people are posted, the same rule as the People figures, with the staff cost of the
+last approved or paid salary month by `Payslip.projectId` and the joining papers outstanding; head office last), head
+count by site, department and employment type, who joined
 and left this month, probation ending in 30 days or overdue, birthdays and work anniversaries to the end of next month,
-active staff with no PAN, UAN or bank account, and active staff with joining documents outstanding; the People home shows it under the module's figures.
+active staff with no PAN, UAN or bank account, and active staff with joining documents outstanding; the People and HR and payroll screens show it under their figures.
 
 ### Management view on the phone (v5 item 96)
 

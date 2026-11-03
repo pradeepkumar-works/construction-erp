@@ -52,8 +52,12 @@ test('HR keeps the full staff record, its service events and letters', async ({ 
   await drawer.getByRole('tab', { name: 'Service and letters' }).click();
   await drawer.getByRole('button', { name: 'Record' }).click();
   const form = formPanel(page, 'Record for Gopal Mishra');
-  await form.getByLabel('What happened').click();
-  await page.locator('.ant-select-item-option').filter({ hasText: /^Warning$/ }).click();
+  // Pick Warning again until its field shows: a click that lands while the list is still opening is lost.
+  await expect(async () => {
+    await form.getByLabel('What happened').click();
+    await page.locator('.ant-select-item-option').filter({ hasText: /^Warning$/ }).click({ timeout: 3000 });
+    await expect(form.getByLabel('What the warning is about')).toBeVisible({ timeout: 2000 });
+  }).toPass({ timeout: 20000 });
   await form.getByLabel('What the warning is about').fill('Late to site three days running');
   await form.getByRole('button', { name: 'Record' }).click();
   await expect(page.getByText(/Warning recorded: warning letter HR-\d{4}-\d{4}/)).toBeVisible();
@@ -95,4 +99,15 @@ test("HR rewrites the confirmation letter in the company's words, and puts the s
   await page.getByRole('button', { name: 'Use the standard words' }).last().click();
   await expect(page.getByText('Confirmation letter prints the standard words again.')).toBeVisible();
   expect((await api<Letter>(hr, `/staff/events/${confirmed.id}/letter`)).template).toBe(standard);
+});
+
+test('The HR dashboard accounts for everyone on the rolls by site, today and in last month’s cost', async () => {
+  const hr = await apiToken('hr@demo.com');
+  type Site = { projectId: string | null; label: string; onRoll: number; present: number; onLeave: number; absent: number; notMarked: number; cost: string | null };
+  const dash = await api<{ active: number; sites: Site[]; costMonth: string | null }>(hr, '/staff/hr-dashboard');
+  expect(dash.sites.reduce((t, s) => t + s.onRoll, 0)).toBe(dash.active);
+  for (const s of dash.sites) expect(s.present + s.onLeave + s.absent + s.notMarked).toBe(s.onRoll);
+  expect(dash.sites[dash.sites.length - 1].projectId).toBeNull();
+  expect(dash.costMonth).toMatch(/^\d{4}-\d{2}$/);
+  expect(dash.sites.some((s) => s.projectId && Number(s.cost) > 0)).toBe(true);
 });
