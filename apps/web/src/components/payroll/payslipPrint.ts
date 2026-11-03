@@ -108,6 +108,7 @@ export function buildSettlementHtml(s: FinalSettlementDto, company: string): str
   const ded: [string, string][] = [
     [`Notice period short by ${s.noticeShortDays} days`, s.noticeRecovery],
     ['Loans and advances still owed', s.loanRecovery],
+    ['Dues found at exit clearance', s.clearanceRecovery],
     ['Other deductions', s.otherDeductions],
   ];
   const rows = (list: [string, string][]) => list.filter(([, v]) => Number(v)).map(([l, v]) => `<tr><td>${esc(l)}</td><td class="r">${formatINR(v)}</td></tr>`).join('') || '<tr><td colspan="2">None</td></tr>';

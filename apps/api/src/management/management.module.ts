@@ -10,8 +10,10 @@ import { ManagementService } from './management.service';
 import { ManagementReportsService } from './management-reports.service';
 
 /** Management dashboard and reports: the portfolio, a project's drill-down and the printable reports. */
+import { PayrollModule } from '../payroll/payroll.module';
+
 @Module({
-  imports: [ProjectsModule, ReceivablesModule, PayablesModule, CostModule, CashForecastModule, StockModule],
+  imports: [ProjectsModule, ReceivablesModule, PayablesModule, CostModule, CashForecastModule, StockModule, PayrollModule],
   controllers: [ManagementController],
   providers: [ManagementService, ManagementReportsService],
   exports: [ManagementService],

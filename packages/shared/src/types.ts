@@ -18,7 +18,7 @@ import type { BillingUnit } from './billing';
 import type { ProgressNarrativeDto } from './briefs';
 import type { DocumentDiscipline, DocumentKind, LetterDirection, RevisionStatus, TransmittalPurpose } from './documents';
 import type { LeaveStatus, LeaveType, OvertimeStatus, StaffAttendanceStatus } from './staff';
-import type { CostHead } from './cost';
+import type { CostExpenseCategory, CostHead } from './cost';
 import type { PoLineRateCheckDto } from './leakage';
 import type { SupplierDispatchStatus, SupplierNoticeEntity } from './supplier';
 import type { SwitchableModule } from './module-switches';
@@ -630,7 +630,7 @@ export interface NotificationDto {
    * Set when the notification points at a submission (or, for SAFETY, an incident or permit; for MACHINERY, a machine
    * due for service, a job card, a vehicle paper or a driver); open it with entityType + entityId.
    */
-  entityType: SubmissionType | 'SAFETY_INCIDENT' | 'WORK_PERMIT' | 'EQUIPMENT' | 'MAINTENANCE_JOB' | 'EQUIPMENT_DOCUMENT' | 'DRIVER' | 'IMPREST' | 'COMPLIANCE_DOC' | 'DEFECT' | 'HANDOVER' | 'RFI' | 'EQUIPMENT_LOAN' | 'MEETING' | 'MATERIAL_APPROVAL' | 'ACCESS_REQUEST' | 'ACCESS_DECISION' | 'GRN' | 'GRN_CHECK' | 'GRN_TO_BILL' | 'DEBIT_TO_RAISE' | 'TRANSFER_IN' | 'PROJECT' | 'LETTER' | 'CONTRACT_OBLIGATION' | 'SITE_ORDER' | 'PROGRAMME' | 'EOT' | SupplierNoticeEntity | null;
+  entityType: SubmissionType | 'SAFETY_INCIDENT' | 'WORK_PERMIT' | 'EQUIPMENT' | 'MAINTENANCE_JOB' | 'EQUIPMENT_DOCUMENT' | 'DRIVER' | 'IMPREST' | 'COMPLIANCE_DOC' | 'DEFECT' | 'HANDOVER' | 'RFI' | 'EQUIPMENT_LOAN' | 'MEETING' | 'MATERIAL_APPROVAL' | 'ACCESS_REQUEST' | 'ACCESS_DECISION' | 'GRN' | 'GRN_CHECK' | 'GRN_TO_BILL' | 'DEBIT_TO_RAISE' | 'TRANSFER_IN' | 'PROJECT' | 'LETTER' | 'CONTRACT_OBLIGATION' | 'SITE_ORDER' | 'PROGRAMME' | 'EOT' | 'PAYROLL_RUN' | 'FINAL_SETTLEMENT' | SupplierNoticeEntity | null;
   entityId: string | null;
   readAt: string | null;
   createdAt: string;
@@ -1111,7 +1111,7 @@ export interface ProjectCostDto extends ProjectCostSummaryDto {
   from: string | null;
   to: string | null;
   months: CostMonthDto[];
-  expensesByCategory: { category: ExpenseCategory; count: number; amount: string }[];
+  expensesByCategory: { category: CostExpenseCategory; count: number; amount: string }[];
   materialByItem: { itemId: string; name: string; unit: string; quantity: string; rate: string | null; amount: string }[];
   machineryByEquipment: { equipmentId: string; code: string; name: string; rateUnit: EquipmentRateUnit; rate: string | null; days: number; hours: string; amount: string }[];
   labourByTrade: { category: string; manDays: number; dailyRate: string | null; amount: string }[];
@@ -3160,7 +3160,8 @@ export interface StaffRegisterRowDto {
 /** One site's staff for one day. */
 export interface StaffRegisterDto {
   date: string;
-  projectId: string;
+  /** Null for the head office register: staff posted at no site */
+  projectId: string | null;
   /** Holiday name when the day is a holiday at this site */
   holiday: string | null;
   weeklyOff: boolean;
@@ -3199,10 +3200,22 @@ export interface LeaveBalanceDto {
   type: LeaveType;
   /** Days for the year; comp-off = weekly offs and holidays worked; null = no limit */
   entitled: number | null;
+  /** Approved, with the days taken before Nirmaan (`takenBefore`) */
   taken: number;
+  /** Of `taken`, the days taken that year before Nirmaan (the employee's opening leave) */
+  takenBefore: number;
   pending: number;
   /** null = no limit */
   left: number | null;
+}
+
+/** An employee's leave before Nirmaan for one year: what HR entered per type. */
+export interface LeaveOpeningDto {
+  employeeId: string;
+  year: number;
+  lines: { type: LeaveType; takenBefore: number; broughtForward: number | null }[];
+  updatedByName: string | null;
+  updatedAt: string | null;
 }
 
 export interface HolidayDto {

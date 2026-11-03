@@ -13,8 +13,10 @@ import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
 import { Money } from '@/components/common/Money';
 
+type LeaveKey = 'casualLeaveDays' | 'sickLeaveDays' | 'earnedLeaveDays' | 'earnedCarryMax';
+const LEAVE_KEYS: LeaveKey[] = ['casualLeaveDays', 'sickLeaveDays', 'earnedLeaveDays', 'earnedCarryMax'];
 
-type Values = Omit<PayrollSettingsDto, 'pfEmployeePct' | 'pfEmployerPct' | 'epsPct' | 'pfWageCeiling' | 'esiEmployeePct' | 'esiEmployerPct' | 'esiGrossCeiling' | 'overtimeMultiplier'> & {
+type Values = Omit<PayrollSettingsDto, 'pfEmployeePct' | 'pfEmployerPct' | 'epsPct' | 'pfWageCeiling' | 'esiEmployeePct' | 'esiEmployerPct' | 'esiGrossCeiling' | 'overtimeMultiplier' | LeaveKey> & {
   pfEmployeePct: number;
   pfEmployerPct: number;
   epsPct: number;
@@ -23,7 +25,7 @@ type Values = Omit<PayrollSettingsDto, 'pfEmployeePct' | 'pfEmployerPct' | 'epsP
   esiEmployerPct: number;
   esiGrossCeiling: number;
   overtimeMultiplier: number;
-};
+} & Record<LeaveKey, number>;
 
 const PT_STATE_OPTIONS = [{ value: '', label: 'None' }, ...Object.keys(PT_RULES).map((c) => ({ value: c, label: GST_STATES[c] ?? c }))];
 const pct = (v: string) => `${Number(v)}%`;
@@ -32,6 +34,7 @@ function SettingsForm({ open, onClose, s }: { open: boolean; onClose: () => void
   const [form] = Form.useForm<Values>();
   const { message } = App.useApp();
   const save = usePayrollAction<PayrollSettingsDto>();
+  const daysInput = (max: number) => <InputNumber min={0} max={max} step={0.5} suffix="days" style={{ width: '100%' }} />;
   const pctInput = (label: string) => <InputNumber min={0} max={100} step={0.01} suffix="%" style={{ width: '100%' }} aria-label={label} />;
   return (
     <FormShell
@@ -62,6 +65,7 @@ function SettingsForm({ open, onClose, s }: { open: boolean; onClose: () => void
           esiEmployerPct: Number(s.esiEmployerPct),
           esiGrossCeiling: Number(s.esiGrossCeiling),
           overtimeMultiplier: Number(s.overtimeMultiplier),
+          ...Object.fromEntries(LEAVE_KEYS.map((k) => [k, Number(s[k])])),
         }}
       >
         <FormSection title="Provident fund">
@@ -108,6 +112,27 @@ function SettingsForm({ open, onClose, s }: { open: boolean; onClose: () => void
             </Form.Item>
             <Form.Item name="overtimeMultiplier" label="Overtime pays" extra="Times the hourly rate; the Factories Act says 2">
               <InputNumber min={1} max={4} step={0.25} suffix="×" style={{ width: '100%' }} />
+            </Form.Item>
+          </FormGrid>
+        </FormSection>
+        <FormSection title="Leave">
+          <FormGrid cols={3}>
+            <Form.Item name="casualLeaveDays" label="Casual leave a year">
+              {daysInput(60)}
+            </Form.Item>
+            <Form.Item name="sickLeaveDays" label="Sick leave a year">
+              {daysInput(60)}
+            </Form.Item>
+            <Form.Item name="earnedLeaveDays" label="Earned leave a year">
+              {daysInput(60)}
+            </Form.Item>
+          </FormGrid>
+          <FormGrid cols={2}>
+            <Form.Item name="earnedCarryMax" label="Earned leave carried into next year" extra="Up to this many unused days; 0 carries none">
+              {daysInput(300)}
+            </Form.Item>
+            <Form.Item name="leaveProRata" valuePropName="checked" label="Someone who joins during the year">
+              <Checkbox>Gets a share for the months left</Checkbox>
             </Form.Item>
           </FormGrid>
         </FormSection>
@@ -163,6 +188,13 @@ export function PayrollSettings() {
         <Descriptions.Item label="Professional tax">{s.ptState ? (GST_STATES[s.ptState] ?? s.ptState) : 'None'}</Descriptions.Item>
         <Descriptions.Item label="A day's pay">Month divided by {PAID_DAYS_BASIS_LABELS[s.paidDaysBasis as PaidDaysBasis].toLowerCase()}</Descriptions.Item>
         <Descriptions.Item label="Overtime">{Number(s.overtimeMultiplier)} times the hourly rate</Descriptions.Item>
+        <Descriptions.Item label="Leave a year">
+          {Number(s.casualLeaveDays)} casual, {Number(s.sickLeaveDays)} sick, {Number(s.earnedLeaveDays)} earned
+        </Descriptions.Item>
+        <Descriptions.Item label="Earned leave carried">
+          {Number(s.earnedCarryMax) > 0 ? `Up to ${Number(s.earnedCarryMax)} days` : 'None'}
+          {s.leaveProRata ? '; joiners get a share for the months left' : ''}
+        </Descriptions.Item>
         <Descriptions.Item label="Salary paid from">
           <span translate="no">{s.debitAccountNo ? `${s.debitBankName ?? 'Account'} ${s.debitAccountNo}` : 'Not set: the bank file needs it'}</span>
         </Descriptions.Item>

@@ -1,7 +1,12 @@
 import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import {
-  LEAVE_ENTITLEMENT,
+  DEFAULT_LEAVE_POLICY,
+  leaveEntitlement,
+  leaveOpeningProblem,
+  OPENING_LEAVE_TYPES,
+  type LeaveOpeningDto,
+  type LeavePolicy,
   LEAVE_TYPE_LABELS,
   LEAVE_TYPES,
   ROLE_LABELS,
@@ -54,6 +59,7 @@ import {
   ListEmployeesQuery,
   ListLeaveQuery,
   RejectLeaveDto,
+  SaveLeaveOpeningDto,
   SaveRegisterDto,
   UpdateEmployeeDto,
 } from './staff.dto';
@@ -572,8 +578,14 @@ export class StaffService {
   // Attendance
 
   /** A site's staff for a day: everyone posted there (and anyone marked there that day), with leave covering the day. */
-  async register(user: RequestUser, projectId: string, date: string): Promise<StaffRegisterDto> {
-    await this.access.assertCanMarkStaff(user, projectId);
+  /** Who may mark a register: a site's markers for a site; HR and admins for head office (staff posted nowhere). */
+  private async assertMayMark(user: RequestUser, projectId: string | null) {
+    if (projectId) return this.access.assertCanMarkStaff(user, projectId);
+    if (!canManageStaff(user.roleKey)) throw new ForbiddenException('Only HR or an admin marks the head office register');
+  }
+
+  async register(user: RequestUser, projectId: string | null, date: string): Promise<StaffRegisterDto> {
+    await this.assertMayMark(user, projectId);
     const day = parseDate(date);
     const employees = await this.prisma.employee.findMany({
       where: {
@@ -614,7 +626,8 @@ export class StaffService {
 
   /** Save the register: each entry sets or clears one employee's day; self check-in times are kept. */
   async saveRegister(user: RequestUser, dto: SaveRegisterDto): Promise<StaffRegisterDto> {
-    await this.access.assertCanMarkStaff(user, dto.projectId);
+    const projectId = dto.projectId ?? null;
+    await this.assertMayMark(user, projectId);
     if (dto.date > todayIn()) throw new BadRequestException('Attendance cannot be marked for a future day');
     const day = parseDate(dto.date);
     const ids = [...new Set(dto.entries.map((e) => e.employeeId))];
@@ -623,7 +636,7 @@ export class StaffService {
       where: {
         id: { in: ids },
         organizationId: user.organizationId,
-        OR: [{ projectId: dto.projectId, isActive: true }, { attendance: { some: { date: day, projectId: dto.projectId } } }, ...(canManageStaff(user.roleKey) ? [{ isActive: true }] : [])],
+        OR: [{ projectId, isActive: true }, { attendance: { some: { date: day, projectId } } }, ...(canManageStaff(user.roleKey) ? [{ isActive: true }] : [])],
       },
       select: { id: true, userId: true, project: { select: { projectManagerId: true } }, attendance: { where: { date: day }, select: { overtimeHours: true, overtimeStatus: true } } },
     });
@@ -642,7 +655,7 @@ export class StaffService {
         const otChanged = e.overtimeHours !== undefined && Number(e.overtimeHours ?? 0) !== Number(was?.overtimeHours ?? 0);
         const data = {
           status: e.status,
-          projectId: dto.projectId,
+          projectId,
           note: e.note === undefined ? undefined : e.note || null,
           overtimeHours: e.overtimeHours === undefined ? undefined : e.overtimeHours,
           ...(otChanged
@@ -662,8 +675,8 @@ export class StaffService {
         marked += 1;
       }
     });
-    await this.audit.log(user, 'STAFF_REGISTER', dto.projectId, 'SAVED', `${dto.date}: ${marked} marked`);
-    return this.register(user, dto.projectId, dto.date);
+    await this.audit.log(user, 'STAFF_REGISTER', projectId ?? user.organizationId, 'SAVED', `${projectId ? '' : 'Head office, '}${dto.date}: ${marked} marked`);
+    return this.register(user, projectId, dto.date);
   }
 
   /** One employee's days between two dates (at most 62): themselves, or someone who can see them. */
@@ -745,18 +758,42 @@ export class StaffService {
 
   // Leave
 
+  /** The company's leave rules (Payroll settings), as shipped until HR sets them. */
+  private async leavePolicy(organizationId: string, db: Prisma.TransactionClient = this.prisma): Promise<LeavePolicy> {
+    const s = await db.payrollSettings.findUnique({ where: { organizationId }, select: { casualLeaveDays: true, sickLeaveDays: true, earnedLeaveDays: true, earnedCarryMax: true, leaveProRata: true } });
+    return s
+      ? { casual: s.casualLeaveDays.toNumber(), sick: s.sickLeaveDays.toNumber(), earned: s.earnedLeaveDays.toNumber(), earnedCarryMax: s.earnedCarryMax.toNumber(), proRata: s.leaveProRata }
+      : DEFAULT_LEAVE_POLICY;
+  }
+
   /**
-   * Days a year per type: fixed for casual, sick and earned; comp-off is earned by working a weekly off or holiday
-   * (a half day earns half); unpaid has no limit. Leave counts in the year it starts.
+   * Days a year per type: the company's leave rules (`leaveEntitlement`) with the employee's opening leave (days taken
+   * before Nirmaan count as taken; earned leave brought forward stands in for the carry); comp-off is earned by working a
+   * weekly off or holiday (a half day earns half); unpaid has no limit. Leave counts in the year it starts.
    */
   async balancesFor(employeeId: string, projectId: string | null, year: number, db: Prisma.TransactionClient = this.prisma, excludeId?: string): Promise<LeaveBalanceDto[]> {
     const range = yearRange(year);
-    const [rows, worked] = await Promise.all([
+    const [rows, worked, openings] = await Promise.all([
       db.leaveRequest.groupBy({ by: ['type', 'status'], where: { employeeId, status: { in: [...LIVE_LEAVE] }, fromDate: range, ...(excludeId ? { id: { not: excludeId } } : {}) }, _sum: { days: true } }),
       db.staffAttendance.findMany({ where: { employeeId, date: range, status: { in: ['PRESENT', 'HALF_DAY'] } }, select: { date: true, status: true, projectId: true } }),
+      db.leaveOpening.findMany({ where: { employeeId, year }, select: { type: true, takenBefore: true, broughtForward: true } }),
     ]);
-    const emp = await db.employee.findUnique({ where: { id: employeeId }, select: { organizationId: true } });
-    const holidays = emp ? await db.holiday.findMany({ where: { organizationId: emp.organizationId, date: range }, select: { date: true, projectId: true } }) : [];
+    const emp = await db.employee.findUnique({ where: { id: employeeId }, select: { organizationId: true, joinedOn: true } });
+    const [holidays, policy] = emp
+      ? await Promise.all([db.holiday.findMany({ where: { organizationId: emp.organizationId, date: range }, select: { date: true, projectId: true } }), this.leavePolicy(emp.organizationId, db)])
+      : [[], DEFAULT_LEAVE_POLICY];
+    const joinedOn = emp?.joinedOn ? dateOnly(emp.joinedOn) : null;
+    // Earned leave the year before left, for what carries: that year's own days (no carry of its own) less taken and waiting.
+    let earnedLeftLastYear = 0;
+    if (policy.earnedCarryMax > 0) {
+      const [last, lastOpening] = await Promise.all([
+        db.leaveRequest.aggregate({ where: { employeeId, type: 'EARNED', status: { in: [...LIVE_LEAVE] }, fromDate: yearRange(year - 1) }, _sum: { days: true } }),
+        db.leaveOpening.findUnique({ where: { employeeId_year_type: { employeeId, year: year - 1, type: 'EARNED' } }, select: { takenBefore: true, broughtForward: true } }),
+      ]);
+      const lastBrought = lastOpening?.broughtForward ? lastOpening.broughtForward.toNumber() : null;
+      earnedLeftLastYear =
+        (leaveEntitlement('EARNED', { ...policy, earnedCarryMax: 0 }, year - 1, joinedOn, 0, lastBrought) ?? 0) - num(last._sum.days ?? 0) - (lastOpening ? lastOpening.takenBefore.toNumber() : 0);
+    }
     const isOff = (d: Date, p: string | null) => {
       const s = dateOnly(d);
       return isWeeklyOff(s) || holidays.some((h) => dateOnly(h.date) === s && (h.projectId === null || h.projectId === (p ?? projectId)));
@@ -764,10 +801,13 @@ export class StaffService {
     const compOff = worked.filter((a) => isOff(a.date, a.projectId)).reduce((n, a) => n + (a.status === 'HALF_DAY' ? 0.5 : 1), 0);
     const sum = (type: LeaveType, status: 'PENDING' | 'APPROVED') => num(rows.find((r) => r.type === type && r.status === status)?._sum.days ?? 0);
     return LEAVE_TYPES.map((type) => {
-      const entitled = type === 'COMP_OFF' ? compOff : LEAVE_ENTITLEMENT[type];
-      const taken = sum(type, 'APPROVED');
+      const opening = openings.find((o) => o.type === type);
+      const broughtForward = opening?.broughtForward ? opening.broughtForward.toNumber() : null;
+      const entitled = type === 'COMP_OFF' ? compOff : leaveEntitlement(type, policy, year, joinedOn, earnedLeftLastYear, broughtForward);
+      const takenBefore = opening ? opening.takenBefore.toNumber() : 0;
+      const taken = sum(type, 'APPROVED') + takenBefore;
       const pending = sum(type, 'PENDING');
-      return { type, entitled, taken, pending, left: entitled === null ? null : entitled - taken - pending };
+      return { type, entitled, taken, takenBefore, pending, left: entitled === null ? null : entitled - taken - pending };
     });
   }
 
@@ -775,6 +815,49 @@ export class StaffService {
     const e = q.employeeId ? await this.visibleEmployee(user, q.employeeId) : await this.ownEmployee(user);
     if (!e) throw new NotFoundException('Your login is not linked to a staff record');
     return this.balancesFor(e.id, e.projectId, q.year ?? yearOf(todayIn()));
+  }
+
+  /** An employee's leave before Nirmaan for a year: days taken and earned leave brought forward (HR and the people who see the record). */
+  async leaveOpening(user: RequestUser, employeeId: string, year: number): Promise<LeaveOpeningDto> {
+    const e = await this.visibleEmployee(user, employeeId);
+    const rows = await this.prisma.leaveOpening.findMany({ where: { employeeId: e.id, year }, include: { updatedBy: { select: { fullName: true } } }, orderBy: { updatedAt: 'desc' } });
+    return {
+      employeeId: e.id,
+      year,
+      lines: OPENING_LEAVE_TYPES.map((type) => {
+        const r = rows.find((x) => x.type === type);
+        return { type, takenBefore: r ? r.takenBefore.toNumber() : 0, broughtForward: r?.broughtForward ? r.broughtForward.toNumber() : null };
+      }),
+      updatedByName: rows[0]?.updatedBy.fullName ?? null,
+      updatedAt: rows[0] ? iso(rows[0].updatedAt) : null,
+    };
+  }
+
+  /** HR sets an employee's leave before Nirmaan for a year; a line of nothing taken and nothing brought forward is removed. */
+  async saveLeaveOpening(user: RequestUser, employeeId: string, dto: SaveLeaveOpeningDto): Promise<LeaveOpeningDto> {
+    if (!canManageStaff(user.roleKey)) throw new ForbiddenException('Only HR or an admin sets opening leave');
+    const e = await this.visibleEmployee(user, employeeId);
+    const lines = dto.lines.map((l) => ({ type: l.type, takenBefore: l.takenBefore, broughtForward: l.broughtForward ?? null }));
+    const problem = leaveOpeningProblem(lines);
+    if (problem) throw new BadRequestException(problem);
+    await this.prisma.$transaction(async (tx) => {
+      await this.lockEmployee(tx, e.id);
+      for (const l of lines) {
+        const key = { employeeId_year_type: { employeeId: e.id, year: dto.year, type: l.type } };
+        if (!l.takenBefore && l.broughtForward === null) {
+          await tx.leaveOpening.deleteMany({ where: { employeeId: e.id, year: dto.year, type: l.type } });
+          continue;
+        }
+        const data = { takenBefore: l.takenBefore, broughtForward: l.broughtForward, updatedById: user.id };
+        await tx.leaveOpening.upsert({ where: key, create: { organizationId: user.organizationId, employeeId: e.id, year: dto.year, type: l.type, ...data }, update: data });
+      }
+    });
+    const words = lines
+      .filter((l) => l.takenBefore || l.broughtForward !== null)
+      .map((l) => `${LEAVE_TYPE_LABELS[l.type]}: ${l.takenBefore} taken${l.broughtForward !== null ? `, ${l.broughtForward} brought forward` : ''}`)
+      .join('; ');
+    await this.audit.log(user, 'EMPLOYEE', e.id, 'UPDATED', `Opening leave ${dto.year}: ${words || 'none'}`);
+    return this.leaveOpening(user, e.id, dto.year);
   }
 
   private leaveWhere(user: RequestUser): Prisma.LeaveRequestWhereInput {

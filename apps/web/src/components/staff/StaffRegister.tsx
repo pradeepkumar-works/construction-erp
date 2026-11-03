@@ -9,14 +9,15 @@ import { formatDayMonth } from '@/lib/format';
 import type { TableProps } from 'antd';
 import dayjs from 'dayjs';
 import type { StaffAttendanceStatus, StaffRegisterDto, StaffRegisterRowDto } from '@erp/shared';
-import { LEAVE_TYPE_LABELS, STAFF_ATTENDANCE_LABELS, STAFF_ATTENDANCE_STATUSES } from '@erp/shared';
+import { LEAVE_TYPE_LABELS, STAFF_ATTENDANCE_LABELS, STAFF_ATTENDANCE_STATUSES, canManageStaff } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useProjectScope } from '@/lib/project-scope';
 import { useProjects, useStaffRegister } from '@/lib/queries';
 import { QueryError } from '@/components/common/QueryState';
-import { ProjectSelect } from '@/components/common/ProjectSelect';
+import { HEAD_OFFICE, ProjectSelect } from '@/components/common/ProjectSelect';
+import { useAuth } from '@/lib/auth';
 import { CheckInPlaceTag, FacePhotos, OvertimeTag, clock } from './staffUi';
 import { CardToolbar } from '@/components/common/CardToolbar';
 
@@ -26,14 +27,21 @@ const NONE = 'NONE';
 const fromRow = (r: StaffRegisterRowDto): Mark => ({ status: r.attendance?.status ?? null, overtimeHours: Number(r.attendance?.overtimeHours ?? 0) || null, note: r.attendance?.note ?? '' });
 const same = (a: Mark, b: Mark) => a.status === b.status && (a.overtimeHours ?? 0) === (b.overtimeHours ?? 0) && a.note.trim() === b.note.trim();
 
-/** A site's staff for one day: mark present, half day or absent, with overtime; leave and holidays are shown. */
+/**
+ * A site's staff for one day: mark present, half day or absent, with overtime; leave and holidays are shown. HR and
+ * admins also mark Head office, the staff posted at no site.
+ */
 export function StaffRegister() {
   const { message } = App.useApp();
   const qc = useQueryClient();
+  const { user } = useAuth();
   const { data: projects } = useProjects();
-  // The header's project, else the first: picking one here picks it for every list.
+  // The header's project, else the first: picking one here picks it for every list. Head office is no project, so it
+  // stays this register's own choice.
   const [scope, setProjectId] = useProjectScope();
-  const projectId = scope ?? projects?.[0]?.id;
+  const officeToo = !!user && canManageStaff(user.roleKey);
+  const [atOffice, setAtOffice] = useState(false);
+  const projectId = atOffice && officeToo ? null : (scope ?? projects?.[0]?.id);
   const [date, setDate] = useState(dayjs());
   const day = date.format('YYYY-MM-DD');
   const { data, isLoading, isFetching, error, refetch } = useStaffRegister(projectId, day);
@@ -164,7 +172,17 @@ export function StaffRegister() {
   return (
     <>
       <CardToolbar wrap gap={8} align="center">
-        <ProjectSelect value={projectId} onChange={(v) => setProjectId(v)} allowClear={false} placeholder="Choose a project" />
+        <ProjectSelect
+          headOffice={officeToo}
+          aria-label="Register for"
+          value={projectId === null ? HEAD_OFFICE : projectId}
+          onChange={(v) => {
+            setAtOffice(v === HEAD_OFFICE);
+            if (v !== HEAD_OFFICE) setProjectId(v);
+          }}
+          allowClear={false}
+          placeholder="Choose a project"
+        />
         <DatePicker value={date} allowClear={false} aria-label="Date" onChange={(d) => d && setDate(d)} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
         <div style={{ flex: 1 }} />
         <Space>
@@ -188,7 +206,7 @@ export function StaffRegister() {
         size="small"
         pagination={false}
         scroll={{ x: 1260 }}
-        locale={{ emptyText: projectId ? 'No staff posted at this site' : 'Select a project' }}
+        locale={{ emptyText: projectId === null ? 'Nobody is posted at head office' : projectId ? 'No staff posted at this site' : 'Select a project' }}
       />
     </>
   );

@@ -14,6 +14,14 @@ export interface Line {
   party?: boolean;
   /** An income or expense line: carries the project as cost centre */
   costCentre?: boolean;
+  /** This line's own site where it differs from the voucher's (a company-wide salary run split by site); a null projectId is head office */
+  site?: LineSite;
+}
+
+export interface LineSite {
+  projectId: string | null;
+  code: string;
+  name: string;
 }
 
 export interface Voucher {
@@ -43,15 +51,15 @@ export type LedgerName = (key: string, fallback?: string) => string;
 export class Lines {
   readonly lines: Line[] = [];
   constructor(private name: LedgerName) {}
-  dr(key: string, amount: Prisma.Decimal.Value, opts: { fallback?: string; party?: boolean; costCentre?: boolean } = {}) {
+  dr(key: string, amount: Prisma.Decimal.Value, opts: { fallback?: string; party?: boolean; costCentre?: boolean; site?: LineSite } = {}) {
     return this.add(key, D(amount), opts);
   }
-  cr(key: string, amount: Prisma.Decimal.Value, opts: { fallback?: string; party?: boolean; costCentre?: boolean } = {}) {
+  cr(key: string, amount: Prisma.Decimal.Value, opts: { fallback?: string; party?: boolean; costCentre?: boolean; site?: LineSite } = {}) {
     return this.add(key, D(amount).neg(), opts);
   }
-  private add(key: string, amount: Prisma.Decimal, opts: { fallback?: string; party?: boolean; costCentre?: boolean }) {
+  private add(key: string, amount: Prisma.Decimal, opts: { fallback?: string; party?: boolean; costCentre?: boolean; site?: LineSite }) {
     if (amount.isZero()) return this;
-    this.lines.push({ ledgerKey: key, ledger: this.name(key, opts.fallback), amount, party: opts.party, costCentre: opts.costCentre });
+    this.lines.push({ ledgerKey: key, ledger: this.name(key, opts.fallback), amount, party: opts.party, costCentre: opts.costCentre, ...(opts.site ? { site: opts.site } : {}) });
     return this;
   }
 }
@@ -106,6 +114,9 @@ function envelope(report: 'Vouchers' | 'All Masters', company: string | null, me
     .join('\n');
 }
 
+/** A line's cost centre: its own site's when it has one (none for head office), else the voucher's. */
+const lineCentre = (l: Line, voucherCentre: string): string | null => (l.site ? (l.site.projectId ? costCentreName(l.site.code, l.site.name) : null) : voucherCentre);
+
 function voucherXml(v: Voucher, costCentres: boolean): string {
   const type = v.voucherType ?? TALLY_VOUCHER_TYPES[v.kind];
   const cc = costCentreName(v.projectCode, v.projectName);
@@ -121,8 +132,8 @@ function voucherXml(v: Voucher, costCentres: boolean): string {
       l.party && v.billRef
         ? `        <BILLALLOCATIONS.LIST><NAME>${esc(v.billRef.name)}</NAME><BILLTYPE>${v.billRef.type}</BILLTYPE><AMOUNT>${a}</AMOUNT></BILLALLOCATIONS.LIST>`
         : null,
-      l.costCentre && costCentres
-        ? `        <CATEGORYALLOCATIONS.LIST><CATEGORY>Primary Cost Category</CATEGORY><ISDEEMEDPOSITIVE>${debit ? 'Yes' : 'No'}</ISDEEMEDPOSITIVE><COSTCENTREALLOCATIONS.LIST><NAME>${esc(cc)}</NAME><AMOUNT>${a}</AMOUNT></COSTCENTREALLOCATIONS.LIST></CATEGORYALLOCATIONS.LIST>`
+      l.costCentre && costCentres && lineCentre(l, cc)
+        ? `        <CATEGORYALLOCATIONS.LIST><CATEGORY>Primary Cost Category</CATEGORY><ISDEEMEDPOSITIVE>${debit ? 'Yes' : 'No'}</ISDEEMEDPOSITIVE><COSTCENTREALLOCATIONS.LIST><NAME>${esc(lineCentre(l, cc) ?? cc)}</NAME><AMOUNT>${a}</AMOUNT></COSTCENTREALLOCATIONS.LIST></CATEGORYALLOCATIONS.LIST>`
         : null,
       '       </ALLLEDGERENTRIES.LIST>',
     ]

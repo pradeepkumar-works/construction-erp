@@ -2,12 +2,13 @@
 
 import React from 'react';
 import Link from 'next/link';
-import {  } from 'antd';
 import { tk } from '@/ds';
-import { MANAGEMENT_REPORT_KEYS, MANAGEMENT_REPORTS } from '@erp/shared';
+import { MANAGEMENT_REPORT_KEYS, MANAGEMENT_REPORTS, canReadReport } from '@erp/shared';
+import { useAuth } from '@/lib/auth';
 
-/** The management reports, each a link with what it shows. */
+/** The management reports the reader may open, each a link with what it shows. */
 export function ReportsList() {
+  const { user } = useAuth();
   return (
     <ul
       style={{
@@ -19,7 +20,7 @@ export function ReportsList() {
         columnGap: tk.space[6],
       }}
     >
-      {MANAGEMENT_REPORT_KEYS.map((k) => (
+      {MANAGEMENT_REPORT_KEYS.filter((k) => !user || canReadReport(user.roleKey, k)).map((k) => (
         <li key={k} style={{ padding: `${tk.space[2]} 0`, minHeight: 44 }}>
           <Link href={`/management/reports/${k}`} style={{ fontWeight: tk.type.title.fontWeight }}>
             {MANAGEMENT_REPORTS[k].title}

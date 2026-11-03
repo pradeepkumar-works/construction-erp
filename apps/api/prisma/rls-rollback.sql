@@ -684,5 +684,14 @@ DROP POLICY IF EXISTS tenant_isolation ON "EmployeeDocument";
 ALTER TABLE "ProjectOpening" NO FORCE ROW LEVEL SECURITY;
 ALTER TABLE "ProjectOpening" DISABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON "ProjectOpening";
+ALTER TABLE "LeaveOpening" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "LeaveOpening" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "LeaveOpening";
+ALTER TABLE "ExitClearanceLine" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "ExitClearanceLine" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "ExitClearanceLine";
+ALTER TABLE "HrLetterTemplate" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "HrLetterTemplate" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "HrLetterTemplate";
 
 DROP FUNCTION IF EXISTS app_current_org();

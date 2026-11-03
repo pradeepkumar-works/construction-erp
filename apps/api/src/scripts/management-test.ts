@@ -7,7 +7,7 @@
  *   node dist/scripts/management-test.js
  */
 import assert from 'node:assert/strict';
-import { APPROVAL_OLD_DAYS, FORECAST_MIN_DONE_PCT, MANAGEMENT_REPORT_KEYS, UNBILLED_WATCH_DAYS, canReadReport, type PortfolioScheduleDto } from '@erp/shared';
+import { APPROVAL_OLD_DAYS, FORECAST_MIN_DONE_PCT, MANAGEMENT_REPORT_KEYS, UNBILLED_WATCH_DAYS, canReadReport, HR_REPORT_KEYS, type PortfolioScheduleDto } from '@erp/shared';
 import {
   approvalAgeing,
   billedMarginPct,
@@ -227,7 +227,7 @@ test('attention is sorted act before watch, then schedule, cost, billing, collec
 
 // Periods
 
-test('each desk reads its own report, and those who see the dashboard read them all', () => {
+test('each desk reads its own report, those who see the dashboard read the rest, and payroll the HR reports', () => {
   for (const key of MANAGEMENT_REPORT_KEYS) {
     assert.equal(canReadReport('MANAGEMENT', key), true, key);
     assert.equal(canReadReport('SITE_ENGINEER', key), false, key);
@@ -235,7 +235,8 @@ test('each desk reads its own report, and those who see the dashboard read them 
   const desk = (role: Parameters<typeof canReadReport>[0]) => MANAGEMENT_REPORT_KEYS.filter((k) => canReadReport(role, k));
   assert.deepEqual(desk('PROCUREMENT_MANAGER'), ['procurement']);
   assert.deepEqual(desk('STORE_MANAGER'), ['stock']);
-  assert.deepEqual(desk('HR_MANAGER'), ['labour']);
+  assert.deepEqual(desk('HR_MANAGER'), ['labour', 'headcount', 'staff-attendance', 'leave-register', 'pf-esi', 'settlements', 'staff-cost']);
+  assert.deepEqual(desk('PROJECT_MANAGER').filter((k) => HR_REPORT_KEYS.includes(k)), [], 'pay and leave stay with the people who see payroll');
 });
 
 test('months between two dates, the last twelve, a month’s first and last day and the financial year', () => {

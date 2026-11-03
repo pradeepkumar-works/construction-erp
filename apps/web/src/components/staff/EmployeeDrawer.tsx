@@ -11,7 +11,8 @@ import type { AttachmentDto, EmployeeDto, LeaveRequestDto, StaffAttendanceDto } 
 import { EMPLOYMENT_TYPE_LABELS, GENDER_LABELS, LEAVE_TYPE_LABELS, canManageStaff, canViewEmployeePrivate } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { errorMessage } from '@/lib/api';
-import { useEmployee, useEmployeeDocuments, useLeave, useLeaveBalances, useSetEmployeeDocuments, useStaffAttendance } from '@/lib/queries';
+import { useEmployee, useEmployeeDocuments, useLeave, useLeaveBalances, useLeaveOpening, useSetEmployeeDocuments, useStaffAttendance } from '@/lib/queries';
+import { LeaveOpeningModal } from './LeaveOpeningModal';
 import { formatDate, formatINR, NO_VALUE, MONTH_PICKER_FORMAT } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
@@ -143,6 +144,9 @@ export function EmployeeDrawer({ id, open, onClose, onOpenLeave }: { id: string 
   const to = month.endOf('month').format('YYYY-MM-DD');
   const { data: att } = useStaffAttendance(id ?? undefined, from, to);
   const { data: balances } = useLeaveBalances(id ?? undefined, month.year(), !!id);
+  const { data: opening } = useLeaveOpening(id ?? '', month.year(), !!id && admin);
+  const [openingFor, setOpeningFor] = useState(false);
+  const takenBefore = (balances ?? []).reduce((n, b) => n + (b.takenBefore ?? 0), 0);
   const { data: leave } = useLeave({ employeeId: id ?? undefined, pageSize: 20 }, !!id);
   const totals = useMemo(() => {
     const rows = att ?? [];
@@ -206,7 +210,17 @@ export function EmployeeDrawer({ id, open, onClose, onOpenLeave }: { id: string 
                           {LEAVE_TYPE_LABELS[b.type]}: <strong>{b.left ?? b.taken}</strong> {b.left === null ? 'taken' : `left of ${b.entitled}`}
                         </Typography.Text>
                       ))}
+                    {admin && opening && (
+                      <Button size="small" onClick={() => setOpeningFor(true)}>
+                        Opening leave
+                      </Button>
+                    )}
                   </Space>
+                  {takenBefore > 0 && (
+                    <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
+                      Taken counts {takenBefore} {takenBefore === 1 ? 'day' : 'days'} from before Nirmaan.
+                    </Typography.Paragraph>
+                  )}
                   <Table<LeaveRequestDto>
                     rowKey="id"
                     size="small"
@@ -234,6 +248,7 @@ export function EmployeeDrawer({ id, open, onClose, onOpenLeave }: { id: string 
         />
       )}
       <EmployeeFormModal open={editing} onClose={() => setEditing(false)} employee={data} />
+      {admin && data && opening && openingFor && <LeaveOpeningModal open onClose={() => setOpeningFor(false)} employee={data} year={month.year()} opening={opening} />}
     </Drawer>
   );
 }

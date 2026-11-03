@@ -20,7 +20,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { dateOnly } from '../common/serialize';
 import { bankCredit } from '../epc/epc-rules';
-import { Lines, balanced, credits, debits, gstLines, isInterState, moneyLedger, type LedgerName, type Voucher } from '../tally/vouchers';
+import { Lines, balanced, credits, debits, gstLines, isInterState, moneyLedger, type LedgerName, type LineSite, type Voucher } from '../tally/vouchers';
 
 type Tx = Prisma.TransactionClient | PrismaService;
 const D = (v: Prisma.Decimal.Value) => new Prisma.Decimal(v);
@@ -374,12 +374,28 @@ export class PostingService {
     const runs = booked.filter((r) => inRange(monthEnd(r.month)));
     const ids = [...new Set([...runs, ...paid].map((r) => r.id))];
     if (!ids.length) return;
-    const lines = await db.payslipLine.findMany({ where: { organizationId: org, payslip: { runId: { in: ids } } }, select: { kind: true, code: true, amount: true, payslip: { select: { runId: true } } } });
+    const lines = await db.payslipLine.findMany({
+      where: { organizationId: org, payslip: { runId: { in: ids } } },
+      select: { kind: true, code: true, amount: true, payslip: { select: { runId: true, project: { select: projectSelect } } } },
+    });
     const zero = () => ({ earnings: D(0), pf: D(0), esi: D(0), pt: D(0), tds: D(0), loans: D(0), other: D(0), employerPf: D(0), employerEsi: D(0) });
     const totals = new Map<string, ReturnType<typeof zero>>();
+    // A company-wide run's cost is split by each payslip's site, so the salaries reach the sites' cost centres.
+    type SiteCost = { site: LineSite; earnings: Prisma.Decimal; employerPf: Prisma.Decimal; employerEsi: Prisma.Decimal };
+    const bySite = new Map<string, Map<string, SiteCost>>();
     for (const l of lines) {
       const t = totals.get(l.payslip.runId) ?? zero();
       totals.set(l.payslip.runId, t);
+      if (l.kind === 'EARNING' || l.kind === 'EMPLOYER') {
+        const p = l.payslip.project;
+        const sites = bySite.get(l.payslip.runId) ?? new Map<string, SiteCost>();
+        bySite.set(l.payslip.runId, sites);
+        const c = sites.get(p?.id ?? '') ?? { site: { projectId: p?.id ?? null, code: p?.code ?? '', name: p?.name ?? '' }, earnings: D(0), employerPf: D(0), employerEsi: D(0) };
+        sites.set(p?.id ?? '', c);
+        if (l.kind === 'EARNING') c.earnings = c.earnings.add(l.amount);
+        else if (l.code === 'ESI_EMPLOYER') c.employerEsi = c.employerEsi.add(l.amount);
+        else c.employerPf = c.employerPf.add(l.amount);
+      }
       if (l.kind === 'EARNING') t.earnings = t.earnings.add(l.amount);
       else if (l.kind === 'EMPLOYER') {
         if (l.code === 'ESI_EMPLOYER') t.employerEsi = t.employerEsi.add(l.amount);
@@ -395,11 +411,15 @@ export class PostingService {
     for (const r of runs) {
       const t = totals.get(r.id) ?? zero();
       const cc = r.project ? { costCentre: true } : {};
-      const l = new Lines(name)
-        .dr('SALARIES', t.earnings, cc)
-        .dr('EMPLOYER_PF', t.employerPf, cc)
-        .dr('EMPLOYER_ESI', t.employerEsi, cc)
-        .cr('PF_PAYABLE', t.pf.add(t.employerPf))
+      const l = new Lines(name);
+      const sites = [...(bySite.get(r.id)?.values() ?? [])];
+      if (!r.project && sites.some((c) => c.site.projectId)) {
+        // Sites by name, head office last; each carries its own cost centre.
+        sites.sort((a, b) => (a.site.projectId ? 0 : 1) - (b.site.projectId ? 0 : 1) || a.site.name.localeCompare(b.site.name));
+        for (const key of ['SALARIES', 'EMPLOYER_PF', 'EMPLOYER_ESI'] as const)
+          for (const c of sites) l.dr(key, key === 'SALARIES' ? c.earnings : key === 'EMPLOYER_PF' ? c.employerPf : c.employerEsi, { costCentre: true, site: c.site });
+      } else l.dr('SALARIES', t.earnings, cc).dr('EMPLOYER_PF', t.employerPf, cc).dr('EMPLOYER_ESI', t.employerEsi, cc);
+      l.cr('PF_PAYABLE', t.pf.add(t.employerPf))
         .cr('ESI_PAYABLE', t.esi.add(t.employerEsi))
         .cr('PT_PAYABLE', t.pt)
         .cr('SALARY_TDS_PAYABLE', t.tds)

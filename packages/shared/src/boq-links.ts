@@ -4,6 +4,7 @@
  * sections are usually named after the same work, so the links can be offered: pure here, applied only on Confirm.
  */
 import { itemSimilarity } from './doc-read';
+import { isLumpSumUnit } from './wbs';
 
 /** A BOQ item as the matching reads it. */
 export interface LinkBoqItem {
@@ -16,6 +17,8 @@ export interface LinkBoqItem {
   quantity: string;
   /** Activities already linked to it */
   linked: number;
+  /** The component it prices */
+  workElementId?: string | null;
 }
 
 export interface LinkActivity {
@@ -66,10 +69,12 @@ const valueOf = (i: LinkBoqItem) => Number(i.quantity) || 0;
 /**
  * One suggested BOQ item for each activity with none, best first. An activity matches the section whose name is like
  * its own (the section's largest item stands for it); failing that, the item whose description is most like the
- * activity's name. An item already linked to an activity is not offered again, and nothing under `min` is offered.
+ * activity's name. An item already linked to an activity, or a lump sum that prices a component, is not offered, and
+ * nothing under `min` is offered.
  */
 export function boqLinkSuggestions(activities: LinkActivity[], items: LinkBoqItem[], min = 0.6): BoqLinkSuggestion[] {
-  const free = items.filter((i) => !i.linked);
+  // A lump sum that prices a component earns by the component's progress (`lumpSumShares`), so it is never offered.
+  const free = items.filter((i) => !i.linked && !(i.workElementId && isLumpSumUnit(i.unit)));
   const open = activities.filter((a) => !a.boqItemId);
   const bySection = new Map<string, LinkBoqItem[]>();
   for (const i of free) if (i.section) bySection.set(i.section, [...(bySection.get(i.section) ?? []), i]);
