@@ -4,6 +4,7 @@ import { CostService } from './cost.service';
 import { BudgetService } from './budget.service';
 import { CashFlowService } from './cash-flow.service';
 import { EarnedValueService } from './earned-value.service';
+import { OpeningService } from './opening.service';
 import { VariationsModule } from '../variations/variations.module';
 import { ReceivablesModule } from '../receivables/receivables.module';
 import { PayablesModule } from '../payables/payables.module';
@@ -11,7 +12,7 @@ import { PayablesModule } from '../payables/payables.module';
 @Module({
   imports: [VariationsModule, ReceivablesModule, PayablesModule],
   controllers: [CostController],
-  providers: [CostService, BudgetService, CashFlowService, EarnedValueService],
-  exports: [CostService, BudgetService, CashFlowService, EarnedValueService],
+  providers: [CostService, BudgetService, CashFlowService, EarnedValueService, OpeningService],
+  exports: [CostService, BudgetService, CashFlowService, EarnedValueService, OpeningService],
 })
 export class CostModule {}

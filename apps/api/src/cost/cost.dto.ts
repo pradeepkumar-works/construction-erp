@@ -65,3 +65,18 @@ export class CashFlowQuery {
   @ApiPropertyOptional({ description: 'One project; omit for every project you can see' }) @IsOptional() @IsUUID() projectId?: string;
   @ApiPropertyOptional({ enum: ['MONTH', 'WEEK'], default: 'MONTH', description: 'Six months, or twelve weeks' }) @IsOptional() @IsIn(['MONTH', 'WEEK']) granularity?: CashFlowGranularity;
 }
+
+export class SetOpeningDto {
+  @ApiProperty({ example: '2026-04-01', description: 'The day the figures stand at: the day the project came on Nirmaan' }) @IsDateString({ strict: true }) asOf: string;
+  @ApiProperty({ type: BudgetHeadsInputDto, description: 'What the project had spent by then, by cost head, before GST' })
+  @ValidateNested()
+  @Type(() => BudgetHeadsInputDto)
+  heads: BudgetHeadsInputDto;
+  @ApiPropertyOptional({ example: '84000000.00', nullable: true, description: 'Value of the work done by then; null when not known' })
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'number' ? String(value) : value))
+  @ValidateIf((_, v) => v !== null)
+  @IsNumberString()
+  workDone?: string | null;
+  @ApiPropertyOptional({ nullable: true }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsString() @MaxLength(2000) notes?: string | null;
+}

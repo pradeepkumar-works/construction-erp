@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { boqContractGap, canEditProjects, dataProblems, sectorStepOf, setupShown, setupSteps, type ContractModel, type ProjectSetupDto, type ProjectSetupFacts, type ProjectType } from '@erp/shared';
+import { boqContractGap, canEditProjects, dataProblems, openingMissing, sectorStepOf, setupShown, setupSteps, type ContractModel, type ProjectSetupDto, type ProjectSetupFacts, type ProjectType } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -53,6 +53,8 @@ export class ProjectSetupService {
         floors: true,
         villages: true,
         setupHiddenAt: true,
+        createdAt: true,
+        opening: { select: { id: true } },
       },
     });
     const [team, boqItems, boqTotals, unlinked, activities, budget, norms, activityNorms] = await Promise.all([
@@ -88,6 +90,7 @@ export class ProjectSetupService {
       budgetSet: !!budget && [budget.expenses, budget.material, budget.machinery, budget.labour, budget.subcontract].some((v) => Number(v) > 0),
       sectorSet: sector === 'chainage' ? p.chainageStart !== null && p.chainageEnd !== null : sector === 'floors' ? p.floors.length > 0 : sector === 'villages' ? p.villages.length > 0 : true,
       norms: norms + activityNorms,
+      openingMissing: openingMissing({ type: p.type, startDate: dateOnly(p.startDate), enteredOn: dateOnly(p.createdAt), hasOpening: !!p.opening }),
     };
   }
 
@@ -102,7 +105,7 @@ export class ProjectSetupService {
       done,
       total: steps.length,
       boqGap: boqContractGap(f),
-      problems: dataProblems(f),
+      problems: dataProblems(f, user.roleKey),
     };
   }
 

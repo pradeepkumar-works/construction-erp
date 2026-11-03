@@ -9,7 +9,7 @@ import { TeamOutlined } from '@/components/common/icons';
 import type { ProjectCostDto } from '@erp/shared';
 import { COST_HEADS, EQUIPMENT_RATE_UNIT_LABELS, EXPENSE_CATEGORY_LABELS, unitLabel } from '@erp/shared';
 import { useProjectCost } from '@/lib/queries';
-import { formatINR, formatPct, formatQty, toNumber, formatMonth, inSentence } from '@/lib/format';
+import { formatDate, formatINR, formatPct, formatQty, toNumber, formatMonth, inSentence } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { CostBar, CostHeadTitle, CostLegend } from './CostBar';
 import { defaultPeriod, PeriodPicker, periodLabel, periodParams, type PeriodState } from './PeriodPicker';
@@ -75,6 +75,17 @@ export function ProjectCostPanel({ projectId }: { projectId: string }) {
           </Row>
           <Section style={{ marginTop: tk.space[4] }} title="Cost heads" extra={<CostLegend />}>
             <CostBar cost={data.cost} scale={toNumber(data.cost.total)} height={18} />
+            {data.opening ? (
+              <Typography.Paragraph type="secondary" style={{ marginTop: tk.space[2], marginBottom: 0 }}>
+                Includes the opening cost of <Money value={data.opening.cost.total} />, what the project had spent by {formatDate(data.opening.asOf)} when it came on Nirmaan
+                {data.opening.workDone ? (
+                  <>
+                    ; work done includes the <Money value={data.opening.workDone} /> done by then
+                  </>
+                ) : null}
+                .
+              </Typography.Paragraph>
+            ) : null}
             <div style={{ display: 'flex', gap: tk.space[8], flexWrap: 'wrap', marginTop: tk.space[3] }}>
               {COST_HEADS.map((h) => (
                 <Statistic key={h} title={<CostHeadTitle head={h} />} value={formatINR(data.cost[h])} styles={{ content: { fontSize: tk.type.lead.fontSize } }} />

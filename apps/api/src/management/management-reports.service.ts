@@ -291,6 +291,7 @@ export class ManagementReportsService {
         'Cost is approved site expenses, material issued at the item rate, machinery at its hire rate or hire bill, labour man-days at the trade rate and approved subcontractor bills.',
         'Where each project stands is as of the day the report is made. Work done there counts each BOQ item at the larger of its approved progress and its approved measurement, so supply items count once measured.',
         'Margin is work done less cost to date. Committed is approved purchase and work orders still open, less what is billed against them.',
+        'Cost to date includes a project\'s opening cost: what it had spent when it came on Nirmaan, counted on that day.',
       ],
     };
   }
@@ -333,6 +334,8 @@ export class ManagementReportsService {
     });
     const monthCols = [col('month', 'Month', 'text'), ...columns.slice(1)];
 
+    const missing = standing.filter((r) => r.money.openingMissing);
+    const noOpening = missing.length ? `${missing.length === 1 ? '1 project has' : `${missing.length} projects have`} no opening cost` : undefined;
     const forecast = {
       columns: [projectCol, col('contract', 'Contract value'), col('workDone', 'Work done'), col('cost', 'Cost to date'), col('committed', 'Committed'), col('budget', 'Cost budget'), col('forecastCost', 'Forecast cost'), col('forecastMargin', 'Forecast margin')],
       rows: standing.map((r) => ({
@@ -351,8 +354,8 @@ export class ManagementReportsService {
       figures: [
         figure('billed', N(t.billed)),
         figure('cost', N(t.cost)),
-        figure('grossMargin', N(t.margin)),
-        figure('marginOnBilling', typeof t.marginPct === 'number' ? t.marginPct : { none: 'Too little billed to say' }),
+        figure('grossMargin', N(t.margin), { caveat: noOpening }),
+        figure('marginOnBilling', typeof t.marginPct === 'number' ? t.marginPct : { none: 'Too little billed to say' }, { caveat: noOpening }),
       ],
       sections: [
         { key: 'projects', title: 'By project', columns, rows, ...(rows.length > 1 ? { total: t } : {}) },
@@ -362,6 +365,8 @@ export class ManagementReportsService {
       notes: [
         'Billed is approved RA bills dated in the period: work value plus price variation, before GST.',
         'Cost by head is as the Project cost page counts it, dated in the period. Material bought and not yet issued is not cost until it is issued.',
+        'A project that ran before it came on Nirmaan counts its opening cost (what it had spent by then) on the day it came on.',
+        ...(missing.length ? [`No opening cost yet, so their cost leaves out what was spent before they came on Nirmaan: ${missing.map((r) => r.code).join(', ')}.`] : []),
       ],
     };
   }

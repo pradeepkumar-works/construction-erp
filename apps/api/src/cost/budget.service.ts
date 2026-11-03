@@ -8,7 +8,7 @@ import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
 import { dec, iso, money } from '../common/serialize';
 import { VariationsService } from '../variations/variations.service';
-import { CostService, Heads, ZERO, total } from './cost.service';
+import { type Acc, CostService, Heads, ZERO, total } from './cost.service';
 import { SetBudgetDto } from './cost.dto';
 
 type D = Prisma.Decimal;
@@ -30,6 +30,8 @@ export interface Forecast {
   actual: D;
   eac: D | null;
   revisedContractValue: D | null;
+  /** The opening cost in `heads` and `executed` (ARCHITECTURE "Opening cost") */
+  opening: Acc['opening'];
 }
 
 /**
@@ -85,6 +87,7 @@ export class BudgetService {
         actual,
         eac: bac ? actual.plus(bac.mul(ONE.minus(pct))).toDecimalPlaces(2) : null,
         revisedContractValue: p.contractValue ? p.contractValue.plus(approved.get(p.id) ?? ZERO) : null,
+        opening: acc.opening,
       });
     }
     return out;

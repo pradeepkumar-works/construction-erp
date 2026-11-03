@@ -131,6 +131,8 @@ export interface ProjectSetupFacts {
   /** The chainage, floors or villages the sector view needs */
   sectorSet: boolean;
   norms: number;
+  /** It ran before it came on Nirmaan and has no opening cost (`openingMissing`) */
+  openingMissing?: boolean;
 }
 
 export interface SetupStepDto {
@@ -153,7 +155,7 @@ export interface ProjectSetupDto {
 }
 
 /** Problems with a project's records that make its figures wrong: the BOQ against the contract, work no activity counts, a plan with holes. */
-export const DATA_PROBLEMS = ['boqOffContract', 'boqItemsWithoutActivity', 'activitiesUndated'] as const;
+export const DATA_PROBLEMS = ['boqOffContract', 'boqItemsWithoutActivity', 'activitiesUndated', 'openingMissing'] as const;
 export type DataProblemKey = (typeof DATA_PROBLEMS)[number];
 
 /** The headline figures each problem makes wrong; the Overview marks them. */
@@ -164,10 +166,15 @@ export const DATA_PROBLEM_AFFECTS: Record<DataProblemKey, readonly FigureId[]> =
   boqItemsWithoutActivity: ['physicalProgress', 'workDone'],
   // What is planned by today leaves out an activity with no dates.
   activitiesUndated: ['physicalProgress'],
+  // Cost leaves out what was spent before the project came on Nirmaan, so margin reads high.
+  openingMissing: ['cost', 'marginToDate'],
 };
 
+/** Problems only some roles are told of: the rest of the team does not see them. */
+const PROBLEM_ACCESS: Partial<Record<DataProblemKey, (role: RoleKey) => boolean>> = { openingMissing: canViewCost };
+
 /** The project tab each problem is fixed on (`?tab=`). */
-export const DATA_PROBLEM_TAB: Record<DataProblemKey, string> = { boqOffContract: 'boq', boqItemsWithoutActivity: 'activities', activitiesUndated: 'schedule' };
+export const DATA_PROBLEM_TAB: Record<DataProblemKey, string> = { boqOffContract: 'boq', boqItemsWithoutActivity: 'activities', activitiesUndated: 'schedule', openingMissing: 'budget' };
 
 export interface DataProblemDto {
   key: DataProblemKey;
@@ -181,14 +188,15 @@ export interface DataProblemDto {
  * The problems that stand on a project's Overview, whatever its progress, until the records are fixed. Unlike the setup
  * checklist they never hide: each one keeps a headline figure wrong. Stores and plants have none.
  */
-export function dataProblems(f: ProjectSetupFacts): DataProblemDto[] {
+export function dataProblems(f: ProjectSetupFacts, role?: RoleKey): DataProblemDto[] {
   if (!setupApplies(f.type)) return [];
   const found: Record<DataProblemKey, [boolean, number | null]> = {
     boqOffContract: [!!boqContractGap(f), null],
     boqItemsWithoutActivity: [f.activities > 0 && f.boqItemsWithoutActivity > 0, f.boqItemsWithoutActivity],
     activitiesUndated: [f.activities > 0 && f.activitiesUndated > 0, f.activitiesUndated],
+    openingMissing: [!!f.openingMissing, null],
   };
-  return DATA_PROBLEMS.filter((k) => found[k][0]).map((key) => ({ key, tab: DATA_PROBLEM_TAB[key], count: found[key][1], affects: DATA_PROBLEM_AFFECTS[key] }));
+  return DATA_PROBLEMS.filter((k) => found[k][0] && (!role || (PROBLEM_ACCESS[k]?.(role) ?? true))).map((key) => ({ key, tab: DATA_PROBLEM_TAB[key], count: found[key][1], affects: DATA_PROBLEM_AFFECTS[key] }));
 }
 
 /** A store or an RMC plant is set up differently; it has no setup checklist. */

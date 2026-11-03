@@ -31,8 +31,9 @@ import { invoiceOf, RECEIPT_SUMS, settlement } from '../receivables/bill-settlem
 import { BudgetService } from '../cost/budget.service';
 import { CostService, total } from '../cost/cost.service';
 import { CashForecastService } from '../cash-forecast/cash-forecast.service';
+import { OpeningService } from '../cost/opening.service';
 import { plannedProgress } from '../common/progress';
-import { approvalAgeing, byUrgency, contractWorkDone, daysBetween, forecastCost, healthOf, lastMonths, paidWork, pctOf, scheduleOf, unbilledDays, workDoneValue } from './management-rules';
+import { approvalAgeing, byUrgency, contractWorkDone, daysBetween, forecastCost, healthOf, lastMonths, paidWork, pctOf, scheduleOf, unbilledDays, withOpeningWork, workDoneValue } from './management-rules';
 
 const N = (v: Prisma.Decimal | number | string | null | undefined) => Number(v ?? 0);
 const m = (n: number) => money(new Prisma.Decimal(n.toFixed(2)));
@@ -60,6 +61,7 @@ export class ManagementService {
     private lifecycle: SubmissionLifecycleService,
     private cash: CashForecastService,
     private masters: MastersService,
+    private opening: OpeningService,
   ) {}
 
   assertSee(user: RequestUser) {
@@ -131,6 +133,7 @@ export class ManagementService {
       committed: m(sum('committed')),
       margin: m(margin),
       marginPct: pctOf(margin, workDone),
+      openingMissing: rows.filter((r) => r.money.openingMissing).length,
     };
     const attention: AttentionItemDto[] = rows
       .flatMap((r) => r.reasons.map((x) => ({ projectId: r.projectId, projectCode: r.code, projectName: r.name, level: x.level, key: x.key, text: x.text })))
@@ -211,7 +214,7 @@ export class ManagementService {
     const ids = projects.map((p) => p.id);
     if (!ids.length) return { rows: [], pending: [] };
     const organizationId = user.organizationId;
-    const [extra, boq, activities, progress, measured, bills, receivables, forecasts, pos, wos, risks, submitted] = await Promise.all([
+    const [extra, boq, activities, progress, measured, bills, receivables, forecasts, pos, wos, risks, submitted, openingMissing] = await Promise.all([
       this.prisma.project.findMany({ where: { id: { in: ids } }, select: { id: true, lumpSumValue: true, client: { select: { name: true } }, risks: { where: { eotGrantedDays: { not: null } }, select: { eotGrantedDays: true } } } }),
       this.prisma.boqItem.findMany({ where: { projectId: { in: ids } }, select: { id: true, projectId: true, rate: true, originalQty: true, revisedQty: true } }),
       this.prisma.activity.findMany({ where: { projectId: { in: ids } }, select: { id: true, projectId: true, boqItemId: true, plannedQty: true, plannedStart: true, plannedEnd: true, _count: { select: { subActivities: true } } } }),
@@ -233,6 +236,7 @@ export class ManagementService {
       }),
       this.prisma.risk.findMany({ where: { organizationId, projectId: { in: ids }, status: { not: 'CLOSED' } }, select: { projectId: true, score: true } }),
       this.lifecycle.submitted(user),
+      this.opening.missing(ids),
     ]);
     const idSet = new Set(ids);
     const pending = submitted.filter((p) => idSet.has(p.projectId));
@@ -253,7 +257,12 @@ export class ManagementService {
         for (const a of acts) if (a.boqItemId) progressOfItem.set(a.boqItemId, (progressOfItem.get(a.boqItemId) ?? 0) + (progressQty.get(a.id) ?? 0));
         const e = extraOf.get(p.id);
         const boqWork = workDoneValue(items.map((b) => ({ rate: N(b.rate), progressQty: progressOfItem.get(b.id) ?? 0, measuredQty: measuredQty.get(b.id) ?? 0 })));
-        const workDone = contractWorkDone(p.contractModel, boqWork, p.physicalProgressPct, e?.lumpSumValue ? N(e.lumpSumValue) : p.revisedContractValue ? N(p.revisedContractValue) : null);
+        const f = forecasts.get(p.id)!;
+        const workDone = withOpeningWork(
+          contractWorkDone(p.contractModel, boqWork, p.physicalProgressPct, e?.lumpSumValue ? N(e.lumpSumValue) : p.revisedContractValue ? N(p.revisedContractValue) : null),
+          N(f.executed),
+          f.opening?.workDone ? N(f.opening.workDone) : null,
+        );
         const measuredValue = items.reduce((s, b) => s + (measuredQty.get(b.id) ?? 0) * N(b.rate), 0);
         const boqValue = items.reduce((s, b) => s + N(b.revisedQty ?? b.originalQty) * N(b.rate), 0);
 
@@ -291,8 +300,7 @@ export class ManagementService {
         const completionDate = revisedCompletion(p.endDate, grantedExtensionDays(e?.risks ?? []));
         const schedule = scheduleOf({ status: p.status, done: p.physicalProgressPct, planned, startDate: p.startDate, completionDate, plannedFinish, late, scheduled: dated.length, today: today });
 
-        // Cost, commitments and the forecast.
-        const f = forecasts.get(p.id)!;
+        // Cost (the opening cost in it), commitments and the forecast.
         const cost = N(total(f.heads));
         const committed =
           pos.filter((o) => o.projectId === p.id).reduce((s, o) => s + Math.max(0, N(o.subtotal) + N(o.freight) - o.vendorBills.reduce((t, b) => t + N(b.subtotal) + N(b.freight), 0)), 0) +
@@ -322,6 +330,7 @@ export class ManagementService {
           approvalsWaiting: waiting.length,
           approvalsOldestDays: oldestDays,
           highRisks,
+          openingMissing: openingMissing.has(p.id),
         });
         return {
           projectId: p.id,
@@ -355,6 +364,7 @@ export class ManagementService {
             margin: m(margin),
             marginPct: pctOf(margin, workDone),
             forecastMargin: forecastMargin === null ? null : m(forecastMargin),
+            openingMissing: openingMissing.has(p.id),
           },
           approvals: { waiting: waiting.length, oldestDays },
           risks: { open: projectRisks.length, high: highRisks },

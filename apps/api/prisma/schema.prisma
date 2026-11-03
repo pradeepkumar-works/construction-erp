@@ -1024,6 +1024,7 @@ model Organization {
   billingPayments      BillingPayment[]
   variations           Variation[]
   projectBudgets       ProjectBudget[]
+  projectOpenings      ProjectOpening[]
   safetyIncidents      SafetyIncident[]
   toolboxTalks         ToolboxTalk[]
   ppeIssues            PpeIssue[]
@@ -1283,6 +1284,7 @@ model User {
   letterMarksTo           LetterMark[]               @relation("LetterMarkTo")
   variationsCreated       Variation[]                @relation("VariationCreator")
   budgetsUpdated          ProjectBudget[]            @relation("BudgetUpdater")
+  openingsUpdated         ProjectOpening[]           @relation("OpeningUpdater")
   incidentsReported       SafetyIncident[]           @relation("IncidentReporter")
   incidentsClosed         SafetyIncident[]           @relation("IncidentCloser")
   toolboxTalks            ToolboxTalk[]              @relation("ToolboxTalkRecorder")
@@ -1596,6 +1598,7 @@ model Project {
   holidays           Holiday[]
   variations         Variation[]
   budget             ProjectBudget?
+  opening            ProjectOpening?
   /// The tender this project was won from
   tender             Tender?
   safetyIncidents    SafetyIncident[]
@@ -5903,6 +5906,33 @@ model ProjectBudget {
   updatedAt      DateTime     @updatedAt
 
   @@index([organizationId])
+}
+
+/// What a project had spent, by head, and the work it had done, on the day it came on Nirmaan (ARCHITECTURE "Opening
+/// cost"). Cost to date counts it from `asOf`; a project that ran before it was entered and has none is flagged.
+model ProjectOpening {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  projectId      String       @unique
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// The day the figures stand at
+  asOf           DateTime     @db.Date
+  expenses       Decimal      @default(0) @db.Decimal(18, 2)
+  material       Decimal      @default(0) @db.Decimal(18, 2)
+  machinery      Decimal      @default(0) @db.Decimal(18, 2)
+  labour         Decimal      @default(0) @db.Decimal(18, 2)
+  subcontract    Decimal      @default(0) @db.Decimal(18, 2)
+  /// Value of the work done by `asOf`; null when not known
+  workDone       Decimal?     @db.Decimal(18, 2)
+  notes          String?
+  updatedById    String
+  updatedBy      User         @relation("OpeningUpdater", fields: [updatedById], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([organizationId, asOf])
 }
 
 /// What happened. A near miss hurt no one; the rest are graded by the worst outcome.

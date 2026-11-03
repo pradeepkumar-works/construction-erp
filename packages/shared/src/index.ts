@@ -103,6 +103,7 @@ export * from './project-progress';
 export * from './items';
 export * from './norms-library';
 export * from './project-setup';
+export * from './project-opening';
 export * from './project-code';
 export * from './purchase-queue';
 export * from './nav-menu';

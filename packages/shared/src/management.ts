@@ -113,6 +113,8 @@ export interface PortfolioMoneyDto {
   marginPct: number | null;
   /** Contract value less the forecast cost; null when either is */
   forecastMargin: string | null;
+  /** It ran before it came on Nirmaan and has no opening cost: cost and margin leave out what was spent before */
+  openingMissing: boolean;
 }
 
 export interface PortfolioProjectDto {
@@ -163,6 +165,8 @@ export interface PortfolioTotalsDto {
   committed: string;
   margin: string;
   marginPct: number | null;
+  /** Projects with no opening cost though they ran before Nirmaan: the margin reads high by what they spent before */
+  openingMissing: number;
 }
 
 /** Billed, received and cost by month, for the trend. */

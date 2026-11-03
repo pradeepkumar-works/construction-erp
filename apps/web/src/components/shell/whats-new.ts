@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-opening-cost',
+    date: '2026-11-03',
+    title: 'Opening cost for projects that ran before Nirmaan',
+    points: [
+      'A project you moved onto Nirmaan part way through can carry what it had spent and done by then, by cost head, on its Budget tab. Cost to date, margin, the budget forecast, the P&L and the cash-flow forecast count it from that day.',
+      'A project that started over a month before it was entered and has none is flagged on its Overview and on the management dashboard, because its margin leaves out everything spent before.',
+      'The cash-flow forecast no longer counts billing to come on a project with no budget unless it can tell what the work will cost: it uses the project’s cost so far against its billing.',
+    ],
+  },
+  {
     id: '2026-11-hr-payroll-module',
     date: '2026-11-03',
     title: 'HR and payroll as one module',

@@ -1,7 +1,7 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type { CashFlowDto, CashFlowGranularity } from '@erp/shared';
-import { DEFAULT_CLIENT_PAYMENT_DAYS, canViewCost, grantedExtensionDays, revisedCompletion } from '@erp/shared';
+import { DEFAULT_CLIENT_PAYMENT_DAYS, canViewCost, grantedExtensionDays, revisedCompletion, spendBasis } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -9,6 +9,7 @@ import { dateOnly, money, parseDate } from '../common/serialize';
 import { ReceivablesService } from '../receivables/receivables.service';
 import { PayablesService } from '../payables/payables.service';
 import { BudgetService } from './budget.service';
+import { OpeningService } from './opening.service';
 import { ZERO } from './cost.service';
 import { CashFlowQuery } from './cost.dto';
 import { todayIn } from '../notifications/time';
@@ -47,6 +48,7 @@ export class CashFlowService {
     private receivables: ReceivablesService,
     private payables: PayablesService,
     private budget: BudgetService,
+    private opening: OpeningService,
   ) {}
 
   private periods(today: Date, granularity: CashFlowGranularity): Period[] {
@@ -80,6 +82,7 @@ export class CashFlowService {
       select: {
         id: true,
         code: true,
+        type: true,
         status: true,
         contractValue: true,
         endDate: true,
@@ -96,7 +99,7 @@ export class CashFlowService {
     });
     const ids = projects.map((p) => p.id);
     const payDays = new Map(projects.map((p) => [p.id, p.clientPaymentDays ?? DEFAULT_CLIENT_PAYMENT_DAYS]));
-    const [recv, pay, unsent, billed, forecasts] = await Promise.all([
+    const [recv, pay, unsent, billed, forecasts, openingMissing] = await Promise.all([
       this.receivables.summary(user, q.projectId ? { projectId: q.projectId } : {}),
       this.payables.summary(user, q.projectId ? { projectId: q.projectId } : {}),
       this.prisma.raBill.findMany({
@@ -105,6 +108,7 @@ export class CashFlowService {
       }),
       this.prisma.raBill.groupBy({ by: ['projectId'], where: { projectId: { in: ids }, status: 'APPROVED' }, _sum: { grossAmount: true } }),
       this.budget.forecasts(user.organizationId, projects),
+      this.opening.missing(ids),
     ]);
 
     // Money in: bills already approved.
@@ -146,6 +150,7 @@ export class CashFlowService {
     // Work still to do: billed and spent evenly from today to completion.
     const billedOf = new Map(billed.map((b) => [b.projectId, b._sum.grossAmount ?? ZERO]));
     const projectsWithoutBudget: CashFlowDto['projectsWithoutBudget'] = [];
+    const projectsAtCostRatio: CashFlowDto['projectsAtCostRatio'] = [];
     const projectsWithoutEndDate: CashFlowDto['projectsWithoutEndDate'] = [];
     /** Spread `amount` evenly over the days from..to and add each period's share (shifted by `lag` days) to `field`. */
     const spread = (amount: D, from: Date, to: Date, lag: number, field: 'futureBilling' | 'remainingBudget') => {
@@ -160,21 +165,34 @@ export class CashFlowService {
       }
     };
     for (const p of projects) {
-      if (p.status === 'COMPLETED' || p.status === 'CLOSED') continue;
+      // A store or an RMC plant has no contract to bill or build out.
+      if (p.status === 'COMPLETED' || p.status === 'CLOSED' || p.type === 'STORE' || p.type === 'PLANT') continue;
       const f = forecasts.get(p.id)!;
+      // What is still to spend: the budget for the work left, else billing still to come at the cost ratio to date
+      // (the opening cost in it). With neither, its billing still to come is left out too: money in with nothing going out
+      // would read as profit no one will make.
+      const billedToDate = billedOf.get(p.id) ?? ZERO;
+      const basis = spendBasis({ hasBudget: !!f.eac, costToDate: f.actual.toNumber(), billedToDate: billedToDate.toNumber(), openingMissing: openingMissing.has(p.id) });
+      if (basis.kind === 'none') {
+        projectsWithoutBudget.push({ projectId: p.id, projectCode: p.code, why: basis.why });
+        continue;
+      }
       const completion = revisedCompletion(dateOnly(p.endDate), grantedExtensionDays(p.risks));
       let to = completion ? parseDate(completion) : null;
       if (!to || to < today) {
         to = addDays(today, OVERRUN_DAYS - 1);
         projectsWithoutEndDate.push({ projectId: p.id, projectCode: p.code });
       }
-      if (f.revisedContractValue) {
-        const remaining = Dec.max(ZERO, f.revisedContractValue.minus(billedOf.get(p.id) ?? ZERO));
+      const remaining = f.revisedContractValue ? Dec.max(ZERO, f.revisedContractValue.minus(billedToDate)) : null;
+      if (remaining) {
         const netOfDeductions = new Dec(100).plus(p.gstRate).minus(p.retentionPct).minus(p.securityDepositPct).minus(p.tdsPct).minus(p.gstTdsPct).minus(p.labourCessPct).div(100);
         spread(remaining.mul(netOfDeductions), today, to, payDays.get(p.id)!, 'futureBilling');
       }
-      if (f.eac) spread(Dec.max(ZERO, f.eac.minus(f.actual)), today, to, 0, 'remainingBudget');
-      else projectsWithoutBudget.push({ projectId: p.id, projectCode: p.code });
+      if (basis.kind === 'budget') spread(Dec.max(ZERO, f.eac!.minus(f.actual)), today, to, 0, 'remainingBudget');
+      else {
+        if (remaining) spread(remaining.mul(basis.ratio), today, to, 0, 'remainingBudget');
+        projectsAtCostRatio.push({ projectId: p.id, projectCode: p.code, costPct: Math.round(basis.ratio * 1000) / 10 });
+      }
     }
 
     let cumulative = ZERO;
@@ -204,6 +222,7 @@ export class CashFlowService {
       overdueIn: money(overdueIn),
       overdueOut: money(overdueOut),
       projectsWithoutBudget,
+      projectsAtCostRatio,
       projectsWithoutEndDate,
     };
   }

@@ -76,7 +76,7 @@ function Detail({ data }: { data: PortfolioProjectDetailDto }) {
     figure('workNotBilled', m.unbilled, unbilled && { attention: unbilled }),
     figure('clientsOwe', m.outstanding, { versus: { part: figure('clientsOweOver90', m.over90) } }),
     m.budget !== null ? figure('cost', m.cost, { when: 'toDate', versus: { of: figure('budget', m.budget) } }) : figure('cost', m.cost, { when: 'toDate' }),
-    figure('marginToDate', m.margin, { versus: { of: figure('workDone', m.workDone) } }),
+    figure('marginToDate', m.margin, { versus: { of: figure('workDone', m.workDone) }, caveat: m.openingMissing ? 'No opening cost: leaves out what was spent before Nirmaan' : undefined }),
   ];
   const facts: [string, React.ReactNode][] = [
     ['Schedule', PORTFOLIO_SCHEDULE_LABELS[s.state]],
