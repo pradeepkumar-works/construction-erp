@@ -9,6 +9,15 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-papers',
+    date: '2026-11-03',
+    title: 'Print the papers that leave the company',
+    points: [
+      'A measurement book page, a permit to work, a variation claim, a debit note, a ready-mix quotation and tax invoice, and a GRN, issue slip, return or transfer challan now print from their record, on your letterhead with your GSTIN and PAN, and with the lines to sign.',
+      'The ready-mix tax invoice shows both GSTINs, the place of supply, the HSN, CGST and SGST or IGST, and the total in words.',
+    ],
+  },
+  {
     id: '2026-11-cost-booked',
     date: '2026-11-03',
     title: 'Budget and earned value say when cost is missing',

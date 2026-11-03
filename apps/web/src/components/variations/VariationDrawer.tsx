@@ -7,7 +7,9 @@ import { App, Button, Descriptions, Divider, Drawer, Form, Input, Segmented, Ske
 import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
-import { CheckCircleOutlined, EditOutlined, SendOutlined } from '@/components/common/icons';
+import { CheckCircleOutlined, EditOutlined, PrinterOutlined, SendOutlined } from '@/components/common/icons';
+import { usePrintPaper } from '@/components/print/usePrintPaper';
+import { openVariationPrint } from './variationPrint';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import type { VariationDto, VariationLineDto, VariationStatus } from '@erp/shared';
@@ -40,6 +42,7 @@ export function VariationDrawer({ id, open, onClose }: { id: string | null; open
   const [sending, setSending] = useState(false);
   const [deciding, setDeciding] = useState(false);
   const manage = !!user && canManageVariations(user.roleKey);
+  const print = usePrintPaper();
   const remove = useMutation({
     mutationFn: async () => (await api.delete(`/variations/${id}`)).data,
     onSuccess: () => {
@@ -105,19 +108,26 @@ export function VariationDrawer({ id, open, onClose }: { id: string | null; open
         )
       }
       extra={
-        data && manage && data.status !== 'APPROVED' ? (
+        data ? (
           <Space>
-            {data.status === 'SUBMITTED' ? (
-              <Button size="small" type="primary" icon={<CheckCircleOutlined />} onClick={() => setDeciding(true)}>
-                Record decision
-              </Button>
-            ) : (
-              <Button size="small" type="primary" icon={<SendOutlined />} onClick={() => setSending(true)}>
-                {data.status === 'REJECTED' ? 'Send again' : 'Send to client'}
-              </Button>
-            )}
-            <Button size="small" icon={<EditOutlined />} onClick={() => setEditing(true)} aria-label="Edit variation" />
-            <DeleteInMenu what={data.label} onConfirm={() => remove.mutateAsync()} />
+            <Button size="small" icon={<PrinterOutlined />} onClick={() => print((l) => openVariationPrint(data, l))}>
+              Print
+            </Button>
+            {manage && data.status !== 'APPROVED' ? (
+              <>
+                {data.status === 'SUBMITTED' ? (
+                  <Button size="small" type="primary" icon={<CheckCircleOutlined />} onClick={() => setDeciding(true)}>
+                    Record decision
+                  </Button>
+                ) : (
+                  <Button size="small" type="primary" icon={<SendOutlined />} onClick={() => setSending(true)}>
+                    {data.status === 'REJECTED' ? 'Send again' : 'Send to client'}
+                  </Button>
+                )}
+                <Button size="small" icon={<EditOutlined />} onClick={() => setEditing(true)} aria-label="Edit variation" />
+                <DeleteInMenu what={data.label} onConfirm={() => remove.mutateAsync()} />
+              </>
+            ) : null}
           </Space>
         ) : null
       }

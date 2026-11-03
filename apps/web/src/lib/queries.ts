@@ -2,6 +2,7 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
 import type {
+  LetterheadDto,
   DocumentCheckDecision,
   EmployeeDocumentKind,
   EmployeeDocumentsChecklistDto,
@@ -662,6 +663,10 @@ export const usePickerRecord = <T>(source: PickerSource, id: string | undefined,
 };
 
 // Queries
+
+/** The company as its printed papers name it (name, address, GSTIN, PAN); a print falls back to the name alone. */
+export const useLetterhead = () =>
+  useQuery({ queryKey: ['letterhead'], queryFn: async () => (await api.get<LetterheadDto>('/company-data/letterhead')).data, staleTime: 30 * 60_000 });
 
 /** The home page's My work: only the cards the caller's role has. */
 export const useMyWork = () =>

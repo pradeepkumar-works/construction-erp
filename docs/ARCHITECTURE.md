@@ -371,6 +371,24 @@ still a tap away. An order puts its sections in the order of its stage (before a
 items with what has come and been billed, then bills, receipts, dispatch), and a line billed above what was received says
 so in words.
 
+### Printed papers
+
+A paper that leaves the company, or goes on its file for audit, prints from its record on the company's letterhead: the
+measurement book page, the permit to work, the variation claim, the debit note, the ready-mix quotation and tax invoice, and
+the GRN, issue slip, return and transfer challan (each kind of stock entry has its own name, `STOCK_PAPER_TITLES`). Each is
+a pure builder beside its module (`measurementPrint.ts`, `permitPrint.ts`, `variationPrint.ts`, `debitNotePrint.ts`,
+`rmcPrint.ts`, `stockEntryPrint.ts`) that writes only its body; the frame is `printDocHtml` (`components/print/printDoc.ts`):
+the letterhead at the top left, the paper's name, number and date at the right, a red stamp when it is not good to act on
+(not checked, draft, cancelled, expired), the signature row the paper needs, and the Nirmaan footer, all in `PRINT`.
+
+The letterhead is `GET /company-data/letterhead` (`LetterheadDto`): the company's name, legal name, billing address,
+GSTIN (its own, else its billing GSTIN), PAN, CIN and GST state. Anyone signed in reads it, since it is printed on what they
+hand out. `usePrintPaper` loads it with the record, so the click opens the window at once, and falls back to the name alone.
+A tax invoice carries what GST asks of one: both GSTINs, the place of supply (the customer's state), the HSN, CGST and SGST
+or IGST, the total in words and reverse charge. A note kept for the company (an RMC order's notes) stays off the paper.
+The older prints (RA bill, purchase order, work order and subcontractor bill, DPR, letter, transmittal, payslip) keep their
+own frames for now; a new one uses `printDocHtml`.
+
 ### Launcher Home, pins and Recent (launcher phase 2)
 
 Home (`app/(app)/page.tsx`, `components/launcher/HomeLauncher.tsx`) is a launcher: a greeting (the page's `<h1>`), a search

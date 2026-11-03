@@ -2,7 +2,9 @@
 
 import React, { useState } from 'react';
 import { App, Button, Descriptions, Drawer, Popconfirm, Segmented, Space, Table, Typography } from 'antd';
-import { FileDoneOutlined, PayCircleOutlined } from '@/components/common/icons';
+import { FileDoneOutlined, PayCircleOutlined, PrinterOutlined } from '@/components/common/icons';
+import { usePrintPaper } from '@/components/print/usePrintPaper';
+import { openRmcInvoicePrint } from './rmcPrint';
 import type { RmcInvoiceDto, RmcReceiptDto } from '@erp/shared';
 import { PAYMENT_MODE_LABELS, canBillRmc, type PaymentMode } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
@@ -25,6 +27,7 @@ const KEYS = ['due'] as const;
 function InvoiceDrawer({ invoice, onClose, onReceive }: { invoice: RmcInvoiceDto | null; onClose: () => void; onReceive: (i: RmcInvoiceDto) => void }) {
   const { message } = App.useApp();
   const act = useRmcAction<RmcInvoiceDto>();
+  const print = usePrintPaper();
   const i = invoice;
   return (
     <Drawer
@@ -35,6 +38,9 @@ function InvoiceDrawer({ invoice, onClose, onReceive }: { invoice: RmcInvoiceDto
       extra={
         i ? (
           <Space wrap>
+            <Button size="small" icon={<PrinterOutlined />} onClick={() => print((l) => openRmcInvoicePrint(i, l))}>
+              Print invoice
+            </Button>
             {i.canReceive && (
               <Button size="small" type="primary" icon={<PayCircleOutlined />} onClick={() => onReceive(i)}>
                 Money received

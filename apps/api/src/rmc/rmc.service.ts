@@ -84,8 +84,8 @@ const batchInclude = {
 type BatchRow = Prisma.RmcBatchGetPayload<{ include: typeof batchInclude }>;
 
 const invoiceInclude = {
-  plant: { select: { name: true } },
-  client: { select: { name: true, gstin: true } },
+  plant: { select: { name: true, siteAddress: true } },
+  client: { select: { name: true, gstin: true, billingAddress: true, stateCode: true } },
   order: { select: { orderNo: true } },
   batches: { select: { id: true, batchNo: true, date: true, quantity: true, mixDesign: { select: { grade: true } } }, orderBy: { batchNo: 'asc' } },
   receipts: { select: { amount: true } },
@@ -681,6 +681,9 @@ export class RmcService {
       clientId: r.clientId,
       customer: r.client.name,
       gstin: r.client.gstin,
+      customerAddress: r.client.billingAddress,
+      customerStateCode: r.client.stateCode ?? gstStateCode(r.client.gstin),
+      plantAddress: r.plant.siteAddress,
       orderNo: r.order?.orderNo ?? null,
       status: r.status,
       quantity: dec(r.quantity),

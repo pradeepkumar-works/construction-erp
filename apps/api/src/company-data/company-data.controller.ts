@@ -16,6 +16,12 @@ import { AllowWhenUnpaid } from '../common/billing';
 export class CompanyDataController {
   constructor(private data: CompanyDataService) {}
 
+  @ApiOperation({ summary: "The company's name, address, GSTIN and PAN, as its printed papers head with them" })
+  @Get('letterhead')
+  letterhead(@CurrentUser() user: RequestUser) {
+    return this.data.letterhead(user);
+  }
+
   @ApiOperation({ summary: 'What a full export contains: tables with row counts, and the number and size of stored files' })
   @Get('export')
   manifest(@CurrentUser() user: RequestUser) {

@@ -16,6 +16,9 @@ import { QueryError } from '@/components/common/QueryState';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { PermitStatusTag, SafetyHistory, permitTypeLabel, permitWindow } from './safetyUi';
 import { joinPrecautions, splitPrecautions } from './PermitFormModal';
+import { PrinterOutlined } from '@/components/common/icons';
+import { usePrintPaper } from '@/components/print/usePrintPaper';
+import { openPermitPrint } from './permitPrint';
 
 type Action = 'issue' | 'reject' | 'close';
 
@@ -30,6 +33,7 @@ export function PermitDrawer({ id, open, onClose, onEdit }: { id: string | null;
   const [form] = Form.useForm<{ note?: string; precautions?: string[]; otherPrecautions?: string }>();
   const manager = !!user && canManageSafety(user.roleKey);
   const own = !!user && !!data && canEditSafetyRecord(user, data.requestedById);
+  const print = usePrintPaper();
 
   const act = useMutation({
     mutationFn: async (v: { note?: string; precautions?: string[]; otherPrecautions?: string }) => {
@@ -72,6 +76,9 @@ export function PermitDrawer({ id, open, onClose, onEdit }: { id: string | null;
       extra={
         data ? (
           <Space wrap>
+            <Button size="small" icon={<PrinterOutlined />} onClick={() => print((l) => openPermitPrint(data, l))}>
+              Print
+            </Button>
             {own && data.status === 'REQUESTED' ? (
               <Button size="small" onClick={() => onEdit(data)}>
                 Edit

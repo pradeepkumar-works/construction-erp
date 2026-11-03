@@ -3056,6 +3056,21 @@ export interface LetterDto {
   updatedAt: string;
 }
 
+/**
+ * The company as its printed papers name it (`GET /company-data/letterhead`): a tax invoice, debit note, quotation or
+ * measurement sheet heads with it. The legal details come from the company's own record, then its billing details.
+ */
+export interface LetterheadDto {
+  name: string;
+  legalName: string | null;
+  address: string | null;
+  gstin: string | null;
+  pan: string | null;
+  cin: string | null;
+  /** GST state code: the billing state, else the GSTIN's first two digits */
+  stateCode: string | null;
+}
+
 /** A letter for printing on the letterhead. */
 export interface LetterPrintDto {
   company: { name: string; address: string | null; gstin: string | null };

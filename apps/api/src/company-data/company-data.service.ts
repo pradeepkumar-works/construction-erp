@@ -1,7 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import type { CompanyDeletionDto, CompanyExportFileDto, CompanyExportManifestDto, CompanyExportPageDto, CompanyLogEntryDto, SupportAccessDto } from '@erp/shared';
-import { DELETION_GRACE_DAYS, PRODUCT_NAME, SUPPORT_ACCESS_DAYS, canManageCompanyData } from '@erp/shared';
+import type { CompanyDeletionDto, CompanyExportFileDto, CompanyExportManifestDto, CompanyExportPageDto, CompanyLogEntryDto, LetterheadDto, SupportAccessDto } from '@erp/shared';
+import { DELETION_GRACE_DAYS, PRODUCT_NAME, SUPPORT_ACCESS_DAYS, canManageCompanyData, gstStateCode } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { withoutTenant } from '../prisma/tenant-context';
 import { AuditService } from '../common/audit.service';
@@ -108,6 +108,17 @@ export class CompanyDataService {
     .find((m) => m.name === 'Attachment')!
     .fields.filter((f) => f.kind === 'object' && f.type !== 'Organization' && f.type !== 'User' && f.relationFromFields?.length === 1)
     .map((f) => ({ column: f.relationFromFields![0], folder: f.name }));
+
+  /** The company as its printed papers name it: anyone who prints one of its documents reads it. */
+  async letterhead(user: RequestUser): Promise<LetterheadDto> {
+    const o = await this.prisma.organization.findUniqueOrThrow({
+      where: { id: user.organizationId },
+      select: { name: true, legalName: true, billingName: true, billingAddress: true, billingStateCode: true, gstin: true, billingGstin: true, pan: true, cin: true },
+    });
+    const gstin = o.gstin ?? o.billingGstin;
+    const legalName = o.legalName ?? (o.billingName && o.billingName !== o.name ? o.billingName : null);
+    return { name: o.name, legalName, address: o.billingAddress, gstin, pan: o.pan, cin: o.cin, stateCode: o.billingStateCode ?? gstStateCode(gstin) };
+  }
 
   async manifest(user: RequestUser): Promise<CompanyExportManifestDto> {
     this.assertAdmin(user);
