@@ -25,8 +25,12 @@ test('add a vendor and an expense typed with its name links to it', async ({ pag
   const modal = formPanel(page, 'New vendor');
   await modal.getByLabel('Vendor name').fill(NAME);
   await modal.getByLabel('GSTIN').fill('21aabfe1234q1z7');
-  await modal.getByLabel('MSME (Udyam)').click();
-  await page.locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden)').getByText('Micro', { exact: true }).click();
+  // The pick can land while the list is still opening; try again until the Udyam field shows.
+  await expect(async () => {
+    await modal.getByLabel('MSME (Udyam)').click();
+    await page.locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option').filter({ hasText: /^Micro$/ }).click({ timeout: 3000 });
+    await expect(modal.getByLabel('Udyam registration no.')).toBeVisible({ timeout: 2000 });
+  }).toPass({ timeout: 20000 });
   await modal.getByLabel('Udyam registration no.').fill('UDYAM-OD-19-0099999');
   await modal.getByLabel('Account number').fill('112233445566');
   await modal.getByLabel('IFSC').fill('sbin0009999');
