@@ -408,7 +408,7 @@ export class HomeService {
   /** Receipts waiting on a desk (`StockService.waitingWhere`), oldest first, with who they came from. */
   private async receiptsWaiting(user: RequestUser, kind: ReceiptWait, today: string) {
     const rows = await this.prisma.stockEntry.findMany({
-      where: { ...this.access.submissionWhere(user), ...this.stock.waitingWhere(kind, today) },
+      where: { ...this.access.submissionWhere(user), ...(await this.stock.waitingWhere(kind, today)) },
       select: { entryNo: true, date: true, type: true, supplier: true, vendor: { select: { name: true } }, project: { select: { name: true } }, purchaseOrder: { select: { vendor: { select: { name: true } } } } },
       orderBy: { date: 'asc' },
     });
@@ -447,12 +447,12 @@ export class HomeService {
     return { count: leaveCount + overtimeCount, items };
   }
 
-  /** GRNs against an order in the last 90 days whose order has no supplier bill yet, oldest first, valued at the order's rates. */
+  /** GRNs against an order in the last 90 days that no supplier bill covers yet, oldest first, valued at the order's rates. */
   private async grnsToMatch(user: RequestUser, today: string) {
     const rows = await this.prisma.stockEntry.findMany({
       where: {
         ...this.access.submissionWhere(user),
-        ...this.stock.waitingWhere('BILL', today),
+        ...(await this.stock.waitingWhere('BILL', today)),
       },
       select: {
         id: true,

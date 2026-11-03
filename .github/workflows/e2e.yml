@@ -186,6 +186,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/reconciliation-test.js
+      - name: Received, not billed covers an order line's receipts with its bills oldest first
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/receipt-billing-test.js
       - name: Stage billing shares the lump sum, reads each stage's evidence, bills it pro rata and withholds for milestone slippage
         if: matrix.suite == 'flows'
         working-directory: apps/api

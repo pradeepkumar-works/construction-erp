@@ -9,7 +9,7 @@ import { AppTabs } from '@/components/common/AppTabs';
 import { PlusOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { PayableBillDto, PayableTotalsDto, ProjectPayableDto, VendorPayableDto, VendorPaymentDto, VendorPaymentSortField } from '@erp/shared';
-import { LIST_SORT_FIELDS, MSME_CATEGORY_LABELS, RECEIPT_MODE_LABELS, SUBMISSION_STATUS_LABELS, canRecordPayment, canRequestPayment } from '@erp/shared';
+import { LIST_SORT_FIELDS, MSME_CATEGORY_LABELS, RECEIPT_MODE_LABELS, SUBMISSION_STATUS_LABELS, canRecordPayment, canRequestPayment, canViewDebitNotes, canViewPaymentRequests, canViewPayables } from '@erp/shared';
 import { useProjectScope } from '@/lib/project-scope';
 import { api, errorStatus } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
@@ -240,12 +240,17 @@ export default function PayablesPage() {
   // The due list is the page's own list: its search and the vendor go in the address bar, as does the tab.
   const page = useListPage<'dueDate'>({ keys: PAGE_KEYS, sortBy: 'dueDate', sortOrder: 'asc', sortFields: [], scope: projectId });
   const vendorId = page.filters.vendorId;
-  const [tab, setTab] = useUrlTab<PayablesTab>(TAB_KEYS, 'due', { param: 'tab' });
+  // The menu sends quantity surveyors and purchase to Payment requests and Debit notes, who may not see what is owed:
+  // they get only the tabs their role opens, and the payables themselves are not asked for.
+  const role = user?.roleKey;
+  const seesPayables = !!role && canViewPayables(role);
+  const shown = TAB_KEYS.filter((k) => (k === 'requests' ? !!role && canViewPaymentRequests(role) : k === 'debit-notes' ? !!role && canViewDebitNotes(role) : seesPayables));
+  const [tab, setTab] = useUrlTab<PayablesTab>(shown, shown[0] ?? 'due', { param: 'tab' });
   const [bill, setBill] = useState<{ billType: PayableBillDto['billType']; billId: string } | null>(null);
   const [paying, setPaying] = useState<PayTarget | null>(null);
   const [asking, setAsking] = useState<RequestFor | null>(null);
   const [request, setRequest] = useState<string | null>(null);
-  const { data, isLoading, error, refetch } = usePayables({ projectId, vendorId });
+  const { data, isLoading, error, refetch } = usePayables({ projectId, vendorId }, seesPayables);
   const accounts = !!user && canRecordPayment(user.roleKey);
   const requester = !!user && canRequestPayment(user.roleKey);
   const needRequest = !!data?.paymentsNeedRequest;
@@ -544,7 +549,7 @@ export default function PayablesPage() {
             },
             { key: 'payments', label: 'Payments', children: <PaymentsTab projectId={projectId} vendorId={vendorId} onBill={setBill} /> },
             { key: 'debit-notes', label: 'Debit notes', children: <DebitNotesTab projectId={projectId} vendorId={vendorId} /> },
-          ]}
+          ].filter((i) => shown.includes(i.key as PayablesTab))}
         />
       </Card>
       )}
