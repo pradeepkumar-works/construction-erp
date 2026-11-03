@@ -116,6 +116,33 @@ export function scheduleWarns(f: ActivityForecast | null): boolean {
   return f.stalled || (f.slipDays !== null && f.slipDays > SLIP_GRACE_DAYS);
 }
 
+/** From this many late or stalled activities on one project, the watch list shows one warning for the project, not one each. */
+export const SCHEDULE_ROLLUP_AT = 4;
+
+export interface LateActivity {
+  slipDays: number | null;
+  stalled: boolean;
+}
+
+/** How bad one late activity is, for ordering: stalled work first, then the longest slip. */
+export const lateWeight = (a: LateActivity) => (a.stalled ? 10_000 : (a.slipDays ?? 0));
+
+/**
+ * A project's late and stalled activities as the watch list shows them: each on its own while there are fewer than
+ * `SCHEDULE_ROLLUP_AT`, otherwise one roll-up with the worst first. The roll-up's key moves on when its figures do (a
+ * new count band or a worse slip), so a dismissal holds while the picture stays the same.
+ */
+export function scheduleRollUp<T extends LateActivity>(late: T[]): { items: T[]; late: number; stalled: number; worstSlip: number | null; keyPart: string } | null {
+  if (late.length < SCHEDULE_ROLLUP_AT) return null;
+  const items = [...late].sort((a, b) => lateWeight(b) - lateWeight(a));
+  const stalled = items.filter((a) => a.stalled).length;
+  const slips = items.filter((a) => !a.stalled && a.slipDays !== null).map((a) => a.slipDays!);
+  const worstSlip = slips.length ? Math.max(...slips) : null;
+  const count = items.length;
+  const band = count < 10 ? count : count < 50 ? Math.floor(count / 10) * 10 : Math.floor(count / 50) * 50;
+  return { items, late: count - stalled, stalled, worstSlip, keyPart: `${band}:${stalled ? 's' : ''}${worstSlip === null ? 0 : Math.floor(worstSlip / 14)}` };
+}
+
 /**
  * The project's plan ends after its completion date: the latest planned finish of its activities
  * against the contract completion with the extensions granted. Days late, or null when the plan ends in time (or a

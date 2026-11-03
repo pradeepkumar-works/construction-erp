@@ -3757,7 +3757,10 @@ days; it is claimed for delays in the register, or for the added work of a varia
   - Schedule: the last 28 days' rate puts the finish more than 7 days past the baseline (or planned) end, or the
     activity was due to start 14 days or more ago and has no progress recorded in the last 28 days. A project whose
     activities' latest planned finish is after its completion date with the extensions granted (`planFinishLate`) is a
-    SCHEDULE warning of its own, above any one activity's. The project header, Overview and Schedule tab read the same
+    SCHEDULE warning of its own, above any one activity's. From `SCHEDULE_ROLLUP_AT` (4) late or stalled activities on
+    one project, `scheduleRollUp` makes them one warning for the project (the count, the worst first under Why, the
+    worst slip as its days at stake), so one slipping project no longer buries every other kind; its key holds while the
+    count band and the worst slip's fortnight stay the same. The project header, Overview and Schedule tab read the same
     rule, `projectScheduleStatus` in `@erp/shared/schedule.ts` (no dated plan, behind, plan ends late, overrun); the
     client portal shows only the frozen baseline's dates.
   - Cash: bills due against expected receipts over the next 8 weeks, cumulative, where each client's receipts are
@@ -3768,6 +3771,8 @@ days; it is claimed for delays in the register, or for the added work of a varia
     7 days by default) and nothing is on order.
   - Machines: breakdown hours or idle share up on the month before.
   - DPRs: no DPR on a site for three or more days running, counting back from yesterday.
+- **Export.** The page's Export to Excel writes the open warnings as shown (kind and project filters applied): kind,
+  project, warning, what the figures say, what is at stake, what to do, confidence and the working.
 - **Who sees what.** `watchListKinds(role)` in `packages/shared/src/warnings.ts`: schedule and DPRs for approvers, cash
   for those who see cost, vendors for purchase, stock for stores, machines for maintenance. Projects come from
   `ProjectAccessService.projectWhere`, so a PM sees only their own.

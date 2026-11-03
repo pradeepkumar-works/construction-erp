@@ -12,7 +12,7 @@ import type { RoleKey } from '@erp/shared';
 import { PAUSE_MIN_OUTCOMES, PAUSE_WINDOW_DAYS, PAUSE_WRONG_SHARE, WARNING_KINDS, trackRecordText, watchListKinds } from '@erp/shared';
 import { OM_MISSING_DAYS, TESTS_SHORT_MIN, calibrationWarns, lateDesignReviews, lateRecalls, lateDrawingGroups, lateReportGroups, omSlip, packageLate, testsShort } from '../warnings/warning-rules';
 import { packageStatus } from '../epc/epc-rules';
-import { alertsToSend, pauseState, trackRecord, activityForecast, addDays, cashGap, cashWeeks, daysToPay, dprGap, emiOverdue, leadDays, machineTrend, fuelNormCheck, fuelStep, fuelTankCheck, materialOveruse, overuseStep, planFinishLate, scheduleWarns, stockRunout, vendorTrend } from '../warnings/warning-rules';
+import { alertsToSend, pauseState, trackRecord, activityForecast, addDays, cashGap, cashWeeks, daysToPay, dprGap, emiOverdue, leadDays, machineTrend, fuelNormCheck, fuelStep, fuelTankCheck, materialOveruse, overuseStep, planFinishLate, scheduleRollUp, scheduleWarns, SCHEDULE_ROLLUP_AT, stockRunout, vendorTrend } from '../warnings/warning-rules';
 
 const cases: [string, () => void][] = [];
 const test = (name: string, fn: () => void) => cases.push([name, fn]);
@@ -36,6 +36,26 @@ test('schedule: a slowed rate puts the finish past the baseline and warns', () =
   assert.equal(f.rate, 0.5);
   assert.equal(f.forecastFinish, addDays(T, 92));
   assert.ok(scheduleWarns(f));
+});
+test('schedule: a few late activities stand on their own, many on one project are one warning with the worst first', () => {
+  const few = [{ slipDays: 20, stalled: false }, { slipDays: null, stalled: true }];
+  assert.equal(scheduleRollUp(few), null);
+  const many = [
+    { name: 'a', slipDays: 10, stalled: false },
+    { name: 'b', slipDays: 40, stalled: false },
+    { name: 'c', slipDays: null, stalled: true },
+    { name: 'd', slipDays: 15, stalled: false },
+  ];
+  assert.equal(many.length, SCHEDULE_ROLLUP_AT);
+  const r = scheduleRollUp(many)!;
+  assert.deepEqual(r.items.map((i) => i.name), ['c', 'b', 'd', 'a']);
+  assert.equal(r.late, 3);
+  assert.equal(r.stalled, 1);
+  assert.equal(r.worstSlip, 40);
+  // The key holds while the picture does, and moves on with a worse slip or a new count band.
+  assert.equal(scheduleRollUp(many.map((m) => (m.name === 'a' ? { ...m, slipDays: 12 } : m)))!.keyPart, r.keyPart);
+  assert.notEqual(scheduleRollUp(many.map((m) => (m.name === 'b' ? { ...m, slipDays: 60 } : m)))!.keyPart, r.keyPart);
+  assert.notEqual(scheduleRollUp([...many, { name: 'e', slipDays: 9, stalled: false }])!.keyPart, r.keyPart);
 });
 test('schedule: a plan ending after the completion date is late by the days between', () => {
   assert.equal(planFinishLate('2028-12-31', '2028-04-30'), 245);
