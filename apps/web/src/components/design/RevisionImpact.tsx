@@ -38,7 +38,7 @@ export function ImpactList({ items }: { items: RevisionImpactItem[] }) {
                 {i.ids.map((id, k) => (
                   <React.Fragment key={id}>
                     {k ? ', ' : ''}
-                    <Link href={`/design-submissions/${id}`} aria-label={`Open design submission ${k + 1} of ${i.ids!.length}`}>{i.ids!.length > 1 ? `Open ${k + 1}` : 'Open'}</Link>
+                    <Link href={`/design-submissions/${id}`} aria-label={`Open submittal ${k + 1} of ${i.ids!.length}`}>{i.ids!.length > 1 ? `Open ${k + 1}` : 'Open'}</Link>
                   </React.Fragment>
                 ))}
               </>
