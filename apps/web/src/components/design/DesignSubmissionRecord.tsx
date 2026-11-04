@@ -12,6 +12,7 @@ import {
   DESIGN_SUBMISSION_KIND_LABELS,
   DRAWING_SOURCE_LABELS,
   REVISION_STATUS_LABELS,
+  inSentence,
   designRevisionLabel,
   isClientSide,
   type DesignCommentDto,
@@ -26,6 +27,7 @@ import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { AppTag } from '@/components/common/AppTag';
+import { StageBar } from '@/components/record/StageBar';
 import { CheckCircleOutlined, DeleteOutlined, EditOutlined, MoreOutlined, PrinterOutlined, RedoOutlined, SendOutlined, StopOutlined, WarningOutlined } from '@/components/common/icons';
 import { CodeTag, DesignStatusTag, DesignSubmissionForm, RecordCodeDialog, ReplyDialog, SubmitDesignDialog, WithdrawDesignDialog } from './DesignSubmissionForms';
 
@@ -43,7 +45,7 @@ export function DesignSubmissionRecord({ id }: { id: string }) {
   if (error || !data)
     return (
       <div className="page-container">
-        <QueryError error={error ?? new Error('Design submission not found')} onRetry={() => refetch()} />
+        <QueryError error={error ?? new Error('Submittal not found')} onRetry={() => refetch()} />
       </div>
     );
   return <SubmissionView s={data} />;
@@ -95,7 +97,7 @@ function SubmissionView({ s }: { s: DesignSubmissionDetailDto }) {
     <Space wrap>
       {s.canRecord ? (
         <Button type="primary" icon={<CheckCircleOutlined />} onClick={() => setDialog('code')}>
-          Record code
+          {s.waitingAt ? `Record ${s.waitingAt} code` : 'Record code'}
         </Button>
       ) : null}
       {s.canSubmit ? (
@@ -123,6 +125,26 @@ function SubmissionView({ s }: { s: DesignSubmissionDetailDto }) {
     </Col>
   );
   const last = s.rounds[0];
+  // Where the latest round stands at each review stage: cleared with its code, waiting since the stage before cleared, or to come.
+  const reviewStages = s.stages.length ? (
+    <Card size="small" title={<CardTitle>Review stages</CardTitle>} style={{ marginBottom: tk.space[5] }}>
+      <StageBar
+        label="Review stages"
+        current={last ? Math.min(last.marks.length, s.stages.length - 1) : 0}
+        status={!last ? 'process' : last.code && !['A', 'B'].includes(last.code) ? 'error' : last.code ? 'finish' : 'wait'}
+        items={[
+          ...s.stages.map((name, i) => {
+            const m = last?.marks[i];
+            const since = last && i === last.marks.length && !last.code ? (i ? last.marks[i - 1].clearedOn : last.submittedOn) : null;
+            return {
+              title: <span translate="no">{name}</span>,
+              content: m ? `Code ${m.code}, ${formatDate(m.clearedOn)} (${m.days} day${m.days === 1 ? '' : 's'})` : since ? `Waiting since ${formatDate(since)}` : !last ? 'Not submitted yet' : 'To come',
+            };
+          }),
+        ]}
+      />
+    </Card>
+  ) : null;
   const notice =
     s.status === 'REVISE_RESUBMIT' || s.status === 'REJECTED' ? (
       <Alert
@@ -160,7 +182,7 @@ function SubmissionView({ s }: { s: DesignSubmissionDetailDto }) {
         <div>
           <span style={{ whiteSpace: 'pre-wrap' }}>{c.text}</span>
           <Typography.Text type="secondary" translate="no" style={{ display: 'block', fontSize: tk.type.caption.fontSize }}>
-            {[c.docNo, designRevisionLabel(c.round)].filter(Boolean).join(' · ')}
+            {[c.docNo, designRevisionLabel(c.round), c.stage].filter(Boolean).join(' · ')}
           </Typography.Text>
         </div>
       ),
@@ -219,8 +241,8 @@ function SubmissionView({ s }: { s: DesignSubmissionDetailDto }) {
     <div className="page-container">
       <PageHeader
         title={s.title}
-        docTitle={`Design submission ${s.submissionNo}`}
-        crumbs={[{ title: 'Design submissions', href: '/design-submissions' }, { title: s.submissionNo }]}
+        docTitle={`Submittal ${s.submissionNo}`}
+        crumbs={[{ title: 'Submittals', href: '/design-submissions' }, { title: s.submissionNo }]}
         subtitle={
           <Flex gap={tk.space[2]} wrap align="center">
             <DesignStatusTag status={s.status} purpose={s.purpose} daysLate={s.daysLate} />
@@ -230,9 +252,12 @@ function SubmissionView({ s }: { s: DesignSubmissionDetailDto }) {
         extra={actions}
       />
       {notice}
+      {reviewStages}
       <Row gutter={[12, 12]} style={{ marginBottom: tk.space[5] }}>
         {stat('Submitted', s.submittedOn ? <span translate="no">{formatDate(s.submittedOn)}</span> : 'Not yet', again ? `${s.rounds.length} round${s.rounds.length === 1 ? '' : 's'}` : 'A draft')}
-        {s.status === 'UNDER_REVIEW'
+        {s.status === 'UNDER_REVIEW' && s.waitingAt
+          ? stat(`With ${s.waitingAt}`, `${s.daysOutstanding ?? 0} day${s.daysOutstanding === 1 ? '' : 's'} since submitted`, s.replyBy ? `Reply asked by ${formatDate(s.replyBy)}` : undefined, s.daysLate ? 'danger' : undefined)
+          : s.status === 'UNDER_REVIEW'
           ? stat('With the reviewer', `${s.daysOutstanding ?? 0} day${s.daysOutstanding === 1 ? '' : 's'}`, s.replyBy ? `Reply asked by ${formatDate(s.replyBy)}` : undefined, s.daysLate ? 'danger' : undefined)
           : stat('Last code', last?.code ? `Code ${last.code}` : '-', last?.reviewedOn ? `On ${formatDate(last.reviewedOn)}, after ${last.days} day${last.days === 1 ? '' : 's'}` : 'None yet')}
         {stat('Comments to answer', toAnswer, `${s.comments.length} in all, ${s.comments.filter((c) => c.state === 'CLOSED').length} closed`, toAnswer && (s.status === 'REVISE_RESUBMIT' || s.status === 'REJECTED') ? 'danger' : undefined)}
@@ -266,6 +291,11 @@ function SubmissionView({ s }: { s: DesignSubmissionDetailDto }) {
                           </>
                         ) : null}
                       </Typography.Text>
+                      {r.marks.length ? (
+                        <Typography.Text type="secondary" style={{ display: 'block', fontSize: tk.type.caption.fontSize }} translate="no">
+                          {r.marks.map((m) => `${m.stage}: code ${m.code}, ${formatDate(m.clearedOn)}${m.reviewerName ? `, ${m.reviewerName}` : ''}`).join(' · ')}
+                        </Typography.Text>
+                      ) : null}
                       {r.submitNote ? <Typography.Paragraph style={{ margin: `${tk.space[1]} 0 0` }}>{r.submitNote}</Typography.Paragraph> : null}
                       <Typography.Text type="secondary" style={{ display: 'block', fontSize: tk.type.caption.fontSize }}>
                         {r.code ? [`Reviewed ${formatDate(r.reviewedOn!)}`, r.reviewerName, r.reviewRef, `${r.days} day${r.days === 1 ? '' : 's'}`].filter(Boolean).join(' · ') : `With the reviewer for ${r.days} day${r.days === 1 ? '' : 's'}`}
@@ -284,14 +314,14 @@ function SubmissionView({ s }: { s: DesignSubmissionDetailDto }) {
         </Col>
         <Col xs={24} lg={8}>
           <Flex vertical gap={16}>
-            <Card size="small" title={<CardTitle>Drawings and documents</CardTitle>}>
+            <Card size="small" title={<CardTitle>Drawings</CardTitle>}>
               {s.docs.length ? (
                 <Flex vertical gap={tk.space[2]}>
                   {s.docs.map((d) => (
                     <div key={d.documentId}>
                       <Link href={`/documents?id=${d.documentId}`} className="text-link" translate="no">{`${d.docNo} ${d.title}`}</Link>
                       <Typography.Text type="secondary" style={{ display: 'block', fontSize: tk.type.caption.fontSize }} translate="no">
-                        {d.revision ? `${d.revision}, ${REVISION_STATUS_LABELS[d.revisionStatus!].toLowerCase()}` : 'No revision in the register yet'}
+                        {d.revision ? `${d.revision}, ${inSentence(REVISION_STATUS_LABELS[d.revisionStatus!])}` : 'No revision in the register yet'}
                       </Typography.Text>
                     </div>
                   ))}

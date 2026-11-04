@@ -42,3 +42,7 @@ export class DesignDashboardQuery {
   @ApiPropertyOptional() @IsOptional() @IsUUID() projectId?: string;
 }
 
+
+export class ByComponentQuery {
+  @ApiProperty() @IsUUID() projectId: string;
+}

@@ -13,7 +13,7 @@ import * as P from './permissions';
  * new one and switch the old one off, as with units.
  */
 
-export const MASTER_LISTS = ['trade', 'designation', 'department', 'itemCategory', 'equipmentCategory', 'letterCategory', 'ncrCategory', 'ncrRootCause', 'instrumentKind', 'vertical', 'workTrade', 'exitClearance'] as const;
+export const MASTER_LISTS = ['trade', 'designation', 'department', 'itemCategory', 'equipmentCategory', 'letterCategory', 'ncrCategory', 'ncrRootCause', 'instrumentKind', 'vertical', 'workTrade', 'exitClearance', 'reviewStage'] as const;
 export type MasterList = (typeof MASTER_LISTS)[number];
 
 export interface MasterStandardEntry {
@@ -330,6 +330,17 @@ export const MASTER_LIST_DEFS: Record<MasterList, MasterListDef> = {
       ['Laptop, phone, SIM and ID card returned', 'लैपटॉप, फ़ोन, SIM और ID कार्ड लौटाए'],
       ['Drawings, files and passwords handed over', 'ड्रॉइंग, फ़ाइलें और पासवर्ड सौंपे'],
     ),
+  },
+  reviewStage: {
+    key: 'reviewStage',
+    label: 'Review stages',
+    singular: 'review stage',
+    description: 'The reviewers a submittal passes through in turn before it is approved for construction, such as the proof checker, TPIA, PIU and head office.',
+    slug: 'review-stage',
+    node: 'documents.reviewStages',
+    usedOn: 'submittals',
+    manage: (role) => P.canManageDocuments(role),
+    standard: entries(['Proof checker', 'प्रूफ़ चेकर'], ['TPIA', 'टीपीआईए'], ['PIU', 'पीआईयू'], ['Client', 'क्लाइंट'], ['Head office', 'मुख्य कार्यालय']),
   },
 };
 

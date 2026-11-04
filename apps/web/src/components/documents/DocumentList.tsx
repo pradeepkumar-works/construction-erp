@@ -9,7 +9,7 @@ import type { DocumentDiscipline, DocumentDto, DocumentKind, DocumentSortField, 
 import { DOCUMENT_DISCIPLINES, DOCUMENT_DISCIPLINE_LABELS, DOCUMENT_KINDS, DOCUMENT_KIND_LABELS, LIST_SORT_FIELDS, REVISION_STATUSES, REVISION_STATUS_LABELS, canManageDocuments, canViewDrawingFile } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useDocuments } from '@/lib/queries';
-import { formatDate } from '@/lib/format';
+import { NO_VALUE, formatDate } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
 import { ExportButton } from '@/components/common/ExportButton';
@@ -83,8 +83,8 @@ export function DocumentList({ projectId: fixedProject, onOpen }: { projectId?: 
         ...(fixedProject
           ? []
           : [{ title: 'Project', dataIndex: 'projectName', ...sort('project'), width: 200, ellipsis: true, render: (v: string, r: DocumentDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> } satisfies ListColumn<DocumentDto>]),
-        { title: 'Rev', label: 'Revision', key: 'rev', width: 70, render: (_, r) => r.current?.revision ?? <Sub>-</Sub> },
-        { title: 'Issued', width: 110, ...sort('issuedOn'), render: (_, r) => (r.current ? formatDate(r.current.issuedOn) : '-') },
+        { title: 'Rev', label: 'Revision', key: 'rev', width: 70, render: (_, r) => r.current?.revision ?? <Sub>{NO_VALUE}</Sub> },
+        { title: 'Issued', width: 110, defaultFrom: 1500, ...sort('issuedOn'), render: (_, r) => (r.current ? formatDate(r.current.issuedOn) : NO_VALUE) },
         { title: 'Status', width: 180, ...sort('status'), render: (_, r) => (r.current ? <RevisionStatusTag status={r.current.status} /> : <Sub>No revision</Sub>) },
         {
           title: 'File',
@@ -127,7 +127,7 @@ export function DocumentList({ projectId: fixedProject, onOpen }: { projectId?: 
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search number or title"
-        searchLabel="Search documents"
+        searchLabel="Search the drawing register"
         extra={
           <>
             <ExportButton

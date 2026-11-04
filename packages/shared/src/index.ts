@@ -121,6 +121,7 @@ export * from './reporting-period';
 export * from './drawing-schedule';
 export * from './design-submissions';
 export * from './design-control';
+export * from './component-drawings';
 export * from './insights';
 export * from './dpr-checks';
 export * from './vendor-score';

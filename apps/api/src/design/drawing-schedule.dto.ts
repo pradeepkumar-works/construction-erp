@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsDateString, IsIn, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength, ValidateIf, ValidateNested } from 'class-validator';
-import { DOCUMENT_DISCIPLINES, DRAWING_SOURCES, type DocumentDiscipline, type DrawingNeedState, type DrawingSource } from '@erp/shared';
+import { AS_BUILT_STATES, DOCUMENT_DISCIPLINES, DRAWING_SOURCES, type AsBuiltState, type DocumentDiscipline, type DrawingNeedState, type DrawingSource } from '@erp/shared';
 import { PageQuery, QueryBool } from '../common/paging';
 import { CLIENT_ID_DOC } from '../common/idempotency';
 
@@ -15,7 +15,7 @@ export class DrawingNeedLineDto {
   @ApiPropertyOptional({ enum: DOCUMENT_DISCIPLINES }) @IsOptional() @IsIn(list(DOCUMENT_DISCIPLINES)) discipline?: DocumentDiscipline;
   @ApiPropertyOptional({ enum: DRAWING_SOURCES, default: 'CLIENT' }) @IsOptional() @IsIn(list(DRAWING_SOURCES)) source?: DrawingSource;
   @ApiPropertyOptional({ example: 'The Executive Engineer, Building Division No. 1', description: 'Who issues it, as a letter is addressed' }) @IsOptional() @blank() @IsString() @MaxLength(300) fromParty?: string | null;
-  @ApiProperty({ example: '2026-11-15', description: 'The day site needs it good for construction' }) @IsDateString() neededBy: string;
+  @ApiProperty({ example: '2026-11-15', description: 'The day site needs it AFC (approved for construction)' }) @IsDateString() neededBy: string;
   @ApiPropertyOptional({ description: 'The work it holds up' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsUUID() activityId?: string | null;
   @ApiPropertyOptional() @IsOptional() @blank() @IsString() @MaxLength(1000) remarks?: string | null;
 }
@@ -50,4 +50,8 @@ export class NextDrawingNoQuery {
 
 export class AsBuiltQuery {
   @ApiPropertyOptional() @IsOptional() @IsUUID() projectId?: string;
+  @ApiPropertyOptional({ enum: AS_BUILT_STATES, description: 'DUE (the default): built from, no as-built revision yet; RECEIVED: the current revision is as built' })
+  @IsOptional()
+  @IsIn(list(AS_BUILT_STATES))
+  state?: AsBuiltState;
 }

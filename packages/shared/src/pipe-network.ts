@@ -1,6 +1,7 @@
 /**
  * Pipe network: a pipe zone's or main's hydraulic model, junctions and the pipes between them, and how far
- * each stage of work has got on each pipe. Reading a model file (EPANET .inp, or an Excel book of nodes and pipes),
+ * each stage of work has got on each pipe. Reading a model file (EPANET .inp, an Excel book of nodes and pipes, or a
+ * Google Earth KMZ / KML alignment),
  * the import's preview, the figures per segment and per diameter, and the working fronts are pure functions here; the
  * API and the screens share them. ARCHITECTURE "Pipe network".
  */
@@ -190,7 +191,7 @@ const nodeKindOf = (v: unknown): PipeNodeKind => {
   const exact = PIPE_NODE_KINDS.find((k) => KEY(k) === t);
   if (exact) return exact;
   if (/tank|oht|esr|gsr|sump/.test(t)) return 'TANK';
-  if (/source|reservoir|wtp/.test(t)) return 'SOURCE';
+  if (/source|reservoir|wtp|intake/.test(t)) return 'SOURCE';
   if (/air/.test(t)) return 'AIR_VALVE';
   if (/scour|washout/.test(t)) return 'SCOUR';
   if (/valve|sv|gate/.test(t)) return 'SLUICE_VALVE';
@@ -242,6 +243,193 @@ export function parseNetworkSheets(nodeRows: Record<string, unknown>[], pipeRows
     });
   }
   return { nodes, pipes, notes: [] };
+}
+
+// Reading an alignment from Google Earth
+
+/** What a KML line does not say for itself: the pipe's diameter and material, and how long a segment to cut it into. */
+export interface KmlDefaults {
+  diameterMm: number;
+  material: PipeMaterial;
+  scope?: PipeScope;
+  /** Segment length in metres between named points (default 500) */
+  splitM?: number;
+}
+
+/** A named point closer than this to a line becomes a node on it, at its chainage. */
+export const KML_SNAP_M = 25;
+const EARTH_M = 6_371_008.8;
+const rad = (d: number) => (d * Math.PI) / 180;
+const round1 = (n: number) => Math.round(n * 10) / 10;
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+/** The ground distance in metres between two places given as [longitude, latitude] (haversine). */
+export function groundDistanceM(a: readonly [number, number, ...(number | null)[]], b: readonly [number, number, ...(number | null)[]]): number {
+  const dLat = rad(b[1] - a[1]);
+  const dLon = rad(b[0] - a[0]);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a[1])) * Math.cos(rad(b[1])) * Math.sin(dLon / 2) ** 2;
+  return 2 * EARTH_M * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+/** A chainage as the site writes it: 1250 m is 1+250. */
+export const chainageLabel = (m: number) => `${Math.floor(Math.round(m) / 1000)}+${String(Math.round(m) % 1000).padStart(3, '0')}`;
+
+const xmlText = (s: string) =>
+  s
+    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, '&')
+    .trim();
+const tagRe = (tag: string) => new RegExp(`<(?:[\\w-]+:)?${tag}\\b[^>]*>([\\s\\S]*?)</(?:[\\w-]+:)?${tag}>`, 'gi');
+const inner = (xml: string, tag: string) => [...xml.matchAll(tagRe(tag))].map((m) => m[1]);
+type Coord = [number, number, number | null];
+const coordsOf = (s: string): Coord[] =>
+  s
+    .trim()
+    .split(/\s+/)
+    .map((t) => t.split(',').map((v) => Number(v)))
+    .filter((c) => c.length >= 2 && Number.isFinite(c[0]) && Number.isFinite(c[1]) && Math.abs(c[0]) <= 180 && Math.abs(c[1]) <= 90)
+    .map((c) => [c[0], c[1], c.length > 2 && Number.isFinite(c[2]) ? c[2] : null]);
+const dataOf = (pm: string) => {
+  const out: Record<string, string> = {};
+  for (const m of pm.matchAll(/<(?:[\w-]+:)?Data\b[^>]*name="([^"]*)"[^>]*>([\s\S]*?)<\/(?:[\w-]+:)?Data>/gi)) out[KEY(m[1])] = xmlText(inner(m[2], 'value')[0] ?? m[2]);
+  for (const m of pm.matchAll(/<(?:[\w-]+:)?SimpleData\b[^>]*name="([^"]*)"[^>]*>([\s\S]*?)<\/(?:[\w-]+:)?SimpleData>/gi)) out[KEY(m[1])] = xmlText(m[2]);
+  return out;
+};
+const pick = (data: Record<string, string>, names: string[]) => names.map((n) => data[n]).find((v) => v !== undefined && v !== '');
+const codeOf = (name: string) => name.replace(/\s+/g, ' ').trim().slice(0, 40);
+
+/**
+ * A pipeline drawn in Google Earth (KML, the file inside a KMZ): each line becomes a run of segments with its chainage
+ * from its start, measured on the ground. A named point within 25 m of a line (a sluice valve, an air valve, a tank)
+ * becomes a node at its chainage, named and of its kind by its name; between them the line is cut every 500 m, at nodes
+ * named by chainage (0+500). The diameter and material come from the line's own data or its name ("300 mm DI"), else
+ * the defaults given. Places are kept in metres east and north of the first point, so the map draws them to scale.
+ */
+export function parseKml(xml: string, defaults: KmlDefaults): PipeNetworkFile {
+  const notes: string[] = [];
+  const splitM = defaults.splitM && defaults.splitM > 0 ? defaults.splitM : 500;
+  const lines: { name: string; data: Record<string, string>; coords: Coord[] }[] = [];
+  const points: { name: string; at: Coord }[] = [];
+  for (const pm of inner(xml, 'Placemark')) {
+    const name = xmlText(inner(pm, 'name')[0] ?? '');
+    const data = dataOf(pm);
+    const ls = inner(pm, 'LineString');
+    ls.forEach((l, i) => {
+      const coords = coordsOf(inner(l, 'coordinates')[0] ?? '').filter((c, k, all) => !k || c[0] !== all[k - 1][0] || c[1] !== all[k - 1][1]);
+      if (coords.length >= 2) lines.push({ name: ls.length > 1 ? `${name || 'Line'} ${i + 1}` : name, data, coords });
+    });
+    if (!ls.length)
+      for (const p of inner(pm, 'Point')) {
+        const c = coordsOf(inner(p, 'coordinates')[0] ?? '')[0];
+        if (c) points.push({ name, at: c });
+      }
+  }
+  if (!lines.length) {
+    notes.push('The file has no line: draw the main as a path in Google Earth and save it as KMZ or KML');
+    return { nodes: [], pipes: [], notes };
+  }
+  const [lon0, lat0] = lines[0].coords[0];
+  const ky = rad(1) * EARTH_M;
+  const kx = Math.cos(rad(lat0)) * ky;
+  const local = (c: Coord): [number, number] => [(c[0] - lon0) * kx, (c[1] - lat0) * ky];
+
+  // Each line's chainage at each of its points, and where each named point falls on the nearest line.
+  const runs = lines.map((l) => {
+    const ch = [0];
+    for (let k = 1; k < l.coords.length; k++) ch.push(ch[k - 1] + groundDistanceM(l.coords[k - 1], l.coords[k]));
+    return { ...l, xy: l.coords.map(local), ch, length: ch[ch.length - 1], marks: [] as { at: number; name: string }[] };
+  });
+  let far = 0;
+  for (const p of points) {
+    const pxy = local(p.at);
+    let best: { run: number; at: number; d: number } | null = null;
+    runs.forEach((r, ri) => {
+      for (let k = 0; k + 1 < r.xy.length; k++) {
+        const [ax, ay] = r.xy[k];
+        const [bx, by] = r.xy[k + 1];
+        const len2 = (bx - ax) ** 2 + (by - ay) ** 2;
+        const t = len2 ? Math.max(0, Math.min(1, ((pxy[0] - ax) * (bx - ax) + (pxy[1] - ay) * (by - ay)) / len2)) : 0;
+        const d = Math.hypot(pxy[0] - (ax + t * (bx - ax)), pxy[1] - (ay + t * (by - ay)));
+        if (!best || d < best.d) best = { run: ri, at: r.ch[k] + t * (r.ch[k + 1] - r.ch[k]), d };
+      }
+    });
+    const b = best as { run: number; at: number; d: number } | null;
+    if (b && b.d <= KML_SNAP_M) runs[b.run].marks.push({ at: b.at, name: p.name });
+    else far++;
+  }
+
+  const nodes: PipeNodeInput[] = [];
+  const pipes: PipeSegmentInput[] = [];
+  const taken = new Set<string>();
+  const unique = (code: string) => {
+    let c = code || 'Node';
+    for (let n = 2; taken.has(c); n++) c = `${code.slice(0, 36)}-${n}`;
+    taken.add(c);
+    return c;
+  };
+  const many = runs.length > 1;
+  runs.forEach((r, ri) => {
+    const prefix = many ? `L${ri + 1}-` : '';
+    // Where the line is cut: its ends, its named points, and every splitM between.
+    const cuts: { at: number; name: string | null }[] = [{ at: 0, name: null }, { at: r.length, name: null }];
+    for (const m of r.marks) {
+      const end = cuts.find((c) => Math.abs(c.at - m.at) < 1);
+      if (end) end.name ??= m.name || null;
+      else cuts.push({ at: m.at, name: m.name || null });
+    }
+    for (let at = splitM; at < r.length - splitM / 5; at += splitM) if (!cuts.some((c) => Math.abs(c.at - at) < splitM / 5)) cuts.push({ at, name: null });
+    cuts.sort((a, b) => a.at - b.at);
+    const alts = r.coords.some((c) => c[2]);
+    const placeAt = (at: number) => {
+      let k = 0;
+      while (k + 2 < r.ch.length && r.ch[k + 1] < at) k++;
+      const span = r.ch[k + 1] - r.ch[k];
+      const t = span ? Math.max(0, Math.min(1, (at - r.ch[k]) / span)) : 0;
+      const lerp = (a: number, b: number) => a + t * (b - a);
+      const a = r.coords[k][2];
+      const b = r.coords[k + 1][2];
+      return { x: round2(lerp(r.xy[k][0], r.xy[k + 1][0])), y: round2(lerp(r.xy[k][1], r.xy[k + 1][1])), level: alts && a !== null && b !== null ? round2(lerp(a, b)) : null };
+    };
+    const codes = cuts.map((c, ci) => {
+      const { x, y, level } = placeAt(c.at);
+      // A line that starts or ends where another did joins it there.
+      if ((ci === 0 || ci === cuts.length - 1) && !c.name) {
+        const near = nodes.find((n) => n.x !== null && n.y !== null && Math.hypot(n.x - x, n.y - y) <= 5);
+        if (near) return near.code;
+      }
+      const code = unique(c.name ? codeOf(c.name) : `${prefix}${chainageLabel(c.at)}`);
+      nodes.push({ code, kind: c.name ? nodeKindOf(c.name) : 'JUNCTION', groundLevel: level, x, y, chainage: round1(c.at) });
+      return code;
+    });
+    const dia = finite(pick(r.data, ['diameter', 'diametermm', 'dia', 'diamm', 'size', 'od', 'odmm', 'dn'])) ?? finite(/(\d{2,4})\s*(?:mm|ø)/i.exec(r.name)?.[1] ?? /\b(?:dia|dn|ø)\s*(\d{2,4})/i.exec(r.name)?.[1]);
+    const matText = pick(r.data, ['material', 'pipematerial']);
+    const matInName = PIPE_MATERIALS.find((m) => m !== 'OTHER' && new RegExp(`\\b${m}\\b`, 'i').test(r.name));
+    const pipeClass = pick(r.data, ['class', 'pipeclass', 'pn', 'rating']) ?? /\b(PN\s?\d+(?:\.\d+)?|K\s?[79])\b/i.exec(r.name)?.[1] ?? null;
+    for (let k = 0; k + 1 < cuts.length; k++) {
+      pipes.push({
+        code: unique(`${prefix}P${k + 1}`),
+        from: codes[k],
+        to: codes[k + 1],
+        lengthM: round1(round1(cuts[k + 1].at) - round1(cuts[k].at)),
+        diameterMm: Math.round(dia ?? defaults.diameterMm),
+        material: matText ? materialOf(matText) : (matInName ?? defaults.material),
+        pipeClass: pipeClass ? pipeClass.slice(0, 40) : null,
+        scope: defaults.scope ?? 'PROPOSED',
+        surface: null,
+        crossing: null,
+      });
+    }
+    notes.push(`${r.name || `Line ${ri + 1}`}: ${(r.length / 1000).toFixed(2)} km on the ground, chainage 0+000 to ${chainageLabel(r.length)}`);
+  });
+  const named = runs.reduce((n, r) => n + r.marks.length, 0);
+  if (named) notes.push(`${named} named point${named === 1 ? '' : 's'} kept as nodes at their chainage`);
+  if (far) notes.push(`${far} point${far === 1 ? ' was' : 's were'} more than ${KML_SNAP_M} m from any line: left out`);
+  return { nodes, pipes, notes };
 }
 
 /** What stops a network from being saved: repeated codes, pipes to nowhere, no length or diameter. */

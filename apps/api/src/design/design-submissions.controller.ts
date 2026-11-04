@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Post, Put, Query }
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { DesignSubmissionsService } from './design-submissions.service';
-import { DesignSubmissionsQuery, RecordDesignCodeDto, ReplyCommentDto, SaveDesignSubmissionDto, SubmitDesignDto, WithdrawDesignDto } from './design-submissions.dto';
+import { DesignCommentsQuery, DesignSubmissionsQuery, RecordDesignCodeDto, ReplyCommentDto, SaveDesignSubmissionDto, SubmitDesignDto, WithdrawDesignDto } from './design-submissions.dto';
 
 /** Design and drawings part 2: design submissions for approval or vetting, their codes and the comment replies. */
 @ApiTags('design')
@@ -15,6 +15,12 @@ export class DesignSubmissionsController {
   @Get()
   list(@CurrentUser() user: RequestUser, @Query() q: DesignSubmissionsQuery) {
     return this.submissions.list(user, q);
+  }
+
+  @ApiOperation({ summary: 'Review comments on every submittal, with our replies: the ones to answer first' })
+  @Get('comments')
+  comments(@CurrentUser() user: RequestUser, @Query() q: DesignCommentsQuery) {
+    return this.submissions.comments(user, q);
   }
 
   @Get(':id')

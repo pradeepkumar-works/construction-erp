@@ -906,7 +906,7 @@ export class OfficialReportsService {
       by.set(d.discipline, r);
     }
     const rows = [...by.entries()].map(([k, r]) => ({ discipline: DOCUMENT_DISCIPLINE_LABELS[k as keyof typeof DOCUMENT_DISCIPLINE_LABELS], total: r.total, review: r.review, approved: r.approved, construction: r.construction }));
-    return table([col('discipline', 'Discipline'), col('total', 'Drawings', 'count'), col('review', 'Sent for approval', 'count'), col('approved', 'Approved', 'count'), col('construction', 'Good for construction', 'count')], rows, 'No drawings in the register', {
+    return table([col('discipline', 'Discipline'), col('total', 'Drawings', 'count'), col('review', 'Sent for approval', 'count'), col('approved', 'Approved', 'count'), col('construction', 'AFC', 'count')], rows, 'No drawings in the register', {
       title: 'Drawing register',
       total: rows.length ? { discipline: 'Total', total: docs.length, review: rows.reduce((s, r) => s + r.review, 0), approved: rows.reduce((s, r) => s + r.approved, 0), construction: rows.reduce((s, r) => s + r.construction, 0) } : undefined,
     });

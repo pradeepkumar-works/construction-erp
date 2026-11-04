@@ -6,7 +6,7 @@
  * Everything here is pure.
  */
 import { daysBetween } from './maintenance';
-import { BUILDABLE_STATUSES, type RevisionStatus } from './documents';
+import { BUILDABLE_STATUSES, DOCUMENT_DISCIPLINES, isBuildable, type DocumentDiscipline, type RevisionStatus } from './documents';
 
 /** A superseded copy not back within this many days of the new revision is late to recall. */
 export const RECALL_DAYS = 7;
@@ -62,7 +62,7 @@ export function issueCopiesProblem(r: { holders: string[]; status: RevisionStatu
     seen.add(key(n));
   }
   if (!r.current) return 'Only the current revision is issued as a controlled copy';
-  if (!BUILDABLE_STATUSES.includes(r.status)) return 'A controlled copy is of a revision site may build from (good for construction or approved). Send others for information on a transmittal.';
+  if (!BUILDABLE_STATUSES.includes(r.status)) return 'A controlled copy is of a revision site may build from (AFC or approved). Send others for information on a transmittal.';
   const has = new Set(r.holdersInForce.map(key));
   const dup = names.find((n) => has.has(key(n)));
   return dup ? `${dup} already holds a copy of this revision` : null;
@@ -199,15 +199,42 @@ export function designNotes(r: DesignTotals): { tone: ImpactTone; text: string }
   if (r.drawingsLate) out.push({ tone: 'danger', text: `${n(r.drawingsLate, 'drawing')} late` });
   if (r.recallsLate) out.push({ tone: 'danger', text: `${n(r.recallsLate, 'superseded copy', 'superseded copies')} still on site` });
   if (r.reviewsLate) out.push({ tone: 'warning', text: `${n(r.reviewsLate, 'review')} past the reply date` });
-  if (r.withUs) out.push({ tone: 'warning', text: `${n(r.withUs, 'submission')} to revise` });
+  if (r.withUs) out.push({ tone: 'warning', text: `${n(r.withUs, 'submittal')} to revise` });
   if (r.commentsToAnswer) out.push({ tone: 'warning', text: `${n(r.commentsToAnswer, 'comment')} to answer` });
-  if (r.copiesToRecall > r.recallsLate) out.push({ tone: 'info', text: `${n(r.copiesToRecall - r.recallsLate, 'copy', 'copies')} to recall` });
+  if (r.copiesToRecall > r.recallsLate) out.push({ tone: 'info', text: `${n(r.copiesToRecall - r.recallsLate, 'copy', 'copies')} to withdraw` });
   if (r.asBuiltDue) out.push({ tone: 'info', text: `${n(r.asBuiltDue, 'as-built')} due` });
   return out;
 }
 
 /** A row worth showing: anything open at all. */
 export const designRowHasWork = (r: DesignTotals) => DESIGN_TOTAL_KEYS.some((k) => k !== 'revisionsRecent' && r[k] > 0) || r.revisionsRecent > 0;
+
+/** Where a drawing's current revision stands, as the dashboard's charts group it: AFC is any revision site may build from. */
+export const DRAWING_BANDS = ['AFC', 'FOR_APPROVAL', 'REJECTED', 'AS_BUILT', 'OTHER'] as const;
+export type DrawingBand = (typeof DRAWING_BANDS)[number];
+export const DRAWING_BAND_LABELS: Record<DrawingBand, string> = { AFC: 'AFC', FOR_APPROVAL: 'For approval', REJECTED: 'Rejected', AS_BUILT: 'As built', OTHER: 'For information or no revision' };
+export const drawingBand = (s: RevisionStatus | null | undefined): DrawingBand =>
+  isBuildable(s) ? 'AFC' : s === 'FOR_APPROVAL' ? 'FOR_APPROVAL' : s === 'REJECTED' ? 'REJECTED' : s === 'AS_BUILT' ? 'AS_BUILT' : 'OTHER';
+
+export interface DrawingCountRow {
+  discipline: DocumentDiscipline;
+  counts: Record<DrawingBand, number>;
+  total: number;
+}
+
+/** The drawings in each discipline by where they stand, in the register's order of disciplines, leaving out empty ones. */
+export function drawingCounts(drawings: { discipline: DocumentDiscipline; status: RevisionStatus | null }[]): DrawingCountRow[] {
+  return DOCUMENT_DISCIPLINES.map((discipline) => {
+    const counts = Object.fromEntries(DRAWING_BANDS.map((b) => [b, 0])) as Record<DrawingBand, number>;
+    let total = 0;
+    for (const d of drawings)
+      if (d.discipline === discipline) {
+        counts[drawingBand(d.status)]++;
+        total++;
+      }
+    return { discipline, counts, total };
+  }).filter((r) => r.total > 0);
+}
 
 // DTOs
 
@@ -271,4 +298,6 @@ export interface DesignDashboardDto {
   totals: DesignTotals;
   projects: (DesignProjectRow & { notes: { tone: ImpactTone; text: string }[] })[];
   recent: RecentRevisionDto[];
+  /** Drawings by discipline and where their current revision stands */
+  drawings: DrawingCountRow[];
 }

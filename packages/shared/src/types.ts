@@ -2896,6 +2896,9 @@ export interface DocumentDto {
   title: string;
   kind: DocumentKind;
   discipline: DocumentDiscipline;
+  /** The component of the project it draws (Drawings by component) */
+  workElementId: string | null;
+  workElementName: string | null;
   remarks: string | null;
   /** The current revision, null until the first one is added */
   current: DocumentRevisionDto | null;

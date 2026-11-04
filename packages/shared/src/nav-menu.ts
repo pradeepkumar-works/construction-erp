@@ -97,7 +97,7 @@ export interface NavModuleDef {
 
 const sub = (key: string, label: string, ...nodes: string[]): NavSubDef => ({ key, label, nodes });
 
-/** The ten modules of a contractor's brochure, QA/QC, Design and drawings and Correspondence, plus Reports and MIS and
+/** The ten modules of a contractor's brochure, QA/QC, Drawings and Correspondence, plus Reports and MIS and
  *  Administration. Keys are kept forever (names hang on them). Each module's Masters names the pages that are its masters
  *  (`mastersByDepartment`). */
 export const DEPARTMENT_MODULES: NavModuleDef[] = [
@@ -134,18 +134,22 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
   },
   {
     key: 'design-drawings',
-    label: 'Design and drawings',
+    label: 'Drawings',
     icon: 'drafting-compass',
     family: 'work',
-    description: 'Drawings and documents with their revisions, the drawing schedule, design submissions, controlled copies, the design dashboard, the drawing viewer, transmittals and RFIs.',
+    description: 'The drawing register and viewer, drawings by component, the drawing schedule, submittals and their comments, controlled copies, as-built drawings, transmittals and RFIs.',
     subs: [
-      sub('register', 'Drawings and documents', 'documents.register'),
-      sub('schedule', 'Drawing schedule', 'documents.schedule'),
-      sub('submissions', 'Design submissions', 'documents.submissions'),
-      sub('copies', 'Controlled copies', 'documents.copies'),
-      sub('dashboard', 'Design dashboard', 'documents.dashboard'),
+      sub('register', 'Register', 'documents.register'),
+      sub('by-component', 'By component', 'documents.byComponent'),
+      sub('schedule', 'Schedule', 'documents.schedule'),
+      sub('submissions', 'Submittals', 'documents.submissions'),
+      sub('comments', 'Comments', 'documents.comments'),
+      sub('copies', 'Copies', 'documents.copies'),
+      sub('as-built', 'As-built', 'documents.asBuilt'),
       sub('transmittals', 'Transmittals', 'documents.transmittals'),
       sub('rfis', 'RFIs', 'documents.rfis'),
+      sub('dashboard', 'Dashboard', 'documents.dashboard'),
+      sub('masters', 'Masters', 'documents.reviewStages'),
     ],
   },
   {

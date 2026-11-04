@@ -727,6 +727,9 @@ Part 2 (`QaRegistersService`, rules pure in `@erp/shared/qa-registers.ts`, teste
 
 ### Design and drawings (item 138)
 
+On screen the module is **Drawings** (`docs/WRITING.md`): the Drawing register, Drawing schedule, Submittals (design
+submissions in the code), Controlled copies, As-built drawings, Transmittals, RFIs and the Dashboard.
+
 The drawings a project waits for, chased until they arrive, beside the document register (`DrawingScheduleService`,
 `apps/api/src/design`, routes under `/design`; its own module because `CorrespondenceModule` imports `DocumentsModule`).
 The rules are pure in `@erp/shared/drawing-schedule.ts`, tested in `src/scripts/drawing-schedule-test.ts` (CI runs it).
@@ -753,7 +756,9 @@ The rules are pure in `@erp/shared/drawing-schedule.ts`, tested in `src/scripts/
   that have no as-built revision yet; what the handover still owes.
 - **Watch list.** `DRAWING_LATE` (drawings awaited past their day, one warning per project and party from `lateDrawingGroups`), for the
   roles that `canManageDocuments`.
-- **Clients.** Web: `/drawing-schedule` (Schedule and As-built check tabs, `?projectId=`, `?state=LATE`, `?id=`). The phone
+- **Clients.** Web: `/drawing-schedule` (`?projectId=`, `?state=LATE`, `?id=`; an old `?tab=as-built` goes to `/as-built`) and
+  `/as-built` (As-built drawings: due, or `?state=RECEIVED` for those whose current revision is as built, through
+  `GET /design/as-built-due?state=`). The phone
   reads drawings from the register; the schedule on the phone is later.
 
 **Design submissions (part 2).** Drawings and designs sent to the client's side for approval, or to an institution for
@@ -801,9 +806,32 @@ tested in `src/scripts/design-submissions-test.ts`, CI runs it).
 - **Design dashboard.** `/design-dashboard` and the Design and drawings module screen (`ModuleHomeService`): per project, the
   drawings awaited and late (from `DrawingScheduleService.list`), submissions with the reviewer, late and back with us and
   comments to answer (from `DesignSubmissionsService.list`), copies to recall, as-builts due and open RFIs, added up by
-  `designTotals` and noted by `designNotes`.
+  `designTotals` and noted by `designNotes`; and the drawings by discipline and where their current revision stands
+  (`drawingCounts` over `drawingBand`: AFC, for approval, rejected, as built, other), drawn as a ring and a bar by discipline.
 - **Watch list.** `COPY_RECALL_LATE` (`lateRecalls`): superseded copies still out past the recall period, one warning per
   document and revision, for the roles that `canManageDocuments`.
+
+**Review stages, drawings by component and review comments (part 4).** How a contractor's drawings are approved on a
+government job: the proof checker, then the TPIA (or SQC), the PIU and head office, each in turn.
+
+- **Review stages.** A submittal's `stages` are codes of the `reviewStage` master (Proof checker, TPIA, PIU, Client, Head
+  office; at most `MAX_REVIEW_STAGES`, checked by `reviewStagesProblem`), fixed while it is under review. A round's
+  `marks` (`StageMark`: stage, code, day, reviewer, reference) are written only by `recordCode` at the stage it waits at
+  (`stageWaiting`): an A or B at a stage before the last moves it on (`stageOutcome` NEXT, a new reply-by day from
+  `stageStartedOn`), a C or D at any stage or the last stage's code is the round's code as before. A comment carries the
+  stage that made it and its day. A submittal with no stages is coded once, as before. The list filters by
+  `?at=<stage>` (Waiting at), the record draws the stages as a `StageBar`.
+- **Drawings by component.** A drawing names the component it is for (`Document.workElementId`, a top-level work
+  element of its project, checked by `checkComponent`). `GET /design/by-component?projectId=` (`DesignControlService.byComponent`):
+  each component with its drawings by discipline at their current revisions, the latest submittal that sends any of them
+  (`withDocuments`) with each stage's day, and its state (`componentState`: AFC when every drawing is buildable, else
+  under review, back with us, not sent); totals by `componentTotals`, stage columns by `stageColumns`. Web
+  `/drawings-by-component`.
+- **Review comments.** `GET /design/submissions/comments` (`DesignSubmissionsService.comments`): every comment across the
+  submittals the user sees, with the stage, the day made, days open and our reply, filtered by state (`NOT_CLOSED` by
+  default) and stage, the oldest to answer first. Web `/design-comments`; a row opens its submittal, where the reply is written.
+- **Words.** A revision site may build from is **AFC** (approved for construction) on every screen (`REVISION_STATUS_LABELS`,
+  the schedule's state); the enum keeps `FOR_CONSTRUCTION` and `GFC`.
 
 ### The launcher on the phone (launcher phase 4, phone Home of October 2026)
 
@@ -1404,7 +1432,11 @@ commissioned, with valves fixed at their points.
   zone's activities and the project's progress still come from the entries through `rollUp`.
 - **Import.** The network comes from the design office's model, read on the screen: an EPANET `.inp` file
   (`parseEpanetInp`: junctions, reservoirs as sources, tanks, pipes, valves as valve points, coordinates, US units
-  converted, pumps left out and said so) or an Excel book of nodes and pipes with loose headers (`parseNetworkSheets`).
+  converted, pumps left out and said so), an Excel book of nodes and pipes with loose headers (`parseNetworkSheets`), or
+  the main's alignment drawn in Google Earth (`parseKml`; a KMZ is unzipped in the browser by `lib/kmz.ts`): each line cut
+  into segments by its ground length (`groundDistanceM`) at the named points within `KML_SNAP_M` of it (a valve, a tank,
+  kind by name) and every 500 m, nodes named by chainage (`chainageLabel`, 1+250) and placed in metres from the first
+  point, the diameter and material from the line's data or name, else those chosen in the dialog.
   `POST /projects/:id/pipe-network/import` (project editors) checks it (`networkProblems`), previews what it would do
   matched by code (`importPlan`: new, changed, kept; never a pipe cut below its work) with `dryRun`, and saves only
   without problems: nodes and pipes upserted by code, nothing deleted, the zone's length stages planned at its proposed

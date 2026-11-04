@@ -9,6 +9,28 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-drawing-approvals',
+    date: '2026-11-04',
+    title: 'Drawing approvals stage by stage, and drawings by component',
+    points: [
+      'A submittal can pass through review stages in turn, such as the proof checker, TPIA, PIU and head office. Each stage’s code and day is recorded, and Submittals shows where each one waits.',
+      'Drawings by component shows each component of a project with its civil, mechanical and electrical drawings, the day its submittal went, the day each stage cleared it, and whether it is AFC.',
+      'Review comments lists every reviewer’s comment across the submittals with our reply; the ones to answer come first.',
+      'The Dashboard shows the drawings by status and by discipline. Approved for construction is now called AFC everywhere.',
+      'Import pipe network on a pipe zone or main now reads a KMZ or KML drawn in Google Earth: the line is cut by chainage at its valves and every 500 m.',
+    ],
+  },
+  {
+    id: '2026-11-drawings',
+    date: '2026-11-03',
+    title: 'Drawings, with shorter names and an as-built register',
+    points: [
+      'Design and drawings is now Drawings. Its pages are the Drawing register, Drawing schedule, Submittals (once Design submissions), Controlled copies, As-built drawings, Transmittals, RFIs and the Dashboard.',
+      'As-built drawings is a page of its own: the drawings site built from that still owe their as-built revision, and those that have it.',
+      'Submittals, Controlled copies and the Dashboard lead with the same figures as the Drawings overview, which now counts as-builts due and open RFIs too.',
+    ],
+  },
+  {
     id: '2026-11-menu-layouts',
     date: '2026-11-03',
     title: 'More ways to lay out the menu',

@@ -103,7 +103,7 @@ export function IssueCopiesDialog({
             <Form.Item
               name="documentId"
               label="Drawing"
-              extra="Its current revision is issued. Only revisions good for construction or approved are issued as controlled copies."
+              extra="Its current revision is issued. Only revisions AFC or approved are issued as controlled copies."
               rules={[{ required: true, message: 'Choose the drawing' }]}
             >
               <Select

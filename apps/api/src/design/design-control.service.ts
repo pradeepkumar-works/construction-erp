@@ -1,11 +1,20 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import {
+  componentState,
+  componentTotals,
+  disciplinesOf,
+  stageColumns,
+  DOCUMENT_DISCIPLINES,
+  type ComponentDrawingsDto,
+  type ComponentRowDto,
+  type DocumentDiscipline,
   copyNumbersFor,
   copyState,
   designNotes,
   designRowHasWork,
   designTotals,
+  drawingCounts,
   disposeCopyProblem,
   isDesignApproved,
   isGuest,
@@ -66,6 +75,67 @@ export class DesignControlService {
 
   private assertView(user: RequestUser) {
     if (isGuest(user.roleKey)) throw new ForbiddenException('Design and drawings are for the company’s own staff');
+  }
+
+  /**
+   * Drawings by component: each top-level work element of the project with its drawings and where their approval
+   * stands, read from the latest submittal (through `DesignSubmissionsService`) that sends any of them. Drawings linked
+   * to no component come last.
+   */
+  async byComponent(user: RequestUser, projectId: string): Promise<ComponentDrawingsDto> {
+    this.assertView(user);
+    await this.access.assertCanAccessProject(user, projectId);
+    const [elements, documents, submittals] = await Promise.all([
+      this.prisma.workElement.findMany({ where: { projectId, parentId: null }, orderBy: [{ sortOrder: 'asc' }, { code: 'asc' }], select: { id: true, code: true, name: true } }),
+      this.prisma.document.findMany({
+        where: { projectId, kind: 'DRAWING' },
+        orderBy: { docNo: 'asc' },
+        select: { id: true, docNo: true, title: true, discipline: true, workElementId: true, currentRevision: { select: { revision: true, status: true } } },
+      }),
+      this.submissions.withDocuments(user, projectId),
+    ]);
+    const drawingsOf = (workElementId: string | null) =>
+      documents
+        .filter((d) => d.workElementId === workElementId)
+        .map((d) => ({ documentId: d.id, docNo: d.docNo, title: d.title, discipline: d.discipline as DocumentDiscipline, revision: d.currentRevision?.revision ?? null, revisionStatus: (d.currentRevision?.status ?? null) as RevisionStatus | null }));
+    const row = (workElementId: string | null, code: string | null, name: string): ComponentRowDto => {
+      const drawings = drawingsOf(workElementId);
+      const ids = new Set(drawings.map((d) => d.documentId));
+      // Newest first: the latest submittal that sends any of its drawings.
+      const s = drawings.length ? submittals.find((x) => x.documentIds.some((id) => ids.has(id))) : undefined;
+      const review = s
+        ? {
+            submissionId: s.dto.id,
+            submissionNo: s.dto.submissionNo,
+            status: s.dto.status,
+            purpose: s.dto.purpose,
+            submittedOn: s.dto.submittedOn,
+            waitingAt: s.dto.waitingAt,
+            daysLate: s.dto.daysLate,
+            stages: s.stages,
+            code: s.dto.lastCode,
+            reviewedOn: s.reviewedOn,
+          }
+        : null;
+      return { workElementId, code, name, drawings, review, state: componentState(drawings, review) };
+    };
+    const rows = elements.map((e) => row(e.id, e.code, e.name));
+    if (documents.some((d) => !d.workElementId || !elements.some((e) => e.id === d.workElementId))) {
+      const loose = row(null, null, 'Not linked to a component');
+      loose.drawings = documents
+        .filter((d) => !d.workElementId || !elements.some((e) => e.id === d.workElementId))
+        .map((d) => ({ documentId: d.id, docNo: d.docNo, title: d.title, discipline: d.discipline as DocumentDiscipline, revision: d.currentRevision?.revision ?? null, revisionStatus: (d.currentRevision?.status ?? null) as RevisionStatus | null }));
+      loose.review = null;
+      loose.state = componentState(loose.drawings, null);
+      rows.push(loose);
+    }
+    return {
+      projectId,
+      disciplines: disciplinesOf(documents.map((d) => ({ discipline: d.discipline as DocumentDiscipline })), DOCUMENT_DISCIPLINES),
+      stages: stageColumns(rows.map((r) => (r.review ? { stages: r.review.stages.map((x) => x.name) } : null))),
+      rows,
+      totals: componentTotals(rows.filter((r) => r.workElementId)),
+    };
   }
 
   private toDto(r: CopyRow, today: string): ControlledCopyDto {
@@ -309,7 +379,7 @@ export class DesignControlService {
     if (projectId) await this.access.assertCanAccessProject(user, projectId);
     const today = todayIn();
     const all = { page: 1, pageSize: 100_000, ...(projectId ? { projectId } : {}) };
-    const [projects, needs, subs, copies, asBuilt, rfis, recentRevs] = await Promise.all([
+    const [projects, needs, subs, copies, asBuilt, rfis, recentRevs, drawings] = await Promise.all([
       this.prisma.project.findMany({
         where: { ...this.access.projectWhere(user), ...(projectId ? { id: projectId } : {}), type: { notIn: ['STORE', 'PLANT'] } },
         select: { id: true, code: true, name: true },
@@ -325,6 +395,10 @@ export class DesignControlService {
         select: { id: true, revision: true, status: true, issuedOn: true, document: { select: { id: true, docNo: true, title: true, projectId: true, currentRevisionId: true, project: { select: { name: true } } } } },
         orderBy: { issuedOn: 'desc' },
         take: 300,
+      }),
+      this.prisma.document.findMany({
+        where: { ...this.access.submissionWhere(user), ...(projectId ? { projectId } : {}), kind: 'DRAWING', project: { type: { notIn: ['STORE', 'PLANT'] } } },
+        select: { discipline: true, currentRevision: { select: { status: true } } },
       }),
     ]);
     const copyDtos = copies.map((r) => this.toDto(r, today));
@@ -376,6 +450,7 @@ export class DesignControlService {
         // What holds up site first.
         .sort((a, b) => b.drawingsLate + b.recallsLate - (a.drawingsLate + a.recallsLate) || b.reviewsLate - a.reviewsLate || a.projectName.localeCompare(b.projectName)),
       recent,
+      drawings: drawingCounts(drawings.map((d) => ({ discipline: d.discipline as DocumentDiscipline, status: (d.currentRevision?.status ?? null) as RevisionStatus | null }))),
     };
   }
 

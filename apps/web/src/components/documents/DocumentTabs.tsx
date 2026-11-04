@@ -61,7 +61,7 @@ export function DocumentTabs({ projectId, tab, onTab, openId, openRfiId }: { pro
         onChange={(k) => onTab(k as DocumentTab)}
         variant="page"
         items={[
-          { key: 'register', ...count('Register', summary?.awaitingApproval, 'current revision awaiting approval'), children: <DocumentList projectId={projectId} onOpen={setDocId} /> },
+          { key: 'register', ...count('Drawings', summary?.awaitingApproval, 'current revision awaiting approval'), children: <DocumentList projectId={projectId} onOpen={setDocId} /> },
           { key: 'transmittals', ...count('Transmittals', summary?.unacknowledged, 'not acknowledged'), children: <TransmittalList projectId={projectId} onOpen={setTransmittalId} onNew={() => setSend('new')} /> },
           ...(letters ? [{ key: 'letters', ...count('Letters', summary?.lettersAwaitingReply, 'reply due'), children: <ProjectLetters projectId={projectId!} /> }] : []),
           { key: 'rfis', ...count('RFIs', rfiSummary?.open, 'waiting for an answer'), children: <RfiList projectId={projectId} onOpen={setRfiId} onNew={() => setNewRfi(true)} /> },

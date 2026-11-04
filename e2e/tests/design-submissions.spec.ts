@@ -78,8 +78,64 @@ test('a drawing goes for approval, comes back with comments and is approved on t
 
   await signIn(page, 'docs@demo.com');
   await page.goto('/design-submissions');
-  await expect(page.getByRole('heading', { name: 'Design submissions', level: 1 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Submittals', level: 1 })).toBeVisible();
   await page.goto(`/design-submissions/${created.id}`);
   await expect(page.getByRole('heading', { name: `E2E staircase ${stamp}`, level: 1 })).toBeVisible();
   await expect(page.getByText('Give the lap length at the waist slab.')).toBeVisible();
+});
+
+/**
+ * Review stages: a submittal goes to the proof checker, then the PIU. The proof checker's A moves it on to the PIU with
+ * a new reply-by day; the PIU's C is the round's code, with a comment that shows on Review comments under the PIU. The
+ * stages cannot change while it is with a reviewer. Drawings by component and Review comments open.
+ */
+test('a submittal passes its review stages in turn, and a stage’s comment shows on Review comments', async ({ page }) => {
+  const docs = await apiToken('docs@demo.com');
+  const demo = await api<{ items: { projectId: string }[] }>(docs, '/design/submissions?pageSize=100');
+  const projectId = demo.items[0]?.projectId;
+  expect(projectId).toBeTruthy();
+  const stamp = Date.now();
+  const today = localToday();
+  const doc = await api<Doc>(docs, '/documents', {
+    method: 'POST',
+    body: { projectId, docNo: `E2E-STG-${stamp}`, title: `E2E pump house roof ${stamp}`, discipline: 'STRUCTURAL', revision: { revision: 'R0', issuedOn: today, status: 'FOR_APPROVAL' } },
+  });
+  await expect(
+    api(docs, '/design/submissions', { method: 'POST', body: { projectId, title: 'E2E twice', toParty: 'PIU', documentIds: [doc.id], stages: ['piu', 'piu'] } }),
+  ).rejects.toThrow(/400/);
+  const created = await api<Submission & { stages: string[] }>(docs, '/design/submissions', {
+    method: 'POST',
+    body: { projectId, title: `E2E pump house ${stamp}`, kind: 'DRAWINGS', purpose: 'APPROVAL', toParty: 'The Executive Engineer, PIU', source: 'CLIENT', documentIds: [doc.id], stages: ['proof-checker', 'piu'] },
+  });
+  expect(created.stages).toEqual(['Proof checker', 'PIU']);
+
+  type Staged = Submission & { waitingAt: string | null; stages: string[] };
+  const sent = await api<Staged>(docs, `/design/submissions/${created.id}/submit`, { method: 'POST', body: { submittedOn: today } });
+  expect(sent).toMatchObject({ status: 'UNDER_REVIEW', waitingAt: 'Proof checker' });
+  await expect(
+    api(docs, `/design/submissions/${created.id}`, {
+      method: 'PUT',
+      body: { projectId, title: `E2E pump house ${stamp}`, kind: 'DRAWINGS', purpose: 'APPROVAL', toParty: 'The Executive Engineer, PIU', source: 'CLIENT', documentIds: [doc.id], stages: ['piu'] },
+    }),
+  ).rejects.toThrow(/400/);
+
+  const cleared = await api<Staged>(docs, `/design/submissions/${created.id}/code`, { method: 'POST', body: { code: 'A', reviewedOn: today, reviewerName: 'Proof checker', comments: [] } });
+  expect(cleared).toMatchObject({ status: 'UNDER_REVIEW', waitingAt: 'PIU' });
+  const waiting = await api<{ items: { id: string }[] }>(docs, `/design/submissions?at=piu&projectId=${projectId}&pageSize=200`);
+  expect(waiting.items.some((s) => s.id === created.id)).toBe(true);
+
+  const text = `E2E show the parapet drainage spouts ${stamp}.`;
+  const back = await api<Staged>(docs, `/design/submissions/${created.id}/code`, { method: 'POST', body: { code: 'C', reviewedOn: today, reviewerName: 'Executive Engineer', comments: [{ text, documentId: doc.id }] } });
+  expect(back).toMatchObject({ status: 'REVISE_RESUBMIT', waitingAt: null, openComments: 1 });
+
+  const comments = await api<{ items: { text: string; stage: string | null; state: string; submissionId: string }[] }>(docs, `/design/submissions/comments?projectId=${projectId}&stage=piu&q=${encodeURIComponent(stamp.toString())}`);
+  expect(comments.items).toEqual([expect.objectContaining({ text, stage: 'PIU', state: 'OPEN', submissionId: created.id })]);
+
+  await signIn(page, 'docs@demo.com');
+  await page.goto(`/design-comments?projectId=${projectId}`);
+  await expect(page.getByRole('heading', { name: 'Review comments', level: 1 })).toBeVisible();
+  await page.getByLabel('Search review comments').fill(String(stamp));
+  await expect(page.getByText(text)).toBeVisible();
+  await page.goto(`/drawings-by-component?projectId=${projectId}`);
+  await expect(page.getByRole('heading', { name: 'Drawings by component', level: 1 })).toBeVisible();
 });

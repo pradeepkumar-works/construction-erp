@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Max, MaxLength, Min, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Max, MaxLength, Min, ValidateIf, ValidateNested } from 'class-validator';
 import {
   DOCUMENT_DISCIPLINES,
   DOCUMENT_KINDS,
@@ -50,6 +50,7 @@ export class CreateDocumentDto {
   @ApiProperty({ example: 'General arrangement, first floor slab' }) @trim() @IsString() @IsNotEmpty() @MaxLength(200) title: string;
   @ApiPropertyOptional({ enum: DOCUMENT_KINDS, default: 'DRAWING' }) @IsOptional() @IsIn(DOCUMENT_KINDS as unknown as string[]) kind?: DocumentKind;
   @ApiPropertyOptional({ enum: DOCUMENT_DISCIPLINES, default: 'GENERAL' }) @IsOptional() @IsIn(DOCUMENT_DISCIPLINES as unknown as string[]) discipline?: DocumentDiscipline;
+  @ApiPropertyOptional({ description: 'The component of the project it draws (a top-level work element)' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsUUID() workElementId?: string | null;
   @ApiPropertyOptional() @IsOptional() @trim() @IsString() @MaxLength(1000) remarks?: string | null;
   @ApiPropertyOptional({ type: CreateRevisionDto, description: 'The first revision, with its files' }) @IsOptional() @ValidateNested() @Type(() => CreateRevisionDto) revision?: CreateRevisionDto;
 }

@@ -2,7 +2,7 @@
  * Pipe network tests. Reading an EPANET file (units, valves, pumps, coordinates) and a design office's sheet
  * with loose headers, the checks that stop an import, what a re-import changes (matched by code, never shortening a pipe
  * below its work), a segment's stages held to its length and weighted, the zone's pipe sheet, the pipes ready to
- * start, the cap a DPR line meets, the DPR's pipeline summary, and a stage guessed from an activity's name.
+ * start, a Google Earth alignment cut at its named points and by chainage, the cap a DPR line meets, the DPR's pipeline summary, and a stage guessed from an activity's name.
  *
  *   node dist/scripts/pipe-network-test.js
  */
@@ -12,7 +12,10 @@ import {
   guessPipeStage,
   importPlan,
   networkProblems,
+  chainageLabel,
+  groundDistanceM,
   parseEpanetInp,
+  parseKml,
   parseNetworkSheets,
   pipelineSummary,
   segmentCapProblem,
@@ -153,6 +156,67 @@ test('pipes ready to start reach the tank or a pipe laid end to end', () => {
   // Nothing laid yet: the pipes at the tank are the fronts.
   assert.deepEqual(workingFronts([seg('P-1', 'T-1', 'J-1'), seg('P-2', 'J-1', 'J-2')], [{ code: 'T-1', kind: 'TANK' }]).map((f) => [f.code, f.viaCode]), [['P-1', null]]);
   assert.deepEqual(fronts.map((f) => [f.code, f.fromCode, f.viaCode]), [['P-2', 'J-1', 'P-1'], ['P-5', 'T-1', 'P-1']]);
+});
+
+// A main drawn due north from 21°N 78°E: a metre of latitude is 1 / 111195 of a degree on the sphere.
+const north = (m: number, east = 0) => `${(78 + east / (111195 * Math.cos((21 * Math.PI) / 180))).toFixed(8)},${(21 + m / 111195).toFixed(8)},0`;
+const KML = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>Devgarh RWRM</name>
+<Placemark><name><![CDATA[Rising main 300 mm DI K9]]></name><LineString><tessellate>1</tessellate><coordinates>
+${north(0)} ${north(700)}
+${north(1200)}
+</coordinates></LineString></Placemark>
+<Placemark><name>SV-1</name><Point><coordinates>${north(300, 10)}</coordinates></Point></Placemark>
+<Placemark><name>Intake well</name><Point><coordinates>${north(0, 3)}</coordinates></Point></Placemark>
+<Placemark><name>Temple</name><Point><coordinates>${north(600, 100)}</coordinates></Point></Placemark>
+</Document></kml>`;
+
+test('a Google Earth main reads as segments by chainage, cut at its named points and every 500 m', () => {
+  assert.equal(chainageLabel(1250), '1+250');
+  assert.equal(chainageLabel(0), '0+000');
+  assert.ok(Math.abs(groundDistanceM([78, 21], [78, 21 + 1000 / 111195]) - 1000) < 0.5);
+  const f = parseKml(KML, { diameterMm: 150, material: 'HDPE' });
+  assert.deepEqual(
+    f.nodes.map((n) => [n.code, n.kind, Math.round(n.chainage!)]),
+    [
+      ['Intake well', 'SOURCE', 0],
+      ['SV-1', 'SLUICE_VALVE', 300],
+      ['0+500', 'JUNCTION', 500],
+      ['1+000', 'JUNCTION', 1000],
+      ['1+200', 'JUNCTION', 1200],
+    ],
+  );
+  assert.deepEqual(f.pipes.map((p) => [p.code, p.from, p.to, Math.round(p.lengthM)]), [
+    ['P1', 'Intake well', 'SV-1', 300],
+    ['P2', 'SV-1', '0+500', 200],
+    ['P3', '0+500', '1+000', 500],
+    ['P4', '1+000', '1+200', 200],
+  ]);
+  assert.ok(Math.abs(f.pipes.reduce((s, p) => s + p.lengthM, 0) - 1200) < 0.5, 'the segments add up to the line');
+  assert.ok(f.pipes.every((p) => p.diameterMm === 300 && p.material === 'DI' && p.pipeClass === 'K9'), 'diameter, material and class from the name');
+  assert.ok(Math.abs(f.nodes[4].y! - 1200) < 5 && Math.abs(f.nodes[4].x!) < 1, 'placed in metres north of the start');
+  assert.equal(f.nodes[0].groundLevel, null, 'Google Earth altitude 0 is no level');
+  assert.ok(f.notes.some((n) => /1 point was more than 25 m/.test(n)));
+  assert.deepEqual(networkProblems(f), []);
+});
+
+test('two lines that meet join at one node; a line with no diameter of its own takes the default, a short end is not cut', () => {
+  const two = `<kml><Document>
+<Placemark><name>Branch A</name><ExtendedData><Data name="Dia (mm)"><value>200</value></Data><Data name="Material"><value>HDPE</value></Data></ExtendedData><LineString><coordinates>${north(0)} ${north(400)}</coordinates></LineString></Placemark>
+<Placemark><name>Branch B</name><LineString><coordinates>${north(400)} ${north(400, 300)}</coordinates></LineString></Placemark>
+</Document></kml>`;
+  const f = parseKml(two, { diameterMm: 110, material: 'PVC', splitM: 250 });
+  assert.deepEqual(f.nodes.map((n) => n.code), ['L1-0+000', 'L1-0+250', 'L1-0+400', 'L2-0+300']);
+  assert.deepEqual(f.pipes.map((p) => [p.code, p.from, p.to, p.diameterMm, p.material]), [
+    ['L1-P1', 'L1-0+000', 'L1-0+250', 200, 'HDPE'],
+    ['L1-P2', 'L1-0+250', 'L1-0+400', 200, 'HDPE'],
+    ['L2-P1', 'L1-0+400', 'L2-0+300', 110, 'PVC'],
+  ]);
+  assert.deepEqual(networkProblems(f), []);
+  const none = parseKml('<kml><Placemark><name>Tank</name><Point><coordinates>78,21</coordinates></Point></Placemark></kml>', { diameterMm: 110, material: 'PVC' });
+  assert.equal(none.pipes.length, 0);
+  assert.match(none.notes[0], /no line/);
+  assert.ok(networkProblems(none).includes('The file has no pipes'));
 });
 
 test("a DPR line can't take a stage past the pipe's length, and says how much is left", () => {

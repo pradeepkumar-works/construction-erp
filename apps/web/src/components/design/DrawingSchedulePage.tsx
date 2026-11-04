@@ -5,7 +5,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import dayjs from 'dayjs';
-import { App, Button, Card, Checkbox, Descriptions, Drawer, Flex, Form, Input, Select, Space, Table, Typography } from 'antd';
+import { App, Button, Card, Checkbox, Descriptions, Drawer, Flex, Form, Input, Select, Space, Typography } from 'antd';
 import { tk } from '@/ds';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -20,7 +20,6 @@ import {
   drawingNeedProblem,
   isClientSide,
   remindsByLetter,
-  type AsBuiltDueDto,
   type DocumentDiscipline,
   type DrawingNeedDto,
   type DrawingNeedState,
@@ -29,13 +28,11 @@ import {
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
-import { useActivities, useAsBuiltDue, useDrawingNeed, useDrawingSchedule } from '@/lib/queries';
-import { useProjectScope } from '@/lib/project-scope';
-import { useUrlParam, useUrlTab } from '@/lib/url-state';
+import { useActivities, useDrawingNeed, useDrawingSchedule } from '@/lib/queries';
+import { useUrlParam } from '@/lib/url-state';
 import { formatDate } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
-import { PageSkeleton, QueryError } from '@/components/common/QueryState';
-import { AppTabs } from '@/components/common/AppTabs';
+import { QueryError } from '@/components/common/QueryState';
 import { AppTag } from '@/components/common/AppTag';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { ListToolbar } from '@/components/common/ListToolbar';
@@ -50,8 +47,6 @@ import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { LineTable } from '@/components/form/LineTable';
 import { NextDrawingNo } from './NextDrawingNo';
 
-const TABS = ['schedule', 'as-built'] as const;
-type Tab = (typeof TABS)[number];
 const KEYS = ['state', 'discipline', 'source'] as const;
 const SORT_FIELDS = ['neededBy'] as const;
 type SortField = (typeof SORT_FIELDS)[number];
@@ -61,7 +56,7 @@ const STATE_FILTERS: { value: StateFilter; label: string }[] = [
   { value: 'SOON', label: 'Due within a week' },
   { value: 'AWAITED', label: 'Awaited' },
   { value: 'RECEIVED', label: 'Received, not for construction' },
-  { value: 'GFC', label: 'Good for construction' },
+  { value: 'GFC', label: 'AFC' },
   { value: 'DROPPED', label: 'Not needed' },
 ];
 
@@ -179,7 +174,7 @@ function NeedFormModal({ open, onClose, need, projectId, onSaved }: { open: bool
             <Form.Item name="source" label="Issued by">
               <Select options={DRAWING_SOURCES.map((s) => ({ value: s, label: DRAWING_SOURCE_LABELS[s] }))} />
             </Form.Item>
-            <Form.Item name="neededBy" label="Needed by" rules={[{ required: true, message: 'Pick the day site needs it good for construction' }]}>
+            <Form.Item name="neededBy" label="Needed by" rules={[{ required: true, message: 'Pick the day site needs it AFC' }]}>
               <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
             </Form.Item>
           </FormGrid>
@@ -380,7 +375,7 @@ function NeedDrawer({ need, onClose, onEdit }: { need: DrawingNeedDto | null; on
                 ),
               },
               ...(n.receivedOn ? [{ key: 'received', label: 'First received', children: formatDate(n.receivedOn) }] : []),
-              ...(n.gfcOn ? [{ key: 'gfc', label: 'Good for construction', children: formatDate(n.gfcOn) }] : []),
+              ...(n.gfcOn ? [{ key: 'gfc', label: 'AFC on', children: formatDate(n.gfcOn) }] : []),
               {
                 key: 'chased',
                 label: 'Chased',
@@ -525,7 +520,7 @@ function ScheduleList() {
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {c ? (
         <p translate="no" style={{ margin: `${tk.space[3]} 0` }}>
-          {`${c.overdue} late · ${c.dueSoon} due within a week · ${c.gfc} of ${c.total} good for construction`}
+          {`${c.overdue} late · ${c.dueSoon} due within a week · ${c.gfc} of ${c.total} AFC`}
         </p>
       ) : null}
       <ListToolbar
@@ -564,76 +559,18 @@ function ScheduleList() {
   );
 }
 
-/** Drawings site builds from that have no as-built revision yet: what the handover still owes. */
-function AsBuiltPanel() {
-  const router = useRouter();
-  const [projectId, setProjectId] = useProjectScope();
-  const { data, isLoading, error, refetch } = useAsBuiltDue(projectId);
-  return (
-    <Flex vertical gap={tk.space[4]} style={{ paddingTop: tk.space[3] }}>
-      <Flex gap={tk.space[3]} wrap align="center">
-        <ProjectSelect value={projectId} onChange={(v) => setProjectId(v)} aria-label="Project" style={{ minWidth: 240, maxWidth: '100%' }} />
-      </Flex>
-      <Typography.Paragraph type="secondary" style={{ margin: 0 }}>
-        Each drawing site built from needs an as-built revision before handover. These are good for construction in the register and have none yet.
-      </Typography.Paragraph>
-      {isLoading ? (
-        <PageSkeleton shape="list" header={false} />
-      ) : error || !data ? (
-        <QueryError error={error} onRetry={() => refetch()} />
-      ) : (
-        <Table<AsBuiltDueDto>
-          rowKey="documentId"
-          size="small"
-          pagination={{ pageSize: 50, hideOnSinglePage: true }}
-          dataSource={data}
-          scroll={{ x: 900 }}
-          rowClassName={() => 'row-click'}
-          onRow={(d) => ({ onClick: (e) => !(e.target as HTMLElement).closest('a') && router.push(`/documents?id=${d.documentId}`) })}
-          locale={{ emptyText: 'Every drawing built from has its as-built revision' }}
-          columns={[
-            {
-              title: 'Drawing',
-              key: 'drawing',
-              render: (_, d) => (
-                <div>
-                  <Link href={`/documents?id=${d.documentId}`} translate="no">
-                    {d.docNo}
-                  </Link>
-                  <Typography.Text type="secondary" style={{ display: 'block' }}>
-                    {d.title}
-                  </Typography.Text>
-                </div>
-              ),
-            },
-            { title: 'Project', dataIndex: 'projectName', width: 200, ellipsis: true },
-            { title: 'Discipline', dataIndex: 'discipline', width: 150, render: (v: DocumentDiscipline) => DOCUMENT_DISCIPLINE_LABELS[v] },
-            { title: 'Current', key: 'rev', width: 230, render: (_, d) => <span translate="no">{`${d.revision}, ${REVISION_STATUS_LABELS[d.status]}`}</span> },
-            { title: 'Issued', dataIndex: 'issuedOn', width: 120, render: (v: string) => formatDate(v) },
-          ]}
-        />
-      )}
-    </Flex>
-  );
-}
-
-/** The drawing schedule: the drawings each project needs and the as-built check. */
+/** The drawing schedule: the drawings each project needs. The as-built check is its own page now (`/as-built`). */
 export function DrawingSchedulePage() {
-  const [tab, setTab] = useUrlTab<Tab>(TABS, 'schedule', { param: 'tab' });
+  const router = useRouter();
+  const params = useSearchParams();
+  const asBuilt = params.get('tab') === 'as-built';
+  useEffect(() => {
+    if (asBuilt) router.replace(`/as-built${params.get('projectId') ? `?projectId=${params.get('projectId')}` : ''}`);
+  }, [asBuilt, params, router]);
   return (
     <div className="page-container">
       <PageHeader title="Drawing schedule" subtitle="The drawings each project needs, from whom and by when. A late one is chased by letter and recorded as a delay, so the time lost counts toward an extension." />
-      <Card size="small">
-        <AppTabs
-          activeKey={tab}
-          onChange={(k) => setTab(k as Tab)}
-          variant="page"
-          items={[
-            { key: 'schedule', label: 'Schedule', children: <ScheduleList /> },
-            { key: 'as-built', label: 'As-built check', children: <AsBuiltPanel /> },
-          ]}
-        />
-      </Card>
+      <Card size="small">{asBuilt ? null : <ScheduleList />}</Card>
     </div>
   );
 }

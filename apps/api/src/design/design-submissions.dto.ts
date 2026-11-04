@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsIn, IsNotEmpty, IsNumberString, IsOptional, IsString, IsUUID, MaxLength, ValidateIf, ValidateNested } from 'class-validator';
-import { DESIGN_CODES, DESIGN_PURPOSES, DESIGN_SUBMISSION_KINDS, DESIGN_SUBMISSION_STATUSES, DRAWING_SOURCES, type DesignCode, type DesignPurpose, type DesignSubmissionKind, type DesignSubmissionStatus, type DrawingSource } from '@erp/shared';
+import { MAX_REVIEW_STAGES, DESIGN_CODES, DESIGN_PURPOSES, DESIGN_SUBMISSION_KINDS, DESIGN_SUBMISSION_STATUSES, DRAWING_SOURCES, type DesignCode, type DesignPurpose, type DesignSubmissionKind, type DesignSubmissionStatus, type DrawingSource } from '@erp/shared';
 import { PageQuery, QueryBool } from '../common/paging';
 import { CLIENT_ID_DOC } from '../common/idempotency';
 
@@ -17,6 +17,7 @@ export class SaveDesignSubmissionDto {
   @ApiPropertyOptional({ enum: DESIGN_PURPOSES, default: 'APPROVAL' }) @IsOptional() @IsIn(list(DESIGN_PURPOSES)) purpose?: DesignPurpose;
   @ApiProperty({ example: 'The Executive Engineer, Building Division No. 1', description: 'Addressed to, as written' }) @trim() @IsString() @IsNotEmpty() @MaxLength(300) toParty: string;
   @ApiPropertyOptional({ enum: DRAWING_SOURCES, default: 'CLIENT', description: "The reviewer's side" }) @IsOptional() @IsIn(list(DRAWING_SOURCES)) source?: DrawingSource;
+  @ApiPropertyOptional({ type: [String], description: 'The review stages it passes through in turn (`reviewStage` master codes, in order); empty when the one reviewer codes it' }) @IsOptional() @IsArray() @ArrayMaxSize(MAX_REVIEW_STAGES) @IsString({ each: true }) stages?: string[];
   @ApiProperty({ type: [String], description: 'Documents of the register it sends' }) @IsArray() @ArrayMaxSize(200) @IsUUID('all', { each: true }) documentIds: string[];
   @ApiPropertyOptional() @IsOptional() @blank() @IsString() @MaxLength(2000) note?: string | null;
   @ApiPropertyOptional({ example: '45000.00', description: "Vetting: the institution's fee" }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumberString() fee?: string | null;
@@ -52,6 +53,12 @@ export class WithdrawDesignDto {
   @ApiProperty() @trim() @IsString() @IsNotEmpty() @MaxLength(1000) note: string;
 }
 
+export class DesignCommentsQuery extends PageQuery {
+  @ApiPropertyOptional() @IsOptional() @IsUUID() projectId?: string;
+  @ApiPropertyOptional({ enum: ['OPEN', 'ANSWERED', 'CLOSED', 'NOT_CLOSED'], description: 'NOT_CLOSED: to answer or answered' }) @IsOptional() @IsIn(['OPEN', 'ANSWERED', 'CLOSED', 'NOT_CLOSED']) state?: 'OPEN' | 'ANSWERED' | 'CLOSED' | 'NOT_CLOSED';
+  @ApiPropertyOptional({ description: 'Only those made by this review stage (`reviewStage` code)' }) @IsOptional() @IsString() @MaxLength(60) stage?: string;
+}
+
 export const DESIGN_LIST_FILTERS = [...DESIGN_SUBMISSION_STATUSES, 'LATE', 'WITH_US'] as const;
 export type DesignListFilter = DesignSubmissionStatus | 'LATE' | 'WITH_US';
 
@@ -60,5 +67,6 @@ export class DesignSubmissionsQuery extends PageQuery {
   @ApiPropertyOptional({ enum: DESIGN_LIST_FILTERS, description: 'LATE: under review past its reply-by date; WITH_US: sent back (C or D)' }) @IsOptional() @IsIn(list(DESIGN_LIST_FILTERS)) status?: DesignListFilter;
   @ApiPropertyOptional({ enum: DESIGN_PURPOSES }) @IsOptional() @IsIn(list(DESIGN_PURPOSES)) purpose?: DesignPurpose;
   @ApiPropertyOptional({ enum: DESIGN_SUBMISSION_KINDS }) @IsOptional() @IsIn(list(DESIGN_SUBMISSION_KINDS)) kind?: DesignSubmissionKind;
+  @ApiPropertyOptional({ description: 'Only those under review waiting at this review stage (`reviewStage` master code)' }) @IsOptional() @IsString() @MaxLength(60) at?: string;
   @ApiPropertyOptional({ description: 'Only those with comments still to answer' }) @IsOptional() @QueryBool() @IsBoolean() toAnswer?: boolean;
 }

@@ -1,0 +1,38 @@
+/**
+ * A KMZ is a zip with the KML inside (doc.kml, else the first .kml). Read here with the browser's own inflate
+ * (DecompressionStream), so no zip library is loaded for one file.
+ */
+export async function kmlFromKmz(bytes: ArrayBuffer): Promise<string> {
+  const view = new DataView(bytes);
+  // The end of the central directory: its signature, searched back from the end over any zip comment.
+  let eocd = -1;
+  for (let i = bytes.byteLength - 22; i >= Math.max(0, bytes.byteLength - 65_557); i--)
+    if (view.getUint32(i, true) === 0x06054b50) {
+      eocd = i;
+      break;
+    }
+  if (eocd < 0) throw new Error('Not a KMZ file');
+  const count = view.getUint16(eocd + 10, true);
+  let at = view.getUint32(eocd + 16, true);
+  const entries: { name: string; method: number; size: number; local: number }[] = [];
+  for (let k = 0; k < count && view.getUint32(at, true) === 0x02014b50; k++) {
+    const nameLen = view.getUint16(at + 28, true);
+    const extraLen = view.getUint16(at + 30, true);
+    const commentLen = view.getUint16(at + 32, true);
+    entries.push({
+      method: view.getUint16(at + 10, true),
+      size: view.getUint32(at + 20, true),
+      local: view.getUint32(at + 42, true),
+      name: new TextDecoder().decode(new Uint8Array(bytes, at + 46, nameLen)),
+    });
+    at += 46 + nameLen + extraLen + commentLen;
+  }
+  const kml = entries.find((e) => /(^|\/)doc\.kml$/i.test(e.name)) ?? entries.find((e) => /\.kml$/i.test(e.name));
+  if (!kml) throw new Error('No KML inside the KMZ');
+  const start = kml.local + 30 + view.getUint16(kml.local + 26, true) + view.getUint16(kml.local + 28, true);
+  const data = new Uint8Array(bytes, start, kml.size);
+  if (kml.method === 0) return new TextDecoder().decode(data);
+  if (kml.method !== 8) throw new Error('Unsupported compression in the KMZ');
+  const stream = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+  return await new Response(stream).text();
+}

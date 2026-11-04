@@ -25,6 +25,7 @@ import { seedQaRegisters } from './seed-qa-registers';
 import { seedQaAudits } from './seed-qa-audits';
 import { seedDrawingSchedule } from './seed-drawing-schedule';
 import { seedDesignSubmissions } from './seed-design-submissions';
+import { seedComponentDrawings } from './seed-component-drawings';
 import { seedControlledCopies } from './seed-controlled-copies';
 import { seedIntegrations } from './seed-integrations';
 import { seedTelematics } from './seed-telematics';
@@ -1915,6 +1916,8 @@ async function modulesPass(organizationId: string, passwordHash: string) {
   await seedConsultantChecks(prisma, organizationId);
   await seedProgramme(prisma, organizationId);
   await seedProjectOpenings(organizationId);
+  // The town scheme's components exist by now (seedWorkBreakdown); their drawings and staged submittals.
+  await seedComponentDrawings(prisma, organizationId);
 }
 
 /**

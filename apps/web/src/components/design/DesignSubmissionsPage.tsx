@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Button, Card, Checkbox, Col, Row, Select, Statistic, Typography } from 'antd';
+import { Button, Card, Checkbox, Select, Typography } from 'antd';
 import { tk } from '@/ds';
 import {
   DESIGN_PURPOSE_LABELS,
@@ -12,13 +12,14 @@ import {
   DESIGN_SUBMISSION_STATUS_LABELS,
   canManageDocuments,
   designRevisionLabel,
+  figure,
   type DesignPurpose,
   type DesignSubmissionDto,
   type DesignSubmissionKind,
   type DesignSubmissionStatus,
 } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
-import { useDesignSubmissions } from '@/lib/queries';
+import { useDesignSubmissions, useMasterList } from '@/lib/queries';
 import { useNewIntent } from '@/lib/new-intent';
 import { formatDate } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -29,10 +30,10 @@ import { PlusOutlined } from '@/components/common/icons';
 import { DataTable, type ListColumn } from '@/components/list/DataTable';
 import { useListFrame } from '@/components/list/useListFrame';
 import { RecordLink } from '@/components/record/RecordLink';
-import { DISPLAY_FONT } from '@/lib/theme';
+import { Figures } from '@/components/figures';
 import { CodeTag, DesignStatusTag, DesignSubmissionForm } from './DesignSubmissionForms';
 
-const KEYS = ['status', 'purpose', 'kind', 'toAnswer'] as const;
+const KEYS = ['status', 'at', 'purpose', 'kind', 'toAnswer'] as const;
 const SORT_FIELDS = ['submittedOn'] as const;
 type SortField = (typeof SORT_FIELDS)[number];
 type StatusFilter = DesignSubmissionStatus | 'LATE' | 'WITH_US';
@@ -44,7 +45,7 @@ const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
 ];
 
 /**
- * Design submissions: drawings and designs sent for approval or vetting, the code each round came back
+ * Submittals (design submissions): drawings and designs sent for approval or vetting, the code each round came back
  * with, and the comments still to answer. Late reviews come first.
  */
 export function DesignSubmissionsPage() {
@@ -55,6 +56,8 @@ export function DesignSubmissionsPage() {
   const [adding, setAdding] = useState(false);
   useNewIntent('design-submission', may, () => setAdding(true));
   const open = (id: string) => router.push(`/design-submissions/${id}`);
+  const stageList = useMasterList('review-stage');
+  const stageNames = new Map((stageList.data?.entries ?? []).map((e) => [e.code, e.name]));
   const sub = (text: React.ReactNode) => (
     <Typography.Text type="secondary" style={{ display: 'block', fontSize: tk.type.caption.fontSize }}>
       {text}
@@ -69,17 +72,20 @@ export function DesignSubmissionsPage() {
     sortFields: SORT_FIELDS,
     initialProject: params.get('projectId') ?? undefined,
     // The dashboard's links: a status, or only those with comments to answer.
-    initialFilters: params.get('status') || params.get('toAnswer') === 'true' ? { ...(params.get('status') ? { status: params.get('status')! } : {}), ...(params.get('toAnswer') === 'true' ? { toAnswer: 'true' } : {}) } : undefined,
+    initialFilters: params.get('status') || params.get('at') || params.get('toAnswer') === 'true'
+        ? { ...(params.get('status') ? { status: params.get('status')! } : {}), ...(params.get('at') ? { at: params.get('at')! } : {}), ...(params.get('toAnswer') === 'true' ? { toAnswer: 'true' } : {}) }
+        : undefined,
     chipLabels: {
       status: (v) => STATUS_FILTERS.find((s) => s.value === v)?.label ?? v,
       purpose: (v) => DESIGN_PURPOSE_LABELS[v as DesignPurpose] ?? v,
       kind: (v) => DESIGN_SUBMISSION_KIND_LABELS[v as DesignSubmissionKind] ?? v,
       toAnswer: () => 'Comments to answer',
+      at: (v) => `Waiting at ${stageNames.get(v) ?? v}`,
     },
     columns: (): ListColumn<DesignSubmissionDto>[] => [
       {
         key: 'title',
-        title: 'Submission',
+        title: 'Submittal',
         locked: true,
         width: 320,
         card: 'title',
@@ -104,6 +110,24 @@ export function DesignSubmissionsPage() {
             {r.openComments ? sub(`${r.openComments} comment${r.openComments === 1 ? '' : 's'} to answer`) : null}
           </div>
         ),
+      },
+      {
+        key: 'waitingAt',
+        title: 'Waiting at',
+        width: 190,
+        card: 'meta',
+        cardText: (r) => (r.waitingAt ? `Waiting at ${r.waitingAt}` : ''),
+        render: (_, r) =>
+          r.waitingAt ? (
+            <div>
+              <span translate="no">{r.waitingAt}</span>
+              {sub(`Stage ${r.stages.indexOf(r.waitingAt) + 1} of ${r.stages.length}`)}
+            </div>
+          ) : r.stages.length ? (
+            <Typography.Text type="secondary">{r.stages.join(', ')}</Typography.Text>
+          ) : (
+            <Typography.Text type="secondary">One reviewer</Typography.Text>
+          ),
       },
       { key: 'project', title: 'Project', width: 170, ellipsis: true, card: 'meta', cardText: (r) => r.projectName, render: (_, r) => <span translate="no">{r.projectName}</span> },
       {
@@ -150,34 +174,30 @@ export function DesignSubmissionsPage() {
   const purpose = page.filters.purpose as DesignPurpose | undefined;
   const kind = page.filters.kind as DesignSubmissionKind | undefined;
   const toAnswer = page.filters.toAnswer === 'true';
-  const { data, isLoading, isFetching, error, refetch } = useDesignSubmissions({ page: page.params.page, pageSize: page.params.pageSize, q: page.params.q, projectId: frame.projectId, status, purpose, kind, toAnswer: toAnswer || undefined });
+  const at = page.filters.at;
+  const { data, isLoading, isFetching, error, refetch } = useDesignSubmissions({ page: page.params.page, pageSize: page.params.pageSize, q: page.params.q, projectId: frame.projectId, status, purpose, kind, toAnswer: toAnswer || undefined, at });
   const newButton = may ? (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setAdding(true)}>
-      New design submission
+      New submittal
     </Button>
   ) : null;
   const s = data?.summary;
-  const stat = (title: string, value: React.ReactNode, note: React.ReactNode, tone?: 'danger') => (
-    <Col xs={12} lg={6}>
-      <Card size="small" style={{ height: '100%' }}>
-        <Statistic title={title} value={0} formatter={() => value} styles={{ content: { fontFamily: DISPLAY_FONT, fontSize: tk.type.lead.fontSize, color: tone === 'danger' ? tk.color.tone.danger.fg : undefined } }} />
-        <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{note}</div>
-      </Card>
-    </Col>
-  );
+  const figures = s && [
+    figure('underReview', s.underReview, { versus: { part: figure('reviewsLate', s.late) } }),
+    figure('submittalsBack', s.withUs),
+    figure('commentsToAnswer', s.toAnswer),
+    figure('daysToCode', s.avgDaysToCode ?? { none: 'No code in the last 90 days' }),
+  ];
 
   return (
     <div className="page-container">
-      <PageHeader title="Design submissions" subtitle="Drawings and designs sent for approval or vetting, the codes they came back with and our replies to the comments." />
+      <PageHeader title="Submittals" subtitle="Drawings and designs sent for approval or vetting, the codes they came back with and the comments answered." />
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      {s ? (
-        <Row gutter={[12, 12]} style={{ marginBottom: tk.space[5] }}>
-          {stat('With the reviewer', s.underReview, s.late ? `${s.late} past the reply date` : 'None past its reply date', s.late ? 'danger' : undefined)}
-          {stat('Back with us', s.withUs, 'Code C or D, to revise and resubmit')}
-          {stat('Comments to answer', s.toAnswer, 'Before the next submission')}
-          {stat('Days to a code', s.avgDaysToCode ?? '-', 'Average over the last 90 days')}
-        </Row>
-      ) : null}
+      {figures && (
+        <div style={{ marginBottom: tk.space[4] }}>
+          <Figures label="Submittal figures" figures={figures} scope={{ projectId: frame.projectId }} />
+        </div>
+      )}
       <Card size="small">
         <ListToolbar
           filters={frame.filterState}
@@ -186,10 +206,19 @@ export function DesignSubmissionsPage() {
           search={page.search}
           onSearch={page.setSearch}
           searchPlaceholder="Search number, title, drawing or reviewer"
-          searchLabel="Search design submissions"
+          searchLabel="Search submittals"
           extra={newButton}
         >
           <Select<StatusFilter> allowClear placeholder="Any status" aria-label="Status" value={status} onChange={(v) => page.setFilter('status', v)} style={{ width: 190 }} options={STATUS_FILTERS} />
+          <Select<string>
+            allowClear
+            placeholder="Waiting at any stage"
+            aria-label="Waiting at"
+            value={at}
+            onChange={(v) => page.setFilter('at', v)}
+            style={{ width: 200 }}
+            options={(stageList.data?.entries ?? []).filter((e) => e.isActive).map((e) => ({ value: e.code, label: e.name }))}
+          />
           <Select<DesignPurpose> allowClear placeholder="Approval or vetting" aria-label="Sent for" value={purpose} onChange={(v) => page.setFilter('purpose', v)} style={{ width: 180 }} options={DESIGN_PURPOSES.map((p) => ({ value: p, label: DESIGN_PURPOSE_LABELS[p] }))} />
           <Select<DesignSubmissionKind> allowClear placeholder="Any kind" aria-label="Kind" value={kind} onChange={(v) => page.setFilter('kind', v)} style={{ width: 190 }} options={DESIGN_SUBMISSION_KINDS.map((k) => ({ value: k, label: DESIGN_SUBMISSION_KIND_LABELS[k] }))} />
           <Checkbox checked={toAnswer} onChange={(e) => page.setFilter('toAnswer', e.target.checked ? 'true' : undefined)}>
@@ -208,7 +237,7 @@ export function DesignSubmissionsPage() {
           chips={frame.chips}
           empty={frame.empty}
           failed={!!error}
-          emptyText={<EmptyArt art="entries" title={status || purpose || kind || toAnswer || page.params.q ? 'No submission matches these filters' : 'No design submission yet'} />}
+          emptyText={<EmptyArt art="entries" title={status || at || purpose || kind || toAnswer || page.params.q ? 'No submittal matches these filters' : 'No submittal yet'} />}
           emptyAction={newButton}
         />
       </Card>

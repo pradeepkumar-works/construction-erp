@@ -370,15 +370,17 @@ export class ModuleHomeService {
     return [figure('peopleWithLogin', users), figure('accessRequestsOpen', requests), failing !== undefined && figure('connectionsFailing', failing)];
   }
 
-  /** The design dashboard's totals (`DesignControlService.dashboard`). */
+  /** The drawings dashboard's totals (`DesignControlService.dashboard`). */
   private async design(user: RequestUser, projectId?: string): Promise<FigureInput[]> {
     if (isGuest(user.roleKey)) return [];
     const t = (await this.designControl.dashboard(user, projectId)).totals;
     return [
       figure('drawingsLate', t.drawingsLate, { versus: { of: figure('drawingsAwaited', t.drawingsAwaited) } }),
       figure('reviewsLate', t.reviewsLate, { versus: { of: figure('underReview', t.underReview) } }),
-      figure('commentsToAnswer', t.commentsToAnswer, { count: t.withUs }),
+      figure('commentsToAnswer', t.commentsToAnswer, { count: t.withUs || undefined }),
       figure('copiesToRecall', t.copiesToRecall, { versus: { part: figure('recallsLate', t.recallsLate) } }),
+      figure('asBuiltDue', t.asBuiltDue),
+      figure('rfisOpen', t.rfisOpen),
     ];
   }
 

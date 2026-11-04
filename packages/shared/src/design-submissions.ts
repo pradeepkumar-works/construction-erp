@@ -150,6 +150,48 @@ export function coveringLetter(
   return { subject, body };
 }
 
+/**
+ * Review stages: a submittal may pass through several reviewers in turn before it is approved for construction, such as
+ * the proof checker, the TPIA, the PIU and the client's head office. Its `stages` are codes of the `reviewStage` master,
+ * in order; with none, the one reviewer it is addressed to codes it. Each stage's code is a mark on the round: an A or B
+ * passes the round to the next stage, a C or D at any stage (or the last stage's code) is the round's code.
+ */
+export const MAX_REVIEW_STAGES = 6;
+
+export interface StageMark {
+  /** The stage's code (`reviewStage` master) */
+  stage: string;
+  code: DesignCode;
+  clearedOn: string;
+  reviewerName: string | null;
+  reviewRef: string | null;
+}
+
+/** Why a submittal's stages cannot be saved, or null: each stage once, and no more than six. */
+export function reviewStagesProblem(stages: string[], known: string[]): string | null {
+  if (stages.length > MAX_REVIEW_STAGES) return `A submittal goes through at most ${MAX_REVIEW_STAGES} review stages.`;
+  if (new Set(stages).size !== stages.length) return 'A review stage is listed twice.';
+  const unknown = stages.find((s) => !known.includes(s));
+  if (unknown) return 'Choose the review stages from the list (Masters › Review stages).';
+  return null;
+}
+
+/** The stage the round waits at while under review: the first stage without a mark; null with no stages or once coded. */
+export function stageWaiting(stages: string[], marks: StageMark[], status: DesignSubmissionStatus): string | null {
+  if (status !== 'UNDER_REVIEW' || !stages.length) return null;
+  return stages.find((s) => !marks.some((m) => m.stage === s)) ?? null;
+}
+
+/** What a code at the stage it waits at does: pass the round on to the next stage, or code the round. */
+export function stageOutcome(stages: string[], marks: StageMark[], code: DesignCode): 'NEXT' | 'FINAL' {
+  if (!codeApproves(code)) return 'FINAL';
+  const done = stages.filter((s) => marks.some((m) => m.stage === s)).length;
+  return done + 1 >= stages.length ? 'FINAL' : 'NEXT';
+}
+
+/** The day the stage before cleared it, else the day the round was submitted: a stage's code cannot be before it. */
+export const stageStartedOn = (submittedOn: string, marks: StageMark[]) => marks.reduce((d, m) => (m.clearedOn > d ? m.clearedOn : d), submittedOn);
+
 export interface DesignSummary {
   underReview: number;
   late: number;
@@ -200,6 +242,8 @@ export interface DesignRoundDto {
   reviewRef: string | null;
   /** Days from submission to the code, or to today while it waits */
   days: number;
+  /** Each review stage's code, in order (named), with the days it took from the stage before */
+  marks: (Omit<StageMark, 'stage'> & { stage: string; days: number })[];
 }
 
 export interface DesignCommentDto {
@@ -207,6 +251,10 @@ export interface DesignCommentDto {
   commentNo: number;
   /** The revision the comment was made on */
   round: number;
+  /** The review stage that made it, by name */
+  stage: string | null;
+  /** The day of the review it came with */
+  madeOn: string | null;
   documentId: string | null;
   docNo: string | null;
   text: string;
@@ -231,6 +279,12 @@ export interface DesignSubmissionDto {
   source: DrawingSource;
   replyBy: string | null;
   status: DesignSubmissionStatus;
+  /** The review stages it goes through in turn, by name; empty when the one reviewer codes it */
+  stages: string[];
+  /** Their codes (`reviewStage` master), for the form */
+  stageCodes: string[];
+  /** The stage it waits at while under review, by name */
+  waitingAt: string | null;
   revision: number;
   submittedOn: string | null;
   lastCode: DesignCode | null;
@@ -261,6 +315,26 @@ export interface DesignSubmissionDetailDto extends DesignSubmissionDto {
   canWithdraw: boolean;
   /** Late with the client's side and not yet a delay */
   canRecordDelay: boolean;
+}
+
+/** A comment in Review comments: the comment with its submittal, project and drawing. */
+export interface DesignCommentRowDto extends DesignCommentDto {
+  submissionId: string;
+  submissionNo: string;
+  submissionTitle: string;
+  submissionStatus: DesignSubmissionStatus;
+  projectId: string;
+  projectName: string;
+  /** The component its drawing belongs to */
+  component: string | null;
+  /** Days since it was made, while not closed */
+  daysOpen: number | null;
+}
+
+export interface DesignCommentListDto {
+  items: DesignCommentRowDto[];
+  total: number;
+  summary: Record<DesignCommentState, number>;
 }
 
 export interface DesignSubmissionListDto {

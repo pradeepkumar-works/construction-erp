@@ -106,17 +106,17 @@ test('an admin features a module for everyone, and can keep locked modules out o
   try {
     await signIn(page, 'admin@demo.com');
     await page.goto('/home-tiles');
-    await page.getByRole('switch', { name: 'Design and drawings Featured' }).click();
-    await expect(page.getByRole('switch', { name: 'Design and drawings Featured' })).toBeChecked();
+    await page.getByRole('switch', { name: 'Drawings Featured' }).click();
+    await expect(page.getByRole('switch', { name: 'Drawings Featured' })).toBeChecked();
     await expect(page.getByRole('button', { name: 'As shipped' })).toBeVisible();
 
     await page.context().clearCookies();
     await signIn(page, 'engineer@demo.com');
-    await expect(discover(page).getByRole('button', { name: 'Design and drawings', exact: true })).toHaveAccessibleDescription(/^Featured/);
+    await expect(discover(page).getByRole('button', { name: 'Drawings', exact: true })).toHaveAccessibleDescription(/^Featured/);
     await expect(discover(page).getByRole('button', { name: 'Correspondence', exact: true })).toBeVisible();
-    await discover(page).getByRole('button', { name: 'Design and drawings', exact: true }).click();
-    const drawer = page.getByRole('dialog', { name: 'Design and drawings' });
-    await drawer.getByRole('link', { name: 'Open Design and drawings' }).click();
+    await discover(page).getByRole('button', { name: 'Drawings', exact: true }).click();
+    const drawer = page.getByRole('dialog', { name: 'Drawings' });
+    await drawer.getByRole('link', { name: 'Open Drawings' }).click();
     await expect(page).toHaveURL(/\/(modules\/documents|documents)(\?|$)/);
 
     await api(admin, '/launcher/settings', { method: 'PATCH', body: { discoverLocked: false } });
