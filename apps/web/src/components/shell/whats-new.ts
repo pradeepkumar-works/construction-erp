@@ -31,6 +31,16 @@ export const WHATS_NEW: WhatsNew[] = [
     ],
   },
   {
+    id: '2026-11-menu-layouts',
+    date: '2026-11-03',
+    title: 'More ways to lay out the menu',
+    points: [
+      'Admin › Menu and names has three more layouts: the modules across the top bar with their pages down the side, two top bars, and two sidebars.',
+      'Choose where the colours go: the sidebar, the top bar, both, or neither.',
+      'The colours are calmer: the gradients stay in one hue, Oxblood and Walnut replace Plum and Ember, and Lagoon is a new deep-sea teal.',
+    ],
+  },
+  {
     id: '2026-11-site-staff-cost',
     date: '2026-11-03',
     title: 'Site staff salaries in project cost',

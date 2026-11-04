@@ -9,7 +9,7 @@ import { AppTag } from '@/components/common/AppTag';
 import type { MenuProps } from 'antd';
 import { BgColorsOutlined, CheckOutlined, ColumnHeightOutlined, LogoutOutlined, MenuOutlined, QuestionCircleOutlined, SearchOutlined, UserOutlined } from '@/components/common/icons';
 import type { AuthUser, NavLook } from '@erp/shared';
-import { NAV_LOOKS, NAV_LOOK_LABELS, PRODUCT_NAME, canUseAi, isGuest, isSupplier, mayApprove } from '@erp/shared';
+import { NAV_LOOKS, NAV_LOOK_LABELS, PRODUCT_NAME, canUseAi, isGuest, isSupplier, mayApprove, moduleScreenHref, navPainted } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useAppearance, type Density, type ThemeMode } from '@/lib/appearance';
 import { ProjectScopeProvider } from '@/lib/project-scope';
@@ -27,7 +27,8 @@ import { MessageBar } from './MessageBar';
 import { NewMenu } from './NewMenu';
 import { ProjectSwitcher } from './ProjectSwitcher';
 import { CompanySwitcher, useCompanyMenu } from './CompanySwitcher';
-import { navFor, navTrail } from './nav';
+import { moduleSections, navFor, navTrail } from './nav';
+import { ModuleRail } from './ModuleRail';
 import { TreeIcon } from './nav-icons';
 import { PageTrailProvider } from './page-trail';
 import { useShellPins } from './pins';
@@ -75,16 +76,24 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
   const sections = useMemo(() => navFor(user), [user]);
   // Menu and names: the company's menu across the top (Home holds the modules, a module's page its sub-modules) or down the side.
   const { settings: navSettings, menu } = useNavMenu(user);
-  const topBar = navSettings.layout === 'TOP_BAR' && !isGuest(user.roleKey) && !isSupplier(user.roleKey);
-  const menuPlace = useMenuPlace(topBar ? menu : []);
+  // The client's and a supplier's portals keep the plain sidebar.
+  const layout = isGuest(user.roleKey) || isSupplier(user.roleKey) ? 'SIDEBAR' : navSettings.layout;
+  // A phone has no room for the modules across the top: those layouts draw as the top bar there, with the menu drawer.
+  const topBar = layout === 'TOP_BAR' || layout === 'TWO_BARS' || (isMobile && layout === 'TOP_AND_SIDE');
+  const topAndSide = layout === 'TOP_AND_SIDE' && !isMobile;
+  const twoSidebars = layout === 'TWO_SIDEBARS' && !isMobile;
+  const menuPlace = useMenuPlace(layout === 'SIDEBAR' ? [] : menu);
   const look = navSettings.look;
-  const compactTools = topBar && look === 'BAR' && !!menuPlace;
+  const modulesOnBar = !isMobile && (layout === 'TWO_BARS' || layout === 'TOP_AND_SIDE');
+  // Where the menu takes more of the width (the modules across the top, or two sidebars open), the tools are icons only.
+  const compactTools = (layout === 'TOP_BAR' && look === 'BAR' && !!menuPlace) || modulesOnBar || (twoSidebars && !rail);
   const ownLook = useSaveOwnLook();
-  // Sidebar and header: the header is painted in the menu's colours too, an L round the page; Floating stands the rail on the canvas.
+  // Which parts take the menu's colours (the rest are plain); Floating stands the sidebar on the canvas.
+  const painted = navPainted({ ...navSettings, layout });
   const sidebarLook = navSettings.sidebarLook;
-  const colouredHeader = !topBar && sidebarLook === 'HEADER';
+  const colouredHeader = !topBar && !topAndSide && painted.top;
   // On a bar in the menu's colours the search box and Ask's mark take the bar's own colours (TopBar.module.css).
-  const navyBar = (topBar && look === 'NAVY') || colouredHeader;
+  const navyBar = painted.top;
   const trail = useMemo(() => navTrail(sections, pathname), [sections, pathname]);
   const guest = isGuest(user.roleKey);
   const { data: projects } = useProjects(!guest);
@@ -188,7 +197,7 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
 
   // The page's last crumb (a record's kind, a project's code) joins the header's trail, so there is one breadcrumb.
   const [trailTail, setTrailTail] = useState<string | null>(null);
-  const headerTrail = !isMobile && !!trail && !topBar;
+  const headerTrail = !isMobile && !!trail && !topBar && !topAndSide;
   const pageTrail = useMemo(() => ({ shown: headerTrail, setTail: setTrailTail }), [headerTrail]);
 
   const openSearch = guest
@@ -244,7 +253,7 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
       })),
     },
     // Menu and names: a person's own look for the top bar, where the company lets people choose.
-    ...(topBar && navSettings.personalLook
+    ...(layout === 'TOP_BAR' && navSettings.personalLook
       ? [
           {
             key: 'look',
@@ -364,21 +373,56 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
   if (topBar) {
     const pin = pinnable && <PinButton pinned={isPinned} onToggle={togglePin} />;
     return (
-      <StickyTopContext.Provider value={topBarHeight(look, isMobile, !!menuPlace)}>
-        <Layout style={{ minHeight: '100vh' }} className={look === 'FRAME' ? t.frameBody : undefined}>
+      <StickyTopContext.Provider value={topBarHeight(layout, look, isMobile, !!menuPlace)}>
+        <Layout style={{ minHeight: '100vh' }} className={layout === 'TOP_BAR' && look === 'FRAME' ? t.frameBody : undefined}>
           <ShellColours choice={navSettings} />
           <a href="#main-content" className="skip-link">
             Skip to content
           </a>
           {isMobile && (
-            <Drawer open={mobileOpen} onClose={() => setMobileOpen(false)} placement="left" size={288} closable={false} styles={{ body: { padding: 0, background: tk.color.chrome.fill, backgroundAttachment: 'fixed' } }}>
-              <Sidebar user={user} sections={sidebarSections} pendingCount={pendingCount} onNavigate={() => setMobileOpen(false)} />
+            <Drawer open={mobileOpen} onClose={() => setMobileOpen(false)} placement="left" size={288} closable={false} styles={{ body: { padding: 0, background: painted.side ? tk.color.chrome.fill : tk.color.surface.base, backgroundAttachment: 'fixed' } }}>
+              <Sidebar user={user} sections={sidebarSections} pendingCount={pendingCount} onNavigate={() => setMobileOpen(false)} plain={!painted.side} />
             </Drawer>
           )}
           {!guest && <CommandPalette open={searchOpen} onClose={closeSearch} sections={sections} recentPages={recentPages} withProjects user={user} onAsk={askVisible ? openAsk : undefined} initialQuery={searchQuery} />}
           <ProductTour user={user} mobile={isMobile} open={touring} onClose={() => setTouring(false)} />
-          <TopBar user={user} look={look} mobile={isMobile} menu={menu} place={menuPlace} pendingCount={pendingCount} tools={tools} onOpenMenu={() => setMobileOpen(true)} pin={pin || undefined} />
-          {look === 'FRAME' && !isMobile ? <div className={t.sheet}>{body}</div> : body}
+          <TopBar user={user} layout={layout} look={look} painted={painted} mobile={isMobile} menu={menu} place={menuPlace} pendingCount={pendingCount} tools={tools} onOpenMenu={() => setMobileOpen(true)} pin={pin || undefined} />
+          {layout === 'TOP_BAR' && look === 'FRAME' && !isMobile ? <div className={t.sheet}>{body}</div> : body}
+        </Layout>
+      </StickyTopContext.Provider>
+    );
+  }
+
+  // Top bar and sidebar, Two sidebars: the module on screen has its sub-modules and pages in a sidebar; with no module
+  // open (Home, My work) it holds the top links and the pins.
+  const topSections = sections.filter((x) => !x.title);
+  const moduleHead = menuPlace && (
+    <Link href={moduleScreenHref(menuPlace.module.key)} className={s.head} aria-label={rail && topAndSide ? `${menuPlace.module.label} overview` : undefined}>
+      <TreeIcon name={menuPlace.module.icon} className={s.icon} />
+      <span className={s.label}>{menuPlace.module.label}</span>
+    </Link>
+  );
+  const asideClass = (...more: (string | false)[]) => [s.aside, !painted.side && s.plain, ...more].filter(Boolean).join(' ');
+
+  if (topAndSide) {
+    const pin = pinnable && <PinButton pinned={isPinned} onToggle={togglePin} />;
+    const panel = menuPlace ? [...topSections, ...moduleSections(menuPlace.module)] : [...topSections, ...pinSections];
+    return (
+      <StickyTopContext.Provider value={topBarHeight(layout, look, false, false)}>
+        <Layout style={{ minHeight: '100vh' }}>
+          <ShellColours choice={navSettings} />
+          <a href="#main-content" className="skip-link">
+            Skip to content
+          </a>
+          {!guest && <CommandPalette open={searchOpen} onClose={closeSearch} sections={sections} recentPages={recentPages} withProjects user={user} onAsk={askVisible ? openAsk : undefined} initialQuery={searchQuery} />}
+          <ProductTour user={user} mobile={false} open={touring} onClose={() => setTouring(false)} />
+          <TopBar user={user} layout={layout} look={look} painted={painted} mobile={false} menu={menu} place={menuPlace} pendingCount={pendingCount} tools={tools} onOpenMenu={() => setMobileOpen(true)} pin={pin || undefined} />
+          <div style={{ display: 'flex', flex: 1, minWidth: 0 }}>
+            <aside className={asideClass(s.asideUnderBar, rail && s.asideRail, painted.side && painted.top && s.asideHeader)}>
+              <Sidebar user={user} sections={panel} pendingCount={pendingCount} rail={rail} onToggleRail={toggleRail} head={moduleHead || null} />
+            </aside>
+            {body}
+          </div>
         </Layout>
       </StickyTopContext.Provider>
     );
@@ -391,13 +435,20 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
         Skip to content
       </a>
       {!isMobile && (
-        <aside className={[s.aside, rail && s.asideRail, sidebarLook === 'HEADER' && s.asideHeader, sidebarLook === 'FLOATING' && s.asideFloating].filter(Boolean).join(' ')} data-tour="sidebar">
-          <Sidebar user={user} sections={sidebarSections} pendingCount={pendingCount} rail={rail} onToggleRail={toggleRail} />
-        </aside>
+        twoSidebars ? (
+          <aside className={asideClass(s.asideTwo, painted.side && painted.top && s.asideHeader, sidebarLook === 'FLOATING' && s.asideFloating)} data-tour="sidebar">
+            <ModuleRail pathname={pathname} top={topSections.flatMap((x) => x.items)} menu={menu} current={menuPlace?.module.key} pendingCount={pendingCount} panelOpen={!rail} onTogglePanel={toggleRail} />
+            {!rail && <Sidebar user={user} sections={menuPlace ? moduleSections(menuPlace.module) : [...topSections, ...pinSections]} pendingCount={pendingCount} head={moduleHead || null} />}
+          </aside>
+        ) : (
+          <aside className={asideClass(rail && s.asideRail, painted.side && painted.top && s.asideHeader, sidebarLook === 'FLOATING' && s.asideFloating)} data-tour="sidebar">
+            <Sidebar user={user} sections={sidebarSections} pendingCount={pendingCount} rail={rail} onToggleRail={toggleRail} />
+          </aside>
+        )
       )}
       {isMobile && (
-        <Drawer open={mobileOpen} onClose={() => setMobileOpen(false)} placement="left" size={288} closable={false} styles={{ body: { padding: 0, background: tk.color.chrome.fill, backgroundAttachment: 'fixed' } }}>
-          <Sidebar user={user} sections={sidebarSections} pendingCount={pendingCount} onNavigate={() => setMobileOpen(false)} />
+        <Drawer open={mobileOpen} onClose={() => setMobileOpen(false)} placement="left" size={288} closable={false} styles={{ body: { padding: 0, background: painted.side ? tk.color.chrome.fill : tk.color.surface.base, backgroundAttachment: 'fixed' } }}>
+          <Sidebar user={user} sections={sidebarSections} pendingCount={pendingCount} onNavigate={() => setMobileOpen(false)} plain={!painted.side} />
         </Drawer>
       )}
       {!guest && <CommandPalette open={searchOpen} onClose={closeSearch} sections={sections} recentPages={recentPages} withProjects user={user} onAsk={askVisible ? openAsk : undefined} initialQuery={searchQuery} />}

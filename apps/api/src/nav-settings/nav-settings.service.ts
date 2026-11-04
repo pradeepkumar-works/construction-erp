@@ -3,6 +3,7 @@ import {
   NAV_LAYOUT_LABELS,
   NAV_LOOK_LABELS,
   NAV_MODULE_SET_LABELS,
+  NAV_PAINT_LABELS,
   NAV_PALETTE_LABELS,
   NAV_SIDEBAR_LOOK_LABELS,
   canManageModules,
@@ -20,7 +21,7 @@ import { AuditService } from '../common/audit.service';
 import { RequestUser } from '../common/current-user';
 import { SaveNavSettingsDto } from './nav-settings.dto';
 
-const NAV_SELECT = { navLayout: true, navLook: true, navSidebarLook: true, navPalette: true, navFill: true, navModuleSet: true, navNames: true, navPersonalLook: true } as const;
+const NAV_SELECT = { navLayout: true, navLook: true, navSidebarLook: true, navPaint: true, navPalette: true, navFill: true, navModuleSet: true, navNames: true, navPersonalLook: true } as const;
 
 /** What changed, for the audit log ("Top bar, Light frame; 2 module names"). */
 function changeNote(before: NavSettingsDto, after: NavSettingsDto): string {
@@ -28,6 +29,7 @@ function changeNote(before: NavSettingsDto, after: NavSettingsDto): string {
   if (before.layout !== after.layout) parts.push(`menu ${NAV_LAYOUT_LABELS[after.layout].toLowerCase()}`);
   if (before.look !== after.look) parts.push(`look ${NAV_LOOK_LABELS[after.look]}`);
   if (before.sidebarLook !== after.sidebarLook) parts.push(`sidebar ${NAV_SIDEBAR_LOOK_LABELS[after.sidebarLook].toLowerCase()}`);
+  if (before.paint !== after.paint) parts.push(`paint ${NAV_PAINT_LABELS[after.paint].toLowerCase()}`);
   if (before.palette !== after.palette || JSON.stringify(before.fill) !== JSON.stringify(after.fill)) parts.push(`colours ${NAV_PALETTE_LABELS[after.palette]}`);
   if (before.moduleSet !== after.moduleSet) parts.push(`modules ${NAV_MODULE_SET_LABELS[after.moduleSet].toLowerCase()}`);
   if (JSON.stringify(before.names) !== JSON.stringify(after.names)) parts.push(`${Object.keys(after.names).length} module names of the company's own`);
@@ -61,6 +63,7 @@ export class NavSettingsService {
       layout: dto.layout,
       look: dto.look,
       sidebarLook: dto.sidebarLook ?? 'RAIL',
+      paint: dto.paint ?? 'SIDE',
       palette,
       fill: palette === 'CUSTOM' ? readNavFill(dto.fill) : null,
       moduleSet: dto.moduleSet,
@@ -73,6 +76,7 @@ export class NavSettingsService {
         navLayout: after.layout,
         navLook: after.look,
         navSidebarLook: after.sidebarLook,
+        navPaint: after.paint,
         navPalette: after.palette,
         navFill: after.fill ?? Prisma.DbNull,
         navModuleSet: after.moduleSet,

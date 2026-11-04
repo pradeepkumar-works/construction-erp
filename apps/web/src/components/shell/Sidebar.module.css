@@ -13,9 +13,154 @@
   z-index: 11;
 }
 
-/* Sidebar and header: the rail and the header are one coloured frame round the page. */
+/* The sidebar and the header both in colour: one coloured frame round the page. */
 .asideHeader {
   border-inline-end-color: transparent;
+}
+
+/* Plain: a part of the menu the company keeps out of its colours (navPainted) is drawn on the page's own surface, its
+   words in the page's ink. Everything in the menu reads the chrome roles, so this is only those roles again. */
+.plain {
+  --c-chrome-bg: var(--c-surface-base);
+  --c-chrome-fill: var(--c-surface-base);
+  --c-chrome-ink: var(--c-text-strong);
+  --c-chrome-deep: var(--c-line-hairline);
+  --c-chrome-hover: var(--c-surface-sunken);
+  --c-chrome-caption: var(--c-text-muted);
+  --c-chrome-accent: var(--c-line-focus);
+}
+
+/* Top bar and sidebar: the module's menu sits under the top bar, which holds the modules. */
+.asideUnderBar {
+  top: 3.5rem;
+  height: calc(100vh - 3.5rem);
+}
+
+/* Two sidebars: a column of the modules and, beside it, the module's sub-modules and pages. */
+.asideTwo {
+  display: flex;
+  width: auto;
+}
+
+.asideTwo > .sidebar {
+  flex: 0 0 auto;
+  width: 14rem;
+}
+
+.modRail {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  width: 5.5rem;
+  height: 100%;
+  background: var(--c-chrome-fill);
+  background-attachment: fixed;
+}
+
+.asideTwo > .modRail + .sidebar {
+  border-inline-start: 1px solid color-mix(in srgb, var(--c-chrome-ink) 10%, transparent);
+}
+
+.modRail .brand {
+  justify-content: center;
+  padding: var(--s-4) 0 var(--s-3);
+}
+
+.modList {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: var(--s-1) var(--s-2) var(--s-3);
+  list-style: none;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+}
+
+.modItem {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-1);
+  width: 100%;
+  margin: 1px 0;
+  padding: var(--s-2) var(--s-1);
+  border-radius: var(--r-md);
+  color: color-mix(in srgb, var(--c-chrome-ink) 72%, transparent);
+  font-size: var(--t-caption);
+  font-weight: 500;
+  line-height: var(--lh-tight);
+  text-align: center;
+  text-decoration: none;
+  transition: background-color var(--m-fast) var(--m-ease-out), color var(--m-fast) var(--m-ease-out);
+}
+
+.modItem:hover {
+  background: color-mix(in srgb, var(--c-chrome-ink) 6%, transparent);
+  color: var(--c-chrome-ink);
+}
+
+.modItem:focus-visible {
+  outline: 0.125rem solid var(--c-chrome-accent);
+  outline-offset: -0.125rem;
+}
+
+.modItem .count {
+  position: absolute;
+  top: var(--s-1);
+  right: var(--s-1);
+}
+
+.modLabel {
+  display: -webkit-box;
+  max-width: 100%;
+  overflow: hidden;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.modRail .foot .item {
+  justify-content: center;
+  padding: 0;
+}
+
+/* The module's name over its menu, where the brand is in the top bar or the column of modules. */
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: 4rem;
+  padding: var(--s-4) var(--s-4) var(--s-3);
+  color: var(--c-chrome-ink);
+  font-size: var(--t-lead);
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.head:hover {
+  color: var(--c-chrome-ink);
+}
+
+.head:focus-visible {
+  outline: 0.125rem solid var(--c-chrome-accent);
+  outline-offset: -0.125rem;
+}
+
+.head .label {
+  flex: 1;
+}
+
+.rail .head {
+  justify-content: center;
+  padding: var(--s-4) 0 var(--s-3);
+}
+
+.rail .head .label {
+  display: none;
 }
 
 /* Floating: the rail stands on the page's canvas, inset and rounded. */
@@ -341,6 +486,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .modItem,
   .aside,
   .fold,
   .chevron,
