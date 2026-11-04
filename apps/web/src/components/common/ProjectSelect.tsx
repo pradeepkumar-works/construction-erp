@@ -11,8 +11,11 @@ function useProjectOptions(exclude?: string) {
   return { isLoading, options: (data ?? []).filter((p) => p.id !== exclude).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` })) };
 }
 
-/** `exclude` leaves one project out (the one being copied into). */
-export function ProjectSelect({ exclude, ...props }: SelectProps<string> & { exclude?: string }) {
+/** The value `headOffice` adds to the projects: staff posted at no site. */
+export const HEAD_OFFICE = 'head-office';
+
+/** `exclude` leaves one project out (the one being copied into); `headOffice` offers Head office first. */
+export function ProjectSelect({ exclude, headOffice, ...props }: SelectProps<string> & { exclude?: string; headOffice?: boolean }) {
   const { options, isLoading } = useProjectOptions(exclude);
   return (
     <Select<string>
@@ -20,7 +23,7 @@ export function ProjectSelect({ exclude, ...props }: SelectProps<string> & { exc
       allowClear
       placeholder="All projects"
       loading={isLoading}
-      options={options}
+      options={headOffice ? [{ value: HEAD_OFFICE, label: 'Head office' }, ...options] : options}
       style={{ minWidth: 260 }}
       aria-label="Project"
       {...props}

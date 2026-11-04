@@ -51,6 +51,13 @@ test('an activity or an item already linked is not offered again', () => {
   assert.deepEqual(boqLinkSuggestions([activity('a1', 'Earthwork')], [{ ...items[0], linked: 1 }]), []);
 });
 
+test('a lump sum that prices a component is never offered: it earns by the component\'s progress', () => {
+  const pb = item('pb1', 'PB-1', 'Intake well with approach bridge', { unit: 'LS', quantity: '1', workElementId: 'well' });
+  assert.deepEqual(boqLinkSuggestions([activity('a1', 'Approach bridge')], [pb]), []);
+  // The same lump sum outside any component can still be linked by hand-picked words.
+  assert.equal(boqLinkSuggestions([activity('a1', 'Approach bridge')], [{ ...pb, workElementId: null }]).length, 1);
+});
+
 test('nothing unlike the activity is offered', () => {
   assert.deepEqual(boqLinkSuggestions([activity('a1', 'Painting')], [item('i1', '1.01', 'Earthwork in embankment', { section: 'Earthwork' })]), []);
 });

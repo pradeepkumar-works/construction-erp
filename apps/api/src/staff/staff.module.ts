@@ -6,5 +6,8 @@ import { StaffService } from './staff.service';
 import { PayrollController } from './payroll.controller';
 import { PayrollService } from './payroll.service';
 
-@Module({ controllers: [StaffController, PayrollController], providers: [StaffService, PayrollService, HrService, EmployeeDocumentsService], exports: [StaffService, HrService, PayrollService, EmployeeDocumentsService] })
+import { ExitClearanceService } from './exit-clearance.service';
+import { LetterTemplatesService } from './letter-templates.service';
+
+@Module({ controllers: [StaffController, PayrollController], providers: [StaffService, PayrollService, HrService, EmployeeDocumentsService, ExitClearanceService, LetterTemplatesService], exports: [StaffService, HrService, PayrollService, EmployeeDocumentsService, ExitClearanceService, LetterTemplatesService] })
 export class StaffModule {}

@@ -194,6 +194,78 @@ export function effectiveWeights(elements: RollupElement[], activities: RollupAc
   return out;
 }
 
+/** A lump-sum unit: the item is paid as one sum for its component, not by a quantity of its own. */
+export const isLumpSumUnit = (unit: string): boolean => /^(ls|l\.s\.?|lump ?sum|job|lot)$/i.test(unit.trim());
+
+/** A BOQ item as the lump-sum shares read it. */
+export interface LumpSumItem {
+  id: string;
+  workElementId: string | null;
+  unit: string;
+  /** Revised where there is one, else original (1 for a plain lump sum) */
+  quantity: number;
+  /** Activities linked to it directly */
+  linked: number;
+}
+
+/** How an activity's work counts against a BOQ item: `perUnit` of the item's quantity for each unit of the activity's. */
+export interface ActivityBoqShare {
+  boqItemId: string;
+  perUnit: number;
+}
+
+/**
+ * Lump-sum items earn by their component's progress (ARCHITECTURE "Work breakdown"). A lump-sum contract prices each
+ * component as one sum, tied to the component, with no activity of its own; the work is done in the activities under it,
+ * in Cum and Rmt. Each such leaf activity takes its share of the item, the effective weights down from the component as
+ * the roll-up weighs them, spread over its planned quantity. So the item's executed quantity is the component's progress,
+ * and every screen that reads executed value (cost, budget, earned value, the dashboard) reads it the same way. A leaf
+ * linked to an item of its own, or with no planned quantity, takes none; where two lump-sum items share a component, the
+ * first one listed takes its leaves.
+ */
+export function lumpSumShares(
+  elements: RollupElement[],
+  activities: (RollupActivity & { boqItemId: string | null })[],
+  items: LumpSumItem[],
+): Map<string, ActivityBoqShare> {
+  const out = new Map<string, ActivityBoqShare>();
+  const lumps = items.filter((i) => !i.linked && i.workElementId && isLumpSumUnit(i.unit) && i.quantity > 0);
+  if (!lumps.length) return out;
+  const { value, summaries } = rollUp(elements, activities);
+  const weight = effectiveWeights(elements, activities, value);
+  const w = (id: string) => (weight.get(id) ?? 0) / 100;
+  const elementIds = new Set(elements.map((e) => e.id));
+  const activityIds = new Set(activities.map((a) => a.id));
+  const subElements = new Map<string, RollupElement[]>();
+  for (const e of elements) if (e.parentId && e.parentId !== e.id && elementIds.has(e.parentId)) subElements.set(e.parentId, [...(subElements.get(e.parentId) ?? []), e]);
+  const under = new Map<string, typeof activities>();
+  for (const a of activities) {
+    const key = a.parentActivityId && a.parentActivityId !== a.id && activityIds.has(a.parentActivityId) ? `a:${a.parentActivityId}` : a.workElementId ? `e:${a.workElementId}` : null;
+    if (key) under.set(key, [...(under.get(key) ?? []), a]);
+  }
+  for (const item of lumps) {
+    const seen = new Set<string>();
+    const visitActivity = (a: (typeof activities)[number], share: number) => {
+      if (seen.has(a.id)) return;
+      seen.add(a.id);
+      if (summaries.has(a.id)) {
+        for (const c of under.get(`a:${a.id}`) ?? []) visitActivity(c, share * w(c.id));
+        return;
+      }
+      if (a.boqItemId || !(a.plannedQty > 0) || out.has(a.id) || share <= 0) return;
+      out.set(a.id, { boqItemId: item.id, perUnit: (item.quantity * share) / a.plannedQty });
+    };
+    const visitElement = (id: string, share: number) => {
+      if (seen.has(`e:${id}`)) return;
+      seen.add(`e:${id}`);
+      for (const e of subElements.get(id) ?? []) visitElement(e.id, share * w(e.id));
+      for (const a of under.get(`e:${id}`) ?? []) visitActivity(a, share * w(a.id));
+    };
+    visitElement(item.workElementId!, 1);
+  }
+  return out;
+}
+
 /** Outline numbers in order: 2 before 10, 3.2 before 3.10. */
 export const compareCodes = (a: string, b: string): number => {
   const pa = a.split('.');

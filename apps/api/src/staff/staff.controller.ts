@@ -1,9 +1,13 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseEnumPipe, Patch, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { StaffService } from './staff.service';
 import { HrService } from './hr.service';
 import { EmployeeDocumentsService } from './employee-documents.service';
+import { ExitClearanceService } from './exit-clearance.service';
+import { LetterTemplatesService } from './letter-templates.service';
+import { HR_LETTER_KINDS, type HrLetterKind } from '@erp/shared';
+import { todayIn } from '../notifications/time';
 import {
   ApplyLeaveDto,
   AttendanceQuery,
@@ -23,6 +27,9 @@ import {
   ListLeaveQuery,
   RegisterQuery,
   RejectLeaveDto,
+  SaveLeaveOpeningDto,
+  ClearExitDto,
+  SaveLetterTemplateDto,
   SaveRegisterDto,
   UpdateEmployeeDto,
   UsersQuery,
@@ -32,7 +39,13 @@ import {
 @ApiBearerAuth()
 @Controller('staff')
 export class StaffController {
-  constructor(private staff: StaffService, private hr: HrService, private docs: EmployeeDocumentsService) {}
+  constructor(
+    private staff: StaffService,
+    private hr: HrService,
+    private docs: EmployeeDocumentsService,
+    private clearance: ExitClearanceService,
+    private letters: LetterTemplatesService,
+  ) {}
 
   @ApiOperation({ summary: 'Counts for the Staff page: leave waiting on the caller, employees, on leave today' })
   @Get('summary')
@@ -160,12 +173,48 @@ export class StaffController {
     return this.hr.setDocuments(user, id, dto);
   }
 
+  @ApiOperation({ summary: "The employee's leave before Nirmaan for a year: days taken and earned leave brought forward" })
+  @Get('employees/:id/leave-opening')
+  leaveOpening(@CurrentUser() user: RequestUser, @Param('id') id: string, @Query() q: BalanceQuery) {
+    return this.staff.leaveOpening(user, id, q.year ?? Number(todayIn().slice(0, 4)));
+  }
+
+  @ApiOperation({ summary: "Set the employee's leave before Nirmaan for a year (HR); the balances count it at once" })
+  @Put('employees/:id/leave-opening')
+  saveLeaveOpening(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: SaveLeaveOpeningDto) {
+    return this.staff.saveLeaveOpening(user, id, dto);
+  }
+
+  @ApiOperation({ summary: "HR letter templates: the words each letter prints, the company's own or the standard" })
+  @Get('letter-templates')
+  letterTemplates(@CurrentUser() user: RequestUser) {
+    return this.letters.list(user);
+  }
+
+  @ApiOperation({ summary: "Save the company's words for one HR letter; empty puts the standard words back" })
+  @Put('letter-templates/:kind')
+  saveLetterTemplate(@CurrentUser() user: RequestUser, @Param('kind', new ParseEnumPipe(Object.fromEntries(HR_LETTER_KINDS.map((k) => [k, k])))) kind: HrLetterKind, @Body() dto: SaveLetterTemplateDto) {
+    return this.letters.save(user, kind, dto.body ?? null);
+  }
+
+  @ApiOperation({ summary: "Exit clearance (no dues): each item of the company's list, signed off or still to clear, and the dues the settlement recovers" })
+  @Get('employees/:id/clearance')
+  exitClearance(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    return this.clearance.get(user, id);
+  }
+
+  @ApiOperation({ summary: 'Sign an exit clearance item off as cleared, not applicable or dues to recover, or take it back (HR, accounts, stores, the site manager)' })
+  @Put('employees/:id/clearance/:code')
+  clearExit(@CurrentUser() user: RequestUser, @Param('id') id: string, @Param('code') code: string, @Body() dto: ClearExitDto) {
+    return this.clearance.clear(user, id, code, dto);
+  }
+
   /* attendance */
 
   @ApiOperation({ summary: "A site's staff register for a day, with leave and holidays" })
   @Get('register')
   register(@CurrentUser() user: RequestUser, @Query() q: RegisterQuery) {
-    return this.staff.register(user, q.projectId, q.date);
+    return this.staff.register(user, q.projectId ?? null, q.date);
   }
 
   @ApiOperation({ summary: 'Mark the register: each entry sets or clears one employee’s day' })

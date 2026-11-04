@@ -342,6 +342,11 @@ import type {
   EmployeeDto,
   HolidayDto,
   LeaveBalanceDto,
+  LeaveOpeningDto,
+  ExitClearanceDto,
+  ClearanceState,
+  HrLetterTemplateDto,
+  HrLetterKind,
   LeaveRequestDto,
   LeaveStatus,
   LeaveType,
@@ -2322,11 +2327,12 @@ export const useStaffAttendance = (employeeId: string | undefined, from: string,
     enabled: !!employeeId,
   });
 
-export const useStaffRegister = (projectId: string | undefined, date: string) =>
+/** A site's staff register for a day; `null` is the head office register (staff posted at no site). */
+export const useStaffRegister = (projectId: string | null | undefined, date: string) =>
   useQuery({
     queryKey: ['staff', 'register', projectId, date],
-    queryFn: async () => (await api.get<StaffRegisterDto>('/staff/register', { params: { projectId, date } })).data,
-    enabled: !!projectId,
+    queryFn: async () => (await api.get<StaffRegisterDto>('/staff/register', { params: { projectId: projectId ?? undefined, date } })).data,
+    enabled: projectId !== undefined,
   });
 
 export interface LeaveFilters extends PageParams {
@@ -2451,6 +2457,55 @@ export const useLeaveBalances = (employeeId: string | undefined, year?: number, 
     queryFn: async () => (await api.get<LeaveBalanceDto[]>('/staff/leave/balances', { params: clean({ employeeId, year }) })).data,
     enabled,
   });
+
+/** An employee's leave before Nirmaan for a year. */
+export const useLeaveOpening = (employeeId: string, year: number, enabled = true) =>
+  useQuery({
+    queryKey: ['staff', 'leave-opening', employeeId, year],
+    queryFn: async () => (await api.get<LeaveOpeningDto>(`/staff/employees/${employeeId}/leave-opening`, { params: { year } })).data,
+    enabled,
+  });
+
+export function useSaveLeaveOpening(employeeId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: { year: number; lines: LeaveOpeningDto['lines'] }) => (await api.put<LeaveOpeningDto>(`/staff/employees/${employeeId}/leave-opening`, body)).data,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['staff', 'leave-opening', employeeId] });
+      qc.invalidateQueries({ queryKey: ['staff', 'balances'] });
+    },
+  });
+}
+
+export const useExitClearance = (employeeId: string, enabled = true) =>
+  useQuery({
+    queryKey: ['staff', 'clearance', employeeId],
+    queryFn: async () => (await api.get<ExitClearanceDto>(`/staff/employees/${employeeId}/clearance`)).data,
+    enabled,
+  });
+
+export function useClearExit(employeeId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ code, ...body }: { code: string; state: ClearanceState; amount?: number | null; note?: string | null }) =>
+      (await api.put<ExitClearanceDto>(`/staff/employees/${employeeId}/clearance/${encodeURIComponent(code)}`, body)).data,
+    onSuccess: (d) => {
+      qc.setQueryData(['staff', 'clearance', employeeId], d);
+      qc.invalidateQueries({ queryKey: ['payroll', 'settlements'] });
+    },
+  });
+}
+
+export const useHrLetterTemplates = () =>
+  useQuery({ queryKey: ['staff', 'letter-templates'], queryFn: async () => (await api.get<HrLetterTemplateDto[]>('/staff/letter-templates')).data });
+
+export function useSaveHrLetterTemplate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ kind, body }: { kind: HrLetterKind; body: string | null }) => (await api.put<HrLetterTemplateDto[]>(`/staff/letter-templates/${kind}`, { body })).data,
+    onSuccess: (d) => qc.setQueryData(['staff', 'letter-templates'], d),
+  });
+}
 
 export const useHolidays = (year?: number, projectId?: string) =>
   useQuery({

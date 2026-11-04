@@ -2,11 +2,12 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Card, Col, Flex, Progress, Row, Typography } from 'antd';
+import { Card, Col, Flex, Progress, Row, Skeleton, Table, Typography } from 'antd';
 import { tk } from '@/ds';
-import type { HeadcountRowDto, HrPersonRowDto } from '@erp/shared';
+import type { HeadcountRowDto, HrPersonRowDto, HrSiteRowDto } from '@erp/shared';
 import { useHrDashboard } from '@/lib/queries';
-import { formatDate } from '@/lib/format';
+import { formatDate, formatINR, formatMonth, NO_VALUE } from '@/lib/format';
+import { QueryError } from '@/components/common/QueryState';
 
 const employeeHref = (id: string) => `/staff?tab=staff&employee=${id}`;
 
@@ -29,6 +30,61 @@ function Split({ title, rows, total }: { title: string; rows: HeadcountRowDto[];
           ))}
         </Flex>
       )}
+    </Card>
+  );
+}
+
+/** Each site today: who is on the rolls there and where they are, the last salary month's cost and papers outstanding. */
+function Sites({ rows, costMonth }: { rows: HrSiteRowDto[]; costMonth: string | null }) {
+  const n = (v: number) => (v ? <span translate="no">{v}</span> : NO_VALUE);
+  const sum = (k: 'onRoll' | 'present' | 'onLeave' | 'absent' | 'notMarked' | 'papersPending') => rows.reduce((t, r) => t + r[k], 0);
+  const cost = rows.reduce((t, r) => t + Number(r.cost ?? 0), 0);
+  return (
+    <Card size="small" title="Sites today">
+      <Table<HrSiteRowDto>
+        rowKey={(r) => r.projectId ?? 'head-office'}
+        size="small"
+        pagination={false}
+        dataSource={rows}
+        scroll={{ x: 760 }}
+        locale={{ emptyText: 'No staff on the rolls' }}
+        columns={[
+          { title: 'Posted at', dataIndex: 'label', render: (v: string) => <span translate="no">{v}</span> },
+          { title: 'On the rolls', dataIndex: 'onRoll', align: 'right', width: 100, render: n },
+          { title: 'Present', dataIndex: 'present', align: 'right', width: 90, render: n },
+          { title: 'On leave', dataIndex: 'onLeave', align: 'right', width: 90, render: n },
+          { title: 'Absent', dataIndex: 'absent', align: 'right', width: 80, render: n },
+          {
+            title: 'Not marked',
+            dataIndex: 'notMarked',
+            align: 'right',
+            width: 100,
+            render: (v: number) => (v ? <span style={{ color: tk.color.tone.pending.fg }} translate="no">{v}</span> : NO_VALUE),
+          },
+          {
+            title: costMonth ? `Staff cost, ${formatMonth(costMonth)}` : 'Staff cost',
+            dataIndex: 'cost',
+            align: 'right',
+            width: 160,
+            render: (v: string | null) => (v ? <span translate="no">{formatINR(v)}</span> : NO_VALUE),
+          },
+          { title: 'Papers to verify', dataIndex: 'papersPending', align: 'right', width: 120, render: n },
+        ]}
+        summary={() =>
+          rows.length > 1 ? (
+            <Table.Summary.Row>
+              <Table.Summary.Cell index={0}>Total</Table.Summary.Cell>
+              <Table.Summary.Cell index={1} align="right">{sum('onRoll')}</Table.Summary.Cell>
+              <Table.Summary.Cell index={2} align="right">{sum('present')}</Table.Summary.Cell>
+              <Table.Summary.Cell index={3} align="right">{sum('onLeave')}</Table.Summary.Cell>
+              <Table.Summary.Cell index={4} align="right">{sum('absent')}</Table.Summary.Cell>
+              <Table.Summary.Cell index={5} align="right">{sum('notMarked')}</Table.Summary.Cell>
+              <Table.Summary.Cell index={6} align="right">{cost ? formatINR(cost) : NO_VALUE}</Table.Summary.Cell>
+              <Table.Summary.Cell index={7} align="right">{sum('papersPending')}</Table.Summary.Cell>
+            </Table.Summary.Row>
+          ) : null
+        }
+      />
     </Card>
   );
 }
@@ -74,12 +130,13 @@ function People({ title, rows, empty, note }: { title: string; rows: HrPersonRow
 }
 
 /**
- * The HR dashboard on the People home: head count by site, department and kind of employment; who joined and
+ * The HR dashboard on the People and HR and payroll screens: each site today, head count by department and kind of employment; who joined and
  * left this month; probation ending; birthdays and work anniversaries; and whose details payroll still needs.
  */
 export function HrDashboard() {
-  const { data } = useHrDashboard();
-  if (!data) return null;
+  const { data, isLoading, error, refetch } = useHrDashboard();
+  if (isLoading) return <Skeleton active paragraph={{ rows: 6 }} />;
+  if (error || !data) return <QueryError error={error} onRetry={() => refetch()} />;
   const short = (d: string) => formatDate(d).slice(0, 6);
   const row: React.CSSProperties = { minHeight: 44, padding: `${tk.space[1]} 0`, borderTop: tk.line('hairline') };
   return (
@@ -88,13 +145,13 @@ export function HrDashboard() {
         Staff: {data.active} on the rolls
       </Typography.Title>
       <Row gutter={[16, 16]}>
-        <Col xs={24} md={12} xl={8}>
-          <Split title="By site" rows={data.bySite} total={data.active} />
+        <Col xs={24}>
+          <Sites rows={data.sites} costMonth={data.costMonth} />
         </Col>
-        <Col xs={24} md={12} xl={8}>
+        <Col xs={24} md={12}>
           <Split title="By department" rows={data.byDepartment} total={data.active} />
         </Col>
-        <Col xs={24} md={12} xl={8}>
+        <Col xs={24} md={12}>
           <Split title="By employment" rows={data.byType} total={data.active} />
         </Col>
         <Col xs={24} md={12} xl={8}>

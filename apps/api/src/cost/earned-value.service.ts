@@ -1,6 +1,7 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import type { EarnedValueActivityDto, EarnedValueDto, EvBacSource, EvBasis } from '@erp/shared';
 import { canViewCost } from '@erp/shared';
+import { activityBoqOf } from '../common/boq-links';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -37,12 +38,12 @@ export class EarnedValueService {
     });
     if (!project) throw new NotFoundException('Project not found');
     const today = todayIn();
-    const [forecast, acc, items, activities, progress, measured] = await Promise.all([
+    const [forecast, acc, items, allActivities, progress, measured, boqOf] = await Promise.all([
       this.budget.forecasts(user.organizationId, [project]).then((m) => m.get(projectId)!),
       this.cost.compute(user.organizationId, [projectId], undefined).then((m) => m.get(projectId)!),
       this.prisma.boqItem.findMany({ where: { projectId }, select: { id: true, rate: true, originalQty: true, revisedQty: true } }),
       this.prisma.activity.findMany({
-        where: { projectId, boqItemId: { not: null } },
+        where: { projectId },
         orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
         select: { id: true, name: true, boqItemId: true, plannedQty: true, plannedStart: true, plannedEnd: true, baselineStart: true, baselineEnd: true },
       }),
@@ -50,7 +51,13 @@ export class EarnedValueService {
       basis === 'MEASURED'
         ? this.prisma.measurementSheet.findMany({ where: { projectId, status: 'APPROVED' }, select: { date: true, totalQty: true, boqItem: { select: { rate: true } } } })
         : Promise.resolve([]),
+      activityBoqOf(this.prisma, [projectId]),
     ]);
+    // Each activity's BOQ item: its own link, or its share of the lump sum its component is priced by.
+    const activities = allActivities.flatMap((a) => {
+      const boq = boqOf.get(a.id);
+      return boq ? [{ ...a, boqItemId: boq.boqItemId, perUnit: boq.perUnit.toNumber() }] : [];
+    });
 
     const usesBaseline = !!project.baselineAt;
     const datesOf = (a: (typeof activities)[number]) => {
@@ -69,7 +76,7 @@ export class EarnedValueService {
     for (const b of items) {
       const value = (b.revisedQty ?? b.originalQty).toNumber() * b.rate.toNumber();
       if (value <= 0) continue;
-      const dated = activities.filter((a) => a.boqItemId === b.id).flatMap((a) => (datesOf(a) ? [{ ...datesOf(a)!, qty: Math.max(0, a.plannedQty.toNumber()) }] : []));
+      const dated = activities.filter((a) => a.boqItemId === b.id).flatMap((a) => (datesOf(a) ? [{ ...datesOf(a)!, qty: Math.max(0, a.plannedQty.toNumber() * a.perUnit) }] : []));
       if (!dated.length) {
         unscheduled += value;
         if (projectStart && projectEnd) slices.push({ value, start: projectStart, end: projectEnd });
@@ -88,7 +95,7 @@ export class EarnedValueService {
     const plannedFinish = ends[ends.length - 1] ?? projectEnd;
 
     // Earned value at BOQ rates, by day.
-    const activityRate = new Map(activities.map((a) => [a.id, rateOf.get(a.boqItemId!) ?? 0]));
+    const activityRate = new Map(activities.map((a) => [a.id, (rateOf.get(a.boqItemId) ?? 0) * a.perUnit]));
     const earnedLog: { date: string; value: number }[] =
       basis === 'MEASURED'
         ? measured.map((m) => ({ date: dateOnly(m.date), value: m.totalQty.toNumber() * m.boqItem.rate.toNumber() }))

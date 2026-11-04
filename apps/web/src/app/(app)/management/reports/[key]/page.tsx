@@ -5,7 +5,7 @@ import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigat
 import { App, Button, Flex, Result, Spin, Typography } from 'antd';
 import { tk } from '@/ds';
 import dayjs, { type Dayjs } from 'dayjs';
-import { MANAGEMENT_REPORTS, MANAGEMENT_REPORT_KEYS, canReadReport, reportingMonth, type ManagementReportDto, type ManagementReportKey } from '@erp/shared';
+import { MANAGEMENT_REPORTS, MANAGEMENT_REPORT_KEYS, canReadReport, isHrReport, reportingMonth, type ManagementReportDto, type ManagementReportKey } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useManagementReport, useProjects } from '@/lib/queries';
 import { useProjectScope, useVerticalScope } from '@/lib/project-scope';
@@ -18,7 +18,7 @@ import { FileExcelOutlined, PrinterOutlined } from '@/components/common/icons';
 import { Figures } from '@/components/figures';
 import { ReportSection } from '@/components/management/ReportSection';
 import { NoAccess } from '@/components/common/NoAccess';
-import { exportManagementReport, openManagementReportPrint } from '@/components/management/reportOutput';
+import { exportManagementReport, openManagementReportPrint, scopeWords } from '@/components/management/reportOutput';
 import { MONTH_PICKER_FORMAT, todayDate } from '@/lib/format';
 
 const isKey = (k: string | undefined): k is ManagementReportKey => !!k && (MANAGEMENT_REPORT_KEYS as readonly string[]).includes(k);
@@ -43,7 +43,7 @@ export default function Page() {
     return (
       <div className="page-container">
         <PageHeader title={MANAGEMENT_REPORTS[key].title} crumbs={crumbs} />
-        <NoAccess title="Management reports are for management, accounts and project managers" />
+        <NoAccess title={isHrReport(key) ? 'HR and payroll reports are for HR, accounts and management' : 'Management reports are for management, accounts and project managers'} />
       </div>
     );
   if (!user) return <PageSkeleton shape="list" />;
@@ -78,13 +78,14 @@ function Report({ reportKey }: { reportKey: ManagementReportKey }) {
     q.delete('projectId');
     router.replace(q.size ? `${pathname}?${q}` : pathname, { scroll: false });
   };
-  // A store or a plant has no contract, so only the stock position takes one.
+  // A store or a plant has no contract, so only the stock position and the HR reports (staff posted there) take one.
+  const hr = isHrReport(reportKey);
   const options = useMemo(
     () =>
       (projects ?? [])
-        .filter((p) => reportKey === 'stock' || (p.type !== 'STORE' && p.type !== 'PLANT'))
+        .filter((p) => reportKey === 'stock' || hr || (p.type !== 'STORE' && p.type !== 'PLANT'))
         .map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` })),
-    [projects, reportKey],
+    [projects, reportKey, hr],
   );
 
   const print = () => {
@@ -150,7 +151,7 @@ function Report({ reportKey }: { reportKey: ManagementReportKey }) {
       />
       <Flex wrap align="center" gap={tk.space[3]} style={{ marginBottom: tk.space[4] }}>
         {period}
-        <ProjectSelect value={projectId} onChange={(v) => setProjectId(v)} options={options} placeholder="Every contract project" aria-label="Project" />
+        <ProjectSelect value={projectId} onChange={(v) => setProjectId(v)} options={options} placeholder={hr ? 'Every site and head office' : 'Every contract project'} aria-label={hr ? 'Posted at' : 'Project'} />
         {isFetching && data ? <Spin size="small" description="Updating…" /> : null}
       </Flex>
       {isLoading && !data ? (
@@ -168,7 +169,7 @@ function ReportBody({ data, projectId }: { data: ManagementReportDto; projectId:
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: tk.space[4] }}>
       <Typography.Text type="secondary">
-        <span translate="no">{data.period}</span>, {data.projectName ? <span translate="no">{data.projectName}</span> : data.verticalName ? <span translate="no">{`every project in ${data.verticalName}`}</span> : 'every contract project'}
+        <span translate="no">{data.period}</span>, {data.projectName ? <span translate="no">{data.projectName}</span> : <span translate={data.verticalName ? 'no' : undefined}>{scopeWords(data).replace(/^E/, 'e')}</span>}
       </Typography.Text>
       {data.commentary ? <p style={{ margin: 0, ...tk.type.lead, maxWidth: 960 }}>{data.commentary}</p> : null}
       <Figures label={`${data.title} figures`} figures={data.figures} scope={projectId ? { projectId } : undefined} />

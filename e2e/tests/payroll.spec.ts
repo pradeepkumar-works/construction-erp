@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { api, apiToken, localToday, signIn } from './helpers';
+import { api, apiToken, formPanel, localToday, signIn } from './helpers';
 
 type Payroll = { month: string; rows: { employeeCode: string; fullName: string; paidDays: number; calendarDays: number; lopDays: number }[] };
 
@@ -75,6 +75,13 @@ test('HR prepares the salary run, management approves it and staff see their pay
   await expect(api(hr, `/payroll/runs/${run.id}/approve`, { method: 'POST', body: {} })).rejects.toThrow(/403/);
   const approved = await api<Run>(md, `/payroll/runs/${run.id}/approve`, { method: 'POST', body: {} });
   expect(approved.status).toBe('APPROVED');
+  // Each step tells whoever acts next: management to approve, then accounts to pay and HR that it went through.
+  type Notice = { title: string; entityType: string | null; entityId: string | null };
+  const told = async (token: string, title: RegExp) =>
+    (await api<{ items: Notice[] }>(token, '/notifications?limit=30&typesVersion=8')).items.some((n) => n.entityType === 'PAYROLL_RUN' && n.entityId === run.id && title.test(n.title));
+  expect(await told(md, new RegExp(`^Salary run SAL-${month} for .+ waits for your approval$`))).toBe(true);
+  expect(await told(await apiToken('accounts@demo.com'), new RegExp(`^Salary run SAL-${month} for .+ approved: pay ₹`))).toBe(true);
+  expect(await told(hr, /approved: pay/)).toBe(true);
 
   const bank = await api<File>(hr, `/payroll/runs/${run.id}/bank-file`);
   expect(bank.fileName).toBe(`SAL-${month}-bank.csv`);
@@ -106,7 +113,7 @@ test('HR prepares the salary run, management approves it and staff see their pay
   await api(hr, `/payroll/runs/${run.id}`, { method: 'DELETE' });
 });
 
-type Settlement = { id: string; settlementNo: string; employeeCode: string; status: string; noticeShortDays: number; loanRecovery: string; net: string };
+type Settlement = { id: string; settlementNo: string; employeeCode: string; status: string; noticeShortDays: number; loanRecovery: string; clearanceRecovery: string; clearanceProblem: string | null; net: string; can: { approve: boolean } };
 
 /**
  * Full and final: once someone's resignation is recorded they are due a settlement; HR works it out on the page
@@ -146,4 +153,132 @@ test('HR works out a full and final settlement for someone who resigned', async 
   await page.goto('/payroll?tab=settings');
   await expect(page.getByText('Odisha')).toBeVisible();
   await expect(page.getByText(/HDFC Bank 50200012345678/)).toBeVisible();
+});
+
+test('The full and final waits for the exit clearance and recovers the dues found there', async ({ page }) => {
+  const hr = await apiToken('hr@demo.com');
+  const md = await apiToken('md@demo.com');
+  const se = await apiToken('engineer@demo.com');
+  type Employee = { id: string; employeeCode: string; fullName: string };
+  type Clearance = { lines: { code: string; name: string; state: string }[]; dues: string; problem: string | null; canClear: boolean };
+  const ramesh = (await api<{ items: Employee[] }>(hr, '/staff/employees?pageSize=100')).items.find((e) => e.employeeCode === 'EMP-008')!;
+  const exit = await api<{ id: string }>(hr, `/staff/employees/${ramesh.id}/events`, { method: 'POST', body: { type: 'RESIGNED', effectiveDate: localToday(), note: 'Joining another firm' } });
+  let draft: Settlement | null = null;
+  let codes: string[] = [];
+  try {
+    const before = await api<Clearance>(hr, `/staff/employees/${ramesh.id}/clearance`);
+    codes = before.lines.map((l) => l.code);
+    expect(before.lines.length).toBeGreaterThanOrEqual(6);
+    expect(before.problem).toMatch(/^Clear the exit first/);
+    await expect(api(se, `/staff/employees/${ramesh.id}/clearance/${before.lines[0].code}`, { method: 'PUT', body: { state: 'CLEARED' } })).rejects.toThrow(/403/);
+
+    // The settlement is worked out, but management cannot approve it while items are open.
+    const d = await api<Settlement>(hr, '/payroll/settlements', { method: 'POST', body: { employeeId: ramesh.id } });
+    draft = d;
+    expect((await api<Settlement[]>(md, '/payroll/settlements')).find((x) => x.id === d.id)!.can.approve).toBe(false);
+    await expect(api(md, `/payroll/settlements/${d.id}/approve`, { method: 'POST' })).rejects.toThrow(/400/);
+
+    // HR records dues for the tools from the person's Service and letters tab.
+    const tools = before.lines.find((l) => /Tools/.test(l.name))!;
+    await signIn(page, 'hr@demo.com');
+    const drawer = page.locator('.ant-drawer').filter({ hasText: ramesh.fullName });
+    const openService = async () => {
+      await page.goto('/staff?tab=service');
+      await page.getByRole('row', { name: new RegExp(`${ramesh.fullName}.*Resigned`) }).first().click();
+      await drawer.getByRole('tab', { name: 'Service and letters' }).click();
+    };
+    await openService();
+    await expect(drawer.getByText(`0 of ${before.lines.length} signed off`)).toBeVisible();
+    await drawer.getByRole('button', { name: `Sign off ${tools.name}` }).click();
+    const form = formPanel(page, tools.name);
+    await form.getByRole('radio', { name: 'Dues to recover' }).check();
+    await form.getByLabel('Amount to recover').fill('2500');
+    await form.getByRole('button', { name: 'Save' }).click();
+    await expect(form.locator('.ant-form-item-explain-error').filter({ hasText: 'Say what the dues are for' })).toBeVisible();
+    await form.getByLabel('What the dues are for').fill('Two safety helmets and a drill not returned');
+    await form.getByRole('button', { name: 'Save' }).click();
+    await expect(page.getByText(`${tools.name}: dues to recover`)).toBeVisible();
+    await expect(drawer.getByText(/1 of \d+ signed off; dues of ₹\s?2,500/)).toBeVisible();
+
+    // The rest are cleared; the settlement worked out again takes the dues off and can be approved.
+    for (const l of before.lines.filter((x) => x.code !== tools.code)) await api(hr, `/staff/employees/${ramesh.id}/clearance/${l.code}`, { method: 'PUT', body: { state: 'CLEARED' } });
+    await openService();
+    await expect(drawer.getByText(/^\d+ of \d+ signed off; .*Nothing is left to clear\./)).toBeVisible();
+    await expect(drawer.getByRole('button', { name: 'No dues certificate' })).toBeVisible();
+    const again = await api<Settlement>(hr, '/payroll/settlements', { method: 'POST', body: { employeeId: ramesh.id } });
+    expect(Number(again.clearanceRecovery)).toBe(2500);
+    expect(Number(again.net)).toBeCloseTo(Number(d.net) - 2500, 2);
+    const forMd = (await api<Settlement[]>(md, '/payroll/settlements')).find((x) => x.id === d.id)!;
+    expect(forMd.clearanceProblem).toBeNull();
+    expect(forMd.can.approve).toBe(true);
+  } finally {
+    // Put things back: the draft goes, the items return to clear and the exit is taken back.
+    if (draft) await api(hr, `/payroll/settlements/${draft.id}`, { method: 'DELETE' });
+    for (const code of codes) await api(hr, `/staff/employees/${ramesh.id}/clearance/${code}`, { method: 'PUT', body: { state: 'PENDING' } });
+    await api(hr, `/staff/events/${exit.id}`, { method: 'DELETE' });
+  }
+});
+
+test("HR sets the company's leave days and an employee's opening leave, and the balances follow", async ({ page }) => {
+  const hr = await apiToken('hr@demo.com');
+  type Employee = { id: string; employeeCode: string };
+  type Balance = { type: string; entitled: number | null };
+  const emp = (await api<{ items: Employee[] }>(hr, '/staff/employees?pageSize=100')).items.find((e) => e.employeeCode === 'EMP-008')!;
+  const casual = async () => (await api<Balance[]>(hr, `/staff/leave/balances?employeeId=${emp.id}`)).find((b) => b.type === 'CASUAL')!.entitled;
+  expect(await casual()).toBe(12);
+  try {
+    await signIn(page, 'hr@demo.com');
+    await page.goto('/payroll?tab=settings');
+    await expect(page.getByText('12 casual, 12 sick, 15 earned')).toBeVisible();
+    await page.getByRole('button', { name: /Change settings/ }).click();
+    const drawer = page.getByRole('dialog', { name: /Payroll settings/ });
+    await drawer.getByLabel('Casual leave a year').fill('10');
+    await drawer.getByLabel('Earned leave carried into next year').fill('30');
+    await drawer.getByRole('button', { name: /Save settings/ }).click();
+    await expect(page.getByText('10 casual, 12 sick, 15 earned')).toBeVisible();
+    await expect(page.getByText('Up to 30 days')).toBeVisible();
+    expect(await casual()).toBe(10);
+
+    // Leave taken before Nirmaan counts as taken; earned leave brought forward adds to the year.
+    const year = Number(new Date().toISOString().slice(0, 4));
+    const left = async (type: string) => (await api<(Balance & { left: number | null; takenBefore: number })[]>(hr, `/staff/leave/balances?employeeId=${emp.id}&year=${year}`)).find((b) => b.type === type)!;
+    const before = await left('CASUAL');
+    await page.goto(`/staff?tab=staff&employee=${emp.id}`);
+    const staffDrawer = page.getByRole('dialog', { name: /EMP-008/ });
+    await staffDrawer.getByRole('tab', { name: 'Attendance and leave', exact: true }).click();
+    await staffDrawer.getByRole('button', { name: 'Opening leave' }).click();
+    const modal = page.getByRole('dialog', { name: /Opening leave for/ });
+    await modal.getByLabel('Casual leave taken').fill('2');
+    await modal.getByLabel(/Earned leave brought forward/).fill('20');
+    await modal.getByRole('button', { name: /Save opening leave/ }).click();
+    await expect(page.getByText(/Opening leave for .* saved/)).toBeVisible();
+    await expect(page.getByText('Taken counts 2 days from before Nirmaan.')).toBeVisible();
+    const after = await left('CASUAL');
+    expect(after.takenBefore).toBe(2);
+    expect(after.left).toBe(before.left! - 2);
+    expect((await left('EARNED')).entitled).toBe(15 + 20); // in place of the 15 the carry of 30 would bring
+    await expect(api(await apiToken('pm@demo.com'), `/staff/employees/${emp.id}/leave-opening`, { method: 'PUT', body: { year, lines: [] } })).rejects.toThrow(/403/);
+  } finally {
+    await api(hr, '/payroll/settings', { method: 'PUT', body: { casualLeaveDays: 12, earnedCarryMax: 0 } });
+    const year = Number(new Date().toISOString().slice(0, 4));
+    await api(hr, `/staff/employees/${emp.id}/leave-opening`, { method: 'PUT', body: { year, lines: ['CASUAL', 'SICK', 'EARNED'].map((type) => ({ type, takenBefore: 0, broughtForward: null })) } });
+  }
+});
+
+test("A site's staff salaries count in its project cost", async () => {
+  const md = await apiToken('md@demo.com');
+  type Run = { id: string; status: string };
+  type Slip = { projectName: string | null; gross: string; employerCost: string };
+  type Project = { id: string; name: string };
+  type Cost = { expensesByCategory: { category: string; amount: string }[] };
+  const runs = await api<Run[] | { items: Run[] }>(md, '/payroll/runs');
+  const settled = (Array.isArray(runs) ? runs : runs.items).filter((r) => r.status === 'APPROVED' || r.status === 'PAID');
+  expect(settled.length).toBeGreaterThan(0);
+  const slips = (await Promise.all(settled.map((r) => api<{ payslips: Slip[] }>(md, `/payroll/runs/${r.id}`)))).flatMap((d) => d.payslips);
+  const projects = await api<{ items: Project[] }>(md, '/projects?pageSize=100');
+  const highway = projects.items.find((p) => p.name.startsWith('Bhubaneswar - Puri'))!;
+  const expected = slips.filter((s) => s.projectName === highway.name).reduce((t, s) => t + Number(s.gross) + Number(s.employerCost), 0);
+  expect(expected).toBeGreaterThan(0);
+  const cost = await api<Cost>(md, `/cost/projects/${highway.id}`);
+  expect(Number(cost.expensesByCategory.find((c) => c.category === 'SITE_STAFF')?.amount)).toBeCloseTo(expected, 2);
 });

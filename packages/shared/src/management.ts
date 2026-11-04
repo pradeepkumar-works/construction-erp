@@ -1,6 +1,6 @@
 import type { RoleKey, SubmissionType } from './enums';
 import type { Because, Figure } from './figures/figure';
-import { canManageStaff, canManageStore, canPurchase, canViewCost, canViewLabourSummary } from './permissions';
+import { canManageStaff, canManageStore, canPurchase, canViewCost, canViewLabourSummary, canViewPayroll } from './permissions';
 
 /**
  * Management dashboard and reports (ARCHITECTURE "Management dashboard and reports"): the portfolio for the MD, one
@@ -239,7 +239,23 @@ export interface PortfolioProjectDetailDto {
   orders: { kind: 'PO' | 'WO'; id: string; number: string; vendorName: string; date: string; value: string; billed: string; open: string }[];
 }
 
-export const MANAGEMENT_REPORT_KEYS = ['mis', 'profit-loss', 'wip', 'receivables', 'payables', 'procurement', 'labour', 'stock', 'approvals'] as const;
+export const MANAGEMENT_REPORT_KEYS = [
+  'mis',
+  'profit-loss',
+  'wip',
+  'receivables',
+  'payables',
+  'procurement',
+  'labour',
+  'stock',
+  'approvals',
+  'headcount',
+  'staff-attendance',
+  'leave-register',
+  'pf-esi',
+  'settlements',
+  'staff-cost',
+] as const;
 export type ManagementReportKey = (typeof MANAGEMENT_REPORT_KEYS)[number];
 
 /** How a report's period is chosen: a month, a range of dates, or a day it stands at. */
@@ -262,7 +278,17 @@ export const MANAGEMENT_REPORTS: Record<ManagementReportKey, ManagementReportInf
   labour: { key: 'labour', title: 'Labour and attendance', description: 'Man-days by project, trade and contractor, the average and peak on site, and labour cost.', period: 'range' },
   stock: { key: 'stock', title: 'Stock position', description: 'Stock value by project and store, items below their minimum, and stock lying idle.', period: 'asOf' },
   approvals: { key: 'approvals', title: 'Approvals waiting', description: 'Entries waiting for a decision by type and project, and the ones waiting longest.', period: 'asOf' },
+  headcount: { key: 'headcount', title: 'Head count and attrition', description: 'Staff on the roll at the start and end of the period, who joined and who left, by site and department.', period: 'range' },
+  'staff-attendance': { key: 'staff-attendance', title: 'Staff attendance', description: 'Each person’s month: days present, on leave, on duty, absent and not marked, off days worked, overtime and check-ins.', period: 'month' },
+  'leave-register': { key: 'leave-register', title: 'Leave register', description: 'Everyone’s leave balance for the year by type, and the leave taken and waiting in the period.', period: 'range' },
+  'pf-esi': { key: 'pf-esi', title: 'PF and ESI', description: 'The month’s provident fund and ESI person by person from the salary runs, with what to deposit by the 15th.', period: 'month' },
+  settlements: { key: 'settlements', title: 'Full and final settlements', description: 'Everyone who left in the period: what their settlement paid, what it recovered, and whether it is paid.', period: 'range' },
+  'staff-cost': { key: 'staff-cost', title: 'Staff cost by site', description: 'Salaries and the company’s PF and ESI from the salary runs, by the site each person was posted at, month by month.', period: 'range' },
 };
+
+/** The HR and payroll reports: read by the people who see payroll (HR, accounts, management and admins), not by site managers. */
+export const HR_REPORT_KEYS: readonly ManagementReportKey[] = ['headcount', 'staff-attendance', 'leave-register', 'pf-esi', 'settlements', 'staff-cost'];
+export const isHrReport = (key: ManagementReportKey) => HR_REPORT_KEYS.includes(key);
 
 /** The desks that read one report of their own beside those who see the dashboard: the procurement manager reads
  *  procurement spend, the store manager the stock position, and HR the labour and attendance report. */
@@ -272,8 +298,9 @@ export const REPORT_DESKS: Partial<Record<ManagementReportKey, (role: RoleKey) =
   labour: (role) => canManageStaff(role) || canViewLabourSummary(role),
 };
 
-/** Who may open a management report: anyone who sees the dashboard, and each desk its own (`REPORT_DESKS`). */
-export const canReadReport = (role: RoleKey, key: ManagementReportKey) => canSeeManagement(role) || !!REPORT_DESKS[key]?.(role);
+/** Who may open a management report: anyone who sees the dashboard, and each desk its own (`REPORT_DESKS`); the HR and payroll
+ *  reports only those who see payroll. */
+export const canReadReport = (role: RoleKey, key: ManagementReportKey) => (isHrReport(key) ? canViewPayroll(role) : canSeeManagement(role) || !!REPORT_DESKS[key]?.(role));
 
 export type ReportColumnKind = 'text' | 'money' | 'qty' | 'pct' | 'date' | 'days' | 'count';
 export type ReportCell = string | number | null;

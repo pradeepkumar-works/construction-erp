@@ -236,8 +236,10 @@ and the pre-delivery checklist.
   `@erp/shared/project-progress.ts` (`portfolioProgress`, `progressNotes`). Keep `src/scripts/project-progress-test.ts` passing.
 - Work breakdown (item 125, ARCHITECTURE "Work breakdown"): project progress is `rollUp` in `@erp/shared/wbs.ts` (through
   `physicalProgress` in `src/common/progress.ts`), never a sum of its own; an activity with sub-activities takes no
-  progress. A new kind of component is a `WorkElementType` (schema + shared + label + Hindi) and its steps in
-  `element-templates.ts`; keep `src/scripts/wbs-rollup-test.ts` passing.
+  progress. A lump-sum item that prices a component earns by its progress through `lumpSumShares`; executed value is read
+  only through `activityBoqOf` (`src/common/boq-links.ts`), never `activity.boqItem.rate` on its own. A new kind of
+  component is a `WorkElementType` (schema + shared + label + Hindi) and its steps in `element-templates.ts`; keep
+  `src/scripts/wbs-rollup-test.ts` passing.
 - Purchase (ARCHITECTURE "Small purchase items"): the split of a request between the vendors who quoted lowest per item is
   `awardLowestPerItem` (`@erp/shared/purchase-award.ts`), shared by the preview and `PurchaseOrdersService.awardLowest`,
   which raises each draft order through its own `create`; where an order is delivered with no address of its own is
@@ -387,8 +389,9 @@ and the pre-delivery checklist.
 - Management dashboard (item 132, `apps/api/src/management`, ARCHITECTURE "Management dashboard and reports"): every figure is
   read through the modules' own services (cost, budget, receivables, payables, stock, cash forecast), never a query of its own
   for money; health, schedule and work done are pure in `management-rules.ts`. A new report is a `MANAGEMENT_REPORTS` key, a
-  builder in `ManagementReportsService` and a Reports node; print and Excel come from the same `ManagementReportDto`.
-  Keep `src/scripts/management-test.ts` passing.
+  builder in `ManagementReportsService` (an HR one, a `HR_REPORT_KEYS` key, in `HrReportsService`) and a Reports node; print and Excel
+  come from the same `ManagementReportDto`.
+  Keep `src/scripts/management-test.ts` and `src/scripts/hr-reports-test.ts` passing.
 - Payroll (item 100, `apps/api/src/payroll`, ARCHITECTURE "Payroll"): every figure is a pure function in `payroll-rules.ts`
   with a test in `src/scripts/payroll-test.ts` (CI runs it); a run has its own approval (prepare, approve, pay), not
   `SubmissionLifecycleService`. Professional tax per state is `PT_RULES` in `packages/shared/src/payroll.ts`. An increment
@@ -396,6 +399,12 @@ and the pre-delivery checklist.
 - Joining documents (ARCHITECTURE "HR records"): the papers are `EMPLOYEE_DOCUMENT_KINDS` (`@erp/shared/hr-documents.ts`), each
   person's an `EmployeeDocument` row moved only through `EmployeeDocumentsService` (`documentCheckProblem`); the offer and
   appointment letters go out only when `documentLetterProblem` is null. Keep `src/scripts/hr-documents-test.ts` passing.
+  Exit clearance is the `exitClearance` master signed off through `ExitClearanceService` (`clearanceLineProblem`); the full
+  and final recovers `clearanceDues` and waits for `clearanceProblem` (`@erp/shared/exit-clearance.ts`). Keep
+  `src/scripts/exit-clearance-test.ts` passing.
+  An HR letter's words come only from `fillLetter` over the company's template or `STANDARD_HR_LETTERS`
+  (`@erp/shared/hr-letters.ts`, checked by `letterTemplateProblem`), never a sentence of a printer's own. Keep
+  `src/scripts/hr-letters-test.ts` passing.
 - Biometric (item 101, `apps/api/src/biometric`, ARCHITECTURE "Biometric attendance"): ADMS (`/iclock`, outside `/api`), the
   webhook and punch files all go through `biometric-rules.ts` (tested in `src/scripts/biometric-test.ts`, CI runs it) and
   `BiometricService.ingest`, and a punch reaches attendance only through `applyDay` (a worker never at a site other than the device's).
