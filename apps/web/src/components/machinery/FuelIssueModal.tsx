@@ -4,7 +4,7 @@ import React, { useEffect, useMemo } from 'react';
 import { Alert, App, Form, Input, Select } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
-import { MAX_PAGE_SIZE, fuelNormText, meterUnit, pumpReadingProblem, unitLabel } from '@erp/shared';
+import { MAX_PAGE_SIZE, fuelNormText, meterUnit, pumpReadingProblem, slipPumpReadings, unitLabel } from '@erp/shared';
 import { useEquipment, useFuelIssue, useFuelPosition, useProjects, useStockBalances } from '@/lib/queries';
 import { formatQty } from '@/lib/format';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
@@ -69,6 +69,7 @@ export function FuelIssueModal({ open, onClose, projectId, equipmentId }: { open
   }, [open, fuels, form]);
 
   const submit = async (v: FormValues) => {
+    const pump = slipPumpReadings(v.pumpStart ?? null, v.pumpEnd ?? null);
     const e = await save.mutateAsync({
       projectId: v.projectId,
       date: v.date.format('YYYY-MM-DD'),
@@ -76,8 +77,8 @@ export function FuelIssueModal({ open, onClose, projectId, equipmentId }: { open
       itemId: v.itemId!,
       quantity: String(v.quantity),
       meterReading: v.meterReading === null || v.meterReading === undefined ? null : String(v.meterReading),
-      pumpStart: v.pumpStart == null ? null : String(v.pumpStart),
-      pumpEnd: v.pumpEnd == null ? null : String(v.pumpEnd),
+      pumpStart: pump.start === null ? null : String(pump.start),
+      pumpEnd: pump.end === null ? null : String(pump.end),
       issuedTo: v.issuedTo?.trim() || null,
       remarks: v.remarks?.trim() || null,
     });

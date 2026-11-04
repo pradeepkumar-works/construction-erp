@@ -38,6 +38,7 @@ import {
   itemCodeOf,
   itemCodeProblem,
   pumpReadingProblem,
+  slipPumpReadings,
   normUnit,
   type ItemDuplicateGroupDto,
   RECEIPT_BILL_WITHIN_DAYS,
@@ -704,7 +705,7 @@ export class StockService {
     const meter = dto.meterReading === undefined || dto.meterReading === null || dto.meterReading === '' ? null : D(dto.meterReading);
     if (meter && meter.isNegative()) throw new BadRequestException('The meter reading cannot be negative');
     const reading = (v: string | null | undefined) => (v === undefined || v === null || v === '' ? null : D(v));
-    const [pumpStart, pumpEnd] = [reading(dto.pumpStart), reading(dto.pumpEnd)];
+    const { start: pumpStart, end: pumpEnd } = slipPumpReadings(reading(dto.pumpStart), reading(dto.pumpEnd));
     const pumpProblem = pumpReadingProblem(pumpStart?.toNumber() ?? null, pumpEnd?.toNumber() ?? null, Number(dto.quantity));
     if (pumpProblem) throw new BadRequestException(pumpProblem);
     return this.issue(

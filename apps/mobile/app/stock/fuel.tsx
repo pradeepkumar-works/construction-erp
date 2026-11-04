@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { MAX_PAGE_SIZE, canIssueFuel, meterUnit, pumpReadingProblem, type EquipmentDto, type FuelPositionDto, type Paginated, type StockEntryDto } from '@erp/shared';
+import { MAX_PAGE_SIZE, canIssueFuel, meterUnit, pumpReadingProblem, slipPumpReadings, type EquipmentDto, type FuelPositionDto, type Paginated, type StockEntryDto } from '@erp/shared';
 import { useAuth } from '../../src/auth/AuthContext';
 import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
@@ -17,6 +17,11 @@ import { fmtQty, formatDate, isIsoDate, today } from '../../src/utils/format';
 
 const QTY = /^\d+(\.\d{1,3})?$/;
 const METER = /^\d+(\.\d{1,2})?$/;
+/** The readings the slip sends: a start with no end (filled from the last slip) is no reading. */
+const pumpBody = (start: string, end: string) => {
+  const r = slipPumpReadings(start.trim() || null, end.trim() || null);
+  return { pumpStart: r.start, pumpEnd: r.end };
+};
 
 /**
  * Fuel issue: diesel from the site store into one machine, with its hour meter or odometer, and the
@@ -126,7 +131,7 @@ export default function FuelIssueScreen() {
       const start = pumpStart.trim() ? Number(pumpStart) : null;
       const end = pumpEnd.trim() ? Number(pumpEnd) : null;
       if (pumpReadingProblem(start, end, Number(quantity))) {
-        if (start === null || end === null) e.pumpEnd = t('Enter both pump readings, or neither');
+        if (start === null || end === null) e.pumpStart = t('Enter the pump start too, or leave the end empty');
         else if (end <= start) e.pumpEnd = t('The end reading must be past the start');
         else e.pumpEnd = t('The pump moved {moved} L; the slip says {qty} L', { moved: fmtQty(Math.round((end - start) * 100) / 100), qty: fmtQty(quantity) });
       }
@@ -141,7 +146,7 @@ export default function FuelIssueScreen() {
     if (!validate()) return;
     setBusy(true);
     try {
-      const body = { projectId, date, equipmentId, itemId, quantity: quantity.trim(), meterReading: meter.trim() || null, pumpStart: pumpStart.trim() || null, pumpEnd: pumpEnd.trim() || null, issuedTo: issuedTo.trim() || null, remarks: remarks.trim() || null };
+      const body = { projectId, date, equipmentId, itemId, quantity: quantity.trim(), meterReading: meter.trim() || null, ...pumpBody(pumpStart, pumpEnd), issuedTo: issuedTo.trim() || null, remarks: remarks.trim() || null };
       const queueIt = async () => {
         const projectName = projects.options.find((o) => o.value === projectId)?.label ?? t('Project');
         const item = await enqueue({

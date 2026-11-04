@@ -5,15 +5,17 @@
  *   node dist/scripts/fuel-slips-test.js
  */
 import assert from 'node:assert/strict';
-import { fuelByKind, pumpReadingProblem } from '@erp/shared';
+import { fuelByKind, pumpReadingProblem, slipPumpReadings } from '@erp/shared';
 
 const tests: [string, () => void][] = [];
 const test = (name: string, fn: () => void) => tests.push([name, fn]);
 
 test('a slip without readings passes, and one with half of them does not', () => {
   assert.equal(pumpReadingProblem(null, null, 60), null);
-  assert.match(pumpReadingProblem(12450, null, 60)!, /both pump readings/);
-  assert.match(pumpReadingProblem(null, 12510, 60)!, /both pump readings/);
+  assert.equal(pumpReadingProblem(12450, null, 60), null);
+  assert.deepEqual(slipPumpReadings(12450, null), { start: null, end: null });
+  assert.deepEqual(slipPumpReadings(12450, 12510), { start: 12450, end: 12510 });
+  assert.match(pumpReadingProblem(null, 12510, 60)!, /pump start too/);
 });
 
 test('the litres are what the pump moved, within half a litre', () => {

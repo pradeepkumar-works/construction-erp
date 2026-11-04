@@ -385,7 +385,7 @@ export const SITE: Record<string, string> = {
   'Pump end': 'पंप अंतिम रीडिंग',
   'Where the last slip at this site ended': 'इस साइट की पिछली पर्ची यहीं खत्म हुई थी',
   "The bowser's reading before the fill": 'भरने से पहले बाउज़र की रीडिंग',
-  'Enter both pump readings, or neither': 'दोनों पंप रीडिंग भरें, या एक भी नहीं',
+  'Enter the pump start too, or leave the end empty': 'पंप की शुरुआती रीडिंग भी भरें, या अंतिम रीडिंग खाली छोड़ें',
   'The end reading must be past the start': 'अंतिम रीडिंग शुरुआती से अधिक होनी चाहिए',
   'The pump moved {moved} L; the slip says {qty} L': 'पंप से {moved} L निकला; पर्ची में {qty} L लिखा है',
   'Handed to': 'किसे दिया',

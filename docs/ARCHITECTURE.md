@@ -1924,7 +1924,8 @@ The store register per project, fed by approved material requests:
   `canIssueFuel` (whoever issues material).
 - **Pump readings (item 178).** A fuel slip may carry the dispenser's `pumpStart` and `pumpEnd` (`StockEntry`,
   Decimal(18,2)); `pumpReadingProblem` (`@erp/shared/fleet.ts`) refuses an end below the start and litres off the
-  readings by more than `PUMP_TOLERANCE_LITRES` (0.5). The form starts from the fuel position's `lastPumpEnd` (the
+  readings by more than `PUMP_TOLERANCE_LITRES` (0.5); a start with no end is no reading (`slipPumpReadings`), so a
+  slip whose pump nobody read still saves. The form starts from the fuel position's `lastPumpEnd` (the
   latest slip at the site with a reading, up to the day) and fills the litres from the readings until they are typed.
   Fuel issues carry the machine's `equipmentCategory` and `ownership`, and `fuelByKind` adds them up by kind for the
   Fuel tab. Tested in `src/scripts/fuel-slips-test.ts`.

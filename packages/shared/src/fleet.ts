@@ -77,12 +77,21 @@ export interface FuelPositionDto {
 export const PUMP_TOLERANCE_LITRES = 0.5;
 
 /**
- * What is wrong with a slip's pump readings, or null: both or neither, the end past the start, and the litres what the
- * pump moved. Readings are what the bowser's totaliser shows, in litres.
+ * The readings a slip keeps: a start with no end is none at all, as the form fills the start from the last slip and the
+ * person may not read the pump this time.
+ */
+export function slipPumpReadings<T>(start: T | null, end: T | null): { start: T | null; end: T | null } {
+  return end === null ? { start: null, end: null } : { start, end };
+}
+
+/**
+ * What is wrong with a slip's pump readings, or null: an end needs its start, the end past the start, and the litres
+ * what the pump moved. A start on its own counts as no reading (`slipPumpReadings`). Readings are what the bowser's
+ * totaliser shows, in litres.
  */
 export function pumpReadingProblem(start: number | null, end: number | null, litres: number): string | null {
-  if (start === null && end === null) return null;
-  if (start === null || end === null) return 'Enter both pump readings, or neither';
+  if (end === null) return null;
+  if (start === null) return 'Enter the pump start too, or leave the end empty';
   if (start < 0) return 'The start reading cannot be negative';
   if (end <= start) return 'The end reading must be past the start';
   const moved = Math.round((end - start) * 100) / 100;
