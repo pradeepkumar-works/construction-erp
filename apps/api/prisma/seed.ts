@@ -30,6 +30,7 @@ import { seedControlledCopies } from './seed-controlled-copies';
 import { seedIntegrations } from './seed-integrations';
 import { seedTelematics } from './seed-telematics';
 import { seedFuel } from './seed-fuel';
+import { seedItemCodes } from './seed-item-codes';
 import { seedWeighbridge } from './seed-weighbridge';
 import { seedBatching } from './seed-batching';
 import { seedBiometricCommands } from './seed-biometric-commands';
@@ -1896,6 +1897,7 @@ async function modulesPass(organizationId: string, passwordHash: string) {
   // Engine hours need the site's location (seedAttendanceExtras) and the tracker's link (seedIntegrations); fuel needs the hours.
   await seedTelematics(prisma, organizationId);
   await seedFuel(prisma, organizationId);
+  await seedItemCodes(prisma, organizationId);
   await seedWeighbridge(prisma, organizationId);
   await seedBatching(prisma, organizationId);
   await seedBiometricCommands(prisma, organizationId);

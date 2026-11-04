@@ -500,7 +500,9 @@ and the pre-delivery checklist.
   typed dates in the common formats; ESLint refuses antd's). Keep `src/scripts/validation-test.ts` passing.
 - Item names (ARCHITECTURE "Stock", One name per item): a request or order line's item is `ItemPicker` on the web and is saved
   through `asMasterNames` (`apps/api/src/stock/item-master.ts`); anything that finds an item by a typed name uses `masterItemFor`
-  (`@erp/shared/items.ts`, aliases included), never a name match of its own. Keep `src/scripts/items-test.ts` passing.
+  (`@erp/shared/items.ts`, aliases included), never a name match of its own. Keep `src/scripts/items-test.ts` passing. An item's code is
+  written only by `itemCodeOf` and held by `itemCodeProblem`; a fuel slip's pump readings are checked only by `pumpReadingProblem`
+  (`@erp/shared/fleet.ts`, keep `src/scripts/fuel-slips-test.ts` passing).
 - Central store (item 106, ARCHITECTURE "Stock"): a store or yard is a project of type `STORE`; its stock is the normal
   stock service. Sites see store stock through `ProjectAccessService.stockSourceWhere`, never a role check of their own;
   anything per site that a store has no part in (DPRs, progress) filters `type: { not: 'STORE' }`. Pages at `/stores`.
