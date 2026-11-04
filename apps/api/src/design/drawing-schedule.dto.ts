@@ -15,7 +15,7 @@ export class DrawingNeedLineDto {
   @ApiPropertyOptional({ enum: DOCUMENT_DISCIPLINES }) @IsOptional() @IsIn(list(DOCUMENT_DISCIPLINES)) discipline?: DocumentDiscipline;
   @ApiPropertyOptional({ enum: DRAWING_SOURCES, default: 'CLIENT' }) @IsOptional() @IsIn(list(DRAWING_SOURCES)) source?: DrawingSource;
   @ApiPropertyOptional({ example: 'The Executive Engineer, Building Division No. 1', description: 'Who issues it, as a letter is addressed' }) @IsOptional() @blank() @IsString() @MaxLength(300) fromParty?: string | null;
-  @ApiProperty({ example: '2026-11-15', description: 'The day site needs it good for construction' }) @IsDateString() neededBy: string;
+  @ApiProperty({ example: '2026-11-15', description: 'The day site needs it AFC (approved for construction)' }) @IsDateString() neededBy: string;
   @ApiPropertyOptional({ description: 'The work it holds up' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsUUID() activityId?: string | null;
   @ApiPropertyOptional() @IsOptional() @blank() @IsString() @MaxLength(1000) remarks?: string | null;
 }

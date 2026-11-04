@@ -47,6 +47,7 @@ type RevisionRow = Prisma.DocumentRevisionGetPayload<{ include: typeof revisionI
 const documentInclude = {
   project: { select: { name: true } },
   createdBy: { select: { fullName: true } },
+  workElement: { select: { name: true } },
   currentRevision: { include: revisionInclude },
   _count: { select: { revisions: true, markups: { where: { status: 'OPEN' } } } },
 } satisfies Prisma.DocumentInclude;
@@ -139,6 +140,8 @@ export class DocumentsService {
       title: d.title,
       kind: d.kind,
       discipline: d.discipline,
+      workElementId: d.workElementId,
+      workElementName: d.workElement?.name ?? null,
       remarks: d.remarks,
       current: d.currentRevision ? this.toRevisionDto(d.currentRevision, d.currentRevisionId) : null,
       revisionCount: d._count.revisions,
@@ -225,9 +228,16 @@ export class DocumentsService {
     return latest?.id ?? null;
   }
 
+  /** A drawing's component is a top-level work element of its own project. */
+  private async checkComponent(projectId: string, workElementId: string | null | undefined) {
+    if (!workElementId) return;
+    if (!(await this.prisma.workElement.count({ where: { id: workElementId, projectId, parentId: null } }))) throw new BadRequestException('Choose a component of this project');
+  }
+
   async createDocument(user: RequestUser, dto: CreateDocumentDto): Promise<DocumentDetailDto> {
     await this.access.assertCanManageDocuments(user, dto.projectId);
     if (dto.revision) this.checkIssuedOn(dto.revision.issuedOn);
+    await this.checkComponent(dto.projectId, dto.workElementId);
     let created: { id: string; revisionId: string | null };
     try {
       created = await this.prisma.$transaction(async (tx) => {
@@ -239,6 +249,7 @@ export class DocumentsService {
             title: dto.title,
             kind: dto.kind ?? 'DRAWING',
             discipline: dto.discipline ?? 'GENERAL',
+            workElementId: dto.workElementId ?? null,
             remarks: dto.remarks || null,
             createdById: user.id,
           },
@@ -268,6 +279,10 @@ export class DocumentsService {
     if (dto.title !== undefined) data.title = dto.title;
     if (dto.kind !== undefined) data.kind = dto.kind;
     if (dto.discipline !== undefined) data.discipline = dto.discipline;
+    if (dto.workElementId !== undefined) {
+      await this.checkComponent(cur.projectId, dto.workElementId);
+      data.workElementId = dto.workElementId;
+    }
     if (dto.remarks !== undefined) data.remarks = dto.remarks || null;
     try {
       await this.prisma.document.update({ where: { id }, data });

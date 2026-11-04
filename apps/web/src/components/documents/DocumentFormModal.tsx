@@ -9,6 +9,7 @@ import type { AttachmentDto, DocumentDetailDto, DocumentDiscipline, DocumentKind
 import { DOCUMENT_DISCIPLINES, DOCUMENT_DISCIPLINE_LABELS, DOCUMENT_KINDS, DOCUMENT_KIND_LABELS, disciplineOf, readText } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { useStructure } from '@/lib/queries';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { ReadDocumentButton, ReadPreview, readDateReason, readFieldProps, useKeepReadFile, type ReadState } from '@/components/ai/ReadDocument';
@@ -21,6 +22,7 @@ interface FormValues {
   title: string;
   kind: DocumentKind;
   discipline: DocumentDiscipline;
+  workElementId?: string | null;
   remarks?: string;
   revision?: { revision: string; issuedOn: dayjs.Dayjs; status: RevisionStatus; receivedFrom?: string; remarks?: string; files?: AttachmentDto[] };
 }
@@ -36,12 +38,16 @@ export function DocumentFormModal({ open, onClose, projectId, doc, onSaved }: { 
   // The drawing itself is kept as the revision's file.
   const keepDrawing = useKeepReadFile(form, ['revision', 'files']);
   const [activeRead, setActiveRead] = useState<string | null>(null);
+  // The project's components (top-level work elements), for the drawing's component.
+  const chosenProject = Form.useWatch('projectId', form) ?? doc?.projectId ?? projectId;
+  const { data: structure } = useStructure(open ? chosenProject : undefined);
+  const components = (structure?.elements ?? []).filter((e) => !e.parentId);
 
   useEffect(() => {
     if (!open) return;
     form.resetFields();
     setReadState(null);
-    if (doc) form.setFieldsValue({ projectId: doc.projectId, docNo: doc.docNo, title: doc.title, kind: doc.kind, discipline: doc.discipline, remarks: doc.remarks ?? undefined });
+    if (doc) form.setFieldsValue({ projectId: doc.projectId, docNo: doc.docNo, title: doc.title, kind: doc.kind, discipline: doc.discipline, workElementId: doc.workElementId, remarks: doc.remarks ?? undefined });
     else form.setFieldsValue({ projectId, kind: 'DRAWING', discipline: 'GENERAL', revision: { revision: 'R0', issuedOn: dayjs(), status: 'FOR_CONSTRUCTION' } as FormValues['revision'] });
   }, [open, projectId, doc, form]);
 
@@ -69,7 +75,7 @@ export function DocumentFormModal({ open, onClose, projectId, doc, onSaved }: { 
 
   const mutation = useMutation({
     mutationFn: async (v: FormValues) => {
-      const body = { docNo: v.docNo.trim(), title: v.title.trim(), kind: v.kind, discipline: v.discipline, remarks: v.remarks?.trim() || (editing ? null : undefined) };
+      const body = { docNo: v.docNo.trim(), title: v.title.trim(), kind: v.kind, discipline: v.discipline, workElementId: v.workElementId ?? null, remarks: v.remarks?.trim() || (editing ? null : undefined) };
       if (doc) return (await api.patch<DocumentDetailDto>(`/documents/${doc.id}`, body)).data;
       const r = v.revision!;
       return (
@@ -135,6 +141,11 @@ export function DocumentFormModal({ open, onClose, projectId, doc, onSaved }: { 
               <Select options={DOCUMENT_DISCIPLINES.map((k) => ({ value: k, label: DOCUMENT_DISCIPLINE_LABELS[k] }))} />
             </Form.Item>
           </FormGrid>
+          {components.length ? (
+            <Form.Item name="workElementId" label="Component" extra="The part of the project it draws, for Drawings by component.">
+              <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="The whole project" options={components.map((e) => ({ value: e.id, label: `${e.code} ${e.name}` }))} />
+            </Form.Item>
+          ) : null}
           <Form.Item name="remarks" label="Remarks">
             <Input.TextArea rows={2} maxLength={1000} />
           </Form.Item>

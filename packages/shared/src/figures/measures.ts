@@ -118,6 +118,11 @@ export const MEASURES = {
   copiesInForce: { label: 'Copies in force', kind: 'count', better: 'either', items: ['copy', 'copies'], list: '/controlled-copies?state=IN_FORCE', define: 'Controlled copies of the current revision on site.' },
   copyHolders: { label: 'Copy holders', kind: 'count', better: 'either', items: ['holder', 'holders'], define: 'Offices, gangs and people holding a copy in force.' },
   asBuiltDue: { label: 'As-built due', kind: 'count', better: 'down', items: ['drawing', 'drawings'], list: '/as-built', define: 'Drawings site built from that have no as-built revision yet.' },
+  commentsAnswered: { label: 'Answered, to close', kind: 'count', better: 'either', items: ['comment', 'comments'], list: '/design-comments?state=ANSWERED', define: 'Review comments we have answered that the reviewer has not yet closed.' },
+  componentsAfc: { label: 'Components AFC', kind: 'count', better: 'up', items: ['component', 'components'], list: '/drawings-by-component', define: 'Components whose every drawing is approved for construction.' },
+  drawingsAfc: { label: 'Drawings AFC', kind: 'count', better: 'up', items: ['drawing', 'drawings'], list: '/drawings-by-component', define: 'Drawings whose current revision site may build from.' },
+  componentsInReview: { label: 'Components in review', kind: 'count', better: 'either', items: ['component', 'components'], list: '/drawings-by-component', define: 'Components whose latest submittal waits for a reviewer’s code.' },
+  componentsBack: { label: 'Components back with us', kind: 'count', better: 'down', items: ['component', 'components'], list: '/drawings-by-component', define: 'Components whose latest submittal came back coded C or D.' },
   rfisOpen: { label: 'Open RFIs', kind: 'count', better: 'down', items: ['RFI', 'RFIs'], list: '/documents?tab=rfis', define: 'Questions to the designer not yet answered.' },
   // Correspondence
   lettersMarkedToYou: { label: 'Letters marked to you', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'No letter marked to you' }, items: ['letter', 'letters'], list: '/correspondence?mine=1', define: 'Received letters marked to you with an action, not yet done.' },

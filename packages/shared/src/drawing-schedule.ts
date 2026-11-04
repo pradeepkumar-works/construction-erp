@@ -22,14 +22,14 @@ export const isClientSide = (s: DrawingSource) => s === 'CLIENT' || s === 'CONSU
 /** A reminder goes by letter to anyone outside the company. */
 export const remindsByLetter = (s: DrawingSource) => s !== 'OWN';
 
-/** A drawing due within this many days and not yet good for construction is due soon. */
+/** A drawing due within this many days and not yet AFC is due soon. */
 export const DRAWING_SOON_DAYS = 7;
 
 export type DrawingNeedState = 'AWAITED' | 'RECEIVED' | 'GFC' | 'DROPPED';
 export const DRAWING_NEED_STATE_LABELS: Record<DrawingNeedState, string> = {
   AWAITED: 'Awaited',
   RECEIVED: 'Received, not for construction',
-  GFC: 'Good for construction',
+  GFC: 'AFC',
   DROPPED: 'Not needed',
 };
 
@@ -42,7 +42,7 @@ export interface DrawingNeedFacts {
   gfcOn: string | null;
 }
 
-/** Where a scheduled drawing stands: awaited, in but not yet buildable, good for construction, or no longer needed. */
+/** Where a scheduled drawing stands: awaited, in but not yet buildable, AFC (approved for construction), or no longer needed. */
 export function drawingNeedState(f: DrawingNeedFacts): DrawingNeedState {
   if (f.dropped) return 'DROPPED';
   if (f.gfcOn) return 'GFC';
@@ -133,7 +133,7 @@ export function reminderLetter(projectName: string, lines: ReminderLine[], today
     '',
     ...rows,
     '',
-    `Work that depends on ${one ? 'it' : 'them'} cannot go ahead until ${one ? 'it is' : 'they are'} issued good for construction. Please issue ${one ? 'it' : 'them'} at the earliest. The time lost is being recorded as a hindrance, and we reserve our right to an extension of time for it under the contract.`,
+    `Work that depends on ${one ? 'it' : 'them'} cannot go ahead until ${one ? 'it is' : 'they are'} issued approved for construction. Please issue ${one ? 'it' : 'them'} at the earliest. The time lost is being recorded as a hindrance, and we reserve our right to an extension of time for it under the contract.`,
   ].join('\n');
   return { subject, body };
 }

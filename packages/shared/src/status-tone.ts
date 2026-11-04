@@ -21,6 +21,7 @@ import type { BookVoucherStatus } from './books';
 import type { CheckOutcome, SiteOrderState } from './consultant-checks';
 import type { ObligationState } from './contract-obligations';
 import type { LetterStatus } from './correspondence';
+import type { ComponentState } from './component-drawings';
 import type { CopyState, ImpactTone } from './design-control';
 import type { DesignCommentState, DesignSubmissionStatus } from './design-submissions';
 import type { RevisionStatus } from './documents';
@@ -155,6 +156,7 @@ export const STATUS_TONES = {
   }),
   designCode: meanings<ApprovalCode>({ A: 'done', B: 'done', C: 'failed', D: 'failed' }),
   designComment: meanings<DesignCommentState>({ OPEN: 'waiting', ANSWERED: 'inHand', CLOSED: 'closed' }),
+  componentDrawings: meanings<ComponentState>({ AFC: 'done', UNDER_REVIEW: 'waiting', BACK_WITH_US: 'failed', NOT_SENT: 'inHand', NO_DRAWINGS: 'closed' }),
   deliverable: meanings<DeliverableStatus>({ NOT_STARTED: 'inHand', SUBMITTED: 'waiting', COMMENTS: 'failed', APPROVED: 'done' }),
   drawingNeed: meanings<DrawingNeedState>({ AWAITED: 'waiting', RECEIVED: 'inHand', GFC: 'done', DROPPED: 'closed' }),
   revision: meanings<RevisionStatus>({

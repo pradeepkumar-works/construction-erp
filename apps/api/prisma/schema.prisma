@@ -2400,6 +2400,7 @@ model WorkElement {
   billingComponents BillingComponent[]
   deliverables      EngineeringDeliverable[]
   packages          ProcurementPackage[]
+  documents         Document[]
 
   @@unique([projectId, code])
   @@index([projectId])
@@ -5099,6 +5100,9 @@ model Document {
   title             String
   kind              DocumentKind       @default(DRAWING)
   discipline        DocumentDiscipline @default(GENERAL)
+  /// The component of the project it draws (a top-level work element), for Drawings by component
+  workElementId     String?
+  workElement       WorkElement?       @relation(fields: [workElementId], references: [id], onDelete: SetNull)
   remarks           String?
   /// The revision in force: the latest issued (kept in step by the service; filters and sorts by it)
   currentRevisionId String?            @unique
@@ -5121,6 +5125,7 @@ model Document {
 
   @@unique([projectId, docNo])
   @@index([organizationId, kind])
+  @@index([workElementId])
 }
 
 /// One revision of a document. The latest one added is the current revision; earlier ones are superseded.
@@ -8945,6 +8950,8 @@ model DesignSubmission {
   replyBy        DateTime?    @db.Date
   /// DRAFT | UNDER_REVIEW | APPROVED | APPROVED_AS_NOTED | REVISE_RESUBMIT | REJECTED | WITHDRAWN
   status         String       @default("DRAFT")
+  /// The reviewers it passes through in turn (`reviewStage` master codes, in order); empty when the one reviewer codes it
+  stages         String[]     @default([])
   /// The current round: 0 for the first submission
   revision       Int          @default(0)
   note           String?
@@ -9001,6 +9008,8 @@ model DesignSubmissionRound {
   reviewedOn     DateTime?        @db.Date
   reviewerName   String?
   reviewRef      String?
+  /// Each review stage's code on this round, in order: [{ stage, code, clearedOn, reviewerName, reviewRef }]
+  marks          Json             @default("[]")
   createdAt      DateTime         @default(now())
 
   items DesignRoundItem[]
@@ -9031,6 +9040,10 @@ model DesignComment {
   commentNo      Int
   /// The round it was made on
   round          Int
+  /// The review stage that made it (`reviewStage` master code), when the submittal goes through stages
+  stage          String?
+  /// The day of the review it came with
+  madeOn         DateTime?        @db.Date
   documentId     String?
   document       Document?        @relation(fields: [documentId], references: [id], onDelete: SetNull)
   text           String

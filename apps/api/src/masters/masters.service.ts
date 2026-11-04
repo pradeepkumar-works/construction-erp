@@ -111,6 +111,12 @@ export class MastersService {
         [...projects, ...tenders].forEach((r) => add(names.get(r.verticalCode!) ?? null, r._count._all));
         break;
       }
+      case 'reviewStage': {
+        // Submittals keep the stages' codes; count each submittal once under every stage it goes through.
+        const names = new Map((await this.entriesFor(org, list)).map((e) => [e.code, e.name]));
+        for (const r of await this.prisma.designSubmission.findMany({ where: { organizationId: org, NOT: { stages: { isEmpty: true } } }, select: { stages: true } })) r.stages.forEach((c) => add(names.get(c) ?? null, 1));
+        break;
+      }
       case 'workTrade':
         (await this.prisma.defect.groupBy({ by: ['trade'], where: { organizationId: org, trade: { not: null } }, _count: { _all: true } })).forEach((r) => add(r.trade, r._count._all));
         break;

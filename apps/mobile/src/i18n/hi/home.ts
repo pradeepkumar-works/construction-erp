@@ -67,6 +67,8 @@ export const MENU: Record<string, string> = {
   'Register': 'रजिस्टर',
   'Copies': 'प्रतियाँ',
   'As-built': 'ऐज़-बिल्ट',
+  'By component': 'कंपोनेंट के अनुसार',
+  'Comments': 'टिप्पणियाँ',
   'Site execution': 'साइट पर काम',
   'Planning and estimation': 'प्लानिंग और एस्टिमेशन',
   'Tenders and rates, estimates from the BOQ, budgets and what each project earns.': 'टेंडर और रेट, BOQ से एस्टिमेट, बजट और हर प्रोजेक्ट की कमाई।',

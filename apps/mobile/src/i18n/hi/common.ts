@@ -150,7 +150,7 @@ export const COMMON: Record<string, string> = {
   Fixed: 'ठीक किया',
 
   // Documents
-  'Good for construction': 'निर्माण के लिए (GFC)',
+  AFC: 'AFC (निर्माण हेतु स्वीकृत)',
   'Approved with comments': 'टिप्पणी के साथ मंज़ूर',
   'For approval': 'मंज़ूरी के लिए',
   'For information': 'जानकारी के लिए',

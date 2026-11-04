@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Post, Query } from
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { DesignControlService } from './design-control.service';
-import { CopiesQuery, DesignDashboardQuery, DisposeCopyDto, IssueCopiesDto, ReissueCopyDto } from './design-control.dto';
+import { ByComponentQuery, CopiesQuery, DesignDashboardQuery, DisposeCopyDto, IssueCopiesDto, ReissueCopyDto } from './design-control.dto';
 
 /** Design and drawings part 3: controlled copies, what a new revision changes and the design dashboard. */
 @ApiTags('design')
@@ -45,6 +45,12 @@ export class DesignControlController {
   @Get('revision-impact/:documentId')
   impact(@CurrentUser() user: RequestUser, @Param('documentId', ParseUUIDPipe) documentId: string) {
     return this.control.impact(user, documentId);
+  }
+
+  @ApiOperation({ summary: 'Drawings by component: each component of the project with its drawings by discipline and where their approval stands' })
+  @Get('by-component')
+  byComponent(@CurrentUser() user: RequestUser, @Query() q: ByComponentQuery) {
+    return this.control.byComponent(user, q.projectId);
   }
 
   @ApiOperation({ summary: 'The design dashboard: every project’s drawings, submissions, copies, as-builts and RFIs, and the recent revisions' })

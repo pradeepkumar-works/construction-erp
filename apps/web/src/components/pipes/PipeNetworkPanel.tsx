@@ -134,8 +134,8 @@ export function PipeNetworkPanel({ project }: { project: ProjectDetail }) {
       {!segments.length ? (
         <div style={{ padding: `${tk.space[2]} 0 ${tk.space[6]}` }}>
           <p>
-            No network loaded for this zone. Import the EPANET (.inp) file from WaterGEMS, LOOP or EPANET, or an Excel sheet of nodes and pipes. Each pipe then
-            takes its own trenching, laying, testing and restoration from the DPR, junction to junction.
+            No network loaded for this zone. Import the EPANET (.inp) file from WaterGEMS, LOOP or EPANET, the main drawn in Google Earth (KMZ or KML), or an
+            Excel sheet of nodes and pipes. Each pipe then takes its own trenching, laying, testing and restoration from the DPR, junction to junction.
           </p>
           {data.canEdit ? (
             <Button type="primary" icon={<UploadOutlined />} onClick={() => setImportOpen(true)}>

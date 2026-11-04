@@ -25,7 +25,7 @@ import {
   statusForCode,
 } from '@erp/shared';
 import { useNotify } from '@/lib/notify';
-import { useDesignSubmissionAction, useDocuments } from '@/lib/queries';
+import { useDesignSubmissionAction, useDocuments, useMasterList } from '@/lib/queries';
 import { afterFormLeaves, FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
 import { LineTable } from '@/components/form/LineTable';
@@ -60,6 +60,7 @@ interface SubmissionValues {
   toParty: string;
   source: DrawingSource;
   documentIds: string[];
+  stages?: string[];
   note?: string | null;
   fee?: string | null;
   files?: AttachmentDto[];
@@ -88,6 +89,8 @@ export function DesignSubmissionForm({
   const docs = useDocuments({ projectId, pageSize: 500 }, open && !!projectId);
   const sent = !!submission && submission.rounds.length > 0;
   const docsLocked = sent && submission.status !== 'REVISE_RESUBMIT' && submission.status !== 'REJECTED';
+  const stageList = useMasterList('review-stage', false, open);
+  const stageOptions = (stageList.data?.entries ?? []).filter((e) => e.isActive || submission?.stageCodes.includes(e.code)).map((e) => ({ value: e.code, label: e.name }));
 
   useEffect(() => {
     if (!open) return;
@@ -100,11 +103,12 @@ export function DesignSubmissionForm({
         toParty: submission.toParty,
         source: submission.purpose === 'VETTING' ? 'CLIENT' : submission.source,
         documentIds: submission.docs.map((d) => d.documentId),
+        stages: submission.stageCodes,
         note: submission.note,
         fee: submission.fee,
         files: submission.attachments,
       });
-    else form.setFieldsValue({ projectId: scoped, kind: 'DRAWINGS', purpose: 'APPROVAL', source: 'CLIENT', documentIds: [], files: [] });
+    else form.setFieldsValue({ projectId: scoped, kind: 'DRAWINGS', purpose: 'APPROVAL', source: 'CLIENT', documentIds: [], stages: [], files: [] });
   }, [open, submission, scoped, form]);
 
   return (
@@ -125,6 +129,7 @@ export function DesignSubmissionForm({
           toParty: v.toParty.trim(),
           source: v.source,
           documentIds: v.documentIds ?? [],
+          stages: v.stages ?? [],
           note: v.note?.trim() || null,
           fee: v.purpose === 'VETTING' && v.fee ? String(v.fee) : null,
           attachmentIds: (v.files ?? []).map((f) => f.id),
@@ -190,6 +195,20 @@ export function DesignSubmissionForm({
               </Form.Item>
             )}
           </FormGrid>
+          <Form.Item
+            name="stages"
+            label="Review stages"
+            extra={submission?.status === 'UNDER_REVIEW' ? 'The stages change only while it is a draft or back with us.' : 'The reviewers it passes through in turn, in order, such as proof checker, TPIA, PIU and head office. Leave it empty when one reviewer codes it.'}
+          >
+            <Select
+              mode="multiple"
+              disabled={submission?.status === 'UNDER_REVIEW'}
+              placeholder="One reviewer"
+              showSearch={{ optionFilterProp: 'label' }}
+              loading={stageList.isLoading}
+              options={stageOptions}
+            />
+          </Form.Item>
           <Form.Item name="files" label="Design reports, calculations and the reviewer’s marked-up copies">
             <PhotoUpload drawings max={10} />
           </Form.Item>
@@ -268,6 +287,11 @@ export function RecordCodeDialog({ submission, open, onClose }: { submission: De
   const notify = useNotify();
   const code = Form.useWatch('code', form);
   const round = submission.rounds[0];
+  // With review stages, the code is the stage's it waits at, which started when the stage before cleared it.
+  const stage = submission.waitingAt;
+  const stageAt = stage ? submission.stages.indexOf(stage) : -1;
+  const nextStage = stageAt >= 0 ? (submission.stages[stageAt + 1] ?? null) : null;
+  const startedOn = round ? (round.marks.length ? round.marks[round.marks.length - 1].clearedOn : round.submittedOn) : null;
   useEffect(() => {
     if (open) form.setFieldsValue({ code: undefined, reviewedOn: dayjs(), reviewerName: undefined, reviewRef: undefined, certificateNo: undefined, comments: [] });
   }, [open, form]);
@@ -280,7 +304,7 @@ export function RecordCodeDialog({ submission, open, onClose }: { submission: De
       layout="drawer"
       width={820}
       projectDefault={false}
-      title={`Record the code for ${designRevisionLabel(submission.revision)}`}
+      title={stage ? `Record the ${stage} code for ${designRevisionLabel(submission.revision)}` : `Record the code for ${designRevisionLabel(submission.revision)}`}
       okText="Record"
       onSubmit={async (v) => {
         await act.mutateAsync({
@@ -304,7 +328,7 @@ export function RecordCodeDialog({ submission, open, onClose }: { submission: De
           </Form.Item>
           <FormGrid cols={2}>
             <Form.Item name="reviewedOn" label="Reviewed on" rules={[{ required: true, message: 'Choose the day of the review' }]}>
-              <DatePicker disabledDate={(d) => afterToday(d) || (!!round && d.isBefore(dayjs(round.submittedOn), 'day'))} style={{ width: '100%' }} />
+              <DatePicker disabledDate={(d) => afterToday(d) || (!!startedOn && d.isBefore(dayjs(startedOn), 'day'))} style={{ width: '100%' }} />
             </Form.Item>
             <Form.Item name="reviewRef" label="Letter or mail reference">
               <Input maxLength={120} placeholder="AE/TL/118" />
@@ -320,7 +344,9 @@ export function RecordCodeDialog({ submission, open, onClose }: { submission: De
               </Form.Item>
             ) : null}
           </FormGrid>
-          {code && code !== 'C' && code !== 'D' && !vetting ? (
+          {nextStage && code && code !== 'C' && code !== 'D' ? (
+            <Typography.Paragraph type="secondary">{`It goes on to ${nextStage}, who is given the usual time to reply. The register changes when the last stage approves.`}</Typography.Paragraph>
+          ) : code && code !== 'C' && code !== 'D' && !vetting ? (
             <Typography.Paragraph type="secondary">The register’s revisions sent for approval become {code === 'A' ? 'approved' : 'approved with comments'}, and comments answered so far close.</Typography.Paragraph>
           ) : null}
         </FormSection>

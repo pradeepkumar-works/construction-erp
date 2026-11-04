@@ -56,7 +56,7 @@ const STATE_FILTERS: { value: StateFilter; label: string }[] = [
   { value: 'SOON', label: 'Due within a week' },
   { value: 'AWAITED', label: 'Awaited' },
   { value: 'RECEIVED', label: 'Received, not for construction' },
-  { value: 'GFC', label: 'Good for construction' },
+  { value: 'GFC', label: 'AFC' },
   { value: 'DROPPED', label: 'Not needed' },
 ];
 
@@ -174,7 +174,7 @@ function NeedFormModal({ open, onClose, need, projectId, onSaved }: { open: bool
             <Form.Item name="source" label="Issued by">
               <Select options={DRAWING_SOURCES.map((s) => ({ value: s, label: DRAWING_SOURCE_LABELS[s] }))} />
             </Form.Item>
-            <Form.Item name="neededBy" label="Needed by" rules={[{ required: true, message: 'Pick the day site needs it good for construction' }]}>
+            <Form.Item name="neededBy" label="Needed by" rules={[{ required: true, message: 'Pick the day site needs it AFC' }]}>
               <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
             </Form.Item>
           </FormGrid>
@@ -375,7 +375,7 @@ function NeedDrawer({ need, onClose, onEdit }: { need: DrawingNeedDto | null; on
                 ),
               },
               ...(n.receivedOn ? [{ key: 'received', label: 'First received', children: formatDate(n.receivedOn) }] : []),
-              ...(n.gfcOn ? [{ key: 'gfc', label: 'Good for construction', children: formatDate(n.gfcOn) }] : []),
+              ...(n.gfcOn ? [{ key: 'gfc', label: 'AFC on', children: formatDate(n.gfcOn) }] : []),
               {
                 key: 'chased',
                 label: 'Chased',
@@ -520,7 +520,7 @@ function ScheduleList() {
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {c ? (
         <p translate="no" style={{ margin: `${tk.space[3]} 0` }}>
-          {`${c.overdue} late · ${c.dueSoon} due within a week · ${c.gfc} of ${c.total} good for construction`}
+          {`${c.overdue} late · ${c.dueSoon} due within a week · ${c.gfc} of ${c.total} AFC`}
         </p>
       ) : null}
       <ListToolbar

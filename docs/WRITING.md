@@ -8,7 +8,7 @@ How the web app and the phone app word things. Short on purpose: when in doubt, 
   ("Staff and leave", "Payroll inputs", "New purchase order"). Capitals only for names and abbreviations (GST, RA bill,
   DPR, Tally, Odisha). Write "and", not "&".
 - **Capitals** stay on abbreviations, which are written all in capitals (BOQ, DPR, GRN, GST, LD, MB, NCR, PO, RA bill,
-  RFI, TDS, WO, QA/QC, O&M), and on these names: Aadhaar, Connector, Excel, Meta Cloud API, MS Project, Nirmaan, Odisha, Tally,
+  RFI, TDS, WO, QA/QC, O&M, AFC), and on these names: Aadhaar, Connector, Excel, Meta Cloud API, MS Project, Nirmaan, Odisha, Tally,
   the Engineer, WhatsApp, ZKTeco, eSSL.
 - **The Engineer** is the contract's role (the client's engineer who approves the programme and forwards an EOT), so it keeps
   its capital as "the Engineer", as the contract writes it. A site engineer, an engineer on the team, stays lower case.
@@ -42,6 +42,8 @@ last column's words stay out of every label; an old name may stay as a Search ke
 | The quality module | Quality | Quality (QA/QC) |
 | The drawings register | Drawing register (module "Drawings") | Drawings and documents |
 | A drawing or design sent for approval or vetting | Submittal, Submittals | Design submission |
+| A revision site may build from | AFC (approved for construction) | Good for construction, GFC |
+| Who checks a submittal, in turn | Review stage (proof checker, TPIA, PIU, head office) | Approval level |
 | Deduction on each RA bill | Security deposit (retention only where the contract keeps it apart) | – |
 | Money from the client | Money received (button "Record money received") | Receipts from clients |
 | Money to a vendor | Payment (button "Record payment") | – |

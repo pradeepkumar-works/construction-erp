@@ -17,7 +17,7 @@ import { EmptyArt } from '@/components/common/EmptyArt';
 
 const STATE_LABELS: Record<AsBuiltState, string> = { DUE: 'Due', RECEIVED: 'Received' };
 const LEAD: Record<AsBuiltState, string> = {
-  DUE: 'Good for construction in the register, so site built from them, and no as-built revision yet.',
+  DUE: 'AFC in the register, so site built from them, and no as-built revision yet.',
   RECEIVED: 'Drawings whose current revision is the as-built one.',
 };
 const EMPTY: Record<AsBuiltState, string> = {
