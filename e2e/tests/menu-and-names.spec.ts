@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { api, apiToken, homeHeading, signIn } from './helpers';
+import { api, apiToken, homeHeading, menuSettled, signIn } from './helpers';
 
 /**
  * Menu and names: an admin moves the menu into the top bar with the department modules and a name of the company's own;
@@ -33,6 +33,8 @@ test('an admin moves the menu to the top bar, and a module opens with its sub-mo
   const bar = page.getByRole('navigation', { name: 'Purchase management' });
   await expect(bar.getByRole('link', { name: 'Overview' })).toHaveAttribute('aria-current', 'page');
   await bar.getByRole('button', { name: 'Orders' }).click();
+  // Wait for the menu to finish sliding in: a click during the animation can land before its items take it.
+  await menuSettled(page);
   await page.getByRole('menuitem', { name: 'Purchase orders' }).click();
   await expect(page).toHaveURL(/\/purchase-orders/);
   await expect(page.getByRole('heading', { level: 1, name: 'Purchase orders' })).toBeVisible();
