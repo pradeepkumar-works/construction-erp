@@ -7,7 +7,9 @@ import { DatePicker } from '@/components/common/DatePicker';
 import type { TableProps } from 'antd';
 import { FileExcelOutlined, PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
-import type { FuelIssueDto, FuelPositionRowDto } from '@erp/shared';
+import type { FuelByKind, FuelIssueDto, FuelPositionRowDto } from '@erp/shared';
+import { EQUIPMENT_OWNERSHIP_LABELS, fuelByKind } from '@erp/shared';
+import { AppTag } from '@/components/common/AppTag';
 import { useFuelPosition } from '@/lib/queries';
 import { useProjectScope } from '@/lib/project-scope';
 import { formatDate, formatQty, toNumber, NO_VALUE } from '@/lib/format';
@@ -51,7 +53,11 @@ export function FuelPanel({ projectId: fixedProject }: { projectId?: string }) {
         { header: 'Fuel', value: (r) => r.itemName },
         { header: 'Quantity', value: (r) => toNumber(r.litres) },
         { header: 'Unit', value: (r) => r.unit },
+        { header: 'Kind', value: (r) => r.equipmentCategory ?? '', width: 18 },
+        { header: 'Owner', value: (r) => (r.ownership ? EQUIPMENT_OWNERSHIP_LABELS[r.ownership] : '') },
         { header: 'Meter', value: (r) => (r.meterReading === null ? null : toNumber(r.meterReading)) },
+        { header: 'Pump start', value: (r) => (r.pumpStart ? toNumber(r.pumpStart) : null) },
+        { header: 'Pump end', value: (r) => (r.pumpEnd ? toNumber(r.pumpEnd) : null) },
         { header: 'Handed to', value: (r) => r.issuedTo ?? '', width: 24 },
         { header: 'By', value: (r) => r.createdByName, width: 20 },
       ],
@@ -114,6 +120,11 @@ export function FuelPanel({ projectId: fixedProject }: { projectId?: string }) {
             {r.equipmentCode}
           </span>{' '}
           {r.equipmentName}
+          {r.ownership === 'HIRED' ? (
+            <AppTag variant="kind" style={{ marginInlineStart: tk.space[2] }}>
+              {EQUIPMENT_OWNERSHIP_LABELS.HIRED}
+            </AppTag>
+          ) : null}
           {r.issuedTo ? (
             <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
               to {r.issuedTo}
@@ -122,10 +133,33 @@ export function FuelPanel({ projectId: fixedProject }: { projectId?: string }) {
         </div>
       ),
     },
+    { title: 'Kind', dataIndex: 'equipmentCategory', width: 140, ellipsis: true, render: (v: string | null) => v ?? <span className="text-muted">{NO_VALUE}</span> },
     { title: 'Quantity', dataIndex: 'litres', width: 110, align: 'right', render: (v: string, r) => q(v, r.unit, false) },
+    {
+      title: 'Pump',
+      key: 'pump',
+      width: 170,
+      align: 'right',
+      render: (_, r) =>
+        r.pumpStart && r.pumpEnd ? (
+          <span className="mono" translate="no">
+            {formatQty(r.pumpStart)} to {formatQty(r.pumpEnd)}
+          </span>
+        ) : (
+          <span className="text-muted">{NO_VALUE}</span>
+        ),
+    },
     { title: 'Meter', dataIndex: 'meterReading', width: 100, align: 'right', render: (v: string | null) => (v === null ? <span className="text-muted">{NO_VALUE}</span> : <span className="mono">{formatQty(v)}</span>) },
     { title: 'By', dataIndex: 'createdByName', width: 150, ellipsis: true },
   ];
+
+  const kindColumns: TableProps<FuelByKind>['columns'] = [
+    { title: 'Kind', dataIndex: 'kind' },
+    { title: 'Machines', dataIndex: 'machines', width: 110, align: 'right' },
+    { title: 'Litres', dataIndex: 'litres', width: 120, align: 'right', render: (v: number) => <span className="mono" translate="no">{formatQty(v)}</span> },
+    { title: 'Into hired machines', dataIndex: 'hiredLitres', width: 170, align: 'right', render: (v: number) => (v ? <span className="mono" translate="no">{formatQty(v)}</span> : <span className="text-muted">{NO_VALUE}</span>) },
+  ];
+  const byKind = data ? fuelByKind(data.issues) : [];
 
   return (
     <SectionStack gap={0}>
@@ -170,11 +204,16 @@ export function FuelPanel({ projectId: fixedProject }: { projectId?: string }) {
               size="small"
               pagination={false}
               dataSource={data.issues}
-              scroll={{ x: 760 }}
+              scroll={{ x: 1070 }}
               columns={issueColumns}
               locale={{ emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No fuel went into machines on this day" /> }}
             />
           </Section>
+          {byKind.length ? (
+            <Section style={{ marginTop: tk.space[4] }} title="By kind of machine">
+              <Table<FuelByKind> rowKey="kind" size="small" pagination={false} dataSource={byKind} scroll={{ x: 520 }} columns={kindColumns} />
+            </Section>
+          ) : null}
           <FuelTanks date={data.date} projectId={projectId} canIssue={data.canIssue} />
           <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[3], marginBottom: 0 }}>
             A fuel issue names the machine and its meter, so each machine&apos;s litres an hour can be checked against its norm (set on the machine in

@@ -1142,11 +1142,12 @@ export const useEquipment = (filters?: EquipmentFilters, enabled = true) =>
 // Fuel and fleet use
 
 /** Each site's fuel on a day (today when left out) and the day's fuel issues into machines. */
-export const useFuelPosition = (q: { date?: string; projectId?: string }) =>
+export const useFuelPosition = (q: { date?: string; projectId?: string }, enabled = true) =>
   useQuery({
     queryKey: ['machinery', 'fuel-position', clean(q)],
     queryFn: async () => (await api.get<FuelPositionDto>('/fleet/fuel-position', { params: clean(q) })).data,
     placeholderData: keepPreviousData,
+    enabled,
   });
 
 export const useFuelIssues = (q: { from: string; to: string; projectId?: string; equipmentId?: string }, enabled = true) =>
@@ -1232,6 +1233,8 @@ export interface FuelIssueInput {
   itemId: string;
   quantity: string;
   meterReading?: string | null;
+  pumpStart?: string | null;
+  pumpEnd?: string | null;
   issuedTo?: string | null;
   remarks?: string | null;
 }

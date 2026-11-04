@@ -4,8 +4,8 @@ import React, { useEffect, useMemo } from 'react';
 import { Alert, App, Form, Input, Select } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
-import { MAX_PAGE_SIZE, fuelNormText, meterUnit, unitLabel } from '@erp/shared';
-import { useEquipment, useFuelIssue, useProjects, useStockBalances } from '@/lib/queries';
+import { MAX_PAGE_SIZE, fuelNormText, meterUnit, pumpReadingProblem, unitLabel } from '@erp/shared';
+import { useEquipment, useFuelIssue, useFuelPosition, useProjects, useStockBalances } from '@/lib/queries';
 import { formatQty } from '@/lib/format';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { QuantityInput } from '@/components/form/inputs';
@@ -17,6 +17,8 @@ interface FormValues {
   itemId?: string;
   quantity?: number;
   meterReading?: number | null;
+  pumpStart?: number | null;
+  pumpEnd?: number | null;
   issuedTo?: string;
   remarks?: string;
 }
@@ -39,12 +41,27 @@ export function FuelIssueModal({ open, onClose, projectId, equipmentId }: { open
   const machine = machines.data?.items.find((m) => m.id === chosenMachine);
   const stock = fuels.find((f) => f.itemId === chosenItem);
   const save = useFuelIssue();
+  // The bowser's last end reading at the site is where this slip starts.
+  const position = useFuelPosition({ projectId: scope }, open && !!scope);
+  const lastPumpEnd = position.data?.lastPumpEnd ?? null;
+  const pumpStart = Form.useWatch('pumpStart', form);
+  const pumpEnd = Form.useWatch('pumpEnd', form);
 
   useEffect(() => {
     if (!open) return;
     form.resetFields();
     form.setFieldsValue({ projectId: projectId as string, date: dayjs(), equipmentId });
   }, [open, projectId, equipmentId, form]);
+
+  useEffect(() => {
+    if (open && lastPumpEnd !== null && !form.isFieldTouched('pumpStart')) form.setFieldValue('pumpStart', Number(lastPumpEnd));
+  }, [open, lastPumpEnd, form]);
+
+  // With both readings, the quantity is what the pump moved, until someone types their own.
+  useEffect(() => {
+    if (!open || pumpStart == null || pumpEnd == null || pumpEnd <= pumpStart || form.isFieldTouched('quantity')) return;
+    form.setFieldValue('quantity', Math.round((pumpEnd - pumpStart) * 100) / 100);
+  }, [open, pumpStart, pumpEnd, form]);
 
   // One fuel at the site (diesel, usually): pick it.
   useEffect(() => {
@@ -59,6 +76,8 @@ export function FuelIssueModal({ open, onClose, projectId, equipmentId }: { open
       itemId: v.itemId!,
       quantity: String(v.quantity),
       meterReading: v.meterReading === null || v.meterReading === undefined ? null : String(v.meterReading),
+      pumpStart: v.pumpStart == null ? null : String(v.pumpStart),
+      pumpEnd: v.pumpEnd == null ? null : String(v.pumpEnd),
       issuedTo: v.issuedTo?.trim() || null,
       remarks: v.remarks?.trim() || null,
     });
@@ -112,6 +131,24 @@ export function FuelIssueModal({ open, onClose, projectId, equipmentId }: { open
           </Form.Item>
           <Form.Item name="meterReading" label={unit === 'km' ? 'Odometer' : 'Hour meter'} extra="Reading when it was filled; it checks the machine's fuel use">
             <QuantityInput unit={unit} precision={1} />
+          </Form.Item>
+          <Form.Item name="pumpStart" label="Pump start" extra={lastPumpEnd !== null ? 'Where the last slip at this site ended' : "The bowser's reading before the fill"}>
+            <QuantityInput unit="L" precision={2} />
+          </Form.Item>
+          <Form.Item
+            name="pumpEnd"
+            label="Pump end"
+            dependencies={['pumpStart', 'quantity']}
+            rules={[
+              {
+                validator: (_, v: number | null | undefined) => {
+                  const problem = pumpReadingProblem(form.getFieldValue('pumpStart') ?? null, v ?? null, Number(form.getFieldValue('quantity') ?? 0));
+                  return problem ? Promise.reject(new Error(problem)) : Promise.resolve();
+                },
+              },
+            ]}
+          >
+            <QuantityInput unit="L" precision={2} />
           </Form.Item>
           <Form.Item name="issuedTo" label="Handed to">
             <Input maxLength={120} placeholder="The operator or driver; the machine when left blank" />
