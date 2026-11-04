@@ -9,18 +9,37 @@
   --tb-hover: color-mix(in srgb, var(--c-text-base) 6%, transparent);
   --tb-rule: var(--c-line-hairline);
   --row-bg: var(--c-surface-base);
+  --row-fg: var(--c-text-base);
+  --row-muted: var(--c-text-muted);
+  --row-hover: color-mix(in srgb, var(--c-text-base) 6%, transparent);
+  --row-rule: var(--c-line-hairline);
   --sub-on: var(--c-accent-solid);
   position: sticky;
   top: 0;
   z-index: 10;
 }
 
-.lookNavy {
+/* The bar in the menu's colours (the coloured look, or a layout's top part in colour: navPainted). */
+.paintTop {
   --tb-bg: var(--c-chrome-fill);
   --tb-fg: var(--c-chrome-ink);
   --tb-muted: color-mix(in srgb, var(--c-chrome-ink) 66%, transparent);
   --tb-hover: color-mix(in srgb, var(--c-chrome-ink) 10%, transparent);
   --tb-rule: transparent;
+}
+
+/* Two top bars with the second bar in the menu's colours. */
+.paintRow {
+  --row-bg: var(--c-chrome-fill);
+  --row-fg: var(--c-chrome-ink);
+  --row-muted: color-mix(in srgb, var(--c-chrome-ink) 70%, transparent);
+  --row-hover: color-mix(in srgb, var(--c-chrome-ink) 10%, transparent);
+  --row-rule: transparent;
+  --sub-on: var(--c-chrome-ink);
+}
+
+.paintTop.paintRow .bar {
+  border-bottom-color: color-mix(in srgb, var(--c-chrome-ink) 12%, transparent);
 }
 
 .lookFrame {
@@ -41,8 +60,9 @@
   border-bottom: 1px solid var(--tb-rule);
 }
 
-/* A gradient is laid over the window, so the bar and the menu drawer show one sweep. */
-.lookNavy .bar {
+/* A gradient is laid over the window, so the bars and the menu drawer show one sweep. */
+.paintTop .bar,
+.paintRow .row {
   background-attachment: fixed;
 }
 
@@ -78,7 +98,7 @@
   border-radius: var(--r-md);
 }
 
-.lookNavy .brand :global(.wordmark) {
+.paintTop .brand :global(.wordmark) {
   color: var(--c-chrome-ink);
 }
 
@@ -156,16 +176,55 @@
   text-align: center;
 }
 
+/* The modules across the bar (Top bar and sidebar, Two top bars): as many as fit, the rest under More. */
+.modules {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  margin-left: var(--s-3);
+}
+
+.moduleList {
+  display: flex;
+  align-items: center;
+  gap: var(--s-half);
+  min-width: 0;
+  flex: 1 1 auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow: hidden;
+}
+
+.moduleList li {
+  display: flex;
+  flex: none;
+}
+
+.more {
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
 /* The module bar: under the top bar in the navy and frame looks (and on a phone), inside it in the one-bar look */
 
 .row {
+  --tb-fg: var(--row-fg);
+  --tb-muted: var(--row-muted);
+  --tb-hover: var(--row-hover);
   display: flex;
   align-items: stretch;
   gap: var(--s-2);
   height: 3rem;
   padding: 0 var(--s-4) 0 var(--s-6);
   background: var(--row-bg);
-  border-bottom: 1px solid var(--c-line-hairline);
+  border-bottom: 1px solid var(--row-rule);
+}
+
+.row .links {
+  align-self: center;
 }
 
 .lookFrame .row {
@@ -203,7 +262,7 @@
   border: 0;
   border-right: 1px solid var(--c-line-hairline);
   background: none;
-  color: var(--c-text-base);
+  color: var(--row-fg);
   font: inherit;
   font-size: var(--t-lead);
   cursor: pointer;
@@ -239,6 +298,11 @@
   color: var(--c-text-faint);
 }
 
+.paintTop .bar .chevron,
+.paintRow .row .chevron {
+  color: currentColor;
+}
+
 .subs {
   position: relative;
   flex: 1 1 auto;
@@ -270,7 +334,7 @@
   border: 0;
   border-bottom: 0.125rem solid transparent;
   background: none;
-  color: var(--c-text-muted);
+  color: var(--row-muted);
   font: inherit;
   font-weight: 500;
   white-space: nowrap;
@@ -279,11 +343,11 @@
 }
 
 .sub:hover {
-  color: var(--c-text-base);
+  color: var(--row-fg);
 }
 
 .sub.on {
-  color: var(--c-text-base);
+  color: var(--row-fg);
   font-weight: 600;
   border-bottom-color: var(--sub-on);
 }
@@ -352,6 +416,11 @@
   color: var(--c-chrome-ink);
   background: color-mix(in srgb, var(--c-chrome-ink) 8%, transparent);
   border-color: color-mix(in srgb, var(--c-chrome-ink) 16%, transparent);
+}
+
+/* antd colours the field's own input (empty, under the value) with its text colour; on the colour it reads in the ink. */
+.onChrome :global(.ant-select-filled:not(.ant-select-customize) .ant-select-input) {
+  color: var(--c-chrome-ink);
 }
 
 .onChrome :global(.ant-select-filled:hover) {

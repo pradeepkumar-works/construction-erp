@@ -7,7 +7,7 @@ import { api, apiToken, homeHeading, signIn } from './helpers';
  * shipped menu (the sidebar) back.
  */
 
-const DEFAULT = { layout: 'SIDEBAR', look: 'NAVY', sidebarLook: 'RAIL', palette: 'QUIET', fill: null, moduleSet: 'DEPARTMENTS', names: {}, personalLook: false };
+const DEFAULT = { layout: 'SIDEBAR', look: 'NAVY', sidebarLook: 'RAIL', paint: 'SIDE', palette: 'QUIET', fill: null, moduleSet: 'DEPARTMENTS', names: {}, personalLook: false };
 
 test.afterEach(async () => {
   await api(await apiToken('admin@demo.com'), '/nav-settings', { method: 'PUT', body: DEFAULT });
@@ -17,7 +17,7 @@ test('an admin moves the menu to the top bar, and a module opens with its sub-mo
   await api(await apiToken('admin@demo.com'), '/nav-settings', { method: 'PUT', body: DEFAULT });
   await signIn(page, 'admin@demo.com');
   await page.goto('/menu-and-names');
-  await page.getByRole('radio', { name: /^Top bar/ }).check();
+  await page.getByRole('radio', { name: /^Top bar\s*Home/ }).check();
   await page.getByRole('radio', { name: /^By department/ }).check();
   await page.getByRole('textbox', { name: 'Your company’s name for Store and inventory' }).fill('Stores');
   await page.getByRole('button', { name: 'Save menu' }).click();
@@ -38,6 +38,27 @@ test('an admin moves the menu to the top bar, and a module opens with its sub-mo
   await expect(page.getByRole('heading', { level: 1, name: 'Purchase orders' })).toBeVisible();
   // The page keeps its module's bar, with its sub-module marked.
   await expect(page.getByRole('navigation', { name: 'Purchase management' }).getByRole('button', { name: 'Orders' })).toBeVisible();
+});
+
+test('with the modules on the top bar, a module opens with its sub-modules and pages down the side', async ({ page }) => {
+  await api(await apiToken('admin@demo.com'), '/nav-settings', { method: 'PUT', body: { ...DEFAULT, layout: 'TOP_AND_SIDE', paint: 'TOP', palette: 'LAGOON' } });
+  await signIn(page, 'admin@demo.com');
+  await page.goto('/modules/purchase-management');
+  await expect(page.getByRole('heading', { level: 1, name: 'Purchase management' })).toBeVisible();
+  const side = page.getByRole('navigation', { name: 'Main' });
+  await side.getByRole('link', { name: 'Purchase orders' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Purchase orders' })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Purchase orders' })).toHaveAttribute('aria-current', 'page');
+  // The module on screen keeps its place across the top, even when the others go under More.
+  await expect(page.getByRole('navigation', { name: 'Modules' }).getByRole('link', { name: 'Purchase management' })).toHaveAttribute('aria-current', 'true');
+});
+
+test('with two sidebars, the column of modules opens a module and its menu beside it', async ({ page }) => {
+  await api(await apiToken('admin@demo.com'), '/nav-settings', { method: 'PUT', body: { ...DEFAULT, layout: 'TWO_SIDEBARS', paint: 'NONE' } });
+  await signIn(page, 'admin@demo.com');
+  await page.getByRole('navigation', { name: 'Modules' }).getByRole('link', { name: 'HR and payroll' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'HR and payroll overview' })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Overview' })).toHaveAttribute('aria-current', 'page');
 });
 
 test('a site engineer sees only the modules their role opens, under the company’s names', async ({ page }) => {
@@ -68,7 +89,7 @@ test('an admin colours the menu and its header, and a colour too bright for its 
   await api(await apiToken('admin@demo.com'), '/nav-settings', { method: 'PUT', body: DEFAULT });
   await signIn(page, 'admin@demo.com');
   await page.goto('/menu-and-names');
-  await page.getByRole('radio', { name: /^Sidebar and header/ }).check();
+  await page.getByRole('radio', { name: /^Both in colour/ }).check();
   await page.getByRole('radio', { name: /^Forest/ }).check();
   // The menu shows the colour before it is saved.
   const rail = page.locator('aside[data-tour="sidebar"]');

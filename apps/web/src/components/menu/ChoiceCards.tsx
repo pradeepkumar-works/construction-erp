@@ -34,20 +34,28 @@ const blocks = (top: number, left: number) => (
   </>
 );
 
-/** A small picture of the menu each choice gives: the sidebar in its three looks, and the top bar in its three. */
-export function MenuPicture({ kind }: { kind: 'SIDEBAR' | 'HEADER' | 'FLOATING' | 'NAVY' | 'FRAME' | 'BAR' }) {
+export type MenuPictureKind = 'SIDEBAR' | 'FLOATING' | 'NAVY' | 'FRAME' | 'BAR' | 'TOP_AND_SIDE' | 'TWO_BARS' | 'TWO_SIDEBARS';
+
+/** One part of a pictured menu, in the menu's colours or plain (with a hairline where it meets the page). */
+function Part({ on, edge, style }: { on: boolean; edge: 'r' | 'b'; style: React.CSSProperties }) {
+  return <i className={[on ? s.fill : s.plainPart, !on && (edge === 'r' ? s.edgeR : s.edgeB)].filter(Boolean).join(' ')} style={style} />;
+}
+
+/** Three module names on a pictured bar. */
+const marks = (on: boolean, top: number, left: number) =>
+  [0, 1, 2].map((i) => <i key={i} className={on ? s.markOn : s.markOff} style={{ top, left: left + i * 22, width: 16, height: 4 }} />);
+
+/**
+ * A small picture of the menu each choice gives: the five layouts with their parts in colour or plain (`paint`, from
+ * `navPainted`), the sidebar floating, and the top bar layout's three looks.
+ */
+export function MenuPicture({ kind, paint = { side: true, top: false } }: { kind: MenuPictureKind; paint?: { side: boolean; top: boolean } }) {
   return (
     <span className={s.pic} aria-hidden>
       {kind === 'SIDEBAR' && (
         <>
-          <i className={s.side} />
-          {blocks(12, 44)}
-        </>
-      )}
-      {kind === 'HEADER' && (
-        <>
-          <i className={s.side} />
-          <i className={s.navy} />
+          <Part on={paint.side} edge="r" style={{ top: 0, bottom: 0, left: 0, width: 34 }} />
+          <Part on={paint.top} edge="b" style={{ top: 0, left: 34, right: 0, height: 14 }} />
           {blocks(24, 44)}
         </>
       )}
@@ -55,6 +63,32 @@ export function MenuPicture({ kind }: { kind: 'SIDEBAR' | 'HEADER' | 'FLOATING' 
         <>
           <i className={`${s.side} ${s.floating}`} />
           {blocks(12, 50)}
+        </>
+      )}
+      {kind === 'TWO_SIDEBARS' && (
+        <>
+          <Part on={paint.side} edge="r" style={{ top: 0, bottom: 0, left: 0, width: 14 }} />
+          <Part on={paint.side} edge="r" style={{ top: 0, bottom: 0, left: 14, width: 30 }} />
+          <i className={paint.side ? s.markOn : s.markOff} style={{ top: 0, bottom: 0, left: 14, width: 1, height: 'auto' }} />
+          <Part on={paint.top} edge="b" style={{ top: 0, left: 44, right: 0, height: 14 }} />
+          {blocks(24, 52)}
+        </>
+      )}
+      {kind === 'TOP_AND_SIDE' && (
+        <>
+          <Part on={paint.top} edge="b" style={{ top: 0, left: 0, right: 0, height: 14 }} />
+          {marks(paint.top, 5, 28)}
+          <Part on={paint.side} edge="r" style={{ top: 14, bottom: 0, left: 0, width: 34 }} />
+          {blocks(24, 44)}
+        </>
+      )}
+      {kind === 'TWO_BARS' && (
+        <>
+          <Part on={paint.top} edge="b" style={{ top: 0, left: 0, right: 0, height: 14 }} />
+          {marks(paint.top, 5, 28)}
+          <Part on={paint.side} edge="b" style={{ top: 14, left: 0, right: 0, height: 11 }} />
+          <i className={paint.side ? s.markOn : s.tab} style={{ top: 23, left: 10, width: 22, height: 2 }} />
+          {blocks(34, 10)}
         </>
       )}
       {kind === 'NAVY' && (

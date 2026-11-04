@@ -34,9 +34,13 @@ interface SidebarProps {
   onToggleRail?: () => void;
   /** Called after a link is followed (closes the mobile drawer). */
   onNavigate?: () => void;
+  /** What sits at the top in place of the brand, where the brand is elsewhere (a module's name beside the top bar) */
+  head?: React.ReactNode;
+  /** Drawn plain (the page's own white or night) instead of in the menu's colours */
+  plain?: boolean;
 }
 
-export function Sidebar({ user, sections, pendingCount, rail = false, onToggleRail, onNavigate }: SidebarProps) {
+export function Sidebar({ user, sections, pendingCount, rail = false, onToggleRail, onNavigate, head, plain }: SidebarProps) {
   const pathname = usePathname();
   const active = activeHref(pathname, sections);
   // The sections someone closed stay closed for them on this browser.
@@ -76,18 +80,22 @@ export function Sidebar({ user, sections, pendingCount, rail = false, onToggleRa
   const countFor = (item: NavItem) => (item.approvals ? pendingCount : 0);
 
   return (
-    <div className={cx(s.sidebar, rail && s.rail)}>
-      <div className={s.brand}>
-        <BrandMark size={32} />
-        {!rail && (
-          <div style={{ lineHeight: tk.leading.tight, minWidth: 0 }}>
-            <Wordmark color={tk.color.chrome.ink} size={18} />
-            <div className={s.org} title={user.organizationName} translate="no">
-              {user.organizationName}
+    <div className={cx(s.sidebar, rail && s.rail, plain && s.plain)}>
+      {head === undefined ? (
+        <div className={s.brand}>
+          <BrandMark size={32} />
+          {!rail && (
+            <div style={{ lineHeight: tk.leading.tight, minWidth: 0 }}>
+              <Wordmark color={tk.color.chrome.ink} size={18} />
+              <div className={s.org} title={user.organizationName} translate="no">
+                {user.organizationName}
+              </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      ) : (
+        head
+      )}
 
       <nav ref={navRef} aria-label="Main" className={s.scroll}>
         {top.map((sec) => (
@@ -100,7 +108,7 @@ export function Sidebar({ user, sections, pendingCount, rail = false, onToggleRa
         {rail && groups.length > 0 && <div className={s.rule} role="separator" />}
         {groups.map((sec) =>
           rail ? (
-            <RailSection key={sec.key} section={sec} active={sec.exact ? pathname : active} onNavigate={onNavigate} />
+            <RailSection key={sec.key} section={sec} active={sec.exact ? pathname : active} onNavigate={onNavigate} plain={plain} />
           ) : (
             <Group key={sec.key} section={sec} open={isOpen(sec.key)} onToggle={() => toggle(sec.key)} active={sec.exact ? pathname : active} onNavigate={onNavigate} />
           ),
@@ -182,7 +190,7 @@ function Group({ section, open, onToggle, active, onNavigate }: { section: NavSe
 }
 
 /** On the rail a section is one icon; hovering, clicking or pressing Enter opens its links beside it (a click never closes what hovering opened). */
-function RailSection({ section, active, onNavigate }: { section: NavSection; active: string; onNavigate?: () => void }) {
+function RailSection({ section, active, onNavigate, plain }: { section: NavSection; active: string; onNavigate?: () => void; plain?: boolean }) {
   const [open, setOpen] = useState(false);
   const button = useRef<HTMLButtonElement>(null);
   const list = useRef<HTMLUListElement>(null);
@@ -211,7 +219,7 @@ function RailSection({ section, active, onNavigate }: { section: NavSection; act
   };
 
   const content = (
-    <div className={s.flyout} role="presentation" onKeyDown={onListKey}>
+    <div className={cx(s.flyout, plain && s.plain)} role="presentation" onKeyDown={onListKey}>
       <div className={s.flyoutTitle}>{section.title}</div>
       <ul ref={list} className={s.list}>
         {section.items.map((item) => (
@@ -241,7 +249,7 @@ function RailSection({ section, active, onNavigate }: { section: NavSection; act
       arrow={false}
       mouseEnterDelay={0.08}
       mouseLeaveDelay={0.15}
-      styles={{ container: { padding: tk.space[2], background: tk.color.chrome.bg, boxShadow: `0 12px 32px color-mix(in srgb, ${tk.color.chrome.deep} 35%, transparent)` } }}
+      styles={{ container: { padding: tk.space[2], background: plain ? tk.color.surface.raised : tk.color.chrome.bg, boxShadow: `0 12px 32px color-mix(in srgb, ${tk.color.chrome.deep} 35%, transparent)` } }}
       afterOpenChange={(visible) => {
         if (visible && fromKeyboard.current) list.current?.querySelector('a')?.focus();
         fromKeyboard.current = false;

@@ -846,9 +846,10 @@ model Organization {
   /// how pages are grouped into modules, and the company's own names for modules (by module key)
   navLayout                NavLayout          @default(SIDEBAR)
   navLook                  NavLook            @default(NAVY)
-  /// How the sidebar sits, and the menu's colours: a curated palette, or CUSTOM with the company's own fill
-  /// (NavFill in @erp/shared nav-colours.ts: a plain colour or a two-stop gradient)
+  /// How the sidebar sits, which of the layout's parts take the menu's colours (navPainted in @erp/shared), and the
+  /// colours: a curated palette, or CUSTOM with the company's own fill (NavFill in @erp/shared nav-colours.ts)
   navSidebarLook           NavSidebarLook     @default(RAIL)
+  navPaint                 NavPaint           @default(SIDE)
   navPalette               NavPalette         @default(QUIET)
   navFill                  Json?
   navModuleSet             NavModuleSet       @default(DEPARTMENTS)
@@ -8563,6 +8564,9 @@ enum ModuleTier {
 enum NavLayout {
   SIDEBAR
   TOP_BAR
+  TOP_AND_SIDE
+  TWO_BARS
+  TWO_SIDEBARS
 }
 
 enum NavLook {
@@ -8579,8 +8583,14 @@ enum NavModuleSet {
 /// Menu and names: NAV_SIDEBAR_LOOKS and NAV_PALETTES in @erp/shared
 enum NavSidebarLook {
   RAIL
-  HEADER
   FLOATING
+}
+
+enum NavPaint {
+  SIDE
+  TOP
+  BOTH
+  NONE
 }
 
 enum NavPalette {
@@ -8588,12 +8598,13 @@ enum NavPalette {
   NAVY
   GRAPHITE
   FOREST
-  PLUM
+  OXBLOOD
   SAND
   SKY
+  LAGOON
   DUSK
   OCEAN
-  EMBER
+  WALNUT
   MIDNIGHT
   DAWN
   CUSTOM
