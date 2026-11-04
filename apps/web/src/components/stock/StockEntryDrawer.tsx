@@ -161,9 +161,12 @@ export function StockEntryDrawer({ id, onClose }: { id: string | null; onClose: 
                 ? [
                     { key: 'to', label: data.type === 'ISSUE' ? 'Issued to' : 'Returned by', children: data.issuedTo ?? NO_VALUE },
                     ...(data.equipmentCode
-                      ? [{ key: 'machine', label: 'Into machine', children: `${data.equipmentCode}${data.meterReading ? ` at meter ${formatQty(data.meterReading)}` : ''}` }]
+                      ? [
+                          { key: 'machine', label: 'Into machine', children: `${data.equipmentCode}${data.meterReading ? ` at meter ${formatQty(data.meterReading)}` : ''}` },
+                          ...(data.pumpStart && data.pumpEnd ? [{ key: 'pump', label: 'Pump', children: `${formatQty(data.pumpStart)} to ${formatQty(data.pumpEnd)}` }] : []),
+                        ]
                       : []),
-                    ...(data.woNo ? [{ key: 'wo', label: 'Work order', children: `${data.woNo}${data.subcontractBillId ? ', recovered in their bill' : ', to be recovered from their next bill'}` }] : []),
+                    ...(data.woNo ? [{ key: 'wo', label: 'Work order', children: `${data.woNo}${data.type === 'RETURN_FROM_SITE' ? (data.subcontractBillId ? ', credited in their bill' : ', to come off their next bill') : data.subcontractBillId ? ', recovered in their bill' : ', to be recovered from their next bill'}` }] : []),
                     { key: 'activity', label: 'Activity', children: data.activityName ?? NO_VALUE },
                   ]
                 : []),

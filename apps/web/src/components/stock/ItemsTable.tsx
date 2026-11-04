@@ -7,7 +7,7 @@ import { AppTag } from '@/components/common/AppTag';
 import { MergeCellsOutlined, PlusOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ItemDto, ItemSortField, PipeMaterial } from '@erp/shared';
-import { LIST_SORT_FIELDS, PIPE_MATERIALS, PIPE_MATERIAL_LABELS, canManageStore, pipeSizeLabel, pipeSizeOf } from '@erp/shared';
+import { LIST_SORT_FIELDS, PIPE_MATERIALS, PIPE_MATERIAL_LABELS, canManageStore, itemCodeOf, itemCodeProblem, pipeSizeLabel, pipeSizeOf } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
@@ -21,7 +21,7 @@ import { EmptyArt } from '@/components/common/EmptyArt';
 import { DataTable, type ListColumn } from '@/components/list/DataTable';
 import { useListFrame } from '@/components/list/useListFrame';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
-import { MoneyInput } from '@/components/form/inputs';
+import { CODE_INPUT, MoneyInput } from '@/components/form/inputs';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
 import { MoreActions } from '@/components/record/MoreActions';
 import { ItemDuplicates } from './ItemDuplicates';
@@ -32,6 +32,8 @@ const NO_KEYS: string[] = [];
 interface ItemForm {
   name: string;
   unit: string;
+  code?: string;
+  standard?: string;
   category?: string;
   rate?: number | null;
   isFuel?: boolean;
@@ -55,7 +57,7 @@ export function ItemsTable() {
 
   const save = useMutation({
     mutationFn: async (v: ItemForm) => {
-      const body = { name: v.name, unit: v.unit, category: v.category?.trim() || null, rate: v.rate === undefined || v.rate === null ? null : String(v.rate), isFuel: !!v.isFuel,
+      const body = { name: v.name, unit: v.unit, code: itemCodeOf(v.code), standard: v.standard?.trim() || null, category: v.category?.trim() || null, rate: v.rate === undefined || v.rate === null ? null : String(v.rate), isFuel: !!v.isFuel,
         pipeDiameterMm: v.pipeDiameterMm ?? null,
         pipeMaterial: v.pipeMaterial ?? null,
         kgPerMetre: v.kgPerMetre === undefined || v.kgPerMetre === null ? null : String(v.kgPerMetre),
@@ -81,7 +83,7 @@ export function ItemsTable() {
   const open = (i: ItemDto | 'new') => {
     setEditing(i);
     form.resetFields();
-    if (i !== 'new') form.setFieldsValue({ name: i.name, unit: i.unit, category: i.category ?? undefined, rate: i.rate === null ? undefined : Number(i.rate), isFuel: !!i.isFuel,
+    if (i !== 'new') form.setFieldsValue({ name: i.name, unit: i.unit, code: i.code ?? undefined, standard: i.standard ?? undefined, category: i.category ?? undefined, rate: i.rate === null ? undefined : Number(i.rate), isFuel: !!i.isFuel,
         pipeDiameterMm: i.pipeDiameterMm ?? undefined,
         pipeMaterial: i.pipeMaterial ?? undefined,
         kgPerMetre: i.kgPerMetre ? Number(i.kgPerMetre) : undefined,
@@ -115,7 +117,9 @@ export function ItemsTable() {
             </span>
           ),
         },
+        { key: 'code', title: 'Code', dataIndex: 'code', width: 140, className: 'mono', render: (v: string | null) => (v ? <span translate="no">{v}</span> : <Typography.Text type="secondary">{NO_VALUE}</Typography.Text>) },
         { title: 'Unit', dataIndex: 'unit', width: 100, ...sort('unit') },
+        { key: 'standard', title: 'Standard', dataIndex: 'standard', width: 160, defaultFrom: 1400, ellipsis: true, render: (v: string | null) => v ?? <Typography.Text type="secondary">{NO_VALUE}</Typography.Text> },
         { title: 'Category', dataIndex: 'category', width: 160, ...sort('category'), render: (v) => (v ? <AppTag variant="kind" style={{ margin: 0 }}>{v}</AppTag> : <Typography.Text type="secondary">{NO_VALUE}</Typography.Text>) },
         {
           key: 'rate',
@@ -167,7 +171,7 @@ export function ItemsTable() {
       {deleteDialog}
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <CardToolbar wrap gap={8} align="center">
-        <SearchBox value={page.search} onChange={page.setSearch} placeholder="Search item, unit or category" aria-label="Search items" />
+        <SearchBox value={page.search} onChange={page.setSearch} placeholder="Search item, code, unit or category" aria-label="Search items" />
         {duplicates?.length ? (
           <Button icon={<MergeCellsOutlined />} onClick={() => setShowDuplicates(true)} style={{ marginLeft: newButton ? 'auto' : undefined }}>
             {duplicates.length === 1 ? '1 possible duplicate' : `${duplicates.length} possible duplicates`}
@@ -211,6 +215,19 @@ export function ItemsTable() {
           >
             <UnitInput maxLength={30} disabled={!!editing && editing !== 'new' && editing.projectCount > 0} />
           </Form.Item>
+          <FormGrid cols={2}>
+            <Form.Item
+              name="code"
+              label="Code"
+              extra="Your own short code, one per item"
+              rules={[{ validator: async (_, v: string | undefined) => { const problem = itemCodeProblem(itemCodeOf(v)); if (problem) throw new Error(problem); } }]}
+            >
+              <Input {...CODE_INPUT} maxLength={30} placeholder="e.g. DI-K9-500" />
+            </Form.Item>
+            <Form.Item name="standard" label="Standard" extra="What it is bought to">
+              <Input maxLength={120} placeholder="e.g. IS 8329" />
+            </Form.Item>
+          </FormGrid>
           <Form.Item name="category" label="Category">
             <MasterInput list="itemCategory" maxLength={60} placeholder="e.g. Cement, Steel, Fuel" />
           </Form.Item>
