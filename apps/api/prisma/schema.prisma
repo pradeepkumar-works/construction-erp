@@ -3091,6 +3091,10 @@ model Item {
   organization   Organization  @relation(fields: [organizationId], references: [id])
   name           String
   unit           String
+  /// The company's own short code for the item (DI-K9-500), one per item; `itemCodeOf` writes it
+  code           String?
+  /// The standard or specification it is bought to (IS 8329, IS 1786 Fe 550D)
+  standard       String?
   category       String?
   /// Standard rate per unit; values issues in the project cost view
   rate           Decimal?      @db.Decimal(18, 2)
@@ -3123,6 +3127,7 @@ model Item {
   omChemicalNorms   OmChemicalNorm[]
 
   @@unique([organizationId, name, unit])
+  @@unique([organizationId, code])
 }
 
 /// A company's entry in one of its simple master lists: trades, designations, departments, item and equipment
@@ -3219,6 +3224,9 @@ model StockEntry {
   equipmentId        String?
   equipment          Equipment?             @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
   meterReading       Decimal?               @db.Decimal(18, 2)
+  /// Fuel issues: the bowser's or dispenser's totaliser before and after the fill; the litres are what it moved
+  pumpStart          Decimal?               @db.Decimal(18, 2)
+  pumpEnd            Decimal?               @db.Decimal(18, 2)
   /// Receipts: QA/QC's check of the material (null = not checked yet)
   qcStatus           GrnQcStatus?
   qcAt               DateTime?

@@ -218,6 +218,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/items-test.js
+      - name: Fuel slips hold the litres to the pump's readings and add up by machine kind
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/fuel-slips-test.js
       - name: Quantities above zero, no day's record after today, measurement held to the BOQ plus its tolerance
         if: matrix.suite == 'flows'
         working-directory: apps/api

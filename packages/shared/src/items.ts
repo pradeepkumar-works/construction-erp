@@ -95,3 +95,17 @@ export interface ItemMergeEntryDto {
   /** Stock movements, request and order lines that name it */
   uses: number;
 }
+
+/** An item code as the company writes it: capitals, a space or underscore as a hyphen ("di k9 500" → "DI-K9-500"); blank is no code. */
+export const itemCodeOf = (raw: string | null | undefined): string | null => {
+  const code = (raw ?? '').trim().toUpperCase().replace(/[\s_]+/g, '-');
+  return code || null;
+};
+
+/** What is wrong with an item code as `itemCodeOf` wrote it, or null: letters and digits with - / or ., at most 30. */
+export function itemCodeProblem(code: string | null): string | null {
+  if (code === null) return null;
+  if (code.length > 30) return 'Keep the code to 30 characters';
+  if (!/^[A-Z0-9][A-Z0-9./-]*$/.test(code)) return 'Use letters and digits, with - / or . between them';
+  return null;
+}

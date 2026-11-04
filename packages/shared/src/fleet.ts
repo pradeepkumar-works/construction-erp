@@ -33,6 +33,12 @@ export interface FuelIssueDto {
   unit: string;
   litres: string;
   meterReading: string | null;
+  /** The bowser's totaliser before and after the fill, when read */
+  pumpStart?: string | null;
+  pumpEnd?: string | null;
+  /** The machine's kind and whether it is ours or hired, for the day's fuel by kind */
+  equipmentCategory?: string | null;
+  ownership?: EquipmentOwnership | null;
   issuedTo: string | null;
   createdByName: string;
 }
@@ -63,6 +69,50 @@ export interface FuelPositionDto {
   /** The day's fuel issues into machines, newest first */
   issues: FuelIssueDto[];
   canIssue: boolean;
+  /** With a site: the bowser's last end reading there, where the next slip starts */
+  lastPumpEnd?: string | null;
+}
+
+/** How far the litres on a slip may differ from what the pump moved: the meter's last digit and a drip. */
+export const PUMP_TOLERANCE_LITRES = 0.5;
+
+/**
+ * What is wrong with a slip's pump readings, or null: both or neither, the end past the start, and the litres what the
+ * pump moved. Readings are what the bowser's totaliser shows, in litres.
+ */
+export function pumpReadingProblem(start: number | null, end: number | null, litres: number): string | null {
+  if (start === null && end === null) return null;
+  if (start === null || end === null) return 'Enter both pump readings, or neither';
+  if (start < 0) return 'The start reading cannot be negative';
+  if (end <= start) return 'The end reading must be past the start';
+  const moved = Math.round((end - start) * 100) / 100;
+  if (Math.abs(moved - litres) > PUMP_TOLERANCE_LITRES) return `The pump moved ${moved} L; the slip says ${litres} L`;
+  return null;
+}
+
+/** One kind of machine on a day's slips: how many machines, the litres, and of them into hired machines. */
+export interface FuelByKind {
+  kind: string;
+  machines: number;
+  litres: number;
+  hiredLitres: number;
+}
+
+/** The day's fuel by machine kind, most litres first; a machine with no kind is "Other". */
+export function fuelByKind(issues: readonly Pick<FuelIssueDto, 'equipmentId' | 'equipmentCategory' | 'ownership' | 'litres'>[]): FuelByKind[] {
+  const by = new Map<string, { machines: Set<string>; litres: number; hiredLitres: number }>();
+  for (const i of issues) {
+    const kind = i.equipmentCategory?.trim() || 'Other';
+    const k = by.get(kind) ?? { machines: new Set<string>(), litres: 0, hiredLitres: 0 };
+    if (i.equipmentId) k.machines.add(i.equipmentId);
+    const litres = Number(i.litres) || 0;
+    k.litres += litres;
+    if (i.ownership === 'HIRED') k.hiredLitres += litres;
+    by.set(kind, k);
+  }
+  return [...by.entries()]
+    .map(([kind, k]) => ({ kind, machines: k.machines.size, litres: Math.round(k.litres * 1000) / 1000, hiredLitres: Math.round(k.hiredLitres * 1000) / 1000 }))
+    .sort((a, b) => b.litres - a.litres || a.kind.localeCompare(b.kind));
 }
 
 /** A machine's use over a period. Available = each day on site at the shift, or the hours logged on a longer day; days on site are days with an approved log. */
