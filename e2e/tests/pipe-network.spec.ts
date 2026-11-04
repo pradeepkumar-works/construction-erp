@@ -92,6 +92,16 @@ test('pipe work names its pipe, is held to its length, and the network imports o
   await expect(page.getByText(`Waiting for approval: ${len} m laid and jointed`)).toBeVisible();
   await expect(page.getByRole('button', { name: 'Import network' })).toBeVisible();
 
+  // A main drawn in Google Earth reads as pipes by chainage, at the diameter chosen where the line gives none.
+  await page.getByRole('button', { name: 'Import network' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Import pipe network' });
+  const kml = `<kml><Document><Placemark><name>E2E main</name><LineString><coordinates>78,21 78,21.01</coordinates></LineString></Placemark><Placemark><name>SV-E2E</name><Point><coordinates>78,21.003</coordinates></Point></Placemark></Document></kml>`;
+  await dialog.locator('input[type=file]').setInputFiles({ name: 'main.kml', mimeType: 'application/vnd.google-earth.kml+xml', buffer: Buffer.from(kml) });
+  await expect(dialog.getByLabel('Diameter')).toBeVisible();
+  await expect(dialog.getByText('E2E main: 1.11 km on the ground, chainage 0+000 to 1+112')).toBeVisible();
+  await expect(dialog.getByText(/5 nodes, 4 pipes, 1,?112 m proposed/)).toBeVisible();
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+
   // Rejected, the pipe is free again.
   await api(pm, `/approvals/DPR/${dpr.id}/review`, { method: 'POST', body: { decision: 'REJECT', note: 'Test report' } });
   const end = await api<PipeNetworkDto>(pm, `/projects/${town.id}/pipe-network`);

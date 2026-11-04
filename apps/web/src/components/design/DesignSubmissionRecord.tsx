@@ -12,6 +12,7 @@ import {
   DESIGN_SUBMISSION_KIND_LABELS,
   DRAWING_SOURCE_LABELS,
   REVISION_STATUS_LABELS,
+  inSentence,
   designRevisionLabel,
   isClientSide,
   type DesignCommentDto,
@@ -320,7 +321,7 @@ function SubmissionView({ s }: { s: DesignSubmissionDetailDto }) {
                     <div key={d.documentId}>
                       <Link href={`/documents?id=${d.documentId}`} className="text-link" translate="no">{`${d.docNo} ${d.title}`}</Link>
                       <Typography.Text type="secondary" style={{ display: 'block', fontSize: tk.type.caption.fontSize }} translate="no">
-                        {d.revision ? `${d.revision}, ${REVISION_STATUS_LABELS[d.revisionStatus!].toLowerCase()}` : 'No revision in the register yet'}
+                        {d.revision ? `${d.revision}, ${inSentence(REVISION_STATUS_LABELS[d.revisionStatus!])}` : 'No revision in the register yet'}
                       </Typography.Text>
                     </div>
                   ))}

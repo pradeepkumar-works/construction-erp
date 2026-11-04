@@ -12,6 +12,7 @@ import {
   DRAWING_SOURCE_LABELS,
   DRAWING_SOURCES,
   REVISION_STATUS_LABELS,
+  inSentence,
   designRevisionLabel,
   designStatusLabel,
   replyByFor,
@@ -172,7 +173,7 @@ export function DesignSubmissionForm({
               loading={docs.isLoading}
               options={(docs.data?.items ?? []).map((d) => ({
                 value: d.id,
-                label: `${d.docNo} ${d.title}${d.current ? ` (${d.current.revision}, ${REVISION_STATUS_LABELS[d.current.status].toLowerCase()})` : ', no revision yet'}`,
+                label: `${d.docNo} ${d.title}${d.current ? ` (${d.current.revision}, ${inSentence(REVISION_STATUS_LABELS[d.current.status])})` : ', no revision yet'}`,
               }))}
             />
           </Form.Item>

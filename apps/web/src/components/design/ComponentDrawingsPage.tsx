@@ -11,6 +11,7 @@ import {
   COMPONENT_STATES,
   DOCUMENT_DISCIPLINE_LABELS,
   REVISION_STATUS_LABELS,
+  inSentence,
   figure,
   isBuildable,
   type ComponentRowDto,
@@ -41,7 +42,7 @@ function DrawingCell({ row, discipline }: { row: ComponentRowDto; discipline: Do
             {d.docNo}
           </Link>
           <Typography.Text type={isBuildable(d.revisionStatus) ? undefined : 'secondary'} style={caption} translate="no">
-            {d.revision ? `${d.revision}, ${isBuildable(d.revisionStatus) ? 'AFC' : REVISION_STATUS_LABELS[d.revisionStatus!].toLowerCase()}` : 'No revision yet'}
+            {d.revision ? `${d.revision}, ${isBuildable(d.revisionStatus) ? 'AFC' : inSentence(REVISION_STATUS_LABELS[d.revisionStatus!])}` : 'No revision yet'}
           </Typography.Text>
         </div>
       ))}

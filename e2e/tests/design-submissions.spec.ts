@@ -112,7 +112,12 @@ test('a submittal passes its review stages in turn, and a stage’s comment show
   type Staged = Submission & { waitingAt: string | null; stages: string[] };
   const sent = await api<Staged>(docs, `/design/submissions/${created.id}/submit`, { method: 'POST', body: { submittedOn: today } });
   expect(sent).toMatchObject({ status: 'UNDER_REVIEW', waitingAt: 'Proof checker' });
-  await expect(api(docs, `/design/submissions/${created.id}`, { method: 'PATCH', body: { stages: ['piu'] } })).rejects.toThrow(/400/);
+  await expect(
+    api(docs, `/design/submissions/${created.id}`, {
+      method: 'PUT',
+      body: { projectId, title: `E2E pump house ${stamp}`, kind: 'DRAWINGS', purpose: 'APPROVAL', toParty: 'The Executive Engineer, PIU', source: 'CLIENT', documentIds: [doc.id], stages: ['piu'] },
+    }),
+  ).rejects.toThrow(/400/);
 
   const cleared = await api<Staged>(docs, `/design/submissions/${created.id}/code`, { method: 'POST', body: { code: 'A', reviewedOn: today, reviewerName: 'Proof checker', comments: [] } });
   expect(cleared).toMatchObject({ status: 'UNDER_REVIEW', waitingAt: 'PIU' });
