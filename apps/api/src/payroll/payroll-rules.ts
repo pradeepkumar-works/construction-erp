@@ -267,6 +267,8 @@ export interface SettlementInput {
   /** The day the resignation was handed in; null for a termination or retirement (no recovery) */
   noticeGivenOn: string | null;
   loanBalance: number;
+  /** Dues found at exit clearance (`clearanceDues`) */
+  clearanceDues?: number;
   otherEarnings?: number;
   otherDeductions?: number;
 }
@@ -279,7 +281,7 @@ export const GRATUITY_CAP = 2_500_000;
 /**
  * Full and final settlement: the last month's unpaid salary, earned leave encashed at a day's basic and DA (/26),
  * gratuity at 15 days' basic and DA (/26) for each year after five years' service (six months or more counts as a
- * year), less notice not served at a day's gross (/30) and loans still owed.
+ * year), less notice not served at a day's gross (/30), loans still owed and the dues found at exit clearance.
  */
 export function computeSettlement(i: SettlementInput) {
   const salary = r0((i.gross / i.calendarDays) * i.unpaidDays);
@@ -293,8 +295,9 @@ export function computeSettlement(i: SettlementInput) {
   const noticeShortDays = served === null || !i.noticeDays ? 0 : Math.max(0, i.noticeDays - served);
   const noticeRecovery = r0((i.gross / 30) * noticeShortDays);
   const loanRecovery = r0(i.loanBalance);
+  const clearanceRecovery = r0(i.clearanceDues ?? 0);
   const otherEarnings = r0(i.otherEarnings ?? 0);
   const otherDeductions = r0(i.otherDeductions ?? 0);
-  const net = salary + leaveEncashment + gratuity + otherEarnings - noticeRecovery - loanRecovery - otherDeductions;
-  return { salaryDays: i.unpaidDays, salary, leaveDays: i.leaveDays, leaveEncashment, serviceYears, gratuity, noticeShortDays, noticeRecovery, loanRecovery, otherEarnings, otherDeductions, net };
+  const net = salary + leaveEncashment + gratuity + otherEarnings - noticeRecovery - loanRecovery - clearanceRecovery - otherDeductions;
+  return { salaryDays: i.unpaidDays, salary, leaveDays: i.leaveDays, leaveEncashment, serviceYears, gratuity, noticeShortDays, noticeRecovery, loanRecovery, clearanceRecovery, otherEarnings, otherDeductions, net };
 }

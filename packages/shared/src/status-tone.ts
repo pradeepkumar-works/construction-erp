@@ -49,6 +49,7 @@ import type { LookaheadReadiness, MilestoneState, ScheduleReading, ScheduleState
 import type { EnquiryVendorState } from './small-purchase';
 import type { LeaveStatus, OvertimeStatus, StaffAttendanceStatus } from './staff';
 import type { EmployeeDocumentState } from './hr-documents';
+import type { ClearanceState } from './exit-clearance';
 import type { FrontFlag, KitStatus, ReconExceptionKind } from './stock-against-dpr';
 import type { ScEnquiryStatus } from './subcontract-enquiries';
 import type { SupplierChangeStatus, SupplierDispatchStatus, SupplierInvoiceStage } from './supplier';
@@ -107,6 +108,7 @@ export const STATUS_TONES = {
   imprestEntry: meanings<ImprestEntryStatus>({ REQUESTED: 'waiting', PAID: 'done', REJECTED: 'failed' }),
   payrollRun: meanings<PayrollRunStatus>({ DRAFT: 'inHand', SUBMITTED: 'waiting', APPROVED: 'done', PAID: 'done' }),
   settlement: meanings<SettlementStatus>({ DRAFT: 'inHand', APPROVED: 'done', PAID: 'done' }),
+  clearance: meanings<ClearanceState>({ PENDING: 'waiting', CLEARED: 'done', DUES: 'failed', NOT_APPLICABLE: 'closed' }),
   emi: meanings<EmiStage>({ PAID: 'done', OVERDUE: 'failed', DUE: 'waiting', LATER: 'closed' }),
   equipmentLoan: meanings<EquipmentLoanStatus>({ ACTIVE: 'done', CLOSED: 'closed' }),
   billing: meanings<BillingStatus>({ TRIAL: 'inHand', ACTIVE: 'done', READ_ONLY: 'failed', EXEMPT: 'closed' }),

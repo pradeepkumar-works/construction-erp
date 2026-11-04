@@ -19,6 +19,76 @@ export const WHATS_NEW: WhatsNew[] = [
     ],
   },
   {
+    id: '2026-11-site-staff-cost',
+    date: '2026-11-03',
+    title: 'Site staff salaries in project cost',
+    points: [
+      "A project's cost now counts the salaries of the staff posted at it, with the company's PF and ESI, under site expenses as Site staff salaries.",
+      'A company-wide salary run goes into the books and Tally split by site, so each site carries its own staff cost.',
+      'The People and HR and payroll screens show each site today: who is present, on leave, absent or not marked, last month’s staff cost and papers still to verify.',
+    ],
+  },
+  {
+    id: '2026-11-letter-templates',
+    date: '2026-11-03',
+    title: 'Your own words for HR letters',
+    points: [
+      'HR and payroll › Letter templates holds the words of every letter, from the offer and appointment to the relieving letter and the experience certificate.',
+      "Change a letter's words, put in the person's facts such as their name, designation or cost to company, and see a preview before you save. The standard words stay a click away.",
+    ],
+  },
+  {
+    id: '2026-11-exit-clearance',
+    date: '2026-11-03',
+    title: 'Exit clearance before the full and final',
+    points: [
+      'When someone leaves, their Service and letters tab lists what they hand back: site records, tools and PPE, vehicle keys, imprest, laptop and phone. HR, accounts, stores or the site manager signs each one off.',
+      'Dues found there come off the full and final settlement, which is approved only once every item is signed off. Then print the no dues certificate.',
+      'Change the list in Admin › Masters, under Exit clearance items.',
+    ],
+  },
+  {
+    id: '2026-11-hr-reports',
+    date: '2026-11-03',
+    title: 'HR and payroll reports',
+    points: [
+      'HR and payroll › Reports has six reports with Print and Excel: head count and attrition, staff attendance person by person, the leave register, PF and ESI for the month, full and final settlements, and staff cost by site.',
+      'They are for HR, accounts and management; a site manager does not see pay or leave across the company.',
+    ],
+  },
+  {
+    id: '2026-11-leave-policy',
+    date: '2026-11-03',
+    title: 'Your own leave rules',
+    points: [
+      "Payroll settings now hold the company's leave: casual, sick and earned days a year, how much unused earned leave carries into the next year, and whether someone who joins during the year gets a share for the months left. Balances follow them at once.",
+      'Opening leave on a staff record (Attendance and leave) takes the days someone took this year before Nirmaan and the earned leave they bring forward, so balances start right.',
+    ],
+  },
+  {
+    id: '2026-11-head-office-register',
+    date: '2026-11-03',
+    title: 'A register for head office',
+    points: ['HR marks head office staff in the Staff register: pick Head office in Register for. Staff posted at no site had no register before.'],
+  },
+  {
+    id: '2026-11-payroll-notices',
+    date: '2026-11-03',
+    title: 'Salary runs tell the next person',
+    points: [
+      'Submitting a salary run tells management, with an email, that it waits for approval. Approving it tells accounts what to pay and HR that it went through; sending it back tells HR why; paying it tells HR and the approver.',
+      'A full and final settlement does the same: management when it is worked out, accounts once approved, and HR when it is paid.',
+    ],
+  },
+  {
+    id: '2026-11-lump-sum-earned',
+    date: '2026-11-03',
+    title: 'Lump-sum contracts show the work done',
+    points: [
+      'On a lump-sum contract, each price-break item now earns by its component’s progress, so executed value, earned value, the budget and the cost margin read the work done instead of zero. Linking activities to such an item is no longer offered.',
+    ],
+  },
+  {
     id: '2026-11-access-grant',
     date: '2026-11-03',
     title: 'Granting access lets the person in',

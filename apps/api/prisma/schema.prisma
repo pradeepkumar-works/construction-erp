@@ -551,6 +551,13 @@ enum SettlementStatus {
   PAID
 }
 
+enum ClearanceState {
+  PENDING
+  CLEARED
+  DUES
+  NOT_APPLICABLE
+}
+
 enum LeaveType {
   CASUAL
   SICK
@@ -1025,6 +1032,9 @@ model Organization {
   tenderBids           TenderBid[]
   staffAttendance      StaffAttendance[]
   leaveRequests        LeaveRequest[]
+  leaveOpenings        LeaveOpening[]
+  exitClearanceLines   ExitClearanceLine[]
+  hrLetterTemplates    HrLetterTemplate[]
   holidays             Holiday[]
   outboundMessages     OutboundMessage[]
   billingPayments      BillingPayment[]
@@ -1340,6 +1350,9 @@ model User {
   closeoutItemsDone       CloseoutItem[]
   leaveDecided            LeaveRequest[]             @relation("LeaveDecider")
   leaveApplied            LeaveRequest[]             @relation("LeaveApplicant")
+  leaveOpeningsSet        LeaveOpening[]             @relation("LeaveOpeningBy")
+  exitClearancesSigned    ExitClearanceLine[]        @relation("ExitClearedBy")
+  hrLetterTemplatesSet    HrLetterTemplate[]         @relation("HrLetterTemplateBy")
   raisedRisks             Risk[]                     @relation("RiskRaiser")
   ownedRisks              Risk[]                     @relation("RiskOwner")
   mixDesignsApproved      MixDesign[]                @relation("MixDesignApprover")
@@ -1628,6 +1641,7 @@ model Project {
   eotApplications      EotApplication[]
   /// Days between programme updates as the contract sets them; null for PROGRAMME_UPDATE_DAYS
   programmeUpdateDays  Int?
+  payslips             Payslip[]                 @relation("PayslipSite")
 
   @@unique([organizationId, code])
   @@index([organizationId, status])
@@ -5538,6 +5552,8 @@ model Employee {
 
   attendance       StaffAttendance[]
   leave            LeaveRequest[]
+  leaveOpenings    LeaveOpening[]
+  clearance        ExitClearanceLine[]
   events           EmployeeEvent[]
   attachments      Attachment[]
   salaryStructures SalaryStructure[]
@@ -5748,6 +5764,68 @@ model LeaveRequest {
 
   @@index([organizationId, status])
   @@index([employeeId, fromDate])
+}
+
+/// One item of someone's exit clearance (no dues), by the code of the company's `exitClearance` master entry: cleared,
+/// not applicable, or dues the full and final recovers. An item not yet signed off has no row.
+/// The company's own words for an HR letter (`HR_LETTER_KINDS`), over `STANDARD_HR_LETTERS`; no row means the standard
+model HrLetterTemplate {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  /// An `HR_LETTER_KINDS` key: an event type or EXPERIENCE
+  kind           String
+  body           String
+  updatedById    String
+  updatedBy      User         @relation("HrLetterTemplateBy", fields: [updatedById], references: [id])
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, kind])
+}
+
+model ExitClearanceLine {
+  id             String         @id @default(uuid())
+  organizationId String
+  organization   Organization   @relation(fields: [organizationId], references: [id])
+  employeeId     String
+  employee       Employee       @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  code           String
+  /// The item's name when it was signed off
+  name           String
+  state          ClearanceState
+  /// Rupees to recover, for DUES
+  amount         Decimal?       @db.Decimal(18, 2)
+  note           String?
+  clearedById    String
+  clearedBy      User           @relation("ExitClearedBy", fields: [clearedById], references: [id])
+  clearedAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@unique([employeeId, code])
+  @@index([organizationId])
+}
+
+/// Leave an employee had before Nirmaan, for one year and type: days already taken that year and, for earned leave,
+/// days brought forward from the old records (in place of the carry Nirmaan works out). HR keeps it on the staff record.
+model LeaveOpening {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  employeeId     String
+  employee       Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  year           Int
+  type           LeaveType
+  /// Days taken that year before Nirmaan
+  takenBefore    Decimal      @default(0) @db.Decimal(5, 1)
+  /// Earned leave only: days brought forward from the year before, null = the carry Nirmaan works out
+  broughtForward Decimal?     @db.Decimal(5, 1)
+  updatedById    String
+  updatedBy      User         @relation("LeaveOpeningBy", fields: [updatedById], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([employeeId, year, type])
+  @@index([organizationId])
 }
 
 /// A holiday for every site (projectId null) or one site.
@@ -6909,6 +6987,14 @@ model PayrollSettings {
   /// The company account salaries are paid from, for the bank file
   debitAccountNo     String?
   debitBankName      String?
+  /// Leave days a year: casual, sick and earned (the other types have no yearly limit)
+  casualLeaveDays    Decimal       @default(12) @db.Decimal(4, 1)
+  sickLeaveDays      Decimal       @default(12) @db.Decimal(4, 1)
+  earnedLeaveDays    Decimal       @default(15) @db.Decimal(4, 1)
+  /// Earned leave not taken that carries into the next year, at most this many days (0 = none carries)
+  earnedCarryMax     Decimal       @default(0) @db.Decimal(4, 1)
+  /// Someone who joins during the year gets the year's leave for the months left
+  leaveProRata       Boolean       @default(false)
   updatedAt          DateTime      @updatedAt
 }
 
@@ -7028,6 +7114,9 @@ model Payslip {
   employeeCode   String
   employeeName   String
   designation    String
+  /// The site they were posted at when the run was prepared; none is head office. Their salary is that site's cost.
+  projectId      String?
+  project        Project?         @relation("PayslipSite", fields: [projectId], references: [id], onDelete: SetNull)
   projectName    String?
   pan            String?
   uan            String?
@@ -7053,6 +7142,7 @@ model Payslip {
   lines PayslipLine[]
 
   @@unique([runId, employeeId])
+  @@index([projectId])
   @@index([organizationId, employeeId])
 }
 
@@ -7082,38 +7172,40 @@ model PayslipLine {
 /// Full and final settlement of someone who has left: the last month's salary, leave encashed, gratuity, notice pay
 /// and what they owe, worked out once and approved.
 model FinalSettlement {
-  id              String           @id @default(uuid())
-  organizationId  String
-  organization    Organization     @relation(fields: [organizationId], references: [id])
-  employeeId      String           @unique
-  employee        Employee         @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  settlementNo    String
-  lastWorkingDay  DateTime         @db.Date
-  status          SettlementStatus @default(DRAFT)
+  id                String           @id @default(uuid())
+  organizationId    String
+  organization      Organization     @relation(fields: [organizationId], references: [id])
+  employeeId        String           @unique
+  employee          Employee         @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  settlementNo      String
+  lastWorkingDay    DateTime         @db.Date
+  status            SettlementStatus @default(DRAFT)
   /// Salary for days of the last month not paid in a run
-  salaryDays      Decimal          @default(0) @db.Decimal(5, 1)
-  salary          Decimal          @default(0) @db.Decimal(18, 2)
-  leaveDays       Decimal          @default(0) @db.Decimal(6, 1)
-  leaveEncashment Decimal          @default(0) @db.Decimal(18, 2)
-  serviceYears    Decimal          @default(0) @db.Decimal(5, 2)
-  gratuity        Decimal          @default(0) @db.Decimal(18, 2)
+  salaryDays        Decimal          @default(0) @db.Decimal(5, 1)
+  salary            Decimal          @default(0) @db.Decimal(18, 2)
+  leaveDays         Decimal          @default(0) @db.Decimal(6, 1)
+  leaveEncashment   Decimal          @default(0) @db.Decimal(18, 2)
+  serviceYears      Decimal          @default(0) @db.Decimal(5, 2)
+  gratuity          Decimal          @default(0) @db.Decimal(18, 2)
   /// Notice days not served, recovered at a day's gross
-  noticeShortDays Int              @default(0)
-  noticeRecovery  Decimal          @default(0) @db.Decimal(18, 2)
-  loanRecovery    Decimal          @default(0) @db.Decimal(18, 2)
-  otherEarnings   Decimal          @default(0) @db.Decimal(18, 2)
-  otherDeductions Decimal          @default(0) @db.Decimal(18, 2)
-  net             Decimal          @default(0) @db.Decimal(18, 2)
-  note            String?
-  preparedById    String
-  preparedBy      User             @relation("SettlementPreparer", fields: [preparedById], references: [id])
-  approvedById    String?
-  approvedBy      User?            @relation("SettlementApprover", fields: [approvedById], references: [id])
-  approvedAt      DateTime?
-  paidOn          DateTime?        @db.Date
-  paymentRef      String?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  noticeShortDays   Int              @default(0)
+  noticeRecovery    Decimal          @default(0) @db.Decimal(18, 2)
+  /// Dues found at exit clearance (ExitClearanceLine DUES), recovered here
+  clearanceRecovery Decimal          @default(0) @db.Decimal(18, 2)
+  loanRecovery      Decimal          @default(0) @db.Decimal(18, 2)
+  otherEarnings     Decimal          @default(0) @db.Decimal(18, 2)
+  otherDeductions   Decimal          @default(0) @db.Decimal(18, 2)
+  net               Decimal          @default(0) @db.Decimal(18, 2)
+  note              String?
+  preparedById      String
+  preparedBy        User             @relation("SettlementPreparer", fields: [preparedById], references: [id])
+  approvedById      String?
+  approvedBy        User?            @relation("SettlementApprover", fields: [approvedById], references: [id])
+  approvedAt        DateTime?
+  paidOn            DateTime?        @db.Date
+  paymentRef        String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
 
   @@unique([organizationId, settlementNo])
 }

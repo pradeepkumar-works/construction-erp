@@ -1,5 +1,6 @@
 /** Project cost rules, shared by the API and the web. */
-import type { EquipmentRateUnit } from './enums';
+import type { EquipmentRateUnit, ExpenseCategory } from './enums';
+import { EXPENSE_CATEGORY_LABELS } from './labels';
 
 /** Days in a month when a monthly hire rate is spread over the days a machine was logged. */
 export const DAYS_PER_MONTH = 30;
@@ -30,3 +31,13 @@ export const COST_HEAD_LABELS: Record<CostHead, string> = {
 
 /** Days a client is assumed to take to pay a bill when the contract does not say. */
 export const DEFAULT_CLIENT_PAYMENT_DAYS = 30;
+
+/**
+ * Site staff salaries in project cost: a payslip's gross and the company's PF and ESI are its site's cost, a line of
+ * site expenses beside the expense categories, dated the salary month's last day.
+ */
+export const SITE_STAFF = 'SITE_STAFF' as const;
+export type CostExpenseCategory = ExpenseCategory | typeof SITE_STAFF;
+export const COST_EXPENSE_LABELS: Record<CostExpenseCategory, string> = { ...EXPENSE_CATEGORY_LABELS, SITE_STAFF: 'Site staff salaries' };
+/** The day a month's salaries count in cost: its last day. */
+export const staffCostDate = (month: string) => new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0));

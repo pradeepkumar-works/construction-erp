@@ -8,11 +8,13 @@ import {
   canManageStaff,
   canViewEmployeePrivate,
   isExitEvent,
+  letterTemplateFor,
   type AttachmentDto,
   type EmployeeEventDto,
   type EmployeeLetterDto,
   type HeadcountRowDto,
   type HrDashboardDto,
+  type HrSiteRowDto,
   type HrPersonRowDto,
   type Paginated,
   type RoleKey,
@@ -28,6 +30,7 @@ import { pageArgs, paginated } from '../common/paging';
 import { EmployeeDocumentsDto, ListEmployeeEventsQuery, RecordEmployeeEventDto } from './staff.dto';
 import { nextLetterNo } from './staff.service';
 import { EmployeeDocumentsService } from './employee-documents.service';
+import { LetterTemplatesService } from './letter-templates.service';
 import { structureForCtc } from '../payroll/payroll-rules';
 import { toRulesSettings, toRulesStructure } from '../payroll/salary.service';
 
@@ -60,6 +63,7 @@ export class HrService {
     private audit: AuditService,
     private attachments: AttachmentsService,
     private docs: EmployeeDocumentsService,
+    private templates: LetterTemplatesService,
   ) {}
 
   private toEventDto(e: EventRow, user: RequestUser): EmployeeEventDto {
@@ -265,9 +269,11 @@ export class HrService {
     if (!ev) throw new NotFoundException('Letter not found');
     const held = await this.docs.letterProblem(ev.employeeId, ev.type);
     if (held) throw new BadRequestException(held);
-    const [org, e] = await Promise.all([
+    const exit = isExitEvent(ev.type);
+    const [org, e, own] = await Promise.all([
       this.prisma.organization.findUnique({ where: { id: user.organizationId }, select: { name: true, billingAddress: true } }),
       this.prisma.employee.findUnique({ where: { id: ev.employeeId }, include: { project: { select: { name: true } } } }),
+      this.templates.ownFor(user.organizationId, exit ? [ev.type, 'EXPERIENCE'] : [ev.type]),
     ]);
     return {
       event: this.toEventDto(ev, user),
@@ -286,6 +292,8 @@ export class HrService {
         noticeDays: e!.noticeDays,
       },
       signedBy: { name: ev.createdBy.fullName, title: ROLE_LABELS[ev.createdBy.role.key as RoleKey] ?? 'Authorised signatory' },
+      template: letterTemplateFor(ev.type, own),
+      experienceTemplate: exit ? letterTemplateFor('EXPERIENCE', own) : null,
     };
   }
 
@@ -312,7 +320,7 @@ export class HrService {
     const today = todayIn();
     const monthStart = `${today.slice(0, 7)}-01`;
     const org = user.organizationId;
-    const select = { id: true, fullName: true, employeeCode: true, designation: true, department: true, employmentType: true, joinedOn: true, leftOn: true, dateOfBirth: true, probationEndsOn: true, confirmedOn: true, pan: true, uan: true, bankAccountNo: true, project: { select: { name: true } } } as const;
+    const select = { id: true, fullName: true, employeeCode: true, designation: true, department: true, employmentType: true, joinedOn: true, leftOn: true, dateOfBirth: true, probationEndsOn: true, confirmedOn: true, pan: true, uan: true, bankAccountNo: true, projectId: true, project: { select: { name: true } } } as const;
     const [active, left] = await Promise.all([
       this.prisma.employee.findMany({ where: { organizationId: org, isActive: true }, select, orderBy: { fullName: 'asc' } }),
       this.prisma.employee.findMany({ where: { organizationId: org, leftOn: { gte: parseDate(monthStart), lte: parseDate(monthEnd(today)) } }, select, orderBy: { leftOn: 'asc' } }),
@@ -350,6 +358,7 @@ export class HrService {
     }
     const soon = addDays(today, 30);
     const papers = await this.docs.outstandingFor(org, active.map((e) => e.id));
+    const { sites, costMonth } = await this.sitesToday(org, today, active, papers);
     return {
       date: today,
       active: active.length,
@@ -368,6 +377,55 @@ export class HrService {
         .map((e) => ({ employeeId: e.id, fullName: e.fullName, employeeCode: e.employeeCode, missing: [!e.pan && 'PAN', !e.uan && 'UAN', !e.bankAccountNo && 'bank account'].filter((x): x is string => !!x) }))
         .filter((m) => m.missing.length > 0),
       documentsPending: active.filter((e) => papers.has(e.id)).map((e) => ({ employeeId: e.id, fullName: e.fullName, employeeCode: e.employeeCode, missing: papers.get(e.id)! })),
+      sites,
+      costMonth,
     };
+  }
+
+  /**
+   * Each site's staff today, by where they are posted: present (half days count), on approved leave, absent and not
+   * marked, the same rule as the People figures; with the last settled salary month's cost and the papers outstanding.
+   */
+  private async sitesToday(org: string, today: string, active: { id: string; projectId: string | null; project: { name: string } | null }[], papers: Map<string, string[]>) {
+    const day = parseDate(today);
+    const ids = active.map((e) => e.id);
+    const [marks, leave, lastRun] = await Promise.all([
+      this.prisma.staffAttendance.findMany({ where: { organizationId: org, date: day, employeeId: { in: ids } }, select: { employeeId: true, status: true } }),
+      this.prisma.leaveRequest.findMany({ where: { organizationId: org, status: 'APPROVED', fromDate: { lte: day }, toDate: { gte: day }, employeeId: { in: ids } }, select: { employeeId: true } }),
+      this.prisma.payrollRun.findFirst({ where: { organizationId: org, status: { in: ['APPROVED', 'PAID'] } }, orderBy: { month: 'desc' }, select: { month: true } }),
+    ]);
+    const costMonth = lastRun?.month ?? null;
+    const slips = costMonth
+      ? await this.prisma.payslip.findMany({ where: { organizationId: org, run: { month: costMonth, status: { in: ['APPROVED', 'PAID'] } } }, select: { projectId: true, gross: true, employerCost: true } })
+      : [];
+    const status = new Map(marks.map((m) => [m.employeeId, m.status]));
+    const away = new Set(leave.map((l) => l.employeeId));
+    const rows = new Map<string, HrSiteRowDto & { costN: number }>();
+    const rowFor = (projectId: string | null, label: string) => {
+      const k = projectId ?? '';
+      const r = rows.get(k) ?? { projectId, label, onRoll: 0, present: 0, onLeave: 0, absent: 0, notMarked: 0, cost: null, papersPending: 0, costN: 0 };
+      rows.set(k, r);
+      return r;
+    };
+    for (const e of active) {
+      const r = rowFor(e.projectId, e.project?.name ?? 'Head office');
+      r.onRoll += 1;
+      const st = status.get(e.id);
+      if (st === 'ABSENT') r.absent += 1;
+      else if (st) r.present += 1;
+      else if (away.has(e.id)) r.onLeave += 1;
+      else r.notMarked += 1;
+      if (papers.has(e.id)) r.papersPending += 1;
+    }
+    const names = new Map(active.filter((e) => e.projectId).map((e) => [e.projectId!, e.project!.name]));
+    if (slips.some((s) => s.projectId && !names.has(s.projectId))) {
+      const more = await this.prisma.project.findMany({ where: { id: { in: slips.map((s) => s.projectId!).filter((p) => p && !names.has(p)) } }, select: { id: true, name: true } });
+      for (const p of more) names.set(p.id, p.name);
+    }
+    for (const s of slips) rowFor(s.projectId, s.projectId ? (names.get(s.projectId) ?? 'Another site') : 'Head office').costN += Number(s.gross) + Number(s.employerCost);
+    const sites: HrSiteRowDto[] = [...rows.values()]
+      .sort((a, b) => (a.projectId ? 0 : 1) - (b.projectId ? 0 : 1) || b.onRoll - a.onRoll || a.label.localeCompare(b.label))
+      .map(({ costN, ...r }) => ({ ...r, cost: costMonth && costN ? money(costN) : null }));
+    return { sites, costMonth };
   }
 }

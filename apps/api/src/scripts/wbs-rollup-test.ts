@@ -6,7 +6,7 @@
  *   node dist/scripts/wbs-rollup-test.js
  */
 import assert from 'node:assert/strict';
-import { ELEMENT_SPEC_FIELDS, WORK_ELEMENT_TYPES, effectiveWeights, elementPlan, leafPct, liftCount, rollUp, siblingWeights, type RollupActivity } from '@erp/shared';
+import { ELEMENT_SPEC_FIELDS, WORK_ELEMENT_TYPES, effectiveWeights, elementPlan, isLumpSumUnit, leafPct, liftCount, lumpSumShares, rollUp, siblingWeights, type RollupActivity } from '@erp/shared';
 
 const tests: [string, () => void][] = [];
 const test = (name: string, fn: () => void) => tests.push([name, fn]);
@@ -185,6 +185,41 @@ test('a building block lays out its frame floor by floor', () => {
     lines.filter((l) => !l.parentKey && l.name.startsWith('Frame')).map((l) => l.name),
     ['Frame: Ground floor', 'Frame: First floor', 'Frame: Second floor'],
   );
+});
+
+// Lump-sum items
+
+test('a lump-sum item earns by its component: each leaf under it takes its share, spread over its planned quantity', () => {
+  assert.ok(isLumpSumUnit('LS') && isLumpSumUnit('Lump sum') && isLumpSumUnit(' job ') && !isLumpSumUnit('Cum') && !isLumpSumUnit('Nos'));
+  // Intake (weight 60 % of the well) split between its two activities by value, the bridge a summary of two lifts.
+  const elements = [
+    { id: 'well', parentId: null, weightPct: null },
+    { id: 'intake', parentId: 'well', weightPct: 60 },
+    { id: 'bridge', parentId: 'well', weightPct: 40 },
+  ];
+  const lump = (o: Partial<RollupActivity> & { id: string }) => ({ ...act(o.id, o), boqItemId: null as string | null });
+  const activities = [
+    lump({ id: 'dig', workElementId: 'intake', plannedQty: 300, value: 300 }),
+    lump({ id: 'rcc', workElementId: 'intake', plannedQty: 100, value: 100 }),
+    lump({ id: 'deck', workElementId: 'bridge', plannedQty: 1, value: 1 }),
+    lump({ id: 'lift1', parentActivityId: 'deck', plannedQty: 50, value: 50 }),
+    lump({ id: 'lift2', parentActivityId: 'deck', plannedQty: 50, value: 50 }),
+    { ...act('own', { workElementId: 'intake', plannedQty: 10 }), boqItemId: 'cum-item' },
+  ];
+  const shares = lumpSumShares(elements, activities, [{ id: 'PB-1', workElementId: 'well', unit: 'LS', quantity: 1, linked: 0 }]);
+  // Doing all of every leaf is the whole item, less the share of the leaf paid by an item of its own (100 of the intake's 500).
+  const whole = ['dig', 'rcc', 'lift1', 'lift2'].reduce((s, id) => s + shares.get(id)!.perUnit * activities.find((a) => a.id === id)!.plannedQty, 0);
+  near(whole, 1 - 0.6 * 0.2, 0.01);
+  assert.ok(!shares.has('deck'), 'a summary takes no share; its lifts do');
+  assert.ok(!shares.has('own'), 'an activity linked to an item of its own keeps it');
+  // The intake's 60 % is split by value: digging 300 of 500; the bridge's 40 % between its two lifts.
+  near(shares.get('dig')!.perUnit * 300, 0.6 * 0.6, 0.01);
+  near(shares.get('lift1')!.perUnit * 50, 0.4 * 0.5, 0.01);
+  assert.equal(shares.get('lift1')!.boqItemId, 'PB-1');
+  // An item with an activity of its own, in a quantity unit, or with no component is read as before.
+  assert.equal(lumpSumShares(elements, activities, [{ id: 'PB-1', workElementId: 'well', unit: 'LS', quantity: 1, linked: 1 }]).size, 0);
+  assert.equal(lumpSumShares(elements, activities, [{ id: 'X', workElementId: 'well', unit: 'Cum', quantity: 400, linked: 0 }]).size, 0);
+  assert.equal(lumpSumShares(elements, activities, [{ id: 'Y', workElementId: null, unit: 'LS', quantity: 1, linked: 0 }]).size, 0);
 });
 
 let failed = 0;

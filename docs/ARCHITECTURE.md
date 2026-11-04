@@ -861,8 +861,9 @@ The books are kept from the same postings the Tally export sends. `PostingServic
 module's records into vouchers of keyed ledger lines: certified RA bills are sales, money received is a receipt, approved
 vendor bills are purchases, subcontractor bills journals, payments to vendors and site expenses payments (a journal when
 bought on credit), debit notes debit notes, an approved salary run a journal on the month's last day (salaries and the
-company's PF and ESI against each deduction's payable and salaries payable) and its payment a payment, and a loan or
-advance to staff a payment. The Tally export calls it for records not yet exported in its date range (`unexported`,
+company's PF and ESI against each deduction's payable and salaries payable; a company-wide run splits the salaries
+and the company's PF and ESI by each payslip's site, each line carrying its own cost centre through `Line.site`, head
+office last) and its payment a payment, and a loan or advance to staff a payment. The Tally export calls it for records not yet exported in its date range (`unexported`,
 marked by `tallyExportId`; a run's salary journal and payment are marked apart); the books call it for every record.
 
 `LedgerAccount` is the chart of accounts: one row per ledger key (`PURCHASE`, `VENDOR:<id>`, `CLIENT:<id>`,
@@ -1028,6 +1029,11 @@ service (15/26 of the last basic + DA per year, capped at 25 lakh), notice not s
 day) and loans still owed. HR prepares it, management approves, accounts pays; the exit cannot be taken back while one
 exists. The web prints the statement with the lines to sign.
 
+Each step of a run or a settlement tells whoever acts next, with an email, through `tellPayroll`
+(`src/payroll/payroll-notices.ts`, a `HANDOFF` with entity `PAYROLL_RUN` or `FINAL_SETTLEMENT`): submitted or worked out,
+management; approved, accounts (and HR); sent back, HR with the reason; paid, HR and the approver. Payroll is company-wide,
+so the role's holders are the company's (admins only when nobody holds it), never the person who acted.
+
 ### HR records (v6 item 99)
 
 `Employee` carries the whole HR record: job and terms (employment type, grade, reports to, probation end, confirmation,
@@ -1046,7 +1052,14 @@ earnings kept, the special allowance taking the rounding), so payroll pays what 
 person has no structure yet or one is already dated that day, refused when that month's salary is approved, noted with
 the letter number, and removed with the event unless a payslip used it.
 Creating a staff record with a joining date writes its JOINED event. `GET /staff/events/:id/letter` returns what the
-letter needs; the web prints it from `components/staff/hrLetterPrint.ts` (an exit also prints the experience certificate).
+letter needs, with the words in force (`template`, and `experienceTemplate` for an exit); the web prints it from
+`components/staff/hrLetterPrint.ts` (an exit also prints the experience certificate).
+The words are templates (`@erp/shared/hr-letters.ts`): `STANDARD_HR_LETTERS` per `HR_LETTER_KINDS` (each event type and
+EXPERIENCE), overlaid by the company's `HrLetterTemplate` rows, which staff admins edit at HR and payroll › Letter
+templates (`GET|PUT /staff/letter-templates`, `LetterTemplatesService`; empty or the standard words remove the row). A
+template is paragraphs split by a blank line, `{field}` for a `LETTER_FIELDS` fact and `[ … ]` around words that print
+only when every field inside has a value; a paragraph with an empty field outside brackets is left out. It is checked by
+`letterTemplateProblem`, filled by `fillLetter` over `hrLetterValues`. Keep `src/scripts/hr-letters-test.ts` passing.
 Other documents are attachments on `Attachment.employeeId` (`PUT /staff/employees/:id/documents`); the joining documents
 below keep theirs out of that list.
 
@@ -1063,9 +1076,22 @@ or set aside (a fresher's experience letter). Recording the offer and `GET /staf
 letter held for papers says which ones. An offer can be taken back while only the joining follows it. The HR dashboard
 lists active staff with papers outstanding (`documentsPending`). Keep `src/scripts/hr-documents-test.ts` passing.
 
-`GET /staff/hr-dashboard` (staff admins and payroll) gives head count by site, department and employment type, who joined
+**Exit clearance (no dues).** Once someone's exit is recorded (an exit event or a last working day), each item of the
+company's `exitClearance` master (Masters › Exit clearance items: site records, tools and PPE, vehicle and fuel card,
+imprest, laptop and phone, drawings and passwords by default) is signed off as cleared, not applicable (with why), or dues
+(with the amount and what for), by `clearanceLineProblem`. HR, admins, accounts, stores and project managers sign items off
+(`canClearExit`, `PUT /staff/employees/:id/clearance/:code`; `PENDING` takes one back); each is one `ExitClearanceLine`,
+moved only through `ExitClearanceService`, and frozen once the full and final is approved. The settlement recovers
+`clearanceDues` as `clearanceRecovery`, and is approved only when `clearanceProblem` is null and the dues still match what
+it was worked out with. The person's Service and letters tab shows the list and prints the no dues certificate on the
+letterhead once nothing is left. Keep `src/scripts/exit-clearance-test.ts` passing.
+
+`GET /staff/hr-dashboard` (staff admins and payroll) gives each site today (`sites`: on the rolls, present, on approved
+leave, absent and not marked by where people are posted, the same rule as the People figures, with the staff cost of the
+last approved or paid salary month by `Payslip.projectId` and the joining papers outstanding; head office last), head
+count by site, department and employment type, who joined
 and left this month, probation ending in 30 days or overdue, birthdays and work anniversaries to the end of next month,
-active staff with no PAN, UAN or bank account, and active staff with joining documents outstanding; the People home shows it under the module's figures.
+active staff with no PAN, UAN or bank account, and active staff with joining documents outstanding; the People and HR and payroll screens show it under their figures.
 
 ### Management view on the phone (v5 item 96)
 
@@ -1297,9 +1323,17 @@ weighs each by its billing share.
   and out. The BOQ tab filters by section and shows section totals; the activity form takes the component, the parent
   activity and the weight; the progress form offers only activities without parts. Phone: project › Structure, read
   only (`app/structure.tsx`).
+- **Lump-sum items earn by their component.** A lump-sum contract prices each component as one sum (a BOQ item in `LS`,
+  tied to the component by `workElementId`, with no activity of its own), while the work is done in the Cum and Rmt
+  activities under it. `lumpSumShares` (`wbs.ts`) gives each leaf under the component its share of the item, the effective
+  weights down from the component as the roll-up weighs them, spread over its planned quantity (`perUnit`); a leaf linked to
+  an item of its own keeps it. `activityBoqOf` (`src/common/boq-links.ts`) joins the direct links (`perUnit` 1) and these
+  shares, and is the one place executed value is read from: `CostService.compute`, the BOQ list (and the dashboard's
+  executed value), the budget's executed quantities and earned value. So a lump-sum item's executed quantity is its
+  component's progress. Such an item is never offered as a link (`boqLinkSuggestions`).
 - **Demo.** `prisma/seed-structure.ts`: WS-2026-04, a lump-sum town water scheme in month 9 (twelve components by
-  billing share, 23 elements, about 390 activities with approved progress), and the hospital's BOQ in sections with
-  three components weighed by BOQ value.
+  billing share, 23 elements, about 390 activities with approved progress, its road restoration and house connections
+  linked to their unit-rate items), and the hospital's BOQ in sections with three components weighed by BOQ value.
 
 ### Structured DPR
 
@@ -1542,7 +1576,8 @@ scores two names over a normaliser that drops "works", "item", "part", "section"
 pair is offered above `min` (0.6). An activity is matched against the BOQ's section names first (reason
 `section`, the section's largest item by amount) and then against the item descriptions (reason `description`);
 duplicate offers for the same pair merge, keeping `section`. Each activity and each item is offered once, best
-score first.
+score first. A lump sum that prices a component (`LS` with a `workElementId`) is never offered: it earns by its
+component's progress (Work breakdown, "Lump-sum items earn by their component").
 
 `GET /projects/:projectId/activities/boq-links` returns the offers for the project's unlinked activities,
 `POST` the same route takes the ones the user kept (`canEditProjects`). Linking sets `Activity.boqItemId` and,
@@ -2135,12 +2170,21 @@ flow, not `SubmissionLifecycleService`: it is a person's request, not site data 
 - **Calendar.** Sunday is the weekly off everywhere; leave days skip Sundays and the employee's site holidays
   (`leaveDays` in `packages/shared/src/staff.ts`, also used by the web and app forms). A standard day is 9 hours:
   check-out records overtime past it in half hours, and under half a day marks a half day.
-- **Balances** are per calendar year (leave counts in the year it starts; a request cannot span two years): casual
-  12, sick 12, earned 15 (`LEAVE_ENTITLEMENT`), comp-off = weekly offs and holidays worked (half a day earns half),
+- **Balances** are per calendar year (leave counts in the year it starts; a request cannot span two years): the
+  company's days a year from Payroll settings (`PayrollSettings` casual, sick and earned days, standard 12, 12 and 15),
+  read by `leaveEntitlement` (`@erp/shared/staff.ts`, tested in `src/scripts/leave-policy-test.ts`): someone who joined
+  that year gets the months left from their joining month when the company gives pro rata (rounded down to a half day),
+  and earned leave the year before left untaken carries in up to `earnedCarryMax` (0 = none). Someone whose leave was
+  kept elsewhere before Nirmaan has a `LeaveOpening` per year and type (HR's Opening leave on the staff record, `GET|PUT
+  /staff/employees/:id/leave-opening`, checked by `leaveOpeningProblem`): its days taken count as taken (`takenBefore` on
+  the balance) and earned leave brought forward stands in for the carry; comp-off = weekly offs and holidays worked (half a day earns half),
   unpaid without limit. Waiting and approved requests both count. Applying or approving beyond the balance, or
   overlapping other waiting or approved leave, is refused; an advisory lock per employee serialises the check.
 - **Who.** `STAFF_ADMIN_ROLES` (admin, management, HR) keep the staff master and holidays, see everyone and decide
-  anyone's leave. Attendance recorders (`canMarkStaff`) see and mark the staff posted at their projects. Leave is
+  anyone's leave. Attendance recorders (`canMarkStaff`) see and mark the staff posted at their projects. The head office
+  register (`GET|PUT /staff/register` with no `projectId`, Head office first in the web's Register for picker) is the
+  staff posted at no site, marked only by staff admins (`canManageStaff`), so head office days are marked like a site's
+  instead of paid unmarked. Leave is
   decided by a staff admin or the manager of the employee's posting project, never by the employee
   (`ProjectAccessService.canDecideLeave` / `leaveDeciderWhere`). Everyone checks in and applies for their own leave
   once HR links their login; a staff admin can apply for someone else. The employee (before it starts) or a staff
@@ -2169,7 +2213,7 @@ flow, not `SubmissionLifecycleService`: it is a person's request, not site data 
   the web's staff register and My attendance (`FacePhotos`). There is no face matching: the photo is the evidence a
   manager looks at. The web's own Mark in sends no photo.
 - **On duty and tour.** `LeaveType` `ON_DUTY` and `TOUR` are requested and decided like leave but have no balance
-  (`LEAVE_ENTITLEMENT` null) and count present and paid in payroll (`countsAsPresent`), each still shown in its own
+  (no yearly limit in `leaveEntitlement`) and count present and paid in payroll (`countsAsPresent`), each still shown in its own
   column.
 - **Overtime approval.** `StaffAttendance.overtimeStatus` (`OvertimeStatus` PENDING / APPROVED / REJECTED, with who and
   when, and a note). Overtime from a check-out waits; overtime typed in the register is approved when the person
@@ -3104,6 +3148,10 @@ no ledger of its own.
   subcontractors (work value of `APPROVED` subcontractor bills, by bill date). Where a subcontractor bill exists the
   actual bill replaces the estimate: issues recovered on an approved subcontractor bill drop out of material, and
   attendance of a contractor with an approved work order on the project drops out of labour.
+  Site staff salaries are site expenses too (`SITE_STAFF` beside the expense categories, `COST_EXPENSE_LABELS`): every
+  payslip of an approved or paid salary run counts its gross and the company's PF and ESI against `Payslip.projectId`, the
+  site the person was posted at when the run was prepared, on the month's last day (`staffCostDate`). Head office staff
+  are no project's cost.
 - **Cash.** Billed and cash in from receivables; vendor and subcontractor bills (approved, with GST, by bill date)
   and cash out (payments by date) from payables.
 - **Value.** Executed value = `APPROVED` progress quantity × BOQ rate (by progress date); measured value =
@@ -4148,6 +4196,16 @@ days; it is claimed for delays in the register, or for the added work of a varia
   numbers). A wide section reads its money in lakhs and crores on the screen; print and Excel keep rupees. The trend's
   colours are the `series.trend` roles (`src/ds`), checked for colour-blind separation in both themes. A new report is a key and an
   entry in `MANAGEMENT_REPORTS`, a builder in `ManagementReportsService`, and a node under Reports in the navigation tree.
+- **HR and payroll reports.** Six more keys on the same page, Print and Excel (`HR_REPORT_KEYS`, read only by the people who
+  see payroll, `canViewPayroll`, never a site manager): head count and attrition (by site and department, who joined and
+  who left; `headcountMoves` keeps start + joined − left = end, and someone whose last day is the period's last has left),
+  staff attendance (each person's month from `PayrollService.staffMonth`, with check-ins, `attendancePct`), the leave
+  register (each person's `StaffService.balancesFor` and the leave in the period), PF and ESI (person by person from the
+  month's approved and paid salary runs, due by `statutoryDueOn`), full and final settlements (with who left and has none)
+  and staff cost by site (gross pay plus the company's PF, pension and ESI by the posting on the payslip). They are built in
+  `HrReportsService` (`apps/api/src/payroll`), which `ManagementReportsService` hands them to; the arithmetic is pure in
+  `@erp/shared/hr-reports.ts` (tested in `src/scripts/hr-reports-test.ts`). A project filter is the staff posted there, so a
+  store takes one too; a vertical does not narrow them. They sit under HR and payroll › Reports and Reports and MIS › HR and payroll.
 - **Not yet.** The phone, a scheduled email of the MIS, and a budget for the company as a whole.
 
 ## Official progress reports

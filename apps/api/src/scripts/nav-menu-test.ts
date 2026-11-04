@@ -86,9 +86,9 @@ test('a user sees only the pages they may open, and a module with none is left o
   assert.ok(navMenuFor(admin, departments).some((m) => m.key === 'administration'));
 });
 
-test('HR and payroll is one module with the brief’s sub-modules, and a site engineer has no salaries or payroll in it', () => {
+test('HR and payroll is one module with the brief’s sub-modules, and a site engineer has no salaries, payroll or HR reports in it', () => {
   const subs = (u: NavUser) => navMenuFor(u, departments).find((m) => m.key === 'hr-payroll')?.subs.map((s) => s.label);
-  assert.deepEqual(subs({ roleKey: 'HR_MANAGER' }), ['My HR', 'Employee master', 'Attendance', 'Leave management', 'Salary master', 'Payroll', 'Letters and history', 'Full and final', 'Masters']);
+  assert.deepEqual(subs({ roleKey: 'HR_MANAGER' }), ['My HR', 'Employee master', 'Attendance', 'Leave management', 'Salary master', 'Payroll', 'Letters and history', 'Full and final', 'Masters', 'Reports']);
   assert.deepEqual(subs(engineer), ['My HR', 'Employee master', 'Attendance', 'Leave management']);
   const hr = navMenuFor({ roleKey: 'HR_MANAGER' }, departments).find((m) => m.key === 'hr-payroll')!;
   for (const id of ['people.employees', 'people.leave', 'payroll.structures', 'payroll.runs', 'people.letters', 'payroll.settlement'])

@@ -123,6 +123,9 @@ export interface EmployeeLetterDto {
   };
   /** Who signs: the person who recorded it, and their role */
   signedBy: { name: string; title: string };
+  /** The company's words for this letter (`STANDARD_HR_LETTERS` unless it changed them), and for an exit the experience certificate's */
+  template: string;
+  experienceTemplate: string | null;
 }
 
 export interface HeadcountRowDto {
@@ -160,4 +163,22 @@ export interface HrDashboardDto {
   missingDetails: { employeeId: string; fullName: string; employeeCode: string; missing: string[] }[];
   /** Active staff whose required joining documents are not all verified or set aside, with what is outstanding */
   documentsPending: { employeeId: string; fullName: string; employeeCode: string; missing: string[] }[];
+  /** Each site today (head office last): who is on the rolls there, present, on leave, absent and not marked, the
+   *  staff cost of the last approved or paid salary month and the joining papers outstanding */
+  sites: HrSiteRowDto[];
+  /** The salary month `sites[].cost` is for, or null before any run is approved */
+  costMonth: string | null;
+}
+
+export interface HrSiteRowDto {
+  projectId: string | null;
+  label: string;
+  onRoll: number;
+  present: number;
+  onLeave: number;
+  absent: number;
+  notMarked: number;
+  /** Gross plus the company's PF and ESI in `costMonth` */
+  cost: string | null;
+  papersPending: number;
 }

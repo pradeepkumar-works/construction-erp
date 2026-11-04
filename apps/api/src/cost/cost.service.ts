@@ -1,7 +1,8 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import type { CostHeadsDto, CostMonthDto, ExpenseCategory, LabourRatesDto, ProjectCostDto, ProjectCostSummaryDto } from '@erp/shared';
-import { canSetLabourRates, canViewCost, machineryLogCost } from '@erp/shared';
+import type { CostExpenseCategory, CostHeadsDto, CostMonthDto, LabourRatesDto, ProjectCostDto, ProjectCostSummaryDto } from '@erp/shared';
+import { SITE_STAFF, canSetLabourRates, canViewCost, machineryLogCost, staffCostDate } from '@erp/shared';
+import { activityBoqOf } from '../common/boq-links';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -137,7 +138,7 @@ export class CostService {
       to: q.to ?? null,
       months,
       expensesByCategory: [...acc.expenses.entries()]
-        .map(([category, v]) => ({ category: category as ExpenseCategory, count: v.count, amount: v.amount }))
+        .map(([category, v]) => ({ category: category as CostExpenseCategory, count: v.count, amount: v.amount }))
         .sort(sortAmount)
         .map((v) => ({ ...v, amount: money(v.amount) })),
       materialByItem: [...acc.material.entries()]
@@ -186,8 +187,8 @@ export class CostService {
     if (!projectIds.length) return out;
     const scope = { organizationId, projectId: { in: projectIds }, ...(date ? { date } : {}) };
     const inProjects = { organizationId, projectId: { in: projectIds } };
-    const [progress, measurements, expenses, issues, logs, attendance, rates, bills, receipts, subBills, vendorBills, payments, subVendors, otherBills, debitNotes, openings] = await Promise.all([
-      this.prisma.progressEntry.findMany({ where: { ...scope, status: 'APPROVED' }, select: { projectId: true, date: true, quantity: true, activity: { select: { boqItem: { select: { rate: true } } } } } }),
+    const [progress, measurements, expenses, issues, logs, attendance, rates, bills, receipts, subBills, vendorBills, payments, subVendors, otherBills, debitNotes, openings, boqOf] = await Promise.all([
+      this.prisma.progressEntry.findMany({ where: { ...scope, status: 'APPROVED' }, select: { projectId: true, date: true, quantity: true, activityId: true } }),
       this.prisma.measurementSheet.findMany({ where: { ...scope, status: 'APPROVED' }, select: { projectId: true, totalQty: true, boqItem: { select: { rate: true } } } }),
       this.prisma.expense.findMany({ where: { ...scope, status: 'APPROVED' }, select: { projectId: true, date: true, category: true, totalAmount: true } }),
       // Material issued to a subcontractor and recovered in their approved bill is in that bill's work value instead.
@@ -236,6 +237,8 @@ export class CostService {
       }),
       // What a project had spent and done when it came on Nirmaan, counted on that day (ARCHITECTURE "Opening cost").
       this.prisma.projectOpening.findMany({ where: { ...inProjects, ...(date ? { asOf: date } : {}) } }),
+      // An entry's BOQ item: its own link, or its share of the lump sum its component is priced by.
+      activityBoqOf(this.prisma, projectIds),
     ]);
     for (const b of vendorBills) out.get(b.projectId)!.payableBilled = b._sum.total ?? ZERO;
     for (const p of payments) out.get(p.projectId)!.cashOut = p._sum.amount ?? ZERO;
@@ -255,10 +258,10 @@ export class CostService {
     };
 
     for (const p of progress) {
-      const rate = p.activity.boqItem?.rate;
-      if (!rate) continue;
+      const boq = boqOf.get(p.activityId);
+      if (!boq) continue;
       const acc = out.get(p.projectId)!;
-      const v = p.quantity.mul(rate);
+      const v = p.quantity.mul(boq.perUnit).mul(boq.rate);
       acc.executed = acc.executed.plus(v);
       const m = month(acc, p.date);
       m.executed = m.executed.plus(v);
@@ -307,7 +310,7 @@ export class CostService {
       acc.machinery.set(m.id, { ...r, amount: r.amount.plus(amount) });
     };
     const workshop = (vendorId: string, name: string): Machine => ({ id: `workshop:${vendorId}`, code: 'Workshop', name, rate: null, rateUnit: 'MONTH' });
-    const expense = (acc: Acc, d: Date, category: ExpenseCategory, amount: D, count: number) => {
+    const expense = (acc: Acc, d: Date, category: CostExpenseCategory, amount: D, count: number) => {
       add(acc, d, 'expenses', amount);
       const c = acc.expenses.get(category) ?? { count: 0, amount: ZERO };
       acc.expenses.set(category, { count: c.count + count, amount: c.amount.plus(amount) });
@@ -330,6 +333,17 @@ export class CostService {
       } else if (vb?.kind === 'HIRE' && vb.equipment) machine(acc, n.date, vb.equipment, amount);
       else if (vb?.kind === 'SERVICE') machine(acc, n.date, workshop(n.vendorId, n.vendor.name), amount);
       else if (vb) expense(acc, n.date, vb.expenseCategory ?? 'OTHER', amount, 0);
+    }
+    // Site staff: each approved or paid payslip is its site's cost on the month's last day, gross plus the company's PF
+    // and ESI (ARCHITECTURE "Cost and margin", Site staff salaries).
+    const slips = await this.prisma.payslip.findMany({
+      where: { organizationId, projectId: { in: projectIds }, run: { status: { in: ['APPROVED', 'PAID'] } } },
+      select: { projectId: true, gross: true, employerCost: true, run: { select: { month: true } } },
+    });
+    for (const s of slips) {
+      const on = staffCostDate(s.run.month);
+      if (date && ((date.gte && on < (date.gte as Date)) || (date.lte && on > (date.lte as Date)))) continue;
+      expense(out.get(s.projectId!)!, on, SITE_STAFF, s.gross.plus(s.employerCost), 1);
     }
     for (const o of openings) {
       const acc = out.get(o.projectId)!;
