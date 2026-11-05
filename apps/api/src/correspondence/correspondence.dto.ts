@@ -4,6 +4,7 @@ import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsEmail, IsIn, IsNotEmp
 import {
   LETTER_ACTIONS,
   LETTER_APPROVAL_RULES,
+  LETTER_GATES,
   LETTER_DIRECTIONS,
   LETTER_MODES,
   LETTER_PRIORITIES,
@@ -11,6 +12,7 @@ import {
   LIST_SORT_FIELDS,
   type LetterAction,
   type LetterApprovalRule,
+  type LetterGate,
   type LetterDirection,
   type LetterMode,
   type LetterPriority,
@@ -58,6 +60,7 @@ export class ListLettersQuery extends PageQuery {
   @ApiPropertyOptional({ enum: LETTER_DIRECTIONS }) @IsOptional() @IsIn(list(LETTER_DIRECTIONS)) direction?: LetterDirection;
   @ApiPropertyOptional({ enum: LETTER_STATUSES }) @IsOptional() @IsIn(list(LETTER_STATUSES)) status?: LetterStatus;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(60) category?: string;
+  @ApiPropertyOptional({ description: 'From or to an office of this kind in the address book (a letterParty code)', example: 'third-party-inspection' }) @IsOptional() @IsString() @MaxLength(80) partyKind?: string;
   @ApiPropertyOptional() @IsOptional() @IsUUID() riskId?: string;
   @ApiPropertyOptional({ description: 'Marked to me and not acted on' }) @IsOptional() @QueryBool() @IsBoolean() mine?: boolean;
   @ApiPropertyOptional({ description: 'Waiting for my signature' }) @IsOptional() @QueryBool() @IsBoolean() toSign?: boolean;
@@ -106,6 +109,7 @@ export class LetterContactInput {
   @ApiPropertyOptional() @IsOptional() @opt() @trim() @IsEmail() @MaxLength(200) email?: string | null;
   @ApiPropertyOptional() @IsOptional() @trim() @IsString() @MaxLength(30) phone?: string | null;
   @ApiPropertyOptional() @IsOptional() @opt() @IsUUID() clientId?: string | null;
+  @ApiPropertyOptional({ description: 'What kind of office it is: a code of the letterParty master', example: 'third-party-inspection' }) @IsOptional() @opt() @IsString() @MaxLength(80) kind?: string | null;
   @ApiPropertyOptional() @IsOptional() @IsBoolean() isActive?: boolean;
 }
 
@@ -113,6 +117,7 @@ export class UpdateLetterContactDto extends PartialType(LetterContactInput) {}
 
 export class ListLetterContactsQuery extends PageQuery {
   @ApiPropertyOptional({ description: 'Include ones switched off' }) @IsOptional() @QueryBool() @IsBoolean() all?: boolean;
+  @ApiPropertyOptional({ description: 'Only offices of this kind (a letterParty code)' }) @IsOptional() @IsString() @MaxLength(80) kind?: string;
 }
 
 export class LetterSettingsInput {
@@ -121,6 +126,18 @@ export class LetterSettingsInput {
   @IsOptional()
   @IsIn(list(LETTER_APPROVAL_RULES))
   seal?: LetterApprovalRule;
+}
+
+export class LetterGateInput {
+  @ApiPropertyOptional({ description: 'A code of the letterCategory master; leave out (or null) for letters with no category', example: 'claim' })
+  @IsOptional()
+  @opt()
+  @IsString()
+  @MaxLength(80)
+  category?: string | null;
+  @ApiProperty({ enum: LETTER_GATES, description: 'NONE numbered when saved, SIGN its signatory signs (L1), SEAL signed and then sealed at head office (L1 and L2)' })
+  @IsIn(list(LETTER_GATES))
+  gate: LetterGate;
 }
 
 export class LetterSeriesInput {

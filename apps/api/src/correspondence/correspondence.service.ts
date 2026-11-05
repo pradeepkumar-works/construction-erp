@@ -2,7 +2,8 @@ import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundEx
 import { Prisma } from '@prisma/client';
 import {
   HEAD_OFFICE_PREFIX,
-  type LetterApprovalRule,
+  type LetterGate,
+  type LetterRules,
   LETTER_ACTION_LABELS,
   LETTER_NUMBER_PATTERN,
   ROLE_LABELS,
@@ -17,6 +18,9 @@ import {
   isDirector,
   isGuest,
   letterFy,
+  letterGate,
+  NO_LETTER_CATEGORY,
+  readLetterGates,
   letterNeedsApproval,
   letterNeedsSeal,
   letterRulesProblem,
@@ -79,6 +83,7 @@ const letterInclude = {
   signatory: { select: { fullName: true } },
   signedBy: { select: { fullName: true } },
   closedBy: { select: { fullName: true } },
+  contact: { select: { kind: true } },
   risk: { select: { riskNo: true, title: true } },
   inReplyTo: { select: { ...refSelect, status: true } },
   replies: { select: { ...refSelect, status: true }, orderBy: { letterDate: 'asc' } },
@@ -192,7 +197,7 @@ export class CorrespondenceService {
     };
   }
 
-  private toDto(user: RequestUser, l: LetterRow, categories: Map<string, string>, today: string, seal: LetterApprovalRule, marks: LetterMarkDto[] = []): LetterDto {
+  private toDto(user: RequestUser, l: LetterRow, categories: Map<string, string>, today: string, rules: LetterRules, marks: LetterMarkDto[] = []): LetterDto {
     const facts = {
       direction: l.direction,
       status: l.status,
@@ -216,6 +221,7 @@ export class CorrespondenceService {
       receivedOn: dateOnly(l.receivedOn),
       party: l.party,
       contactId: l.contactId,
+      partyKind: l.contact?.kind ?? null,
       subject: l.subject,
       summary: l.summary,
       body: l.body,
@@ -242,7 +248,8 @@ export class CorrespondenceService {
       sentForApprovalAt: iso(l.sentForApprovalAt),
       signedAt: iso(l.signedAt),
       signedByName: l.signedBy?.fullName ?? null,
-      needsSeal: l.direction === 'OUT' && !l.letterNo && letterNeedsApproval(seal, l.category),
+      gate: l.direction === 'OUT' ? letterGate(rules, l.category) : null,
+      needsSeal: l.direction === 'OUT' && !l.letterNo && letterGate(rules, l.category) === 'SEAL',
       approvedAt: iso(l.approvedAt),
       returnNote: l.returnNote,
       docketNo: l.docketNo,
@@ -277,6 +284,7 @@ export class CorrespondenceService {
     if (q.direction) and.push({ direction: q.direction });
     if (q.status) and.push({ status: q.status });
     if (q.category) and.push({ category: q.category });
+    if (q.partyKind) and.push({ contact: { kind: q.partyKind } });
     if (q.riskId) and.push({ riskId: q.riskId });
     if (q.from) and.push({ letterDate: { gte: parseDate(q.from) } });
     if (q.to) and.push({ letterDate: { lte: parseDate(q.to) } });
@@ -317,24 +325,24 @@ export class CorrespondenceService {
     const where: Prisma.LetterWhereInput = { AND: [this.where(user), ...this.filterWhere(user, q, parseDate(today))] };
     const sortBy = q.sortBy ?? 'letterDate';
     const args = pageArgs(q);
-    const [rows, total, categories, seal] = await Promise.all([
+    const [rows, total, categories, rules] = await Promise.all([
       this.prisma.letter.findMany({ where, include: letterInclude, orderBy: [...LETTER_ORDER[sortBy](order(sortBy, q.sortOrder)), { id: 'asc' }], skip: args.skip, take: args.take }),
       this.prisma.letter.count({ where }),
       this.categoryNames(user.organizationId),
-      this.sealRule(user.organizationId),
+      this.rules(user.organizationId),
     ]);
-    return paginated(rows.map((r) => this.toDto(user, r, categories, today, seal)), total, args);
+    return paginated(rows.map((r) => this.toDto(user, r, categories, today, rules)), total, args);
   }
 
   async get(user: RequestUser, id: string): Promise<LetterDto> {
     const row = await this.prisma.letter.findFirst({ where: { AND: [{ id }, this.where(user)] }, include: letterInclude });
     if (!row) throw new NotFoundException('Letter not found, or not one you can open');
-    const [marks, categories, seal] = await Promise.all([
+    const [marks, categories, rules] = await Promise.all([
       this.prisma.letterMark.findMany({ where: { letterId: id }, include: markInclude, orderBy: { createdAt: 'asc' } }),
       this.categoryNames(user.organizationId),
-      this.sealRule(user.organizationId),
+      this.rules(user.organizationId),
     ]);
-    return this.toDto(user, row, categories, todayIn(), seal, marks.map((m) => this.markDto(m)));
+    return this.toDto(user, row, categories, todayIn(), rules, marks.map((m) => this.markDto(m)));
   }
 
   private async load(user: RequestUser, id: string) {
@@ -545,8 +553,7 @@ export class CorrespondenceService {
     await this.checkLinks(user.organizationId, projectId, dto);
     if (dto.signatoryId) await this.assertSignatory(user.organizationId, dto.signatoryId, projectId);
     if (alreadySent) {
-      const org = await this.prisma.organization.findUniqueOrThrow({ where: { id: user.organizationId }, select: { letterApproval: true } });
-      if (letterNeedsApproval(org.letterApproval, dto.category) && !canSignLetters(user.roleKey))
+      if (letterNeedsApproval(await this.rules(user.organizationId), dto.category) && !canSignLetters(user.roleKey))
         throw new ForbiddenException('This kind of letter is approved by its signatory before it is numbered. Save it as a draft and send it for approval.');
     }
     const id = await this.prisma.$transaction(async (tx) => {
@@ -701,12 +708,10 @@ export class CorrespondenceService {
 
   // Sign-off and issue
 
-  private async sealRule(organizationId: string) {
-    return (await this.prisma.organization.findUniqueOrThrow({ where: { id: organizationId }, select: { letterSeal: true } })).letterSeal;
-  }
-
-  private async approvalRule(organizationId: string) {
-    return (await this.prisma.organization.findUniqueOrThrow({ where: { id: organizationId }, select: { letterApproval: true } })).letterApproval;
+  /** The company's approval: its two rules and the gate of each category it has set. */
+  private async rules(organizationId: string): Promise<LetterRules> {
+    const o = await this.prisma.organization.findUniqueOrThrow({ where: { id: organizationId }, select: { letterApproval: true, letterSeal: true, letterGates: true } });
+    return { approval: o.letterApproval, seal: o.letterSeal, gates: readLetterGates(o.letterGates) };
   }
 
   /** A draft goes to its signatory, who approves it (and it gets its number) or returns it with what to change. */
@@ -743,7 +748,7 @@ export class CorrespondenceService {
     const cur = await this.load(user, id);
     if (cur.direction !== 'OUT' || cur.status !== 'DRAFT') throw new BadRequestException('Only a draft letter is issued');
     this.assertRegister(user);
-    if (letterNeedsApproval(await this.approvalRule(user.organizationId), cur.category)) throw new BadRequestException('This kind of letter is approved by its signatory before it is numbered. Send it for approval.');
+    if (letterNeedsApproval(await this.rules(user.organizationId), cur.category)) throw new BadRequestException('This kind of letter is approved by its signatory before it is numbered. Send it for approval.');
     await this.number(user, cur, 'ISSUED');
     return this.get(user, id);
   }
@@ -753,7 +758,7 @@ export class CorrespondenceService {
     const cur = await this.load(user, id);
     if (!this.can(user, cur).sign)
       throw new ForbiddenException(cur.status !== 'AWAITING_APPROVAL' ? 'The letter is not waiting for approval' : cur.signedAt ? 'A director seals this letter at head office' : 'Only its signatory or a director approves this letter');
-    if (!cur.signedAt && letterNeedsSeal(await this.sealRule(user.organizationId), cur.category, user.roleKey)) {
+    if (!cur.signedAt && letterNeedsSeal(await this.rules(user.organizationId), cur.category, user.roleKey)) {
       await this.sign(user, cur);
       return this.get(user, id);
     }
@@ -898,16 +903,29 @@ export class CorrespondenceService {
     const rows = await this.prisma.letterSeries.findMany({ where: { organizationId: org, OR: [{ projectId: { in: projects.map((p) => p.id) } }, ...(canHeadLetters(user.roleKey) ? [{ projectId: null }] : [])] }, include: { project: { select: { name: true } } } });
     rows.sort((a, b) => (a.projectId === null ? -1 : b.projectId === null ? 1 : (a.project?.name ?? '').localeCompare(b.project?.name ?? '')) || a.direction.localeCompare(b.direction));
     const today = todayIn();
-    return { approval: await this.approvalRule(org), seal: await this.sealRule(org), series: await Promise.all(rows.map((r) => this.seriesDto(r, today))), pattern: LETTER_NUMBER_PATTERN, canManage: canHeadLetters(user.roleKey) };
+    const rules = await this.rules(org);
+    return { approval: rules.approval, seal: rules.seal, gates: rules.gates, series: await Promise.all(rows.map((r) => this.seriesDto(r, today))), pattern: LETTER_NUMBER_PATTERN, canManage: canHeadLetters(user.roleKey) };
   }
 
   async saveSettings(user: RequestUser, dto: LetterSettingsInput): Promise<LetterSettingsDto> {
     this.assertHead(user);
-    const seal = dto.seal ?? (await this.sealRule(user.organizationId));
+    const seal = dto.seal ?? (await this.rules(user.organizationId)).seal;
     const problem = letterRulesProblem(dto.approval, seal);
     if (problem) throw new BadRequestException(problem);
     await this.prisma.organization.update({ where: { id: user.organizationId }, data: { letterApproval: dto.approval, letterSeal: seal } });
     await this.audit.log(user, 'ORGANIZATION', user.organizationId, 'UPDATED', `Letter approval: ${dto.approval}; seal at head office: ${seal}`);
+    return this.settings(user);
+  }
+
+  /** One category's gate (or that of letters with no category); a letter already waiting keeps where it stands. */
+  async saveGate(user: RequestUser, dto: { category?: string | null; gate: LetterGate }): Promise<LetterSettingsDto> {
+    this.assertHead(user);
+    const category = dto.category || null;
+    const names = await this.categoryNames(user.organizationId);
+    if (category && !names.has(category)) throw new BadRequestException('Choose a letter category from the list');
+    const gates = { ...(await this.rules(user.organizationId)).gates, [category ?? NO_LETTER_CATEGORY]: dto.gate };
+    await this.prisma.organization.update({ where: { id: user.organizationId }, data: { letterGates: gates } });
+    await this.audit.log(user, 'ORGANIZATION', user.organizationId, 'UPDATED', `Letter approval for ${category ? names.get(category) : 'letters with no category'}: ${dto.gate}`);
     return this.settings(user);
   }
 
@@ -931,26 +949,33 @@ export class CorrespondenceService {
 
   // Address book
 
-  private contactDto(c: Prisma.LetterContactGetPayload<{ include: { client: { select: { name: true } }; _count: { select: { letters: true } } } }>): LetterContactDto {
-    return { id: c.id, name: c.name, office: c.office, organisation: c.organisation, address: c.address, email: c.email, phone: c.phone, clientId: c.clientId, clientName: c.client?.name ?? null, isActive: c.isActive, letters: c._count.letters };
+  private contactDto(c: Prisma.LetterContactGetPayload<{ include: { client: { select: { name: true } }; _count: { select: { letters: true } } } }>, kinds: Map<string, string>): LetterContactDto {
+    return { id: c.id, name: c.name, office: c.office, organisation: c.organisation, address: c.address, email: c.email, phone: c.phone, kind: c.kind, kindName: c.kind ? (kinds.get(c.kind) ?? c.kind) : null, clientId: c.clientId, clientName: c.client?.name ?? null, isActive: c.isActive, letters: c._count.letters };
+  }
+
+  private async kindNames(organizationId: string) {
+    return new Map((await this.masters.entriesFor(organizationId, 'letterParty')).map((e) => [e.code, e.name]));
   }
 
   async contacts(user: RequestUser, q: ListLetterContactsQuery): Promise<Paginated<LetterContactDto>> {
     this.assertRegister(user);
     const and: Prisma.LetterContactWhereInput[] = [{ organizationId: user.organizationId }];
     if (!q.all) and.push({ isActive: true });
+    if (q.kind) and.push({ kind: q.kind });
     for (const w of searchWords(q.q)) and.push({ OR: [{ name: ilike(w) }, { office: ilike(w) }, { organisation: ilike(w) }, { email: ilike(w) }] });
     const args = pageArgs(q);
     const where = { AND: and };
-    const [rows, total] = await Promise.all([
+    const [rows, total, kinds] = await Promise.all([
       this.prisma.letterContact.findMany({ where, include: { client: { select: { name: true } }, _count: { select: { letters: true } } }, orderBy: [{ isActive: 'desc' }, { name: 'asc' }, { office: 'asc' }], skip: args.skip, take: args.take }),
       this.prisma.letterContact.count({ where }),
+      this.kindNames(user.organizationId),
     ]);
-    return paginated(rows.map((r) => this.contactDto(r)), total, args);
+    return paginated(rows.map((r) => this.contactDto(r, kinds)), total, args);
   }
 
   private async checkContact(user: RequestUser, dto: Partial<LetterContactInput>, selfId?: string) {
     if (dto.clientId && !(await this.prisma.client.count({ where: { id: dto.clientId, organizationId: user.organizationId } }))) throw new NotFoundException('Client not found');
+    if (dto.kind && !(await this.kindNames(user.organizationId)).has(dto.kind)) throw new BadRequestException('Choose the kind of office from the list');
     if (dto.name !== undefined || dto.office !== undefined) {
       const cur = selfId ? await this.prisma.letterContact.findUnique({ where: { id: selfId } }) : null;
       const name = (dto.name ?? cur?.name ?? '').trim();
@@ -964,11 +989,11 @@ export class CorrespondenceService {
     this.assertRegister(user);
     await this.checkContact(user, dto);
     const row = await this.prisma.letterContact.create({
-      data: { organizationId: user.organizationId, name: dto.name, office: dto.office || null, organisation: dto.organisation || null, address: dto.address || null, email: dto.email || null, phone: dto.phone || null, clientId: dto.clientId || null, isActive: dto.isActive ?? true },
+      data: { organizationId: user.organizationId, name: dto.name, office: dto.office || null, organisation: dto.organisation || null, address: dto.address || null, email: dto.email || null, phone: dto.phone || null, kind: dto.kind || null, clientId: dto.clientId || null, isActive: dto.isActive ?? true },
       include: { client: { select: { name: true } }, _count: { select: { letters: true } } },
     });
     await this.audit.log(user, 'LETTER_CONTACT', row.id, 'CREATED', contactLine(row));
-    return this.contactDto(row);
+    return this.contactDto(row, await this.kindNames(user.organizationId));
   }
 
   async updateContact(user: RequestUser, id: string, dto: UpdateLetterContactDto): Promise<LetterContactDto> {
@@ -977,11 +1002,11 @@ export class CorrespondenceService {
     await this.checkContact(user, dto, id);
     const data: Prisma.LetterContactUncheckedUpdateInput = {};
     if (dto.name) data.name = dto.name;
-    for (const k of ['office', 'organisation', 'address', 'email', 'phone', 'clientId'] as const) if (dto[k] !== undefined) data[k] = dto[k] || null;
+    for (const k of ['office', 'organisation', 'address', 'email', 'phone', 'kind', 'clientId'] as const) if (dto[k] !== undefined) data[k] = dto[k] || null;
     if (dto.isActive !== undefined) data.isActive = dto.isActive;
     const row = await this.prisma.letterContact.update({ where: { id }, data, include: { client: { select: { name: true } }, _count: { select: { letters: true } } } });
     await this.audit.log(user, 'LETTER_CONTACT', id, 'UPDATED', contactLine(row));
-    return this.contactDto(row);
+    return this.contactDto(row, await this.kindNames(user.organizationId));
   }
 
   async removeContact(user: RequestUser, id: string) {

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LETTER_STATUS_LABELS, type LetterDto, type LetterSummaryDto, type Paginated } from '@erp/shared';
+import { letterStatusLabel, type LetterDto, type LetterSummaryDto, type Paginated } from '@erp/shared';
 import { useFetch } from '../src/api/hooks';
 import { Chips, EmptyState, ErrorBanner, Loading, Pill, Screen, SectionTitle, Stat, Touchable } from '../src/components';
 import { LETTER_STATUS_TONE } from '../src/components/letterTone';
@@ -76,7 +76,7 @@ export default function LettersScreen() {
                   ) : null}
                 </View>
                 <View style={styles.side}>
-                  <Pill text={t(LETTER_STATUS_LABELS[l.status])} fg={tone.fg} bg={tone.bg} icon={tone.icon} />
+                  <Pill text={t(letterStatusLabel(l))} fg={tone.fg} bg={tone.bg} icon={tone.icon} />
                   <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
                 </View>
               </Touchable>

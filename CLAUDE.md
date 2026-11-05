@@ -173,9 +173,10 @@ and the pre-delivery checklist.
   read through `MastersService.entriesFor`, never a fixed array of a form's own. Keep `src/scripts/masters-test.ts` passing.
 - Correspondence (item 136, `apps/api/src/correspondence`, ARCHITECTURE "Correspondence"): a letter's number comes only from
   its series through `formatLetterNo` (`@erp/shared/correspondence.ts`), an outward letter waits for its signatory only by
-  `letterNeedsApproval`, and for the head office seal (item 169) only by `letterNeedsSeal` (`letterRulesProblem` keeps the
-  second rule within the first), and a received letter comes in only through `CorrespondenceService.recordInward` (the form
-  and the email inbox). Keep `src/scripts/correspondence-test.ts` passing.
+  `letterNeedsApproval`, and for the head office seal (item 169) only by `letterNeedsSeal`, both over its category's gate
+  `letterGate` (item 179: the company's `letterGates`, the two rules for a category it has not set), and a received letter
+  comes in only through `CorrespondenceService.recordInward` (the form and the email inbox). The outward register's sign-off
+  is `letterSignOff` and a letter's state in words `letterStatusLabel`. Keep `src/scripts/correspondence-test.ts` passing.
 - QA/QC (item 137, `apps/api/src/qa`, ARCHITECTURE "QA/QC"): test types are `STANDARD_TEST_TYPES` overlaid by the company's
   rows by code (`testTypesOf`), never seeded; what a quality plan line owes is only `testsOwed` (IS 456 sampling by
   `is456Samples`), over approved DPR lines and receipts; a pour's card is an `Inspection` made through

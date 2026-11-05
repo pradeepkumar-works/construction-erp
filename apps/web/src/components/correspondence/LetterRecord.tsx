@@ -220,7 +220,7 @@ export function LetterRecord({ id, mode, open, onClose }: RecordProps & { mode: 
   };
 
   const isIn = data?.direction === 'IN';
-  const needsApproval = !!data && !!settings && letterNeedsApproval(settings.approval, data.category);
+  const needsApproval = !!data && !!settings && letterNeedsApproval(settings, data.category);
   const modeValue = Form.useWatch('mode', form);
 
   const actions = (size: 'small' | 'middle') => {
@@ -341,7 +341,7 @@ export function LetterRecord({ id, mode, open, onClose }: RecordProps & { mode: 
           tags: (
             <Flex gap={4} wrap>
               <DirectionTag direction={data.direction} />
-              <LetterStatusTag status={data.status} />
+              <LetterStatusTag letter={data} />
               {data.priority === 'URGENT' ? <AppTag meaning="failed">{LETTER_PRIORITY_LABELS.URGENT}</AppTag> : null}
               {data.confidential ? <AppTag variant="kind">Confidential</AppTag> : null}
               {data.overdue ? <AppTag meaning="failed">Reply overdue</AppTag> : null}

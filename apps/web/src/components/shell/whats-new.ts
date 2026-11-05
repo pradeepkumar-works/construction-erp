@@ -9,6 +9,18 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-correspondence-desk',
+    date: '2026-11-05',
+    title: 'Letters: approval by category, where each letter stands, kinds of office',
+    points: [
+      'Numbering and approval now sets each letter category on its own: numbered when saved, signed by its signatory, or signed and then sealed at head office.',
+      'The outward register shows where each letter stands: with its signatory, waiting for the seal, signed and sealed, dispatched or delivered. Letters to sign and seal opens the letters waiting at either step.',
+      'A letter waiting for the seal says so on its tag, not just "Waiting for signature".',
+      'The address book records what kind of office each entry is: client, consultant, third-party inspection, a government authority and more. Both registers filter by it.',
+      'A received letter with its scan kept opens the copy straight from the inward register.',
+    ],
+  },
+  {
     id: '2026-11-stores-purchase',
     date: '2026-11-04',
     title: 'Purchase and stores overviews, item codes and pump readings',

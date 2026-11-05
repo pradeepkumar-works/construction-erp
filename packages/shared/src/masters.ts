@@ -13,7 +13,7 @@ import * as P from './permissions';
  * new one and switch the old one off, as with units.
  */
 
-export const MASTER_LISTS = ['trade', 'designation', 'department', 'itemCategory', 'equipmentCategory', 'letterCategory', 'ncrCategory', 'ncrRootCause', 'instrumentKind', 'vertical', 'workTrade', 'exitClearance', 'reviewStage'] as const;
+export const MASTER_LISTS = ['trade', 'designation', 'department', 'itemCategory', 'equipmentCategory', 'letterCategory', 'letterParty', 'ncrCategory', 'ncrRootCause', 'instrumentKind', 'vertical', 'workTrade', 'exitClearance', 'reviewStage'] as const;
 export type MasterList = (typeof MASTER_LISTS)[number];
 
 export interface MasterStandardEntry {
@@ -205,6 +205,26 @@ export const MASTER_LIST_DEFS: Record<MasterList, MasterListDef> = {
       'Statutory and tax',
       'Bank',
       'Invitation and meeting',
+    ),
+  },
+  letterParty: {
+    key: 'letterParty',
+    label: 'Kinds of office',
+    singular: 'kind of office',
+    description: 'What an office in the address book is to the company: the client, its consultant, the third-party inspection agency, a government authority. The registers filter letters by it.',
+    slug: 'letter-party',
+    node: 'correspondence.partyKinds',
+    usedOn: 'address book entries',
+    manage: (role) => P.canHeadLetters(role),
+    standard: entries(
+      ['Client', 'क्लाइंट'],
+      ['Consultant', 'सलाहकार'],
+      ['Third-party inspection', 'थर्ड पार्टी निरीक्षण'],
+      ['Government authority', 'सरकारी विभाग'],
+      ['Subcontractor', 'उप-ठेकेदार'],
+      ['Supplier', 'आपूर्तिकर्ता'],
+      ['Bank and insurer', 'बैंक और बीमा'],
+      ['Other', 'अन्य'],
     ),
   },
   ncrCategory: {

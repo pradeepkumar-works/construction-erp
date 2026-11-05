@@ -1,6 +1,6 @@
 import type { MachineEngineDto } from './telematics';
 import type { VendorRecordDto } from './vendor-score';
-import type { LetterAction, LetterMarkDto, LetterMode, LetterPriority, LetterStatus } from './correspondence';
+import type { LetterAction, LetterGate, LetterMarkDto, LetterMode, LetterPriority, LetterStatus } from './correspondence';
 import type { NavSettingsDto } from './nav-menu';
 import type { DprLineDto } from './dpr-lines';
 import type { DprExtra, DprFormDto } from './dpr-form';
@@ -3016,6 +3016,8 @@ export interface LetterDto {
   receivedOn: string | null;
   party: string;
   contactId: string | null;
+  /** The kind of office it is from or to, when picked from the address book (a letterParty code) */
+  partyKind: string | null;
   subject: string;
   summary: string | null;
   body: string | null;
@@ -3045,7 +3047,9 @@ export interface LetterDto {
   /** When its signatory approved it, where it then waits for head office's seal (L2); null before */
   signedAt: string | null;
   signedByName: string | null;
-  /** The letter waits for head office's seal after its signature (the company's rule, for its category) */
+  /** What an outward letter passes before it is numbered, by its category (`letterGate`); null for one received */
+  gate: LetterGate | null;
+  /** The letter waits for head office's seal after its signature (its category's gate) */
   needsSeal: boolean;
   approvedAt: string | null;
   returnNote: string | null;

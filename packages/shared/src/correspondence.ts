@@ -66,8 +66,8 @@ export const LETTER_APPROVAL_RULE_LABELS: Record<LetterApprovalRule, string> = {
 export const CONTRACTUAL_LETTER_CATEGORIES = ['notice', 'claim', 'extension-of-time', 'hindrance', 'reply-to-show-cause'];
 export const isContractualCategory = (category: string | null | undefined) => !!category && CONTRACTUAL_LETTER_CATEGORIES.includes(category);
 
-/** Whether an outward letter of this category waits for its signatory before it is numbered. */
-export function letterNeedsApproval(rule: LetterApprovalRule, category: string | null | undefined): boolean {
+/** Whether a company-wide rule reaches a letter of this category. */
+function ruleReaches(rule: LetterApprovalRule, category: string | null | undefined): boolean {
   if (rule === 'ALL') return true;
   if (rule === 'NONE') return false;
   return isContractualCategory(category);
@@ -80,11 +80,53 @@ export const maySealLetters = (role: string) => (LETTER_SEAL_ROLES as readonly s
 const RULE_REACH: Record<LetterApprovalRule, number> = { NONE: 0, CONTRACTUAL: 1, ALL: 2 };
 
 /**
- * Whether a letter its signatory has just approved (L1) waits for head office's seal (L2) before it is numbered: the
- * company's second rule asks for it for the category, and the signatory is not a director.
+ * How far an outward letter of a category goes before it gets its number: numbered when saved, signed by its signatory
+ * (L1), or signed and then sealed by a director at head office (L1 and L2). The company sets it per category in Numbering
+ * and approval; a seal always comes after a signature, so no category can skip the first.
  */
-export function letterNeedsSeal(secondRule: LetterApprovalRule, category: string | null | undefined, signerRole: string): boolean {
-  return letterNeedsApproval(secondRule, category) && !maySealLetters(signerRole);
+export const LETTER_GATES = ['NONE', 'SIGN', 'SEAL'] as const;
+export type LetterGate = (typeof LETTER_GATES)[number];
+export const LETTER_GATE_LABELS: Record<LetterGate, string> = {
+  NONE: 'Numbered when saved',
+  SIGN: 'Signatory signs',
+  SEAL: 'Signatory, then head office seal',
+};
+/** Where letters with no category keep their gate (no category code has brackets). */
+export const NO_LETTER_CATEGORY = '(none)';
+
+/**
+ * The company's approval: a gate per category it has set, and for the rest the two company-wide rules it started with
+ * (by default the signatory for contractual letters and no seal), so a category added later starts where they put it.
+ */
+export interface LetterRules {
+  approval: LetterApprovalRule;
+  seal: LetterApprovalRule;
+  gates: Partial<Record<string, LetterGate>>;
+}
+
+/** The gate a letter of this category passes before it is numbered. */
+export function letterGate(rules: LetterRules, category: string | null | undefined): LetterGate {
+  const own = rules.gates[category || NO_LETTER_CATEGORY];
+  if (own) return own;
+  if (!ruleReaches(rules.approval, category)) return 'NONE';
+  return ruleReaches(rules.seal, category) ? 'SEAL' : 'SIGN';
+}
+
+/** Whether an outward letter of this category waits for its signatory before it is numbered. */
+export const letterNeedsApproval = (rules: LetterRules, category: string | null | undefined): boolean => letterGate(rules, category) !== 'NONE';
+
+/**
+ * Whether a letter its signatory has just approved (L1) waits for head office's seal (L2) before it is numbered: its
+ * category's gate asks for the seal, and the signatory is not a director.
+ */
+export function letterNeedsSeal(rules: LetterRules, category: string | null | undefined, signerRole: string): boolean {
+  return letterGate(rules, category) === 'SEAL' && !maySealLetters(signerRole);
+}
+
+/** The gates as stored (`Organization.letterGates`): anything that is not a gate is left out. */
+export function readLetterGates(json: unknown): Partial<Record<string, LetterGate>> {
+  if (!json || typeof json !== 'object' || Array.isArray(json)) return {};
+  return Object.fromEntries(Object.entries(json as Record<string, unknown>).filter((e): e is [string, LetterGate] => (LETTER_GATES as readonly unknown[]).includes(e[1])));
 }
 
 /** The second approval reaches no letter the first does not: a seal comes after a signature. */
@@ -96,6 +138,27 @@ export function letterRulesProblem(first: LetterApprovalRule, second: LetterAppr
 /** Where a letter waiting for approval stands: with its signatory (L1) or at head office (L2). */
 export const letterApprovalStage = (l: { status: LetterStatus; signedAt: string | null }): 'SIGN' | 'SEAL' | null =>
   l.status !== 'AWAITING_APPROVAL' ? null : l.signedAt ? 'SEAL' : 'SIGN';
+
+/** A letter's state in words; one waiting for approval says which of the two it waits for. */
+export const letterStatusLabel = (l: { status: LetterStatus; signedAt: string | null }): string =>
+  letterApprovalStage(l) === 'SEAL' ? 'Waiting for the seal' : LETTER_STATUS_LABELS[l.status];
+
+/** Where an outward letter's signature (L1) or seal (L2) stands. */
+export type SignOffStep = 'DONE' | 'WAITING' | 'LATER' | 'NOT_NEEDED';
+
+/**
+ * The outward register's sign-off: the signatory's step and head office's, from the letter's state and its category's
+ * gate. A letter issued without either (one that needed none, or was already sent) shows them not needed; one a
+ * director signed shows the seal not needed, as the signature was the seal.
+ */
+export function letterSignOff(l: { status: LetterStatus; gate: LetterGate | null; signedAt: string | null; signatoryId: string | null }): { sign: SignOffStep; seal: SignOffStep } {
+  if (l.status === 'ISSUED') return { sign: l.signatoryId || l.signedAt ? 'DONE' : 'NOT_NEEDED', seal: l.signedAt ? 'DONE' : 'NOT_NEEDED' };
+  const gate = l.gate ?? 'NONE';
+  const sealLater: SignOffStep = gate === 'SEAL' ? 'LATER' : 'NOT_NEEDED';
+  if (l.status === 'AWAITING_APPROVAL') return l.signedAt ? { sign: 'DONE', seal: 'WAITING' } : { sign: 'WAITING', seal: sealLater };
+  if (l.status === 'DRAFT') return { sign: gate === 'NONE' ? 'NOT_NEEDED' : 'LATER', seal: sealLater };
+  return { sign: 'NOT_NEEDED', seal: 'NOT_NEEDED' };
+}
 
 /** P07/OUT/26-27/042; head office HO/IN/26-27/015. */
 export const LETTER_NUMBER_PATTERN = '{PREFIX}/{DIR}/{FY}/{NNN}';
@@ -247,6 +310,9 @@ export interface LetterContactDto {
   address: string | null;
   email: string | null;
   phone: string | null;
+  /** What kind of office it is (a code of the letterParty master), and its name */
+  kind: string | null;
+  kindName: string | null;
   clientId: string | null;
   clientName: string | null;
   isActive: boolean;
@@ -275,6 +341,8 @@ export interface LetterSettingsDto {
   approval: LetterApprovalRule;
   /** Which signed letters then wait for a director's seal at head office before they are numbered */
   seal: LetterApprovalRule;
+  /** The gate each category the company has set passes (`letterGate` reads them with the two rules above) */
+  gates: Partial<Record<string, LetterGate>>;
   series: LetterSeriesDto[];
   /** Projects and head office without a series of their own yet (one is made with the defaults on their first letter) */
   pattern: string;

@@ -836,6 +836,8 @@ model Organization {
   letterApproval           LetterApprovalRule @default(CONTRACTUAL)
   /// Which signed letters then wait for a director's seal at head office (L2) before they are numbered
   letterSeal               LetterApprovalRule @default(NONE)
+  /// The gate (NONE, SIGN, SEAL) of each letter category the company has set, by code; the two rules above cover the rest
+  letterGates              Json               @default("{}")
   /// Item categories (master codes) whose receipts need the maker's test certificate
   mtcCategories            String[]           @default(["steel", "cement", "pipes-and-fittings"])
   /// Discover on Home also shows modules a person's role cannot open, greyed, with Request access.
@@ -5443,6 +5445,8 @@ model LetterContact {
   address        String?
   email          String?
   phone          String?
+  /// What kind of office it is: a code of the letterParty master (client, consultant, third-party inspection…)
+  kind           String?
   /// The client it is, when it is one
   clientId       String?
   client         Client?      @relation(fields: [clientId], references: [id], onDelete: SetNull)
