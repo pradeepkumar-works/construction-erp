@@ -26,6 +26,9 @@ import {
   canViewPayables,
   canViewPaymentRequests,
   canViewPurchaseOrders,
+  canViewStockValue,
+  canCheckGrn,
+  canViewVendorBills,
   canViewVariations,
   canViewWorkers,
   byProgressOrder,
@@ -48,6 +51,7 @@ import { todayIn } from '../notifications/time';
 import { ReceivablesService } from '../receivables/receivables.service';
 import { PayablesService } from '../payables/payables.service';
 import { PurchaseOrdersService } from '../purchasing/purchase-orders.service';
+import { RequestsToOrderService } from '../purchasing/requests-to-order.service';
 import { ComplianceService } from '../compliance/compliance.service';
 import { StockService } from '../stock/stock.service';
 import { StaffService } from '../staff/staff.service';
@@ -90,6 +94,7 @@ export class ModuleHomeService {
     private letters: CorrespondenceService,
     private designControl: DesignControlService,
     private quality_: QualityService,
+    private requestsToOrder: RequestsToOrderService,
   ) {}
 
   async home(user: RequestUser, key: string, projectId?: string): Promise<ModuleHomeDto> {
@@ -236,7 +241,7 @@ export class ModuleHomeService {
       case 'plant':
         return this.plant(user, today, projectId);
       case 'purchases':
-        return this.purchases(user, projectId);
+        return this.purchases(user, today, projectId);
       case 'billing':
         return this.billing(user, projectId);
       case 'rmc':
@@ -370,15 +375,17 @@ export class ModuleHomeService {
     return [figure('peopleWithLogin', users), figure('accessRequestsOpen', requests), failing !== undefined && figure('connectionsFailing', failing)];
   }
 
-  /** The design dashboard's totals (`DesignControlService.dashboard`). */
+  /** The drawings dashboard's totals (`DesignControlService.dashboard`). */
   private async design(user: RequestUser, projectId?: string): Promise<FigureInput[]> {
     if (isGuest(user.roleKey)) return [];
     const t = (await this.designControl.dashboard(user, projectId)).totals;
     return [
       figure('drawingsLate', t.drawingsLate, { versus: { of: figure('drawingsAwaited', t.drawingsAwaited) } }),
       figure('reviewsLate', t.reviewsLate, { versus: { of: figure('underReview', t.underReview) } }),
-      figure('commentsToAnswer', t.commentsToAnswer, { count: t.withUs }),
+      figure('commentsToAnswer', t.commentsToAnswer, { count: t.withUs || undefined }),
       figure('copiesToRecall', t.copiesToRecall, { versus: { part: figure('recallsLate', t.recallsLate) } }),
+      figure('asBuiltDue', t.asBuiltDue),
+      figure('rfisOpen', t.rfisOpen),
     ];
   }
 
@@ -399,11 +406,17 @@ export class ModuleHomeService {
     const onSite = canReportSafety(role);
     const where = this.where(user, projectId);
     const seesStock = onSite || canPurchase(role) || canViewCost(role);
-    const [openRequests, low] = await Promise.all([
-      onSite || canPurchase(role) ? this.prisma.materialRequest.count({ where: { ...where, status: 'SUBMITTED' } }) : null,
+    const [worth, low, openRequests] = await Promise.all([
+      canViewStockValue(role) ? this.stock.worth(user, projectId) : null,
       seesStock ? this.stock.balances(user, { lowOnly: true, page: 1, pageSize: 1, ...(projectId ? { projectId } : {}) }) : null,
+      onSite || canPurchase(role) ? this.prisma.materialRequest.count({ where: { ...where, status: 'SUBMITTED' } }) : null,
     ]);
-    return [openRequests !== null && figure('materialRequestsToApprove', openRequests), low && figure('itemsBelowMinimum', low.total)];
+    return [
+      worth && figure('stockValue', worth.value, { versus: { part: figure('stockAtStores', worth.atStores) } }),
+      worth && figure('stockOnTheRoad', worth.onTheRoad, { count: worth.transfersOnTheRoad }),
+      low && figure('itemsBelowMinimum', low.total),
+      openRequests !== null && figure('materialRequestsToApprove', openRequests),
+    ];
   }
 
   private async plant(user: RequestUser, today: string, projectId?: string): Promise<FigureInput[]> {
@@ -417,10 +430,24 @@ export class ModuleHomeService {
     return [figure('openJobCards', jobCards), figure('fuelIssues', fuel, { when: 'today' })];
   }
 
-  private async purchases(user: RequestUser, projectId?: string): Promise<FigureInput[]> {
-    if (!canViewPurchaseOrders(user.roleKey)) return [];
-    const { totals } = await this.purchaseOrders.status(user, { show: 'PENDING', ...(projectId ? { projectId } : {}) });
-    return [figure('ordersToReceive', totals.pendingValue, { count: totals.pending }), figure('lateDeliveries', totals.late)];
+  private async purchases(user: RequestUser, today: string, projectId?: string): Promise<FigureInput[]> {
+    const role = user.roleKey;
+    const where = this.where(user, projectId);
+    const scope = projectId ? { projectId } : {};
+    const [queue, orders, toCheck, toBill] = await Promise.all([
+      canPurchase(role) ? this.requestsToOrder.list(user, { ...scope, page: 1, pageSize: 1 }) : null,
+      canViewPurchaseOrders(role) ? this.purchaseOrders.status(user, { show: 'PENDING', ...scope }) : null,
+      canCheckGrn(role) || canPurchase(role) ? this.stock.waitingWhere('CHECK', today).then((w) => this.prisma.stockEntry.count({ where: { ...where, ...w } })) : null,
+      canViewVendorBills(role) ? this.stock.waitingWhere('BILL', today).then((w) => this.prisma.stockEntry.count({ where: { ...where, ...w } })) : null,
+    ]);
+    return [
+      queue && figure('waitingForQuotations', queue.stages.TO_ENQUIRE + queue.stages.AWAITING_QUOTES),
+      queue && figure('choicesToApprove', queue.stages.AWAITING_APPROVAL),
+      orders && figure('ordersToReceive', orders.totals.pendingValue, { count: orders.totals.pending }),
+      orders && figure('lateDeliveries', orders.totals.late),
+      toCheck !== null && figure('materialToCheck', toCheck),
+      toBill !== null && figure('receivedNotBilled', toBill),
+    ];
   }
 
   private async accounts(user: RequestUser, projectId?: string): Promise<FigureInput[]> {

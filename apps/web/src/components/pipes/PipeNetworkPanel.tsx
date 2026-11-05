@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { Alert, Button, Flex, Form, Input, InputNumber, Segmented, Select, Space, Statistic, Table, Typography } from 'antd';
+import { Alert, App, Button, Dropdown, Flex, Form, Input, InputNumber, Segmented, Select, Space, Statistic, Table, Typography } from 'antd';
 import { tk } from '@/ds';
-import { EditOutlined, UploadOutlined } from '@/components/common/icons';
+import { DownloadOutlined, EditOutlined, UploadOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   PIPE_MATERIALS,
@@ -13,6 +13,9 @@ import {
   PIPE_STAGE_LABELS,
   SEGMENT_STAGES,
   VALVE_NODE_KINDS,
+  networkKml,
+  networkOf,
+  networkSheets,
   type PipeMaterial,
   type PipeScope,
   type PipeSegmentDto,
@@ -22,7 +25,8 @@ import {
 import { api } from '@/lib/api';
 import { usePipeNetwork } from '@/lib/queries';
 import { formatPct, formatQty } from '@/lib/format';
-import { downloadXlsx, exportFileName } from '@/lib/exportExcel';
+import { downloadXlsx, exportFileName, loadXlsx } from '@/lib/exportExcel';
+import { kmzFromKml } from '@/lib/kmz';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { ExportButton } from '@/components/common/ExportButton';
 import { LinkButton } from '@/components/common/LinkButton';
@@ -30,6 +34,8 @@ import { Section } from '@/components/common/Section';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { QuantityInput } from '@/components/form/inputs';
 import { PipeImportModal } from './PipeImportModal';
+import { PipeCard } from './PipeCard';
+import { PipeNetworkEditor } from './PipeNetworkEditor';
 import { PipeMap, SEGMENT_STATE_LABELS, segmentState, type SegmentState } from './PipeMap';
 
 type StateFilter = 'all' | SegmentState;
@@ -42,9 +48,11 @@ const figure = { content: { fontSize: tk.type.subhead.fontSize } };
  * diameter, the pipes ready to start, and the list of pipes. Work reaches a pipe only through DPR lines.
  */
 export function PipeNetworkPanel({ project }: { project: ProjectDetail }) {
+  const { message } = App.useApp();
   const { data, isLoading, error, refetch } = usePipeNetwork(project.id);
   const [picked, setPicked] = useState<string | null>(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<PipeSegmentDto | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [filter, setFilter] = useState<StateFilter>('all');
@@ -65,8 +73,8 @@ export function PipeNetworkPanel({ project }: { project: ProjectDetail }) {
     return (
       <div style={{ padding: tk.space[6] }}>
         <p>
-          No pipe zones yet. Add a component of kind Pipe network zone, Rising main or Feeder main in Structure, then load its network here from the design
-          office&apos;s EPANET or Excel file.
+          No pipe zones yet. Add a component of kind Pipe network zone, Rising main or Feeder main in Structure, then load its network here from a Google Earth
+          KMZ, or the design office&apos;s EPANET or Excel file.
         </p>
         <LinkButton href={`/projects/${project.id}?tab=structure`}>Open Components</LinkButton>
       </div>
@@ -76,6 +84,33 @@ export function PipeNetworkPanel({ project }: { project: ProjectDetail }) {
   const valves = nodes.filter((n) => VALVE_NODE_KINDS.includes(n.kind));
   const unplaced = SEGMENT_STAGES.filter((s) => zone!.unplacedM[s]).map((s) => `${formatQty(zone!.unplacedM[s])} m ${PIPE_STAGE_LABELS[s].toLowerCase()}`);
   const laidPct = total.scopeM ? (100 * total.laidM) / total.scopeM : 0;
+
+  const placed = nodes.some((n) => n.lat !== null && n.lon !== null);
+  const fileBase = `${project.code}-${zone!.code}-network`.replace(/[^\w.+-]+/g, '-');
+  const downloadNetwork = async (as: 'kmz' | 'xlsx') => {
+    const network = networkOf(nodes, segments);
+    if (as === 'xlsx') {
+      const XLSX = await loadXlsx();
+      const sheets = networkSheets(network);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(sheets.nodes), 'Nodes');
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(sheets.pipes), 'Pipes');
+      XLSX.writeFile(wb, `${fileBase}.xlsx`);
+      message.success(`Downloaded ${segments.length} pipes and ${nodes.length} nodes. Correct them in Excel, then load the file with Import network.`);
+      return;
+    }
+    const { kml, left } = networkKml(`${project.code} ${zone!.label}`, network);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(kmzFromKml(kml));
+    a.download = `${fileBase}.kmz`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 10_000);
+    message.success(
+      left.length
+        ? `Downloaded for Google Earth. ${left.length} pipe${left.length === 1 ? ' has' : 's have'} no place on the earth and ${left.length === 1 ? 'is' : 'are'} left out: ${left.slice(0, 6).join(', ')}${left.length > 6 ? '…' : ''}`
+        : 'Downloaded for Google Earth. Move a valve or a line there, save it as KMZ, then load it with Import network.',
+    );
+  };
 
   const exportPipes = async () => {
     await downloadXlsx(exportFileName(`pipes-${project.code}-${zone!.code}`), 'Pipes', [
@@ -114,6 +149,25 @@ export function PipeNetworkPanel({ project }: { project: ProjectDetail }) {
         )}
         <Space wrap>
           {segments.length ? <ExportButton onExport={exportPipes} /> : null}
+          {segments.length ? (
+            <Dropdown
+              trigger={['click']}
+              menu={{
+                items: [
+                  { key: 'kmz', label: placed ? 'Google Earth (KMZ)' : 'Google Earth (KMZ): import the KMZ again to place it', disabled: !placed },
+                  { key: 'xlsx', label: 'Excel, to correct and load again' },
+                ],
+                onClick: ({ key }) => void downloadNetwork(key as 'kmz' | 'xlsx'),
+              }}
+            >
+              <Button icon={<DownloadOutlined />}>Download network</Button>
+            </Dropdown>
+          ) : null}
+          {data.canEdit && segments.length ? (
+            <Button icon={<EditOutlined />} onClick={() => setEditorOpen(true)}>
+              Edit network
+            </Button>
+          ) : null}
           {data.canEdit ? (
             <Button icon={<UploadOutlined />} type={segments.length ? 'default' : 'primary'} onClick={() => setImportOpen(true)}>
               Import network
@@ -134,8 +188,8 @@ export function PipeNetworkPanel({ project }: { project: ProjectDetail }) {
       {!segments.length ? (
         <div style={{ padding: `${tk.space[2]} 0 ${tk.space[6]}` }}>
           <p>
-            No network loaded for this zone. Import the EPANET (.inp) file from WaterGEMS, LOOP or EPANET, or an Excel sheet of nodes and pipes. Each pipe then
-            takes its own trenching, laying, testing and restoration from the DPR, junction to junction.
+            No network loaded for this zone. Import the EPANET (.inp) file from WaterGEMS, LOOP or EPANET, the main drawn in Google Earth (KMZ or KML), or an
+            Excel sheet of nodes and pipes. Each pipe then takes its own trenching, laying, testing and restoration from the DPR, junction to junction.
           </p>
           {data.canEdit ? (
             <Button type="primary" icon={<UploadOutlined />} onClick={() => setImportOpen(true)}>
@@ -157,7 +211,8 @@ export function PipeNetworkPanel({ project }: { project: ProjectDetail }) {
             nodes={nodes}
             segments={segments}
             selected={selected}
-            label={`Map of ${zone!.label}: ${segments.length} pipes, ${formatQty(total.laidM)} of ${formatQty(total.scopeM)} m laid. The pipe list below gives each pipe.`}
+            onSelect={setSelected}
+            label={`Map of ${zone!.label}: ${segments.length} pipes, ${formatQty(total.laidM)} of ${formatQty(total.scopeM)} m laid. Click a pipe to open it; the pipe list below gives each pipe.`}
           />
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))', gap: tk.space[4] }}>
@@ -237,7 +292,7 @@ export function PipeNetworkPanel({ project }: { project: ProjectDetail }) {
                   title: 'Pipe',
                   width: 170,
                   render: (_, s) => (
-                    <Button type="link" size="small" style={{ paddingInline: 0 }} aria-pressed={s.id === selected} onClick={() => setSelected(s.id === selected ? null : s.id)}>
+                    <Button type="link" size="small" style={{ paddingInline: 0 }} aria-haspopup="dialog" onClick={() => setSelected(s.id)}>
                       <span translate="no">{`${s.code}, ${s.fromCode} to ${s.toCode}`}</span>
                     </Button>
                   ),
@@ -277,6 +332,27 @@ export function PipeNetworkPanel({ project }: { project: ProjectDetail }) {
         </>
       )}
       {data.canEdit ? <PipeImportModal key={importOpen ? `open-${zone!.id}` : 'closed'} open={importOpen} onClose={() => setImportOpen(false)} projectId={project.id} zones={data.zones} zoneId={zone!.id} /> : null}
+      {zone ? (
+        <PipeCard
+          projectId={project.id}
+          projectName={project.name}
+          zone={zone}
+          segment={segments.find((s) => s.id === selected) ?? null}
+          nodes={nodes}
+          canEdit={data.canEdit}
+          onEdit={setEditing}
+          onStep={(by) => {
+            const list = shown.some((s) => s.id === selected) ? shown : segments;
+            const i = list.findIndex((s) => s.id === selected);
+            const to = list[i + by];
+            return i >= 0 && to ? () => setSelected(to.id) : null;
+          }}
+          onClose={() => setSelected(null)}
+        />
+      ) : null}
+      {data.canEdit && zone && editorOpen ? (
+        <PipeNetworkEditor open={editorOpen} onClose={() => setEditorOpen(false)} projectId={project.id} zone={zone} nodes={nodes} segments={segments} />
+      ) : null}
       {data.canEdit ? <SegmentFormModal projectId={project.id} segment={editing} onClose={() => setEditing(null)} /> : null}
     </div>
   );

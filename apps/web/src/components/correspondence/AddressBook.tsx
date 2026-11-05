@@ -9,7 +9,8 @@ import { canViewLetters, contactLine } from '@erp/shared';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
-import { useClientsPage, useLetterContacts } from '@/lib/queries';
+import { useClientsPage, useLetterContacts, useMasterList } from '@/lib/queries';
+import { AppTag } from '@/components/common/AppTag';
 import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
@@ -25,6 +26,7 @@ interface ContactForm {
   address?: string;
   email?: string;
   phone?: string;
+  kind?: string | null;
   clientId?: string | null;
 }
 
@@ -33,6 +35,7 @@ function ContactDialog({ editing, onClose }: { editing: LetterContactDto | 'new'
   const qc = useQueryClient();
   const notify = useNotify();
   const { data: clients } = useClientsPage({ pageSize: 200 });
+  const { data: kinds } = useMasterList('letter-party');
   const entry = editing && editing !== 'new' ? editing : null;
   useEffect(() => {
     if (!editing) return;
@@ -42,7 +45,7 @@ function ContactDialog({ editing, onClose }: { editing: LetterContactDto | 'new'
   const save = useMutation({
     mutationFn: async (v: ContactForm) => {
       const t = (x?: string) => x?.trim() || null;
-      const body = { name: v.name.trim(), office: t(v.office), organisation: t(v.organisation), address: t(v.address), email: t(v.email), phone: t(v.phone), clientId: v.clientId ?? null };
+      const body = { name: v.name.trim(), office: t(v.office), organisation: t(v.organisation), address: t(v.address), email: t(v.email), phone: t(v.phone), kind: v.kind ?? null, clientId: v.clientId ?? null };
       return entry ? (await api.patch<LetterContactDto>(`/letter-contacts/${entry.id}`, body)).data : (await api.post<LetterContactDto>('/letter-contacts', body)).data;
     },
     onSuccess: (c) => {
@@ -76,9 +79,14 @@ function ContactDialog({ editing, onClose }: { editing: LetterContactDto | 'new'
             <Input {...PHONE_INPUT} maxLength={30} />
           </Form.Item>
         </FormGrid>
-        <Form.Item name="clientId" label="Client" extra="When this office is a client's, its letters show on the client too">
-          <Select allowClear showSearch={{ optionFilterProp: 'label' }} options={(clients?.items ?? []).map((c) => ({ value: c.id, label: c.name }))} />
-        </Form.Item>
+        <FormGrid cols={2}>
+          <Form.Item name="kind" label="Kind of office" extra="The registers filter letters by it">
+            <Select allowClear placeholder="Client, consultant, TPIA…" options={(kinds?.entries ?? []).filter((e) => e.isActive || e.code === entry?.kind).map((e) => ({ value: e.code, label: e.name }))} />
+          </Form.Item>
+          <Form.Item name="clientId" label="Client" extra="When this office is a client's, its letters show on the client too">
+            <Select allowClear showSearch={{ optionFilterProp: 'label' }} options={(clients?.items ?? []).map((c) => ({ value: c.id, label: c.name }))} />
+          </Form.Item>
+        </FormGrid>
       </Form>
     </FormShell>
   );
@@ -91,6 +99,8 @@ export function AddressBook() {
   const notify = useNotify();
   const [all, setAll] = useState(false);
   const [q, setQ] = useState('');
+  const [kind, setKind] = useState<string | undefined>();
+  const { data: kinds } = useMasterList('letter-party');
   const [editing, setEditing] = useState<LetterContactDto | 'new' | null>(null);
   const { data, isLoading, error, refetch } = useLetterContacts(all);
   const keeper = !!user && canViewLetters(user.roleKey);
@@ -108,8 +118,8 @@ export function AddressBook() {
   });
   const rows = useMemo(() => {
     const k = q.trim().toLowerCase();
-    return (data ?? []).filter((c) => !k || [c.name, c.office, c.organisation, c.address, c.email].some((x) => x?.toLowerCase().includes(k)));
-  }, [data, q]);
+    return (data ?? []).filter((c) => (!kind || c.kind === kind) && (!k || [c.name, c.office, c.organisation, c.address, c.email].some((x) => x?.toLowerCase().includes(k))));
+  }, [data, q, kind]);
 
   return (
     <div className="page-container">
@@ -127,6 +137,7 @@ export function AddressBook() {
       <Card>
         <Flex gap={tk.space[3]} wrap align="center" style={{ marginBottom: tk.space[4] }}>
           <Input.Search allowClear placeholder="Find an office or person" aria-label="Find an office or person" value={q} onChange={(e) => setQ(e.target.value)} style={{ maxWidth: 320 }} />
+          <Select allowClear placeholder="Any kind of office" aria-label="Kind of office" value={kind} onChange={setKind} style={{ width: 210 }} options={(kinds?.entries ?? []).map((e) => ({ value: e.code, label: e.name }))} />
           <Flex gap={tk.space[2]} align="center">
             <Switch size="small" checked={all} onChange={setAll} aria-label="Show those not in use" />
             <Typography.Text>Show those not in use</Typography.Text>
@@ -144,10 +155,16 @@ export function AddressBook() {
             {
               title: 'Addressed to',
               key: 'name',
+              width: 300,
               render: (_, c) => (
                 <div>
                   <Typography.Text strong>{c.name}</Typography.Text>
                   <div className="text-muted">{[c.office, c.organisation].filter(Boolean).join(', ')}</div>
+                  {c.kindName ? (
+                    <AppTag variant="kind" style={{ marginTop: tk.space[1] }}>
+                      {c.kindName}
+                    </AppTag>
+                  ) : null}
                 </div>
               ),
             },

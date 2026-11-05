@@ -1,5 +1,5 @@
-import type { NavLayout, NavLook, NavModuleSet, NavPalette, NavSidebarLook } from './enums';
-import { NAV_LOOKS, NAV_MODULE_SETS, NAV_LAYOUTS, NAV_PALETTES, NAV_SIDEBAR_LOOKS } from './enums';
+import type { NavLayout, NavLook, NavModuleSet, NavPaint, NavPalette, NavSidebarLook } from './enums';
+import { NAV_LOOKS, NAV_MODULE_SETS, NAV_LAYOUTS, NAV_PAINTS, NAV_PALETTES, NAV_SIDEBAR_LOOKS } from './enums';
 import { readNavFill, type NavFill } from './nav-colours';
 import type { NavFamily, NavNode, NavUser } from './navigation';
 import { NAV_TREE, canSeeNav, navNode, navNodeAt } from './navigation';
@@ -8,9 +8,9 @@ import { submissionListHref } from './links';
 import { PRODUCT_NAME } from './brand';
 
 /**
- * Menu and names (ARCHITECTURE "Menu and names"): each company chooses where its menu sits (a sidebar, or a top bar with
- * the modules on Home and each module's sub-modules across the top), how the top bar looks, how the pages are grouped into
- * modules, and what each module is called. The pages, their access and their routes stay the navigation tree's
+ * Menu and names (ARCHITECTURE "Menu and names"): each company chooses where its menu sits (`NavLayout`: the modules and
+ * a module's sub-modules in the sidebar, in a top bar, or one in each), which of the layout's parts take the menu's colours,
+ * how the top bar looks, how the pages are grouped into modules, and what each module is called. The pages, their access and their routes stay the navigation tree's
  * (`NAV_TREE`); a module set only groups its nodes, so a page is never two things.
  *
  * - `AREAS` is the tree's own modules (Projects, Site, Purchases…), each node a sub-module (Accounts by its groups).
@@ -24,6 +24,8 @@ export interface NavSettingsDto {
   look: NavLook;
   /** How the sidebar sits, when the menu is down the side */
   sidebarLook: NavSidebarLook;
+  /** Which of the layout's two parts take the menu's colours (`navPainted`); the top bar layout's look decides its own */
+  paint: NavPaint;
   /** The menu's colours: a curated palette, or `CUSTOM` with the company's own `fill` */
   palette: NavPalette;
   /** The company's own plain colour or gradient; set only with `palette: 'CUSTOM'` */
@@ -36,9 +38,39 @@ export interface NavSettingsDto {
 }
 
 /** A company that has not chosen gets the sidebar grouped by departments (the standard, Pradeep's pick); the top bar starts in the navy look. */
-export const DEFAULT_NAV_SETTINGS: NavSettingsDto = { layout: 'SIDEBAR', look: 'NAVY', sidebarLook: 'RAIL', palette: 'QUIET', fill: null, moduleSet: 'DEPARTMENTS', names: {}, personalLook: false };
+export const DEFAULT_NAV_SETTINGS: NavSettingsDto = { layout: 'SIDEBAR', look: 'NAVY', sidebarLook: 'RAIL', paint: 'SIDE', palette: 'QUIET', fill: null, moduleSet: 'DEPARTMENTS', names: {}, personalLook: false };
 
 export const NAV_NAME_MAX = 40;
+
+/**
+ * The two parts of each layout that can take the menu's colours, in words for Admin › Menu and names: the part down the
+ * side (or, with two top bars, the second bar) and the part across the top. The top bar layout has none: its look decides
+ * (the coloured bar, or the light ones).
+ */
+export const NAV_LAYOUT_PARTS: Record<NavLayout, { side: string; top: string } | null> = {
+  SIDEBAR: { side: 'the sidebar', top: 'the header' },
+  TOP_BAR: null,
+  TOP_AND_SIDE: { side: 'the sidebar', top: 'the top bar' },
+  TWO_BARS: { side: 'the second bar', top: 'the first bar' },
+  TWO_SIDEBARS: { side: 'the two sidebars', top: 'the header' },
+};
+
+/** Which parts of the company's menu are drawn in its colours; the rest are plain (the page's own white or night). */
+export function navPainted(s: Pick<NavSettingsDto, 'layout' | 'look' | 'paint'>): { side: boolean; top: boolean } {
+  if (!NAV_LAYOUT_PARTS[s.layout]) return { side: true, top: s.look === 'NAVY' };
+  return { side: s.paint === 'SIDE' || s.paint === 'BOTH', top: s.paint === 'TOP' || s.paint === 'BOTH' };
+}
+
+/** A paint choice in a layout's own words ("The sidebar in colour, the header plain"). */
+export function navPaintWords(layout: NavLayout, paint: NavPaint): string {
+  const parts = NAV_LAYOUT_PARTS[layout];
+  if (!parts) return '';
+  const up = (w: string) => w[0].toUpperCase() + w.slice(1);
+  if (paint === 'BOTH') return `${up(parts.side)} and ${parts.top} in colour.`;
+  if (paint === 'NONE') return `${up(parts.side)} and ${parts.top} plain, the colours left out.`;
+  const [coloured, plain] = paint === 'SIDE' ? [parts.side, parts.top] : [parts.top, parts.side];
+  return `${up(coloured)} in colour, ${plain} plain.`;
+}
 
 /** What the signed-in user's menu is: the company's settings with their own look, when the company lets them choose. */
 export function navSettingsOf(user: { navigation?: NavSettingsDto; ownLook?: NavLook | null }): NavSettingsDto {
@@ -65,7 +97,7 @@ export interface NavModuleDef {
 
 const sub = (key: string, label: string, ...nodes: string[]): NavSubDef => ({ key, label, nodes });
 
-/** The ten modules of a contractor's brochure, QA/QC, Design and drawings and Correspondence, plus Reports and MIS and
+/** The ten modules of a contractor's brochure, QA/QC, Drawings and Correspondence, plus Reports and MIS and
  *  Administration. Keys are kept forever (names hang on them). Each module's Masters names the pages that are its masters
  *  (`mastersByDepartment`). */
 export const DEPARTMENT_MODULES: NavModuleDef[] = [
@@ -102,18 +134,23 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
   },
   {
     key: 'design-drawings',
-    label: 'Design and drawings',
+    label: 'Drawings',
     icon: 'drafting-compass',
     family: 'work',
-    description: 'Drawings and documents with their revisions, the drawing schedule, design submissions, controlled copies, the design dashboard, the drawing viewer, transmittals and RFIs.',
+    description: 'The drawing register and viewer, drawings by component, the drawing schedule, submittals and their comments, the pipeline layout from Google Earth, controlled copies, as-built drawings, transmittals and RFIs.',
     subs: [
-      sub('register', 'Drawings and documents', 'documents.register'),
-      sub('schedule', 'Drawing schedule', 'documents.schedule'),
-      sub('submissions', 'Design submissions', 'documents.submissions'),
-      sub('copies', 'Controlled copies', 'documents.copies'),
-      sub('dashboard', 'Design dashboard', 'documents.dashboard'),
+      sub('register', 'Register', 'documents.register'),
+      sub('by-component', 'By component', 'documents.byComponent'),
+      sub('schedule', 'Schedule', 'documents.schedule'),
+      sub('submissions', 'Submittals', 'documents.submissions'),
+      sub('comments', 'Comments', 'documents.comments'),
+      sub('pipeline', 'Pipeline', 'documents.pipeline'),
+      sub('copies', 'Copies', 'documents.copies'),
+      sub('as-built', 'As-built', 'documents.asBuilt'),
       sub('transmittals', 'Transmittals', 'documents.transmittals'),
       sub('rfis', 'RFIs', 'documents.rfis'),
+      sub('dashboard', 'Dashboard', 'documents.dashboard'),
+      sub('masters', 'Masters', 'documents.reviewStages'),
     ],
   },
   {
@@ -125,7 +162,8 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
     subs: [
       sub('inward', 'Inward register', 'documents.letters'),
       sub('outward', 'Outward register', 'correspondence.outward'),
-      sub('masters', 'Masters', 'correspondence.contacts', 'correspondence.templates', 'correspondence.categories', 'correspondence.numbering'),
+      sub('approvals', 'Approvals', 'correspondence.approvals'),
+      sub('masters', 'Masters', 'correspondence.contacts', 'correspondence.templates', 'correspondence.categories', 'correspondence.partyKinds', 'correspondence.numbering'),
     ],
   },
   {
@@ -556,6 +594,7 @@ export function navSettingsFrom(row: {
   navLayout?: string | null;
   navLook?: string | null;
   navSidebarLook?: string | null;
+  navPaint?: string | null;
   navPalette?: string | null;
   navFill?: unknown;
   navModuleSet?: string | null;
@@ -572,6 +611,7 @@ export function navSettingsFrom(row: {
     layout: (NAV_LAYOUTS as readonly string[]).includes(row.navLayout ?? '') ? (row.navLayout as NavLayout) : d.layout,
     look: (NAV_LOOKS as readonly string[]).includes(row.navLook ?? '') ? (row.navLook as NavLook) : d.look,
     sidebarLook: (NAV_SIDEBAR_LOOKS as readonly string[]).includes(row.navSidebarLook ?? '') ? (row.navSidebarLook as NavSidebarLook) : d.sidebarLook,
+    paint: (NAV_PAINTS as readonly string[]).includes(row.navPaint ?? '') ? (row.navPaint as NavPaint) : d.paint,
     ...colours,
     moduleSet: (NAV_MODULE_SETS as readonly string[]).includes(row.navModuleSet ?? '') ? (row.navModuleSet as NavModuleSet) : d.moduleSet,
     names: cleanNavNames(Object.fromEntries(Object.entries(names).filter((e): e is [string, string] => typeof e[1] === 'string'))),
@@ -584,6 +624,7 @@ export const isDefaultNav = (s: NavSettingsDto) =>
   s.layout === DEFAULT_NAV_SETTINGS.layout &&
   s.look === DEFAULT_NAV_SETTINGS.look &&
   s.sidebarLook === DEFAULT_NAV_SETTINGS.sidebarLook &&
+  s.paint === DEFAULT_NAV_SETTINGS.paint &&
   s.palette === DEFAULT_NAV_SETTINGS.palette &&
   s.moduleSet === DEFAULT_NAV_SETTINGS.moduleSet &&
   !s.personalLook &&

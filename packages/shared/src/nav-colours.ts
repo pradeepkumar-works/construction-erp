@@ -7,7 +7,8 @@ import type { NavPalette } from './enums';
  * quietest words (its ink at `QUIET_SHARE`, the captions) keep 4.5:1 against every part of the fill, in both themes.
  */
 
-export type NavFill = { kind: 'SOLID'; color: string } | { kind: 'GRADIENT'; from: string; to: string; angle: NavGradientAngle };
+/** A gradient may pass through a third colour (`via`, at a share of the way along, 1 to 99) on its way from one end to the other. */
+export type NavFill = { kind: 'SOLID'; color: string } | { kind: 'GRADIENT'; from: string; to: string; angle: NavGradientAngle; via?: { color: string; at: number } };
 
 /** Gradient directions: down the rail, across the bar, and corner to corner. */
 export const NAV_GRADIENT_ANGLES = [180, 90, 135] as const;
@@ -52,10 +53,17 @@ export function contrastOf(a: string, b: string): number {
   return (hi + 0.05) / (lo + 0.05);
 }
 
-export const fillStops = (f: NavFill): string[] => (f.kind === 'SOLID' ? [f.color] : [f.from, f.to]);
+export const fillStops = (f: NavFill): string[] => (f.kind === 'SOLID' ? [f.color] : f.via ? [f.from, f.via.color, f.to] : [f.from, f.to]);
 
-/** Points along the fill to check: a gradient's ends and three between (sRGB, as the browser draws it). */
-const samples = (f: NavFill): string[] => (f.kind === 'SOLID' ? [f.color] : [0, 0.25, 0.5, 0.75, 1].map((t) => mixHex(f.to, f.from, t)));
+/** The colour a gradient draws `t` of the way along (0 to 1), through its `via` (sRGB, as the browser draws it). */
+function gradientAt(f: Extract<NavFill, { kind: 'GRADIENT' }>, t: number): string {
+  if (!f.via) return mixHex(f.to, f.from, t);
+  const at = f.via.at / 100;
+  return t <= at ? mixHex(f.via.color, f.from, t / at) : mixHex(f.to, f.via.color, (t - at) / (1 - at));
+}
+
+/** Points along the fill to check: a gradient's ends, its `via` and the points between (sRGB, as the browser draws it). */
+const samples = (f: NavFill): string[] => (f.kind === 'SOLID' ? [f.color] : [0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1, ...(f.via ? [f.via.at / 100] : [])].map((t) => gradientAt(f, t)));
 
 /** The weakest contrast the menu's captions get over the fill in this ink. */
 export function weakestContrast(f: NavFill, ink: ChromeInk): number {
@@ -69,12 +77,14 @@ export function inkFor(f: NavFill): ChromeInk | null {
 }
 
 /** The colour a fill averages to: a solid's own, a gradient's middle (for hovers and edges mixed from it). */
-export const fillBase = (f: NavFill): string => (f.kind === 'SOLID' ? f.color : mixHex(f.from, f.to, 0.5));
+export const fillBase = (f: NavFill): string => (f.kind === 'SOLID' ? f.color : gradientAt(f, 0.5));
 
 /** The fill as a CSS background. */
-export const fillCss = (f: NavFill): string => (f.kind === 'SOLID' ? f.color : `linear-gradient(${f.angle}deg, ${f.from}, ${f.to})`);
+export const fillCss = (f: NavFill): string =>
+  f.kind === 'SOLID' ? f.color : f.via ? `linear-gradient(${f.angle}deg, ${f.from} 0%, ${f.via.color} ${f.via.at}%, ${f.to} 100%)` : `linear-gradient(${f.angle}deg, ${f.from}, ${f.to})`;
 
-const mapStops = (f: NavFill, g: (c: string) => string): NavFill => (f.kind === 'SOLID' ? { ...f, color: g(f.color) } : { ...f, from: g(f.from), to: g(f.to) });
+const mapStops = (f: NavFill, g: (c: string) => string): NavFill =>
+  f.kind === 'SOLID' ? { ...f, color: g(f.color) } : { ...f, from: g(f.from), to: g(f.to), ...(f.via ? { via: { ...f.via, color: g(f.via.color) } } : {}) };
 
 /**
  * A company's fill in the night theme: a dark fill a step deeper, a light one mixed into the night's near-black (a pale
@@ -122,10 +132,13 @@ export function readNavFill(v: unknown): NavFill | null {
   const o = v as Record<string, unknown>;
   if (o.kind === 'SOLID' && isHexColour(o.color)) return { kind: 'SOLID', color: o.color.toUpperCase() };
   if (o.kind === 'GRADIENT' && isHexColour(o.from) && isHexColour(o.to) && (NAV_GRADIENT_ANGLES as readonly unknown[]).includes(o.angle)) {
-    return { kind: 'GRADIENT', from: o.from.toUpperCase(), to: o.to.toUpperCase(), angle: o.angle as NavGradientAngle };
+    const via = o.via as Record<string, unknown> | undefined | null;
+    if (via != null && !(typeof via === 'object' && isHexColour(via.color) && Number.isInteger(via.at) && (via.at as number) >= 1 && (via.at as number) <= 99)) return null;
+    const base = { kind: 'GRADIENT' as const, from: o.from.toUpperCase(), to: o.to.toUpperCase(), angle: o.angle as NavGradientAngle };
+    return via ? { ...base, via: { color: (via.color as string).toUpperCase(), at: via.at as number } } : base;
   }
   return null;
 }
 
 /** The curated palettes that are gradients (the rest are plain colours); the screen groups them so. */
-export const GRADIENT_PALETTES: readonly NavPalette[] = ['DUSK', 'OCEAN', 'EMBER', 'MIDNIGHT', 'DAWN'];
+export const GRADIENT_PALETTES: readonly NavPalette[] = ['LAGOON', 'DUSK', 'OCEAN', 'WALNUT', 'MIDNIGHT', 'DAWN'];

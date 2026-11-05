@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { Button, Checkbox, Select, Typography } from 'antd';
 import { tk } from '@/ds';
 import { PlusOutlined } from '@/components/common/icons';
-import type { AiDraftDto, LetterDirection, LetterDto, LetterSortField, LetterStatus } from '@erp/shared';
-import { LETTER_ACTION_LABELS, LETTER_MODE_LABELS, LIST_SORT_FIELDS, LETTER_STATUS_LABELS, canViewLetters } from '@erp/shared';
+import type { AiDraftDto, LetterDirection, LetterDto, LetterSortField, LetterStatus, SignOffStep } from '@erp/shared';
+import { LETTER_ACTION_LABELS, LETTER_MODE_LABELS, LIST_SORT_FIELDS, LETTER_STATUS_LABELS, canViewLetters, letterSignOff, letterStatusLabel } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useLetters, useMasterList } from '@/lib/queries';
 import { useNewIntent } from '@/lib/new-intent';
@@ -21,11 +21,13 @@ import { DataTable, type ListColumn } from '@/components/list/DataTable';
 import { useListFrame } from '@/components/list/useListFrame';
 import { DueCell } from '@/components/list/DueCell';
 import { RecordLink } from '@/components/record/RecordLink';
+import { fileUrl } from '@/lib/api';
+import { PaperClipOutlined } from '@/components/common/icons';
 import { LetterDrawer } from './LetterRecord';
 import { LetterForm, HEAD_OFFICE } from './LetterForm';
-import { LetterStatusTag, letterHref, letterLabel } from './letterUi';
+import { LetterStatusTag, letterHref } from './letterUi';
 
-const KEYS = ['status', 'category', 'mine', 'toSign', 'awaiting', 'overdue', 'proof', 'unmarked', 'ho'] as const;
+const KEYS = ['status', 'category', 'partyKind', 'mine', 'toSign', 'awaiting', 'overdue', 'proof', 'unmarked', 'ho'] as const;
 const FLAG_LABELS = { mine: 'Marked to me', toSign: 'To sign', awaiting: 'Reply due', overdue: 'Overdue', proof: 'No proof of delivery', unmarked: 'Not marked', ho: 'Head office' };
 
 function Sub({ children }: { children: React.ReactNode }) {
@@ -33,6 +35,29 @@ function Sub({ children }: { children: React.ReactNode }) {
 }
 
 const STATUSES: Record<LetterDirection, LetterStatus[]> = { IN: ['OPEN', 'CLOSED'], OUT: ['DRAFT', 'AWAITING_APPROVAL', 'ISSUED'] };
+
+const STEP_WORDS: Record<SignOffStep, string> = { DONE: 'Done', WAITING: 'Waiting', LATER: 'Not yet', NOT_NEEDED: 'Not needed' };
+
+/** One line of the sign-off: the step, who it is with or who did it, and whether it waits. */
+function SignOffLine({ label, step, who }: { label: string; step: SignOffStep; who?: string | null }) {
+  const words = step === 'WAITING' && who ? `With ${who}` : step === 'DONE' && who ? who : STEP_WORDS[step];
+  return (
+    <div style={{ fontSize: tk.type.caption.fontSize, color: step === 'WAITING' ? tk.color.tone.pending.fg : step === 'DONE' ? tk.color.text.base : tk.color.text.muted }}>
+      <span style={{ color: tk.color.text.muted }}>{label}: </span>
+      {words}
+    </div>
+  );
+}
+
+/** The scanned letter (the first file kept with it), opened in a new tab from the register's row. */
+function CopyLink({ letter }: { letter: LetterDto }) {
+  const file = letter.attachments[0];
+  return (
+    <a href={fileUrl(file.url)} target="_blank" rel="noreferrer" aria-label={`Open the scanned copy of ${letter.letterNo ?? letter.subject}`} style={{ marginInlineStart: tk.space[2], whiteSpace: 'nowrap' }} onClick={(e) => e.stopPropagation()}>
+      <PaperClipOutlined /> Copy
+    </a>
+  );
+}
 
 /**
  * The inward or outward register: numbered from each project's series (P07/IN/26-27/015), with who has a
@@ -50,7 +75,9 @@ const EXPORT: ExportColumn<LetterDto>[] = [
   { header: 'Subject', value: (l) => l.subject, width: 44 },
   { header: 'Category', value: (l) => l.categoryName, width: 18 },
   { header: 'Mode', value: (l) => (l.mode ? LETTER_MODE_LABELS[l.mode] : null), width: 12 },
-  { header: 'Status', value: (l) => LETTER_STATUS_LABELS[l.status], width: 18 },
+  { header: 'Status', value: (l) => letterStatusLabel(l), width: 20 },
+  { header: 'Drafted by', value: (l) => (l.direction === 'OUT' ? l.createdByName : null), width: 20 },
+  { header: 'Signed by', value: (l) => (l.direction === 'OUT' ? (l.signedByName ?? (l.status === 'ISSUED' ? l.signatoryName : null)) : null), width: 20 },
   { header: 'Reply by', value: (l) => l.replyBy, width: 12 },
   { header: 'Awaiting reply', value: (l) => (l.awaitingReply ? (l.overdue ? 'Overdue' : 'Yes') : ''), width: 12 },
   { header: 'Marked to', value: (l) => l.markedToName, width: 20 },
@@ -71,6 +98,8 @@ export function LetterRegister({ direction, projectId: fixedProject, initialFilt
   });
   const { data: categories } = useMasterList('letter-category');
   const categoryName = (code: string) => categories?.entries.find((e) => e.code === code)?.name ?? code;
+  const { data: partyKinds } = useMasterList('letter-party');
+  const partyKindName = (code: string) => partyKinds?.entries.find((e) => e.code === code)?.name ?? code;
 
   const frame = useListFrame<LetterSortField, LetterDto>({
     ...(fixedProject ? { list: `letters-${direction.toLowerCase()}`, url: false as const } : { list: isIn ? ('inward-letters' as const) : ('outward-letters' as const) }),
@@ -89,29 +118,32 @@ export function LetterRegister({ direction, projectId: fixedProject, initialFilt
         ]
       : [
           { key: 'toSign', label: 'To sign', filters: { toSign: '1' } },
+          { key: 'approval', label: 'Signature and seal', filters: { status: 'AWAITING_APPROVAL' } },
           { key: 'drafts', label: 'Drafts', filters: { status: 'DRAFT' } },
           { key: 'proof', label: 'No proof of delivery', filters: { proof: '1' } },
         ],
     chipLabels: {
       status: (v) => LETTER_STATUS_LABELS[v as LetterStatus] ?? v,
       category: (v) => `Category: ${categoryName(v)}`,
+      partyKind: (v) => `${isIn ? 'From' : 'To'}: ${partyKindName(v)}`,
       ...Object.fromEntries(Object.entries(FLAG_LABELS).map(([k, label]) => [k, () => label])),
     },
     columns: (sortOrderFor): ListColumn<LetterDto>[] => {
       const sort = (key: LetterSortField) => ({ key, sorter: true, sortOrder: sortOrderFor(key), sortDirections: ['descend', 'ascend'] as ('descend' | 'ascend')[] });
       return [
-        { title: 'No.', dataIndex: 'letterNo', width: 170, render: (_, r) => <span className="mono" translate="no">{letterLabel(r)}</span>, ...sort('letterNo') },
+        { title: 'No.', dataIndex: 'letterNo', width: 150, render: (_, r) => (r.letterNo ? <span className="mono" translate="no">{r.letterNo}</span> : <Sub>Not numbered</Sub>), ...sort('letterNo') },
         { title: isIn ? 'Received' : 'Dated', dataIndex: isIn ? 'receivedOn' : 'letterDate', width: 110, render: (v: string | null, r) => formatDate(v ?? r.letterDate), ...sort('letterDate') },
         {
           title: 'Subject',
           key: 'subject',
           locked: true,
-          width: 340,
+          width: isIn ? 340 : 310,
           render: (_, r) => (
             <div>
               <RecordLink href={letterHref(r.id)} onOpen={() => setOpenId(r.id)}>
                 {r.subject}
               </RecordLink>
+              {isIn && r.attachments.length ? <CopyLink letter={r} /> : null}
               {r.priority === 'URGENT' ? (
                 <AppTag meaning="failed" style={{ marginInlineStart: tk.space[2] }}>
                   Urgent
@@ -133,7 +165,7 @@ export function LetterRegister({ direction, projectId: fixedProject, initialFilt
                 render: (v: string | null, r: LetterDto) => (r.projectId ? <Link href={`/projects/${r.projectId}`}>{v}</Link> : <Typography.Text type="secondary">Head office</Typography.Text>),
               } satisfies ListColumn<LetterDto>,
             ]),
-        { key: 'status', title: 'Status', dataIndex: 'status', width: 150, render: (v: LetterStatus) => <LetterStatusTag status={v} /> },
+        { key: 'status', title: 'Status', dataIndex: 'status', width: isIn ? 120 : 160, render: (_: LetterStatus, r) => <LetterStatusTag letter={r} /> },
         ...(isIn
           ? [
               {
@@ -158,33 +190,38 @@ export function LetterRegister({ direction, projectId: fixedProject, initialFilt
             ]
           : [
               {
-                title: 'Sent',
-                key: 'sent',
-                width: 180,
-                render: (_: unknown, r: LetterDto) =>
-                  r.status === 'ISSUED' ? (
-                    r.deliveredOn ? (
-                      <Sub>Delivered {formatDate(r.deliveredOn)}</Sub>
-                    ) : r.dispatchedOn ? (
+                title: 'Where it stands',
+                key: 'stands',
+                width: 200,
+                render: (_: unknown, r: LetterDto) => {
+                  const s = letterSignOff(r);
+                  if (r.status !== 'ISSUED')
+                    return (
+                      <div>
+                        <SignOffLine label="Signatory" step={s.sign} who={s.sign === 'DONE' ? (r.signedByName ?? r.signatoryName) : r.signatoryName} />
+                        <SignOffLine label="Head office" step={s.seal} />
+                      </div>
+                    );
+                  const signer = r.signedByName ?? r.signatoryName;
+                  return (
+                    <div>
+                      <Sub>{signer ? `Signed by ${signer}${s.seal === 'DONE' ? ', sealed' : ''}` : 'Issued'}</Sub>
                       <Sub>
-                        <span className={r.proofMissing ? 'text-danger' : undefined}>Dispatched {formatDate(r.dispatchedOn)}{r.proofMissing ? ', no proof' : ''}</span>
+                        <span className={r.proofMissing ? 'text-danger' : undefined}>
+                          {r.deliveredOn ? `Delivered ${formatDate(r.deliveredOn)}` : r.dispatchedOn ? `Dispatched ${formatDate(r.dispatchedOn)}${r.proofMissing ? ', no proof' : ''}` : 'Not dispatched'}
+                        </span>
                       </Sub>
-                    ) : (
-                      <Sub>
-                        <span className={r.proofMissing ? 'text-danger' : undefined}>Not dispatched</span>
-                      </Sub>
-                    )
-                  ) : r.status === 'AWAITING_APPROVAL' ? (
-                    <Sub>With {r.signatoryName ?? 'the signatory'}</Sub>
-                  ) : (
-                    <Sub>-</Sub>
-                  ),
+                    </div>
+                  );
+                },
               } satisfies ListColumn<LetterDto>,
+              { key: 'draftedBy', title: 'Drafted by', dataIndex: 'createdByName', width: 150, defaultFrom: 1600 } satisfies ListColumn<LetterDto>,
             ]),
         {
           title: 'Reply by',
           dataIndex: 'replyBy',
           width: 140,
+          ...(isIn ? {} : { defaultFrom: 1500 }),
           ...sort('replyBy'),
           render: (v: string | null, r) =>
             v && !r.awaitingReply ? <Typography.Text type="secondary">{`${formatDate(v)} (replied)`}</Typography.Text> : v ? <DueCell date={v} /> : <Sub>-</Sub>,
@@ -204,6 +241,7 @@ export function LetterRegister({ direction, projectId: fixedProject, initialFilt
     projectId: f.ho === '1' ? HEAD_OFFICE : frame.projectId,
     status,
     category: f.category,
+    partyKind: f.partyKind,
     mine: flag('mine'),
     toSign: flag('toSign'),
     awaitingReply: flag('awaiting'),
@@ -212,7 +250,7 @@ export function LetterRegister({ direction, projectId: fixedProject, initialFilt
     unmarked: flag('unmarked'),
   };
   const { data, isLoading, isFetching, error, refetch } = useLetters({ ...listFilters, page: page.params.page, pageSize: page.params.pageSize });
-  const filtered = !!(status || f.category || KEYS.some((k) => k !== 'status' && k !== 'category' && f[k] === '1') || page.params.q);
+  const filtered = !!(status || f.category || f.partyKind || KEYS.some((k) => k !== 'status' && k !== 'category' && k !== 'partyKind' && f[k] === '1') || page.params.q);
 
   const newButton = keeper ? (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
@@ -256,6 +294,15 @@ export function LetterRegister({ direction, projectId: fixedProject, initialFilt
           onChange={(v) => page.setFilter('category', v)}
           style={{ width: 190 }}
           options={(categories?.entries ?? []).map((e) => ({ value: e.code, label: e.name }))}
+        />
+        <Select
+          allowClear
+          placeholder={isIn ? 'From any office' : 'To any office'}
+          aria-label={isIn ? 'Kind of office it is from' : 'Kind of office it is to'}
+          value={f.partyKind}
+          onChange={(v) => page.setFilter('partyKind', v)}
+          style={{ width: 200 }}
+          options={(partyKinds?.entries ?? []).map((e) => ({ value: e.code, label: `${isIn ? 'From' : 'To'} ${e.name.toLowerCase()}` }))}
         />
         {isIn ? (
           <Checkbox checked={f.awaiting === '1'} onChange={(e) => page.setFilter('awaiting', e.target.checked ? '1' : undefined)}>

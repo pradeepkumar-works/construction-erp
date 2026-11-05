@@ -33,7 +33,7 @@ function DocumentPageView() {
       <PageHeader
         title={data.title}
         subtitle={data.pages ? `Page ${page} of ${data.pages}` : `Page ${page}`}
-        crumbs={[{ title: 'Drawings and documents', href: '/documents' }, { title: data.title, href: data.recordHref }, { title: `Page ${page}` }]}
+        crumbs={[{ title: 'Drawing register', href: '/documents' }, { title: data.title, href: data.recordHref }, { title: `Page ${page}` }]}
         extra={
           <Flex gap={tk.space[2]} wrap>
             <LinkButton href={at(page - 1)} icon={<LeftOutlined />} disabled={page <= 1}>

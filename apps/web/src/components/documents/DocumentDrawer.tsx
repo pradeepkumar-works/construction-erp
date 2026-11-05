@@ -91,6 +91,7 @@ export function DocumentDrawer({ id, open, onClose, onSend, onOpenTransmittal }:
               { key: 'project', label: 'Project', children: data.projectName, span: 2 },
               { key: 'kind', label: 'Type', children: DOCUMENT_KIND_LABELS[data.kind] },
               { key: 'disc', label: 'Discipline', children: DOCUMENT_DISCIPLINE_LABELS[data.discipline] },
+              ...(data.workElementName ? [{ key: 'component', label: 'Component', children: <span translate="no">{data.workElementName}</span> }] : []),
               { key: 'rev', label: 'Current revision', children: cur ? <Space>{cur.revision}<RevisionStatusTag status={cur.status} /></Space> : 'None yet' },
               { key: 'issued', label: 'Issued', children: cur ? `${formatDate(cur.issuedOn)}${cur.receivedFrom ? ` by ${cur.receivedFrom}` : ''}` : '-' },
               {

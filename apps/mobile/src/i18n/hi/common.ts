@@ -150,7 +150,7 @@ export const COMMON: Record<string, string> = {
   Fixed: 'ठीक किया',
 
   // Documents
-  'Good for construction': 'निर्माण के लिए (GFC)',
+  AFC: 'AFC (निर्माण हेतु स्वीकृत)',
   'Approved with comments': 'टिप्पणी के साथ मंज़ूर',
   'For approval': 'मंज़ूरी के लिए',
   'For information': 'जानकारी के लिए',
@@ -335,4 +335,5 @@ export const COMMON: Record<string, string> = {
   'Letters open': 'खुले पत्र',
   'Each indent from approval through quotations and the order to the last delivery.': 'हर इंडेंट, मंज़ूरी से कोटेशन और ऑर्डर होते हुए आख़िरी डिलीवरी तक।',
   'Waiting for signature': 'दस्तख़त का इंतज़ार',
+  'Waiting for the seal': 'मुहर का इंतज़ार',
 };

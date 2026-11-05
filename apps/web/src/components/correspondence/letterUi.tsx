@@ -3,7 +3,7 @@
 import React from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { LetterDirection, LetterDto, LetterRefDto, LetterStatus } from '@erp/shared';
-import { LETTER_DIRECTION_LABELS, LETTER_STATUS_LABELS } from '@erp/shared';
+import { LETTER_DIRECTION_LABELS, LETTER_STATUS_LABELS, letterStatusLabel } from '@erp/shared';
 import { AppTag } from '@/components/common/AppTag';
 
 export const DirectionTag = ({ direction }: { direction: LetterDirection }) => (
@@ -12,9 +12,10 @@ export const DirectionTag = ({ direction }: { direction: LetterDirection }) => (
   </AppTag>
 );
 
-export const LetterStatusTag = ({ status }: { status: LetterStatus }) => (
-  <AppTag kind="letter" status={status} style={{ margin: 0 }}>
-    {LETTER_STATUS_LABELS[status]}
+/** A letter's state; one waiting for approval says whether it waits for the signature or the seal. */
+export const LetterStatusTag = ({ letter }: { letter: Pick<LetterDto, 'status' | 'signedAt'> }) => (
+  <AppTag kind="letter" status={letter.status} style={{ margin: 0 }}>
+    {letterStatusLabel(letter)}
   </AppTag>
 );
 

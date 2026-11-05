@@ -431,7 +431,7 @@ import type {
   ApplyUpdatesResultDto,
   ImportRowDto,
   ProjectUpdatesDto,
-  TypeBundle, CalibrationRegisterDto, CertificateMissingDto, LabSamplesDto, QaInstrumentDto, QaLabDto, QaAuditDto, QaAuditKind, QaReportDto, DrawingNeedState, DrawingNeedDto, DrawingSource, DrawingScheduleDto, AsBuiltDueDto, DesignSubmissionListDto, DesignSubmissionDetailDto, DesignSubmissionStatus, DesignPurpose, DesignSubmissionKind, CopyState, ControlledCopyListDto, RevisionImpactDto, DesignDashboardDto, BillMeasureChecksDto, CheckLevel, MeasurementCheckDto, PortalMeasurementDto, PortalMeasurementsDto, SiteOrderDto, ProgrammeRegisterDto, ProgrammeSubmissionDto, EotRegisterDto, EotApplicationDto, EotBasis, EotDelayDto } from '@erp/shared';
+  TypeBundle, CalibrationRegisterDto, CertificateMissingDto, LabSamplesDto, QaInstrumentDto, QaLabDto, QaAuditDto, QaAuditKind, QaReportDto, DrawingNeedState, DrawingNeedDto, DrawingSource, DrawingScheduleDto, AsBuiltDueDto, AsBuiltState, ComponentDrawingsDto, DesignCommentListDto, DesignSubmissionListDto, DesignSubmissionDetailDto, DesignSubmissionStatus, DesignPurpose, DesignSubmissionKind, CopyState, ControlledCopyListDto, RevisionImpactDto, DesignDashboardDto, BillMeasureChecksDto, CheckLevel, MeasurementCheckDto, PortalMeasurementDto, PortalMeasurementsDto, SiteOrderDto, ProgrammeRegisterDto, ProgrammeSubmissionDto, EotRegisterDto, EotApplicationDto, EotBasis, EotDelayDto } from '@erp/shared';
 import { CAD_MIME_TYPES, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, NOTIFICATION_TYPES_VERSION, SEARCH_MIN_LENGTH, lastRateKey } from '@erp/shared';
 import { api } from './api';
 import { useModuleOn } from './modules';
@@ -1142,11 +1142,12 @@ export const useEquipment = (filters?: EquipmentFilters, enabled = true) =>
 // Fuel and fleet use
 
 /** Each site's fuel on a day (today when left out) and the day's fuel issues into machines. */
-export const useFuelPosition = (q: { date?: string; projectId?: string }) =>
+export const useFuelPosition = (q: { date?: string; projectId?: string }, enabled = true) =>
   useQuery({
     queryKey: ['machinery', 'fuel-position', clean(q)],
     queryFn: async () => (await api.get<FuelPositionDto>('/fleet/fuel-position', { params: clean(q) })).data,
     placeholderData: keepPreviousData,
+    enabled,
   });
 
 export const useFuelIssues = (q: { from: string; to: string; projectId?: string; equipmentId?: string }, enabled = true) =>
@@ -1232,6 +1233,8 @@ export interface FuelIssueInput {
   itemId: string;
   quantity: string;
   meterReading?: string | null;
+  pumpStart?: string | null;
+  pumpEnd?: string | null;
   issuedTo?: string | null;
   remarks?: string | null;
 }
@@ -1700,11 +1703,33 @@ export const useDrawingNeed = (id: string | null | undefined) =>
     enabled: !!id,
   });
 
-export const useAsBuiltDue = (projectId?: string, enabled = true) =>
+/** The as-built register: drawings built from with no as-built revision yet, or (RECEIVED) those that have one. */
+export const useAsBuiltDue = (projectId?: string, state: AsBuiltState = 'DUE') =>
   useQuery({
-    queryKey: ['documents', 'as-built-due', projectId ?? null],
-    queryFn: async () => (await api.get<AsBuiltDueDto[]>('/design/as-built-due', { params: clean({ projectId }) })).data,
-    enabled,
+    queryKey: ['documents', 'as-built-due', projectId ?? null, state],
+    queryFn: async () => (await api.get<AsBuiltDueDto[]>('/design/as-built-due', { params: clean({ projectId, state: state === 'DUE' ? undefined : state }) })).data,
+  });
+
+/** Drawings by component: each component of the project with its drawings and where their approval stands. */
+export const useComponentDrawings = (projectId?: string) =>
+  useQuery({
+    queryKey: ['documents', 'by-component', projectId ?? null],
+    queryFn: async () => (await api.get<ComponentDrawingsDto>('/design/by-component', { params: { projectId } })).data,
+    enabled: !!projectId,
+  });
+
+export interface DesignCommentFilters extends PageParams {
+  projectId?: string;
+  state?: 'OPEN' | 'ANSWERED' | 'CLOSED' | 'NOT_CLOSED';
+  stage?: string;
+}
+
+/** Review comments across the submittals: the ones to answer first. */
+export const useDesignComments = (filters?: DesignCommentFilters) =>
+  useQuery({
+    queryKey: ['documents', 'design-submissions', 'comments', clean(filters)],
+    queryFn: async () => (await api.get<DesignCommentListDto>('/design/submissions/comments', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
   });
 
 export interface DesignSubmissionFilters extends PageParams {
@@ -1713,6 +1738,8 @@ export interface DesignSubmissionFilters extends PageParams {
   purpose?: DesignPurpose;
   kind?: DesignSubmissionKind;
   toAnswer?: boolean;
+  /** Under review, waiting at this review stage (`reviewStage` code) */
+  at?: string;
 }
 
 /** Design submissions: late reviews first, with the summary over the filter. */
@@ -1948,6 +1975,8 @@ export interface LetterFilters extends PageParams {
   direction?: LetterDirection;
   status?: LetterStatus;
   category?: string;
+  /** From or to an office of this kind (a letterParty code) */
+  partyKind?: string;
   riskId?: string;
   mine?: boolean;
   toSign?: boolean;

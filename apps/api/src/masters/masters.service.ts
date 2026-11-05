@@ -88,6 +88,11 @@ export class MastersService {
         (await this.prisma.letter.groupBy({ by: ['category'], where: { organizationId: org, category: { not: null } }, _count: { _all: true } })).forEach((r) => add(names.get(r.category!) ?? null, r._count._all));
         break;
       }
+      case 'letterParty': {
+        const names = new Map((await this.entriesFor(org, list)).map((e) => [e.code, e.name]));
+        (await this.prisma.letterContact.groupBy({ by: ['kind'], where: { organizationId: org, kind: { not: null } }, _count: { _all: true } })).forEach((r) => add(names.get(r.kind!) ?? null, r._count._all));
+        break;
+      }
       case 'ncrCategory':
       case 'ncrRootCause': {
         // NCRs keep the code, like letters.
@@ -109,6 +114,12 @@ export class MastersService {
           this.prisma.tender.groupBy({ by: ['verticalCode'], where: { organizationId: org, verticalCode: { not: null } }, _count: { _all: true } }),
         ]);
         [...projects, ...tenders].forEach((r) => add(names.get(r.verticalCode!) ?? null, r._count._all));
+        break;
+      }
+      case 'reviewStage': {
+        // Submittals keep the stages' codes; count each submittal once under every stage it goes through.
+        const names = new Map((await this.entriesFor(org, list)).map((e) => [e.code, e.name]));
+        for (const r of await this.prisma.designSubmission.findMany({ where: { organizationId: org, NOT: { stages: { isEmpty: true } } }, select: { stages: true } })) r.stages.forEach((c) => add(names.get(c) ?? null, 1));
         break;
       }
       case 'workTrade':

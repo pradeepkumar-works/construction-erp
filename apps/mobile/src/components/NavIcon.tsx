@@ -58,6 +58,7 @@ import GitBranch from 'lucide-react-native/icons/git-branch';
 import Hammer from 'lucide-react-native/icons/hammer';
 import TrafficCone from 'lucide-react-native/icons/traffic-cone';
 import DraftingCompass from 'lucide-react-native/icons/drafting-compass';
+import PencilRuler from 'lucide-react-native/icons/pencil-ruler';
 import LibraryBig from 'lucide-react-native/icons/library-big';
 import Tags from 'lucide-react-native/icons/tags';
 import MailOpen from 'lucide-react-native/icons/mail-open';
@@ -191,6 +192,7 @@ export const NAV_ICONS: Record<string, LucideIcon> = {
   'hammer': Hammer,
   'traffic-cone': TrafficCone,
   'drafting-compass': DraftingCompass,
+  'pencil-ruler': PencilRuler,
   'library-big': LibraryBig,
   'tags': Tags,
   'mail-open': MailOpen,

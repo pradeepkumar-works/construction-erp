@@ -8,14 +8,14 @@ import { AppTag } from '@/components/common/AppTag';
 import { EditOutlined, WarningOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { StockBalanceDto, StockBalanceSortField } from '@erp/shared';
-import { LIST_SORT_FIELDS, canManageStore, unitLabel } from '@erp/shared';
+import { LIST_SORT_FIELDS, canManageStore, canViewStockValue, unitLabel } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useStockBalances } from '@/lib/queries';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { STOCK_BALANCE_EXPORT } from '@/lib/exportColumns';
-import { formatDate, formatQty, NO_VALUE } from '@/lib/format';
+import { formatDate, formatINR, formatQty, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
 import { ExportButton } from '@/components/common/ExportButton';
@@ -94,6 +94,7 @@ const KEYS = ['low', 'inStock'] as const;
 export function StockBalances({ projectId: fixedProject, initialLow = false, initialProject, initialSearch }: { projectId?: string; initialLow?: boolean; initialProject?: string; initialSearch?: string }) {
   const { user } = useAuth();
   const mayManage = !!user && canManageStore(user.roleKey);
+  const seesValue = !!user && canViewStockValue(user.roleKey);
   const [ledger, setLedger] = useState<StockBalanceDto | null>(null);
   const unit = (r: StockRow) => unitLabel(r.unit);
   const moved = (v: string) => (Number(v) === 0 ? null : v);
@@ -121,6 +122,11 @@ export function StockBalances({ projectId: fixedProject, initialLow = false, ini
           render: (v, r) => (
             <Space size={6} wrap>
               <RecordLink onOpen={() => setLedger(r)}>{v}</RecordLink>
+              {r.itemCode ? (
+                <Typography.Text type="secondary" className="mono" translate="no">
+                  {r.itemCode}
+                </Typography.Text>
+              ) : null}
               {r.category ? <AppTag variant="kind" style={{ margin: 0 }}>{r.category}</AppTag> : null}
             </Space>
           ),
@@ -163,6 +169,18 @@ export function StockBalances({ projectId: fixedProject, initialLow = false, ini
             </Space>
           ),
         },
+        ...(seesValue
+          ? [
+              {
+                title: 'Value',
+                dataIndex: 'value',
+                kind: 'money',
+                width: 140,
+                ...sort('value'),
+                total: (rows) => formatINR(rows.reduce((n, r) => n + Number(r.value ?? 0), 0)),
+              } satisfies ListColumn<StockRow>,
+            ]
+          : []),
         { title: 'Last movement', dataIndex: 'lastMovement', width: 130, ...sort('lastMovement'), card: 'date', render: (v) => formatDate(v) },
         { title: 'Received', dataIndex: 'received', defaultFrom: 1600, kind: 'qty', unit, width: 120, ...sort('received') },
         { title: 'Issued', dataIndex: 'issued', defaultFrom: 1600, kind: 'qty', unit, width: 120, ...sort('issued') },

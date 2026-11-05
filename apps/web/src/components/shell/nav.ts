@@ -5,7 +5,7 @@
  */
 import type React from 'react';
 import { AppstoreOutlined, AuditOutlined, ContactsOutlined, ContainerOutlined, FileTextOutlined, ProjectOutlined, QuestionCircleOutlined, WalletOutlined } from '@/components/common/icons';
-import type { AuthUser, ModuleKey, NavNode, NavSettingsDto, NavSidebarLink } from '@erp/shared';
+import type { AuthUser, ModuleKey, NavMenuModule, NavNode, NavSettingsDto, NavSidebarLink } from '@erp/shared';
 import { isGuest, isModuleKey, isSupplier, moduleScreenHref, navMenuFor, navPageLink, navSettingsOf, navSidebar } from '@erp/shared';
 import { navIcon } from './nav-icons';
 
@@ -121,6 +121,27 @@ function departmentSections(user: AuthUser, settings: NavSettingsDto, top: NavSe
       items.push({ href: link.href, label: link.label, icon: navIcon(n.icon), keywords: n.keywords, node: n });
     }
     sections.push({ key: m.key, title: m.label, icon: navIcon(m.icon), items });
+  }
+  return sections;
+}
+
+/**
+ * One module's menu as sidebar sections, where the sub-modules sit down the side (Top bar and sidebar, Two sidebars): its
+ * screen first, then each sub-module with its pages. A page with no link of its own (a project's tab) opens from its
+ * project; a page already listed is not listed again, and a sub-module left with no page is left out.
+ */
+export function moduleSections(module: NavMenuModule): NavSection[] {
+  const seen = new Set<string>();
+  const sections: NavSection[] = [{ key: `${module.key}.overview`, items: [{ href: moduleScreenHref(module.key), label: 'Overview', icon: navIcon('layout-dashboard'), keywords: `module home summary ${module.defaultLabel}`, overview: true }] }];
+  for (const sub of module.subs) {
+    const items: NavItem[] = [];
+    for (const n of sub.nodes) {
+      const link = navPageLink(n);
+      if (!link || seen.has(link.href)) continue;
+      seen.add(link.href);
+      items.push({ href: link.href, label: link.label, icon: navIcon(n.icon), keywords: n.keywords, approvals: n.badge === 'approvals' || undefined, node: n });
+    }
+    if (items.length) sections.push({ key: `${module.key}.${sub.key}`, title: sub.label, icon: items[0].icon, items });
   }
   return sections;
 }

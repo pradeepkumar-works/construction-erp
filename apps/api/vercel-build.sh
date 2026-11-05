@@ -11,6 +11,9 @@ OWNER_URL="${MIGRATE_DATABASE_URL:-$DATABASE_URL}"
 DATABASE_URL="$OWNER_URL" npx prisma migrate resolve --rolled-back 20261015180000_client_portal > /dev/null 2>&1 || true
 # The same for a renamed copy of contract obligations (#237), whose first name 20270510090000 the database already has.
 DATABASE_URL="$OWNER_URL" npx prisma migrate resolve --rolled-back 20270517090000_contract_obligations > /dev/null 2>&1 || true
+# And for the drawing migrations of #313: a preview applied them as 20270711090000/090100 before they were renamed to
+# 20270713090000/090100, so the renamed review stages failed on columns it already had. Both now run again safely.
+DATABASE_URL="$OWNER_URL" npx prisma migrate resolve --rolled-back 20270713090000_drawing_review_stages > /dev/null 2>&1 || true
 DATABASE_URL="$OWNER_URL" npx prisma migrate deploy
 if [ "$SEED_ON_BUILD" = "true" ]; then
   echo "SEED_ON_BUILD=true: seeding demo data (idempotent)"

@@ -1,9 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsBoolean, IsIn, IsObject, IsOptional } from 'class-validator';
-import { NAV_LAYOUTS, NAV_LOOKS, NAV_MODULE_SETS, NAV_PALETTES, NAV_SIDEBAR_LOOKS, type NavFill, type NavLayout, type NavLook, type NavModuleSet, type NavPalette, type NavSidebarLook } from '@erp/shared';
+import { NAV_LAYOUTS, NAV_LOOKS, NAV_MODULE_SETS, NAV_PAINTS, NAV_PALETTES, NAV_SIDEBAR_LOOKS, type NavFill, type NavLayout, type NavLook, type NavModuleSet, type NavPaint, type NavPalette, type NavSidebarLook } from '@erp/shared';
 
 export class SaveNavSettingsDto {
-  @ApiProperty({ enum: NAV_LAYOUTS, description: 'The menu down the side, or across the top with the modules on Home' })
+  @ApiProperty({
+    enum: NAV_LAYOUTS,
+    description: 'Where the modules and their sub-modules sit: all down the side, the modules on Home with a top bar, modules on top and sub-modules down the side, two top bars, or two sidebars',
+  })
   @IsIn(NAV_LAYOUTS as unknown as string[])
   layout: NavLayout;
 
@@ -15,6 +18,11 @@ export class SaveNavSettingsDto {
   @IsOptional()
   @IsIn(NAV_SIDEBAR_LOOKS as unknown as string[])
   sidebarLook?: NavSidebarLook;
+
+  @ApiPropertyOptional({ enum: NAV_PAINTS, description: "Which of the layout's two parts take the menu's colours; left out, the side part" })
+  @IsOptional()
+  @IsIn(NAV_PAINTS as unknown as string[])
+  paint?: NavPaint;
 
   @ApiPropertyOptional({ enum: NAV_PALETTES, description: "The menu's colours; left out, Nirmaan's own. CUSTOM takes `fill`" })
   @IsOptional()

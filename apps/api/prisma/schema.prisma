@@ -836,6 +836,8 @@ model Organization {
   letterApproval           LetterApprovalRule @default(CONTRACTUAL)
   /// Which signed letters then wait for a director's seal at head office (L2) before they are numbered
   letterSeal               LetterApprovalRule @default(NONE)
+  /// The gate (NONE, SIGN, SEAL) of each letter category the company has set, by code; the two rules above cover the rest
+  letterGates              Json               @default("{}")
   /// Item categories (master codes) whose receipts need the maker's test certificate
   mtcCategories            String[]           @default(["steel", "cement", "pipes-and-fittings"])
   /// Discover on Home also shows modules a person's role cannot open, greyed, with Request access.
@@ -846,9 +848,10 @@ model Organization {
   /// how pages are grouped into modules, and the company's own names for modules (by module key)
   navLayout                NavLayout          @default(SIDEBAR)
   navLook                  NavLook            @default(NAVY)
-  /// How the sidebar sits, and the menu's colours: a curated palette, or CUSTOM with the company's own fill
-  /// (NavFill in @erp/shared nav-colours.ts: a plain colour or a two-stop gradient)
+  /// How the sidebar sits, which of the layout's parts take the menu's colours (navPainted in @erp/shared), and the
+  /// colours: a curated palette, or CUSTOM with the company's own fill (NavFill in @erp/shared nav-colours.ts)
   navSidebarLook           NavSidebarLook     @default(RAIL)
+  navPaint                 NavPaint           @default(SIDE)
   navPalette               NavPalette         @default(QUIET)
   navFill                  Json?
   navModuleSet             NavModuleSet       @default(DEPARTMENTS)
@@ -2400,6 +2403,7 @@ model WorkElement {
   billingComponents BillingComponent[]
   deliverables      EngineeringDeliverable[]
   packages          ProcurementPackage[]
+  documents         Document[]
 
   @@unique([projectId, code])
   @@index([projectId])
@@ -2748,6 +2752,9 @@ model PipeNode {
   y              Float?
   /// Chainage on a main, m
   chainage       Int?
+  /// Where it is on the earth (from a Google Earth file or a sheet's latitude and longitude)
+  lat            Float?
+  lon            Float?
   remarks        String?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
@@ -2787,6 +2794,8 @@ model PipeSegment {
   surface        String?
   /// Road, rail or drain crossing, open cut or HDD
   crossing       String?
+  /// Its bends between its two ends, [[longitude, latitude], ...], as the Google Earth line drew them
+  path           Json?
   boqItemId      String?
   boqItem        BoqItem?     @relation(fields: [boqItemId], references: [id], onDelete: SetNull)
   sortOrder      Int          @default(0)
@@ -3089,6 +3098,10 @@ model Item {
   organization   Organization  @relation(fields: [organizationId], references: [id])
   name           String
   unit           String
+  /// The company's own short code for the item (DI-K9-500), one per item; `itemCodeOf` writes it
+  code           String?
+  /// The standard or specification it is bought to (IS 8329, IS 1786 Fe 550D)
+  standard       String?
   category       String?
   /// Standard rate per unit; values issues in the project cost view
   rate           Decimal?      @db.Decimal(18, 2)
@@ -3121,6 +3134,7 @@ model Item {
   omChemicalNorms   OmChemicalNorm[]
 
   @@unique([organizationId, name, unit])
+  @@unique([organizationId, code])
 }
 
 /// A company's entry in one of its simple master lists: trades, designations, departments, item and equipment
@@ -3217,6 +3231,9 @@ model StockEntry {
   equipmentId        String?
   equipment          Equipment?             @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
   meterReading       Decimal?               @db.Decimal(18, 2)
+  /// Fuel issues: the bowser's or dispenser's totaliser before and after the fill; the litres are what it moved
+  pumpStart          Decimal?               @db.Decimal(18, 2)
+  pumpEnd            Decimal?               @db.Decimal(18, 2)
   /// Receipts: QA/QC's check of the material (null = not checked yet)
   qcStatus           GrnQcStatus?
   qcAt               DateTime?
@@ -5099,6 +5116,9 @@ model Document {
   title             String
   kind              DocumentKind       @default(DRAWING)
   discipline        DocumentDiscipline @default(GENERAL)
+  /// The component of the project it draws (a top-level work element), for Drawings by component
+  workElementId     String?
+  workElement       WorkElement?       @relation(fields: [workElementId], references: [id], onDelete: SetNull)
   remarks           String?
   /// The revision in force: the latest issued (kept in step by the service; filters and sorts by it)
   currentRevisionId String?            @unique
@@ -5121,6 +5141,7 @@ model Document {
 
   @@unique([projectId, docNo])
   @@index([organizationId, kind])
+  @@index([workElementId])
 }
 
 /// One revision of a document. The latest one added is the current revision; earlier ones are superseded.
@@ -5429,6 +5450,8 @@ model LetterContact {
   address        String?
   email          String?
   phone          String?
+  /// What kind of office it is: a code of the letterParty master (client, consultant, third-party inspection…)
+  kind           String?
   /// The client it is, when it is one
   clientId       String?
   client         Client?      @relation(fields: [clientId], references: [id], onDelete: SetNull)
@@ -8563,6 +8586,9 @@ enum ModuleTier {
 enum NavLayout {
   SIDEBAR
   TOP_BAR
+  TOP_AND_SIDE
+  TWO_BARS
+  TWO_SIDEBARS
 }
 
 enum NavLook {
@@ -8579,8 +8605,14 @@ enum NavModuleSet {
 /// Menu and names: NAV_SIDEBAR_LOOKS and NAV_PALETTES in @erp/shared
 enum NavSidebarLook {
   RAIL
-  HEADER
   FLOATING
+}
+
+enum NavPaint {
+  SIDE
+  TOP
+  BOTH
+  NONE
 }
 
 enum NavPalette {
@@ -8588,12 +8620,13 @@ enum NavPalette {
   NAVY
   GRAPHITE
   FOREST
-  PLUM
+  OXBLOOD
   SAND
   SKY
+  LAGOON
   DUSK
   OCEAN
-  EMBER
+  WALNUT
   MIDNIGHT
   DAWN
   CUSTOM
@@ -8945,6 +8978,8 @@ model DesignSubmission {
   replyBy        DateTime?    @db.Date
   /// DRAFT | UNDER_REVIEW | APPROVED | APPROVED_AS_NOTED | REVISE_RESUBMIT | REJECTED | WITHDRAWN
   status         String       @default("DRAFT")
+  /// The reviewers it passes through in turn (`reviewStage` master codes, in order); empty when the one reviewer codes it
+  stages         String[]     @default([])
   /// The current round: 0 for the first submission
   revision       Int          @default(0)
   note           String?
@@ -9001,6 +9036,8 @@ model DesignSubmissionRound {
   reviewedOn     DateTime?        @db.Date
   reviewerName   String?
   reviewRef      String?
+  /// Each review stage's code on this round, in order: [{ stage, code, clearedOn, reviewerName, reviewRef }]
+  marks          Json             @default("[]")
   createdAt      DateTime         @default(now())
 
   items DesignRoundItem[]
@@ -9031,6 +9068,10 @@ model DesignComment {
   commentNo      Int
   /// The round it was made on
   round          Int
+  /// The review stage that made it (`reviewStage` master code), when the submittal goes through stages
+  stage          String?
+  /// The day of the review it came with
+  madeOn         DateTime?        @db.Date
   documentId     String?
   document       Document?        @relation(fields: [documentId], references: [id], onDelete: SetNull)
   text           String

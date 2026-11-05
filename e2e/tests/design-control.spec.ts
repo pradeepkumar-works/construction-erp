@@ -68,7 +68,7 @@ test('controlled copies are issued, recalled by a new revision and taken back', 
   await expect(page.getByRole('heading', { name: 'Controlled copies', level: 1 })).toBeVisible();
   await expect(page.getByText('Steel fixing gang').first()).toBeVisible();
   await page.goto('/design-dashboard');
-  await expect(page.getByRole('heading', { name: 'Design dashboard', level: 1 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Dashboard', level: 1 })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'What new revisions change' })).toBeVisible();
   await page.goto(`/documents?id=${doc.id}`);
   await expect(page.getByText('What R2 changes')).toBeVisible();

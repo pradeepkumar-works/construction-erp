@@ -1,6 +1,6 @@
 import type { MachineEngineDto } from './telematics';
 import type { VendorRecordDto } from './vendor-score';
-import type { LetterAction, LetterMarkDto, LetterMode, LetterPriority, LetterStatus } from './correspondence';
+import type { LetterAction, LetterGate, LetterMarkDto, LetterMode, LetterPriority, LetterStatus } from './correspondence';
 import type { NavSettingsDto } from './nav-menu';
 import type { DprLineDto } from './dpr-lines';
 import type { DprExtra, DprFormDto } from './dpr-form';
@@ -720,6 +720,10 @@ export interface ItemDto {
   id: string;
   name: string;
   unit: string;
+  /** The company's code for it (DI-K9-500) */
+  code?: string | null;
+  /** The standard it is bought to (IS 8329) */
+  standard?: string | null;
   category: string | null;
   /** Standard rate per unit used to value issues in the cost view. */
   rate: string | null;
@@ -773,7 +777,7 @@ export interface StockEntryDto {
   /** Issues and returns: the component or pipe zone the material went to, "9.2 Zone 2" */
   workElementId?: string | null;
   workElementLabel?: string | null;
-  /** Issues to a subcontractor: their work order, and the bill that recovered the material */
+  /** Issues to a subcontractor and returns from one: their work order, and the bill that recovered or credited the material */
   workOrderId: string | null;
   woNo: string | null;
   subcontractBillId: string | null;
@@ -793,6 +797,9 @@ export interface StockEntryDto {
   equipmentId?: string | null;
   equipmentCode?: string | null;
   meterReading?: string | null;
+  /** Fuel issues: the bowser's totaliser before and after the fill, when read */
+  pumpStart?: string | null;
+  pumpEnd?: string | null;
   /** Receipts: QA/QC's check of the material (null until checked) */
   qcStatus?: GrnQcStatus | null;
   qcAt?: string | null;
@@ -814,8 +821,11 @@ export interface StockBalanceDto {
   projectName: string;
   itemId: string;
   itemName: string;
+  itemCode?: string | null;
   unit: string;
   category: string | null;
+  /** The balance at the item master rate, for those who see stock value (`canViewStockValue`); null with no rate */
+  value?: string | null;
   /** Received on GRNs less returned to suppliers */
   received: string;
   /** Issued at site less returned from site */
@@ -2896,6 +2906,9 @@ export interface DocumentDto {
   title: string;
   kind: DocumentKind;
   discipline: DocumentDiscipline;
+  /** The component of the project it draws (Drawings by component) */
+  workElementId: string | null;
+  workElementName: string | null;
   remarks: string | null;
   /** The current revision, null until the first one is added */
   current: DocumentRevisionDto | null;
@@ -3003,6 +3016,8 @@ export interface LetterDto {
   receivedOn: string | null;
   party: string;
   contactId: string | null;
+  /** The kind of office it is from or to, when picked from the address book (a letterParty code) */
+  partyKind: string | null;
   subject: string;
   summary: string | null;
   body: string | null;
@@ -3032,7 +3047,9 @@ export interface LetterDto {
   /** When its signatory approved it, where it then waits for head office's seal (L2); null before */
   signedAt: string | null;
   signedByName: string | null;
-  /** The letter waits for head office's seal after its signature (the company's rule, for its category) */
+  /** What an outward letter passes before it is numbered, by its category (`letterGate`); null for one received */
+  gate: LetterGate | null;
+  /** The letter waits for head office's seal after its signature (its category's gate) */
   needsSeal: boolean;
   approvedAt: string | null;
   returnNote: string | null;

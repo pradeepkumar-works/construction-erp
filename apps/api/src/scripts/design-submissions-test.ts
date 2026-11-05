@@ -18,8 +18,13 @@ import {
   designSummary,
   replyByFor,
   reviewDaysLate,
+  reviewStagesProblem,
   revisionStatusAfter,
+  stageOutcome,
+  stageStartedOn,
+  stageWaiting,
   statusForCode,
+  type StageMark,
 } from '@erp/shared';
 
 const cases: [string, () => void][] = [];
@@ -130,6 +135,39 @@ test('the summary counts what is under review, late, back with us and the commen
   );
   assert.deepEqual(sum, { underReview: 2, late: 1, withUs: 2, toAnswer: 4, avgDaysToCode: 16 });
   assert.equal(designSummary([], []).avgDaysToCode, null);
+});
+
+const STAGES = ['proof-checker', 'tpia', 'piu', 'head-office'];
+const mark = (stage: string, code: 'A' | 'B' | 'C' | 'D', clearedOn: string): StageMark => ({ stage, code, clearedOn, reviewerName: null, reviewRef: null });
+
+test('review stages: each once, at most six, from the list', () => {
+  assert.equal(reviewStagesProblem(STAGES, STAGES), null);
+  assert.equal(reviewStagesProblem([], STAGES), null);
+  assert.match(reviewStagesProblem(['tpia', 'tpia'], STAGES)!, /twice/);
+  assert.match(reviewStagesProblem(['lab'], STAGES)!, /from the list/);
+  assert.match(reviewStagesProblem(['a', 'b', 'c', 'd', 'e', 'f', 'g'], ['a', 'b', 'c', 'd', 'e', 'f', 'g'])!, /at most 6/);
+});
+
+test('a round waits at the first stage without a code, only while under review', () => {
+  assert.equal(stageWaiting(STAGES, [], 'UNDER_REVIEW'), 'proof-checker');
+  assert.equal(stageWaiting(STAGES, [mark('proof-checker', 'A', '2026-10-05'), mark('tpia', 'B', '2026-10-12')], 'UNDER_REVIEW'), 'piu');
+  assert.equal(stageWaiting(STAGES, [], 'APPROVED'), null);
+  assert.equal(stageWaiting([], [], 'UNDER_REVIEW'), null);
+});
+
+test('an A or B passes the round on, a C or D or the last stage codes it', () => {
+  assert.equal(stageOutcome(STAGES, [], 'A'), 'NEXT');
+  assert.equal(stageOutcome(STAGES, [], 'B'), 'NEXT');
+  assert.equal(stageOutcome(STAGES, [], 'C'), 'FINAL');
+  assert.equal(stageOutcome(STAGES, [mark('proof-checker', 'A', '2026-10-05')], 'D'), 'FINAL');
+  const three = [mark('proof-checker', 'A', '2026-10-05'), mark('tpia', 'A', '2026-10-12'), mark('piu', 'B', '2026-10-20')];
+  assert.equal(stageOutcome(STAGES, three, 'A'), 'FINAL');
+  assert.equal(stageOutcome(['client'], [], 'A'), 'FINAL');
+});
+
+test('a stage starts the day the stage before cleared it', () => {
+  assert.equal(stageStartedOn('2026-10-01', []), '2026-10-01');
+  assert.equal(stageStartedOn('2026-10-01', [mark('proof-checker', 'A', '2026-10-05'), mark('tpia', 'B', '2026-10-12')]), '2026-10-12');
 });
 
 let failed = 0;

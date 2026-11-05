@@ -138,6 +138,7 @@ const VALUES: Record<StatusKind, readonly string[]> = {
   designSubmission: DESIGN_SUBMISSION_STATUSES,
   designCode: APPROVAL_CODES,
   designComment: ['OPEN', 'ANSWERED', 'CLOSED'],
+  componentDrawings: ['AFC', 'UNDER_REVIEW', 'BACK_WITH_US', 'NOT_SENT', 'NO_DRAWINGS'],
   deliverable: DELIVERABLE_STATUSES,
   drawingNeed: ['AWAITED', 'RECEIVED', 'GFC', 'DROPPED'],
   revision: REVISION_STATUSES,

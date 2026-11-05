@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { MAX_PAGE_SIZE, canIssueFuel, meterUnit, type EquipmentDto, type FuelPositionDto, type Paginated, type StockEntryDto } from '@erp/shared';
+import { MAX_PAGE_SIZE, canIssueFuel, meterUnit, pumpReadingProblem, slipPumpReadings, type EquipmentDto, type FuelPositionDto, type Paginated, type StockEntryDto } from '@erp/shared';
 import { useAuth } from '../../src/auth/AuthContext';
 import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
@@ -17,6 +17,11 @@ import { fmtQty, formatDate, isIsoDate, today } from '../../src/utils/format';
 
 const QTY = /^\d+(\.\d{1,3})?$/;
 const METER = /^\d+(\.\d{1,2})?$/;
+/** The readings the slip sends: a start with no end (filled from the last slip) is no reading. */
+const pumpBody = (start: string, end: string) => {
+  const r = slipPumpReadings(start.trim() || null, end.trim() || null);
+  return { pumpStart: r.start, pumpEnd: r.end };
+};
 
 /**
  * Fuel issue: diesel from the site store into one machine, with its hour meter or odometer, and the
@@ -40,6 +45,10 @@ export default function FuelIssueScreen() {
   const [itemId, setItemId] = useState<string | null>(null);
   const [quantity, setQuantity] = useState('');
   const [meter, setMeter] = useState('');
+  const [pumpStart, setPumpStart] = useState('');
+  const [pumpEnd, setPumpEnd] = useState('');
+  // The quantity this form filled from the pump readings, so a quantity someone typed is never overwritten.
+  const filledQty = useRef<string | null>(null);
   const [issuedTo, setIssuedTo] = useState('');
   const [remarks, setRemarks] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -48,13 +57,15 @@ export default function FuelIssueScreen() {
   const [saved, setSaved] = useState<StockEntryDto | null>(null);
   const [queued, setQueued] = useState<OutboxItem | null>(null);
 
-  const draft = useFormDraft('fuel-issue', { projectId, date, equipmentId, itemId, quantity, meter, issuedTo, remarks }, (d) => {
+  const draft = useFormDraft('fuel-issue', { projectId, date, equipmentId, itemId, quantity, meter, pumpStart, pumpEnd, issuedTo, remarks }, (d) => {
     setProjectId(d.projectId);
     setDate(d.date);
     setEquipmentId(d.equipmentId);
     setItemId(d.itemId);
     setQuantity(d.quantity);
     setMeter(d.meter);
+    setPumpStart(d.pumpStart ?? '');
+    setPumpEnd(d.pumpEnd ?? '');
     setIssuedTo(d.issuedTo);
     setRemarks(d.remarks);
   });
@@ -86,6 +97,24 @@ export default function FuelIssueScreen() {
     if (fuels.length === 1 && !itemId) setItemId(fuels[0].itemId);
   }, [fuels, itemId]);
 
+  // The bowser's last end reading at the site is where this slip starts.
+  const lastPumpEnd = position.data?.lastPumpEnd ?? null;
+  useEffect(() => {
+    if (lastPumpEnd !== null && !pumpStart) {
+      setPumpStart(String(Number(lastPumpEnd)));
+      draft.settle();
+    }
+  }, [lastPumpEnd, pumpStart, draft]);
+
+  // With both readings, the quantity is what the pump moved, until someone types their own.
+  useEffect(() => {
+    if (!METER.test(pumpStart.trim()) || !METER.test(pumpEnd.trim())) return;
+    const moved = Math.round((Number(pumpEnd) - Number(pumpStart)) * 100) / 100;
+    if (moved <= 0 || (quantity && quantity !== filledQty.current)) return;
+    filledQty.current = String(moved);
+    setQuantity(String(moved));
+  }, [pumpStart, pumpEnd, quantity]);
+
   const validate = () => {
     const e: Record<string, string> = {};
     if (!projectId) e.projectId = t('Choose a project');
@@ -96,6 +125,17 @@ export default function FuelIssueScreen() {
     if (!QTY.test(quantity.trim()) || Number(quantity) <= 0) e.quantity = t('Enter a quantity (up to 3 decimals)');
     else if (fuel && Number(quantity) > Number(fuel.closing)) e.quantity = t('Enter at most {qty} {unit}, the stock on hand', { qty: fmtQty(fuel.closing), unit: fuel.unit });
     if (meter.trim() && !METER.test(meter.trim())) e.meter = t('Enter the reading as a number');
+    if (pumpStart.trim() && !METER.test(pumpStart.trim())) e.pumpStart = t('Enter the reading as a number');
+    if (pumpEnd.trim() && !METER.test(pumpEnd.trim())) e.pumpEnd = t('Enter the reading as a number');
+    else if (!e.pumpStart && !e.quantity) {
+      const start = pumpStart.trim() ? Number(pumpStart) : null;
+      const end = pumpEnd.trim() ? Number(pumpEnd) : null;
+      if (pumpReadingProblem(start, end, Number(quantity))) {
+        if (start === null || end === null) e.pumpStart = t('Enter the pump start too, or leave the end empty');
+        else if (end <= start) e.pumpEnd = t('The end reading must be past the start');
+        else e.pumpEnd = t('The pump moved {moved} L; the slip says {qty} L', { moved: fmtQty(Math.round((end - start) * 100) / 100), qty: fmtQty(quantity) });
+      }
+    }
     setErrors(e);
     errorSummary.report(e);
     return Object.keys(e).length === 0;
@@ -106,7 +146,7 @@ export default function FuelIssueScreen() {
     if (!validate()) return;
     setBusy(true);
     try {
-      const body = { projectId, date, equipmentId, itemId, quantity: quantity.trim(), meterReading: meter.trim() || null, issuedTo: issuedTo.trim() || null, remarks: remarks.trim() || null };
+      const body = { projectId, date, equipmentId, itemId, quantity: quantity.trim(), meterReading: meter.trim() || null, ...pumpBody(pumpStart, pumpEnd), issuedTo: issuedTo.trim() || null, remarks: remarks.trim() || null };
       const queueIt = async () => {
         const projectName = projects.options.find((o) => o.value === projectId)?.label ?? t('Project');
         const item = await enqueue({
@@ -146,6 +186,9 @@ export default function FuelIssueScreen() {
     setEquipmentId(null);
     setQuantity('');
     setMeter('');
+    setPumpStart(pumpEnd);
+    setPumpEnd('');
+    filledQty.current = null;
     setIssuedTo('');
     setRemarks('');
     setErrors({});
@@ -158,6 +201,9 @@ export default function FuelIssueScreen() {
     setItemId(null);
     setQuantity('');
     setMeter('');
+    setPumpStart('');
+    setPumpEnd('');
+    filledQty.current = null;
     setIssuedTo('');
     setRemarks('');
     setErrors({});
@@ -235,6 +281,25 @@ export default function FuelIssueScreen() {
           right={<Text style={typography.caption} maxFontSizeMultiplier={maxFontScale}>{unit}</Text>}
           hint={t('Reading when it was filled')}
           error={errors.meter}
+        />
+        <Input
+          {...field()}
+          label={t('Pump start')}
+          value={pumpStart}
+          onChangeText={setPumpStart}
+          keyboardType="decimal-pad"
+          right={<Text style={typography.caption} maxFontSizeMultiplier={maxFontScale}>L</Text>}
+          hint={lastPumpEnd !== null ? t('Where the last slip at this site ended') : t("The bowser's reading before the fill")}
+          error={errors.pumpStart}
+        />
+        <Input
+          {...field()}
+          label={t('Pump end')}
+          value={pumpEnd}
+          onChangeText={setPumpEnd}
+          keyboardType="decimal-pad"
+          right={<Text style={typography.caption} maxFontSizeMultiplier={maxFontScale}>L</Text>}
+          error={errors.pumpEnd}
         />
         <Input {...field()} label={t('Handed to')} value={issuedTo} onChangeText={setIssuedTo} maxLength={120} placeholder={t('The operator or driver')} />
         <Input {...field({ multiline: true })} label={t('Remarks')} value={remarks} onChangeText={setRemarks} multiline maxLength={1000} containerStyle={styles.last} />

@@ -2,8 +2,8 @@
 
 import React from 'react';
 import { Grid } from 'antd';
-import { Column, Line, Pie } from '@ant-design/plots';
-import type { CashWeekDto, CostHeadsDto, EarnedValuePointDto, HomeTrendsDto } from '@erp/shared';
+import { Bar, Column, Line, Pie } from '@ant-design/plots';
+import { DOCUMENT_DISCIPLINE_LABELS, DRAWING_BAND_LABELS, DRAWING_BANDS, type CashWeekDto, type CostHeadsDto, type DrawingBand, type DrawingCountRow, type EarnedValuePointDto, type HomeTrendsDto } from '@erp/shared';
 import { useAppearance, useReducedMotion } from '@/lib/appearance';
 import { formatINRCompact, formatPct, toNumber, RUPEE } from '@/lib/format';
 import { COST_HEADS, monthLabel } from './chartData';
@@ -161,6 +161,66 @@ export function CostByHeadChart({ heads }: { heads: CostHeadsDto }) {
           style: { text: formatINRCompact(heads.total), x: '50%', y: '50%', textAlign: 'center', fontSize: r.type.subhead.size, fontWeight: r.type.subhead.weight, fill: c.text.base },
         },
       ]}
+    />
+  );
+}
+
+/** A drawing's place drawn in the colour of its meaning: AFC done, for approval waiting, rejected failed. */
+const BAND_TONE: Record<DrawingBand, 'success' | 'pending' | 'danger' | 'info' | 'neutral'> = { AFC: 'success', FOR_APPROVAL: 'pending', REJECTED: 'danger', AS_BUILT: 'info', OTHER: 'neutral' };
+
+function bandScale(c: ReturnType<typeof useChartTheme>['c'], bands: readonly DrawingBand[]) {
+  return { domain: bands.map((b) => DRAWING_BAND_LABELS[b]), range: bands.map((b) => c.tone[BAND_TONE[b]].solid) };
+}
+
+/** All drawings by where their current revision stands, as a ring with the AFC count in the middle. */
+export function DrawingStatusChart({ rows }: { rows: DrawingCountRow[] }) {
+  const { c, r, base } = useChartTheme();
+  const side = Grid.useBreakpoint().md !== false;
+  const bands = DRAWING_BANDS.filter((b) => rows.some((x) => x.counts[b] > 0));
+  const data = bands.map((b) => ({ band: DRAWING_BAND_LABELS[b], count: rows.reduce((t, x) => t + x.counts[b], 0) }));
+  const total = rows.reduce((t, x) => t + x.total, 0);
+  const afc = rows.reduce((t, x) => t + x.counts.AFC, 0);
+  return (
+    <Pie
+      theme={base.theme}
+      {...(base.animate === false ? { animate: false as const } : {})}
+      autoFit
+      height={280}
+      data={data}
+      angleField="count"
+      colorField="band"
+      innerRadius={0.78}
+      scale={{ color: bandScale(c, bands) }}
+      legend={{ color: { itemLabelFill: c.text.base, position: side ? ('right' as const) : ('bottom' as const) } }}
+      label={false}
+      tooltip={{ field: 'count' }}
+      annotations={[
+        {
+          type: 'text',
+          style: { text: `${afc} of ${total} AFC`, x: '50%', y: '50%', textAlign: 'center', fontSize: r.type.subhead.size, fontWeight: r.type.subhead.weight, fill: c.text.base },
+        },
+      ]}
+    />
+  );
+}
+
+/** Each discipline's drawings as one bar, split by where they stand. */
+export function DrawingDisciplineChart({ rows }: { rows: DrawingCountRow[] }) {
+  const { c, base } = useChartTheme();
+  const bands = DRAWING_BANDS.filter((b) => rows.some((x) => x.counts[b] > 0));
+  const data = rows.flatMap((x) => bands.map((b) => ({ discipline: DOCUMENT_DISCIPLINE_LABELS[x.discipline], band: DRAWING_BAND_LABELS[b], count: x.counts[b] })));
+  return (
+    <Bar
+      {...base}
+      height={Math.max(200, 56 * rows.length + 80)}
+      data={data}
+      xField="discipline"
+      yField="count"
+      colorField="band"
+      stack
+      scale={{ color: bandScale(c, bands), y: { nice: true } }}
+      style={{ maxWidth: 28 }}
+      tooltip={{ channel: 'y' }}
     />
   );
 }

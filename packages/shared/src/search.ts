@@ -46,7 +46,7 @@ export const SEARCH_KIND_LABELS: Record<SearchKind, string> = {
   quality_test: 'Material tests',
   ncr: 'NCRs',
   risk: 'Delays and risks',
-  document: 'Drawings and documents',
+  document: 'Drawing register',
   rfi: 'RFIs',
   letter: 'Letters',
   meeting: 'Meetings',

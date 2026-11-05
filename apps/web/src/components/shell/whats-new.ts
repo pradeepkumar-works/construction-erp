@@ -9,6 +9,84 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-pipeline-editor',
+    date: '2026-11-05',
+    title: 'Edit a pipeline on the map, and download it for Google Earth or Excel',
+    points: [
+      'Edit network opens the zone on a satellite or street map. Drag a valve or a junction, drag the bends of a pipe, put a valve on a pipe (it is cut in two there), or draw a new pipe from a point.',
+      'Sizes, class, surface and kinds are corrected beside the map. Saving shows first what changes; nothing is deleted, and no pipe is cut shorter than the work on it.',
+      'Download network gives a KMZ to open in Google Earth, or an Excel book of nodes and pipes. Either one, corrected, loads back with Import network, matched by code.',
+      'A KMZ now keeps where every valve and bend is. A zone loaded from a KMZ before today needs its KMZ imported once more to be edited on the map.',
+    ],
+  },
+  {
+    id: '2026-11-pipeline-layout',
+    date: '2026-11-05',
+    title: 'Pipeline layout in Drawings: upload a KMZ from Google Earth',
+    points: [
+      'Drawings has a Pipeline layout page. Choose a water project, then Import network, and drop a KMZ or KML drawn in Google Earth, an EPANET file or an Excel sheet.',
+      'Valves and tanks named on the path become nodes at their chainage. Short names like AV-01, WO-2, SV-3 and NRV read as air valves, scours and valves.',
+      'A KMZ with valves between the 500 m marks now saves; before, Save network stayed greyed out.',
+      'Click a pipe on the map (or in the list) to open it: each stage done against its length, what waits for approval, its valves, the next and previous pipe, and Edit pipe. Record work opens the daily report with a line for that pipe already filled in.',
+    ],
+  },
+  {
+    id: '2026-11-correspondence-desk',
+    date: '2026-11-05',
+    title: 'Letters: approval by category, where each letter stands, kinds of office',
+    points: [
+      'Numbering and approval now sets each letter category on its own: numbered when saved, signed by its signatory, or signed and then sealed at head office.',
+      'The outward register shows where each letter stands: with its signatory, waiting for the seal, signed and sealed, dispatched or delivered. Letters to sign and seal opens the letters waiting at either step.',
+      'A letter waiting for the seal says so on its tag, not just "Waiting for signature".',
+      'The address book records what kind of office each entry is: client, consultant, third-party inspection, a government authority and more. Both registers filter by it.',
+      'A received letter with its scan kept opens the copy straight from the inward register.',
+    ],
+  },
+  {
+    id: '2026-11-stores-purchase',
+    date: '2026-11-04',
+    title: 'Purchase and stores overviews, item codes and pump readings',
+    points: [
+      'The Purchases overview counts each step of buying: waiting for quotations, choices to approve, orders to receive, late deliveries, material to check and receipts not yet billed.',
+      'Materials leads with what the stock is worth, the part at central stores, and what is on the road between stores.',
+      'An item can have a code and the standard it is bought to. Stock on hand shows the code and, if you see stock value, each line’s value and the total.',
+      'A return from site can name the subcontractor’s work order. It is held to what was issued on that order, and their next bill credits it.',
+      'A fuel slip takes the pump’s start and end readings and fills the litres from them, on the web and the phone. The Fuel tab adds up litres by kind of machine.',
+    ],
+  },
+  {
+    id: '2026-11-drawing-approvals',
+    date: '2026-11-04',
+    title: 'Drawing approvals stage by stage, and drawings by component',
+    points: [
+      'A submittal can pass through review stages in turn, such as the proof checker, TPIA, PIU and head office. Each stage’s code and day is recorded, and Submittals shows where each one waits.',
+      'Drawings by component shows each component of a project with its civil, mechanical and electrical drawings, the day its submittal went, the day each stage cleared it, and whether it is AFC.',
+      'Review comments lists every reviewer’s comment across the submittals with our reply; the ones to answer come first.',
+      'The Dashboard shows the drawings by status and by discipline. Approved for construction is now called AFC everywhere.',
+      'Import pipe network on a pipe zone or main now reads a KMZ or KML drawn in Google Earth: the line is cut by chainage at its valves and every 500 m.',
+    ],
+  },
+  {
+    id: '2026-11-drawings',
+    date: '2026-11-03',
+    title: 'Drawings, with shorter names and an as-built register',
+    points: [
+      'Design and drawings is now Drawings. Its pages are the Drawing register, Drawing schedule, Submittals (once Design submissions), Controlled copies, As-built drawings, Transmittals, RFIs and the Dashboard.',
+      'As-built drawings is a page of its own: the drawings site built from that still owe their as-built revision, and those that have it.',
+      'Submittals, Controlled copies and the Dashboard lead with the same figures as the Drawings overview, which now counts as-builts due and open RFIs too.',
+    ],
+  },
+  {
+    id: '2026-11-menu-layouts',
+    date: '2026-11-03',
+    title: 'More ways to lay out the menu',
+    points: [
+      'Admin › Menu and names has three more layouts: the modules across the top bar with their pages down the side, two top bars, and two sidebars.',
+      'Choose where the colours go: the sidebar, the top bar, both, or neither.',
+      'The colours are calmer: the gradients stay in one hue, Oxblood and Walnut replace Plum and Ember, and Lagoon is a new deep-sea teal.',
+    ],
+  },
+  {
     id: '2026-11-site-staff-cost',
     date: '2026-11-03',
     title: 'Site staff salaries in project cost',

@@ -1,14 +1,18 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { Alert, App, Button, Descriptions, Form, Modal, Select, Space, Upload } from 'antd';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Alert, App, Button, Descriptions, Flex, Form, Modal, Select, Space, Upload } from 'antd';
 import { tk } from '@/ds';
 import type { UploadProps } from 'antd';
 import { DownloadOutlined, InboxOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
+  PIPE_MATERIAL_LABELS,
+  PIPE_MATERIALS,
   parseEpanetInp,
+  parseKml,
   parseNetworkSheets,
+  type PipeMaterial,
   type PipeNetworkFile,
   type PipeNetworkImportBody,
   type PipeNetworkImportResultDto,
@@ -18,6 +22,7 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { loadXlsx } from '@/lib/exportExcel';
 import { formatQty } from '@/lib/format';
+import { kmlFromKmz } from '@/lib/kmz';
 
 async function downloadTemplate() {
   const XLSX = await loadXlsx();
@@ -57,7 +62,18 @@ function withEnds(file: PipeNetworkFile): PipeNetworkFile {
   return { ...file, nodes };
 }
 
-async function readFile(file: File): Promise<PipeNetworkFile> {
+/** Pipe sizes offered for a Google Earth line that does not give its own, in millimetres. */
+const DIAMETERS = [63, 75, 90, 110, 125, 140, 160, 180, 200, 225, 250, 280, 300, 315, 350, 400, 450, 500, 600, 700, 800, 900, 1000, 1200];
+
+type Chosen = { name: string; data: PipeNetworkFile; kml?: undefined } | { name: string; kml: string; data?: undefined };
+
+async function readFile(file: File): Promise<Chosen> {
+  if (/\.kmz$/i.test(file.name)) return { name: file.name, kml: await kmlFromKmz(await file.arrayBuffer()) };
+  if (/\.kml$/i.test(file.name)) return { name: file.name, kml: await file.text() };
+  return { name: file.name, data: await readNetwork(file) };
+}
+
+async function readNetwork(file: File): Promise<PipeNetworkFile> {
   if (/\.inp$/i.test(file.name)) return parseEpanetInp(await file.text());
   const XLSX = await loadXlsx();
   const wb = XLSX.read(new Uint8Array(await file.arrayBuffer()), { type: 'array' });
@@ -69,15 +85,19 @@ async function readFile(file: File): Promise<PipeNetworkFile> {
 
 /**
  * Loads a zone's network from the design office's model: an EPANET .inp file (WaterGEMS, LOOP and EPANET all
- * write one) or an Excel book of nodes and pipes. The file is read here, the server says what saving would change, and
- * nothing is saved until that is accepted. Codes match pipes already loaded, so work recorded on them stays.
+ * write one), an Excel book of nodes and pipes, or the main's alignment drawn in Google Earth (KMZ or KML), cut into
+ * segments by chainage with the diameter and material chosen here where the line gives none. The file is read here,
+ * the server says what saving would change, and nothing is saved until that is accepted. Codes match pipes already loaded, so work recorded on them stays.
  */
 export function PipeImportModal({ open, onClose, projectId, zones, zoneId }: { open: boolean; onClose: () => void; projectId: string; zones: PipeZoneDto[]; zoneId: string | null }) {
   const { message } = App.useApp();
   const qc = useQueryClient();
   const [zone, setZone] = useState<string | null>(zoneId);
-  const [file, setFile] = useState<{ name: string; data: PipeNetworkFile } | null>(null);
+  const [chosen, setChosen] = useState<Chosen | null>(null);
+  const [diameterMm, setDiameterMm] = useState(200);
+  const [material, setMaterial] = useState<PipeMaterial>('DI');
   const [problem, setProblem] = useState<string | null>(null);
+  const file = useMemo(() => (chosen ? { name: chosen.name, data: chosen.kml !== undefined ? parseKml(chosen.kml, { diameterMm, material }) : chosen.data } : null), [chosen, diameterMm, material]);
 
   const body = (dryRun: boolean): PipeNetworkImportBody => ({ projectId, zoneId: zone!, nodes: file!.data.nodes, pipes: file!.data.pipes, dryRun });
   const preview = useMutation({
@@ -103,7 +123,7 @@ export function PipeImportModal({ open, onClose, projectId, zones, zoneId }: { o
   }, [file, zone, runPreview, resetPreview]);
 
   const close = () => {
-    setFile(null);
+    setChosen(null);
     setProblem(null);
     preview.reset();
     save.reset();
@@ -113,11 +133,17 @@ export function PipeImportModal({ open, onClose, projectId, zones, zoneId }: { o
   const beforeUpload: UploadProps['beforeUpload'] = (f) => {
     setProblem(null);
     readFile(f)
-      .then((data) => {
-        if (!data.pipes.length) setProblem('No pipes were found in that file. Use an EPANET .inp file, or the template: a Nodes sheet and a Pipes sheet.');
-        setFile({ name: f.name, data });
+      .then((c) => {
+        const pipes = c.kml !== undefined ? parseKml(c.kml, { diameterMm, material }).pipes : c.data.pipes;
+        if (!pipes.length)
+          setProblem(
+            c.kml !== undefined
+              ? 'No line was found in that file. Draw the main as a path in Google Earth, then save it as KMZ or KML.'
+              : 'No pipes were found in that file. Use an EPANET .inp file, or the template: a Nodes sheet and a Pipes sheet.',
+          );
+        setChosen(c);
       })
-      .catch(() => setProblem('That file could not be read. Use an EPANET .inp file, or save the sheet as .xlsx and try again.'));
+      .catch(() => setProblem('That file could not be read. Use an EPANET .inp file, a Google Earth KMZ or KML, or save the sheet as .xlsx and try again.'));
     return false;
   };
 
@@ -147,17 +173,28 @@ export function PipeImportModal({ open, onClose, projectId, zones, zoneId }: { o
         <Form.Item label="Zone or main" htmlFor="pipe-import-zone" required>
           <Select id="pipe-import-zone" value={zone ?? undefined} onChange={setZone} placeholder="Choose the zone" options={zones.map((z) => ({ value: z.id, label: z.label }))} />
         </Form.Item>
+        {chosen?.kml !== undefined ? (
+          <Flex wrap gap={tk.space[3]} align="start">
+            <Form.Item label="Diameter" htmlFor="pipe-import-dia" extra="Where the line's name or data gives none" style={{ minWidth: 200 }}>
+              <Select id="pipe-import-dia" value={diameterMm} onChange={setDiameterMm} options={DIAMETERS.map((d) => ({ value: d, label: `${d} mm` }))} showSearch={{ optionFilterProp: 'label' }} />
+            </Form.Item>
+            <Form.Item label="Material" htmlFor="pipe-import-material" style={{ minWidth: 160 }}>
+              <Select id="pipe-import-material" value={material} onChange={setMaterial} options={PIPE_MATERIALS.map((m) => ({ value: m, label: PIPE_MATERIAL_LABELS[m] }))} />
+            </Form.Item>
+          </Flex>
+        ) : null}
       </Form>
       {problem ? <Alert type="error" showIcon title={problem} style={{ marginBottom: tk.space[3] }} /> : null}
       {!file ? (
-        <Upload.Dragger accept=".inp,.xlsx,.xls,.csv" beforeUpload={beforeUpload} showUploadList={false} maxCount={1}>
+        <Upload.Dragger accept=".inp,.xlsx,.xls,.csv,.kmz,.kml" beforeUpload={beforeUpload} showUploadList={false} maxCount={1}>
           <p className="ant-upload-drag-icon">
             <InboxOutlined />
           </p>
           <p className="ant-upload-text">Choose or drop the network file</p>
           <p className="ant-upload-hint">
-            An EPANET .inp file from WaterGEMS, LOOP or EPANET, or an Excel book with a Nodes sheet (code, kind, ground level, X, Y) and a Pipes sheet (code, from, to,
-            length, diameter, material, class, scope).
+            An EPANET .inp file from WaterGEMS, LOOP or EPANET; the main drawn as a path in Google Earth (KMZ or KML), cut into lengths by chainage at its named
+            valves and every 500 m; or an Excel book with a Nodes sheet (code, kind, ground level, X, Y) and a Pipes sheet (code, from, to, length, diameter, material,
+            class, scope).
           </p>
         </Upload.Dragger>
       ) : (
@@ -210,7 +247,7 @@ export function PipeImportModal({ open, onClose, projectId, zones, zoneId }: { o
               }
             />
           ) : null}
-          <Button style={{ marginTop: tk.space[3] }} onClick={() => setFile(null)}>
+          <Button style={{ marginTop: tk.space[3] }} onClick={() => setChosen(null)}>
             Choose another file
           </Button>
         </>

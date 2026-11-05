@@ -15,11 +15,18 @@ import {
   masterCode,
   replyByFor,
   reviewDaysLate,
+  reviewStagesProblem,
   revisionStatusAfter,
+  stageOutcome,
+  stageStartedOn,
+  stageWaiting,
   statusForCode,
   DESIGN_PURPOSE_LABELS,
   type DesignCode,
   type DesignCommentDto,
+  type DesignCommentListDto,
+  type DesignCommentRowDto,
+  type DesignCommentState,
   type DesignPurpose,
   type DesignSubmissionDetailDto,
   type DesignSubmissionDto,
@@ -29,6 +36,7 @@ import {
   type DocumentDiscipline,
   type DrawingSource,
   type RevisionStatus,
+  type StageMark,
 } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
@@ -39,19 +47,20 @@ import { CorrespondenceService } from '../correspondence/correspondence.service'
 import { DocumentsService } from '../documents/documents.service';
 import { RisksService } from '../risks/risks.service';
 import { EpcService } from '../epc/epc.service';
+import { MastersService } from '../masters/masters.service';
 import { todayIn } from '../notifications/time';
 import { dateOnly, iso, money, parseDate } from '../common/serialize';
 import { titleDate } from '../common/submission-titles';
 import { isUniqueViolation } from '../common/idempotency';
 import { nextDocNo } from '../common/doc-number';
 import { ilike, pageArgs, searchWords } from '../common/paging';
-import { DesignSubmissionsQuery, RecordDesignCodeDto, ReplyCommentDto, SaveDesignSubmissionDto, SubmitDesignDto, WithdrawDesignDto } from './design-submissions.dto';
+import { DesignCommentsQuery, DesignSubmissionsQuery, RecordDesignCodeDto, ReplyCommentDto, SaveDesignSubmissionDto, SubmitDesignDto, WithdrawDesignDto } from './design-submissions.dto';
 
 const listInclude = {
   project: { select: { code: true, name: true } },
   createdBy: { select: { fullName: true } },
   risk: { select: { riskNo: true } },
-  rounds: { orderBy: { revision: 'desc' as const }, take: 1, select: { submittedOn: true, code: true } },
+  rounds: { orderBy: { revision: 'desc' as const }, take: 1, select: { submittedOn: true, code: true, marks: true } },
   comments: { select: { reply: true, closedOn: true } },
   _count: { select: { docs: true } },
 } satisfies Prisma.DesignSubmissionInclude;
@@ -72,6 +81,11 @@ const detailInclude = {
   comments: { orderBy: { commentNo: 'asc' as const }, include: { document: { select: { docNo: true } }, repliedBy: { select: { fullName: true } } } },
 } satisfies Prisma.DesignSubmissionInclude;
 type DetailRow = Prisma.DesignSubmissionGetPayload<{ include: typeof detailInclude }>;
+
+/** A round's stage marks as stored (JSON), oldest first. */
+const marksOf = (v: Prisma.JsonValue | undefined): StageMark[] => (Array.isArray(v) ? (v as unknown as StageMark[]) : []);
+type StageNames = Map<string, string>;
+const stageName = (names: StageNames, code: string) => names.get(code) ?? code;
 
 const daysFrom = (from: string, to: string) => Math.max(0, Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000));
 const plusDays = (day: string, n: number) => {
@@ -98,17 +112,30 @@ export class DesignSubmissionsService {
     private documents: DocumentsService,
     private risks: RisksService,
     private epc: EpcService,
+    private masters: MastersService,
   ) {}
+
+  /** The company's review stages, code to name (`reviewStage` master, switched-off ones included for old records). */
+  private async stageNames(organizationId: string): Promise<StageNames> {
+    return new Map((await this.masters.entriesFor(organizationId, 'reviewStage')).map((e) => [e.code, e.name]));
+  }
+
+  private async checkStages(organizationId: string, stages: string[]) {
+    const known = (await this.masters.entriesFor(organizationId, 'reviewStage')).filter((e) => e.isActive).map((e) => e.code);
+    const problem = reviewStagesProblem(stages, known);
+    if (problem) throw new BadRequestException(problem);
+  }
 
   private assertView(user: RequestUser) {
     if (isGuest(user.roleKey)) throw new ForbiddenException('Design submissions are for the company’s own staff');
   }
 
-  private toDto(r: ListRow, today: string): DesignSubmissionDto {
+  private toDto(r: ListRow, today: string, names: StageNames): DesignSubmissionDto {
     const status = r.status as DesignSubmissionStatus;
     const last = r.rounds[0];
     const submittedOn = last ? dateOnly(last.submittedOn) : null;
     const replyBy = dateOnly(r.replyBy);
+    const waiting = stageWaiting(r.stages, marksOf(last?.marks), status);
     return {
       id: r.id,
       submissionNo: r.submissionNo,
@@ -122,6 +149,9 @@ export class DesignSubmissionsService {
       source: r.source as DrawingSource,
       replyBy,
       status,
+      stages: r.stages.map((c) => stageName(names, c)),
+      stageCodes: r.stages,
+      waitingAt: waiting ? stageName(names, waiting) : null,
       revision: r.revision,
       submittedOn,
       lastCode: (last?.code ?? null) as DesignCode | null,
@@ -136,8 +166,8 @@ export class DesignSubmissionsService {
     };
   }
 
-  private detail(user: RequestUser, r: DetailRow, today: string): DesignSubmissionDetailDto {
-    const base = this.toDto(r as unknown as ListRow, today);
+  private detail(user: RequestUser, r: DetailRow, today: string, names: StageNames): DesignSubmissionDetailDto {
+    const base = this.toDto(r as unknown as ListRow, today, names);
     const may = canManageDocuments(user.roleKey);
     const comments: DesignCommentDto[] = r.comments.map((c) => ({
       id: c.id,
@@ -151,6 +181,8 @@ export class DesignSubmissionsService {
       repliedByName: c.repliedBy?.fullName ?? null,
       closedOn: dateOnly(c.closedOn),
       state: commentState({ reply: c.reply, closedOn: dateOnly(c.closedOn) }),
+      stage: c.stage ? stageName(names, c.stage) : null,
+      madeOn: dateOnly(c.madeOn) ?? dateOnly(c.createdAt),
     }));
     const s = base.status;
     return {
@@ -183,6 +215,7 @@ export class DesignSubmissionsService {
           reviewerName: x.reviewerName,
           reviewRef: x.reviewRef,
           days: daysFrom(submittedOn, reviewedOn ?? today),
+          marks: marksOf(x.marks).map((m, i, all) => ({ ...m, stage: stageName(names, m.stage), days: daysFrom(i ? all[i - 1].clearedOn : submittedOn, m.clearedOn) })),
         };
       }),
       comments,
@@ -208,7 +241,8 @@ export class DesignSubmissionsService {
       ...(q.kind ? { kind: q.kind } : {}),
       AND: words.map((w) => ({ OR: [{ submissionNo: ilike(w) }, { title: ilike(w) }, { toParty: ilike(w) }, { docs: { some: { document: { OR: [{ docNo: ilike(w) }, { title: ilike(w) }] } } } }] })),
     };
-    const rows = (await this.prisma.designSubmission.findMany({ where, include: listInclude, orderBy: [{ updatedAt: 'desc' }], take: 2000 })).map((r) => this.toDto(r, today));
+    const names = await this.stageNames(user.organizationId);
+    const rows = (await this.prisma.designSubmission.findMany({ where, include: listInclude, orderBy: [{ updatedAt: 'desc' }], take: 2000 })).map((r) => this.toDto(r, today, names));
     const reviews = await this.prisma.designSubmissionRound.findMany({
       where: { submission: where, reviewedOn: { gte: parseDate(plusDays(today, -90)) } },
       select: { submittedOn: true, reviewedOn: true },
@@ -221,8 +255,99 @@ export class DesignSubmissionsService {
     const shown = rows
       .filter((r) => !f || (f === 'LATE' ? r.daysLate !== null : f === 'WITH_US' ? r.status === 'REVISE_RESUBMIT' || r.status === 'REJECTED' : r.status === f))
       .filter((r) => !q.toAnswer || r.openComments > 0)
+      .filter((r) => !q.at || (r.waitingAt !== null && r.stageCodes[r.stages.indexOf(r.waitingAt)] === q.at))
       // Late first, then what waits on us, then the rest by how long they have waited.
       .sort((a, b) => (b.daysLate ?? -1) - (a.daysLate ?? -1) || b.openComments - a.openComments || (b.daysOutstanding ?? -1) - (a.daysOutstanding ?? -1));
+    const args = pageArgs(q);
+    return { items: shown.slice(args.skip, args.skip + args.take), total: shown.length, summary };
+  }
+
+  /**
+   * The project's submittals (not withdrawn) with the documents each sends and its latest round's stage marks, newest
+   * first: what Drawings by component reads a component's approval from.
+   */
+  async withDocuments(user: RequestUser, projectId: string) {
+    this.assertView(user);
+    await this.access.assertCanAccessProject(user, projectId);
+    const today = todayIn();
+    const names = await this.stageNames(user.organizationId);
+    const rows = await this.prisma.designSubmission.findMany({
+      where: { ...this.access.submissionWhere(user), projectId, status: { not: 'WITHDRAWN' } },
+      include: { ...listInclude, docs: { select: { documentId: true } }, rounds: { orderBy: { revision: 'desc' as const }, take: 1, select: { submittedOn: true, code: true, marks: true, reviewedOn: true } } },
+      orderBy: { createdAt: 'desc' },
+      take: 2000,
+    });
+    return rows.map((r) => {
+      const last = r.rounds[0];
+      const marks = marksOf(last?.marks);
+      return {
+        dto: this.toDto(r, today, names),
+        documentIds: r.docs.map((d) => d.documentId),
+        stages: r.stages.map((code) => {
+          const m = marks.find((x) => x.stage === code);
+          return { name: stageName(names, code), clearedOn: m?.clearedOn ?? null, code: m?.code ?? null };
+        }),
+        reviewedOn: last ? dateOnly(last.reviewedOn) : null,
+      };
+    });
+  }
+
+  /**
+   * Review comments: every reviewer's comment on the submittals the user sees, with its submittal and drawing; the
+   * ones to answer first, oldest first, then those answered, then closed.
+   */
+  async comments(user: RequestUser, q: DesignCommentsQuery): Promise<DesignCommentListDto> {
+    this.assertView(user);
+    if (q.projectId) await this.access.assertCanAccessProject(user, q.projectId);
+    const today = todayIn();
+    const names = await this.stageNames(user.organizationId);
+    const words = searchWords(q.q);
+    const rows = await this.prisma.designComment.findMany({
+      where: {
+        submission: { ...this.access.submissionWhere(user), ...(q.projectId ? { projectId: q.projectId } : {}), status: { not: 'WITHDRAWN' } },
+        ...(q.stage ? { stage: q.stage } : {}),
+        AND: words.map((w) => ({ OR: [{ text: ilike(w) }, { reply: ilike(w) }, { submission: { OR: [{ submissionNo: ilike(w) }, { title: ilike(w) }] } }, { document: { docNo: ilike(w) } }] })),
+      },
+      include: {
+        submission: { select: { id: true, submissionNo: true, title: true, status: true, projectId: true, project: { select: { name: true } } } },
+        document: { select: { docNo: true, workElement: { select: { name: true } } } },
+        repliedBy: { select: { fullName: true } },
+      },
+      take: 3000,
+    });
+    const order: Record<DesignCommentState, number> = { OPEN: 0, ANSWERED: 1, CLOSED: 2 };
+    const all: DesignCommentRowDto[] = rows.map((c) => {
+      const state = commentState({ reply: c.reply, closedOn: dateOnly(c.closedOn) });
+      const madeOn = dateOnly(c.madeOn) ?? dateOnly(c.createdAt);
+      return {
+        id: c.id,
+        commentNo: c.commentNo,
+        round: c.round,
+        stage: c.stage ? stageName(names, c.stage) : null,
+        madeOn,
+        documentId: c.documentId,
+        docNo: c.document?.docNo ?? null,
+        text: c.text,
+        reply: c.reply,
+        repliedOn: dateOnly(c.repliedOn),
+        repliedByName: c.repliedBy?.fullName ?? null,
+        closedOn: dateOnly(c.closedOn),
+        state,
+        submissionId: c.submission.id,
+        submissionNo: c.submission.submissionNo,
+        submissionTitle: c.submission.title,
+        submissionStatus: c.submission.status as DesignSubmissionStatus,
+        projectId: c.submission.projectId,
+        projectName: c.submission.project.name,
+        component: c.document?.workElement?.name ?? null,
+        daysOpen: state === 'CLOSED' || !madeOn ? null : daysFrom(madeOn, today),
+      };
+    });
+    const summary = { OPEN: 0, ANSWERED: 0, CLOSED: 0 } as Record<DesignCommentState, number>;
+    all.forEach((c) => summary[c.state]++);
+    const shown = all
+      .filter((c) => !q.state || (q.state === 'NOT_CLOSED' ? c.state !== 'CLOSED' : c.state === q.state))
+      .sort((a, b) => order[a.state] - order[b.state] || (b.daysOpen ?? -1) - (a.daysOpen ?? -1) || a.submissionNo.localeCompare(b.submissionNo) || a.commentNo - b.commentNo);
     const args = pageArgs(q);
     return { items: shown.slice(args.skip, args.skip + args.take), total: shown.length, summary };
   }
@@ -235,7 +360,8 @@ export class DesignSubmissionsService {
       include: listInclude,
       take: 500,
     });
-    return rows.map((r) => this.toDto(r, today)).filter((r) => r.daysLate !== null);
+    const names = await this.stageNames(user.organizationId);
+    return rows.map((r) => this.toDto(r, today, names)).filter((r) => r.daysLate !== null);
   }
 
   private async row(user: RequestUser, id: string) {
@@ -246,7 +372,7 @@ export class DesignSubmissionsService {
 
   async get(user: RequestUser, id: string): Promise<DesignSubmissionDetailDto> {
     this.assertView(user);
-    return this.detail(user, await this.row(user, id), todayIn());
+    return this.detail(user, await this.row(user, id), todayIn(), await this.stageNames(user.organizationId));
   }
 
   private async checkDocs(projectId: string, documentIds: string[]) {
@@ -262,6 +388,7 @@ export class DesignSubmissionsService {
     }
     await this.access.assertCanManageDocuments(user, dto.projectId);
     await this.checkDocs(dto.projectId, dto.documentIds);
+    await this.checkStages(user.organizationId, dto.stages ?? []);
     let id: string;
     try {
       id = await this.prisma.$transaction(async (tx) => {
@@ -283,6 +410,7 @@ export class DesignSubmissionsService {
             source: purpose === 'VETTING' ? 'DESIGN_CONSULTANT' : (dto.source ?? 'CLIENT'),
             note: dto.note ?? null,
             fee: purpose === 'VETTING' && dto.fee ? new Prisma.Decimal(dto.fee) : null,
+            stages: dto.stages ?? [],
             createdById: user.id,
             docs: { create: dto.documentIds.map((documentId, i) => ({ documentId, sortOrder: i })) },
           },
@@ -309,6 +437,10 @@ export class DesignSubmissionsService {
     const docsChanged = row.docs.map((d) => d.documentId).join() !== dto.documentIds.join();
     if (sent && docsChanged && row.status !== 'REVISE_RESUBMIT' && row.status !== 'REJECTED') throw new BadRequestException('The drawings change only while it is a draft or back with us');
     await this.checkDocs(row.projectId, dto.documentIds);
+    const stages = dto.stages ?? row.stages;
+    const stagesChanged = stages.join() !== row.stages.join();
+    if (stagesChanged && row.status === 'UNDER_REVIEW') throw new BadRequestException('The review stages change only while it is a draft or back with us');
+    if (stagesChanged) await this.checkStages(user.organizationId, stages);
     const purpose = sent ? (row.purpose as DesignPurpose) : (dto.purpose ?? 'APPROVAL');
     await this.prisma.$transaction(async (tx) => {
       await tx.designSubmission.update({
@@ -321,6 +453,7 @@ export class DesignSubmissionsService {
           source: purpose === 'VETTING' ? 'DESIGN_CONSULTANT' : (dto.source ?? row.source),
           note: dto.note ?? null,
           fee: purpose === 'VETTING' && dto.fee ? new Prisma.Decimal(dto.fee) : null,
+          stages,
         },
       });
       if (docsChanged) {
@@ -347,7 +480,7 @@ export class DesignSubmissionsService {
     const row = await this.row(user, id);
     await this.access.assertCanManageDocuments(user, row.projectId);
     const today = todayIn();
-    const me = this.detail(user, row, today);
+    const me = this.detail(user, row, today, await this.stageNames(user.organizationId));
     const last = row.rounds[0];
     const replyBy = dto.replyBy ?? replyByFor(dto.submittedOn);
     const problem = designSubmitProblem(me.status, {
@@ -417,16 +550,36 @@ export class DesignSubmissionsService {
     const today = todayIn();
     const round = row.rounds[0];
     if (!round) throw new BadRequestException('Only a submission under review gets a code');
-    const problem = designCodeProblem(row.status as DesignSubmissionStatus, { code: dto.code, reviewedOn: dto.reviewedOn, submittedOn: dateOnly(round.submittedOn), newComments: dto.comments.length, today });
-    if (problem) throw new BadRequestException(problem);
+    // With review stages, the code is the stage's it waits at; it starts the day the stage before cleared it.
+    const marks = marksOf(round.marks);
+    const stage = stageWaiting(row.stages, marks, row.status as DesignSubmissionStatus);
+    const startedOn = stageStartedOn(dateOnly(round.submittedOn), marks);
+    const problem = designCodeProblem(row.status as DesignSubmissionStatus, { code: dto.code, reviewedOn: dto.reviewedOn, submittedOn: startedOn, newComments: dto.comments.length, today });
+    if (problem) throw new BadRequestException(stage && dto.reviewedOn < startedOn ? 'The review cannot be before the stage before cleared it.' : problem);
     const docIds = new Set(row.docs.map((d) => d.documentId));
     if (dto.comments.some((c) => c.documentId && !docIds.has(c.documentId))) throw new BadRequestException('A comment is on a drawing this submission does not send');
+    const startNo = row.comments.reduce((m, c) => Math.max(m, c.commentNo), 0);
+    const newComments = dto.comments.map((c, i) => ({ organizationId: user.organizationId, submissionId: id, commentNo: startNo + i + 1, round: round.revision, stage, madeOn: parseDate(dto.reviewedOn), documentId: c.documentId ?? null, text: c.text }));
+    if (stage) {
+      const mark: StageMark = { stage, code: dto.code, clearedOn: dto.reviewedOn, reviewerName: dto.reviewerName ?? null, reviewRef: dto.reviewRef ?? null };
+      const allMarks = [...marks, mark];
+      await this.prisma.designSubmissionRound.update({ where: { id: round.id }, data: { marks: allMarks as unknown as Prisma.InputJsonValue } });
+      if (stageOutcome(row.stages, marks, dto.code) === 'NEXT') {
+        // Cleared at this stage: on to the next reviewer, who is given the usual time from today's clearance.
+        await this.prisma.$transaction(async (tx) => {
+          await tx.designSubmission.update({ where: { id }, data: { replyBy: parseDate(replyByFor(dto.reviewedOn)) } });
+          if (newComments.length) await tx.designComment.createMany({ data: newComments });
+        });
+        const names = await this.stageNames(user.organizationId);
+        await this.audit.log(user, 'DESIGN_SUBMISSION', id, 'REVIEWED', `R${round.revision} ${stageName(names, stage)} code ${dto.code}, on to ${stageName(names, row.stages[allMarks.length])}`);
+        return this.get(user, id);
+      }
+    }
     const purpose = row.purpose as DesignPurpose;
     const closing = commentsClosedBy(
       dto.code,
       row.comments.map((c) => ({ id: c.id, reply: c.reply, closedOn: dateOnly(c.closedOn) })),
     );
-    const startNo = row.comments.reduce((m, c) => Math.max(m, c.commentNo), 0);
     await this.prisma.$transaction(async (tx) => {
       await tx.designSubmissionRound.update({ where: { id: round.id }, data: { code: dto.code, reviewedOn: parseDate(dto.reviewedOn), reviewerName: dto.reviewerName ?? null, reviewRef: dto.reviewRef ?? null } });
       await tx.designSubmission.update({
@@ -434,10 +587,7 @@ export class DesignSubmissionsService {
         data: { status: statusForCode(dto.code), ...(purpose === 'VETTING' && (dto.code === 'A' || dto.code === 'B') ? { certificateNo: dto.certificateNo ?? null } : {}) },
       });
       if (closing.length) await tx.designComment.updateMany({ where: { id: { in: closing } }, data: { closedOn: parseDate(dto.reviewedOn) } });
-      if (dto.comments.length)
-        await tx.designComment.createMany({
-          data: dto.comments.map((c, i) => ({ organizationId: user.organizationId, submissionId: id, commentNo: startNo + i + 1, round: round.revision, documentId: c.documentId ?? null, text: c.text })),
-        });
+      if (newComments.length) await tx.designComment.createMany({ data: newComments });
     });
     // The register's revisions sent for approval take the code, through the register's own change.
     const sent = round.items.map((i) => ({ documentId: i.revision.document.id, revision: i.revision.revision, revisionId: i.revisionId }));
@@ -491,7 +641,7 @@ export class DesignSubmissionsService {
   async recordDelay(user: RequestUser, id: string): Promise<DesignSubmissionDetailDto> {
     const row = await this.row(user, id);
     await this.access.assertCanManageDocuments(user, row.projectId);
-    const me = this.detail(user, row, todayIn());
+    const me = this.detail(user, row, todayIn(), await this.stageNames(user.organizationId));
     if (row.riskId) throw new BadRequestException(`Already recorded as delay ${me.riskNo}`);
     if (!isClientSide(row.source as DrawingSource)) throw new BadRequestException('Only a review by the client’s side is the client’s delay');
     if (me.daysLate === null || !me.replyBy) throw new BadRequestException('The review is not late yet');

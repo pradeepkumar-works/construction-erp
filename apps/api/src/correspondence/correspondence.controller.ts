@@ -6,6 +6,7 @@ import {
   CreateLetterDto,
   DispatchLetterDto,
   LetterContactInput,
+  LetterGateInput,
   LetterNoteDto,
   LetterSeriesInput,
   LetterSettingsInput,
@@ -54,6 +55,12 @@ export class LettersController {
   @Put('settings')
   saveSettings(@CurrentUser() user: RequestUser, @Body() dto: LetterSettingsInput) {
     return this.letters.saveSettings(user, dto);
+  }
+
+  @ApiOperation({ summary: 'Set what outward letters of one category pass before they are numbered: nothing, their signatory, or their signatory and the seal at head office' })
+  @Put('settings/gate')
+  saveGate(@CurrentUser() user: RequestUser, @Body() dto: LetterGateInput) {
+    return this.letters.saveGate(user, dto);
   }
 
   @ApiOperation({ summary: "Set a project's (or head office's) series: prefix and pattern" })

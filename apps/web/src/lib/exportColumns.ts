@@ -190,6 +190,7 @@ export const ATTENDANCE_EXPORT: ExportColumn<AttendanceExportRow>[] = [
 export const STOCK_BALANCE_EXPORT: ExportColumn<StockBalanceDto>[] = [
   { header: 'Project', value: (r) => r.projectName, width: 34 },
   { header: 'Item', value: (r) => r.itemName, width: 30 },
+  { header: 'Code', value: (r) => r.itemCode ?? '', width: 14 },
   { header: 'Category', value: (r) => r.category, width: 14 },
   { header: 'Unit', value: (r) => r.unit },
   { header: 'Received', value: (r) => toNumber(r.received) },
@@ -198,6 +199,7 @@ export const STOCK_BALANCE_EXPORT: ExportColumn<StockBalanceDto>[] = [
   { header: 'Balance', value: (r) => toNumber(r.balance) },
   { header: 'Minimum', value: (r) => (r.minQty === null ? '' : toNumber(r.minQty)) },
   { header: 'Low', value: (r) => (r.low ? 'Yes' : '') },
+  { header: 'Value', value: (r) => (r.value ? toNumber(r.value) : '') },
   { header: 'Last movement', value: (r) => r.lastMovement, width: 14 },
 ];
 

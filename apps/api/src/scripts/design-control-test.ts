@@ -1,6 +1,6 @@
 /**
  * Design and drawings part 3: controlled copies (their state, numbers and recall), what a new revision changes,
- * and the design dashboard's totals and notes, with no database. CI runs it after the build:
+ * and the design dashboard's totals, notes and drawing counts, with no database. CI runs it after the build:
  *
  *   node dist/scripts/design-control-test.js
  */
@@ -13,6 +13,8 @@ import {
   designRowHasWork,
   designTotals,
   disposeCopyProblem,
+  drawingBand,
+  drawingCounts,
   issueCopiesProblem,
   recallDays,
   recallLate,
@@ -143,13 +145,33 @@ test('the dashboard adds the projects up and notes the worst first', () => {
   assert.equal(t.drawingsAwaited, 6);
   assert.equal(t.drawingsLate, 2);
   assert.equal(t.commentsToAnswer, 4);
-  assert.deepEqual(designNotes(t).map((n) => n.text), ['2 drawings late', '1 superseded copy still on site', '1 review past the reply date', '4 comments to answer', '2 copies to recall']);
+  assert.deepEqual(designNotes(t).map((n) => n.text), ['2 drawings late', '1 superseded copy still on site', '1 review past the reply date', '4 comments to answer', '2 copies to withdraw']);
   assert.equal(designRowHasWork(row({})), false);
   assert.equal(designRowHasWork(row({ revisionsRecent: 1 })), true);
   assert.equal(designRowHasWork(row({ asBuiltDue: 1 })), true);
 });
 
 let failed = 0;
+test('the dashboard counts drawings by discipline and where they stand: AFC is any revision site may build from', () => {
+  assert.equal(drawingBand('FOR_CONSTRUCTION'), 'AFC');
+  assert.equal(drawingBand('APPROVED_WITH_COMMENTS'), 'AFC');
+  assert.equal(drawingBand(null), 'OTHER');
+  const rows = drawingCounts([
+    { discipline: 'MECHANICAL', status: 'FOR_APPROVAL' },
+    { discipline: 'STRUCTURAL', status: 'FOR_CONSTRUCTION' },
+    { discipline: 'STRUCTURAL', status: 'REJECTED' },
+    { discipline: 'STRUCTURAL', status: 'APPROVED' },
+    { discipline: 'MECHANICAL', status: null },
+  ]);
+  assert.deepEqual(
+    rows.map((r) => [r.discipline, r.total, r.counts.AFC, r.counts.FOR_APPROVAL, r.counts.REJECTED, r.counts.OTHER]),
+    [
+      ['STRUCTURAL', 3, 2, 0, 1, 0],
+      ['MECHANICAL', 2, 0, 1, 0, 1],
+    ],
+  );
+});
+
 for (const [name, fn] of cases) {
   try {
     fn();

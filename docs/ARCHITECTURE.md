@@ -471,13 +471,30 @@ audited on the company. `LauncherFlag` and `AccessRequest` are tenant tables (mi
 A company chooses its menu in Admin › Menu and names (`/menu-and-names`, `GET`/`PUT /nav-settings`, admins through
 `canManageModules`, audited as `MENU` on the company):
 
-- **Where it sits** (`Organization.navLayout`): `SIDEBAR` (the default, as before) or `TOP_BAR`. With the top bar, Home's
-  first section is the company's modules; a module's screen and every page in it carry the module's bar under the top bar:
-  the module's name (a menu of every module), Overview, then its sub-modules, a sub-module of several pages opening as a
-  menu of them. Sub-modules that do not fit go under More on a wide screen; a phone's bar scrolls sideways.
-- **The sidebar's look** (`navSidebarLook`): `RAIL` (the rail beside the page, a white header; the default), `HEADER` (the
-  rail and the header in the menu's colours, one frame round the page; the header's controls take the chrome ink through
-  `TopBar.module.css`'s `onChrome`) or `FLOATING` (the rail inset and rounded on the page's canvas, the header on the canvas).
+- **Where it sits** (`Organization.navLayout`), that is, where the modules and a module's sub-modules go:
+  - `SIDEBAR` (the default): every module and its pages down the left.
+  - `TOP_BAR`: Home's first section is the company's modules; a module's screen and every page in it carry the module's bar
+    under the top bar: the module's name (a menu of every module), Overview, then its sub-modules, a sub-module of several
+    pages opening as a menu of them.
+  - `TOP_AND_SIDE`: the modules across the top bar, the module on screen with its Overview, sub-modules and pages down the
+    left (`moduleSections` in `nav.ts`, drawn by `Sidebar`); with no module open the side holds the top links and the pins.
+  - `TWO_BARS`: the modules across a first bar, the module's sub-modules across a second (Home's links there when no module
+    is open).
+  - `TWO_SIDEBARS`: the top links and the modules in a column of icons with their names (`ModuleRail`), the module's
+    sub-modules and pages in a column beside it, which `[` hides and shows.
+
+  Modules or sub-modules that do not fit a bar go under More on a wide screen (the module on screen keeps its place);
+  a phone's bar scrolls sideways. A phone has no room for the modules across the top, so `TOP_AND_SIDE` and `TWO_BARS`
+  draw as the top bar there and `TWO_SIDEBARS` as the sidebar, all with the menu drawer. The portals keep the sidebar.
+- **Where the colours go** (`navPaint`): `SIDE`, `TOP`, `BOTH` or `NONE`, over the layout's two parts named in
+  `NAV_LAYOUT_PARTS` (the sidebar and the header, the top bar and the sidebar, the first and second bar, the two sidebars
+  and the header). `navPainted(settings)` is the one reading of it; `TOP_BAR` has no paint, its look decides. A plain part
+  is drawn on the page's own surface by `.plain` (`Sidebar.module.css`), which sets the chrome roles to the page's, so
+  everything in the menu keeps reading the chrome roles. A coloured bar's controls take the chrome ink through
+  `TopBar.module.css`'s `onChrome`. `20270712090000_nav_layouts_and_paint` moved the old `HEADER` sidebar look onto
+  `BOTH`.
+- **The sidebar's look** (`navSidebarLook`, the sidebar layouts): `RAIL` (beside the page; the default) or `FLOATING` (inset
+  and rounded on the page's canvas, the header on the canvas).
 - **The top bar's look** (`navLook`): `NAVY` (a bar in the menu's colours over a white module bar, the default), `FRAME` (a light frame round the page,
   Home listing each module with its sub-modules) or `BAR` (one white bar holding the module and its menu, Home grouping the
   modules by `navMenuGroup`). `navPersonalLook` lets each person pick their own (`User.navLook`, the account menu's Top bar
@@ -510,10 +527,14 @@ in `DEPARTMENT_MODULES`: `src/scripts/nav-menu-test.ts` (CI) fails on a live pag
 
 ### Menu colours
 
-The sidebar, the header in `HEADER` and the `NAVY` top bar are painted in one fill: a plain colour or a two-stop gradient
-(`NavFill`, `@erp/shared/nav-colours.ts`). A company picks one of the curated palettes (`NAV_PALETTES`: `QUIET`, the chrome
-roles as they are and the default, six plain colours and five gradients, each with its own fill for the night, kept as design
-tokens in `ds/source/chrome.ts`) or `CUSTOM` with its own `navFill`. A palette is only its fill: the words, captions, hovers
+The parts of the menu in colour (`navPainted`) and the `NAVY` top bar are painted in one fill: a plain colour or a gradient
+of two stops or three (`NavFill` with an optional `via`, `@erp/shared/nav-colours.ts`). A company picks one of the curated
+palettes (`NAV_PALETTES`: `QUIET`, the chrome roles as they are and the default, six plain colours and six gradients, each
+with its own fill for the night, kept as design tokens in `ds/source/chrome.ts`) or `CUSTOM` with its own `navFill`. The
+curated set follows the taste skill (`.claude/skills/design-taste-frontend`, `references/colour.md`): no violet or indigo, no
+rust; warmth from oxblood, walnut and a bone stone; a gradient stays in one hue and a few steps of lightness, so the menu reads
+as one colour with depth. Plum became Oxblood and Ember became Walnut in `20270712090000_nav_layouts_and_paint`. Lagoon is
+Pradeep's deep-sea teal across the bar through three stops, taken down to the shade where the captions read. A palette is only its fill: the words, captions, hovers
 and edges are mixed from the ink that reads on it (`inkFor`, near-black or white), so every palette draws the same menu.
 
 One rule holds a fill: the menu's captions (its ink at `QUIET_SHARE`) keep 4.5:1 against every part of it, in both themes
@@ -566,7 +587,9 @@ Letters in and out for every project and for head office (`CorrespondenceService
   text we send), `category` (the `letterCategory` master), `priority`, `confidential`, `mode` (hand, post, speed post…),
   `replyBy`, `inReplyToId`, `riskId`, `markedToId` / `action` / `actionDue`, `signatoryId`, `sentForApprovalAt`,
   `approvedAt`, `returnNote`, `docketNo`, `dispatchedOn`, `deliveredOn`, `deliveryProof`, `closedAt` / `closedNote`.
-  `LetterMark` keeps every mark and forward (from, to, action, due, note, done). `LetterContact` (the address book),
+  `LetterMark` keeps every mark and forward (from, to, action, due, note, done). `LetterContact` (the address book, with
+  its `kind`, a code of the `letterParty` master: client, consultant, third-party inspection…; the registers filter by it
+  as `partyKind`),
   `LetterSeries` (per project or head office and direction: `prefix`, `pattern`) with `LetterSeriesCounter` (one per
   financial year), `LetterTemplate`. All four have RLS. `Organization.letterApproval` is the approval rule.
 - **Numbers.** `formatLetterNo(pattern, …)` over `{PREFIX}/{DIR}/{FY}/{NNN}` by default: `P07/OUT/26-27/042`,
@@ -587,6 +610,13 @@ Letters in and out for every project and for head office (`CorrespondenceService
   sending it back clears the signature. `letterApprovalStage` says which of the two it waits for. It prints on the letterhead (`GET /letters/:id/print`),
   and the desk records dispatch and delivery; a contractual letter issued with no delivery date shows "no proof"
   (`proofMissing`). An "already sent" letter is numbered at once.
+  Since item 179 the approval is set per category (`LETTER_GATES`: `NONE` numbered when saved, `SIGN` its signatory,
+  `SEAL` its signatory and then the seal), kept by code in `Organization.letterGates` with `(none)` for letters with no
+  category; `letterGate(rules, category)` reads a category's own gate, else the two rules above, so a category added later
+  starts where they put it and a seal can never come without a signature. Numbering and approval sets them one at a time
+  (`PUT /letters/settings/gate`). The outward register reads `letterSignOff` (the signatory's step and head office's:
+  done, waiting, not yet, not needed), and a letter's tag `letterStatusLabel` ("Waiting for the seal" once signed).
+  Letters to sign and seal (`correspondence.approvals`) is the register at the letters waiting for approval.
 - **Who.** `canViewLetters` (admin, management, PM, QS, document controller) keep the registers of their projects;
   `canHeadLetters` (admin, management, document controller) also see head office and confidential letters and change
   numbering; `canSignLetters` sign. Anyone sees a letter marked to them or waiting for their signature (`mine`, `toSign`).
@@ -601,8 +631,9 @@ A department's screen (`DepartmentHome`) opens, under what waits for the user, w
 `GET /dashboard/departments/:key?projectId` (`DepartmentHomeService`, `DepartmentHomeDto`):
 
 - **Figures.** The area modules' own (`ModuleHomeService.figures`, `Figure[]`), picked per department by measure id in
-  `DEPARTMENT_FIGURES` and `departmentFigures` (`@erp/shared/department-home.ts`, at most `MAX_FIGURES`), drawn by `<Figures>`: purchase shows requests to approve and orders to
-  receive, the store its stock and late deliveries, accounts its books and what clients owe, quality its failed tests,
+  `DEPARTMENT_FIGURES` and `departmentFigures` (`@erp/shared/department-home.ts`, at most `MAX_FIGURES`), drawn by `<Figures>`: purchase shows the round (requests to approve,
+  waiting for quotations, choices to approve, orders to receive, late deliveries, received not billed; item 175), the
+  store its stock with the part at central stores and what is on the road, material to check and late deliveries, accounts its books and what clients owe, quality its failed tests,
   late results and open NCRs with safety incidents (near misses counted apart), contractor management its work orders and
   the retention kept from subcontractors, planning and estimation the tenders to submit and bids awaiting a result, HR and
   payroll its people with the last salary run's net pay, and administration who can sign in, access requests and failing
@@ -706,6 +737,9 @@ Part 2 (`QaRegistersService`, rules pure in `@erp/shared/qa-registers.ts`, teste
 
 ### Design and drawings (item 138)
 
+On screen the module is **Drawings** (`docs/WRITING.md`): the Drawing register, Drawing schedule, Submittals (design
+submissions in the code), Controlled copies, As-built drawings, Transmittals, RFIs and the Dashboard.
+
 The drawings a project waits for, chased until they arrive, beside the document register (`DrawingScheduleService`,
 `apps/api/src/design`, routes under `/design`; its own module because `CorrespondenceModule` imports `DocumentsModule`).
 The rules are pure in `@erp/shared/drawing-schedule.ts`, tested in `src/scripts/drawing-schedule-test.ts` (CI runs it).
@@ -732,7 +766,9 @@ The rules are pure in `@erp/shared/drawing-schedule.ts`, tested in `src/scripts/
   that have no as-built revision yet; what the handover still owes.
 - **Watch list.** `DRAWING_LATE` (drawings awaited past their day, one warning per project and party from `lateDrawingGroups`), for the
   roles that `canManageDocuments`.
-- **Clients.** Web: `/drawing-schedule` (Schedule and As-built check tabs, `?projectId=`, `?state=LATE`, `?id=`). The phone
+- **Clients.** Web: `/drawing-schedule` (`?projectId=`, `?state=LATE`, `?id=`; an old `?tab=as-built` goes to `/as-built`) and
+  `/as-built` (As-built drawings: due, or `?state=RECEIVED` for those whose current revision is as built, through
+  `GET /design/as-built-due?state=`). The phone
   reads drawings from the register; the schedule on the phone is later.
 
 **Design submissions (part 2).** Drawings and designs sent to the client's side for approval, or to an institution for
@@ -780,9 +816,32 @@ tested in `src/scripts/design-submissions-test.ts`, CI runs it).
 - **Design dashboard.** `/design-dashboard` and the Design and drawings module screen (`ModuleHomeService`): per project, the
   drawings awaited and late (from `DrawingScheduleService.list`), submissions with the reviewer, late and back with us and
   comments to answer (from `DesignSubmissionsService.list`), copies to recall, as-builts due and open RFIs, added up by
-  `designTotals` and noted by `designNotes`.
+  `designTotals` and noted by `designNotes`; and the drawings by discipline and where their current revision stands
+  (`drawingCounts` over `drawingBand`: AFC, for approval, rejected, as built, other), drawn as a ring and a bar by discipline.
 - **Watch list.** `COPY_RECALL_LATE` (`lateRecalls`): superseded copies still out past the recall period, one warning per
   document and revision, for the roles that `canManageDocuments`.
+
+**Review stages, drawings by component and review comments (part 4).** How a contractor's drawings are approved on a
+government job: the proof checker, then the TPIA (or SQC), the PIU and head office, each in turn.
+
+- **Review stages.** A submittal's `stages` are codes of the `reviewStage` master (Proof checker, TPIA, PIU, Client, Head
+  office; at most `MAX_REVIEW_STAGES`, checked by `reviewStagesProblem`), fixed while it is under review. A round's
+  `marks` (`StageMark`: stage, code, day, reviewer, reference) are written only by `recordCode` at the stage it waits at
+  (`stageWaiting`): an A or B at a stage before the last moves it on (`stageOutcome` NEXT, a new reply-by day from
+  `stageStartedOn`), a C or D at any stage or the last stage's code is the round's code as before. A comment carries the
+  stage that made it and its day. A submittal with no stages is coded once, as before. The list filters by
+  `?at=<stage>` (Waiting at), the record draws the stages as a `StageBar`.
+- **Drawings by component.** A drawing names the component it is for (`Document.workElementId`, a top-level work
+  element of its project, checked by `checkComponent`). `GET /design/by-component?projectId=` (`DesignControlService.byComponent`):
+  each component with its drawings by discipline at their current revisions, the latest submittal that sends any of them
+  (`withDocuments`) with each stage's day, and its state (`componentState`: AFC when every drawing is buildable, else
+  under review, back with us, not sent); totals by `componentTotals`, stage columns by `stageColumns`. Web
+  `/drawings-by-component`.
+- **Review comments.** `GET /design/submissions/comments` (`DesignSubmissionsService.comments`): every comment across the
+  submittals the user sees, with the stage, the day made, days open and our reply, filtered by state (`NOT_CLOSED` by
+  default) and stage, the oldest to answer first. Web `/design-comments`; a row opens its submittal, where the reply is written.
+- **Words.** A revision site may build from is **AFC** (approved for construction) on every screen (`REVISION_STATUS_LABELS`,
+  the schedule's state); the enum keeps `FOR_CONSTRUCTION` and `GFC`.
 
 ### The launcher on the phone (launcher phase 4, phone Home of October 2026)
 
@@ -1383,7 +1442,25 @@ commissioned, with valves fixed at their points.
   zone's activities and the project's progress still come from the entries through `rollUp`.
 - **Import.** The network comes from the design office's model, read on the screen: an EPANET `.inp` file
   (`parseEpanetInp`: junctions, reservoirs as sources, tanks, pipes, valves as valve points, coordinates, US units
-  converted, pumps left out and said so) or an Excel book of nodes and pipes with loose headers (`parseNetworkSheets`).
+  converted, pumps left out and said so), an Excel book of nodes and pipes with loose headers (`parseNetworkSheets`), or
+  the main's alignment drawn in Google Earth (`parseKml`; a KMZ is unzipped in the browser by `lib/kmz.ts`): each line cut
+  into segments by its ground length (`groundDistanceM`) at the named points within `KML_SNAP_M` of it (a valve, a tank,
+  kind by name, the drawings' short names too: AV air valve, WO or SC scour, SV, BFV, NRV a valve) and every 500 m,
+  nodes named by chainage (`chainageLabel`, 1+250) and placed in metres from the first point, the diameter and material
+  from the line's data or name, else those chosen in the dialog. A node's chainage is whole metres, as the table keeps
+  it (a sheet may write it 1+250). The network also keeps its places on the earth: each node's latitude and longitude
+  (`PipeNode.lat`, `lon`) and each pipe's bends between its ends (`PipeSegment.path`, `[longitude, latitude]` pairs); a
+  file that gives none (EPANET, a sheet without latitudes) leaves the saved ones alone.
+- **Download and edit.** A zone downloads as a KMZ for Google Earth (`networkKml`, zipped by `kmzFromKml`: a line per
+  pipe with its code, ends and size in its data, a point per node) or as the two sheets the Excel import reads
+  (`networkSheets`, with latitude, longitude and a Route column); `parseKml` reads a line whose data names its `from`
+  and `to` as that one pipe, so either file loads back pipe for pipe. Edit network opens the map editor
+  (`PipeNetworkEditor` over `PipeEditMap`: Leaflet with Esri satellite and OpenStreetMap street tiles, Leaflet-Geoman for
+  a route's bends and drawing): drag a point, reshape a pipe, add a valve on a pipe (`splitPipe`: the pipe keeps its
+  code to the new point and a new pipe goes on, the length shared by the ground each side), draw a pipe between points
+  (`addPipe`, ends within `DRAW_SNAP_M`), and correct sizes and kinds beside the map. The edits are pure in
+  `pipe-network-edit.ts` and save only through the import with its preview (codes from `nextNetworkCode`; a new pipe or
+  point can be removed before saving, a saved one never).
   `POST /projects/:id/pipe-network/import` (project editors) checks it (`networkProblems`), previews what it would do
   matched by code (`importPlan`: new, changed, kept; never a pipe cut below its work) with `dryRun`, and saves only
   without problems: nodes and pipes upserted by code, nothing deleted, the zone's length stages planned at its proposed
@@ -1391,14 +1468,18 @@ commissioned, with valves fixed at their points.
   `PATCH .../segments/:id` corrects one pipe (not below its work).
 - **Screens.** Web: Project › Plan › Pipe network on water supply and sewerage projects (`components/pipes/`: the zone
   map drawn from coordinates or as a tree from the tank, pipes in the state of their work and thicker by diameter, the
-  pipe sheet, ready to start, the pipe list with search, state filter, Export and Correct, and the import dialog); the
-  DPR form's Where picks the segment or valve (`DprLinesField`), the test form the pipes tested. Phone: the DPR line's
+  pipe sheet, ready to start, the pipe list with search, state filter, Export and Correct, and the import dialog), and
+  the same panel at Drawings › Pipeline layout (`/pipeline-layout`, a water project picked there). A pipe clicked on the
+  map or the list opens its card (`PipeCard`: each stage done and waiting against its length, its ends and valves, the
+  pipe before and after, Edit pipe); Download network and Edit network sit beside Import network; Record work opens a daily report with a line for the pipe and the stage's activity
+  (`stageActivities`), so work done still comes in only through an approved DPR. The DPR form's Where picks the segment
+  or valve (`DprLinesField`), the test form the pipes tested. Phone: the DPR line's
   segment and valve pickers (`src/forms/dprLines.tsx`).
-- **Code.** The arithmetic and readers are pure in `packages/shared/src/pipe-network.ts`, tested in
+- **Code.** The arithmetic and readers are pure in `packages/shared/src/pipe-network.ts` (edits in `pipe-network-edit.ts`), tested in
   `src/scripts/pipe-network-test.ts` (CI flows); `e2e/tests/pipe-network.spec.ts` covers a line held to its pipe, the
-  import preview and the tab.
+  import preview, the tab, the downloads and a valve put on a pipe in the editor.
 - **Demo.** `seedTownNetwork` (`prisma/seed-pipes.ts`): zone 2 of WS-2026-04, a tank, a 20-junction spine and six
-  branches with sluice valves, an air valve and a scour (53 pipes, 10.1 km), its approved work laid out pipe by pipe
+  branches with sluice valves, an air valve and a scour (53 pipes, 10.1 km) placed near Jajpur, its approved work laid out pipe by pipe
   from the tank, the town DPRs' pipe lines on the pipes past each stage's front, and a passed hydraulic test.
 
 ### Project types (item 134)
@@ -1794,7 +1875,10 @@ The store register per project, fed by approved material requests:
   `transferOutId`) for the full quantities, once, on or after the sent date. Until then the transfer is "on the
   way" (`GET /stock/transfers/incoming`) and the sender cannot delete it once received. `RETURN_TO_VENDOR`
   (`RTV-`, supplier and reason required) takes stock out; `RETURN_FROM_SITE` (`RFS-`) brings unused material
-  back, up to what is out on site (issued net of returns), and comes off the project's material cost. A stock
+  back, up to what is out on site (issued net of returns), and comes off the project's material cost. A return may
+  name the work order its material comes back from (`workOrderId`, an open order of the project; item 177): it is then
+  held per item to what was issued on that order net of its earlier returns, `issuedTo` defaults to the order's
+  subcontractor, and their bill credits it (see "A subcontractor's material"). A stock
   count (`POST /stock/counts`) posts the differences between counted and book quantities as one adjustment and
   returns `{counted, entry}` (`entry` null when everything matched). Balances show transfers in their own
   column; returns from site net off issued, returns to vendor off received.
@@ -1819,6 +1903,12 @@ The store register per project, fed by approved material requests:
   /stock/items/:id/merge`, store managers and approvers): every foreign key to `Item` (read from the Prisma schema)
   moves to the kept item, a minimum or norm both have keeps the kept one's, request and order lines take its name,
   and the merged names become its aliases. Rules in `@erp/shared/items.ts`, tested in `src/scripts/items-test.ts`.
+- **Code, standard and value (item 176).** `Item.code` is optional, written by `itemCodeOf` (capitals, spaces and `_` as
+  hyphens) and held by `itemCodeProblem` (letters, digits and `- / .`, up to 30) and unique per organisation;
+  `Item.standard` is free text (IS 1489, Fe 500D). The item list's `q` searches both. Stock on hand carries `itemCode`
+  and, for `canViewStockValue`, `value` (balance × item rate, sortable); `StockService.worth` gives the Materials
+  overview its stock value, the part at `STORE` projects and what is on the road (transfers out with no transfer in
+  yet), each at item rates.
 - **Valuation.** `GET /stock/valuation` values stock on hand at the item master rate and ages it first in,
   first out over the inward movements (0-30, 31-90, 91-180, over 180 days). Store managers, approvers and
   anyone who sees project cost.
@@ -1859,6 +1949,13 @@ The store register per project, fed by approved material requests:
   `StockService.issue`, so the stock check, minimum-level alert and numbering are the same as any issue; it refuses an
   item not marked as fuel and an inactive machine, and takes a client `id` (the phone's outbox, `FUEL_ISSUE`). Roles:
   `canIssueFuel` (whoever issues material).
+- **Pump readings (item 178).** A fuel slip may carry the dispenser's `pumpStart` and `pumpEnd` (`StockEntry`,
+  Decimal(18,2)); `pumpReadingProblem` (`@erp/shared/fleet.ts`) refuses an end below the start and litres off the
+  readings by more than `PUMP_TOLERANCE_LITRES` (0.5); a start with no end is no reading (`slipPumpReadings`), so a
+  slip whose pump nobody read still saves. The form starts from the fuel position's `lastPumpEnd` (the
+  latest slip at the site with a reading, up to the day) and fills the litres from the readings until they are typed.
+  Fuel issues carry the machine's `equipmentCategory` and `ownership`, and `fuelByKind` adds them up by kind for the
+  Fuel tab. Tested in `src/scripts/fuel-slips-test.ts`.
 - **Fuel position.** `GET /fleet/fuel-position?date&projectId` (`FleetService`): per site the user sees and fuel item,
   opening (all movements before the day), received (any positive movement), into machines (issues with a machine),
   other issues and closing, against the item's minimum level, with the day's issues into machines.
@@ -2772,6 +2869,9 @@ gets Handover › O&M (`canViewOm`: everyone but guests).
   one: `SubcontractBillsService.recompute` attaches recoveries with no bill and adds their total as `excessRecovery`
   ("Material used over the norm" among the deductions; Tally posts it with the material recovery). It can be removed
   until its bill is submitted.
+- **Returns credited (item 177).** The bill's material recovery (`recompute`) reads the order's `ISSUE` and
+  `RETURN_FROM_SITE` rows not yet on a bill up to its measured date, so a return comes off what the bill recovers; a period with more back
+  than out gives a negative line, which the posting handles as a credit.
 - **API.** `GET /reconciliation/projects/:id/subcontractors`, `POST .../work-orders/:workOrderId/recoveries`,
   `DELETE .../recoveries/:recoveryId`.
 

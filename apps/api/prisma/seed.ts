@@ -11,7 +11,7 @@ import { dprTitle, progressTitle, titleDate } from '../src/common/submission-tit
 import { DEMO_CONTRACTS, textPdf } from '../src/documents/demo-contracts';
 import { addMonths, schedule as loanSchedule } from '../src/machine-loans/loan-rules';
 import { seedTownDprs, seedWorkBreakdown } from './seed-structure';
-import { seedTownNetwork } from './seed-pipes';
+import { placeTownNetwork, seedTownNetwork } from './seed-pipes';
 import { seedTownStock } from './seed-stock';
 import { seedTownBilling } from './seed-billing';
 import { seedEpc } from './seed-epc';
@@ -19,16 +19,18 @@ import { seedConsultantChecks } from './seed-consultant-checks';
 import { seedProgramme } from './seed-programme';
 import { seedJoiningDocuments } from './seed-joining-documents';
 import { seedOm } from './seed-om';
-import { seedCorrespondence } from './seed-correspondence';
+import { seedCorrespondence, seedLetterPartyKinds } from './seed-correspondence';
 import { seedQa } from './seed-qa';
 import { seedQaRegisters } from './seed-qa-registers';
 import { seedQaAudits } from './seed-qa-audits';
 import { seedDrawingSchedule } from './seed-drawing-schedule';
 import { seedDesignSubmissions } from './seed-design-submissions';
+import { seedComponentDrawings } from './seed-component-drawings';
 import { seedControlledCopies } from './seed-controlled-copies';
 import { seedIntegrations } from './seed-integrations';
 import { seedTelematics } from './seed-telematics';
 import { seedFuel } from './seed-fuel';
+import { seedItemCodes } from './seed-item-codes';
 import { seedWeighbridge } from './seed-weighbridge';
 import { seedBatching } from './seed-batching';
 import { seedBiometricCommands } from './seed-biometric-commands';
@@ -1844,6 +1846,7 @@ async function modulesPass(organizationId: string, passwordHash: string) {
   await seedTestsAndNcrs(organizationId);
   await seedDocuments(organizationId);
   await seedCorrespondence(prisma, organizationId);
+  await seedLetterPartyKinds(prisma, organizationId);
   await seedQa(prisma, organizationId);
   await seedQaRegisters(prisma, organizationId);
   await seedQaAudits(prisma, organizationId);
@@ -1895,6 +1898,7 @@ async function modulesPass(organizationId: string, passwordHash: string) {
   // Engine hours need the site's location (seedAttendanceExtras) and the tracker's link (seedIntegrations); fuel needs the hours.
   await seedTelematics(prisma, organizationId);
   await seedFuel(prisma, organizationId);
+  await seedItemCodes(prisma, organizationId);
   await seedWeighbridge(prisma, organizationId);
   await seedBatching(prisma, organizationId);
   await seedBiometricCommands(prisma, organizationId);
@@ -1903,6 +1907,7 @@ async function modulesPass(organizationId: string, passwordHash: string) {
   await seedWorkBreakdown(prisma, organizationId);
   await seedTownDprs(prisma, organizationId);
   await seedTownNetwork(prisma, organizationId);
+  await placeTownNetwork(prisma, organizationId);
   await seedTownStock(prisma, organizationId);
   await seedTownBilling(prisma, organizationId);
   await seedEpc(prisma, organizationId);
@@ -1915,6 +1920,8 @@ async function modulesPass(organizationId: string, passwordHash: string) {
   await seedConsultantChecks(prisma, organizationId);
   await seedProgramme(prisma, organizationId);
   await seedProjectOpenings(organizationId);
+  // The town scheme's components exist by now (seedWorkBreakdown); their drawings and staged submittals.
+  await seedComponentDrawings(prisma, organizationId);
 }
 
 /**

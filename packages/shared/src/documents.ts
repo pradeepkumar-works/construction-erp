@@ -27,7 +27,7 @@ export const DOCUMENT_DISCIPLINE_LABELS: Record<DocumentDiscipline, string> = {
 export const REVISION_STATUSES = ['FOR_CONSTRUCTION', 'APPROVED', 'APPROVED_WITH_COMMENTS', 'FOR_APPROVAL', 'FOR_INFORMATION', 'REJECTED', 'AS_BUILT', 'WITHDRAWN'] as const;
 export type RevisionStatus = (typeof REVISION_STATUSES)[number];
 export const REVISION_STATUS_LABELS: Record<RevisionStatus, string> = {
-  FOR_CONSTRUCTION: 'Good for construction',
+  FOR_CONSTRUCTION: 'AFC',
   APPROVED: 'Approved',
   APPROVED_WITH_COMMENTS: 'Approved with comments',
   FOR_APPROVAL: 'For approval',

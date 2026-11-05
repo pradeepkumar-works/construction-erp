@@ -255,7 +255,7 @@ export class SubcontractBillsService {
     await tx.measurementSheet.updateMany({ where: { subcontractBillId: id }, data: { subcontractBillId: null } });
     await tx.stockEntry.updateMany({ where: { subcontractBillId: id }, data: { subcontractBillId: null } });
     await tx.measurementSheet.updateMany({ where: { workOrderId: wo.id, status: 'APPROVED', subcontractBillId: null, date: { lte: bill.measuredUpTo } }, data: { subcontractBillId: id } });
-    await tx.stockEntry.updateMany({ where: { workOrderId: wo.id, type: 'ISSUE', subcontractBillId: null, date: { lte: bill.measuredUpTo } }, data: { subcontractBillId: id } });
+    await tx.stockEntry.updateMany({ where: { workOrderId: wo.id, type: { in: ['ISSUE', 'RETURN_FROM_SITE'] }, subcontractBillId: null, date: { lte: bill.measuredUpTo } }, data: { subcontractBillId: id } });
     // Material used over the norm, raised from the reconciliation and not yet on a bill.
     await tx.excessMaterialRecovery.updateMany({ where: { subcontractBillId: id }, data: { subcontractBillId: null } });
     await tx.excessMaterialRecovery.updateMany({ where: { workOrderId: wo.id, subcontractBillId: null }, data: { subcontractBillId: id } });
@@ -279,7 +279,8 @@ export class SubcontractBillsService {
       return [{ workOrderLineId: l.id, rate: l.rate, prevQty, thisQty, uptoQty: prevQty.add(thisQty), amount: round2(thisQty.mul(l.rate)), sortOrder: i }];
     });
 
-    // Material issued to them, at each item's current rate (the last approved PO rate, or as set in the item master).
+    // Material issued to them less what they brought back, at each item's current rate (the last approved PO rate, or as
+    // set in the item master). A return of material an earlier bill recovered comes off as a credit.
     const items = issued.length ? await tx.item.findMany({ where: { id: { in: issued.map((m) => m.itemId) } }, select: { id: true, rate: true } }) : [];
     const materials = issued
       .map((m) => {

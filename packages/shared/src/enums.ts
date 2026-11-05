@@ -376,18 +376,23 @@ export const ACCESS_REQUEST_STATUSES = ['OPEN', 'GRANTED', 'DECLINED'] as const;
 export type AccessRequestStatus = (typeof ACCESS_REQUEST_STATUSES)[number];
 
 /** Menu and names (`nav-menu.ts`): where a company's menu sits, how the top bar looks, and how its pages are grouped into
- *  modules. Each company's own, set by an admin; a person may pick their own look when the company lets them. */
-export const NAV_LAYOUTS = ['SIDEBAR', 'TOP_BAR'] as const;
+ *  modules. Each company's own, set by an admin; a person may pick their own look when the company lets them. A layout
+ *  places the modules and a module's sub-modules (`NAV_LAYOUT_PARTS`): all in the sidebar, the modules on Home and the
+ *  sub-modules in a top bar, the modules in the top bar and the sub-modules in the sidebar, the two in two top bars, or the
+ *  two in two sidebars. */
+export const NAV_LAYOUTS = ['SIDEBAR', 'TOP_BAR', 'TOP_AND_SIDE', 'TWO_BARS', 'TWO_SIDEBARS'] as const;
 export type NavLayout = (typeof NAV_LAYOUTS)[number];
 export const NAV_LOOKS = ['NAVY', 'FRAME', 'BAR'] as const;
 export type NavLook = (typeof NAV_LOOKS)[number];
 export const NAV_MODULE_SETS = ['AREAS', 'DEPARTMENTS'] as const;
 export type NavModuleSet = (typeof NAV_MODULE_SETS)[number];
-/** How the sidebar sits (`nav-colours.ts`): a rail beside the page, a rail and header in one colour round the page, or a
- *  rail floating on the page's canvas. */
-export const NAV_SIDEBAR_LOOKS = ['RAIL', 'HEADER', 'FLOATING'] as const;
+/** How the sidebar sits: a rail beside the page, or a rail floating on the page's canvas. */
+export const NAV_SIDEBAR_LOOKS = ['RAIL', 'FLOATING'] as const;
 export type NavSidebarLook = (typeof NAV_SIDEBAR_LOOKS)[number];
+/** Which of a layout's two parts take the menu's colours (`navPainted`): the side part, the top part, both, or neither. */
+export const NAV_PAINTS = ['SIDE', 'TOP', 'BOTH', 'NONE'] as const;
+export type NavPaint = (typeof NAV_PAINTS)[number];
 /** The menu's colours (`nav-colours.ts`): Nirmaan's own, a plain colour or a gradient from the curated set, or the
  *  company's own (`CUSTOM`, with its `NavFill`). The colours themselves are design tokens (web `ds/source/chrome.ts`). */
-export const NAV_PALETTES = ['QUIET', 'NAVY', 'GRAPHITE', 'FOREST', 'PLUM', 'SAND', 'SKY', 'DUSK', 'OCEAN', 'EMBER', 'MIDNIGHT', 'DAWN', 'CUSTOM'] as const;
+export const NAV_PALETTES = ['QUIET', 'NAVY', 'GRAPHITE', 'FOREST', 'OXBLOOD', 'SAND', 'SKY', 'LAGOON', 'DUSK', 'OCEAN', 'WALNUT', 'MIDNIGHT', 'DAWN', 'CUSTOM'] as const;
 export type NavPalette = (typeof NAV_PALETTES)[number];

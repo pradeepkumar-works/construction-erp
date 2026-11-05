@@ -87,6 +87,12 @@ export class CreateFuelIssueDto {
   @ValidateIf((_, v) => v !== null)
   @IsNumberString()
   meterReading?: string | null;
+  @ApiPropertyOptional({ example: '12450', description: "The bowser's totaliser before the fill; with the end reading, the quantity must be what it moved" })
+  @IsOptional()
+  @ValidateIf((_, v) => v !== null)
+  @IsNumberString()
+  pumpStart?: string | null;
+  @ApiPropertyOptional({ example: '12510', description: "The bowser's totaliser after the fill" }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumberString() pumpEnd?: string | null;
   @ApiPropertyOptional({ example: 'Ramesh (operator)', description: 'Who took it; the machine when left out' }) @IsOptional() @IsString() @trim() @MaxLength(200) issuedTo?: string | null;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(1000) remarks?: string | null;
 }
@@ -169,7 +175,17 @@ export class CreateSiteReturnDto {
   @ApiPropertyOptional(CLIENT_ID_DOC) @IsOptional() @IsUUID('4') id?: string;
   @ApiProperty() @IsUUID() projectId: string;
   @ApiProperty({ example: '2026-10-13' }) @IsDateString() @dateOnly() date: string;
-  @ApiProperty({ example: 'Kalinga Builders (slab gang)', description: 'Who brought the material back' }) @IsString() @trim() @MinLength(1) @MaxLength(200) issuedTo: string;
+  @ApiPropertyOptional({ example: 'Kalinga Builders (slab gang)', description: 'Who brought the material back; the contractor when left out with a work order' })
+  @ValidateIf((o: CreateSiteReturnDto) => !o.workOrderId || o.issuedTo != null)
+  @IsString()
+  @trim()
+  @MinLength(1)
+  @MaxLength(200)
+  issuedTo?: string;
+  @ApiPropertyOptional({ description: "The subcontractor's work order it was issued against: their next bill takes it off the material recovered. At most what was issued on that order, net of earlier returns." })
+  @IsOptional()
+  @IsUUID()
+  workOrderId?: string;
   @ApiPropertyOptional({ description: 'Activity it had been issued for' }) @IsOptional() @IsUUID() activityId?: string | null;
   @ApiPropertyOptional({ description: "Component or pipe zone it had been issued to; the activity's own when an activity is given" }) @IsOptional() @IsUUID() workElementId?: string | null;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(1000) remarks?: string | null;
@@ -250,6 +266,8 @@ export class CreateItemDto {
   @ApiProperty({ example: 'OPC 53 Grade Cement' }) @IsString() @trim() @MinLength(1) @MaxLength(200) name: string;
   @ApiProperty({ example: 'Bags' }) @IsString() @trim() @MinLength(1) @MaxLength(30) unit: string;
   @ApiPropertyOptional({ example: 'Cement' }) @IsOptional() @IsString() @trim() @MaxLength(60) category?: string | null;
+  @ApiPropertyOptional({ example: 'CEM-OPC53', description: "The company's code for the item, one per item; written in capitals" }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsString() @MaxLength(40) code?: string | null;
+  @ApiPropertyOptional({ example: 'IS 269', description: 'The standard or specification it is bought to' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsString() @trim() @MaxLength(120) standard?: string | null;
   @ApiPropertyOptional({ example: '395.00', description: 'Standard rate per unit; values issues in the cost view' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumberString() rate?: string | null;
   @ApiPropertyOptional({ description: 'Diesel, petrol and the like: issued to machines and in the daily fuel position' }) @IsOptional() @IsBoolean() isFuel?: boolean;
   @ApiPropertyOptional({ example: 110, description: 'Pipe: the outside or nominal diameter it lays as, when the name does not say it' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsInt() @Min(15) @Max(4000) pipeDiameterMm?: number | null;
@@ -261,6 +279,8 @@ export class UpdateItemDto {
   @ApiPropertyOptional() @IsOptional() @IsString() @trim() @MinLength(1) @MaxLength(200) name?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() @trim() @MinLength(1) @MaxLength(30) unit?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() @trim() @MaxLength(60) category?: string | null;
+  @ApiPropertyOptional({ example: 'CEM-OPC53' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsString() @MaxLength(40) code?: string | null;
+  @ApiPropertyOptional({ example: 'IS 269' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsString() @trim() @MaxLength(120) standard?: string | null;
   @ApiPropertyOptional({ example: '395.00' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumberString() rate?: string | null;
   @ApiPropertyOptional() @IsOptional() @IsBoolean() isFuel?: boolean;
   @ApiPropertyOptional({ example: 110, description: 'Pipe: the outside or nominal diameter it lays as, when the name does not say it' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsInt() @Min(15) @Max(4000) pipeDiameterMm?: number | null;

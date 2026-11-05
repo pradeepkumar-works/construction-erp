@@ -2,19 +2,25 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Card, Col, Flex, Row, Statistic, Table, Typography } from 'antd';
+import dynamic from 'next/dynamic';
+import { Card, Col, Flex, Row, Skeleton, Table, Typography } from 'antd';
 import { tk } from '@/ds';
-import type { DesignDashboardDto, RecentRevisionDto } from '@erp/shared';
+import { DOCUMENT_DISCIPLINE_LABELS, DRAWING_BAND_LABELS, DRAWING_BANDS, figure, type DesignDashboardDto, type DrawingCountRow, type RecentRevisionDto } from '@erp/shared';
 import { useDesignDashboard } from '@/lib/queries';
 import { useProjectScope } from '@/lib/project-scope';
-import { formatDate } from '@/lib/format';
-import { DISPLAY_FONT } from '@/lib/theme';
+import { NO_VALUE, formatDate } from '@/lib/format';
+import { Figures } from '@/components/figures';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { AppTag } from '@/components/common/AppTag';
 import { RevisionStatusTag } from '@/components/documents/docUi';
+import { ChartCard } from '@/components/home/ChartCard';
 import { ImpactList } from './RevisionImpact';
+
+const chartLoading = () => <Skeleton.Node active style={{ width: '100%', height: 280 }} />;
+const DrawingStatusChart = dynamic(() => import('@/components/home/charts').then((m) => m.DrawingStatusChart), { ssr: false, loading: chartLoading });
+const DrawingDisciplineChart = dynamic(() => import('@/components/home/charts').then((m) => m.DrawingDisciplineChart), { ssr: false, loading: chartLoading });
 
 type ProjectRow = DesignDashboardDto['projects'][number];
 
@@ -26,33 +32,71 @@ function CardTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Body({ data }: { data: DesignDashboardDto }) {
+/** The drawing counts as a table: each discipline's drawings by where they stand, with the total. */
+function DrawingCountTable({ rows }: { rows: DrawingCountRow[] }) {
+  const bands = DRAWING_BANDS.filter((b) => rows.some((x) => x.counts[b] > 0));
+  return (
+    <Table<DrawingCountRow>
+      size="small"
+      pagination={false}
+      rowKey="discipline"
+      dataSource={rows}
+      scroll={{ x: 'max-content' }}
+      columns={[
+        { title: 'Discipline', key: 'discipline', render: (_, r) => DOCUMENT_DISCIPLINE_LABELS[r.discipline] },
+        ...bands.map((b) => ({ title: DRAWING_BAND_LABELS[b], key: b, align: 'right' as const, className: 'mono', render: (_: unknown, r: DrawingCountRow) => r.counts[b] })),
+        { title: 'Drawings', key: 'total', align: 'right', className: 'mono', render: (_, r) => r.total },
+      ]}
+    />
+  );
+}
+
+/** What the drawing charts say in words: the AFC share, then what waits and what came back. */
+function drawingSummary(rows: DrawingCountRow[]) {
+  const sum = (k: keyof DrawingCountRow['counts']) => rows.reduce((t, x) => t + x.counts[k], 0);
+  const total = rows.reduce((t, x) => t + x.total, 0);
+  const parts = [`${sum('AFC')} of ${total} drawings are AFC`];
+  if (sum('FOR_APPROVAL')) parts.push(`${sum('FOR_APPROVAL')} for approval`);
+  if (sum('REJECTED')) parts.push(`${sum('REJECTED')} rejected`);
+  return `${parts.join(', ')}.`;
+}
+
+function Body({ data, projectId }: { data: DesignDashboardDto; projectId?: string }) {
   const t = data.totals;
   const scope = (pid?: string) => (pid ? `&projectId=${pid}` : '');
-  const stat = (title: string, value: number, note: string, href: string, tone?: 'danger' | 'warning') => (
-    <Col xs={12} lg={8} xl={4}>
-      <Card size="small" style={{ height: '100%' }}>
-        <Statistic
-          title={<Link href={href}>{title}</Link>}
-          value={value}
-          styles={{ content: { fontFamily: DISPLAY_FONT, fontSize: tk.type.lead.fontSize, color: value && tone === 'danger' ? tk.color.tone.danger.fg : value && tone === 'warning' ? tk.color.tone.pending.fg : undefined } }}
-        />
-        <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{note}</div>
-      </Card>
-    </Col>
-  );
-  const n = (v: number, href: string) => (v ? <Link href={href}>{v}</Link> : <Typography.Text type="secondary">-</Typography.Text>);
+  const n = (v: number, href: string) => (v ? <Link href={href}>{v}</Link> : <Typography.Text type="secondary">{NO_VALUE}</Typography.Text>);
   const withWork = data.recent.filter((r) => r.items.length);
   return (
     <Flex vertical gap={tk.space[5]}>
-      <Row gutter={[12, 12]}>
-        {stat('Drawings late', t.drawingsLate, `${t.drawingsAwaited} awaited in all`, '/drawing-schedule?state=LATE', 'danger')}
-        {stat('Reviews past the reply date', t.reviewsLate, `${t.underReview} with the reviewer`, '/design-submissions?status=LATE', 'warning')}
-        {stat('Comments to answer', t.commentsToAnswer, `${t.withUs} submission${t.withUs === 1 ? '' : 's'} to revise`, '/design-submissions?toAnswer=true', 'warning')}
-        {stat('Copies to recall', t.copiesToRecall, t.recallsLate ? `${t.recallsLate} out longer than a week` : 'Superseded prints on site', '/controlled-copies?state=TO_RECALL', t.recallsLate ? 'danger' : 'warning')}
-        {stat('As-built due', t.asBuiltDue, 'Built from, no as-built revision', '/drawing-schedule?tab=as-built')}
-        {stat('Open RFIs', t.rfisOpen, `${t.revisionsRecent} revisions in 30 days`, '/documents?tab=rfis')}
-      </Row>
+      <Figures
+        label="Drawing figures"
+        scope={{ projectId }}
+        figures={[
+          figure('drawingsLate', t.drawingsLate, { versus: { of: figure('drawingsAwaited', t.drawingsAwaited) } }),
+          figure('reviewsLate', t.reviewsLate, { versus: { of: figure('underReview', t.underReview) } }),
+          figure('commentsToAnswer', t.commentsToAnswer, { count: t.withUs || undefined }),
+          figure('copiesToRecall', t.copiesToRecall, { versus: { part: figure('recallsLate', t.recallsLate) } }),
+          figure('asBuiltDue', t.asBuiltDue),
+          figure('rfisOpen', t.rfisOpen),
+        ]}
+      />
+      {data.drawings.length ? (
+        <Row gutter={[16, 16]}>
+          <Col xs={24} lg={10}>
+            <ChartCard title="Drawings by status" summary={drawingSummary(data.drawings)} chart={<DrawingStatusChart rows={data.drawings} />} table={<DrawingCountTable rows={data.drawings} />} />
+          </Col>
+          <Col xs={24} lg={14}>
+            <ChartCard
+              title="Drawings by discipline"
+              summary={`${data.drawings.length} discipline${data.drawings.length === 1 ? '' : 's'}; ${data.drawings
+                .map((r) => `${DOCUMENT_DISCIPLINE_LABELS[r.discipline]} ${r.counts.AFC} of ${r.total} AFC`)
+                .join(', ')}.`}
+              chart={<DrawingDisciplineChart rows={data.drawings} />}
+              table={<DrawingCountTable rows={data.drawings} />}
+            />
+          </Col>
+        </Row>
+      ) : null}
       <Card size="small" title={<CardTitle>By project</CardTitle>}>
         <Table<ProjectRow>
           rowKey="projectId"
@@ -87,8 +131,8 @@ function Body({ data }: { data: DesignDashboardDto }) {
             { title: 'With reviewer', key: 'review', align: 'right', width: 110, render: (_, r) => n(r.underReview, `/design-submissions?status=UNDER_REVIEW${scope(r.projectId)}`) },
             { title: 'Reply late', key: 'rlate', align: 'right', width: 100, render: (_, r) => n(r.reviewsLate, `/design-submissions?status=LATE${scope(r.projectId)}`) },
             { title: 'Comments', key: 'comments', align: 'right', width: 100, render: (_, r) => n(r.commentsToAnswer, `/design-submissions?toAnswer=true${scope(r.projectId)}`) },
-            { title: 'To recall', key: 'recall', align: 'right', width: 90, render: (_, r) => n(r.copiesToRecall, `/controlled-copies?state=TO_RECALL${scope(r.projectId)}`) },
-            { title: 'As-built due', key: 'asbuilt', align: 'right', width: 100, render: (_, r) => n(r.asBuiltDue, `/drawing-schedule?tab=as-built${scope(r.projectId)}`) },
+            { title: 'To withdraw', key: 'recall', align: 'right', width: 100, render: (_, r) => n(r.copiesToRecall, `/controlled-copies?state=TO_RECALL${scope(r.projectId)}`) },
+            { title: 'As-built due', key: 'asbuilt', align: 'right', width: 100, render: (_, r) => n(r.asBuiltDue, `/as-built?projectId=${r.projectId}`) },
             { title: 'Open RFIs', key: 'rfis', align: 'right', width: 90, render: (_, r) => n(r.rfisOpen, '/documents?tab=rfis') },
           ]}
         />
@@ -118,19 +162,19 @@ function Body({ data }: { data: DesignDashboardDto }) {
 }
 
 /**
- * The design dashboard: late drawings, approvals and comments, superseded copies on site, as-builts and
- * RFIs by project, and what each revision of the last 30 days changes.
+ * The drawings dashboard: late drawings, approvals and comments, superseded copies on site, as-builts and
+ * RFIs by project, the drawings by status and by discipline, and what each revision of the last 30 days changes.
  */
 export function DesignDashboardPage() {
   const [projectId, setProjectId] = useProjectScope();
   const { data, isLoading, error, refetch } = useDesignDashboard(projectId);
   return (
     <div className="page-container">
-      <PageHeader title="Design dashboard" subtitle="Drawings late, approvals and comments, superseded copies on site and what new revisions change, by project." />
+      <PageHeader title="Dashboard" subtitle="What is late or open on each project, and what new revisions change." />
       <Flex gap={tk.space[3]} wrap align="center" style={{ marginBottom: tk.space[4] }}>
         <ProjectSelect value={projectId} onChange={(v) => setProjectId(v)} aria-label="Project" placeholder="All projects" style={{ minWidth: 240, maxWidth: '100%' }} />
       </Flex>
-      {isLoading ? <PageSkeleton shape="home" header={false} /> : error || !data ? <QueryError error={error} onRetry={() => refetch()} /> : <Body data={data} />}
+      {isLoading ? <PageSkeleton shape="home" header={false} /> : error || !data ? <QueryError error={error} onRetry={() => refetch()} /> : <Body data={data} projectId={projectId} />}
     </div>
   );
 }

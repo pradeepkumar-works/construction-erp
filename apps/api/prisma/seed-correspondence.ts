@@ -128,3 +128,29 @@ export async function seedCorrespondence(prisma: PrismaClient, organizationId: s
     await prisma.letterSeriesCounter.create({ data: { seriesId, fy: c.fy, last: c.n } });
   }
 }
+
+/**
+ * Item 182: what each demo office in the address book is (client, consultant, bank, authority), and a third-party
+ * inspection agency's office where there is none. Writes only kinds that are missing, so it runs on the live demo too.
+ */
+export async function seedLetterPartyKinds(prisma: PrismaClient, organizationId: string) {
+  const contacts = await prisma.letterContact.findMany({ where: { organizationId, kind: null }, select: { id: true, name: true, organisation: true, office: true, clientId: true } });
+  const kindOf = (c: (typeof contacts)[number]) => {
+    const words = `${c.name} ${c.office ?? ''} ${c.organisation ?? ''}`.toLowerCase();
+    if (c.clientId) return 'client';
+    if (/bank|insurance/.test(words)) return 'bank-and-insurer';
+    if (/authority engineer|consultant|associates|pmc/.test(words)) return 'consultant';
+    if (/inspection|tpia|tpi\b/.test(words)) return 'third-party-inspection';
+    if (/department|commissioner|board|municipal|collector|tahsildar/.test(words)) return 'government-authority';
+    return null;
+  };
+  for (const c of contacts) {
+    const kind = kindOf(c);
+    if (kind) await prisma.letterContact.update({ where: { id: c.id }, data: { kind } });
+  }
+  if (!(await prisma.letterContact.count({ where: { organizationId } }))) return;
+  if (await prisma.letterContact.count({ where: { organizationId, kind: 'third-party-inspection' } })) return;
+  await prisma.letterContact.create({
+    data: { organizationId, name: 'The Team Leader', office: 'Third-party inspection, Bhubaneswar', organisation: 'Quality Assurance Services', address: 'Saheed Nagar, Bhubaneswar 751007', kind: 'third-party-inspection' },
+  });
+}

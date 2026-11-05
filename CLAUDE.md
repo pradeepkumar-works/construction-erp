@@ -173,9 +173,10 @@ and the pre-delivery checklist.
   read through `MastersService.entriesFor`, never a fixed array of a form's own. Keep `src/scripts/masters-test.ts` passing.
 - Correspondence (item 136, `apps/api/src/correspondence`, ARCHITECTURE "Correspondence"): a letter's number comes only from
   its series through `formatLetterNo` (`@erp/shared/correspondence.ts`), an outward letter waits for its signatory only by
-  `letterNeedsApproval`, and for the head office seal (item 169) only by `letterNeedsSeal` (`letterRulesProblem` keeps the
-  second rule within the first), and a received letter comes in only through `CorrespondenceService.recordInward` (the form
-  and the email inbox). Keep `src/scripts/correspondence-test.ts` passing.
+  `letterNeedsApproval`, and for the head office seal (item 169) only by `letterNeedsSeal`, both over its category's gate
+  `letterGate` (item 179: the company's `letterGates`, the two rules for a category it has not set), and a received letter
+  comes in only through `CorrespondenceService.recordInward` (the form and the email inbox). The outward register's sign-off
+  is `letterSignOff` and a letter's state in words `letterStatusLabel`. Keep `src/scripts/correspondence-test.ts` passing.
 - QA/QC (item 137, `apps/api/src/qa`, ARCHITECTURE "QA/QC"): test types are `STANDARD_TEST_TYPES` overlaid by the company's
   rows by code (`testTypesOf`), never seeded; what a quality plan line owes is only `testsOwed` (IS 456 sampling by
   `is456Samples`), over approved DPR lines and receipts; a pour's card is an `Inspection` made through
@@ -289,8 +290,9 @@ and the pre-delivery checklist.
   arithmetic is pure in `@erp/shared/dpr-lines.ts`; keep `src/scripts/dpr-lines-test.ts` passing.
 - Pipe network (item 126, ARCHITECTURE "Pipe network"): a pipe zone or main's nodes and segments come in only through the
   import (matched by code, previewed, never deleting a pipe or cutting it below its work); a DPR line of a length stage names
-  its segment and is held to its length (`segmentCapProblem` over `heldOnSegments`); segment figures, readers and the import
-  plan are pure in `@erp/shared/pipe-network.ts`. Keep `src/scripts/pipe-network-test.ts` passing.
+  its segment and is held to its length (`segmentCapProblem` over `heldOnSegments`); segment figures, readers, writers
+  (`networkKml`, `networkSheets`) and the import plan are pure in `@erp/shared/pipe-network.ts`, and the map editor's edits
+  (`splitPipe`, `moveNode`, `addPipe`) in `pipe-network-edit.ts`, saved only through the import. Keep `src/scripts/pipe-network-test.ts` passing.
 - Stock against the DPR (item 128, ARCHITECTURE "Stock against the DPR"): an activity's own norms (`ActivityMaterialNorm`) come
   before its BOQ item's (`normSource`), and the DPR form reads the same; an issue or return names its component
   (`StockEntry.workElementId`, through `StockService.placeOf`). The Structure, Pipe, Kits and Exceptions figures are pure in
@@ -500,7 +502,9 @@ and the pre-delivery checklist.
   typed dates in the common formats; ESLint refuses antd's). Keep `src/scripts/validation-test.ts` passing.
 - Item names (ARCHITECTURE "Stock", One name per item): a request or order line's item is `ItemPicker` on the web and is saved
   through `asMasterNames` (`apps/api/src/stock/item-master.ts`); anything that finds an item by a typed name uses `masterItemFor`
-  (`@erp/shared/items.ts`, aliases included), never a name match of its own. Keep `src/scripts/items-test.ts` passing.
+  (`@erp/shared/items.ts`, aliases included), never a name match of its own. Keep `src/scripts/items-test.ts` passing. An item's code is
+  written only by `itemCodeOf` and held by `itemCodeProblem`; a fuel slip's pump readings are checked only by `pumpReadingProblem`
+  (`@erp/shared/fleet.ts`, keep `src/scripts/fuel-slips-test.ts` passing).
 - Central store (item 106, ARCHITECTURE "Stock"): a store or yard is a project of type `STORE`; its stock is the normal
   stock service. Sites see store stock through `ProjectAccessService.stockSourceWhere`, never a role check of their own;
   anything per site that a store has no part in (DPRs, progress) filters `type: { not: 'STORE' }`. Pages at `/stores`.

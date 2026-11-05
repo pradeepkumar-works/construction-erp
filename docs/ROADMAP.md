@@ -974,6 +974,55 @@ real tenders: gap analysis"; Pradeep chose items 1 to 3 of it, in order.
      "Official progress reports". Not yet: staff qualifications, the lab's equipment list, the safety yes/no checklist,
      the environment and pre-construction checklist, and the phone.
 
+## From a business user's materials and procurement screens (items 175 to 178)
+
+Asked by Pradeep on 4 Nov 2026: a business user sketched the stores and purchase screens they expect (19 screens: the
+stores overview, item master, stock on hand, transfers, returns, the fuel log, and purchase from the indent through
+quotations, the order, the check on arrival and the bill). The analysis is the Claude Doc "Materials and procurement
+mockups: screen by screen"; twelve of the screens are in Nirmaan already. These four were thin, built as one round. Left
+out on purpose: a condition on returns (damaged material is the contractor's wastage), a gap check between pump readings
+and a second top bar to switch depots.
+
+175. ~~**Purchase and materials overviews that answer the round** (S).~~ Done: the Purchases overview counts what waits
+     at each step of the round, from requests waiting for quotations and choices to approve through orders to receive,
+     late deliveries and material to check on arrival to receipts not yet billed; Materials leads with the stock's value
+     with the part at central stores and what is on the road between stores. The Purchase and Store departments pick
+     from them. ARCHITECTURE "Department screens", "Stock".
+176. ~~**Item code and standard, and stock value** (S).~~ Done: an item in the master has an optional code (capitals,
+     unique in the company) and the standard it is bought to (IS 1489, Fe 500D); search finds them, Stock on hand shows
+     the code and, to those who see stock value, each line's value with the total, in Excel too. ARCHITECTURE "Stock".
+177. ~~**Returns from a subcontractor** (S).~~ Done: a return from site can name the work order whose material comes
+     back; it is held to what was issued on that order net of earlier returns, and the subcontractor's next bill
+     credits it against the material recovered. ARCHITECTURE "A subcontractor's material".
+178. ~~**Pump readings and fuel by kind of machine** (S).~~ Done: a fuel slip takes the dispenser's start and end
+     readings (the start from the last slip at the site, the litres from the two, held within half a litre), on the web
+     and the phone; the Fuel tab shows each machine's kind and whether it is hired, the pump readings, and the litres by
+     kind of machine for the period. ARCHITECTURE "Fuel and fleet use".
+
+## From a business user's correspondence screens (items 179 to 182)
+
+Asked by Pradeep on 5 Nov 2026: a business user sketched the correspondence desk they expect (five screens: the overview,
+the inward register, the outward register, the approvals desk for the project manager's signature and head office's seal,
+and the masters). The analysis is "Correspondence mockups, screen by screen" in the project files
+(`correspondence-mockups/analysis.md`); the overview, both registers, the two-level approval and the masters were in
+Nirmaan already (item 136, item 169). These four were thin, built as one round. Left out on purpose: the role switcher
+(a demo device: each person signs in as themselves), a combined audit log (each letter keeps its own History, and the
+registers sort newest first) and a second header for the vertical (the header has one).
+
+179. ~~**Approval per letter category** (S).~~ Done: Numbering and approval sets each category, and letters with no
+     category, to numbered when saved, its signatory, or its signatory and then head office's seal; a category the company
+     has not set follows the two company-wide rules it started with (`letterGate`, `Organization.letterGates`).
+     ARCHITECTURE "Correspondence".
+180. ~~**Where an outward letter stands** (S).~~ Done: the outward register shows the signatory's step and head office's
+     (`letterSignOff`), then who signed and whether it is dispatched or delivered; a letter waiting for the seal says so
+     on its tag (`letterStatusLabel`), on the phone too; a Signature and seal view, and Letters to sign and seal in the
+     menu with the count of letters waiting for the user; the drafter is a column the register can show.
+181. ~~**The scanned copy from the inward register** (XS).~~ Done: a received letter with its scan kept opens it from the
+     row.
+182. ~~**Kinds of office** (S).~~ Done: an address book entry is a client, consultant, third-party inspection agency,
+     government authority, subcontractor, supplier, bank or other (the `letterParty` master, Correspondence › Masters ›
+     Kinds of office); the address book shows and filters it, and both registers filter letters by it.
+
 ## Definition of done for every item
 Prisma migration, API endpoints with Swagger, shared types, web screen, mobile screen where site
 staff use it, seed data updated, `pnpm typecheck` + `next build` + mobile `tsc` clean, smoke test

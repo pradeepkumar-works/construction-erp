@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { api, apiToken, chooseOption, formPanel, signIn } from './helpers';
+import { api, apiToken, chooseOption, formPanel, localToday, signIn } from './helpers';
 
 type Letter = {
   id: string;
@@ -75,4 +75,52 @@ test('a letter received is numbered, answered with a notice the project manager 
   const se = await apiToken('engineer@demo.com');
   await expect(api(se, '/letters')).rejects.toThrow(/403/);
   for (const l of [sent, answered]) await api(docs, `/letters/${l.id}`, { method: 'DELETE' });
+});
+
+/**
+ * Approval per category (item 179): the document controller sets Variation letters to their signatory and then the seal
+ * at head office; the project manager's signature leaves the letter waiting for the seal (the register says so and where
+ * it stands), and only a director's seal numbers it.
+ */
+test('a category set to signature and seal waits for head office after the project manager signs', async ({ page, browser }) => {
+  const docs = await apiToken('docs@demo.com');
+  const subject = `E2E variation ${Date.now()}`;
+  await signIn(page, 'docs@demo.com');
+  await page.goto('/correspondence/numbering');
+  const row = page.getByRole('listitem').filter({ hasText: /^Variation/ });
+  await row.getByText('Signatory and seal', { exact: true }).click();
+  await expect(page.getByText('Variation: signatory, then head office seal')).toBeVisible();
+  let id: string | null = null;
+  try {
+    const projectId = (await api<{ items: { projectId: string }[] }>(docs, '/letters?direction=OUT&pageSize=1')).items[0].projectId;
+    const signer = (await api<Person[]>(docs, `/letters/people?projectId=${projectId}`)).find((p) => p.canSign && p.onProject)!;
+    const draft = await api<Letter & { gate: string }>(docs, '/letters', {
+      method: 'POST',
+      body: { direction: 'OUT', projectId, letterDate: localToday(), party: 'The Executive Engineer, R&B Division, Khordha', subject, category: 'variation', body: 'We submit the extra item for the culvert apron as under.', signatoryId: signer.id },
+    });
+    id = draft.id;
+    expect(draft.gate).toBe('SEAL');
+    await expect(api(docs, `/letters/${id}/issue`, { method: 'POST' })).rejects.toThrow(/400/);
+    await api(docs, `/letters/${id}/send-for-approval`, { method: 'POST', body: {} });
+
+    const pm = await browser.newPage();
+    await signIn(pm, 'pm@demo.com');
+    await pm.goto(`/correspondence/${id}`);
+    await pm.getByRole('button', { name: 'Sign and send to head office' }).click();
+    await expect(pm.getByText('Signed; sent to head office for the seal')).toBeVisible();
+    expect(await api<Letter>(docs, `/letters/${id}`)).toMatchObject({ status: 'AWAITING_APPROVAL', letterNo: null });
+
+    await page.goto('/correspondence/outward?status=AWAITING_APPROVAL');
+    const line = page.getByRole('row').filter({ hasText: subject });
+    await expect(line.getByText('Waiting for the seal')).toBeVisible();
+    await expect(line.getByText('Head office: Waiting')).toBeVisible();
+
+    const md = await apiToken('md@demo.com');
+    const sealed = await api<Letter>(md, `/letters/${id}/approve`, { method: 'POST' });
+    expect(sealed.status).toBe('ISSUED');
+    expect(sealed.letterNo).toMatch(/^RD01\/OUT\/\d\d-\d\d\/\d{3}$/);
+  } finally {
+    await api(docs, '/letters/settings/gate', { method: 'PUT', body: { category: 'variation', gate: 'NONE' } });
+    if (id) await api(docs, `/letters/${id}`, { method: 'DELETE' });
+  }
 });
