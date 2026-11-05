@@ -5,7 +5,7 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { Card, Col, Empty, Flex, Grid, Progress, Row, Skeleton, Typography } from 'antd';
 import type { CompanyDashboard, HomeTrendsDto } from '@erp/shared';
-import { figure, isCompanyWide, type FigureInput } from '@erp/shared';
+import { figure, seesEveryProject, type FigureInput } from '@erp/shared';
 import { useCompanyDashboard, useHomeTrends, useMyWork } from '@/lib/queries';
 import { formatINRCompact, formatPct, toNumber, todayDate } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -28,7 +28,7 @@ const CostByHeadChart = dynamic(() => import('@/components/home/charts').then((m
 export default function MyWorkPage() {
   const { user } = useAuth();
   const { data, isPending, error, refetch } = useCompanyDashboard();
-  const companyWide = !!user && isCompanyWide(user.roleKey);
+  const companyWide = !!user && seesEveryProject(user);
 
   const layout = homeLayout(user?.roleKey ?? 'SITE_ENGINEER');
   const myWork = useMyWork();

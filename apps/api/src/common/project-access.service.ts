@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { APPROVER_ROLES, type RoleKey, type SubmissionType, COMPANY_WIDE_ROLES, isCompanyWide, canAdjustStock, canApprove, canKeepStock, canLogMachinery, canManageEquipment, canManageStore, canMeasure, canRaiseRisk, canRecordAttendance, canRequestInspection, canSubmitExpense, canRecordTest, canRaiseNcr, canCheckGrn, canManageDocuments, canViewLetters, canManageStaff, canMarkStaff, canViewEmployeePrivate, canViewMessageLog, canReportSafety, canManageSafety, canIssuePpe, canManageMaintenance, canFreezeBaseline, canManageWorkers, canViewWorkers, canReportDefect, canCloseDefect, canManageHandover, CLIENT_GUEST_ROLES, isClientGuest, isGuest, isSupplier, canManageSupplierLogins, canCheckSupplierInvoices, canApproveSupplierChange } from '@erp/shared';
+import { APPROVER_ROLES, type RoleKey, type SubmissionType, COMPANY_WIDE_ROLES, GUEST_ROLES, seesEveryProject, canAdjustStock, canApprove, canKeepStock, canLogMachinery, canManageEquipment, canManageStore, canMeasure, canRaiseRisk, canRecordAttendance, canRequestInspection, canSubmitExpense, canRecordTest, canRaiseNcr, canCheckGrn, canManageDocuments, canViewLetters, canManageStaff, canMarkStaff, canViewEmployeePrivate, canViewMessageLog, canReportSafety, canManageSafety, canIssuePpe, canManageMaintenance, canFreezeBaseline, canManageWorkers, canViewWorkers, canReportDefect, canCloseDefect, canManageHandover, CLIENT_GUEST_ROLES, isClientGuest, isGuest, isSupplier, canManageSupplierLogins, canCheckSupplierInvoices, canApproveSupplierChange } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { ApprovalRightsService } from './approval-rights.service';
 import { RequestUser } from './current-user';
@@ -15,8 +15,8 @@ export class ProjectAccessService {
   constructor(private prisma: PrismaService, private rights: ApprovalRightsService) {}
 
   /** Prisma where-clause restricting projects to those visible to the user. */
-  projectWhere(user: Pick<RequestUser, 'id' | 'organizationId' | 'roleKey'>): Prisma.ProjectWhereInput {
-    if (isCompanyWide(user.roleKey)) return { organizationId: user.organizationId };
+  projectWhere(user: Pick<RequestUser, 'id' | 'organizationId' | 'roleKey' | 'seesAllProjects'>): Prisma.ProjectWhereInput {
+    if (seesEveryProject(user)) return { organizationId: user.organizationId };
     return {
       organizationId: user.organizationId,
       OR: [{ projectManagerId: user.id }, { members: { some: { userId: user.id } } }],
@@ -34,7 +34,7 @@ export class ProjectAccessService {
 
   /** Where-clause for submissions (progress/DPR/MR) visible to the user. */
   submissionWhere(user: RequestUser): { organizationId: string; project?: Prisma.ProjectWhereInput } {
-    if (isCompanyWide(user.roleKey)) return { organizationId: user.organizationId };
+    if (seesEveryProject(user)) return { organizationId: user.organizationId };
     return { organizationId: user.organizationId, project: this.projectWhere(user) };
   }
 
@@ -44,7 +44,7 @@ export class ProjectAccessService {
     return project;
   }
 
-  async userSeesProject(u: Pick<RequestUser, 'id' | 'organizationId' | 'roleKey'>, projectId: string) {
+  async userSeesProject(u: Pick<RequestUser, 'id' | 'organizationId' | 'roleKey' | 'seesAllProjects'>, projectId: string) {
     return (await this.prisma.project.count({ where: { id: projectId, ...this.projectWhere(u) } })) > 0;
   }
 
@@ -52,6 +52,7 @@ export class ProjectAccessService {
     return {
       OR: [
         { role: { key: { in: COMPANY_WIDE_ROLES } } },
+        { seesAllProjects: true, role: { key: { notIn: GUEST_ROLES } } },
         { managedProjects: { some: { id: projectId } } },
         { memberships: { some: { projectId } } },
       ],
@@ -356,7 +357,7 @@ export class ProjectAccessService {
 
   /** Job cards a user sees: company-wide roles all; others those at their projects, plus machines in the yard for maintenance managers. */
   maintenanceWhere(user: RequestUser): Prisma.MaintenanceJobWhereInput {
-    if (isCompanyWide(user.roleKey)) return { organizationId: user.organizationId };
+    if (seesEveryProject(user)) return { organizationId: user.organizationId };
     return {
       organizationId: user.organizationId,
       OR: [{ project: this.projectWhere(user) }, ...(canManageMaintenance(user.roleKey) ? [{ projectId: null }] : [])],

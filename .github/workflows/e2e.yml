@@ -150,6 +150,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/small-fixes-test.js
+      - name: A head office manager given every project sees them all; guests never do
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/head-office-reach-test.js
       - name: A headline figure has one name, leads only when it needs action, and every strip shares one money unit
         if: matrix.suite == 'flows'
         working-directory: apps/api

@@ -23,6 +23,10 @@ export class CreateUserDto {
   @ApiPropertyOptional() @IsOptional() @IsString() phone?: string;
   @ApiProperty({ enum: ROLE_KEYS }) @IsIn(ROLE_KEYS as unknown as string[]) roleKey: RoleKey;
   @ApiPropertyOptional({ description: 'Leave out to invite the user by email / link instead' }) @IsOptional() @IsString() @MinLength(MIN_PASSWORD_LENGTH) @MaxLength(100) password?: string;
+  @ApiPropertyOptional({ description: 'A head office manager who sees every project without joining each team (not for company-wide roles or guests)' })
+  @IsOptional()
+  @IsBoolean()
+  seesAllProjects?: boolean;
   @ApiPropertyOptional({ type: [String], description: 'Projects whose team the new user joins' })
   @IsOptional()
   @IsArray()

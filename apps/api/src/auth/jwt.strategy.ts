@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { modulesOffFor, type RoleKey } from '@erp/shared';
+import { mayGiveEveryProject, modulesOffFor, type RoleKey } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { setTenant, withoutTenant } from '../prisma/tenant-context';
 import { isPlatformAdmin } from '../common/platform-admin';
@@ -40,6 +40,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         email: true,
         fullName: true,
         vendorId: true,
+        seesAllProjects: true,
         login: { select: { tokensValidAfter: true } },
         role: { select: { key: true } },
         organization: { select: { code: true, trialEndsAt: true, paidUntil: true, modulesOff: true, moduleTier: true } },
@@ -62,6 +63,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       roleKey: user.role.key as RoleKey,
       email: user.email,
       fullName: user.fullName,
+      ...(user.seesAllProjects && mayGiveEveryProject(user.role.key as RoleKey) ? { seesAllProjects: true } : {}),
       ...(user.vendorId ? { vendorId: user.vendorId } : {}),
       ...(readOnly ? { billingReadOnly: true } : {}),
       ...(off.length ? { modulesOff: off } : {}),

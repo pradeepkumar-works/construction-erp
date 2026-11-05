@@ -5,7 +5,7 @@ import {
   MAINTENANCE_KIND_LABELS,
   canManageMaintenance,
   expiryState,
-  isCompanyWide,
+  seesEveryProject,
   type DriverDto,
   type EquipmentDocumentDto,
   type MaintenanceJobDto,
@@ -339,7 +339,7 @@ export class MaintenanceService {
   /** Machines a user's summary covers: all for company-wide roles; others the machines at their projects (and the yard for maintenance managers). */
   private equipmentWhere(user: RequestUser, projectId?: string): Prisma.EquipmentWhereInput {
     const base: Prisma.EquipmentWhereInput = { organizationId: user.organizationId, ...(projectId ? { projectId } : {}) };
-    if (isCompanyWide(user.roleKey)) return base;
+    if (seesEveryProject(user)) return base;
     return { ...base, OR: [{ project: this.access.projectWhere(user) }, ...(canManageMaintenance(user.roleKey) ? [{ projectId: null }] : [])] };
   }
 

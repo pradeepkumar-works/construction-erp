@@ -1172,6 +1172,9 @@ model User {
   organization   Organization @relation(fields: [organizationId], references: [id])
   roleId         String
   role           Role         @relation(fields: [roleId], references: [id])
+  /// A head office manager given every project by an admin (QA/QC, stores, planning, technical): sees them as a
+  /// company-wide role does, without joining each team. Ignored for company-wide roles, guests and suppliers.
+  seesAllProjects Boolean     @default(false)
   /// The person's sign-in (group companies): the same login has a user in each company of a group they work in.
   /// The password and the sessions live on the login; `email` is always the login's.
   loginId        String

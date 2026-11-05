@@ -47,6 +47,10 @@ shapes of every API response, so web, mobile and API agree on one contract.
 
 - Company-wide roles (Admin, Management, Procurement, Accounts, HR) see all projects.
 - Everyone else sees projects they manage or are a member of (`ProjectMember`).
+- A head office manager outside those roles (QA/QC, stores, planning, technical) can be given every project by an admin
+  (`User.seesAllProjects`, the user form's Every project switch), so they oversee every site's staff without joining
+  each team: `seesEveryProject` (`@erp/shared/permissions.ts`) is what `ProjectAccessService` reads, and
+  `seesProjectWhere` counts them among a project's people. Guests and suppliers never get it (`mayGiveEveryProject`).
 - Approvers come from the organisation's approval matrix (`ApprovalRule`: role, submission type, optional
   rupee limit), limited to projects they can see. Without rules the fixed rule applies (Admin, Management
   and Project Manager approve everything). Admin always approves everything. `ApprovalRightsService`

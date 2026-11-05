@@ -6,6 +6,8 @@ export interface RequestUser {
   id: string;
   organizationId: string;
   roleKey: RoleKey;
+  /** A head office manager given every project (`seesEveryProject`) */
+  seesAllProjects?: boolean;
   email: string;
   fullName: string;
   /** A read-only Nirmaan support session: `id` is the staff member, acting as an admin of `organizationId` */

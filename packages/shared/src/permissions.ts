@@ -124,6 +124,17 @@ export const GETTING_STARTED_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT'];
 export const COMPANY_TODAY_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'ACCOUNTS_MANAGER', 'PROJECT_MANAGER'];
 
 export const isCompanyWide = (role: RoleKey) => COMPANY_WIDE_ROLES.includes(role);
+
+/**
+ * Sees every project of the company: a company-wide role, or a head office manager an admin gave every project
+ * (`User.seesAllProjects`: a QA/QC, stores, planning or technical manager overseeing every site's staff). Never a
+ * guest or a supplier, whatever the switch says.
+ */
+export const seesEveryProject = (user: { roleKey: RoleKey; seesAllProjects?: boolean | null }) =>
+  isCompanyWide(user.roleKey) || (!!user.seesAllProjects && !isGuest(user.roleKey));
+
+/** May an admin give this role every project? Company-wide roles have them already; guests never. */
+export const mayGiveEveryProject = (role: RoleKey) => !isCompanyWide(role) && !isGuest(role);
 export const isDirector = (role: RoleKey) => role === 'ADMIN' || role === 'MANAGEMENT';
 export const canApprove = (role: RoleKey) => APPROVER_ROLES.includes(role);
 /** Issue an official progress report to the client: it takes a revision and is kept as issued. */

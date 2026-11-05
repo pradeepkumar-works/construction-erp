@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
-import { BILLING_YEAR_CHARGED_MONTHS, PRODUCT_NAME, aiRoleAllowed, ROLE_KEYS, ROLE_LABELS, orgCodeFrom, modulesOffFor, isDefaultNav, navSettingsFrom, type NavLook, type CompanyKind, type ModuleTier, type AuthOptionsDto, type AuthUser, type LoginResponse, type PasswordTokenInfoDto, type RoleKey } from '@erp/shared';
+import { BILLING_YEAR_CHARGED_MONTHS, PRODUCT_NAME, aiRoleAllowed, mayGiveEveryProject, ROLE_KEYS, ROLE_LABELS, orgCodeFrom, modulesOffFor, isDefaultNav, navSettingsFrom, type NavLook, type CompanyKind, type ModuleTier, type AuthOptionsDto, type AuthUser, type LoginResponse, type PasswordTokenInfoDto, type RoleKey } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { withoutTenant } from '../prisma/tenant-context';
 import { pickPlace } from '../group/group-rules';
@@ -154,7 +154,7 @@ export class AuthService {
     return { ok: true, accessToken: await this.jwt.signAsync({ sub: user.id, org: user.organizationId }) };
   }
 
-  private async toAuthUser(user: { id: string; loginId: string; email: string; fullName: string; phone: string | null; organizationId: string; vendorId: string | null; navLook: NavLook | null; role: { key: string; name: string }; organization: BillingOrg & ModulesOrg & NavOrg & GroupOrg & { name: string; aiEnabled: boolean; aiRoles: string[] } }): Promise<AuthUser> {
+  private async toAuthUser(user: { id: string; loginId: string; email: string; fullName: string; phone: string | null; organizationId: string; vendorId: string | null; seesAllProjects: boolean; navLook: NavLook | null; role: { key: string; name: string }; organization: BillingOrg & ModulesOrg & NavOrg & GroupOrg & { name: string; aiEnabled: boolean; aiRoles: string[] } }): Promise<AuthUser> {
     return {
       id: user.id,
       email: user.email,
@@ -165,6 +165,7 @@ export class AuthService {
       organizationId: user.organizationId,
       organizationName: user.organization.name,
       approvalRights: await this.rights.rightsFor(user.organizationId, user.role.key as RoleKey),
+      ...(user.seesAllProjects && mayGiveEveryProject(user.role.key as RoleKey) ? { seesAllProjects: true } : {}),
       ...(isPlatformAdmin(user.email) ? { platformAdmin: true } : {}),
       ...billingOf(user.organization),
       ...modulesOf(user.organization),
