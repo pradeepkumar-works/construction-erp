@@ -37,6 +37,10 @@ test('the book offers the approved days, and a sheet starts from them', async ({
     method: 'POST',
     body: { name: 'Earthwork in embankment', unit: 'Cum', plannedQty: '18500', boqItemId: item.id },
   });
+  // The site engineer files the days and the owner approves them: nobody approves their own entry.
+  const engineerEmail = `measure-site-${stamp}@e2e.test`;
+  await api(owner, '/users', { method: 'POST', body: { email: engineerEmail, fullName: 'Ravi Site', roleKey: 'SITE_ENGINEER', password: PASSWORD, projectIds: [project.id] } });
+  const engineer = await apiToken(engineerEmail);
   // Three days approved on site, in the same reach so the sheet knows where it was measured.
   const days: [string, string][] = [
     ['2026-10-05', '120'],
@@ -44,7 +48,7 @@ test('the book offers the approved days, and a sheet starts from them', async ({
     ['2026-10-07', '100'],
   ];
   const approvedDay = async (date: string, quantity: string, location: string) => {
-    const dpr = await api<Progress>(owner, '/dpr', {
+    const dpr = await api<Progress>(engineer, '/dpr', {
       method: 'POST',
       body: { projectId: project.id, date, lines: [{ activityId: activity.id, quantity, location }] },
     });
