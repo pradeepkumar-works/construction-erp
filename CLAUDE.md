@@ -290,8 +290,9 @@ and the pre-delivery checklist.
   arithmetic is pure in `@erp/shared/dpr-lines.ts`; keep `src/scripts/dpr-lines-test.ts` passing.
 - Pipe network (item 126, ARCHITECTURE "Pipe network"): a pipe zone or main's nodes and segments come in only through the
   import (matched by code, previewed, never deleting a pipe or cutting it below its work); a DPR line of a length stage names
-  its segment and is held to its length (`segmentCapProblem` over `heldOnSegments`); segment figures, readers and the import
-  plan are pure in `@erp/shared/pipe-network.ts`. Keep `src/scripts/pipe-network-test.ts` passing.
+  its segment and is held to its length (`segmentCapProblem` over `heldOnSegments`); segment figures, readers, writers
+  (`networkKml`, `networkSheets`) and the import plan are pure in `@erp/shared/pipe-network.ts`, and the map editor's edits
+  (`splitPipe`, `moveNode`, `addPipe`) in `pipe-network-edit.ts`, saved only through the import. Keep `src/scripts/pipe-network-test.ts` passing.
 - Stock against the DPR (item 128, ARCHITECTURE "Stock against the DPR"): an activity's own norms (`ActivityMaterialNorm`) come
   before its BOQ item's (`normSource`), and the DPR form reads the same; an issue or return names its component
   (`StockEntry.workElementId`, through `StockService.placeOf`). The Structure, Pipe, Kits and Exceptions figures are pure in

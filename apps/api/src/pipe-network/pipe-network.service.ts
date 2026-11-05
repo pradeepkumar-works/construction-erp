@@ -14,6 +14,7 @@ import {
   zoneTable,
   type PipeNetworkDto,
   type PipeNetworkImportResultDto,
+  type PipeRoute,
   type PipeStage,
   type PipeZoneDto,
   type SegmentStage,
@@ -26,7 +27,10 @@ import { dec } from '../common/serialize';
 import { PipeNetworkImportDto, UpdatePipeSegmentDto } from './pipe-network.dto';
 
 type Db = PrismaService | Prisma.TransactionClient;
+/** A saved route, read back as [longitude, latitude] pairs. */
+const routeOf = (v: Prisma.JsonValue | null): PipeRoute | null => (Array.isArray(v) && v.length ? (v as PipeRoute) : null);
 const round3 = (n: number) => Math.round(n * 1000) / 1000;
+const round7 = (n: number) => Math.round(n * 1e7) / 1e7;
 
 /** A zone's or main's leaf activities and the pipe stage each stands for. */
 export async function stageActivities(db: Db, where: Prisma.WorkElementWhereInput) {
@@ -136,6 +140,7 @@ export class PipeNetworkService {
           scope: s.scope,
           surface: s.surface,
           crossing: s.crossing,
+          path: routeOf(s.path),
           status: segmentStatus(lengthM, { done: s.scope === 'PROPOSED' ? (done.get(s.id) ?? {}) : {}, tested: s.scope === 'PROPOSED' && testedIds.has(s.id) }),
           waiting: pending.get(s.id) ?? {},
         };
@@ -179,7 +184,7 @@ export class PipeNetworkService {
       projectId,
       zones: zoneDtos,
       nodes: nodes
-        .map((n) => ({ id: n.id, zoneId: n.zoneId, code: n.code, kind: n.kind, groundLevel: dec(n.groundLevel), x: n.x, y: n.y, chainage: n.chainage, fixed: fixedIds.has(n.id) }))
+        .map((n) => ({ id: n.id, zoneId: n.zoneId, code: n.code, kind: n.kind, groundLevel: dec(n.groundLevel), x: n.x, y: n.y, chainage: n.chainage, lat: n.lat, lon: n.lon, fixed: fixedIds.has(n.id) }))
         .sort((a, b) => comparePipeCodes(a.code, b.code)),
       segments: segmentDtos,
       canEdit,
@@ -215,8 +220,8 @@ export class PipeNetworkService {
     }
     const plan = importPlan(
       {
-        nodes: nodes.filter((n) => n.zoneId === zone.id).map((n) => ({ code: n.code, kind: n.kind, groundLevel: n.groundLevel === null ? null : Number(n.groundLevel), x: n.x, y: n.y, chainage: n.chainage })),
-        pipes: mine.map((p) => ({ code: p.code, from: p.fromNode.code, to: p.toNode.code, lengthM: Number(p.lengthM), diameterMm: p.diameterMm, material: p.material, pipeClass: p.pipeClass, scope: p.scope, surface: p.surface, crossing: p.crossing, doneM: doneOf.get(p.id) ?? 0 })),
+        nodes: nodes.filter((n) => n.zoneId === zone.id).map((n) => ({ code: n.code, kind: n.kind, groundLevel: n.groundLevel === null ? null : Number(n.groundLevel), x: n.x, y: n.y, chainage: n.chainage, lat: n.lat, lon: n.lon })),
+        pipes: mine.map((p) => ({ code: p.code, from: p.fromNode.code, to: p.toNode.code, lengthM: Number(p.lengthM), diameterMm: p.diameterMm, material: p.material, pipeClass: p.pipeClass, scope: p.scope, surface: p.surface, crossing: p.crossing, path: routeOf(p.path), doneM: doneOf.get(p.id) ?? 0 })),
       },
       { nodes: file.nodes.filter((n) => !nodes.some((o) => o.code === n.code && o.zoneId !== zone.id)), pipes: file.pipes },
     );
@@ -229,7 +234,7 @@ export class PipeNetworkService {
       async (tx) => {
         const zoneOf = new Map(nodes.map((n) => [n.code, n.zoneId]));
         for (const n of file.nodes) {
-          const data = { kind: n.kind, groundLevel: n.groundLevel === null || n.groundLevel === undefined ? null : new Prisma.Decimal(n.groundLevel), x: n.x ?? null, y: n.y ?? null, chainage: n.chainage ?? null };
+          const data = { kind: n.kind, groundLevel: n.groundLevel === null || n.groundLevel === undefined ? null : new Prisma.Decimal(n.groundLevel), x: n.x ?? null, y: n.y ?? null, chainage: n.chainage ?? null, ...(n.lat !== undefined ? { lat: n.lat === null ? null : round7(n.lat) } : {}), ...(n.lon !== undefined ? { lon: n.lon === null ? null : round7(n.lon) } : {}) };
           const owner = zoneOf.get(n.code);
           if (owner && owner !== zone.id) continue; // a tank or junction of another zone, only referred to
           if (owner) await tx.pipeNode.update({ where: { projectId_code: { projectId, code: n.code } }, data });
@@ -247,6 +252,7 @@ export class PipeNetworkService {
             scope: p.scope,
             surface: p.surface ?? null,
             crossing: p.crossing ?? null,
+            ...(p.path !== undefined ? { path: p.path?.length ? (p.path as Prisma.InputJsonValue) : Prisma.DbNull } : {}),
             sortOrder: i,
           };
           await tx.pipeSegment.upsert({

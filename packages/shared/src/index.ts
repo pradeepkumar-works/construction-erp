@@ -100,6 +100,7 @@ export * from './dpr-form';
 export * from './type-updates';
 export * from './type-bundle';
 export * from './pipe-network';
+export * from './pipe-network-edit';
 export * from './om';
 export * from './management';
 export * from './project-progress';

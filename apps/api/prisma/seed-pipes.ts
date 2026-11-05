@@ -77,6 +77,19 @@ function townZone(total: number): { nodes: NodeSeed[]; pipes: PipeSeed[] } {
 /** How far along each length stage the zone is, as a share of its pipes from the tank outwards. */
 const STAGE_FRONT: Partial<Record<PipeStage, number>> = { TRENCH: 0.7, BEDDING: 0.68, LAY_JOINT: 0.62, BACKFILL: 0.5, TEST: 0.34, RESTORATION: 0.26, COMMISSIONING: 0 };
 
+/** The demo town's places on the earth, laid out in metres from a point near Jajpur, so the map editor and the KMZ download have a real map. */
+const placeOf = (x: number, y: number) => ({ lat: Math.round((20.85 + y / 111195) * 1e7) / 1e7, lon: Math.round((86.33 + x / (111195 * Math.cos((20.85 * Math.PI) / 180))) * 1e7) / 1e7 });
+
+/** A town network seeded before nodes kept their places gets them, once; nothing else changes. */
+export async function placeTownNetwork(prisma: PrismaClient, organizationId: string) {
+  const project = await prisma.project.findFirst({ where: { organizationId, code: 'WS-2026-04' }, select: { id: true } });
+  if (!project) return;
+  const zone = await prisma.workElement.findFirst({ where: { projectId: project.id, code: '9.2', elementType: 'PIPE_ZONE' }, select: { id: true } });
+  if (!zone) return;
+  const unplaced = await prisma.pipeNode.findMany({ where: { zoneId: zone.id, lat: null, x: { not: null }, y: { not: null } }, select: { id: true, x: true, y: true } });
+  for (const n of unplaced) await prisma.pipeNode.update({ where: { id: n.id }, data: placeOf(n.x!, n.y!) });
+}
+
 export async function seedTownNetwork(prisma: PrismaClient, organizationId: string) {
   const project = await prisma.project.findFirst({ where: { organizationId, code: 'WS-2026-04' }, select: { id: true } });
   if (!project) return;
@@ -106,7 +119,7 @@ export async function seedTownNetwork(prisma: PrismaClient, organizationId: stri
   const net = townZone(scope);
   const nodeId = new Map<string, string>();
   for (const n of net.nodes) {
-    const row = await prisma.pipeNode.create({ data: { organizationId, projectId: project.id, zoneId: zone.id, code: n.code, kind: n.kind, x: n.x, y: n.y, groundLevel: D((112 - n.x / 900 + n.y / 400).toFixed(2)) } });
+    const row = await prisma.pipeNode.create({ data: { organizationId, projectId: project.id, zoneId: zone.id, code: n.code, kind: n.kind, x: n.x, y: n.y, ...placeOf(n.x, n.y), groundLevel: D((112 - n.x / 900 + n.y / 400).toFixed(2)) } });
     nodeId.set(n.code, row.id);
   }
   const segs: { id: string; code: string; from: string; to: string; lengthM: number; diameterMm: number }[] = [];
