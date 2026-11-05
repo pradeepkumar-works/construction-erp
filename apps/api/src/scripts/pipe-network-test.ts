@@ -2,7 +2,7 @@
  * Pipe network tests. Reading an EPANET file (units, valves, pumps, coordinates) and a design office's sheet
  * with loose headers, the checks that stop an import, what a re-import changes (matched by code, never shortening a pipe
  * below its work), a segment's stages held to its length and weighted, the zone's pipe sheet, the pipes ready to
- * start, a Google Earth alignment cut at its named points and by chainage, the cap a DPR line meets, the DPR's pipeline summary, and a stage guessed from an activity's name.
+ * start, a Google Earth alignment cut at its named points and by chainage (keeping its places on the earth), a network downloaded as KML or sheets and read back as it was, the cap a DPR line meets, the DPR's pipeline summary, and a stage guessed from an activity's name.
  *
  *   node dist/scripts/pipe-network-test.js
  */
@@ -17,6 +17,8 @@ import {
   parseEpanetInp,
   parseKml,
   parseNetworkSheets,
+  networkKml,
+  networkSheets,
   pipelineSummary,
   segmentCapProblem,
   segmentLabel,
@@ -227,6 +229,52 @@ ${[['AV-01', 200], ['WO 2', 400], ['SC3', 600], ['BFV-1', 700], ['ESR Khordha', 
   assert.equal(none.pipes.length, 0);
   assert.match(none.notes[0], /no line/);
   assert.ok(networkProblems(none).includes('The file has no pipes'));
+});
+
+test('a Google Earth main keeps its places on the earth: each node its latitude and longitude, each pipe its bends', () => {
+  const bent = `<kml><Document><Placemark><name>RM 200 mm DI</name><LineString><coordinates>${north(0)} ${north(200)} ${north(300, 150)} ${north(450, 150)}</coordinates></LineString></Placemark>
+<Placemark><name>SV-1</name><Point><coordinates>${north(300, 150)}</coordinates></Point></Placemark></Document></kml>`;
+  const f = parseKml(bent, { diameterMm: 110, material: 'HDPE' });
+  assert.deepEqual(f.nodes.map((n) => n.code), ['0+000', 'SV-1', '0+530']);
+  assert.ok(Math.abs(f.nodes[0].lat! - 21) < 1e-6 && Math.abs(f.nodes[0].lon! - 78) < 1e-6, 'the start where it was drawn');
+  assert.ok(Math.abs(f.nodes[2].lat! - (21 + 450 / 111195)) < 1e-6, 'the end where it was drawn');
+  assert.equal(f.pipes[0].path!.length, 1, 'the first pipe keeps the bend at 200 m north');
+  assert.ok(Math.abs(f.pipes[0].path![0][1] - (21 + 200 / 111195)) < 1e-6);
+  assert.deepEqual(f.pipes[1].path, [], 'the second runs straight from the valve to the end');
+});
+
+test('a network downloaded as KML or sheets reads back pipe for pipe, with its codes, sizes, lengths and places', () => {
+  const f = parseKml(KML, { diameterMm: 150, material: 'HDPE' });
+  f.pipes[1] = { ...f.pipes[1], surface: 'Bitumen road', crossing: 'Nala', pipeClass: 'K7', lengthM: 201.5 };
+  f.nodes[0] = { ...f.nodes[0], groundLevel: 104.25 };
+  const { kml, left } = networkKml('Devgarh RWRM & branch', f);
+  assert.deepEqual(left, []);
+  assert.match(kml, /<name>Devgarh RWRM &amp; branch<\/name>/);
+  const back = parseKml(kml, { diameterMm: 63, material: 'PVC' });
+  const strip = (x: typeof f) => ({ nodes: x.nodes.map(({ x: _x, y: _y, ...n }) => n), pipes: x.pipes });
+  assert.deepEqual(strip(back), strip(f), 'every code, end, size, length, class, surface, kind, chainage and place as it was');
+  assert.deepEqual(importPlan({ nodes: f.nodes, pipes: f.pipes }, back), { nodes: { added: 0, changed: 0, unchanged: 5 }, pipes: { added: 0, changed: 0, unchanged: 4 }, notInFile: [], shortened: [] }, 'loading it again changes nothing');
+
+  const sheets = networkSheets(f);
+  const rows = (aoa: (string | number | null)[][]) => aoa.slice(1).map((r) => Object.fromEntries(aoa[0].map((h, i) => [h as string, r[i] ?? ''])));
+  const read = parseNetworkSheets(rows(sheets.nodes), rows(sheets.pipes));
+  assert.deepEqual(read.nodes, f.nodes, 'the sheets keep every node with its place');
+  assert.deepEqual(read.pipes.map((p) => ({ ...p, path: p.path ?? [] })), f.pipes, 'and every pipe with its route');
+
+  const noPlace = networkKml('Zone 4', parseEpanetInp(INP));
+  assert.ok(noPlace.left.length > 0 && !/<LineString>/.test(noPlace.kml), 'a network with no latitudes has nothing to put on the earth, and says which pipes');
+});
+
+test('a file that gives no place or route leaves the saved ones alone', () => {
+  const saved = { nodes: [{ code: 'J-1', kind: 'JUNCTION' as const, groundLevel: null, x: 0, y: 0, chainage: null, lat: 21, lon: 78 }], pipes: [] };
+  const plan = (n: Partial<(typeof saved.nodes)[number]>) => importPlan(saved, { nodes: [{ ...saved.nodes[0], ...n }], pipes: [] }).nodes;
+  assert.deepEqual(plan({ lat: undefined, lon: undefined }), { added: 0, changed: 0, unchanged: 1 });
+  assert.deepEqual(plan({ lat: 21.0001 }), { added: 0, changed: 1, unchanged: 0 });
+  const pipe = { code: 'P-1', from: 'J-1', to: 'J-2', lengthM: 10, diameterMm: 110, material: 'HDPE' as const, pipeClass: null, scope: 'PROPOSED' as const, surface: null, crossing: null };
+  const pipes = (p: object) => importPlan({ nodes: [], pipes: [{ ...pipe, path: [[78, 21]] as [number, number][] }] }, { nodes: [], pipes: [{ ...pipe, ...p }] }).pipes;
+  assert.deepEqual(pipes({}), { added: 0, changed: 0, unchanged: 1 }, 'no route given: kept');
+  assert.deepEqual(pipes({ path: [] }), { added: 0, changed: 1, unchanged: 0 }, 'a straight route given: changed');
+  assert.deepEqual(pipes({ surface: 'CC road' }), { added: 0, changed: 1, unchanged: 0 }, 'a surface given counts as a change');
 });
 
 test("a DPR line can't take a stage past the pipe's length, and says how much is left", () => {
