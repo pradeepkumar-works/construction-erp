@@ -43,27 +43,26 @@ export default function AuditLogPage() {
     columns: (sortOrderFor): ListColumn<AuditLogEntryDto>[] => {
       const sort = (key: AuditLogSortField) => ({ key, sorter: true, sortOrder: sortOrderFor(key) });
       return [
-        { title: 'When', dataIndex: 'createdAt', locked: true, width: 170, ...sort('createdAt'), render: (v: string) => <span translate="no">{formatDateTime(v)}</span> },
-        { title: 'Who', dataIndex: 'actorName', width: 200, ...sort('actor'), render: (v: string) => <span translate="no">{v}</span> },
-        { title: 'Kind', dataIndex: 'entityType', width: 190, ...sort('kind'), render: (v: string) => auditKindLabel(v) },
-        { title: 'Action', dataIndex: 'action', width: 190, ...sort('action'), render: (v: string) => auditActionLabel(v) },
+        { title: 'When', dataIndex: 'createdAt', locked: true, card: 'date', width: 170, ...sort('createdAt'), render: (v: string) => <span translate="no">{formatDateTime(v)}</span> },
+        { title: 'Who', dataIndex: 'actorName', card: 'meta', width: 200, ...sort('actor'), render: (v: string) => <span translate="no">{v}</span> },
+        { title: 'Kind', dataIndex: 'entityType', card: 'meta', width: 190, ...sort('kind'), render: (v: string) => auditKindLabel(v) },
+        { title: 'Action', dataIndex: 'action', card: 'title', width: 190, ...sort('action'), render: (v: string) => auditActionLabel(v) },
         {
           key: 'note',
           title: 'Note',
           dataIndex: 'note',
           render: (v: string | null, r) => {
             const href = linkOf(r);
+            const open = href ? (
+              <Link href={href} onClick={(e) => e.stopPropagation()}>
+                Open
+              </Link>
+            ) : null;
+            if (!v) return open ?? <span style={{ color: tk.color.text.muted }}>{NO_VALUE}</span>;
             return (
-              <span style={{ color: v ? undefined : tk.color.text.muted }}>
-                {v ?? NO_VALUE}
-                {href ? (
-                  <>
-                    {' '}
-                    <Link href={href} onClick={(e) => e.stopPropagation()}>
-                      Open
-                    </Link>
-                  </>
-                ) : null}
+              <span>
+                {v}
+                {open ? <> {open}</> : null}
               </span>
             );
           },

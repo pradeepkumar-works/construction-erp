@@ -4,7 +4,8 @@ import React from 'react';
 import { Progress, Table, Typography } from 'antd';
 import { tk } from '@/ds';
 import type { ComparativeStatementDto, PurchaseOrderDto, QuotationDto } from '@erp/shared';
-import { useComparative, useProjectBudget } from '@/lib/queries';
+import { poOverBudget } from '@erp/shared';
+import { useComparative } from '@/lib/queries';
 import { AppTag } from '@/components/common/AppTag';
 import { formatINR, toNumber } from '@/lib/format';
 import { Money } from '@/components/common/Money';
@@ -73,38 +74,35 @@ export function OrderQuotes({ order }: { order: PurchaseOrderDto }) {
   );
 }
 
-/** The project's material budget, what it has cost so far, and where this order takes it. */
+/**
+ * The project's material budget, the other approved orders against it and where this order takes it: the same figures
+ * as the order's budget check (`PurchaseOrderDto.budgetCheck`, `poBudgetCheck`), all before GST, so the page gives one answer.
+ */
 export function OrderBudget({ order }: { order: PurchaseOrderDto }) {
-  const { data, isLoading } = useProjectBudget(order.projectId);
-  const material = data?.heads.find((h) => h.head === 'material');
-  if (isLoading && !data) return <Typography.Text type="secondary">Reading the budget…</Typography.Text>;
-  if (!material || material.budget === null)
-    return <Typography.Text type="secondary">No material budget is set for this project, so there is nothing to hold this order against.</Typography.Text>;
+  const b = order.budgetCheck;
+  if (!b) return <Typography.Text type="secondary">No material budget is set for this project, so there is nothing to hold this order against.</Typography.Text>;
 
-  const budget = toNumber(material.budget);
-  const spent = toNumber(material.actual);
-  const thisOrder = toNumber(order.total);
-  const after = spent + thisOrder;
+  const budget = toNumber(b.budget);
+  const ordered = toNumber(b.ordered);
+  const after = ordered + toNumber(b.thisOrder);
   const pct = budget > 0 ? Math.round((after / budget) * 100) : 0;
-  const over = after > budget;
+  const over = poOverBudget(b);
 
   return (
     <>
       <Typography.Paragraph style={{ marginBottom: tk.space[2] }}>
-        Material budget <Money value={budget} />, of which{' '}
-        <Money value={spent} /> has been spent. This order of{' '}
-        <Money value={order.total} paise /> takes it to{' '}
-        <Money value={after} />, {pct}% of the budget.
+        Material budget <Money value={budget} />, of which <Money value={ordered} /> is on other approved orders. This order of{' '}
+        <Money value={b.thisOrder} paise /> before GST takes it to <Money value={after} />, {pct}% of the budget.
       </Typography.Paragraph>
       <Progress
         percent={Math.min(pct, 100)}
         status={over ? 'exception' : 'normal'}
-        aria-label={`Material budget used after this order, ${pct}%`}
-        success={{ percent: budget > 0 ? Math.min(Math.round((spent / budget) * 100), 100) : 0 }}
+        aria-label={`Material budget ordered after this order, ${pct}%`}
+        success={{ percent: budget > 0 ? Math.min(Math.round((ordered / budget) * 100), 100) : 0 }}
       />
       {over ? (
         <Typography.Text style={{ color: tk.color.tone.danger.fg }}>
-          It would go {formatINR(after - budget)} past the material budget. Check it against the budget before approving.
+          It would go {formatINR(-toNumber(b.left))} past the material budget. Check it against the budget before approving.
         </Typography.Text>
       ) : null}
     </>
