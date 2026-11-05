@@ -106,7 +106,8 @@ test('the payroll screen and HR and payroll show what is due', async ({ page }) 
   await signIn(page, 'hr@demo.com');
   await page.goto('/modules/payroll');
   await expect(page.getByRole('heading', { level: 1, name: 'Payroll overview' })).toBeVisible();
-  await expect(page.getByText('Leavers not settled')).toBeVisible();
+  // A leaver not settled is a figure; with none, the strip's clear line says so.
+  await expect(page.getByText(/Leavers not settled|[Ee]very leaver settled/).first()).toBeVisible();
   await expect(page.getByText('Waiting for you')).toBeVisible();
   if (leave) {
     await page.goto('/modules/people');
