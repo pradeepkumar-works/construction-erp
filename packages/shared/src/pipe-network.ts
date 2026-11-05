@@ -190,6 +190,11 @@ const nodeKindOf = (v: unknown): PipeNodeKind => {
   if (!t) return 'JUNCTION';
   const exact = PIPE_NODE_KINDS.find((k) => KEY(k) === t);
   if (exact) return exact;
+  // The short names on site drawings, as a word of their own or before a number: AV-01, WO 2, SC3, BFV-1, NRV.
+  const abbr = (re: string) => new RegExp(`(^|[^a-z])(${re})(\\d|[^a-z]|$)`).test(text(v).toLowerCase());
+  if (abbr('av|arv|dav|kav')) return 'AIR_VALVE';
+  if (abbr('wo|sc|scv|so')) return 'SCOUR';
+  if (abbr('sv|gv|bv|bfv|nrv|prv|cv')) return 'SLUICE_VALVE';
   if (/tank|oht|esr|gsr|sump/.test(t)) return 'TANK';
   if (/source|reservoir|wtp|intake/.test(t)) return 'SOURCE';
   if (/air/.test(t)) return 'AIR_VALVE';
@@ -199,6 +204,12 @@ const nodeKindOf = (v: unknown): PipeNodeKind => {
   if (/crossing|pit/.test(t)) return 'CROSSING_PIT';
   if (/end|cap/.test(t)) return 'END';
   return 'JUNCTION';
+};
+/** A chainage cell in whole metres, as the site writes it (1+250) or as a number (1250.4). */
+const chainageOf = (v: unknown): number | null => {
+  const km = /^\s*(\d+)\s*\+\s*(\d+(?:\.\d+)?)\s*$/.exec(text(v));
+  const m = km ? Number(km[1]) * 1000 + Number(km[2]) : finite(v);
+  return m === null ? null : Math.round(m);
 };
 const materialOf = (v: unknown): PipeMaterial => {
   const t = KEY(text(v));
@@ -221,7 +232,7 @@ export function parseNetworkSheets(nodeRows: Record<string, unknown>[], pipeRows
       groundLevel: finite(cell(r, ['groundlevel', 'gl', 'elevation', 'elev', 'rl', 'levelm', 'level'])),
       x: finite(cell(r, ['x', 'xcoord', 'xcoordinate', 'easting', 'lng', 'longitude'])),
       y: finite(cell(r, ['y', 'ycoord', 'ycoordinate', 'northing', 'lat', 'latitude'])),
-      chainage: finite(cell(r, ['chainage', 'ch', 'chainagem'])),
+      chainage: chainageOf(cell(r, ['chainage', 'ch', 'chainagem'])),
     });
   }
   const pipes: PipeSegmentInput[] = [];
@@ -403,7 +414,7 @@ export function parseKml(xml: string, defaults: KmlDefaults): PipeNetworkFile {
         if (near) return near.code;
       }
       const code = unique(c.name ? codeOf(c.name) : `${prefix}${chainageLabel(c.at)}`);
-      nodes.push({ code, kind: c.name ? nodeKindOf(c.name) : 'JUNCTION', groundLevel: level, x, y, chainage: round1(c.at) });
+      nodes.push({ code, kind: c.name ? nodeKindOf(c.name) : 'JUNCTION', groundLevel: level, x, y, chainage: Math.round(c.at) });
       return code;
     });
     const dia = finite(pick(r.data, ['diameter', 'diametermm', 'dia', 'diamm', 'size', 'od', 'odmm', 'dn'])) ?? finite(/(\d{2,4})\s*(?:mm|ø)/i.exec(r.name)?.[1] ?? /\b(?:dia|dn|ø)\s*(\d{2,4})/i.exec(r.name)?.[1]);

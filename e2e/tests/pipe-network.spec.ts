@@ -100,6 +100,9 @@ test('pipe work names its pipe, is held to its length, and the network imports o
   await expect(dialog.getByLabel('Diameter')).toBeVisible();
   await expect(dialog.getByText('E2E main: 1.11 km on the ground, chainage 0+000 to 1+112')).toBeVisible();
   await expect(dialog.getByText(/5 nodes, 4 pipes, 1,?112 m proposed/)).toBeVisible();
+  // The server's preview takes it: the save is open once the plan is drawn (a valve at 333.6 m sits at 0+334).
+  await expect(dialog.getByText(/^4 new, 0 changed/)).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Save network' })).toBeEnabled();
   await dialog.getByRole('button', { name: 'Cancel' }).click();
 
   // Rejected, the pipe is free again.

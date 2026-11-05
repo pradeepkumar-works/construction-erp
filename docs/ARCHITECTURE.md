@@ -1445,8 +1445,10 @@ commissioned, with valves fixed at their points.
   converted, pumps left out and said so), an Excel book of nodes and pipes with loose headers (`parseNetworkSheets`), or
   the main's alignment drawn in Google Earth (`parseKml`; a KMZ is unzipped in the browser by `lib/kmz.ts`): each line cut
   into segments by its ground length (`groundDistanceM`) at the named points within `KML_SNAP_M` of it (a valve, a tank,
-  kind by name) and every 500 m, nodes named by chainage (`chainageLabel`, 1+250) and placed in metres from the first
-  point, the diameter and material from the line's data or name, else those chosen in the dialog.
+  kind by name, the drawings' short names too: AV air valve, WO or SC scour, SV, BFV, NRV a valve) and every 500 m,
+  nodes named by chainage (`chainageLabel`, 1+250) and placed in metres from the first point, the diameter and material
+  from the line's data or name, else those chosen in the dialog. A node's chainage is whole metres, as the table keeps
+  it (a sheet may write it 1+250).
   `POST /projects/:id/pipe-network/import` (project editors) checks it (`networkProblems`), previews what it would do
   matched by code (`importPlan`: new, changed, kept; never a pipe cut below its work) with `dryRun`, and saves only
   without problems: nodes and pipes upserted by code, nothing deleted, the zone's length stages planned at its proposed

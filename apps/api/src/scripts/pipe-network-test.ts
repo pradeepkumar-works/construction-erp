@@ -82,8 +82,8 @@ test("a design office's sheet reads with loose headers, existing pipes and kinds
   const f = parseNetworkSheets(
     [
       { 'Node ID': 'ESR-1', Type: 'ESR', 'G.L.': '' , Easting: 10, Northing: 20 },
-      { 'Node ID': 'J-1', Type: '', GL: '101.5' },
-      { 'Node ID': 'SV-1', Type: 'Sluice valve' },
+      { 'Node ID': 'J-1', Type: '', GL: '101.5', Chainage: '1+250.5' },
+      { 'Node ID': 'SV-1', Type: 'Sluice valve', Chainage: 1290.4 },
     ],
     [
       { 'Pipe No': 'P-1', 'From node': 'ESR-1', 'To node': 'J-1', 'Length (m)': '1,250.5', 'Dia (mm)': 160, Material: 'HDPE PE100', Class: 'PN 6', Status: 'Proposed' },
@@ -92,6 +92,7 @@ test("a design office's sheet reads with loose headers, existing pipes and kinds
   );
   assert.deepEqual(f.nodes.map((n) => n.kind), ['TANK', 'JUNCTION', 'SLUICE_VALVE']);
   assert.deepEqual([f.nodes[0].x, f.nodes[0].y, f.nodes[1].groundLevel], [10, 20, 101.5]);
+  assert.deepEqual(f.nodes.map((n) => n.chainage), [null, 1251, 1290], 'a chainage as the site writes it, in whole metres');
   assert.deepEqual(f.pipes.map((p) => [p.lengthM, p.diameterMm, p.material, p.pipeClass, p.scope]), [[1250.5, 160, 'HDPE', 'PN 6', 'PROPOSED'], [40, 110, 'CI', null, 'EXISTING']]);
 });
 
@@ -196,6 +197,7 @@ test('a Google Earth main reads as segments by chainage, cut at its named points
   assert.ok(f.pipes.every((p) => p.diameterMm === 300 && p.material === 'DI' && p.pipeClass === 'K9'), 'diameter, material and class from the name');
   assert.ok(Math.abs(f.nodes[4].y! - 1200) < 5 && Math.abs(f.nodes[4].x!) < 1, 'placed in metres north of the start');
   assert.equal(f.nodes[0].groundLevel, null, 'Google Earth altitude 0 is no level');
+  assert.ok(f.nodes.every((n) => Number.isInteger(n.chainage)), 'a chainage is whole metres, as the import takes it');
   assert.ok(f.notes.some((n) => /1 point was more than 25 m/.test(n)));
   assert.deepEqual(networkProblems(f), []);
 });
@@ -213,6 +215,14 @@ test('two lines that meet join at one node; a line with no diameter of its own t
     ['L2-P1', 'L1-0+400', 'L2-0+300', 110, 'PVC'],
   ]);
   assert.deepEqual(networkProblems(f), []);
+  const valves = `<kml><Document><Placemark><name>RM-1</name><LineString><coordinates>${north(0)} ${north(1000)}</coordinates></LineString></Placemark>
+${[['AV-01', 200], ['WO 2', 400], ['SC3', 600], ['BFV-1', 700], ['ESR Khordha', 1000]].map(([n, m]) => `<Placemark><name>${n}</name><Point><coordinates>${north(m as number)}</coordinates></Point></Placemark>`).join('')}
+</Document></kml>`;
+  assert.deepEqual(
+    parseKml(valves, { diameterMm: 300, material: 'DI' }).nodes.filter((n) => !/\+/.test(n.code)).map((n) => [n.code, n.kind]),
+    [['AV-01', 'AIR_VALVE'], ['WO 2', 'SCOUR'], ['SC3', 'SCOUR'], ['BFV-1', 'SLUICE_VALVE'], ['ESR Khordha', 'TANK']],
+    'the short names on site drawings read as their kinds',
+  );
   const none = parseKml('<kml><Placemark><name>Tank</name><Point><coordinates>78,21</coordinates></Point></Placemark></kml>', { diameterMm: 110, material: 'PVC' });
   assert.equal(none.pipes.length, 0);
   assert.match(none.notes[0], /no line/);
