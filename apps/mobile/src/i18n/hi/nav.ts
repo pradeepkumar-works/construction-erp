@@ -350,6 +350,8 @@ export const NAV: Record<string, string> = {
   'Discover and access requests': 'नए मॉड्यूल और एक्सेस की माँग',
   'Mark modules as new or featured, and answer requests for access.': 'मॉड्यूल को नया या ख़ास चिह्नित करें, और एक्सेस के अनुरोधों का जवाब दें।',
   'Data and privacy': 'डेटा और गोपनीयता',
+  'Audit log': 'ऑडिट लॉग',
+  'Who did what and when, across every module, to search and export.': 'किसने क्या और कब किया, हर मॉड्यूल में, खोजने और एक्सपोर्ट करने के लिए।',
   'Group companies': 'समूह की कंपनियाँ',
   "The group's companies, their kind and legal details, and who works in which.": 'समूह की कंपनियाँ, उनका प्रकार और क़ानूनी विवरण, और कौन किसमें काम करता है।',
   'Export or delete company data.': 'कंपनी का डेटा एक्सपोर्ट या डिलीट करें।',

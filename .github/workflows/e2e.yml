@@ -154,6 +154,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/head-office-reach-test.js
+      - name: The audit log reads every kind in words, and only an admin reads it
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/audit-log-test.js
       - name: A headline figure has one name, leads only when it needs action, and every strip shares one money unit
         if: matrix.suite == 'flows'
         working-directory: apps/api

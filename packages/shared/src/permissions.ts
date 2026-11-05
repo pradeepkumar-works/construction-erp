@@ -182,6 +182,8 @@ export const canEditProjects = (role: RoleKey) => PROJECT_EDITOR_ROLES.includes(
 export const canManageProjects = (role: RoleKey) => PROJECT_ADMIN_ROLES.includes(role);
 export const canFreezeBaseline = (role: RoleKey) => BASELINE_ROLES.includes(role);
 export const canManageUsers = (role: RoleKey) => USER_ADMIN_ROLES.includes(role);
+/** The company's whole audit log, every module's lines: the admin who runs the system. */
+export const canViewAuditLog = (role: RoleKey) => role === 'ADMIN';
 /** Export all the company's data, or ask for the company to be deleted: admins only. */
 export const canManageCompanyData = (role: RoleKey) => role === 'ADMIN';
 /** See and pay for the company's subscription: admins only. */

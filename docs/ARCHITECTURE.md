@@ -110,6 +110,11 @@ hold points use the latter on progress. The clients keep a few per-type maps (we
 `approvalTypeParam`; mobile `TYPE_ICON`, `EDIT_PATH`, `REVIEW_PATH`, `OUTBOX_PATH`, push routes) that
 TypeScript flags when a type is added.
 
+The admin reads every module's `AuditLog` rows in one place at Admin › Audit log (`/audit-log`, `GET /audit-log`,
+`AuditLogService`, `canViewAuditLog`): searched by note, action and person, filtered by kind and by days in India time,
+sorted and exported like any list. A kind reads in words only through `auditKindLabel` and an action through
+`auditActionLabel` (`@erp/shared`), and a submission's line opens its record. Keep `src/scripts/audit-log-test.ts` passing.
+
 **Who is told.** An approval ask goes to the approvers on the project (its manager and members) through
 `NotificationsService.onProjectFirst`; company-wide approvers (management, admin) are asked only when nobody on the
 project may decide the entry, such as one above the PM's limit, and see the rest in the daily digest. When a step is

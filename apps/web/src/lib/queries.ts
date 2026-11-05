@@ -2,6 +2,7 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
 import type {
+  AuditLogEntryDto,
   LetterheadDto,
   DocumentCheckDecision,
   EmployeeDocumentKind,
@@ -493,6 +494,14 @@ export interface UserFilters extends PageParams {
   isActive?: boolean;
 }
 
+export interface AuditLogFilters extends PageParams {
+  kind?: string;
+  action?: string;
+  actorId?: string;
+  from?: string;
+  to?: string;
+}
+
 export interface AttendanceFilters extends PageParams {
   projectId?: string;
   from?: string;
@@ -759,6 +768,14 @@ export const useProjectsPage = (filters: ProjectFilters) =>
   });
 
 export const useProject = (id: string | undefined) => useQuery({ ...recordQuery<ProjectDetail>('/projects', id), enabled: !!id });
+
+/** The company's audit log (admin): a page of lines and the kinds of record in it. */
+export const useAuditLog = (filters: AuditLogFilters) =>
+  useQuery({
+    queryKey: ['audit-log', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<AuditLogEntryDto> & { kinds: string[] }>('/audit-log', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+  });
 
 export const useUsersPage = (filters: UserFilters, enabled = true) =>
   useQuery({
