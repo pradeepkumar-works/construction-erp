@@ -11,7 +11,7 @@ import { dprTitle, progressTitle, titleDate } from '../src/common/submission-tit
 import { DEMO_CONTRACTS, textPdf } from '../src/documents/demo-contracts';
 import { addMonths, schedule as loanSchedule } from '../src/machine-loans/loan-rules';
 import { seedTownDprs, seedWorkBreakdown } from './seed-structure';
-import { seedTownNetwork } from './seed-pipes';
+import { placeTownNetwork, seedTownNetwork } from './seed-pipes';
 import { seedTownStock } from './seed-stock';
 import { seedTownBilling } from './seed-billing';
 import { seedEpc } from './seed-epc';
@@ -1908,6 +1908,7 @@ async function modulesPass(organizationId: string, passwordHash: string) {
   await seedWorkBreakdown(prisma, organizationId);
   await seedTownDprs(prisma, organizationId);
   await seedTownNetwork(prisma, organizationId);
+  await placeTownNetwork(prisma, organizationId);
   await seedTownStock(prisma, organizationId);
   await seedTownBilling(prisma, organizationId);
   await seedEpc(prisma, organizationId);

@@ -2817,6 +2817,9 @@ model PipeNode {
   y              Float?
   /// Chainage on a main, m
   chainage       Int?
+  /// Where it is on the earth (from a Google Earth file or a sheet's latitude and longitude)
+  lat            Float?
+  lon            Float?
   remarks        String?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
@@ -2856,6 +2859,8 @@ model PipeSegment {
   surface        String?
   /// Road, rail or drain crossing, open cut or HDD
   crossing       String?
+  /// Its bends between its two ends, [[longitude, latitude], ...], as the Google Earth line drew them
+  path           Json?
   boqItemId      String?
   boqItem        BoqItem?     @relation(fields: [boqItemId], references: [id], onDelete: SetNull)
   sortOrder      Int          @default(0)

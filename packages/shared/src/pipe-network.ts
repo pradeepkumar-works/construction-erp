@@ -60,7 +60,13 @@ export interface PipeNodeInput {
   x: number | null;
   y: number | null;
   chainage: number | null;
+  /** Where it is on the earth, from a Google Earth file or a sheet's latitude and longitude; left out keeps what is saved */
+  lat?: number | null;
+  lon?: number | null;
 }
+
+/** A pipe's route between its two ends as [longitude, latitude] points, the bends a Google Earth line drew. */
+export type PipeRoute = [number, number][];
 
 export interface PipeSegmentInput {
   code: string;
@@ -73,6 +79,8 @@ export interface PipeSegmentInput {
   scope: PipeScope;
   surface: string | null;
   crossing: string | null;
+  /** Its bends between its ends; left out keeps what is saved */
+  path?: PipeRoute | null;
 }
 
 /** A network read from a file: its nodes and pipes, and what was left out or changed on the way in. */
@@ -216,6 +224,23 @@ const materialOf = (v: unknown): PipeMaterial => {
   return PIPE_MATERIALS.find((m) => t.startsWith(KEY(m))) ?? (t ? 'OTHER' : 'HDPE');
 };
 
+const round7 = (n: number) => Math.round(n * 1e7) / 1e7;
+/** A latitude and longitude pair, kept only when both are on the earth. */
+const latLonOf = (lat: number | null, lon: number | null): Pick<PipeNodeInput, 'lat' | 'lon'> =>
+  lat !== null && lon !== null && Math.abs(lat) <= 90 && Math.abs(lon) <= 180 && (lat || lon) ? { lat: round7(lat), lon: round7(lon) } : {};
+/** A route cell, "lon,lat lon,lat ...", as the sheet download writes it; an empty cell leaves the saved route alone. */
+const routeOf = (v: string): Pick<PipeSegmentInput, 'path'> => {
+  if (!v) return {};
+  const path = v
+    .split(/\s+/)
+    .map((t) => t.split(',').map(Number))
+    .filter((c) => c.length >= 2 && Number.isFinite(c[0]) && Number.isFinite(c[1]) && Math.abs(c[0]) <= 180 && Math.abs(c[1]) <= 90)
+    .map((c) => [round7(c[0]), round7(c[1])] as [number, number]);
+  return { path: path.slice(0, MAX_ROUTE_POINTS) };
+};
+/** Most bends kept on one pipe's route. */
+export const MAX_ROUTE_POINTS = 500;
+
 /**
  * An Excel book of two sheets, nodes and pipes, read as rows keyed by their header. Headers are matched loosely
  * ("Node", "Junction ID", "Code"; "From node", "Start"; "Dia (mm)"), so a pipe sheet as the design office sends it
@@ -233,6 +258,7 @@ export function parseNetworkSheets(nodeRows: Record<string, unknown>[], pipeRows
       x: finite(cell(r, ['x', 'xcoord', 'xcoordinate', 'easting', 'lng', 'longitude'])),
       y: finite(cell(r, ['y', 'ycoord', 'ycoordinate', 'northing', 'lat', 'latitude'])),
       chainage: chainageOf(cell(r, ['chainage', 'ch', 'chainagem'])),
+      ...latLonOf(finite(cell(r, ['lat', 'latitude'])), finite(cell(r, ['lon', 'lng', 'long', 'longitude']))),
     });
   }
   const pipes: PipeSegmentInput[] = [];
@@ -251,6 +277,7 @@ export function parseNetworkSheets(nodeRows: Record<string, unknown>[], pipeRows
       scope: /exist/i.test(scope) ? 'EXISTING' : 'PROPOSED',
       surface: text(cell(r, ['surface', 'road', 'roadtype'])) || null,
       crossing: text(cell(r, ['crossing'])) || null,
+      ...routeOf(text(cell(r, ['route', 'path']))),
     });
   }
   return { nodes, pipes, notes: [] };
@@ -319,13 +346,16 @@ const codeOf = (name: string) => name.replace(/\s+/g, ' ').trim().slice(0, 40);
  * from its start, measured on the ground. A named point within 25 m of a line (a sluice valve, an air valve, a tank)
  * becomes a node at its chainage, named and of its kind by its name; between them the line is cut every 500 m, at nodes
  * named by chainage (0+500). The diameter and material come from the line's own data or its name ("300 mm DI"), else
- * the defaults given. Places are kept in metres east and north of the first point, so the map draws them to scale.
+ * the defaults given. Places are kept in metres east and north of the first point, so the map draws them to scale, and
+ * on the earth (each node's latitude and longitude, each pipe's bends), so the network can go back to Google Earth.
+ * A line whose data names its two ends (`from`, `to`: the network's own download, `networkKml`) is one pipe with its
+ * code, size and length as written, between the points of those names, so a downloaded network reads back as it was.
  */
 export function parseKml(xml: string, defaults: KmlDefaults): PipeNetworkFile {
   const notes: string[] = [];
   const splitM = defaults.splitM && defaults.splitM > 0 ? defaults.splitM : 500;
   const lines: { name: string; data: Record<string, string>; coords: Coord[] }[] = [];
-  const points: { name: string; at: Coord }[] = [];
+  const points: { name: string; data: Record<string, string>; at: Coord }[] = [];
   for (const pm of inner(xml, 'Placemark')) {
     const name = xmlText(inner(pm, 'name')[0] ?? '');
     const data = dataOf(pm);
@@ -337,7 +367,7 @@ export function parseKml(xml: string, defaults: KmlDefaults): PipeNetworkFile {
     if (!ls.length)
       for (const p of inner(pm, 'Point')) {
         const c = coordsOf(inner(p, 'coordinates')[0] ?? '')[0];
-        if (c) points.push({ name, at: c });
+        if (c) points.push({ name, data, at: c });
       }
   }
   if (!lines.length) {
@@ -348,15 +378,78 @@ export function parseKml(xml: string, defaults: KmlDefaults): PipeNetworkFile {
   const ky = rad(1) * EARTH_M;
   const kx = Math.cos(rad(lat0)) * ky;
   const local = (c: Coord): [number, number] => [(c[0] - lon0) * kx, (c[1] - lat0) * ky];
+  const onEarth = (lon: number, lat: number) => ({ lat: round7(lat), lon: round7(lon) });
 
-  // Each line's chainage at each of its points, and where each named point falls on the nearest line.
-  const runs = lines.map((l) => {
-    const ch = [0];
-    for (let k = 1; k < l.coords.length; k++) ch.push(ch[k - 1] + groundDistanceM(l.coords[k - 1], l.coords[k]));
-    return { ...l, xy: l.coords.map(local), ch, length: ch[ch.length - 1], marks: [] as { at: number; name: string }[] };
-  });
+  const nodes: PipeNodeInput[] = [];
+  const pipes: PipeSegmentInput[] = [];
+  const taken = new Set<string>();
+  const unique = (code: string) => {
+    let c = code || 'Node';
+    for (let n = 2; taken.has(c); n++) c = `${code.slice(0, 36)}-${n}`;
+    taken.add(c);
+    return c;
+  };
+
+  // Lines that are one pipe each, between the points their data names.
+  const isPipe = (l: (typeof lines)[number]) => !!pick(l.data, ['from', 'fromnode']) && !!pick(l.data, ['to', 'tonode']);
+  const pointOf = new Map(points.map((p) => [codeOf(p.name), p]));
+  const used = new Set<(typeof points)[number]>();
+  const endNode = (code: string, at: Coord) => {
+    if (nodes.some((n) => n.code === code)) return code;
+    const pt = pointOf.get(code);
+    if (pt) used.add(pt);
+    const c = pt?.at ?? at;
+    const [x, y] = local(c);
+    const kind = pt ? PIPE_NODE_KINDS.find((k) => k === (pt.data.kind ?? '').toUpperCase()) : undefined;
+    taken.add(code);
+    nodes.push({
+      code,
+      kind: kind ?? nodeKindOf(code),
+      groundLevel: pt ? finite(pick(pt.data, ['groundlevel', 'gl', 'level'])) : null,
+      x: round2(x),
+      y: round2(y),
+      chainage: pt ? chainageOf(pick(pt.data, ['chainage', 'ch'])) : null,
+      ...onEarth(c[0], c[1]),
+    });
+    return code;
+  };
+  const piped = lines.filter(isPipe);
+  for (const l of piped) {
+    const ends = [codeOf(pick(l.data, ['from', 'fromnode'])!), codeOf(pick(l.data, ['to', 'tonode'])!)];
+    const from = endNode(ends[0], l.coords[0]);
+    const to = endNode(ends[1], l.coords[l.coords.length - 1]);
+    let measured = 0;
+    for (let k = 1; k < l.coords.length; k++) measured += groundDistanceM(l.coords[k - 1], l.coords[k]);
+    const scope = pick(l.data, ['scope']);
+    const code = codeOf(pick(l.data, ['code', 'pipe']) ?? l.name);
+    taken.add(code);
+    pipes.push({
+      code,
+      from,
+      to,
+      lengthM: round3(finite(pick(l.data, ['lengthm', 'length'])) ?? round1(measured)),
+      diameterMm: Math.round(finite(pick(l.data, ['diametermm', 'diameter', 'dia'])) ?? defaults.diameterMm),
+      material: pick(l.data, ['material']) ? materialOf(pick(l.data, ['material'])) : defaults.material,
+      pipeClass: pick(l.data, ['class', 'pipeclass'])?.slice(0, 40) ?? null,
+      scope: scope && /exist/i.test(scope) ? 'EXISTING' : (defaults.scope ?? 'PROPOSED'),
+      surface: pick(l.data, ['surface'])?.slice(0, 60) ?? null,
+      crossing: pick(l.data, ['crossing'])?.slice(0, 80) ?? null,
+      path: l.coords.slice(1, -1).map((c) => [round7(c[0]), round7(c[1])] as [number, number]),
+    });
+  }
+  if (piped.length) notes.push(`${piped.length} pipe${piped.length === 1 ? '' : 's'} read with ${piped.length === 1 ? 'its' : 'their'} own code, size and ends`);
+
+  // Each drawn line's chainage at each of its points, and where each named point falls on the nearest line.
+  const runs = lines
+    .filter((l) => !isPipe(l))
+    .map((l) => {
+      const ch = [0];
+      for (let k = 1; k < l.coords.length; k++) ch.push(ch[k - 1] + groundDistanceM(l.coords[k - 1], l.coords[k]));
+      return { ...l, xy: l.coords.map(local), ch, length: ch[ch.length - 1], marks: [] as { at: number; name: string }[] };
+    });
   let far = 0;
   for (const p of points) {
+    if (used.has(p)) continue;
     const pxy = local(p.at);
     let best: { run: number; at: number; d: number } | null = null;
     runs.forEach((r, ri) => {
@@ -374,15 +467,6 @@ export function parseKml(xml: string, defaults: KmlDefaults): PipeNetworkFile {
     else far++;
   }
 
-  const nodes: PipeNodeInput[] = [];
-  const pipes: PipeSegmentInput[] = [];
-  const taken = new Set<string>();
-  const unique = (code: string) => {
-    let c = code || 'Node';
-    for (let n = 2; taken.has(c); n++) c = `${code.slice(0, 36)}-${n}`;
-    taken.add(c);
-    return c;
-  };
   const many = runs.length > 1;
   runs.forEach((r, ri) => {
     const prefix = many ? `L${ri + 1}-` : '';
@@ -404,17 +488,22 @@ export function parseKml(xml: string, defaults: KmlDefaults): PipeNetworkFile {
       const lerp = (a: number, b: number) => a + t * (b - a);
       const a = r.coords[k][2];
       const b = r.coords[k + 1][2];
-      return { x: round2(lerp(r.xy[k][0], r.xy[k + 1][0])), y: round2(lerp(r.xy[k][1], r.xy[k + 1][1])), level: alts && a !== null && b !== null ? round2(lerp(a, b)) : null };
+      return {
+        x: round2(lerp(r.xy[k][0], r.xy[k + 1][0])),
+        y: round2(lerp(r.xy[k][1], r.xy[k + 1][1])),
+        level: alts && a !== null && b !== null ? round2(lerp(a, b)) : null,
+        ...onEarth(lerp(r.coords[k][0], r.coords[k + 1][0]), lerp(r.coords[k][1], r.coords[k + 1][1])),
+      };
     };
     const codes = cuts.map((c, ci) => {
-      const { x, y, level } = placeAt(c.at);
+      const { x, y, level, lat, lon } = placeAt(c.at);
       // A line that starts or ends where another did joins it there.
       if ((ci === 0 || ci === cuts.length - 1) && !c.name) {
         const near = nodes.find((n) => n.x !== null && n.y !== null && Math.hypot(n.x - x, n.y - y) <= 5);
         if (near) return near.code;
       }
       const code = unique(c.name ? codeOf(c.name) : `${prefix}${chainageLabel(c.at)}`);
-      nodes.push({ code, kind: c.name ? nodeKindOf(c.name) : 'JUNCTION', groundLevel: level, x, y, chainage: Math.round(c.at) });
+      nodes.push({ code, kind: c.name ? nodeKindOf(c.name) : 'JUNCTION', groundLevel: level, x, y, chainage: Math.round(c.at), lat, lon });
       return code;
     });
     const dia = finite(pick(r.data, ['diameter', 'diametermm', 'dia', 'diamm', 'size', 'od', 'odmm', 'dn'])) ?? finite(/(\d{2,4})\s*(?:mm|ø)/i.exec(r.name)?.[1] ?? /\b(?:dia|dn|ø)\s*(\d{2,4})/i.exec(r.name)?.[1]);
@@ -433,6 +522,8 @@ export function parseKml(xml: string, defaults: KmlDefaults): PipeNetworkFile {
         scope: defaults.scope ?? 'PROPOSED',
         surface: null,
         crossing: null,
+        // The line's own bends between the two cuts, so the pipe keeps its route on the earth.
+        path: r.coords.filter((_, i) => r.ch[i] > cuts[k].at + 0.5 && r.ch[i] < cuts[k + 1].at - 0.5).map((c) => [round7(c[0]), round7(c[1])] as [number, number]),
       });
     }
     notes.push(`${r.name || `Line ${ri + 1}`}: ${(r.length / 1000).toFixed(2)} km on the ground, chainage 0+000 to ${chainageLabel(r.length)}`);
@@ -441,6 +532,125 @@ export function parseKml(xml: string, defaults: KmlDefaults): PipeNetworkFile {
   if (named) notes.push(`${named} named point${named === 1 ? '' : 's'} kept as nodes at their chainage`);
   if (far) notes.push(`${far} point${far === 1 ? ' was' : 's were'} more than ${KML_SNAP_M} m from any line: left out`);
   return { nodes, pipes, notes };
+}
+
+const xmlEscape = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+/**
+ * A zone's network as a Google Earth file (KML; the screen zips it into a KMZ): each pipe a line from its start node
+ * through its bends to its end node, with its code, ends, length and size in its data, and each node a point named by
+ * its code with its kind, chainage and level. `parseKml` reads it back pipe for pipe. Only what has a place on the
+ * earth goes in; `left` names the pipes that had none (a network loaded from EPANET or a sheet without latitudes).
+ */
+export function networkKml(name: string, file: Pick<PipeNetworkFile, 'nodes' | 'pipes'>): { kml: string; left: string[] } {
+  const at = new Map(file.nodes.filter((n) => typeof n.lat === 'number' && typeof n.lon === 'number').map((n) => [n.code, n]));
+  const data = (pairs: [string, string | number | null | undefined][]) =>
+    `<ExtendedData>${pairs
+      .filter(([, v]) => v !== null && v !== undefined && v !== '')
+      .map(([k, v]) => `<Data name="${k}"><value>${xmlEscape(String(v))}</value></Data>`)
+      .join('')}</ExtendedData>`;
+  const left: string[] = [];
+  const lines: string[] = [];
+  const ends = new Set<string>();
+  for (const p of file.pipes) {
+    const a = at.get(p.from);
+    const b = at.get(p.to);
+    if (!a || !b) {
+      left.push(p.code);
+      continue;
+    }
+    ends.add(p.from).add(p.to);
+    const coords = [[a.lon!, a.lat!], ...(p.path ?? []), [b.lon!, b.lat!]].map(([x, y]) => `${x},${y},0`).join(' ');
+    lines.push(
+      `<Placemark><name>${xmlEscape(p.code)}</name><description>${xmlEscape(`${p.diameterMm} mm ${p.material}${p.pipeClass ? ` ${p.pipeClass}` : ''}, ${p.lengthM} m`)}</description><styleUrl>#${p.scope === 'EXISTING' ? 'existing' : 'pipe'}</styleUrl>${data([
+        ['code', p.code],
+        ['from', p.from],
+        ['to', p.to],
+        ['length m', p.lengthM],
+        ['diameter mm', p.diameterMm],
+        ['material', p.material],
+        ['class', p.pipeClass],
+        ['scope', p.scope],
+        ['surface', p.surface],
+        ['crossing', p.crossing],
+      ])}<LineString><tessellate>1</tessellate><coordinates>${coords}</coordinates></LineString></Placemark>`,
+    );
+  }
+  const points = file.nodes
+    .filter((n) => at.has(n.code) && (ends.has(n.code) || n.kind !== 'JUNCTION'))
+    .map(
+      (n) =>
+        `<Placemark><name>${xmlEscape(n.code)}</name>${data([
+          ['kind', n.kind],
+          ['chainage', n.chainage === null ? null : chainageLabel(n.chainage)],
+          ['ground level', n.groundLevel],
+        ])}<Point><coordinates>${n.lon},${n.lat},0</coordinates></Point></Placemark>`,
+    );
+  const kml = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>${xmlEscape(name)}</name>
+<Style id="pipe"><LineStyle><color>ffd77800</color><width>3</width></LineStyle></Style>
+<Style id="existing"><LineStyle><color>ff8c8c8c</color><width>2</width></LineStyle></Style>
+<Folder><name>Pipes</name>
+${lines.join('\n')}
+</Folder>
+<Folder><name>Nodes</name>
+${points.join('\n')}
+</Folder>
+</Document></kml>
+`;
+  return { kml, left };
+}
+
+/**
+ * A zone's network as the two sheets the Excel import reads (Nodes and Pipes, with latitude, longitude and each pipe's
+ * route), so it can be corrected in Excel and loaded again, matched by code.
+ */
+export function networkSheets(file: Pick<PipeNetworkFile, 'nodes' | 'pipes'>): { nodes: (string | number | null)[][]; pipes: (string | number | null)[][] } {
+  return {
+    nodes: [
+      ['Code', 'Kind', 'Ground level', 'X', 'Y', 'Chainage', 'Latitude', 'Longitude'],
+      ...file.nodes.map((n) => [n.code, PIPE_NODE_KIND_NAMES[n.kind], n.groundLevel, n.x, n.y, n.chainage === null ? null : chainageLabel(n.chainage), n.lat ?? null, n.lon ?? null]),
+    ],
+    pipes: [
+      ['Code', 'From', 'To', 'Length m', 'Diameter mm', 'Material', 'Class', 'Scope', 'Surface', 'Crossing', 'Route'],
+      ...file.pipes.map((p) => [
+        p.code,
+        p.from,
+        p.to,
+        p.lengthM,
+        p.diameterMm,
+        p.material,
+        p.pipeClass,
+        p.scope === 'EXISTING' ? 'Existing' : 'Proposed',
+        p.surface,
+        p.crossing,
+        p.path?.length ? p.path.map(([x, y]) => `${x},${y}`).join(' ') : null,
+      ]),
+    ],
+  };
+}
+
+/** The node kinds as a sheet writes them, read back by their words. */
+const PIPE_NODE_KIND_NAMES: Record<PipeNodeKind, string> = Object.fromEntries(PIPE_NODE_KINDS.map((k) => [k, k.charAt(0) + k.slice(1).toLowerCase().replace(/_/g, ' ')])) as Record<PipeNodeKind, string>;
+
+/** A zone's saved network as the import takes it, for a download or the editor. */
+export function networkOf(nodes: PipeNodeDto[], segments: PipeSegmentDto[]): Pick<PipeNetworkFile, 'nodes' | 'pipes'> {
+  return {
+    nodes: nodes.map((n) => ({ code: n.code, kind: n.kind, groundLevel: n.groundLevel === null ? null : Number(n.groundLevel), x: n.x, y: n.y, chainage: n.chainage, lat: n.lat, lon: n.lon })),
+    pipes: segments.map((s) => ({
+      code: s.code,
+      from: s.fromCode,
+      to: s.toCode,
+      lengthM: Number(s.lengthM),
+      diameterMm: s.diameterMm,
+      material: s.material,
+      pipeClass: s.pipeClass,
+      scope: s.scope,
+      surface: s.surface,
+      crossing: s.crossing,
+      path: s.path,
+    })),
+  };
 }
 
 /** What stops a network from being saved: repeated codes, pipes to nowhere, no length or diameter. */
@@ -464,9 +674,16 @@ export function networkProblems(file: Pick<PipeNetworkFile, 'nodes' | 'pipes'>, 
     if (p.from && p.from === p.to) problems.push(`Pipe ${p.code} starts and ends at ${p.from}`);
     if (!(p.lengthM > 0)) problems.push(`Pipe ${p.code} has no length`);
     if (!(p.diameterMm > 0)) problems.push(`Pipe ${p.code} has no diameter`);
+    if (p.path && p.path.length > MAX_ROUTE_POINTS) problems.push(`Pipe ${p.code} has more than ${MAX_ROUTE_POINTS} bends: cut it into shorter pipes`);
   }
   return problems.slice(0, 50);
 }
+
+/** A map position read again from the same place, up to its rounding to the centimetre. */
+const nearly = (a: number | null, b: number | null) => a === b || (a !== null && b !== null && Math.abs(a - b) < 0.015);
+/** A node a file places somewhere else on the earth; a file that gives no latitude leaves the saved one alone. */
+const movedOnEarth = (o: Pick<PipeNodeInput, 'lat' | 'lon'>, n: Pick<PipeNodeInput, 'lat' | 'lon'>) =>
+  (n.lat !== undefined && (o.lat ?? null) !== (n.lat === null ? null : round7(n.lat))) || (n.lon !== undefined && (o.lon ?? null) !== (n.lon === null ? null : round7(n.lon)));
 
 export interface NetworkImportPlan {
   nodes: { added: number; changed: number; unchanged: number };
@@ -492,7 +709,7 @@ export function importPlan(
   for (const n of file.nodes) {
     const o = oldNodes.get(n.code);
     if (!o) plan.nodes.added++;
-    else if (o.kind !== n.kind || o.groundLevel !== n.groundLevel || o.x !== n.x || o.y !== n.y || o.chainage !== n.chainage) plan.nodes.changed++;
+    else if (o.kind !== n.kind || o.groundLevel !== n.groundLevel || !nearly(o.x, n.x) || !nearly(o.y, n.y) || o.chainage !== n.chainage || movedOnEarth(o, n)) plan.nodes.changed++;
     else plan.nodes.unchanged++;
   }
   const inFile = new Set<string>();
@@ -503,7 +720,17 @@ export function importPlan(
       plan.pipes.added++;
       continue;
     }
-    const same = o.from === p.from && o.to === p.to && round3(o.lengthM) === round3(p.lengthM) && o.diameterMm === p.diameterMm && o.material === p.material && o.scope === p.scope && (o.pipeClass ?? null) === (p.pipeClass ?? null);
+    const same =
+      o.from === p.from &&
+      o.to === p.to &&
+      round3(o.lengthM) === round3(p.lengthM) &&
+      o.diameterMm === p.diameterMm &&
+      o.material === p.material &&
+      o.scope === p.scope &&
+      (o.pipeClass ?? null) === (p.pipeClass ?? null) &&
+      (o.surface ?? null) === (p.surface ?? null) &&
+      (o.crossing ?? null) === (p.crossing ?? null) &&
+      (p.path === undefined || JSON.stringify(o.path ?? []) === JSON.stringify(p.path ?? []));
     if (same) plan.pipes.unchanged++;
     else plan.pipes.changed++;
     if ((o.doneM ?? 0) > p.lengthM + 0.001) plan.shortened.push(p.code);
@@ -683,6 +910,8 @@ export interface PipeNodeDto {
   x: number | null;
   y: number | null;
   chainage: number | null;
+  lat: number | null;
+  lon: number | null;
   /** A valve or fitting fixed (a VALVES line on it was approved) */
   fixed: boolean;
 }
@@ -702,6 +931,8 @@ export interface PipeSegmentDto {
   scope: PipeScope;
   surface: string | null;
   crossing: string | null;
+  /** Its bends between its ends on the earth, [longitude, latitude] */
+  path: PipeRoute | null;
   status: SegmentStatus;
   /** Metres per stage on lines still waiting for approval */
   waiting: Partial<Record<SegmentStage, number>>;

@@ -1500,7 +1500,19 @@ commissioned, with valves fixed at their points.
   kind by name, the drawings' short names too: AV air valve, WO or SC scour, SV, BFV, NRV a valve) and every 500 m,
   nodes named by chainage (`chainageLabel`, 1+250) and placed in metres from the first point, the diameter and material
   from the line's data or name, else those chosen in the dialog. A node's chainage is whole metres, as the table keeps
-  it (a sheet may write it 1+250).
+  it (a sheet may write it 1+250). The network also keeps its places on the earth: each node's latitude and longitude
+  (`PipeNode.lat`, `lon`) and each pipe's bends between its ends (`PipeSegment.path`, `[longitude, latitude]` pairs); a
+  file that gives none (EPANET, a sheet without latitudes) leaves the saved ones alone.
+- **Download and edit.** A zone downloads as a KMZ for Google Earth (`networkKml`, zipped by `kmzFromKml`: a line per
+  pipe with its code, ends and size in its data, a point per node) or as the two sheets the Excel import reads
+  (`networkSheets`, with latitude, longitude and a Route column); `parseKml` reads a line whose data names its `from`
+  and `to` as that one pipe, so either file loads back pipe for pipe. Edit network opens the map editor
+  (`PipeNetworkEditor` over `PipeEditMap`: Leaflet with Esri satellite and OpenStreetMap street tiles, Leaflet-Geoman for
+  a route's bends and drawing): drag a point, reshape a pipe, add a valve on a pipe (`splitPipe`: the pipe keeps its
+  code to the new point and a new pipe goes on, the length shared by the ground each side), draw a pipe between points
+  (`addPipe`, ends within `DRAW_SNAP_M`), and correct sizes and kinds beside the map. The edits are pure in
+  `pipe-network-edit.ts` and save only through the import with its preview (codes from `nextNetworkCode`; a new pipe or
+  point can be removed before saving, a saved one never).
   `POST /projects/:id/pipe-network/import` (project editors) checks it (`networkProblems`), previews what it would do
   matched by code (`importPlan`: new, changed, kept; never a pipe cut below its work) with `dryRun`, and saves only
   without problems: nodes and pipes upserted by code, nothing deleted, the zone's length stages planned at its proposed
@@ -1511,15 +1523,15 @@ commissioned, with valves fixed at their points.
   pipe sheet, ready to start, the pipe list with search, state filter, Export and Correct, and the import dialog), and
   the same panel at Drawings › Pipeline layout (`/pipeline-layout`, a water project picked there). A pipe clicked on the
   map or the list opens its card (`PipeCard`: each stage done and waiting against its length, its ends and valves, the
-  pipe before and after, Edit pipe); Record work opens a daily report with a line for the pipe and the stage's activity
+  pipe before and after, Edit pipe); Download network and Edit network sit beside Import network; Record work opens a daily report with a line for the pipe and the stage's activity
   (`stageActivities`), so work done still comes in only through an approved DPR. The DPR form's Where picks the segment
   or valve (`DprLinesField`), the test form the pipes tested. Phone: the DPR line's
   segment and valve pickers (`src/forms/dprLines.tsx`).
-- **Code.** The arithmetic and readers are pure in `packages/shared/src/pipe-network.ts`, tested in
+- **Code.** The arithmetic and readers are pure in `packages/shared/src/pipe-network.ts` (edits in `pipe-network-edit.ts`), tested in
   `src/scripts/pipe-network-test.ts` (CI flows); `e2e/tests/pipe-network.spec.ts` covers a line held to its pipe, the
-  import preview and the tab.
+  import preview, the tab, the downloads and a valve put on a pipe in the editor.
 - **Demo.** `seedTownNetwork` (`prisma/seed-pipes.ts`): zone 2 of WS-2026-04, a tank, a 20-junction spine and six
-  branches with sluice valves, an air valve and a scour (53 pipes, 10.1 km), its approved work laid out pipe by pipe
+  branches with sluice valves, an air valve and a scour (53 pipes, 10.1 km) placed near Jajpur, its approved work laid out pipe by pipe
   from the tank, the town DPRs' pipe lines on the pipes past each stage's front, and a passed hydraulic test.
 
 ### Project types (item 134)
