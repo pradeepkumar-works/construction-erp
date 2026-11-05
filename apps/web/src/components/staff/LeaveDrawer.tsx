@@ -98,7 +98,7 @@ export function LeaveDrawer({ id, open, onClose }: { id: string | null; open: bo
             dataSource={balances ?? []}
             columns={[
               { title: 'Leave', dataIndex: 'type', render: (v: LeaveRequestDto['type']) => LEAVE_TYPE_LABELS[v] },
-              { title: 'For the year', dataIndex: 'entitled', align: 'right', render: (v: number | null) => v ?? 'No limit' },
+              { title: 'For the leave year', dataIndex: 'entitled', align: 'right', render: (v: number | null) => v ?? 'No limit' },
               { title: 'Taken', dataIndex: 'taken', align: 'right' },
               { title: 'Waiting', dataIndex: 'pending', align: 'right' },
               { title: 'Left', dataIndex: 'left', align: 'right', render: (v: number | null) => (v === null ? NO_VALUE : <Typography.Text strong type={v < 0 ? 'danger' : undefined}>{v}</Typography.Text>) },

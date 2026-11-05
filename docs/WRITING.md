@@ -9,7 +9,8 @@ How the web app and the phone app word things. Short on purpose: when in doubt, 
   DPR, Tally, Odisha). Write "and", not "&".
 - **Capitals** stay on abbreviations, which are written all in capitals (BOQ, DPR, GRN, GST, LD, MB, NCR, PO, RA bill,
   RFI, TDS, WO, QA/QC, O&M, AFC), and on these names: Aadhaar, Connector, Excel, Meta Cloud API, MS Project, Nirmaan, Odisha, Tally,
-  the Engineer, WhatsApp, ZKTeco, eSSL.
+  the Engineer, WhatsApp, ZKTeco, eSSL, January, February, March, April, May, June, July, August, September, October,
+  November, December, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday.
 - **The Engineer** is the contract's role (the client's engineer who approves the programme and forwards an EOT), so it keeps
   its capital as "the Engineer", as the contract writes it. A site engineer, an engineer on the team, stays lower case.
 - **One name per module**, the same in the sidebar (the navigation tree, `packages/shared/src/navigation.ts`), the page's `PageHeader` title (and so the

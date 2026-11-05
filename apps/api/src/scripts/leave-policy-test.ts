@@ -1,6 +1,6 @@
 /** The company's leave rules: days a year, pro rata for joiners, earned leave carried forward. Run: node dist/scripts/leave-policy-test.js */
 import assert from 'node:assert/strict';
-import { DEFAULT_LEAVE_POLICY, leaveEntitlement, leaveOpeningProblem, type LeavePolicy } from '@erp/shared';
+import { DEFAULT_LEAVE_POLICY, isWeeklyOff, leaveDays, leaveEntitlement, leaveOpeningProblem, leaveYearLabel, leaveYearOf, leaveYearRange, weeklyOffOf, type LeavePolicy } from '@erp/shared';
 
 const policy = (p: Partial<LeavePolicy>): LeavePolicy => ({ ...DEFAULT_LEAVE_POLICY, ...p });
 
@@ -51,6 +51,49 @@ const cases: [string, () => void][] = [
     assert.match(leaveOpeningProblem([{ type: 'CASUAL', takenBefore: 1, broughtForward: null }, { type: 'CASUAL', takenBefore: 2, broughtForward: null }])!, /once/);
   }],
   ['a joiner has no earlier year to carry from', () => assert.equal(leaveEntitlement('EARNED', policy({ earnedCarryMax: 10 }), 2026, '2026-03-01', 6), 15)],
+  ['an April to March leave year is named by the year it starts in', () => {
+    assert.equal(leaveYearOf('2027-02-10', 4), 2026);
+    assert.equal(leaveYearOf('2027-04-01', 4), 2027);
+    assert.equal(leaveYearOf('2027-03-31', 4), 2026);
+    assert.equal(leaveYearOf('2027-02-10'), 2027);
+    assert.deepEqual(leaveYearRange(2026, 4), { from: '2026-04-01', to: '2027-03-31' });
+    assert.deepEqual(leaveYearRange(2026), { from: '2026-01-01', to: '2026-12-31' });
+    assert.equal(leaveYearLabel(2026, 4), '2026-27');
+    assert.equal(leaveYearLabel(2099, 4), '2099-00');
+    assert.equal(leaveYearLabel(2026), '2026');
+  }],
+  ['pro rata counts the months left in the leave year, the joining month included', () => {
+    const april = policy({ proRata: true, yearStart: 4 });
+    // Joined in October 2026: October to March is 6 months of 12.
+    assert.equal(leaveEntitlement('CASUAL', april, 2026, '2026-10-15'), 6);
+    // Joined in February 2027: still leave year 2026, February and March left.
+    assert.equal(leaveEntitlement('CASUAL', april, 2026, '2027-02-01'), 2);
+    // Joined in April: the whole year.
+    assert.equal(leaveEntitlement('CASUAL', april, 2027, '2027-04-01'), 12);
+    // Not yet joined in that leave year.
+    assert.equal(leaveEntitlement('CASUAL', april, 2025, '2026-05-01'), 0);
+    // Calendar year as before: joined in October, 3 months.
+    assert.equal(leaveEntitlement('CASUAL', policy({ proRata: true }), 2026, '2026-10-01'), 3);
+  }],
+  ['the weekly off is the site’s own day, else the company’s, else Sunday', () => {
+    assert.equal(weeklyOffOf({ weeklyOff: 5 }, 0), 5);
+    assert.equal(weeklyOffOf({ weeklyOff: null }, 1), 1);
+    assert.equal(weeklyOffOf(null), 0);
+    assert.equal(weeklyOffOf({ weeklyOff: 9 }, 2), 2);
+    // 6 Nov 2026 is a Friday, 8 Nov a Sunday.
+    assert.ok(isWeeklyOff('2026-11-06', 5));
+    assert.ok(isWeeklyOff('2026-11-08'));
+    assert.ok(!isWeeklyOff('2026-11-08', 5));
+  }],
+  ['leave days leave out the site’s weekly off and holidays', () => {
+    // Mon 2 Nov to Sun 8 Nov 2026: 6 days with Sunday off, 6 with Friday off.
+    assert.equal(leaveDays('2026-11-02', '2026-11-08', false), 6);
+    assert.equal(leaveDays('2026-11-02', '2026-11-08', false, new Set(), 5), 6);
+    assert.equal(leaveDays('2026-11-02', '2026-11-08', false, new Set(['2026-11-04']), 5), 5);
+    // A half day on the weekly off takes nothing.
+    assert.equal(leaveDays('2026-11-06', '2026-11-06', true, new Set(), 5), 0);
+    assert.equal(leaveDays('2026-11-06', '2026-11-06', true), 0.5);
+  }],
 ];
 
 let failed = 0;

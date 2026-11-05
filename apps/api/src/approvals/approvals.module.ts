@@ -8,5 +8,5 @@ import { ApprovalRulesController } from './approval-rules.controller';
 import { ApprovalRulesService } from './approval-rules.service';
 import { OtherDecisionsService } from './other-decisions.service';
 
-@Module({ imports: [StaffModule, PayrollModule, BooksModule, CorrespondenceModule], controllers: [ApprovalsController, ApprovalRulesController], providers: [ApprovalRulesService, OtherDecisionsService] })
+@Module({ imports: [StaffModule, PayrollModule, BooksModule, CorrespondenceModule], controllers: [ApprovalsController, ApprovalRulesController], providers: [ApprovalRulesService, OtherDecisionsService], exports: [OtherDecisionsService] })
 export class ApprovalsModule {}

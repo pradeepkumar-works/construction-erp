@@ -17,8 +17,20 @@ import {
   canMarkStaff,
   canViewEmployeePrivate,
   isWeeklyOff,
+  isWeekday,
   leaveDays,
+  leaveYearLabel,
+  leaveYearOf,
+  leaveYearRange,
   overtimeHours,
+  weeklyOffOf,
+  weeklyOffWords,
+  DEFAULT_WEEKLY_OFF,
+  LEAVE_YEAR_STARTS,
+  WEEKDAY_NAMES,
+  type LeaveYearStart,
+  type StaffCalendarDto,
+  type Weekday,
   type EmployeeDto,
   type EmployeeSortField,
   type HolidayDto,
@@ -149,6 +161,8 @@ export async function nextLetterNo(tx: Prisma.TransactionClient, organizationId:
 /** Leave that counts: waiting or approved. */
 const LIVE_LEAVE = ['PENDING', 'APPROVED'] as const;
 const yearOf = (d: string) => Number(d.slice(0, 4));
+/** A stored leave year start, January unless it is one of the starts offered. */
+const asYearStart = (n: number | null | undefined): LeaveYearStart => ((LEAVE_YEAR_STARTS as readonly number[]).includes(n ?? 1) ? (n as LeaveYearStart) : 1);
 const yearRange = (year: number) => ({ gte: parseDate(`${year}-01-01`), lte: parseDate(`${year}-12-31`) });
 const num = (d: Prisma.Decimal | number) => Number(d);
 const km = (m: number) => (m < 1000 ? `${m} m` : `${(m / 1000).toFixed(1)} km`);
@@ -158,7 +172,7 @@ const siteSelect = { id: true, name: true, siteLat: true, siteLng: true, siteRad
  * Company staff (not contractor labour): the employee master, daily attendance (self check-in from the app or the
  * site register), leave with balances and approval, and holidays. Leave has its own approval flow: a staff admin
  * (admin, management, HR) or the manager of the employee's site decides it, never the employee.
- * Sunday is the weekly off; weekly offs and holidays are not counted as leave days.
+ * The weekly off (each site's, else the company's) and holidays are not counted as leave days.
  */
 @Injectable()
 export class StaffService {
@@ -336,18 +350,20 @@ export class StaffService {
 
   async me(user: RequestUser): Promise<MyStaffDto> {
     const today = todayIn();
-    const year = yearOf(today);
-    const e = await this.ownEmployee(user);
+    const [e, yearStart, offs] = await Promise.all([this.ownEmployee(user), this.leaveYearStart(user.organizationId), this.weeklyOffs(user.organizationId)]);
+    const year = leaveYearOf(today, yearStart);
+    const yearLabel = leaveYearLabel(year, yearStart);
+    const weeklyOff = offs.of(e?.projectId);
     const holidayRows = await this.prisma.holiday.findMany({
-      where: { organizationId: user.organizationId, date: { gte: parseDate(today), lte: parseDate(`${year + 1}-01-31`) }, OR: [{ projectId: null }, ...(e?.projectId ? [{ projectId: e.projectId }] : [])] },
+      where: { organizationId: user.organizationId, date: { gte: parseDate(today), lte: parseDate(`${Number(today.slice(0, 4)) + 1}-01-31`) }, OR: [{ projectId: null }, ...(e?.projectId ? [{ projectId: e.projectId }] : [])] },
       include: { project: { select: { name: true } } },
       orderBy: { date: 'asc' },
       take: 12,
     });
     const holidays = holidayRows.map((h) => this.toHolidayDto(h));
     const todayHoliday = holidays.find((h) => h.date === today)?.name ?? null;
-    const todayOff = todayHoliday ?? (isWeeklyOff(today) ? 'Sunday' : null);
-    if (!e) return { employee: null, today: null, todayOff, year, balances: [], leave: [], holidays, site: null, monthPresent: '0' };
+    const todayOff = todayHoliday ?? (isWeeklyOff(today, weeklyOff) ? WEEKDAY_NAMES[weeklyOff] : null);
+    if (!e) return { employee: null, today: null, todayOff, year, yearLabel, yearStart, weeklyOff, balances: [], leave: [], holidays, site: null, monthPresent: '0' };
     const [att, leave, balances, site, month] = await Promise.all([
       this.prisma.staffAttendance.findUnique({ where: { employeeId_date: { employeeId: e.id, date: parseDate(today) } }, include: attendanceInclude }),
       this.prisma.leaveRequest.findMany({ where: { employeeId: e.id }, include: leaveInclude, orderBy: [{ fromDate: 'desc' }, { createdAt: 'desc' }], take: 20 }),
@@ -361,6 +377,9 @@ export class StaffService {
       today: att ? this.toAttendanceDto(att, user) : null,
       todayOff,
       year,
+      yearLabel,
+      yearStart,
+      weeklyOff,
       balances,
       leave: leave.map((l) => this.toLeaveDto(l, user, today)),
       holidays,
@@ -604,6 +623,7 @@ export class StaffService {
       this.prisma.leaveRequest.findMany({ where: { employeeId: { in: ids }, status: { in: [...LIVE_LEAVE] }, fromDate: { lte: day }, toDate: { gte: day } }, orderBy: { status: 'asc' } }),
       this.holidayMap(user.organizationId, projectId, date, date),
     ]);
+    const offs = await this.weeklyOffs(user.organizationId);
     const attBy = new Map(att.map((a) => [a.employeeId, a]));
     const leaveBy = new Map<string, (typeof leave)[number]>();
     for (const l of leave) if (!leaveBy.has(l.employeeId) || l.status === 'APPROVED') leaveBy.set(l.employeeId, l);
@@ -611,7 +631,7 @@ export class StaffService {
       date,
       projectId,
       holiday: holidays.get(date) ?? null,
-      weeklyOff: isWeeklyOff(date),
+      weeklyOff: isWeeklyOff(date, offs.of(projectId)),
       rows: employees.map((e) => {
         const a = attBy.get(e.id);
         const l = leaveBy.get(e.id);
@@ -760,10 +780,62 @@ export class StaffService {
 
   /** The company's leave rules (Payroll settings), as shipped until HR sets them. */
   private async leavePolicy(organizationId: string, db: Prisma.TransactionClient = this.prisma): Promise<LeavePolicy> {
-    const s = await db.payrollSettings.findUnique({ where: { organizationId }, select: { casualLeaveDays: true, sickLeaveDays: true, earnedLeaveDays: true, earnedCarryMax: true, leaveProRata: true } });
+    const s = await db.payrollSettings.findUnique({ where: { organizationId }, select: { casualLeaveDays: true, sickLeaveDays: true, earnedLeaveDays: true, earnedCarryMax: true, leaveProRata: true, leaveYearStart: true } });
     return s
-      ? { casual: s.casualLeaveDays.toNumber(), sick: s.sickLeaveDays.toNumber(), earned: s.earnedLeaveDays.toNumber(), earnedCarryMax: s.earnedCarryMax.toNumber(), proRata: s.leaveProRata }
+      ? { casual: s.casualLeaveDays.toNumber(), sick: s.sickLeaveDays.toNumber(), earned: s.earnedLeaveDays.toNumber(), earnedCarryMax: s.earnedCarryMax.toNumber(), proRata: s.leaveProRata, yearStart: asYearStart(s.leaveYearStart) }
       : DEFAULT_LEAVE_POLICY;
+  }
+
+  /** The company's leave year start (January unless it chose April). */
+  async leaveYearStart(organizationId: string, db: Prisma.TransactionClient = this.prisma): Promise<LeaveYearStart> {
+    const s = await db.payrollSettings.findUnique({ where: { organizationId }, select: { leaveYearStart: true } });
+    return asYearStart(s?.leaveYearStart);
+  }
+
+  /**
+   * The weekly off of each place: the company's (Payroll settings, Sunday until set) for head office and any site
+   * without its own, and each site's own. `of(projectId)` answers for one place.
+   */
+  async weeklyOffs(organizationId: string, db: Prisma.TransactionClient = this.prisma): Promise<{ company: Weekday; of: (projectId: string | null | undefined) => Weekday }> {
+    const [s, sites] = await Promise.all([
+      db.payrollSettings.findUnique({ where: { organizationId }, select: { weeklyOff: true } }),
+      db.project.findMany({ where: { organizationId, weeklyOff: { not: null } }, select: { id: true, weeklyOff: true } }),
+    ]);
+    const company = isWeekday(s?.weeklyOff) ? s!.weeklyOff : DEFAULT_WEEKLY_OFF;
+    const own = new Map(sites.map((p) => [p.id, p]));
+    return { company, of: (projectId) => weeklyOffOf(projectId ? own.get(projectId) : null, company) };
+  }
+
+  /** GET /staff/weekly-offs: the leave year's start, the company's weekly off and each active site's own. */
+  async calendar(user: RequestUser): Promise<StaffCalendarDto> {
+    const [yearStart, offs, sites] = await Promise.all([
+      this.leaveYearStart(user.organizationId),
+      this.weeklyOffs(user.organizationId),
+      this.prisma.project.findMany({ where: { organizationId: user.organizationId, status: { not: 'COMPLETED' } }, select: { id: true, name: true, weeklyOff: true }, orderBy: { name: 'asc' } }),
+    ]);
+    return { yearStart, weeklyOff: offs.company, sites: sites.map((p) => ({ projectId: p.id, projectName: p.name, weeklyOff: isWeekday(p.weeklyOff) ? p.weeklyOff : null })) };
+  }
+
+  /** HR sets the company's weekly off and each site's own (null = the company's). Leave and comp-off read them from then on. */
+  async saveCalendar(user: RequestUser, dto: { weeklyOff?: number; sites?: { projectId: string; weeklyOff: number | null }[] }): Promise<StaffCalendarDto> {
+    if (!canManageStaff(user.roleKey)) throw new ForbiddenException('Only HR sets the weekly off');
+    const before = await this.calendar(user);
+    const changes: string[] = [];
+    await this.prisma.$transaction(async (tx) => {
+      if (dto.weeklyOff !== undefined && dto.weeklyOff !== before.weeklyOff) {
+        await tx.payrollSettings.upsert({ where: { organizationId: user.organizationId }, create: { organizationId: user.organizationId, weeklyOff: dto.weeklyOff }, update: { weeklyOff: dto.weeklyOff } });
+        changes.push(`company ${WEEKDAY_NAMES[dto.weeklyOff as Weekday]}`);
+      }
+      for (const site of dto.sites ?? []) {
+        const was = before.sites.find((x) => x.projectId === site.projectId);
+        if (!was) throw new NotFoundException('Site not found');
+        if (was.weeklyOff === site.weeklyOff) continue;
+        await tx.project.update({ where: { id: site.projectId }, data: { weeklyOff: site.weeklyOff } });
+        changes.push(`${was.projectName} ${site.weeklyOff === null ? "the company's" : WEEKDAY_NAMES[site.weeklyOff as Weekday]}`);
+      }
+    });
+    if (changes.length) await this.audit.log(user, 'PAYROLL_SETTINGS', user.organizationId, 'UPDATED', `Weekly off: ${changes.join(', ')}`);
+    return this.calendar(user);
   }
 
   /**
@@ -772,16 +844,20 @@ export class StaffService {
    * weekly off or holiday (a half day earns half); unpaid has no limit. Leave counts in the year it starts.
    */
   async balancesFor(employeeId: string, projectId: string | null, year: number, db: Prisma.TransactionClient = this.prisma, excludeId?: string): Promise<LeaveBalanceDto[]> {
+    const emp = await db.employee.findUnique({ where: { id: employeeId }, select: { organizationId: true, joinedOn: true } });
+    const policy = emp ? await this.leavePolicy(emp.organizationId, db) : DEFAULT_LEAVE_POLICY;
+    const yearRange = (y: number) => {
+      const r = leaveYearRange(y, policy.yearStart);
+      return { gte: parseDate(r.from), lte: parseDate(r.to) };
+    };
     const range = yearRange(year);
-    const [rows, worked, openings] = await Promise.all([
+    const [rows, worked, openings, holidays, offs] = await Promise.all([
       db.leaveRequest.groupBy({ by: ['type', 'status'], where: { employeeId, status: { in: [...LIVE_LEAVE] }, fromDate: range, ...(excludeId ? { id: { not: excludeId } } : {}) }, _sum: { days: true } }),
       db.staffAttendance.findMany({ where: { employeeId, date: range, status: { in: ['PRESENT', 'HALF_DAY'] } }, select: { date: true, status: true, projectId: true } }),
       db.leaveOpening.findMany({ where: { employeeId, year }, select: { type: true, takenBefore: true, broughtForward: true } }),
+      emp ? db.holiday.findMany({ where: { organizationId: emp.organizationId, date: range }, select: { date: true, projectId: true } }) : [],
+      emp ? this.weeklyOffs(emp.organizationId, db) : null,
     ]);
-    const emp = await db.employee.findUnique({ where: { id: employeeId }, select: { organizationId: true, joinedOn: true } });
-    const [holidays, policy] = emp
-      ? await Promise.all([db.holiday.findMany({ where: { organizationId: emp.organizationId, date: range }, select: { date: true, projectId: true } }), this.leavePolicy(emp.organizationId, db)])
-      : [[], DEFAULT_LEAVE_POLICY];
     const joinedOn = emp?.joinedOn ? dateOnly(emp.joinedOn) : null;
     // Earned leave the year before left, for what carries: that year's own days (no carry of its own) less taken and waiting.
     let earnedLeftLastYear = 0;
@@ -794,9 +870,11 @@ export class StaffService {
       earnedLeftLastYear =
         (leaveEntitlement('EARNED', { ...policy, earnedCarryMax: 0 }, year - 1, joinedOn, 0, lastBrought) ?? 0) - num(last._sum.days ?? 0) - (lastOpening ? lastOpening.takenBefore.toNumber() : 0);
     }
+    // A day worked on the weekly off of the site worked at (else their posting), or on a holiday there, earns a comp-off.
     const isOff = (d: Date, p: string | null) => {
       const s = dateOnly(d);
-      return isWeeklyOff(s) || holidays.some((h) => dateOnly(h.date) === s && (h.projectId === null || h.projectId === (p ?? projectId)));
+      const site = p ?? projectId;
+      return isWeeklyOff(s, offs ? offs.of(site) : DEFAULT_WEEKLY_OFF) || holidays.some((h) => dateOnly(h.date) === s && (h.projectId === null || h.projectId === site));
     };
     const compOff = worked.filter((a) => isOff(a.date, a.projectId)).reduce((n, a) => n + (a.status === 'HALF_DAY' ? 0.5 : 1), 0);
     const sum = (type: LeaveType, status: 'PENDING' | 'APPROVED') => num(rows.find((r) => r.type === type && r.status === status)?._sum.days ?? 0);
@@ -814,7 +892,7 @@ export class StaffService {
   async balances(user: RequestUser, q: BalanceQuery): Promise<LeaveBalanceDto[]> {
     const e = q.employeeId ? await this.visibleEmployee(user, q.employeeId) : await this.ownEmployee(user);
     if (!e) throw new NotFoundException('Your login is not linked to a staff record');
-    return this.balancesFor(e.id, e.projectId, q.year ?? yearOf(todayIn()));
+    return this.balancesFor(e.id, e.projectId, q.year ?? leaveYearOf(todayIn(), await this.leaveYearStart(user.organizationId)));
   }
 
   /** An employee's leave before Nirmaan for a year: days taken and earned leave brought forward (HR and the people who see the record). */
@@ -900,10 +978,14 @@ export class StaffService {
   }
 
   private async assertBalance(tx: Prisma.TransactionClient, employeeId: string, projectId: string | null, type: LeaveType, fromDate: string, days: number, excludeId?: string) {
-    const b = (await this.balancesFor(employeeId, projectId, yearOf(fromDate), tx, excludeId)).find((x) => x.type === type)!;
+    const emp = await tx.employee.findUnique({ where: { id: employeeId }, select: { organizationId: true } });
+    const start = emp ? await this.leaveYearStart(emp.organizationId, tx) : DEFAULT_LEAVE_POLICY.yearStart;
+    const year = leaveYearOf(fromDate, start);
+    const b = (await this.balancesFor(employeeId, projectId, year, tx, excludeId)).find((x) => x.type === type)!;
     if (b.left !== null && b.left < days) {
       const label = LEAVE_TYPE_LABELS[type].toLowerCase();
-      throw new BadRequestException(b.left <= 0 ? `No ${label} left for ${yearOf(fromDate)}` : `Only ${b.left} day${b.left === 1 ? '' : 's'} of ${label} left for ${yearOf(fromDate)}`);
+      const name = leaveYearLabel(year, start);
+      throw new BadRequestException(b.left <= 0 ? `No ${label} left for ${name}` : `Only ${b.left} day${b.left === 1 ? '' : 's'} of ${label} left for ${name}`);
     }
   }
 
@@ -919,14 +1001,16 @@ export class StaffService {
     const halfDay = !!dto.halfDay;
     if (dto.fromDate > dto.toDate) throw new BadRequestException('The leave cannot end before it starts');
     if (halfDay && dto.fromDate !== dto.toDate) throw new BadRequestException('A half day is a single day');
-    if (yearOf(dto.fromDate) !== yearOf(dto.toDate)) throw new BadRequestException('Apply separately for the days in each year');
+    const start = await this.leaveYearStart(user.organizationId);
+    if (leaveYearOf(dto.fromDate, start) !== leaveYearOf(dto.toDate, start)) throw new BadRequestException('Apply separately for the days in each leave year');
     if ((Date.parse(dto.toDate) - Date.parse(dto.fromDate)) / 86_400_000 > 90) throw new BadRequestException('At most 90 days at a time');
     const employee = e;
     const created = await this.prisma.$transaction(async (tx) => {
       await this.lockEmployee(tx, employee.id);
       const holidays = await this.holidayMap(user.organizationId, employee.projectId, dto.fromDate, dto.toDate, tx);
-      const days = leaveDays(dto.fromDate, dto.toDate, halfDay, new Set(holidays.keys()));
-      if (days === 0) throw new BadRequestException('Those days are Sundays or holidays; no leave is needed');
+      const weeklyOff = (await this.weeklyOffs(user.organizationId, tx)).of(employee.projectId);
+      const days = leaveDays(dto.fromDate, dto.toDate, halfDay, new Set(holidays.keys()), weeklyOff);
+      if (days === 0) throw new BadRequestException(`Those days are ${weeklyOffWords(weeklyOff)} or holidays; no leave is needed`);
       const clash = await tx.leaveRequest.findFirst({
         where: { employeeId: employee.id, status: { in: [...LIVE_LEAVE] }, fromDate: { lte: parseDate(dto.toDate) }, toDate: { gte: parseDate(dto.fromDate) } },
         select: { fromDate: true, toDate: true, halfDay: true },

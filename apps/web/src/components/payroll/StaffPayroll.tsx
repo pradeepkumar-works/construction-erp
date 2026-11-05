@@ -30,7 +30,7 @@ export function StaffPayroll({ month, projectId }: { month: string; projectId?: 
     { header: 'Joined', value: (r) => r.joinedOn, width: 12 },
     { header: 'Left', value: (r) => r.leftOn, width: 12 },
     { header: 'Days on rolls', value: (r) => r.calendarDays },
-    { header: 'Sundays and holidays', value: (r) => r.offDays },
+    { header: 'Weekly offs and holidays', value: (r) => r.offDays },
     { header: 'Working days', value: (r) => r.workingDays },
     { header: 'Present', value: (r) => r.present },
     ...LEAVE_TYPES.map((t) => ({ header: LEAVE_TYPE_LABELS[t], value: (r: PayrollRowDto) => r.leave[t] })),
@@ -61,7 +61,7 @@ export function StaffPayroll({ month, projectId }: { month: string; projectId?: 
     },
     { title: 'Posted at', dataIndex: 'projectName', width: 200, ellipsis: true, render: (v: string | null) => v ?? 'Head office' },
     { title: <Tooltip title="Days on the rolls this month">Days</Tooltip>, dataIndex: 'calendarDays', width: 70, align: 'right' },
-    { title: <Tooltip title="Sundays and holidays">Off</Tooltip>, dataIndex: 'offDays', width: 60, align: 'right' },
+    { title: <Tooltip title="Weekly offs and holidays">Off</Tooltip>, dataIndex: 'offDays', width: 60, align: 'right' },
     { title: 'Present', dataIndex: 'present', width: 80, align: 'right' },
     ...LEAVE_TYPES.map((t) => ({ title: <Tooltip title={LEAVE_TYPE_LABELS[t]}>{SHORT[t]}</Tooltip>, key: t, width: 80, align: 'right' as const, render: (_: unknown, r: PayrollRowDto) => n(r.leave[t]) })),
     { title: 'Absent', dataIndex: 'absent', width: 75, align: 'right', render: n },
@@ -70,7 +70,7 @@ export function StaffPayroll({ month, projectId }: { month: string; projectId?: 
     { title: 'Paid days', dataIndex: 'paidDays', width: 90, align: 'right', render: (v: number) => <strong>{v}</strong> },
     { title: <Tooltip title="Approved overtime hours">OT h</Tooltip>, dataIndex: 'overtimeHours', width: 70, align: 'right', render: n },
     { title: <Tooltip title="Overtime hours still waiting for the site manager or HR; not paid until approved">Overtime waiting (h)</Tooltip>, dataIndex: 'overtimePendingHours', width: 90, align: 'right', render: n },
-    { title: <Tooltip title="Sundays and holidays worked: comp-off earned">Off worked</Tooltip>, dataIndex: 'offDaysWorked', width: 95, align: 'right', render: n },
+    { title: <Tooltip title="Weekly offs and holidays worked: comp-off earned">Off worked</Tooltip>, dataIndex: 'offDaysWorked', width: 95, align: 'right', render: n },
     { title: 'On rolls', key: 'rolls', width: 200, render: (_, r) => (r.leftOn ? `Left ${formatDate(r.leftOn)}` : r.joinedOn && r.joinedOn >= (data?.from ?? '') ? `Joined ${formatDate(r.joinedOn)}` : '') },
   ];
 

@@ -49,7 +49,7 @@ export function departmentFigures(department: string, byModule: Partial<Record<M
   return out.slice(0, DEPARTMENT_FIGURE_MAX);
 }
 
-export const PIPELINE_KEYS = ['indents', 'deliveries', 'letters'] as const;
+export const PIPELINE_KEYS = ['indents', 'deliveries', 'letters', 'salaries'] as const;
 export type PipelineKey = (typeof PIPELINE_KEYS)[number];
 
 /** The pipelines per department, top first. */
@@ -57,6 +57,7 @@ export const DEPARTMENT_PIPELINES: Record<string, PipelineKey[]> = {
   'purchase-management': ['indents'],
   'store-inventory': ['deliveries'],
   correspondence: ['letters'],
+  'hr-payroll': ['salaries'],
 };
 
 /** Every stage a pipeline's entries stand at, in the order the work moves. */
@@ -79,12 +80,19 @@ export const PIPELINE_STAGES: Record<PipelineKey, { key: string; label: string }
     { key: 'SEAL', label: 'Waiting for the seal' },
     { key: 'REPLY', label: 'Our reply due' },
   ],
+  salaries: [
+    { key: 'TO_PREPARE', label: 'To prepare' },
+    { key: 'DRAFT', label: 'In draft' },
+    { key: 'APPROVAL', label: 'Waiting for approval' },
+    { key: 'TO_PAY', label: 'Approved, to pay' },
+  ],
 };
 
 export const PIPELINE_TITLES: Record<PipelineKey, { title: string; note: string; href: string }> = {
   indents: { title: 'Open indents', note: 'Each indent from approval through quotations and the order to the last delivery.', href: '/material-requests' },
   deliveries: { title: 'Deliveries to receive', note: 'Approved orders with material still to come, late ones first.', href: '/purchase-orders?tab=status' },
   letters: { title: 'Letters open', note: 'Outward letters waiting to be signed or sealed, and letters waiting for our reply.', href: '/correspondence' },
+  salaries: { title: 'Salaries and settlements', note: 'Each month’s salary run, due by the 7th, and each leaver’s full and final, due two days after the last day, until paid.', href: '/payroll?tab=runs' },
 };
 
 /** At most this many rows of a pipeline on the screen; the stage counts cover them all. */

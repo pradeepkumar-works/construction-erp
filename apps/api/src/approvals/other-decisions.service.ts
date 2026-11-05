@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import {
   LEAVE_TYPE_LABELS,
+  OTHER_DECISION_KINDS,
   canApprovePayroll,
   canApproveVouchers,
   canKeepBooks,
@@ -33,14 +34,16 @@ const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 export class OtherDecisionsService {
   constructor(private staff: StaffService, private payroll: PayrollRunService, private books: BooksService, private letters: CorrespondenceService) {}
 
-  async forUser(user: RequestUser): Promise<OtherDecisionGroupDto[]> {
+  /** Every kind, or only `kinds` (a module's screen asks for its own). */
+  async forUser(user: RequestUser, kinds: readonly OtherDecisionKind[] = OTHER_DECISION_KINDS): Promise<OtherDecisionGroupDto[]> {
     const role = user.roleKey;
+    const wants = (k: OtherDecisionKind) => kinds.includes(k);
     const [leave, overtime, runs, vouchers, letters] = await Promise.all([
-      this.staff.listLeave(user, { toDecide: true, sortBy: 'fromDate', sortOrder: 'asc', page: 1, pageSize: SHOWN }).catch(() => null),
-      this.staff.overtimeToDecide(user).catch(() => null),
-      canApprovePayroll(role) ? this.payroll.list(user, {}).catch(() => null) : null,
-      canApproveVouchers(role) && canKeepBooks(role) ? this.books.vouchers(user, { toDecide: true, page: 1, pageSize: SHOWN }) : null,
-      this.letters.list(user, { toSign: true, sortBy: 'letterDate', sortOrder: 'asc', page: 1, pageSize: SHOWN }).catch(() => null),
+      wants('LEAVE') ? this.staff.listLeave(user, { toDecide: true, sortBy: 'fromDate', sortOrder: 'asc', page: 1, pageSize: SHOWN }).catch(() => null) : null,
+      wants('OVERTIME') ? this.staff.overtimeToDecide(user).catch(() => null) : null,
+      wants('PAYROLL_RUN') && canApprovePayroll(role) ? this.payroll.list(user, {}).catch(() => null) : null,
+      wants('VOUCHER') && canApproveVouchers(role) && canKeepBooks(role) ? this.books.vouchers(user, { toDecide: true, page: 1, pageSize: SHOWN }) : null,
+      wants('LETTER') ? this.letters.list(user, { toSign: true, sortBy: 'letterDate', sortOrder: 'asc', page: 1, pageSize: SHOWN }).catch(() => null) : null,
     ]);
     const groups: OtherDecisionGroupDto[] = [];
     const add = (kind: OtherDecisionKind, count: number, items: OtherDecisionDto[], href: string, money = false) => {

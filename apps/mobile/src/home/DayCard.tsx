@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { canMarkStaff, type MyStaffDto, type PayslipDto, type StaffSummaryDto } from '@erp/shared';
+import { WEEKDAY_NAMES, canMarkStaff, type MyStaffDto, type PayslipDto, type StaffSummaryDto } from '@erp/shared';
 import { useFetch } from '../api/hooks';
 import { useAuth } from '../auth/AuthContext';
 import { Button } from '../components/Button';
@@ -71,7 +71,7 @@ export function DayCard({ refreshKey }: { refreshKey?: number }) {
           ? { text: t('Outside the site'), fg: colors.warning, bg: colors.warningSoft, icon: 'warning-outline' }
           : { text: t('Marked in'), fg: colors.success, bg: colors.successSoft, icon: 'checkmark-circle-outline' }
       : !day?.checkIn && data?.todayOff
-        ? { text: data.todayOff === 'Sunday' ? t('Weekly off') : data.todayOff, fg: colors.neutral, bg: colors.neutralSoft, icon: 'sunny-outline' }
+        ? { text: data.todayOff === WEEKDAY_NAMES[data.weeklyOff ?? 0] ? t('Weekly off') : data.todayOff, fg: colors.neutral, bg: colors.neutralSoft, icon: 'sunny-outline' }
         : null;
 
   const leaveLeft = (data?.balances ?? []).filter((b) => b.entitled !== null && b.left !== null).reduce((n, b) => n + Number(b.left), 0);

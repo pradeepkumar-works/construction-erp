@@ -1,3 +1,4 @@
+import type { LeaveYearStart, Weekday } from './staff';
 import type { MachineEngineDto } from './telematics';
 import type { VendorRecordDto } from './vendor-score';
 import type { LetterAction, LetterGate, LetterMarkDto, LetterMode, LetterPriority, LetterStatus } from './correspondence';
@@ -3249,9 +3250,14 @@ export interface MyStaffDto {
   /** null when the login is not linked to an employee */
   employee: EmployeeDto | null;
   today: StaffAttendanceDto | null;
-  /** Holiday name or 'Sunday' when today is off */
+  /** Holiday name or the weekday ('Sunday') when today is off */
   todayOff: string | null;
+  /** The leave year today is in (named by the year it starts), its name ("2026-27") and the month it starts */
   year: number;
+  yearLabel: string;
+  yearStart: LeaveYearStart;
+  /** The weekly off where they are posted (their site's, else the company's) */
+  weeklyOff: Weekday;
   balances: LeaveBalanceDto[];
   leave: LeaveRequestDto[];
   holidays: HolidayDto[];
@@ -3259,6 +3265,15 @@ export interface MyStaffDto {
   site: CheckInSiteDto | null;
   /** Days present this month so far, a half day counting half (the phone's Home shows it) */
   monthPresent: string;
+}
+
+/** GET /staff/weekly-offs: the leave year's start, the company's weekly off and each site's own. */
+export interface StaffCalendarDto {
+  yearStart: LeaveYearStart;
+  /** Head office and every site without its own */
+  weeklyOff: Weekday;
+  /** Active sites, each with its own weekly off or null for the company's */
+  sites: { projectId: string; projectName: string; weeklyOff: Weekday | null }[];
 }
 
 /** A site's location for GPS check-in. */

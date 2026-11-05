@@ -4,7 +4,7 @@ import React from 'react';
 import { App, Form, InputNumber, Typography } from 'antd';
 import type { EmployeeDto, LeaveOpeningDto } from '@erp/shared';
 import { LEAVE_TYPE_LABELS, OPENING_LEAVE_TYPES } from '@erp/shared';
-import { useSaveLeaveOpening } from '@/lib/queries';
+import { useLeaveCalendar, useSaveLeaveOpening } from '@/lib/queries';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { formatDateTime } from '@/lib/format';
 
@@ -20,6 +20,7 @@ export function LeaveOpeningModal({ open, onClose, employee, year, opening }: { 
   const [form] = Form.useForm<Values>();
   const { message } = App.useApp();
   const save = useSaveLeaveOpening(employee.id);
+  const cal = useLeaveCalendar();
   const initial: Values = Object.fromEntries(opening.lines.flatMap((l) => [[`taken_${l.type}`, l.takenBefore], ...(l.type === 'EARNED' ? [['brought', l.broughtForward]] : [])]));
   return (
     <FormShell
@@ -29,7 +30,7 @@ export function LeaveOpeningModal({ open, onClose, employee, year, opening }: { 
       layout="modal"
       width={560}
       projectDefault={false}
-      title={`Opening leave for ${employee.fullName}, ${year}`}
+      title={`Opening leave for ${employee.fullName}, ${cal.label(year)}`}
       okText="Save opening leave"
       onSubmit={async (v) => {
         await save.mutateAsync({
@@ -40,8 +41,8 @@ export function LeaveOpeningModal({ open, onClose, employee, year, opening }: { 
       }}
     >
       <Typography.Paragraph type="secondary">
-        For someone whose leave was kept elsewhere before Nirmaan: the days they took in {year} before then count as taken, and earned leave brought forward
-        stands in for what Nirmaan carries from {year - 1}.
+        For someone whose leave was kept elsewhere before Nirmaan: the days they took in {cal.label(year)} before then count as taken, and earned leave brought forward
+        stands in for what Nirmaan carries from {cal.label(year - 1)}.
       </Typography.Paragraph>
       <Form form={form} layout="vertical" initialValues={initial}>
         <FormGrid cols={3}>
@@ -51,7 +52,7 @@ export function LeaveOpeningModal({ open, onClose, employee, year, opening }: { 
             </Form.Item>
           ))}
         </FormGrid>
-        <Form.Item name="brought" label={`Earned leave brought forward into ${year}`} extra="Leave it empty for Nirmaan to carry what the year before left, by your leave rules">
+        <Form.Item name="brought" label={`Earned leave brought forward into ${cal.label(year)}`} extra="Leave it empty for Nirmaan to carry what the year before left, by your leave rules">
           {daysInput(300, 'Worked out')}
         </Form.Item>
       </Form>

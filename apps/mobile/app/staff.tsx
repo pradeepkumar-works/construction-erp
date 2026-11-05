@@ -9,6 +9,7 @@ import {
   STAFF_ATTENDANCE_LABELS,
   canMarkStaff,
   leaveDays,
+  WEEKDAY_NAMES,
   type LeaveRequestDto,
   type LeaveStatus,
   type LeaveType,
@@ -163,7 +164,7 @@ export default function StaffScreen() {
 
   const data = me.data;
   const holidays = useMemo(() => new Set((data?.holidays ?? []).map((h) => h.date)), [data]);
-  const taking = isIsoDate(from) && isIsoDate(to) && from <= to ? leaveDays(from, to, halfDay && from === to, holidays) : null;
+  const taking = isIsoDate(from) && isIsoDate(to) && from <= to ? leaveDays(from, to, halfDay && from === to, holidays, data?.weeklyOff ?? 0) : null;
   const balance = data?.balances.find((b) => b.type === type);
 
   const run = async (fn: () => Promise<unknown>, done: string) => {
@@ -235,7 +236,7 @@ export default function StaffScreen() {
           <Card title={t('Today, {date}', { date: formatDate(today()) })}>
             {data.todayOff && !day ? (
               <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
-                {data.todayOff === 'Sunday' ? t('Weekly off.') : t('Holiday: {name}.', { name: data.todayOff })} {t('Working today earns a comp-off.')}
+                {data.todayOff === WEEKDAY_NAMES[data.weeklyOff ?? 0] ? t('Weekly off.') : t('Holiday: {name}.', { name: data.todayOff })} {t('Working today earns a comp-off.')}
               </Text>
             ) : null}
             {day ? (
@@ -276,7 +277,7 @@ export default function StaffScreen() {
             </View>
           </Card>
 
-          <Card title={t('Leave left in {year}', { year: data.year })}>
+          <Card title={t('Leave left in {year}', { year: data.yearLabel ?? data.year })}>
             <View style={styles.balances}>
               {data.balances
                 .filter((b) => b.entitled !== null)
@@ -313,7 +314,7 @@ export default function StaffScreen() {
               <Input label={t('Reason')} required value={reason} onChangeText={setReason} error={formErrors.reason} maxLength={500} multiline />
               {taking !== null ? (
                 <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, (taking === 0 || (balance?.left != null && balance.left < taking)) && styles.errText]}>
-                  {taking === 0 ? t('Those days are Sundays or holidays.') : t('Takes {days} (Sundays and holidays not counted).', { days: days(taking, t) })}
+                  {taking === 0 ? t('Those days are weekly offs or holidays.') : t('Takes {days} (weekly offs and holidays not counted).', { days: days(taking, t) })}
                   {balance && balance.left !== null ? ` ${t('{days} left.', { days: days(balance.left, t) })}` : ''}
                 </Text>
               ) : null}

@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Button, Card, Col, Flex, Result, Row, Typography } from 'antd';
 import { CheckSquareOutlined, HourglassOutlined, RollbackOutlined } from '@/components/common/icons';
 import type { ModuleHomeDto, ModuleKey } from '@erp/shared';
-import { MODULE_INTROS, MODULE_LABELS, MODULE_SUBMISSION_TYPES, SUBMISSION_TYPE_PLURAL_LABELS, canManageStaff, canSeeNav, canViewEmployeePrivate, isModuleKey, navDestination, navNode, navTilesFor, projectTabHref, submissionListHref } from '@erp/shared';
+import { MODULE_INTROS, MODULE_LABELS, MODULE_OTHER_DECISIONS, MODULE_SUBMISSION_TYPES, OTHER_DECISION_LABELS, daysBetween, SUBMISSION_TYPE_PLURAL_LABELS, canManageStaff, canSeeNav, canViewEmployeePrivate, isModuleKey, navDestination, navNode, navTilesFor, projectTabHref, submissionListHref } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useModuleHome } from '@/lib/queries';
 import { useProjectScope } from '@/lib/project-scope';
@@ -26,9 +26,13 @@ import { tk } from '@/ds';
 
 const oldest = (n: number) => (n === 0 ? 'all from today' : `oldest ${n} day${n === 1 ? '' : 's'}`);
 
-/** What waits for the caller in this module: approvals by type, their entries sent back, and theirs waiting with others. */
+/**
+ * What waits for the caller in this module: approvals by type, decisions with an approval of their own (leave, salary
+ * runs…), their entries sent back, and theirs waiting with others.
+ */
 function Waiting({ data, label }: { data: ModuleHomeDto; label: string }) {
-  const total = data.waiting.reduce((s, w) => s + w.count, 0);
+  const others = data.others ?? [];
+  const total = data.waiting.reduce((s, w) => s + w.count, 0) + others.reduce((s, g) => s + g.count, 0);
   const back = data.sentBack.reduce((s, w) => s + w.count, 0);
   const row: React.CSSProperties = { minHeight: 44, padding: `${tk.space[2]} 0`, borderTop: tk.line('hairline') };
   return (
@@ -54,6 +58,24 @@ function Waiting({ data, label }: { data: ModuleHomeDto; label: string }) {
               </Link>
             </li>
           ))}
+          {others.map((g) => {
+            const days = g.items.length ? Math.max(0, daysBetween(g.items[0].since, data.date)) : 0;
+            return (
+              <li key={g.kind}>
+                <Link href={g.href} className="text-link">
+                  <Flex align="center" justify="space-between" gap={tk.space[3]} style={row}>
+                    <span>
+                      <CheckSquareOutlined aria-hidden /> {OTHER_DECISION_LABELS[g.kind]}: {g.count} {g.kind === 'LETTER' ? 'to sign' : 'to decide'}
+                    </span>
+                    <Typography.Text type={days > 2 ? 'warning' : 'secondary'} style={{ fontSize: tk.type.caption.fontSize, whiteSpace: 'nowrap' }}>
+                      {g.amount !== null ? <span translate="no">{formatINRCompact(g.amount)} · </span> : null}
+                      {oldest(days)}
+                    </Typography.Text>
+                  </Flex>
+                </Link>
+              </li>
+            );
+          })}
           {data.sentBack.map((s) => (
             <li key={`back-${s.type}`}>
               <Link href={submissionListHref(s.type)} className="text-link">
@@ -118,7 +140,7 @@ export function ModuleHome({ moduleKey }: { moduleKey: string }) {
       ))}
     </>
   ) : undefined;
-  const waits = MODULE_SUBMISSION_TYPES[key].length > 0;
+  const waits = MODULE_SUBMISSION_TYPES[key].length > 0 || !!MODULE_OTHER_DECISIONS[key]?.length;
 
   return (
     <div className="page-container">

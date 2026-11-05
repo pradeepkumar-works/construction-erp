@@ -25,9 +25,37 @@ export interface LeavePolicy {
   earnedCarryMax: number;
   /** A joiner gets the year's leave for the months left, from their joining month */
   proRata: boolean;
+  /** The month the leave year starts: 1, the calendar year, or 4, April to March */
+  yearStart: LeaveYearStart;
 }
 
-export const DEFAULT_LEAVE_POLICY: LeavePolicy = { casual: 12, sick: 12, earned: 15, earnedCarryMax: 0, proRata: false };
+/** When a company's leave year starts: January (the calendar year) or April (April to March, the financial year). */
+export const LEAVE_YEAR_STARTS = [1, 4] as const;
+export type LeaveYearStart = (typeof LEAVE_YEAR_STARTS)[number];
+export const LEAVE_YEAR_START_LABELS: Record<LeaveYearStart, string> = { 1: 'January to December', 4: 'April to March' };
+
+export const DEFAULT_LEAVE_POLICY: LeavePolicy = { casual: 12, sick: 12, earned: 15, earnedCarryMax: 0, proRata: false, yearStart: 1 };
+
+const pad2 = (n: number) => String(n).padStart(2, '0');
+
+/**
+ * The leave year a day (YYYY-MM-DD) falls in, named by the calendar year it starts in: with an April start, 10 Feb 2027
+ * is in leave year 2026 (April 2026 to March 2027).
+ */
+export function leaveYearOf(date: string, start: LeaveYearStart = 1): number {
+  const y = Number(date.slice(0, 4));
+  return Number(date.slice(5, 7)) >= start ? y : y - 1;
+}
+
+/** A leave year's first and last days (YYYY-MM-DD). */
+export function leaveYearRange(year: number, start: LeaveYearStart = 1): { from: string; to: string } {
+  if (start === 1) return { from: `${year}-01-01`, to: `${year}-12-31` };
+  const end = new Date(Date.UTC(year + 1, start - 1, 0)).toISOString().slice(0, 10);
+  return { from: `${year}-${pad2(start)}-01`, to: end };
+}
+
+/** A leave year's name: "2026" for a calendar year, "2026-27" for April to March. */
+export const leaveYearLabel = (year: number, start: LeaveYearStart = 1) => (start === 1 ? String(year) : `${year}-${String(year + 1).slice(2)}`);
 
 /** Rounded down to a half day. */
 const halfDays = (n: number) => Math.floor(n * 2) / 2;
@@ -41,9 +69,12 @@ const halfDays = (n: number) => Math.floor(n * 2) / 2;
 export function leaveEntitlement(type: LeaveType, policy: LeavePolicy, year: number, joinedOn: string | null, earnedLeftLastYear = 0, broughtForward: number | null = null): number | null {
   const days = type === 'CASUAL' ? policy.casual : type === 'SICK' ? policy.sick : type === 'EARNED' ? policy.earned : null;
   if (days === null) return null;
-  const joinYear = joinedOn ? Number(joinedOn.slice(0, 4)) : null;
+  const start = policy.yearStart ?? 1;
+  const joinYear = joinedOn ? leaveYearOf(joinedOn, start) : null;
   if (joinYear !== null && joinYear > year) return 0;
-  const base = policy.proRata && joinYear === year ? halfDays((days * (13 - Number(joinedOn!.slice(5, 7)))) / 12) : days;
+  // Months left in the leave year from the joining month, that month included.
+  const monthsLeft = joinedOn ? 12 - ((Number(joinedOn.slice(5, 7)) - start + 12) % 12) : 12;
+  const base = policy.proRata && joinYear === year ? halfDays((days * monthsLeft) / 12) : days;
   if (type === 'EARNED' && broughtForward !== null) return base + Math.max(0, broughtForward);
   const carry = type === 'EARNED' && policy.earnedCarryMax > 0 && (joinYear === null || joinYear < year) ? Math.min(policy.earnedCarryMax, Math.max(0, earnedLeftLastYear)) : 0;
   return base + carry;
@@ -111,21 +142,37 @@ export const LEAVE_STATUSES = ['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED'] a
 export type LeaveStatus = (typeof LEAVE_STATUSES)[number];
 export const LEAVE_STATUS_LABELS: Record<LeaveStatus, string> = { PENDING: 'Waiting', APPROVED: 'Approved', REJECTED: 'Rejected', CANCELLED: 'Cancelled' };
 
-/** The weekly off for every site. */
-export const isWeeklyOff = (date: string) => new Date(`${date}T00:00:00Z`).getUTCDay() === 0;
+/** Days of the week as `Date.getUTCDay()` numbers them: 0 is Sunday. */
+export const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6] as const;
+export type Weekday = (typeof WEEKDAYS)[number];
+export const WEEKDAY_NAMES: Record<Weekday, string> = { 0: 'Sunday', 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Friday', 6: 'Saturday' };
+/** Sunday, the weekly off of a company that has not set one */
+export const DEFAULT_WEEKLY_OFF: Weekday = 0;
+export const isWeekday = (n: unknown): n is Weekday => Number.isInteger(n) && (n as number) >= 0 && (n as number) <= 6;
+
+/** Whether a day (YYYY-MM-DD) is the weekly off: the site's own day, else the company's (Sunday unless it set another). */
+export const isWeeklyOff = (date: string, weeklyOff: Weekday = DEFAULT_WEEKLY_OFF) => new Date(`${date}T00:00:00Z`).getUTCDay() === weeklyOff;
+
+/** A site's weekly off: its own day, else the company's. Head office (no site) has the company's. */
+export const weeklyOffOf = (site: { weeklyOff: number | null } | null | undefined, company: Weekday = DEFAULT_WEEKLY_OFF): Weekday =>
+  site && isWeekday(site.weeklyOff) ? site.weeklyOff : company;
+
+/** The weekly off in words, for a sentence: "Sundays". */
+export const weeklyOffWords = (day: Weekday) => `${WEEKDAY_NAMES[day]}s`;
 
 /** A standard working day in hours; time beyond it between check-in and check-out is overtime. */
 export const STANDARD_DAY_HOURS = 9;
 
 /**
- * Working days a leave takes: Sundays and the given holidays (YYYY-MM-DD) are not counted; a half day is 0.5.
+ * Working days a leave takes: the weekly off (Sunday unless the site has another) and the given holidays (YYYY-MM-DD)
+ * are not counted; a half day is 0.5.
  */
-export function leaveDays(fromDate: string, toDate: string, halfDay: boolean, holidays: ReadonlySet<string> = new Set()): number {
-  if (halfDay) return fromDate === toDate && !isWeeklyOff(fromDate) && !holidays.has(fromDate) ? 0.5 : 0;
+export function leaveDays(fromDate: string, toDate: string, halfDay: boolean, holidays: ReadonlySet<string> = new Set(), weeklyOff: Weekday = DEFAULT_WEEKLY_OFF): number {
+  if (halfDay) return fromDate === toDate && !isWeeklyOff(fromDate, weeklyOff) && !holidays.has(fromDate) ? 0.5 : 0;
   let n = 0;
   for (let t = Date.parse(`${fromDate}T00:00:00Z`), end = Date.parse(`${toDate}T00:00:00Z`); t <= end; t += 86_400_000) {
     const d = new Date(t).toISOString().slice(0, 10);
-    if (!isWeeklyOff(d) && !holidays.has(d)) n += 1;
+    if (!isWeeklyOff(d, weeklyOff) && !holidays.has(d)) n += 1;
   }
   return n;
 }

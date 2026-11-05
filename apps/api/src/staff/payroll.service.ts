@@ -1,6 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { LEAVE_TYPES, canViewLabourSummary, countsAsPresent, canViewPayroll, isWeeklyOff, type ContractorMonthDto, type ContractorMonthRowDto, type LeaveType, type PayrollDto, type PayrollRowDto } from '@erp/shared';
+import { StaffService } from './staff.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -25,13 +26,13 @@ const days = (from: string, to: string) => {
 };
 
 /**
- * Payroll inputs (no statutory calculations): per employee per month the days on the rolls, Sundays and holidays,
+ * Payroll inputs (no statutory calculations): per employee per month the days on the rolls, weekly offs (each site's) and holidays,
  * days present, approved leave by type, absences, days not marked, overtime and loss-of-pay days; and per labour
  * contractor the man-days by trade from the attendance register, priced at the trade's daily rate.
  */
 @Injectable()
 export class PayrollService {
-  constructor(private prisma: PrismaService, private access: ProjectAccessService) {}
+  constructor(private prisma: PrismaService, private access: ProjectAccessService, private staff: StaffService) {}
 
   async staffMonth(user: RequestUser, month: string, projectId?: string): Promise<PayrollDto> {
     if (!canViewPayroll(user.roleKey)) throw new ForbiddenException('Only HR, accounts, management or an admin can see payroll inputs');
@@ -56,6 +57,7 @@ export class PayrollService {
       this.prisma.holiday.findMany({ where: { organizationId: user.organizationId, date: { gte: start, lte: end } }, select: { date: true, projectId: true } }),
     ]);
     const today = todayIn();
+    const offs = await this.staff.weeklyOffs(user.organizationId);
     const isHoliday = (d: string, site: string | null) => holidays.some((h) => dateOnly(h.date) === d && (h.projectId === null || h.projectId === site));
 
     const rows = employees.map((e): PayrollRowDto => {
@@ -72,7 +74,8 @@ export class PayrollService {
         // Only approved overtime is paid; what waits is shown apart, rejected is dropped.
         if (a?.overtimeHours && a.overtimeStatus === 'PENDING') r.overtimePendingHours += Number(a.overtimeHours);
         else if (a?.overtimeHours && a.overtimeStatus !== 'REJECTED') r.overtimeHours += Number(a.overtimeHours);
-        if (isWeeklyOff(d) || isHoliday(d, a?.projectId ?? e.projectId)) {
+        const site = a?.projectId ?? e.projectId;
+        if (isWeeklyOff(d, offs.of(site)) || isHoliday(d, site)) {
           r.offDays += 1;
           if (a && a.status !== 'ABSENT') r.offDaysWorked += a.status === 'HALF_DAY' ? 0.5 : 1;
           continue;

@@ -6,7 +6,7 @@ import { tk } from '@/ds';
 import type { TableProps } from 'antd';
 import { LoginOutlined, LogoutOutlined, PlusOutlined } from '@/components/common/icons';
 import type { LeaveRequestDto } from '@erp/shared';
-import { LEAVE_TYPE_LABELS } from '@erp/shared';
+import { LEAVE_TYPE_LABELS, WEEKDAY_NAMES } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
@@ -74,7 +74,7 @@ export function MyStaff() {
         <Col xs={24} lg={8}>
           <Section title={`Today, ${formatDate(new Date().toISOString())}`}>
             {data.todayOff && !t ? (
-              <Typography.Paragraph type="secondary">{data.todayOff === 'Sunday' ? 'Sunday, the weekly off.' : `Holiday: ${data.todayOff}.`} Working today counts towards a comp-off.</Typography.Paragraph>
+              <Typography.Paragraph type="secondary">{data.todayOff === WEEKDAY_NAMES[data.weeklyOff] ? `${data.todayOff}, the weekly off.` : `Holiday: ${data.todayOff}.`} Working today counts towards a comp-off.</Typography.Paragraph>
             ) : null}
             {t ? (
               <Space orientation="vertical" size={4}>
@@ -119,7 +119,7 @@ export function MyStaff() {
         </Col>
         <Col xs={24} lg={16}>
           <Section
-            title={`Leave left in ${data.year}`}
+            title={`Leave left in ${data.yearLabel}`}
             extra={
               <Button icon={<PlusOutlined />} onClick={() => setApply(true)}>
                 Apply for leave

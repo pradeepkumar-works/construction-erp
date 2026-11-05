@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, Matches, Max, MaxLength, Min, ValidateIf, ValidateNested } from 'class-validator';
-import { MANUAL_PAYSLIP_CODES, PAID_DAYS_BASES, PT_RULES, STAFF_LOAN_KINDS, TAX_REGIMES, type ManualPayslipCode, type PaidDaysBasis, type StaffLoanKind, type TaxRegime } from '@erp/shared';
+import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, Matches, Max, MaxLength, Min, ValidateIf, ValidateNested } from 'class-validator';
+import { LEAVE_YEAR_STARTS, MANUAL_PAYSLIP_CODES, PAID_DAYS_BASES, PT_RULES, STAFF_LOAN_KINDS, TAX_REGIMES, type ManualPayslipCode, type PaidDaysBasis, type StaffLoanKind, type TaxRegime } from '@erp/shared';
 import { QueryBool } from '../common/paging';
 
 const trim = () => Transform(({ value }) => (typeof value === 'string' ? value.trim() : value));
@@ -34,6 +34,8 @@ export class PayrollSettingsDto {
   @ApiPropertyOptional({ example: 15 }) @IsOptional() @IsNumber({ maxDecimalPlaces: 1 }, { message: 'Days in whole or half days' }) @Min(0) @Max(60) earnedLeaveDays?: number;
   @ApiPropertyOptional({ example: 30, description: 'Earned leave carried into the next year, at most; 0 = none' }) @IsOptional() @IsNumber({ maxDecimalPlaces: 1 }) @Min(0) @Max(300) earnedCarryMax?: number;
   @ApiPropertyOptional({ description: 'A joiner gets the year’s leave for the months left' }) @IsOptional() @IsBoolean() leaveProRata?: boolean;
+  @ApiPropertyOptional({ enum: LEAVE_YEAR_STARTS, description: 'The month the leave year starts: 1 January, 4 April' }) @IsOptional() @IsIn(LEAVE_YEAR_STARTS as unknown as number[]) leaveYearStart?: number;
+  @ApiPropertyOptional({ minimum: 0, maximum: 6, description: 'Weekly off at head office and every site without its own: 0 Sunday to 6 Saturday' }) @IsOptional() @IsInt() @Min(0) @Max(6) weeklyOff?: number;
 }
 
 export class CreateSalaryStructureDto {
