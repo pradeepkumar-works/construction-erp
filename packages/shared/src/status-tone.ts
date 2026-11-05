@@ -86,7 +86,7 @@ export const STATUS_TONES = {
   poReceipt: meanings<PoReceiptState>({ OPEN: 'waiting', RECEIVED: 'done', CLOSED: 'closed' }),
   delivery: meanings<DeliveryState>({ NOT_STARTED: 'waiting', PARTLY_RECEIVED: 'inHand', RECEIVED: 'done', CLOSED: 'closed' }),
   orderStage: meanings<OrderStage>({ TO_ENQUIRE: 'inHand', AWAITING_QUOTES: 'waiting', TO_FINALISE: 'waiting', AWAITING_APPROVAL: 'waiting', READY: 'inHand' }),
-  pipelineStage: meanings<'APPROVAL' | 'TO_ENQUIRE' | 'AWAITING_QUOTES' | 'TO_FINALISE' | 'READY' | 'NOT_STARTED' | 'PARTLY_RECEIVED' | 'SIGN' | 'SEAL' | 'REPLY'>({
+  pipelineStage: meanings<'APPROVAL' | 'TO_ENQUIRE' | 'AWAITING_QUOTES' | 'TO_FINALISE' | 'READY' | 'NOT_STARTED' | 'PARTLY_RECEIVED' | 'SIGN' | 'SEAL' | 'REPLY' | 'TO_PREPARE' | 'DRAFT' | 'TO_PAY'>({
     APPROVAL: 'waiting',
     TO_ENQUIRE: 'inHand',
     AWAITING_QUOTES: 'waiting',
@@ -97,6 +97,9 @@ export const STATUS_TONES = {
     SIGN: 'waiting',
     SEAL: 'waiting',
     REPLY: 'waiting',
+    TO_PREPARE: 'inHand',
+    DRAFT: 'inHand',
+    TO_PAY: 'waiting',
   }),
   enquiryVendor: meanings<EnquiryVendorState>({ NOT_SENT: 'inHand', SENT: 'waiting', OPENED: 'waiting', QUOTED: 'done', EXPIRED: 'closed' }),
   scEnquiry: meanings<ScEnquiryStatus>({ OPEN: 'waiting', AWARDED: 'done', CANCELLED: 'closed' }),
