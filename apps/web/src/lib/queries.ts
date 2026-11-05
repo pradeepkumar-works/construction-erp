@@ -185,6 +185,8 @@ import type {
   DprFormDto,
   DprFormVersionsDto,
   ApprovalMatrixDto,
+  ApprovalDelegationDto,
+  UserPositionDto,
   AuthOptionsDto,
   MeasurementSheetDto,
   ToMeasureItemDto,
@@ -1327,6 +1329,50 @@ export const useAuthOptions = () =>
 
 export const useApprovalMatrix = (enabled = true) =>
   useQuery({ queryKey: ['approval-rules'], queryFn: async () => (await api.get<ApprovalMatrixDto>('/approval-rules')).data, enabled });
+
+/** Approvals while someone is away: the caller's own (from or to them), or with `all` everyone's (admin). */
+export const useApprovalDelegations = (all = false, enabled = true) =>
+  useQuery({ queryKey: ['approval-delegations', all], queryFn: async () => (await api.get<ApprovalDelegationDto[]>('/approval-delegations', { params: all ? { all: true } : {} })).data, enabled });
+
+export interface NewDelegation {
+  fromUserId?: string;
+  toUserId: string;
+  startsOn: string;
+  endsOn: string;
+  note?: string;
+}
+
+export function useCreateDelegation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: NewDelegation) => (await api.post<ApprovalDelegationDto>('/approval-delegations', body)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['approval-delegations'] }),
+    meta: FAIL_NOTICE,
+  });
+}
+
+export function useEndDelegation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => (await api.delete(`/approval-delegations/${id}`)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['approval-delegations'] }),
+    meta: FAIL_NOTICE,
+  });
+}
+
+/** Replace the positions a user holds (admin). */
+export function useSetPositions() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ userId, positions }: { userId: string; positions: Pick<UserPositionDto, 'positionCode' | 'projectId'>[] }) => (await api.put<UserSummary>(`/users/${userId}/positions`, { positions })).data,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['users'] });
+      qc.invalidateQueries({ queryKey: ['approval-rules'] });
+      qc.invalidateQueries({ queryKey: ['projects'] });
+    },
+    meta: FAIL_NOTICE,
+  });
+}
 
 export const useActivityTemplates = (enabled = true) =>
   useQuery({ queryKey: ['activity-templates'], queryFn: async () => (await api.get<ActivityTemplateDto[]>('/activity-templates')).data, enabled });

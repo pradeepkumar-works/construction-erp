@@ -31,7 +31,8 @@ export function ApprovalLevels({ type, id }: { type: ApprovalTypeParam; id: stri
               <span role="listitem" key={l}>
                 {step ? (
                   <AppTag meaning="done" icon={<CheckOutlined />} style={{ margin: 0 }}>
-                    Level {l}: {step.byName ?? 'approved'}, {formatDateTime(step.at)}
+                    Level {l}: {step.byName ?? 'approved'}
+                    {step.forName ? ` for ${step.forName}` : ''}, {formatDateTime(step.at)}
                   </AppTag>
                 ) : waiting && l === data.level ? (
                   <AppTag meaning="waiting" icon={<ClockCircleOutlined />} style={{ margin: 0 }}>
@@ -52,7 +53,7 @@ export function ApprovalLevels({ type, id }: { type: ApprovalTypeParam; id: stri
               Waiting with <span translate="no">{data.waitingWith.join(', ')}</span>
             </>
           ) : (
-            'No role approves this level yet: set one on Approval rules'
+            'Nobody approves this level yet: set a role or position on Approval rules'
           )}
           {data.waitingSince ? ` since ${formatDateTime(data.waitingSince)}` : ''}
           {data.escalated ? (

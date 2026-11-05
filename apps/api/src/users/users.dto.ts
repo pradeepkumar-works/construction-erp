@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
-import { ArrayMaxSize, IsArray, IsBoolean, IsEmail, IsIn, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { ArrayMaxSize, IsArray, IsBoolean, IsEmail, IsIn, IsOptional, IsString, IsUUID, MaxLength, MinLength, ValidateNested } from 'class-validator';
 import { MIN_PASSWORD_LENGTH, LIST_SORT_FIELDS, ROLE_KEYS, RoleKey, type UserSortField } from '@erp/shared';
 import { PageQuery, QueryBool } from '../common/paging';
 
@@ -38,4 +38,18 @@ export class CreateUserDto {
 /** A user's projects are changed from the project's own team card, not here. */
 export class UpdateUserDto extends PartialType(OmitType(CreateUserDto, ['projectIds'] as const)) {
   @ApiPropertyOptional() @IsOptional() @QueryBool() @IsBoolean() isActive?: boolean;
+}
+
+export class UserPositionItemDto {
+  @ApiProperty({ example: 'site-in-charge', description: 'A code of the position master' }) @IsString() @MaxLength(60) positionCode: string;
+  @ApiPropertyOptional({ nullable: true, description: 'The project it is held on; null or left out = head office (every project)' }) @IsOptional() @IsUUID() projectId?: string | null;
+}
+
+export class SetPositionsDto {
+  @ApiProperty({ type: [UserPositionItemDto], description: 'Every position the user holds; an empty list clears them' })
+  @IsArray()
+  @ArrayMaxSize(200)
+  @ValidateNested({ each: true })
+  @Type(() => UserPositionItemDto)
+  positions: UserPositionItemDto[];
 }

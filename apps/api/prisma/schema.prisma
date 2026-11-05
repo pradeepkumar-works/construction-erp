@@ -936,6 +936,8 @@ model Organization {
   componentKinds       ComponentKind[]
   approvalRules        ApprovalRule[]
   approvalSteps        ApprovalStep[]
+  userPositions        UserPosition[]
+  approvalDelegations  ApprovalDelegation[]
   approvalEscalations  ApprovalEscalation[]
   passwordTokens       PasswordToken[]
   measurements         MeasurementSheet[]
@@ -1107,19 +1109,23 @@ model ApprovalRule {
   id             String       @id @default(uuid())
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
-  roleId         String
-  role           Role         @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  /// The approver is a role or a position, exactly one of the two
+  roleId         String?
+  role           Role?        @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  /// A code of the `position` master: whoever holds it on the entry's project, or at head office
+  positionCode   String?
   /// SubmissionType: PROGRESS | DPR | MATERIAL_REQUEST | MACHINERY | EXPENSE | MEASUREMENT | BILL | PURCHASE_ORDER | VENDOR_BILL | WORK_ORDER | SUBCONTRACT_BILL | INSPECTION | PAYMENT_REQUEST | SUPPLIER_CHOICE
   submissionType String
   maxAmount      Decimal?     @db.Decimal(18, 2)
-  /// 1 is the matrix; 2 and 3 are further approvals of the same entry
+  /// 1 is the first approval; 2 to 6 are further approvals of the same entry
   level          Int          @default(1)
-  /// Levels 2 and 3: the amount from which the level applies (null = always)
+  /// Levels 2 to 6: the amount from which the level applies (null = always)
   minAmount      Decimal?     @db.Decimal(18, 2)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
   @@unique([roleId, submissionType, level])
+  @@unique([organizationId, positionCode, submissionType, level])
   @@index([organizationId])
 }
 
@@ -1145,11 +1151,54 @@ model ApprovalStep {
   /// null for steps the system took (reminders, escalation)
   actorId        String?
   actor          User?              @relation("ApprovalStepActor", fields: [actorId], references: [id], onDelete: SetNull)
+  /// The approver the actor decided for, while they were away (ApprovalDelegation)
+  onBehalfOfId   String?
+  onBehalfOf     User?              @relation("ApprovalStepOnBehalfOf", fields: [onBehalfOfId], references: [id], onDelete: SetNull)
   note           String?
   createdAt      DateTime           @default(now())
 
   @@index([entityType, entityId])
   @@index([organizationId, createdAt])
+}
+
+/// A position a user holds (a code of the `position` master): on one project, or at head office (projectId null).
+/// Approval rules can name a position; positions never grant access, which stays with the user's role.
+model UserPosition {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  positionCode   String
+  /// null = head office: the position counts on every project
+  projectId      String?
+  project        Project?     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([userId, positionCode, projectId])
+  @@index([organizationId, positionCode])
+}
+
+/// Someone decides another user's approvals while they are away, from startsOn to endsOn (company dates, both included).
+model ApprovalDelegation {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  fromUserId     String
+  fromUser       User         @relation("DelegationFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUserId       String
+  toUser         User         @relation("DelegationTo", fields: [toUserId], references: [id], onDelete: Cascade)
+  startsOn       DateTime     @db.Date
+  endsOn         DateTime     @db.Date
+  note           String?
+  createdById    String?
+  createdBy      User?        @relation("DelegationCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId, toUserId])
+  @@index([organizationId, fromUserId])
 }
 
 /// Reminders and escalation for one submission type, set on the Approval rules page.
@@ -1248,6 +1297,11 @@ model User {
   excessRecoveries        ExcessMaterialRecovery[]
   equipmentParts          EquipmentPart[]
   approvalSteps           ApprovalStep[]             @relation("ApprovalStepActor")
+  approvalStepsFor        ApprovalStep[]             @relation("ApprovalStepOnBehalfOf")
+  positions               UserPosition[]
+  delegationsFrom         ApprovalDelegation[]       @relation("DelegationFrom")
+  delegationsTo           ApprovalDelegation[]       @relation("DelegationTo")
+  delegationsMade         ApprovalDelegation[]       @relation("DelegationCreatedBy")
   enquiries               Enquiry[]                  @relation("EnquiryCreator")
   submittedMachinery      MachineryLog[]             @relation("MachinerySubmitter")
   reviewedMachinery       MachineryLog[]             @relation("MachineryReviewer")
@@ -1528,6 +1582,7 @@ model Project {
   updatedAt              DateTime       @updatedAt
 
   members            ProjectMember[]
+  userPositions      UserPosition[]
   boqItems           BoqItem[]
   activities         Activity[]
   workElements       WorkElement[]

@@ -1,9 +1,19 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { APPROVER_ROLES, type RoleKey, type SubmissionType, COMPANY_WIDE_ROLES, GUEST_ROLES, seesEveryProject, canAdjustStock, canApprove, canKeepStock, canLogMachinery, canManageEquipment, canManageStore, canMeasure, canRaiseRisk, canRecordAttendance, canRequestInspection, canSubmitExpense, canRecordTest, canRaiseNcr, canCheckGrn, canManageDocuments, canViewLetters, canManageStaff, canMarkStaff, canViewEmployeePrivate, canViewMessageLog, canReportSafety, canManageSafety, canIssuePpe, canManageMaintenance, canFreezeBaseline, canManageWorkers, canViewWorkers, canReportDefect, canCloseDefect, canManageHandover, CLIENT_GUEST_ROLES, isClientGuest, isGuest, isSupplier, canManageSupplierLogins, canCheckSupplierInvoices, canApproveSupplierChange } from '@erp/shared';
+import { APPROVER_ROLES, GUEST_ROLES, approverOf, type ApproverKey, type RoleKey, type SubmissionType, COMPANY_WIDE_ROLES, seesEveryProject, canAdjustStock, canApprove, canKeepStock, canLogMachinery, canManageEquipment, canManageStore, canMeasure, canRaiseRisk, canRecordAttendance, canRequestInspection, canSubmitExpense, canRecordTest, canRaiseNcr, canCheckGrn, canManageDocuments, canViewLetters, canManageStaff, canMarkStaff, canViewEmployeePrivate, canViewMessageLog, canReportSafety, canManageSafety, canIssuePpe, canManageMaintenance, canFreezeBaseline, canManageWorkers, canViewWorkers, canReportDefect, canCloseDefect, canManageHandover, CLIENT_GUEST_ROLES, isClientGuest, isGuest, isSupplier, canManageSupplierLogins, canCheckSupplierInvoices, canApproveSupplierChange } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { ApprovalRightsService } from './approval-rights.service';
 import { RequestUser } from './current-user';
+import { parseDate } from './serialize';
+import { todayIn } from '../notifications/time';
+
+/** A user who decides by a key, or (with `forUserId`) holds that user's approvals while they are away. */
+export interface KeyHolder {
+  id: string;
+  email: string;
+  fullName: string;
+  forUserId?: string;
+}
 
 /**
  * Central place for "which projects can this user see / act on".
@@ -62,10 +72,40 @@ export class ProjectAccessService {
   /**
    * Inverse of the visibility rule: every active user who may approve submissions of this project
    * (company-wide approvers plus approvers who manage or are a member of it). With a submission type (and amount),
-   * only the roles the organisation's approval matrix allows for it; without one, the fixed approver roles.
+   * those the organisation's approval matrix names at `level` (roles and positions) and whoever holds their approvals
+   * while they are away; without one, the fixed approver roles.
    */
-  async approversForProject(organizationId: string, projectId: string, type?: SubmissionType, amount: Prisma.Decimal | null = null, level = 1) {
-    return this.usersWithRoles(organizationId, projectId, type ? await this.rights.roleKeysFor(organizationId, type, amount, level) : APPROVER_ROLES);
+  async approversForProject(organizationId: string, projectId: string, type?: SubmissionType, amount: Prisma.Decimal | null = null, level = 1): Promise<KeyHolder[]> {
+    if (!type) return this.usersWithRoles(organizationId, projectId, APPROVER_ROLES);
+    return this.usersWithKeys(organizationId, projectId, await this.rights.levelKeysFor(organizationId, type, amount, level));
+  }
+
+  /**
+   * Active users who see the project and decide by one of these keys: the roles, the positions held on the project or at
+   * head office, and (with `forUserId`) the delegates of those users today, who see the project too.
+   */
+  async usersWithKeys(organizationId: string, projectId: string, keys: ApproverKey[]): Promise<KeyHolder[]> {
+    const roles = keys.flatMap((k) => approverOf(k).roleKey ?? []);
+    const positions = keys.flatMap((k) => approverOf(k).positionCode ?? []);
+    const holders = await this.prisma.user.findMany({
+      where: {
+        organizationId,
+        isActive: true,
+        AND: [
+          { OR: [...(roles.length ? [{ role: { key: { in: roles } } }] : []), ...(positions.length ? [{ positions: { some: { positionCode: { in: positions }, OR: [{ projectId: null }, { projectId }] } } }] : [])] },
+          this.seesProjectWhere(projectId),
+        ],
+      },
+      select: { id: true, email: true, fullName: true },
+    });
+    if (!holders.length) return [];
+    const today = parseDate(todayIn());
+    const delegations = await this.prisma.approvalDelegation.findMany({
+      where: { organizationId, fromUserId: { in: holders.map((h) => h.id) }, startsOn: { lte: today }, endsOn: { gte: today }, toUser: { isActive: true, role: { key: { notIn: GUEST_ROLES } }, ...this.seesProjectWhere(projectId) } },
+      select: { fromUserId: true, toUser: { select: { id: true, email: true, fullName: true } } },
+    });
+    const own = new Set(holders.map((h) => h.id));
+    return [...holders, ...delegations.filter((d) => !own.has(d.toUser.id)).map((d) => ({ ...d.toUser, forUserId: d.fromUserId }))];
   }
 
   /** Active users of these roles who see the project (company-wide roles, its manager and its members). */

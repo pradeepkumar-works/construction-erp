@@ -693,5 +693,11 @@ DROP POLICY IF EXISTS tenant_isolation ON "ExitClearanceLine";
 ALTER TABLE "HrLetterTemplate" NO FORCE ROW LEVEL SECURITY;
 ALTER TABLE "HrLetterTemplate" DISABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON "HrLetterTemplate";
+ALTER TABLE "UserPosition" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "UserPosition" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "UserPosition";
+ALTER TABLE "ApprovalDelegation" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "ApprovalDelegation" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "ApprovalDelegation";
 
 DROP FUNCTION IF EXISTS app_current_org();

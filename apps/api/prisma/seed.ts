@@ -1833,6 +1833,7 @@ async function modulesPass(organizationId: string, passwordHash: string) {
   await seedLdTerms(organizationId);
   await seedPriceVariation(organizationId);
   await seedApprovalRules(organizationId);
+  await seedPositions(organizationId);
   await seedBills(organizationId);
   await seedReceipts(organizationId);
   await seedVendors(organizationId);
@@ -2232,6 +2233,23 @@ async function seedApprovalRules(organizationId: string) {
     ...CHOICE_RULES,
   ];
   await write(rows);
+}
+
+/**
+ * Demo positions (the `position` master): the team leader is site in-charge of the highway and the MD holds managing
+ * director at head office. No approval rule names a position, so the demo's approvals run as before.
+ */
+async function seedPositions(organizationId: string) {
+  const [tl, md, road] = await Promise.all([
+    prisma.user.findFirst({ where: { organizationId, email: 'tl@demo.com' }, select: { id: true } }),
+    prisma.user.findFirst({ where: { organizationId, email: 'md@demo.com' }, select: { id: true } }),
+    prisma.project.findFirst({ where: { organizationId, code: 'RD-2026-01' }, select: { id: true } }),
+  ]);
+  const data = [
+    ...(tl && road ? [{ organizationId, userId: tl.id, positionCode: 'site-in-charge', projectId: road.id }] : []),
+    ...(md ? [{ organizationId, userId: md.id, positionCode: 'managing-director', projectId: null }] : []),
+  ];
+  if (data.length) await prisma.userPosition.createMany({ data, skipDuplicates: true });
 }
 
 /** Demo first bills: [project type, measurements up to (days ago), bill date, sent, remarks]. */

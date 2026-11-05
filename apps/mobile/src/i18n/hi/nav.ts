@@ -409,6 +409,8 @@ export const NAV: Record<string, string> = {
   'Departments': 'विभाग',
   'The departments people work in.': 'वे विभाग जिनमें लोग काम करते हैं।',
   'Designations': 'पद',
+  Positions: 'ओहदे',
+  'Posts people hold on a project or at head office, which approval levels can name.': 'प्रोजेक्ट या मुख्य कार्यालय पर लोगों के ओहदे, जिन्हें मंज़ूरी के स्तर चुन सकते हैं।',
   'Job titles on employee records.': 'कर्मचारी रिकॉर्ड पर पद के नाम।',
   // Correspondence
   'Inward register': 'आवक रजिस्टर',

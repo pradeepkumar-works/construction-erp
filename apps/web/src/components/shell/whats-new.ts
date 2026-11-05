@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-positions-delegation',
+    date: '2026-11-05',
+    title: 'Approval chains by position, up to six levels, and approvals while you are away',
+    points: [
+      'Approval rules can name a position as well as a role: site in-charge, team leader, billing engineer, general manager / COO, managing director and the rest of Administration › Masters › Positions.',
+      'Admins set who holds each position on Users, on a project or at head office. Whoever holds it on the entry’s project, or at head office, decides that level. Access still comes from the role.',
+      'An entry can now go through up to six approvals in order, so a bill can run from the site to the project manager, accounts and the general manager or the MD, each with their own limit.',
+      'Going on leave? Approvals › While you are away hands your approvals to a colleague for the days you choose. They decide what waits on you with your limits, are told of it, and the record says whom they approved for. Admins can set this for anyone on Users.',
+    ],
+  },
+  {
     id: '2026-11-approval-design',
     date: '2026-11-05',
     title: 'Approvals: no one decides their own entry, and head office sees every project',
