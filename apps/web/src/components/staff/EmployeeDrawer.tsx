@@ -11,7 +11,7 @@ import type { AttachmentDto, EmployeeDto, LeaveRequestDto, StaffAttendanceDto } 
 import { EMPLOYMENT_TYPE_LABELS, GENDER_LABELS, LEAVE_TYPE_LABELS, canManageStaff, canViewEmployeePrivate } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { errorMessage } from '@/lib/api';
-import { useEmployee, useEmployeeDocuments, useLeave, useLeaveBalances, useLeaveOpening, useSetEmployeeDocuments, useStaffAttendance } from '@/lib/queries';
+import { useEmployee, useEmployeeDocuments, useLeave, useLeaveBalances, useLeaveCalendar, useLeaveOpening, useSetEmployeeDocuments, useStaffAttendance } from '@/lib/queries';
 import { LeaveOpeningModal } from './LeaveOpeningModal';
 import { formatDate, formatINR, NO_VALUE, MONTH_PICKER_FORMAT } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
@@ -144,8 +144,10 @@ export function EmployeeDrawer({ id, open, onClose, onOpenLeave }: { id: string 
   const from = month.format('YYYY-MM-DD');
   const to = month.endOf('month').format('YYYY-MM-DD');
   const { data: att } = useStaffAttendance(id ?? undefined, from, to);
-  const { data: balances } = useLeaveBalances(id ?? undefined, month.year(), !!id);
-  const { data: opening } = useLeaveOpening(id ?? '', month.year(), !!id && admin);
+  const cal = useLeaveCalendar();
+  const leaveYear = cal.yearOf(from);
+  const { data: balances } = useLeaveBalances(id ?? undefined, leaveYear, !!id);
+  const { data: opening } = useLeaveOpening(id ?? '', leaveYear, !!id && admin);
   const [openingFor, setOpeningFor] = useState(false);
   const takenBefore = (balances ?? []).reduce((n, b) => n + (b.takenBefore ?? 0), 0);
   const { data: leave } = useLeave({ employeeId: id ?? undefined, pageSize: 20 }, !!id);
@@ -201,7 +203,7 @@ export function EmployeeDrawer({ id, open, onClose, onOpenLeave }: { id: string 
                     ]}
                   />
                   <Divider titlePlacement="start" plain>
-                    Leave in {month.year()}
+                    Leave in {cal.label(leaveYear)}
                   </Divider>
                   <Space wrap size={[16, 4]} style={{ marginBottom: tk.space[2] }}>
                     {(balances ?? [])
@@ -249,7 +251,7 @@ export function EmployeeDrawer({ id, open, onClose, onOpenLeave }: { id: string 
         />
       )}
       <EmployeeFormModal open={editing} onClose={() => setEditing(false)} employee={data} />
-      {admin && data && opening && openingFor && <LeaveOpeningModal open onClose={() => setOpeningFor(false)} employee={data} year={month.year()} opening={opening} />}
+      {admin && data && opening && openingFor && <LeaveOpeningModal open onClose={() => setOpeningFor(false)} employee={data} year={leaveYear} opening={opening} />}
     </Drawer>
   );
 }

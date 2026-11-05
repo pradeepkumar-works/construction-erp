@@ -18,6 +18,7 @@ import {
   CheckOutDto,
   CreateEmployeeDto,
   CreateHolidayDto,
+  SaveStaffCalendarDto,
   CheckEmployeeDocumentDto,
   EmployeeDocumentsDto,
   FileEmployeeDocumentDto,
@@ -291,7 +292,7 @@ export class StaffController {
 
   @ApiOperation({
     summary: 'Apply for leave',
-    description: 'Sundays and holidays are not counted. Rejected when it overlaps other leave or exceeds the balance for the year. HR and the site manager are told.',
+    description: 'The site’s weekly off and holidays are not counted. Rejected when it overlaps other leave or exceeds the balance for the year. HR and the site manager are told.',
   })
   @Post('leave')
   apply(@CurrentUser() user: RequestUser, @Body() dto: ApplyLeaveDto) {
@@ -332,6 +333,20 @@ export class StaffController {
   @Post('leave/:id/cancel')
   cancel(@CurrentUser() user: RequestUser, @Param('id') id: string) {
     return this.staff.cancelLeave(user, id);
+  }
+
+  /* weekly off and the leave year */
+
+  @ApiOperation({ summary: 'The leave year’s start, the company’s weekly off and each site’s own', description: 'Read by every screen that counts leave days.' })
+  @Get('weekly-offs')
+  calendar(@CurrentUser() user: RequestUser) {
+    return this.staff.calendar(user);
+  }
+
+  @ApiOperation({ summary: 'Set the company’s weekly off and each site’s own (HR)', description: 'Leave days, comp-off and the register read them from then on.' })
+  @Put('weekly-offs')
+  saveCalendar(@CurrentUser() user: RequestUser, @Body() dto: SaveStaffCalendarDto) {
+    return this.staff.saveCalendar(user, dto);
   }
 
   /* holidays */

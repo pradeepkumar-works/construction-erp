@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-leave-year-weekly-off',
+    date: '2026-11-05',
+    title: 'April to March leave year, a weekly off per site, and what payroll owes',
+    points: [
+      'Payroll settings has a Leave year: January to December, or April to March. Balances, carry forward, pro rata for joiners and the leave register follow it, and a year reads as 2026-27.',
+      'Staff › Holidays › Weekly offs sets the company’s weekly off and any site that keeps another day, such as Friday. Leave, comp-off, the staff register and the staff month count that site’s day.',
+      'The Payroll screen shows months ended with no salary run, PF and ESI to deposit by the 15th, and leavers whose full and final is not paid. Leave, overtime and salary runs to decide show under Waiting for you on People and Payroll.',
+      'HR and payroll shows Salaries and settlements: each month’s run and each full and final, from to prepare to paid, late ones first.',
+    ],
+  },
+  {
     id: '2026-11-reporting-lines',
     date: '2026-11-05',
     title: 'Reporting lines: manager first, then HR, attendance corrections and the org chart',

@@ -1,3 +1,4 @@
+import type { LeaveYearStart, Weekday } from './staff';
 /**
  * Payroll: salary structures, salary runs with payslips, loans and advances, the statutory returns, and
  * full and final settlement. The arithmetic is in the API's `payroll-rules.ts`; this holds the labels, the professional
@@ -119,6 +120,10 @@ export interface PayrollSettingsDto {
   earnedLeaveDays: string;
   earnedCarryMax: string;
   leaveProRata: boolean;
+  /** When the leave year starts: 1 January, 4 April */
+  leaveYearStart: LeaveYearStart;
+  /** The weekly off at head office and at every site without its own */
+  weeklyOff: Weekday;
 }
 
 export interface SalaryStructureDto {
@@ -278,3 +283,38 @@ export interface FinalSettlementDto {
   createdAt: string;
   can: { edit: boolean; approve: boolean; pay: boolean };
 }
+
+/** A month (YYYY-MM) n months on, or back when n is negative. */
+export function shiftMonth(month: string, n: number): string {
+  const t = Number(month.slice(0, 4)) * 12 + Number(month.slice(5, 7)) - 1 + n;
+  return `${Math.floor(t / 12)}-${String((t % 12) + 1).padStart(2, '0')}`;
+}
+
+/** How far back a month with no salary run still counts as one to prepare. */
+export const SALARY_MONTHS_BACK = 3;
+
+/**
+ * The months ended, the last `SALARY_MONTHS_BACK`, with no salary run, oldest first, counted only from the company's first
+ * run (a company that has never run payroll owes none).
+ */
+export function salaryMonthsNotRun(today: string, runMonths: readonly string[]): string[] {
+  if (!runMonths.length) return [];
+  const first = [...runMonths].sort()[0];
+  const ran = new Set(runMonths);
+  const out: string[] = [];
+  for (let back = SALARY_MONTHS_BACK; back >= 1; back -= 1) {
+    const m = shiftMonth(today.slice(0, 7), -back);
+    if (m >= first && !ran.has(m)) out.push(m);
+  }
+  return out;
+}
+
+/** A month's salary is paid by the 7th of the next month (Payment of Wages Act), so a run is due by then. */
+export const salaryDueOn = (month: string) => `${shiftMonth(month, 1)}-07`;
+
+/** A full and final is paid within two days of the last working day (Code on Wages, section 17(2)). */
+export const settlementDueOn = (lastWorkingDay: string) => new Date(Date.parse(`${lastWorkingDay}T00:00:00Z`) + 2 * 86_400_000).toISOString().slice(0, 10);
+
+const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+/** A month in words: "Oct 2026". */
+export const monthWords = (month: string) => `${SHORT_MONTHS[Number(month.slice(5, 7)) - 1]} ${month.slice(0, 4)}`;

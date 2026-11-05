@@ -3,6 +3,9 @@ import { Prisma } from '@prisma/client';
 import {
   LEAVE_STATUS_LABELS,
   LEAVE_TYPE_LABELS,
+  leaveYearLabel,
+  leaveYearOf,
+  leaveYearRange,
   OPENING_LEAVE_TYPES,
   SETTLEMENT_STATUS_LABELS,
   attendancePct,
@@ -210,7 +213,7 @@ export class HrReportsService {
         }),
       ],
       notes: [
-        'Working days leave out Sundays and the site’s holidays. Present counts a half day as half; on duty and tour are work away from the site.',
+        'Working days leave out the site’s weekly off and holidays. Present counts a half day as half; on duty and tour are work away from the site.',
         'Attendance is present, on duty and tour against the working days so far. Not marked days are not deducted from pay.',
         'Checked in is the days with a check-in from the phone or a biometric punch. Overtime is approved overtime only.',
       ],
@@ -222,9 +225,13 @@ export class HrReportsService {
   private async leaveRegister(user: RequestUser, period: HrReportPeriod, projectId?: string): Promise<HrReportBody> {
     const from = period.from!;
     const to = period.to;
-    const year = Number(to.slice(0, 4));
+    // The leave year the period ends in, by the company's leave year (January or April start).
+    const start = await this.staff.leaveYearStart(user.organizationId);
+    const year = leaveYearOf(to, start);
+    const yearFrom = leaveYearRange(year, start).from;
+    const yearName = leaveYearLabel(year, start);
     const people = await this.prisma.employee.findMany({
-      where: { ...this.staffWhere(user, projectId), OR: [{ leftOn: null }, { leftOn: { gte: parseDate(`${year}-01-01`) } }], AND: [{ OR: [{ joinedOn: null }, { joinedOn: { lte: parseDate(to) } }] }] },
+      where: { ...this.staffWhere(user, projectId), OR: [{ leftOn: null }, { leftOn: { gte: parseDate(yearFrom) } }], AND: [{ OR: [{ joinedOn: null }, { joinedOn: { lte: parseDate(to) } }] }] },
       select: { id: true, employeeCode: true, fullName: true, projectId: true, project: { select: { name: true } } },
       orderBy: { employeeCode: 'asc' },
     });
@@ -258,7 +265,7 @@ export class HrReportsService {
       sections: [
         section({
           key: 'balances',
-          title: `Balances for ${year}`,
+          title: `Balances for ${yearName}`,
           note: 'Taken includes days taken before Nirmaan; left is what remains after taken and waiting.',
           columns: [
             col('person', 'Person', 'text'),
@@ -289,8 +296,8 @@ export class HrReportsService {
         }),
       ],
       notes: [
-        `Balances are for the calendar year ${year}, by the company's leave rules in Payroll settings and each person's opening leave.`,
-        'Leave is counted in working days: Sundays and the site’s holidays inside a request are not leave.',
+        `Balances are for the leave year ${yearName} (${start === 1 ? 'January to December' : 'April to March'}), by the company's leave rules in Payroll settings and each person's opening leave.`,
+        'Leave is counted in working days: the site’s weekly off and holidays inside a request are not leave.',
       ],
     };
   }

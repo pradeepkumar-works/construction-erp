@@ -38,7 +38,7 @@ function Due({ row }: { row: PipelineRowDto }) {
 
 /** One pipeline: how many stand at each stage, then the most urgent entries. */
 function Pipeline({ p }: { p: DepartmentPipelineDto }) {
-  const dueTitle = p.key === 'deliveries' ? 'Delivery by' : p.key === 'letters' ? 'Reply by' : 'Needed by';
+  const dueTitle = p.key === 'deliveries' ? 'Delivery by' : p.key === 'letters' ? 'Reply by' : p.key === 'salaries' ? 'Pay by' : 'Needed by';
   return (
     <Card
       size="small"
@@ -82,7 +82,7 @@ function Pipeline({ p }: { p: DepartmentPipelineDto }) {
                 ),
               },
               { title: 'Project', dataIndex: 'projectName', width: 180, render: (v: string | null) => (v ? <span translate="no">{v}</span> : <span className="text-muted">Head office</span>) },
-              { title: p.key === 'deliveries' ? 'Vendor and items' : p.key === 'letters' ? 'Subject' : 'Items', dataIndex: 'title', render: (v: string) => <span translate="no">{v}</span> },
+              { title: p.key === 'deliveries' ? 'Vendor and items' : p.key === 'letters' ? 'Subject' : p.key === 'salaries' ? 'What' : 'Items', dataIndex: 'title', render: (v: string) => <span translate="no">{v}</span> },
               { title: 'Stage', key: 'stage', width: 190, render: (_, r) => <Stage pipeline={p} row={r} /> },
               { title: dueTitle, key: 'due', width: 130, render: (_, r) => <Due row={r} /> },
             ]}

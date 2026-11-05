@@ -2,6 +2,7 @@ import type { SubmissionType } from './enums';
 import type { Figure } from './figures';
 import { NAV_TREE } from './navigation';
 import type { ModuleProgressDto } from './project-progress';
+import type { OtherDecisionGroupDto, OtherDecisionKind } from './approvals';
 
 /**
  * Module screens: every module on Home that is not a page itself has a screen at
@@ -70,4 +71,14 @@ export interface ModuleHomeDto {
   waitingWithOthers: number;
   /** Projects only: each contract project's physical and financial progress (`project-progress.ts`) */
   progress?: ModuleProgressDto;
+  /** Decisions with an approval of their own that wait on the caller in this module (leave, salary runs…), as Approvals lists them */
+  others: OtherDecisionGroupDto[];
 }
+
+/** The decisions outside the submission queue that each module's screen shows as waiting (`OTHER_DECISION_KINDS`). */
+export const MODULE_OTHER_DECISIONS: Partial<Record<ModuleKey, readonly OtherDecisionKind[]>> = {
+  people: ['LEAVE', 'OVERTIME', 'CORRECTION'],
+  payroll: ['PAYROLL_RUN'],
+  accounts: ['VOUCHER'],
+  correspondence: ['LETTER'],
+};

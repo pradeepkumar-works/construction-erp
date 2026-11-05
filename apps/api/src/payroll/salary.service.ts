@@ -1,6 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, type PayrollSettings, type SalaryStructure } from '@prisma/client';
-import { DEFAULT_LEAVE_POLICY, canRunPayroll, canViewPayroll, type PayrollSettingsDto, type SalaryStructureDto, type StaffLoanDto } from '@erp/shared';
+import { DEFAULT_LEAVE_POLICY, DEFAULT_WEEKLY_OFF, isWeekday, canRunPayroll, canViewPayroll, type PayrollSettingsDto, type SalaryStructureDto, type StaffLoanDto } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { AuditService } from '../common/audit.service';
@@ -99,6 +99,8 @@ export class SalaryService {
       earnedLeaveDays: String(s ? s.earnedLeaveDays.toNumber() : DEFAULT_LEAVE_POLICY.earned),
       earnedCarryMax: String(s ? s.earnedCarryMax.toNumber() : DEFAULT_LEAVE_POLICY.earnedCarryMax),
       leaveProRata: s?.leaveProRata ?? DEFAULT_LEAVE_POLICY.proRata,
+      leaveYearStart: s?.leaveYearStart === 4 ? 4 : 1,
+      weeklyOff: isWeekday(s?.weeklyOff) ? s!.weeklyOff : DEFAULT_WEEKLY_OFF,
     };
   }
 

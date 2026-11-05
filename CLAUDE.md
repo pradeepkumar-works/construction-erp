@@ -398,6 +398,10 @@ and the pre-delivery checklist.
   with a test in `src/scripts/payroll-test.ts` (CI runs it); a run has its own approval (prepare, approve, pay), not
   `SubmissionLifecycleService`. Professional tax per state is `PT_RULES` in `packages/shared/src/payroll.ts`. An increment
   or promotion's new pay is a `SalaryStructure` made by `HrService.recordEvent` through `structureForCtc`, never a CTC alone.
+- Leave year and weekly off (ARCHITECTURE "Staff and leave"): a leave year is only `leaveYearOf` / `leaveYearRange` /
+  `leaveYearLabel` over `PayrollSettings.leaveYearStart` (January or April), and a day off only `weeklyOffOf` / `isWeeklyOff`
+  (the site's `Project.weeklyOff`, else the company's), never a year or a Sunday of a screen's own; the web reads them
+  through `useLeaveCalendar()`. Keep `src/scripts/leave-policy-test.ts` passing.
 - Joining documents (ARCHITECTURE "HR records"): the papers are `EMPLOYEE_DOCUMENT_KINDS` (`@erp/shared/hr-documents.ts`), each
   person's an `EmployeeDocument` row moved only through `EmployeeDocumentsService` (`documentCheckProblem`); the offer and
   appointment letters go out only when `documentLetterProblem` is null. Keep `src/scripts/hr-documents-test.ts` passing.

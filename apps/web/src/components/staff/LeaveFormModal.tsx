@@ -6,12 +6,12 @@ import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import type { LeaveRequestDto, LeaveType } from '@erp/shared';
-import { LEAVE_TYPES, LEAVE_TYPE_LABELS, canManageStaff, leaveDays } from '@erp/shared';
+import { LEAVE_TYPES, LEAVE_TYPE_LABELS, canManageStaff, leaveDays, weeklyOffWords } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
-import { useEmployees, useHolidays, useLeaveBalances, useMyStaff } from '@/lib/queries';
+import { useEmployees, useHolidays, useLeaveBalances, useLeaveCalendar, useMyStaff } from '@/lib/queries';
 import { days } from './staffUi';
 import { inSentence } from '@/lib/format';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
@@ -26,8 +26,8 @@ interface FormValues {
 }
 
 /**
- * Apply for leave: for yourself, or (HR) for someone else. Shows the working days it takes (Sundays and holidays are
- * not counted) and what is left of that leave for the year.
+ * Apply for leave: for yourself, or (HR) for someone else. Shows the working days it takes (the site's weekly off and
+ * holidays are not counted) and what is left of that leave for the leave year.
  */
 export function LeaveFormModal({ open, onClose, employeeId: fixedEmployee, onSaved }: { open: boolean; onClose: () => void; employeeId?: string; onSaved?: (l: LeaveRequestDto) => void }) {
   const [form] = Form.useForm<FormValues>();
@@ -43,15 +43,19 @@ export function LeaveFormModal({ open, onClose, employeeId: fixedEmployee, onSav
   const to = Form.useWatch('toDate', form);
   const halfDay = Form.useWatch('halfDay', form);
   const employee = chosen === me?.employee?.id ? me?.employee : staff?.items.find((e) => e.id === chosen);
-  const year = from ? from.year() : dayjs().year();
+  const cal = useLeaveCalendar();
+  const year = cal.yearOf((from ?? dayjs()).format('YYYY-MM-DD'));
+  const weeklyOff = cal.weeklyOffAt(employee?.projectId);
   const { data: balances } = useLeaveBalances(chosen === me?.employee?.id ? undefined : chosen, year, open && !!chosen);
-  const { data: holidays } = useHolidays(year, employee?.projectId ?? undefined);
+  // Holidays are kept by calendar year; a leave can cross into the next one when the leave year starts in April.
+  const { data: holidays } = useHolidays((from ?? dayjs()).year(), employee?.projectId ?? undefined);
+  const { data: laterHolidays } = useHolidays((to ?? from ?? dayjs()).year(), employee?.projectId ?? undefined);
 
   const taking = useMemo(() => {
     if (!from || !to || to.isBefore(from, 'day')) return null;
-    const off = new Set((holidays ?? []).map((h) => h.date));
-    return leaveDays(from.format('YYYY-MM-DD'), to.format('YYYY-MM-DD'), !!halfDay && from.isSame(to, 'day'), off);
-  }, [from, to, halfDay, holidays]);
+    const off = new Set([...(holidays ?? []), ...(laterHolidays ?? [])].map((h) => h.date));
+    return leaveDays(from.format('YYYY-MM-DD'), to.format('YYYY-MM-DD'), !!halfDay && from.isSame(to, 'day'), off, weeklyOff);
+  }, [from, to, halfDay, holidays, laterHolidays, weeklyOff]);
   const balance = balances?.find((b) => b.type === type);
 
   useEffect(() => {
@@ -118,8 +122,8 @@ export function LeaveFormModal({ open, onClose, employeeId: fixedEmployee, onSav
         </Form.Item>
         {taking !== null && (
           <Typography.Text type={taking === 0 || (balance?.left != null && balance.left < taking) ? 'danger' : 'secondary'}>
-            {taking === 0 ? 'Those days are Sundays or holidays.' : `Takes ${days(taking)} (Sundays and holidays not counted).`}
-            {balance && balance.left !== null ? ` ${days(balance.left)} of ${inSentence(LEAVE_TYPE_LABELS[balance.type])} left for ${year}.` : ''}
+            {taking === 0 ? `Those days are ${weeklyOffWords(weeklyOff)} or holidays.` : `Takes ${days(taking)} (${weeklyOffWords(weeklyOff)} and holidays not counted).`}
+            {balance && balance.left !== null ? ` ${days(balance.left)} of ${inSentence(LEAVE_TYPE_LABELS[balance.type])} left for ${cal.label(year)}.` : ''}
           </Typography.Text>
         )}
       </Form>

@@ -4,7 +4,7 @@ import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import ArrowLeftRight from 'lucide-react-native/icons/arrow-left-right';
 import ArrowRight from 'lucide-react-native/icons/arrow-right';
 import Award from 'lucide-react-native/icons/award';
-import History from 'lucide-react-native/icons/history';
+import History from 'lucide-react-native/icons/rotate-ccw-clock';
 import BadgeIndianRupee from 'lucide-react-native/icons/badge-indian-rupee';
 import Banknote from 'lucide-react-native/icons/banknote';
 import BookOpen from 'lucide-react-native/icons/book-open';

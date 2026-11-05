@@ -5,7 +5,7 @@
  *   node dist/scripts/department-home-test.js
  */
 import assert from 'node:assert/strict';
-import { DEPARTMENT_FIGURES, DEPARTMENT_FIGURE_MAX, DEPARTMENT_MODULES, DEPARTMENT_PIPELINES, FIGURE_LABELS, MODULE_KEYS, daysPast, departmentFigures, pipelineOf, type Figure, type FigureId, type PipelineRowDto } from '@erp/shared';
+import { DEPARTMENT_FIGURES, DEPARTMENT_FIGURE_MAX, DEPARTMENT_MODULES, DEPARTMENT_PIPELINES, FIGURE_LABELS, MODULE_KEYS, daysPast, departmentFigures, monthWords, pipelineOf, salaryDueOn, salaryMonthsNotRun, settlementDueOn, type Figure, type FigureId, type PipelineRowDto } from '@erp/shared';
 
 const cases: [string, () => void][] = [];
 const test = (name: string, fn: () => void) => cases.push([name, fn]);
@@ -62,6 +62,24 @@ test('the screen shows the most urgent eight; days past a date count from the da
   assert.equal(daysPast('2026-10-28', '2026-10-30'), 2);
   assert.equal(daysPast('2026-10-30', '2026-10-30'), 0);
   assert.equal(daysPast(null, '2026-10-30'), 0);
+});
+
+test('salaries: a month ended with no run is to prepare, from the first run on, due by the 7th', () => {
+  // Runs for Jul and Sep; today in Nov: Aug and Oct ended with none.
+  assert.deepEqual(salaryMonthsNotRun('2026-11-05', ['2026-07', '2026-09']), ['2026-08', '2026-10']);
+  // The first run was in Sep: nothing before it is owed.
+  assert.deepEqual(salaryMonthsNotRun('2026-11-05', ['2026-09']), ['2026-10']);
+  // A company that has never run payroll owes none; the current month is not yet ended.
+  assert.deepEqual(salaryMonthsNotRun('2026-11-05', []), []);
+  assert.deepEqual(salaryMonthsNotRun('2026-11-05', ['2026-08', '2026-09', '2026-10', '2026-11']), []);
+  // Across the year end.
+  assert.deepEqual(salaryMonthsNotRun('2027-01-10', ['2026-10']), ['2026-11', '2026-12']);
+  assert.equal(salaryDueOn('2026-12'), '2027-01-07');
+  assert.equal(settlementDueOn('2026-10-30'), '2026-11-01');
+  assert.equal(monthWords('2026-10'), 'Oct 2026');
+  const p = pipelineOf('salaries', [row('Oct 2026', 'TO_PREPARE', { dueOn: '2026-11-07' }), row('SAL-2026-09', 'TO_PAY', { dueOn: '2026-10-07', daysLate: 29 })]);
+  assert.deepEqual(p.stages.map((s) => s.count), [1, 0, 0, 1]);
+  assert.equal(DEPARTMENT_PIPELINES['hr-payroll'][0], 'salaries');
 });
 
 let failed = 0;

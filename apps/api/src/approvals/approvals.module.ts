@@ -10,5 +10,5 @@ import { OtherDecisionsService } from './other-decisions.service';
 import { ApprovalDelegationsController } from './approval-delegations.controller';
 import { ApprovalDelegationsService } from './approval-delegations.service';
 
-@Module({ imports: [StaffModule, PayrollModule, BooksModule, CorrespondenceModule], controllers: [ApprovalsController, ApprovalRulesController, ApprovalDelegationsController], providers: [ApprovalRulesService, OtherDecisionsService, ApprovalDelegationsService] })
+@Module({ imports: [StaffModule, PayrollModule, BooksModule, CorrespondenceModule], controllers: [ApprovalsController, ApprovalRulesController, ApprovalDelegationsController], providers: [ApprovalRulesService, OtherDecisionsService, ApprovalDelegationsService], exports: [OtherDecisionsService] })
 export class ApprovalsModule {}

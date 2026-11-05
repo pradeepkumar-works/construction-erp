@@ -2,6 +2,7 @@ import { NotFoundException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type { Figure, FigureInput, ModuleHomeDto, ModuleKey, ModuleProgressDto, ModuleWaitingDto, ProgressNoteKey, ProjectProgressDto, SubmissionType } from '@erp/shared';
 import {
+  MODULE_OTHER_DECISIONS,
   MODULE_SUBMISSION_TYPES,
   canMarkStaff,
   canApprovePayroll,
@@ -41,12 +42,15 @@ import {
   plural,
   portfolioProgress,
   progressNotes,
+  monthWords,
+  salaryMonthsNotRun,
+  statutoryDueOn,
 } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
-import { dateOnly, dec, money, parseDate } from '../common/serialize';
+import { dateOnly, dec, formatDay, money, parseDate } from '../common/serialize';
 import { todayIn } from '../notifications/time';
 import { ReceivablesService } from '../receivables/receivables.service';
 import { PayablesService } from '../payables/payables.service';
@@ -64,6 +68,7 @@ import { plannedProgress } from '../common/progress';
 import { CorrespondenceService } from '../correspondence/correspondence.service';
 import { DesignControlService } from '../design/design-control.service';
 import { QualityService } from '../quality/quality.service';
+import { OtherDecisionsService } from '../approvals/other-decisions.service';
 
 type D = Prisma.Decimal;
 const ZERO = new Prisma.Decimal(0);
@@ -95,6 +100,7 @@ export class ModuleHomeService {
     private designControl: DesignControlService,
     private quality_: QualityService,
     private requestsToOrder: RequestsToOrderService,
+    private otherDecisions: OtherDecisionsService,
   ) {}
 
   async home(user: RequestUser, key: string, projectId?: string): Promise<ModuleHomeDto> {
@@ -106,11 +112,13 @@ export class ModuleHomeService {
       rows.filter((r) => types.has(r.type) && (!projectId || !r.projectId || r.projectId === projectId));
 
     const progress = key === 'projects' && !isGuest(user.roleKey) ? await this.progress(user, today, projectId) : undefined;
-    const [figures, pending, sentBack, waiting] = await Promise.all([
+    const otherKinds = MODULE_OTHER_DECISIONS[key];
+    const [figures, pending, sentBack, waiting, others] = await Promise.all([
       progress ? this.progressFigures(progress) : this.figures(user, key, today, projectId),
       types.size ? this.lifecycle.pending(user) : [],
       types.size ? this.lifecycle.mine(user, ['REJECTED', 'CHANGES_REQUESTED']) : [],
       types.size ? this.lifecycle.waiting(user) : [],
+      otherKinds && !isGuest(user.roleKey) ? this.otherDecisions.forUser(user, otherKinds) : [],
     ]);
 
     const seesAmounts = canViewCost(user.roleKey);
@@ -136,6 +144,7 @@ export class ModuleHomeService {
       sentBack: [...back.entries()].map(([type, n]) => ({ type, count: n })),
       waitingWithOthers: inModule(waiting).length,
       ...(progress ? { progress } : {}),
+      others,
     };
   }
 
@@ -255,7 +264,7 @@ export class ModuleHomeService {
       case 'tenders':
         return this.tenders(user, today);
       case 'payroll':
-        return this.payroll(user, projectId);
+        return this.payroll(user, today, projectId);
       case 'admin':
         return this.admin(user);
       default:
@@ -346,15 +355,41 @@ export class ModuleHomeService {
     return [figure('tendersToSubmit', preparing, { versus: { part: figure('bidsDueThisWeek', dueSoon) } }), figure('bidsAwaitingResult', submitted)];
   }
 
-  /** The salary runs waiting on the caller, and what the last paid run came to. Payroll is the company's. */
-  private async payroll(user: RequestUser, projectId?: string): Promise<FigureInput[]> {
+  /**
+   * Payroll is the company's: the salary runs waiting on the caller, months ended with no run, PF and ESI to deposit by the
+   * 15th for the latest approved month, leavers whose full and final is not paid, and what the last paid run came to.
+   */
+  private async payroll(user: RequestUser, today: string, projectId?: string): Promise<FigureInput[]> {
     if (!canViewPayroll(user.roleKey) || !moduleOn(user, 'payroll') || projectId) return [];
-    const [runs, last] = await Promise.all([
+    const org = user.organizationId;
+    const [runs, last, months, settled, leavers] = await Promise.all([
       this.payrollRuns.waiting(user),
-      this.prisma.payrollRun.findFirst({ where: { organizationId: user.organizationId, status: 'PAID' }, orderBy: { month: 'desc' }, select: { month: true, net: true } }),
+      this.prisma.payrollRun.findFirst({ where: { organizationId: org, status: 'PAID' }, orderBy: { month: 'desc' }, select: { month: true, net: true } }),
+      this.prisma.payrollRun.groupBy({ by: ['month'], where: { organizationId: org }, _count: { _all: true } }),
+      this.prisma.payrollRun.findFirst({ where: { organizationId: org, status: { in: ['APPROVED', 'PAID'] } }, orderBy: { month: 'desc' }, select: { month: true } }),
+      this.prisma.employee.findMany({ where: { organizationId: org, isActive: false, leftOn: { not: null }, OR: [{ settlement: null }, { settlement: { status: { not: 'PAID' } } }] }, select: { id: true } }),
     ]);
+    const notRun = salaryMonthsNotRun(today, months.map((m) => m.month));
+    // PF and ESI of the latest approved month, until their 15th has passed.
+    const dueMonth = settled && today <= statutoryDueOn(settled.month) ? settled.month : null;
+    const dues = dueMonth
+      ? await this.prisma.payslipLine.groupBy({
+          by: ['code'],
+          where: { organizationId: org, code: { in: ['PF', 'PF_EMPLOYER', 'EPS_EMPLOYER', 'ESI', 'ESI_EMPLOYER'] }, payslip: { run: { month: dueMonth, status: { in: ['APPROVED', 'PAID'] } } } },
+          _sum: { amount: true },
+        })
+      : [];
+    const sum = (codes: string[]) => dues.filter((d) => codes.includes(d.code)).reduce((t, d) => t.add(d._sum.amount ?? ZERO), ZERO);
+    const pf = sum(['PF', 'PF_EMPLOYER', 'EPS_EMPLOYER']);
+    const esi = sum(['ESI', 'ESI_EMPLOYER']);
+    const dueOn = dueMonth ? statutoryDueOn(dueMonth) : null;
+    const soon = dueOn !== null && daysBetween(today, dueOn) <= 5 ? { attention: { level: 'watch' as const, because: `Due by ${formatDay(dueOn)}` } } : {};
     return [
       figure('salaryRunsWaiting', runs.length),
+      figure('salaryMonthsNotRun', notRun.length, notRun.length ? { attention: { level: 'act', because: `${notRun.map(monthWords).join(', ')} not prepared` } } : undefined),
+      dueMonth !== null && pf.gt(0) && figure('pfToDeposit', money(pf), { when: { month: dueMonth }, ...soon }),
+      dueMonth !== null && esi.gt(0) && figure('esiToDeposit', money(esi), { when: { month: dueMonth }, ...soon }),
+      figure('leaversNotSettled', leavers.length),
       last && figure('netPayLastRun', money(last.net), { when: { month: last.month } }),
     ];
   }

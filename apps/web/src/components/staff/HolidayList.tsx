@@ -5,17 +5,73 @@ import { App, Button, Form, Input, Select, Table, Typography } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
 import { PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
-import type { HolidayDto } from '@erp/shared';
-import { canManageStaff } from '@erp/shared';
+import type { HolidayDto, StaffCalendarDto, Weekday } from '@erp/shared';
+import { WEEKDAYS, WEEKDAY_NAMES, canManageStaff, weeklyOffWords } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
-import { useHolidays, useProjects } from '@/lib/queries';
+import { useHolidays, useProjects, useSaveStaffCalendar, useStaffCalendar } from '@/lib/queries';
 import { QueryError } from '@/components/common/QueryState';
 import { CardToolbar } from '@/components/common/CardToolbar';
 import { FormShell } from '@/components/form/FormShell';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
+import { tk } from '@/ds';
+
+const WEEKDAY_OPTIONS = WEEKDAYS.map((d) => ({ value: d, label: WEEKDAY_NAMES[d] }));
+
+/** The weekly off in a line: the company's, and the sites that keep another day. */
+function weeklyOffLine(cal: StaffCalendarDto): string {
+  const own = cal.sites.filter((x) => x.weeklyOff !== null && x.weeklyOff !== cal.weeklyOff);
+  const rest = own.map((x) => `${WEEKDAY_NAMES[x.weeklyOff as Weekday]} at ${x.projectName}`);
+  return `${weeklyOffWords(cal.weeklyOff)} are the weekly off${own.length ? `; ${rest.join(', ')}` : ' at every site'}.`;
+}
+
+type CalendarValues = { weeklyOff: Weekday } & Record<string, Weekday | null | undefined>;
+
+/** HR sets the company's weekly off and any site that keeps another day. */
+function WeeklyOffsModal({ open, onClose, cal }: { open: boolean; onClose: () => void; cal: StaffCalendarDto }) {
+  const [form] = Form.useForm<CalendarValues>();
+  const { message } = App.useApp();
+  const save = useSaveStaffCalendar();
+  const company = Form.useWatch('weeklyOff', form) ?? cal.weeklyOff;
+  const initial: CalendarValues = { weeklyOff: cal.weeklyOff, ...Object.fromEntries(cal.sites.map((x) => [`site_${x.projectId}`, x.weeklyOff])) };
+  return (
+    <FormShell
+      open={open}
+      onClose={onClose}
+      form={form}
+      layout="modal"
+      width={560}
+      title="Weekly offs"
+      okText="Save"
+      projectDefault={false}
+      onSubmit={async (v) => {
+        await save.mutateAsync({ weeklyOff: v.weeklyOff, sites: cal.sites.map((x) => ({ projectId: x.projectId, weeklyOff: v[`site_${x.projectId}`] ?? null })) });
+        message.success('Weekly offs saved');
+      }}
+    >
+      <Form form={form} layout="vertical" initialValues={initial}>
+        <Typography.Paragraph type="secondary">
+          Leave does not count the weekly off, and working on it earns a comp-off. A change counts for every date, so leave already approved keeps the days it was given; salary runs already paid keep their figures.
+        </Typography.Paragraph>
+        <Form.Item name="weeklyOff" label="Company's weekly off" rules={[{ required: true, message: 'Choose the day' }]}>
+          <Select options={WEEKDAY_OPTIONS} />
+        </Form.Item>
+        {cal.sites.length > 0 && (
+          <Typography.Text strong style={{ display: 'block', marginBottom: tk.space[2] }}>
+            Sites that keep another day
+          </Typography.Text>
+        )}
+        {cal.sites.map((x) => (
+          <Form.Item key={x.projectId} name={`site_${x.projectId}`} label={x.projectName}>
+            <Select allowClear placeholder={`The company's (${WEEKDAY_NAMES[company]})`} options={WEEKDAY_OPTIONS} />
+          </Form.Item>
+        ))}
+      </Form>
+    </FormShell>
+  );
+}
 
 /** Holidays for the year: for every site or one site. Leave does not count them; working one earns a comp-off. */
 export function HolidayList() {
@@ -27,6 +83,8 @@ export function HolidayList() {
   const { data, isLoading, error, refetch } = useHolidays(year);
   const { data: projects } = useProjects();
   const [adding, setAdding] = useState(false);
+  const [offs, setOffs] = useState(false);
+  const { data: cal } = useStaffCalendar();
   const [form] = Form.useForm<{ date: dayjs.Dayjs; name: string; projectId?: string }>();
 
   const add = useMutation({
@@ -49,8 +107,9 @@ export function HolidayList() {
     <>
       <CardToolbar gap={8} align="center">
         <Select value={year} onChange={setYear} style={{ width: 100 }} aria-label="Year" options={[-1, 0, 1].map((d) => ({ value: dayjs().year() + d, label: String(dayjs().year() + d) }))} />
-        <Typography.Text type="secondary">Sundays are the weekly off at every site.</Typography.Text>
+        {cal && <Typography.Text type="secondary">{weeklyOffLine(cal)}</Typography.Text>}
         <div style={{ flex: 1 }} />
+        {admin && cal && <Button onClick={() => setOffs(true)}>Weekly offs</Button>}
         {admin && (
           <Button
             type="primary"
@@ -94,6 +153,7 @@ export function HolidayList() {
             : []),
         ]}
       />
+      {admin && cal && offs && <WeeklyOffsModal open onClose={() => setOffs(false)} cal={cal} />}
       {/* Blank Where is every site, so the header's project is not put in. */}
       <FormShell open={adding} onClose={() => setAdding(false)} form={form} layout="modal" title="New holiday" okText="Save" onSubmit={(v) => add.mutateAsync(v)} projectDefault={false}>
         <Form form={form} layout="vertical">

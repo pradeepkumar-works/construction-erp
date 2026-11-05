@@ -4,8 +4,8 @@ import React, { useState } from 'react';
 import { App, Button, Checkbox, Descriptions, Form, Input, InputNumber, Select, Typography } from 'antd';
 import { tk } from '@/ds';
 import { EditOutlined } from '@/components/common/icons';
-import type { PaidDaysBasis, PayrollSettingsDto } from '@erp/shared';
-import { GST_STATES, PAID_DAYS_BASES, PAID_DAYS_BASIS_LABELS, PT_RULES, canRunPayroll } from '@erp/shared';
+import type { LeaveYearStart, PaidDaysBasis, PayrollSettingsDto } from '@erp/shared';
+import { GST_STATES, LEAVE_YEAR_STARTS, LEAVE_YEAR_START_LABELS, PAID_DAYS_BASES, PAID_DAYS_BASIS_LABELS, PT_RULES, WEEKDAYS, WEEKDAY_NAMES, canRunPayroll, weeklyOffWords } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { usePayrollAction, usePayrollSettings } from '@/lib/queries';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
@@ -134,6 +134,12 @@ function SettingsForm({ open, onClose, s }: { open: boolean; onClose: () => void
             <Form.Item name="leaveProRata" valuePropName="checked" label="Someone who joins during the year">
               <Checkbox>Gets a share for the months left</Checkbox>
             </Form.Item>
+            <Form.Item name="leaveYearStart" label="Leave year" extra="Balances, carry forward and the leave register run over it">
+              <Select options={LEAVE_YEAR_STARTS.map((v) => ({ value: v, label: LEAVE_YEAR_START_LABELS[v] }))} />
+            </Form.Item>
+            <Form.Item name="weeklyOff" label="Weekly off" extra="Sites that keep another day are set under Holidays">
+              <Select options={WEEKDAYS.map((d) => ({ value: d, label: WEEKDAY_NAMES[d] }))} />
+            </Form.Item>
           </FormGrid>
         </FormSection>
         <FormSection title="Bank file">
@@ -195,6 +201,8 @@ export function PayrollSettings() {
           {Number(s.earnedCarryMax) > 0 ? `Up to ${Number(s.earnedCarryMax)} days` : 'None'}
           {s.leaveProRata ? '; joiners get a share for the months left' : ''}
         </Descriptions.Item>
+        <Descriptions.Item label="Leave year">{LEAVE_YEAR_START_LABELS[s.leaveYearStart as LeaveYearStart] ?? LEAVE_YEAR_START_LABELS[1]}</Descriptions.Item>
+        <Descriptions.Item label="Weekly off">{weeklyOffWords(s.weeklyOff ?? 0)}, unless a site keeps another day</Descriptions.Item>
         <Descriptions.Item label="Salary paid from">
           <span translate="no">{s.debitAccountNo ? `${s.debitBankName ?? 'Account'} ${s.debitAccountNo}` : 'Not set: the bank file needs it'}</span>
         </Descriptions.Item>

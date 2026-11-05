@@ -187,7 +187,7 @@ export class CostService {
     if (!projectIds.length) return out;
     const scope = { organizationId, projectId: { in: projectIds }, ...(date ? { date } : {}) };
     const inProjects = { organizationId, projectId: { in: projectIds } };
-    const [progress, measurements, expenses, issues, logs, attendance, rates, bills, receipts, subBills, vendorBills, payments, subVendors, otherBills, debitNotes, openings, boqOf] = await Promise.all([
+    const [progress, measurements, expenses, issues, logs, attendance, rates, bills, receipts, subBills, vendorBills, payments, subVendors, otherBills, debitNotes, openings, boqOf, slips] = await Promise.all([
       this.prisma.progressEntry.findMany({ where: { ...scope, status: 'APPROVED' }, select: { projectId: true, date: true, quantity: true, activityId: true } }),
       this.prisma.measurementSheet.findMany({ where: { ...scope, status: 'APPROVED' }, select: { projectId: true, totalQty: true, boqItem: { select: { rate: true } } } }),
       this.prisma.expense.findMany({ where: { ...scope, status: 'APPROVED' }, select: { projectId: true, date: true, category: true, totalAmount: true } }),
@@ -239,6 +239,11 @@ export class CostService {
       this.prisma.projectOpening.findMany({ where: { ...inProjects, ...(date ? { asOf: date } : {}) } }),
       // An entry's BOQ item: its own link, or its share of the lump sum its component is priced by.
       activityBoqOf(this.prisma, projectIds),
+      // Site staff: approved or paid payslips, each its site's cost (ARCHITECTURE "Cost and margin", Site staff salaries).
+      this.prisma.payslip.findMany({
+        where: { organizationId, projectId: { in: projectIds }, run: { status: { in: ['APPROVED', 'PAID'] } } },
+        select: { projectId: true, gross: true, employerCost: true, run: { select: { month: true } } },
+      }),
     ]);
     for (const b of vendorBills) out.get(b.projectId)!.payableBilled = b._sum.total ?? ZERO;
     for (const p of payments) out.get(p.projectId)!.cashOut = p._sum.amount ?? ZERO;
@@ -336,10 +341,6 @@ export class CostService {
     }
     // Site staff: each approved or paid payslip is its site's cost on the month's last day, gross plus the company's PF
     // and ESI (ARCHITECTURE "Cost and margin", Site staff salaries).
-    const slips = await this.prisma.payslip.findMany({
-      where: { organizationId, projectId: { in: projectIds }, run: { status: { in: ['APPROVED', 'PAID'] } } },
-      select: { projectId: true, gross: true, employerCost: true, run: { select: { month: true } } },
-    });
     for (const s of slips) {
       const on = staffCostDate(s.run.month);
       if (date && ((date.gte && on < (date.gte as Date)) || (date.lte && on > (date.lte as Date)))) continue;

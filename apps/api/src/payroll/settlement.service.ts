@@ -1,6 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { canApprovePayroll, canPayPayroll, canRunPayroll, clearanceDues, clearanceProblem, ownEntryProblem, type FinalSettlementDto } from '@erp/shared';
+import { leaveYearOf, canApprovePayroll, canPayPayroll, canRunPayroll, clearanceDues, clearanceProblem, ownEntryProblem, type FinalSettlementDto } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { AuditService } from '../common/audit.service';
@@ -123,7 +123,7 @@ export class SettlementService {
     // The last month is paid here unless a run already paid it.
     const paidInRun = await this.prisma.payslip.findFirst({ where: { employeeId: e.id, run: { month } }, select: { id: true } });
     const exit = await this.prisma.employeeEvent.findFirst({ where: { employeeId: e.id, type: { in: ['RESIGNED', 'TERMINATED', 'RETIRED'] } }, orderBy: { effectiveDate: 'desc' }, select: { noticeGivenOn: true } });
-    const balances = await this.staff.balancesFor(e.id, e.projectId, y);
+    const balances = await this.staff.balancesFor(e.id, e.projectId, leaveYearOf(lwd, await this.staff.leaveYearStart(user.organizationId)));
     const loans = await this.salary.openLoans([e.id], '9999-12');
     const clearance = await this.clearanceOf(user, e.id);
     const r = computeSettlement({

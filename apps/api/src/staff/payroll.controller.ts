@@ -13,7 +13,7 @@ export class PayrollController {
   constructor(private payroll: PayrollService) {}
 
   @ApiOperation({
-    summary: 'Payroll inputs for a month: days on the rolls, Sundays and holidays, present, leave by type, absent, not marked, overtime, loss of pay',
+    summary: 'Payroll inputs for a month: days on the rolls, weekly offs and holidays, present, leave by type, absent, not marked, overtime, loss of pay',
     description: 'HR, accounts, management and admins. No statutory calculations: the payroll provider works from these.',
   })
   @Get('staff')

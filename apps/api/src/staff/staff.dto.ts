@@ -215,3 +215,14 @@ export class PayrollQuery {
   @ApiProperty({ example: '2026-10' }) @IsString() @Matches(/^\d{4}-(0[1-9]|1[0-2])$/, { message: 'month must be YYYY-MM' }) month: string;
   @ApiPropertyOptional() @IsOptional() @IsUUID() projectId?: string;
 }
+
+class SiteWeeklyOffDto {
+  @ApiProperty() @IsUUID() projectId: string;
+  @ApiPropertyOptional({ nullable: true, minimum: 0, maximum: 6, description: '0 Sunday to 6 Saturday; null for the company’s' }) @ValidateIf((_, v) => v !== null) @IsInt() @Min(0) @Max(6) weeklyOff: number | null;
+}
+
+/** The company's weekly off and each site's own. */
+export class SaveStaffCalendarDto {
+  @ApiPropertyOptional({ minimum: 0, maximum: 6, description: 'Head office and every site without its own: 0 Sunday to 6 Saturday' }) @IsOptional() @IsInt() @Min(0) @Max(6) weeklyOff?: number;
+  @ApiPropertyOptional({ type: [SiteWeeklyOffDto] }) @IsOptional() @IsArray() @ArrayMaxSize(500) @ValidateNested({ each: true }) @Type(() => SiteWeeklyOffDto) sites?: SiteWeeklyOffDto[];
+}

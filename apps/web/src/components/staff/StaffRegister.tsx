@@ -196,7 +196,7 @@ export function StaffRegister() {
       </CardToolbar>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {data && (data.holiday || data.weeklyOff) && (
-        <Alert type="info" showIcon style={{ margin: tk.space[3] }} title={`${data.holiday ? `Holiday: ${data.holiday}` : 'Sunday, the weekly off'}. Anyone marked present earns a comp-off.`} />
+        <Alert type="info" showIcon style={{ margin: tk.space[3] }} title={`${data.holiday ? `Holiday: ${data.holiday}` : `${date.format('dddd')}, the weekly off`}. Anyone marked present earns a comp-off.`} />
       )}
       <Table<StaffRegisterRowDto>
         rowKey={(r) => r.employee.id}

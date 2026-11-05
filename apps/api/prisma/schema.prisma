@@ -1567,6 +1567,8 @@ model Project {
   clientPaymentDays      Int?
   /// Days the contract allows to give notice of a hindrance; the notice clock assumes 14 when not set
   noticeDays             Int?
+  /// Staff weekly off at this site, 0 Sunday to 6 Saturday; null is the company's (Payroll settings)
+  weeklyOff              Int?
   /// How far, in %, measurement may run past a BOQ item's quantity before it needs a variation; 25 when not set
   measureTolerancePct    Int?
   /// When the schedule baseline was last frozen (activity planned dates and milestone due dates copied to their baseline)
@@ -7131,6 +7133,10 @@ model PayrollSettings {
   earnedCarryMax     Decimal       @default(0) @db.Decimal(4, 1)
   /// Someone who joins during the year gets the year's leave for the months left
   leaveProRata       Boolean       @default(false)
+  /// The month the leave year starts: 1 (January to December) or 4 (April to March)
+  leaveYearStart     Int           @default(1)
+  /// The weekly off at head office and at every site without its own: 0 Sunday to 6 Saturday
+  weeklyOff          Int           @default(0)
   updatedAt          DateTime      @updatedAt
 }
 

@@ -168,7 +168,10 @@ keys in `MODULE_KEYS`, which `MODULE_LABELS` and `MODULE_INTROS` take from the t
 - **Module screen** (`components/modules/ModuleHome.tsx`): a `TileGrid` of the module's tiles for this person (one Tab stop,
   arrow keys between tiles; a project tab with no project chosen in the header asks for one), then the figures from
   `GET /dashboard/modules/:key?projectId=` (`ModuleHomeService`, each behind the helper of the list it counts) and Waiting
-  for you (the caller's approvals for `MODULE_SUBMISSION_TYPES`, their own entries sent back, theirs waiting with others).
+  for you (the caller's approvals for `MODULE_SUBMISSION_TYPES`, the decisions with an approval of their own in
+  `MODULE_OTHER_DECISIONS` read through `OtherDecisionsService.forUser(user, kinds)` as Approvals lists them: leave and
+  overtime on People, salary runs on Payroll, vouchers on Accounts, letters to sign on Correspondence; their own entries
+  sent back, theirs waiting with others).
   The module's `NewMenu` entries are buttons in the header. With one tile for the person, the screen opens that page.
 - **Checks.** `apps/web/scripts/nav-check.ts` (CI) fails when a live node's route is not a page of the app, a project tab is
   not one of the project page's, an icon or access key is missing, a module is not in `MODULE_KEYS`, or a Concord item
@@ -652,14 +655,20 @@ A department's screen (`DepartmentHome`) opens, under what waits for the user, w
   store its stock with the part at central stores and what is on the road, material to check and late deliveries, accounts its books and what clients owe, quality its failed tests,
   late results and open NCRs with safety incidents (near misses counted apart), contractor management its work orders and
   the retention kept from subcontractors, planning and estimation the tenders to submit and bids awaiting a result, HR and
-  payroll its people with the last salary run's net pay, and administration who can sign in, access requests and failing
+  payroll its people with the last salary run's net pay (the Payroll screen adds months ended with no run,
+  `salaryMonthsNotRun`; PF and ESI to deposit by the 15th for the latest approved month, until that 15th; and leavers whose
+  full and final is not paid), and administration who can sign in, access requests and failing
   connections. Project management keeps the Projects figures and progress by project it had; Reports and MIS is the list
   of reports, each with figures of its own.
 - **Pipelines** (`DEPARTMENT_PIPELINES`): the work in flight through the department, read from the modules' own services
   so their rights hold. Indents (purchase): material requests waiting for approval (`MaterialRequestsService.list`), the
   approved ones still to order at their order stage (`RequestsToOrderService.rows`) and orders still to arrive
   (`PurchaseOrdersService.status`). Deliveries (store): the last of those. Letters (correspondence): outward letters to
-  sign or seal and letters our reply is due on (`CorrespondenceService.list`). Each shows its count at every stage
+  sign or seal and letters our reply is due on (`CorrespondenceService.list`). Salaries and settlements (HR and payroll,
+  `canViewPayroll`): months ended with no salary run (the last three, from the company's first run), runs in draft,
+  waiting for approval or approved and not paid (`PayrollRunService.list`), due by the 7th of the next month
+  (`salaryDueOn`), and leavers with no full and final or one not paid (`SettlementService.due` / `list`), due two days
+  after the last working day (`settlementDueOn`). Each shows its count at every stage
   (`pipelineStages`) and the eight most urgent (`byPipelineUrgency`: late first, then the soonest due), with a link to the
   whole list. A pipeline the role cannot read (`canPurchase`, `canViewPurchaseOrders`, `canViewLetters`) is left out.
   Tested in `src/scripts/department-home-test.ts` (CI flows).
@@ -2295,10 +2304,19 @@ flow, not `SubmissionLifecycleService`: it is a person's request, not site data 
   themselves, `overtimeHours`, note, who marked it). `LeaveRequest`: `type` (`LeaveType`), from / to, `halfDay`,
   `days` (working days), reason, `status` (`LeaveStatus`), who applied and decided, decision note. `Holiday`: a date
   for every site (`projectId` null) or one site.
-- **Calendar.** Sunday is the weekly off everywhere; leave days skip Sundays and the employee's site holidays
-  (`leaveDays` in `packages/shared/src/staff.ts`, also used by the web and app forms). A standard day is 9 hours:
+- **Calendar.** The weekly off is the company's (`PayrollSettings.weeklyOff`, 0 Sunday to 6 Saturday, Sunday until
+  set) for head office and every site without its own, and a site's own where it keeps another day (`Project.weeklyOff`,
+  null for the company's), read only by `weeklyOffOf` / `isWeeklyOff` (`@erp/shared/staff.ts`). HR sets both under Staff ›
+  Holidays › Weekly offs (`GET|PUT /staff/weekly-offs`, `StaffCalendarDto`; the company's also in Payroll settings); a
+  change counts for every date, so leave already approved keeps the days it was given and paid runs their figures. Leave
+  days skip the weekly off of the employee's site and the site's holidays (`leaveDays`, also used by the web and app
+  forms; the phone reads the day from `MyStaffDto.weeklyOff`); the register, comp-off and the staff month read the site
+  worked at. A standard day is 9 hours:
   check-out records overtime past it in half hours, and under half a day marks a half day.
-- **Balances** are per calendar year (leave counts in the year it starts; a request cannot span two years): the
+- **Balances** are per leave year, January to December or April to March (`PayrollSettings.leaveYearStart` 1 or 4,
+  Payroll settings › Leave year), named by the year it starts in ("2026-27", `leaveYearOf`, `leaveYearRange`,
+  `leaveYearLabel`); leave counts in the leave year it starts, a request cannot span two, and pro rata counts the months
+  left in the leave year from the joining month. The
   company's days a year from Payroll settings (`PayrollSettings` casual, sick and earned days, standard 12, 12 and 15),
   read by `leaveEntitlement` (`@erp/shared/staff.ts`, tested in `src/scripts/leave-policy-test.ts`): someone who joined
   that year gets the months left from their joining month when the company gives pro rata (rounded down to a half day),
@@ -2390,9 +2408,9 @@ Read-only reports (`PayrollService`; `GET /payroll/staff`, `GET /payroll/contrac
 Nirmaan hands the payroll provider its inputs; PF, ESI, professional tax and salary TDS are worked out there.
 
 - **Staff month.** Per employee on the rolls for any part of the month (`joinedOn` / `leftOn`): days on the rolls,
-  Sundays and holidays (at their site), working days, present (a half day counts half), approved leave by type
+  weekly offs and holidays (at their site), working days, present (a half day counts half), approved leave by type
   (working days only; a half-day leave counts half and the other half follows the attendance), absent, days not
-  marked (working days up to today with neither attendance nor leave; not deducted, flagged for checking), Sundays
+  marked (working days up to today with neither attendance nor leave; not deducted, flagged for checking), weekly offs
   and holidays worked (comp-off earned), overtime hours, loss-of-pay days (absent, leave without pay, the unworked
   half of a half day without leave) and paid days = days on the rolls - loss of pay. For `PAYROLL_ROLES` (admin,
   management, HR, accounts).

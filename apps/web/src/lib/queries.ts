@@ -280,6 +280,7 @@ import type {
   Paginated,
   PendingApprovalDto,
   OtherDecisionGroupDto,
+  StaffCalendarDto,
   ApprovalStageDto,
   ReviewResultDto,
   ReviewedItemDto,
@@ -437,7 +438,7 @@ import type {
   ImportRowDto,
   ProjectUpdatesDto,
   TypeBundle, CalibrationRegisterDto, CertificateMissingDto, LabSamplesDto, QaInstrumentDto, QaLabDto, QaAuditDto, QaAuditKind, QaReportDto, DrawingNeedState, DrawingNeedDto, DrawingSource, DrawingScheduleDto, AsBuiltDueDto, AsBuiltState, ComponentDrawingsDto, DesignCommentListDto, DesignSubmissionListDto, DesignSubmissionDetailDto, DesignSubmissionStatus, DesignPurpose, DesignSubmissionKind, CopyState, ControlledCopyListDto, RevisionImpactDto, DesignDashboardDto, BillMeasureChecksDto, CheckLevel, MeasurementCheckDto, PortalMeasurementDto, PortalMeasurementsDto, SiteOrderDto, ProgrammeRegisterDto, ProgrammeSubmissionDto, EotRegisterDto, EotApplicationDto, EotBasis, EotDelayDto } from '@erp/shared';
-import { CAD_MIME_TYPES, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, NOTIFICATION_TYPES_VERSION, SEARCH_MIN_LENGTH, lastRateKey } from '@erp/shared';
+import { CAD_MIME_TYPES, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, NOTIFICATION_TYPES_VERSION, SEARCH_MIN_LENGTH, lastRateKey, leaveYearLabel, leaveYearOf, weeklyOffOf } from '@erp/shared';
 import { api } from './api';
 import { useModuleOn } from './modules';
 import { FAIL_NOTICE, failNoticeSaying } from './notify';
@@ -2622,6 +2623,41 @@ export const useHolidays = (year?: number, projectId?: string) =>
     queryFn: async () => (await api.get<HolidayDto[]>('/staff/holidays', { params: clean({ year, projectId }) })).data,
   });
 
+/** The leave year's start, the company's weekly off and each site's own (`GET /staff/weekly-offs`). */
+export const useStaffCalendar = (enabled = true) =>
+  useQuery({
+    queryKey: ['staff', 'calendar'],
+    queryFn: async () => (await api.get<StaffCalendarDto>('/staff/weekly-offs')).data,
+    staleTime: 300_000,
+    enabled,
+  });
+
+/** HR sets the company's weekly off and each site's own. */
+export function useSaveStaffCalendar() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { weeklyOff?: number; sites?: { projectId: string; weeklyOff: number | null }[] }) => (await api.put<StaffCalendarDto>('/staff/weekly-offs', v)).data,
+    onSuccess: (d) => {
+      qc.setQueryData(['staff', 'calendar'], d);
+      qc.invalidateQueries({ queryKey: ['staff'] });
+      qc.invalidateQueries({ queryKey: ['payroll'] });
+    },
+  });
+}
+
+/** Where a place's weekly off and the leave year come from: the calendar, read once for every screen that counts leave. */
+export function useLeaveCalendar() {
+  const { data } = useStaffCalendar();
+  const yearStart = data?.yearStart ?? 1;
+  return {
+    ready: !!data,
+    yearStart,
+    weeklyOffAt: (projectId: string | null | undefined) => weeklyOffOf(projectId ? data?.sites.find((x) => x.projectId === projectId) : null, data?.weeklyOff),
+    yearOf: (date: string) => leaveYearOf(date, yearStart),
+    label: (year: number) => leaveYearLabel(year, yearStart),
+  };
+}
+
 export const usePayroll = (month: string, projectId?: string, enabled = true) =>
   useQuery({
     queryKey: ['payroll', 'staff', month, projectId ?? null],
@@ -2679,7 +2715,11 @@ export function usePayrollAction<T = unknown>() {
   return useMutation({
     mutationFn: async ({ method = 'post', path, body }: { method?: 'post' | 'put' | 'delete'; path: string; body?: unknown }) =>
       (method === 'delete' ? await api.delete<T>(path) : await api[method]<T>(path, body ?? {})).data,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['payroll'] }),
+    onSuccess: (_, { path }) => {
+      qc.invalidateQueries({ queryKey: ['payroll'] });
+      // The settings carry the leave year and the weekly off, which leave screens read.
+      if (path === '/payroll/settings') qc.invalidateQueries({ queryKey: ['staff'] });
+    },
   });
 }
 
