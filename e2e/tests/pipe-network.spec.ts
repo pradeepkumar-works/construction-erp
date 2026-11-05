@@ -138,3 +138,39 @@ test('Drawings › Pipeline layout picks a water project and imports a Google Ea
   await expect(page).toHaveURL(/\/dpr/);
   await expect(page.getByText(/^Filled in from pipe /)).toBeVisible();
 });
+
+test('the network downloads for Google Earth and Excel, and the map editor puts a valve on a pipe, saving only after its preview', async ({ page }) => {
+  const pm = await apiToken('pm@demo.com');
+  const town = (await api<{ items: Project[] }>(pm, '/projects?pageSize=100')).items.find((p) => p.code === 'WS-2026-04')!;
+  await signIn(page, 'pm@demo.com');
+  await page.goto(`/projects/${town.id}?tab=pipes`);
+  await expect(page.getByRole('img', { name: /^Map of / })).toBeVisible();
+
+  for (const [item, ext] of [['Google Earth (KMZ)', '.kmz'], ['Excel, to correct and load again', '.xlsx']] as const) {
+    await page.getByRole('button', { name: 'Download network' }).click();
+    const download = page.waitForEvent('download');
+    await page.getByRole('menuitem', { name: item }).click();
+    expect((await download).suggestedFilename()).toMatch(new RegExp(`${ext.replace('.', '\\.')}$`));
+  }
+
+  await page.getByRole('button', { name: 'Edit network' }).click();
+  const editor = page.getByRole('dialog', { name: /^Edit network: / });
+  await expect(editor.getByRole('region', { name: /^Map of the network: / })).toBeVisible();
+  await expect(editor.getByRole('button', { name: 'Save network' })).toBeDisabled();
+  await editor.getByText('Add a valve on a pipe', { exact: true }).click();
+  await expect(editor.getByLabel('Code', { exact: true })).toHaveValue(/^SV-\d+$/);
+  // The middle of a pipe's drawn line, on the screen: a click there puts the valve on it.
+  const mid = await editor.locator('path.leaflet-interactive').last().evaluate((el) => {
+    const path = el as SVGPathElement;
+    const p = path.getPointAtLength(path.getTotalLength() / 2);
+    const at = new DOMPoint(p.x, p.y).matrixTransform(path.getScreenCTM()!);
+    return { x: at.x, y: at.y };
+  });
+  await page.mouse.click(mid.x, mid.y);
+  await expect(editor.getByText(/^Pipes: 1 new, 1 changed\. Points: 1 new/)).toBeVisible();
+  await expect(editor.getByRole('button', { name: 'Save network' })).toBeEnabled();
+  await editor.getByRole('button', { name: 'Undo' }).click();
+  await expect(editor.getByText('No changes yet')).toBeVisible();
+  await editor.getByRole('button', { name: 'Cancel' }).click();
+  await expect(editor).toBeHidden();
+});

@@ -35,6 +35,7 @@ import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { QuantityInput } from '@/components/form/inputs';
 import { PipeImportModal } from './PipeImportModal';
 import { PipeCard } from './PipeCard';
+import { PipeNetworkEditor } from './PipeNetworkEditor';
 import { PipeMap, SEGMENT_STATE_LABELS, segmentState, type SegmentState } from './PipeMap';
 
 type StateFilter = 'all' | SegmentState;
@@ -51,6 +52,7 @@ export function PipeNetworkPanel({ project }: { project: ProjectDetail }) {
   const { data, isLoading, error, refetch } = usePipeNetwork(project.id);
   const [picked, setPicked] = useState<string | null>(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<PipeSegmentDto | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [filter, setFilter] = useState<StateFilter>('all');
@@ -160,6 +162,11 @@ export function PipeNetworkPanel({ project }: { project: ProjectDetail }) {
             >
               <Button icon={<DownloadOutlined />}>Download network</Button>
             </Dropdown>
+          ) : null}
+          {data.canEdit && segments.length ? (
+            <Button icon={<EditOutlined />} onClick={() => setEditorOpen(true)}>
+              Edit network
+            </Button>
           ) : null}
           {data.canEdit ? (
             <Button icon={<UploadOutlined />} type={segments.length ? 'default' : 'primary'} onClick={() => setImportOpen(true)}>
@@ -342,6 +349,9 @@ export function PipeNetworkPanel({ project }: { project: ProjectDetail }) {
           }}
           onClose={() => setSelected(null)}
         />
+      ) : null}
+      {data.canEdit && zone && editorOpen ? (
+        <PipeNetworkEditor open={editorOpen} onClose={() => setEditorOpen(false)} projectId={project.id} zone={zone} nodes={nodes} segments={segments} />
       ) : null}
       {data.canEdit ? <SegmentFormModal projectId={project.id} segment={editing} onClose={() => setEditing(null)} /> : null}
     </div>

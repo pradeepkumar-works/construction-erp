@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-pipeline-editor',
+    date: '2026-11-05',
+    title: 'Edit a pipeline on the map, and download it for Google Earth or Excel',
+    points: [
+      'Edit network opens the zone on a satellite or street map. Drag a valve or a junction, drag the bends of a pipe, put a valve on a pipe (it is cut in two there), or draw a new pipe from a point.',
+      'Sizes, class, surface and kinds are corrected beside the map. Saving shows first what changes; nothing is deleted, and no pipe is cut shorter than the work on it.',
+      'Download network gives a KMZ to open in Google Earth, or an Excel book of nodes and pipes. Either one, corrected, loads back with Import network, matched by code.',
+      'A KMZ now keeps where every valve and bend is. A zone loaded from a KMZ before today needs its KMZ imported once more to be edited on the map.',
+    ],
+  },
+  {
     id: '2026-11-pipeline-layout',
     date: '2026-11-05',
     title: 'Pipeline layout in Drawings: upload a KMZ from Google Earth',

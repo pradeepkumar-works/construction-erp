@@ -102,11 +102,13 @@ export async function seedTownNetwork(prisma: PrismaClient, organizationId: stri
   }
   const unitOf = new Map(pipeActivities.map((a) => [a.id, a.unit]));
 
+  // The demo town's places on the earth, laid out in metres from a point near Jajpur, so the map editor and the KMZ download have a real map.
+  const placeOf = (x: number, y: number) => ({ lat: Math.round((20.85 + y / 111195) * 1e7) / 1e7, lon: Math.round((86.33 + x / (111195 * Math.cos((20.85 * Math.PI) / 180))) * 1e7) / 1e7 });
   const scope = Number((zone.specs as { lengthM?: number } | null)?.lengthM ?? 10100);
   const net = townZone(scope);
   const nodeId = new Map<string, string>();
   for (const n of net.nodes) {
-    const row = await prisma.pipeNode.create({ data: { organizationId, projectId: project.id, zoneId: zone.id, code: n.code, kind: n.kind, x: n.x, y: n.y, groundLevel: D((112 - n.x / 900 + n.y / 400).toFixed(2)) } });
+    const row = await prisma.pipeNode.create({ data: { organizationId, projectId: project.id, zoneId: zone.id, code: n.code, kind: n.kind, x: n.x, y: n.y, ...placeOf(n.x, n.y), groundLevel: D((112 - n.x / 900 + n.y / 400).toFixed(2)) } });
     nodeId.set(n.code, row.id);
   }
   const segs: { id: string; code: string; from: string; to: string; lengthM: number; diameterMm: number }[] = [];

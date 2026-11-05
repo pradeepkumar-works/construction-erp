@@ -2,7 +2,7 @@
  * Pipe network tests. Reading an EPANET file (units, valves, pumps, coordinates) and a design office's sheet
  * with loose headers, the checks that stop an import, what a re-import changes (matched by code, never shortening a pipe
  * below its work), a segment's stages held to its length and weighted, the zone's pipe sheet, the pipes ready to
- * start, a Google Earth alignment cut at its named points and by chainage (keeping its places on the earth), a network downloaded as KML or sheets and read back as it was, the cap a DPR line meets, the DPR's pipeline summary, and a stage guessed from an activity's name.
+ * start, a Google Earth alignment cut at its named points and by chainage (keeping its places on the earth), a network downloaded as KML or sheets and read back as it was, the map editor's moves, valves and new pipes, the cap a DPR line meets, the DPR's pipeline summary, and a stage guessed from an activity's name.
  *
  *   node dist/scripts/pipe-network-test.js
  */
@@ -19,6 +19,13 @@ import {
   parseNetworkSheets,
   networkKml,
   networkSheets,
+  addPipe,
+  moveNode,
+  networkChanges,
+  nextNetworkCode,
+  pipeRoute,
+  routeLengthM,
+  splitPipe,
   pipelineSummary,
   segmentCapProblem,
   segmentLabel,
@@ -275,6 +282,40 @@ test('a file that gives no place or route leaves the saved ones alone', () => {
   assert.deepEqual(pipes({}), { added: 0, changed: 0, unchanged: 1 }, 'no route given: kept');
   assert.deepEqual(pipes({ path: [] }), { added: 0, changed: 1, unchanged: 0 }, 'a straight route given: changed');
   assert.deepEqual(pipes({ surface: 'CC road' }), { added: 0, changed: 1, unchanged: 0 }, 'a surface given counts as a change');
+});
+
+test("the map editor: a valve cuts a pipe in two by the ground each side, a node moves, a drawn pipe joins the nodes it reaches", () => {
+  assert.equal(nextNetworkCode(['P-1', 'P-2', 'P-40', 'J-7'], 'P-27'), 'P-41');
+  assert.equal(nextNetworkCode(['SV-01', 'SV-02'], 'SV-01'), 'SV-03');
+  assert.equal(nextNetworkCode(['Main'], 'Main'), 'Main-1');
+
+  const net = parseKml(KML, { diameterMm: 300, material: 'DI' });
+  const p3 = net.pipes.find((p) => p.code === 'P3')!; // 0+500 to 1+000, straight north
+  const cut = splitPipe(net, 'P3', [78.0001, 21 + 650 / 111195], { code: 'AV-1', kind: 'AIR_VALVE' });
+  assert.equal(cut.problem, null);
+  const av = cut.network.nodes.find((n) => n.code === 'AV-1')!;
+  assert.equal(av.kind, 'AIR_VALVE');
+  assert.equal(av.chainage, 650, 'its chainage between the two ends');
+  assert.ok(Math.abs(av.lon! - 78) < 1e-6, 'put on the line, not where the pointer was beside it');
+  const [head, tail] = cut.network.pipes.filter((p) => p.code === 'P3' || p.code === 'P5');
+  assert.deepEqual([head.from, head.to, head.lengthM, tail.from, tail.to, tail.lengthM, tail.diameterMm], ['0+500', 'AV-1', 150, 'AV-1', '1+000', p3.lengthM - 150, 300]);
+  assert.deepEqual(cut.network.pipes.map((p) => p.code), ['P1', 'P2', 'P3', 'P5', 'P4'], 'the new part sits after the pipe it came from');
+  assert.match(splitPipe(net, 'P3', [78, 21 + 500 / 111195], { code: 'AV-2', kind: 'AIR_VALVE' }).problem!, /at an end of P3/);
+  assert.match(splitPipe(net, 'P3', [78, 21.005], { code: 'SV-1', kind: 'SLUICE_VALVE' }).problem!, /already in this network/);
+  const plan = importPlan({ nodes: net.nodes, pipes: net.pipes.map((p) => ({ ...p, doneM: p.code === 'P3' ? 400 : 0 })) }, cut.network);
+  assert.deepEqual([plan.pipes, plan.shortened], [{ added: 1, changed: 1, unchanged: 3 }, ['P3']], 'cutting a pipe below its work stops the save');
+
+  const moved = moveNode(net, 'SV-1', [78.001, 21 + 300 / 111195]);
+  const sv = moved.nodes.find((n) => n.code === 'SV-1')!;
+  assert.ok(Math.abs(sv.x! - 103.9) < 1, 'its map position follows, about 104 m east');
+  assert.deepEqual(networkChanges(net, moved), { added: [], changed: ['SV-1'] });
+
+  const drawn = addPipe(net, [[78.00005, 21 + 1000 / 111195], [78.003, 21 + 1000 / 111195]], { diameterMm: 110, material: 'HDPE', pipeClass: 'PN 6' });
+  const np = drawn.pipes[drawn.pipes.length - 1];
+  assert.deepEqual([np.code, np.from, np.to, np.diameterMm], ['P5', '1+000', 'J-1', 110], 'starts at the node it was drawn from, ends at a new junction');
+  assert.ok(Math.abs(np.lengthM - routeLengthM(pipeRoute(drawn, np)!)) < 0.1 && np.lengthM > 300, 'its length on the ground');
+  assert.deepEqual(networkProblems(drawn), []);
+  assert.deepEqual(networkChanges(net, drawn), { added: ['J-1', 'P5'], changed: [] });
 });
 
 test("a DPR line can't take a stage past the pipe's length, and says how much is left", () => {
