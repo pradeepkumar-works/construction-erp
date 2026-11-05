@@ -7,6 +7,7 @@ import {
   canPayPayroll,
   canRunPayroll,
   canViewPayroll,
+  ownEntryProblem,
   type ManualPayslipCode,
   type PayrollRunDetailDto,
   type PayrollRunDto,
@@ -81,7 +82,7 @@ export class PayrollRunService {
       can: {
         edit: r.status === 'DRAFT' && canRunPayroll(user.roleKey),
         submit: r.status === 'DRAFT' && canRunPayroll(user.roleKey) && r._count.payslips > 0,
-        approve: r.status === 'SUBMITTED' && canApprovePayroll(user.roleKey),
+        approve: r.status === 'SUBMITTED' && canApprovePayroll(user.roleKey) && !ownEntryProblem(r.preparedById, user.id),
         pay: r.status === 'APPROVED' && canPayPayroll(user.roleKey),
         remove: r.status === 'DRAFT' && canRunPayroll(user.roleKey),
       },
@@ -280,6 +281,8 @@ export class PayrollRunService {
     const r = await this.runFor(user, id);
     if (!canApprovePayroll(user.roleKey)) throw new ForbiddenException('Only management or an admin approves the salary run');
     if (r.status !== 'SUBMITTED') throw new BadRequestException('Only a submitted run can be approved');
+    const own = ownEntryProblem(r.preparedById, user.id);
+    if (own) throw new ForbiddenException(own);
     await this.prisma.payrollRun.update({ where: { id }, data: { status: 'APPROVED', approvedById: user.id, approvedAt: new Date(), reviewNote: note ?? null } });
     await this.audit.log(user, 'PAYROLL_RUN', id, 'APPROVED', note ?? r.runNo);
     const done = await this.detail(user, id);

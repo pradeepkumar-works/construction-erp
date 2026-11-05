@@ -4,8 +4,8 @@ import React, { useState } from 'react';
 import { Alert, App, Button, Col, Empty, Flex, Listy, Popconfirm, Row, Space, Statistic, Table, Typography } from 'antd';
 import { tk } from '@/ds';
 import type { TableProps } from 'antd';
-import { LoginOutlined, LogoutOutlined, PlusOutlined } from '@/components/common/icons';
-import type { LeaveRequestDto } from '@erp/shared';
+import { EditOutlined, LoginOutlined, LogoutOutlined, PlusOutlined } from '@/components/common/icons';
+import type { AttendanceCorrectionDto, LeaveRequestDto } from '@erp/shared';
 import { LEAVE_TYPE_LABELS, WEEKDAY_NAMES } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
@@ -13,9 +13,22 @@ import { FAIL_NOTICE } from '@/lib/notify';
 import { useMyStaff } from '@/lib/queries';
 import { formatDate, NO_VALUE } from '@/lib/format';
 import { Loading, QueryError } from '@/components/common/QueryState';
-import { AttendanceTag, CheckInPlaceTag, FacePhotos, LeaveStatusTag, OvertimeTag, clock, currentPosition, leaveSpan, metres } from './staffUi';
+import { AttendanceTag, CheckInPlaceTag, FacePhotos, LeaveStatusTag, OvertimeTag, clock, correctionAsked, correctionNow, currentPosition, leaveSpan, metres } from './staffUi';
 import { LeaveFormModal } from './LeaveFormModal';
+import { CorrectionFormModal } from './CorrectionFormModal';
 import { Section } from '@/components/common/Section';
+
+/** Who decided a request, or who it waits on while it waits. */
+function decided(r: { decidedByName: string | null; decisionNote: string | null; approval: { waitingOn: string | null } }) {
+  if (r.decidedByName)
+    return (
+      <span>
+        {r.decidedByName}
+        {r.decisionNote ? <Typography.Text type="secondary">: {r.decisionNote}</Typography.Text> : null}
+      </span>
+    );
+  return r.approval.waitingOn ? <Typography.Text type="secondary">Waiting on {r.approval.waitingOn}</Typography.Text> : NO_VALUE;
+}
 
 /** The signed-in person's own record: mark in and out (the phone adds their photo, face attendance), leave balances, their requests and coming holidays. */
 export function MyStaff() {
@@ -23,16 +36,17 @@ export function MyStaff() {
   const qc = useQueryClient();
   const { data, isLoading, error, refetch } = useMyStaff();
   const [apply, setApply] = useState(false);
+  const [correct, setCorrect] = useState(false);
 
   const act = useMutation({
-    mutationFn: async (what: 'check-in' | 'check-out' | { cancel: string }) => {
-      if (typeof what !== 'string') return (await api.post(`/staff/leave/${what.cancel}/cancel`)).data;
+    mutationFn: async (what: 'check-in' | 'check-out' | { cancel: string } | { withdraw: string }) => {
+      if (typeof what !== 'string') return (await api.post('cancel' in what ? `/staff/leave/${what.cancel}/cancel` : `/staff/corrections/${what.withdraw}/cancel`)).data;
       // Check-in sends where the browser is when the site has a location to measure from.
       const at = what === 'check-in' && data?.site ? await currentPosition() : null;
       return (await api.post(`/staff/me/${what}`, at ?? {})).data;
     },
     onSuccess: (_, what) => {
-      message.success(what === 'check-in' ? 'Marked in' : what === 'check-out' ? 'Marked out' : 'Leave cancelled');
+      message.success(what === 'check-in' ? 'Marked in' : what === 'check-out' ? 'Marked out' : 'cancel' in what ? 'Leave cancelled' : 'Correction cancelled');
       qc.invalidateQueries({ queryKey: ['staff'] });
     },
     meta: FAIL_NOTICE,
@@ -48,13 +62,31 @@ export function MyStaff() {
     );
 
   const t = data.today;
+  const correctionColumns: TableProps<AttendanceCorrectionDto>['columns'] = [
+    { title: 'Day', dataIndex: 'date', width: 120, render: (v: string) => <span translate="no">{formatDate(v)}</span> },
+    { title: 'Marked', key: 'now', width: 190, render: (_, r) => correctionNow(r) },
+    { title: 'Asked for', key: 'asked', width: 230, render: (_, r) => correctionAsked(r) },
+    { title: 'Status', dataIndex: 'status', width: 110, render: (v: AttendanceCorrectionDto['status']) => <LeaveStatusTag status={v} /> },
+    { title: 'Decided by', key: 'decided', width: 220, render: (_, r) => decided(r) },
+    {
+      title: '',
+      key: 'actions',
+      width: 90,
+      render: (_, r) =>
+        r.canCancel ? (
+          <Popconfirm title="Cancel this correction?" okText="Cancel correction" cancelText="Keep" onConfirm={() => act.mutate({ withdraw: r.id })}>
+            <Button size="small">Cancel</Button>
+          </Popconfirm>
+        ) : null,
+    },
+  ];
   const columns: TableProps<LeaveRequestDto>['columns'] = [
     { title: 'Leave', dataIndex: 'type', width: 170, render: (v: LeaveRequestDto['type']) => LEAVE_TYPE_LABELS[v] },
     { title: 'Dates', key: 'dates', width: 220, render: (_, r) => leaveSpan(r) },
     { title: 'Days', dataIndex: 'days', width: 70, align: 'right' },
     { title: 'Reason', dataIndex: 'reason', ellipsis: true, width: 200 },
     { title: 'Status', dataIndex: 'status', width: 110, render: (v: LeaveRequestDto['status']) => <LeaveStatusTag status={v} /> },
-    { title: 'Decided by', key: 'decided', width: 220, render: (_, r) => (r.decidedByName ? <span>{r.decidedByName}{r.decisionNote ? <Typography.Text type="secondary">: {r.decisionNote}</Typography.Text> : null}</span> : NO_VALUE) },
+    { title: 'Decided by', key: 'decided', width: 220, render: (_, r) => decided(r) },
     {
       title: '',
       key: 'actions',
@@ -145,6 +177,26 @@ export function MyStaff() {
             <Table<LeaveRequestDto> rowKey="id" size="small" columns={columns} dataSource={data.leave} pagination={false} scroll={{ x: 1080 }} locale={{ emptyText: 'No leave yet' }} />
           </Section>
         </Col>
+        <Col xs={24} lg={16}>
+          <Section
+            title="My attendance corrections"
+            extra={
+              <Button icon={<EditOutlined />} onClick={() => setCorrect(true)}>
+                Ask to correct
+              </Button>
+            }
+          >
+            <Table<AttendanceCorrectionDto>
+              rowKey="id"
+              size="small"
+              columns={correctionColumns}
+              dataSource={data.corrections}
+              pagination={false}
+              scroll={{ x: 960 }}
+              locale={{ emptyText: 'A missed mark-in or a wrong day: ask to correct it, and your manager and HR decide' }}
+            />
+          </Section>
+        </Col>
         <Col xs={24} lg={8}>
           <Section title="Coming holidays">
             {data.holidays.length ? (
@@ -169,6 +221,7 @@ export function MyStaff() {
         </Col>
       </Row>
       <LeaveFormModal open={apply} onClose={() => setApply(false)} employeeId={data.employee.id} />
+      <CorrectionFormModal open={correct} onClose={() => setCorrect(false)} employeeId={data.employee.id} />
     </div>
   );
 }

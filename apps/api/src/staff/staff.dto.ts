@@ -37,7 +37,8 @@ export class CreateEmployeeDto {
   @ApiPropertyOptional({ example: 'SBIN0001234' }) @IsOptional() @upper() @opt() @Matches(IFSC_PATTERN, { message: 'IFSC is four letters, a zero and six letters or digits, like SBIN0001234' }) bankIfsc?: string | null;
   @ApiPropertyOptional({ enum: EMPLOYMENT_TYPES }) @IsOptional() @opt() @IsIn(EMPLOYMENT_TYPES as unknown as string[]) employmentType?: EmploymentType | null;
   @ApiPropertyOptional({ example: 'M2' }) @IsOptional() @trim() @IsString() @MaxLength(20) grade?: string | null;
-  @ApiPropertyOptional({ description: 'The employee they report to' }) @IsOptional() @opt() @IsUUID() reportingToId?: string | null;
+  @ApiPropertyOptional({ description: 'The employee they report to: their leave, overtime and corrections wait on this person first' }) @IsOptional() @opt() @IsUUID() reportingToId?: string | null;
+  @ApiPropertyOptional({ description: 'The functional line (a site QA/QC engineer to the head office QA/QC manager); on the org chart, routes nothing' }) @IsOptional() @opt() @IsUUID() functionalManagerId?: string | null;
   @ApiPropertyOptional() @IsOptional() @opt() @IsDateString() probationEndsOn?: string | null;
   @ApiPropertyOptional() @IsOptional() @opt() @IsDateString() confirmedOn?: string | null;
   @ApiPropertyOptional({ example: 30 }) @IsOptional() @opt() @IsInt() @Min(0) @Max(180) noticeDays?: number | null;
@@ -129,6 +130,15 @@ export class ApplyLeaveDto {
   @ApiProperty({ example: '2026-10-22' }) @IsDateString() toDate: string;
   @ApiPropertyOptional({ default: false, description: 'A single half day (from and to the same day)' }) @IsOptional() @IsBoolean() halfDay?: boolean;
   @ApiProperty({ example: 'Family function' }) @trim() @IsString() @IsNotEmpty() @MaxLength(500) reason: string;
+}
+
+export class AskCorrectionDto {
+  @ApiProperty({ example: '2026-11-03', description: 'The day to correct, today or earlier' }) @IsDateString() date: string;
+  @ApiProperty({ enum: STAFF_ATTENDANCE_STATUSES, description: 'The day as it should be' }) @IsIn(STAFF_ATTENDANCE_STATUSES as unknown as string[]) dayStatus: StaffAttendanceStatus;
+  @ApiPropertyOptional({ example: '09:05', description: 'Mark-in that day, HH:mm local time; empty keeps the day as it is' }) @IsOptional() @opt() @Matches(/^([01]\d|2[0-3]):[0-5]\d$/, { message: 'Enter the mark-in time as HH:mm, for example 09:05' }) checkIn?: string | null;
+  @ApiPropertyOptional({ example: '18:30', description: 'Mark-out that day, HH:mm local time; empty keeps the day as it is' }) @IsOptional() @opt() @Matches(/^([01]\d|2[0-3]):[0-5]\d$/, { message: 'Enter the mark-out time as HH:mm, for example 18:30' }) checkOut?: string | null;
+  @ApiPropertyOptional({ example: 1.5, description: 'Overtime that day in half hours; empty keeps it, 0 clears it' }) @IsOptional() @opt() @IsNumber() @Min(0) @Max(15) overtimeHours?: number | null;
+  @ApiProperty({ example: 'Phone was off at the gate; I was on site from 9' }) @trim() @IsString() @IsNotEmpty({ message: 'Say why the day needs correcting' }) @MaxLength(500) reason: string;
 }
 
 export class DecideLeaveDto {

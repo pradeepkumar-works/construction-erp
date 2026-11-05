@@ -14,6 +14,7 @@ export const LIST_SORT_FIELDS = {
   materialRequests: ['createdAt', 'requestNo', 'requiredDate', 'priority', 'status', 'project', 'submittedBy'],
   projects: ['status', 'code', 'name', 'type', 'startDate', 'endDate', 'contractValue', 'createdAt'],
   users: ['fullName', 'email', 'role', 'isActive', 'createdAt'],
+  auditLog: ['createdAt', 'kind', 'action', 'actor'],
   attendance: ['date', 'project', 'totalWorkers', 'recordedBy', 'updatedAt'],
   stockEntries: ['date', 'entryNo', 'type', 'project', 'createdBy', 'createdAt'],
   stockBalances: ['item', 'project', 'balance', 'received', 'issued', 'lastMovement', 'value'],
@@ -49,6 +50,7 @@ export type DprSortField = (typeof LIST_SORT_FIELDS.dpr)[number];
 export type MaterialRequestSortField = (typeof LIST_SORT_FIELDS.materialRequests)[number];
 export type ProjectSortField = (typeof LIST_SORT_FIELDS.projects)[number];
 export type UserSortField = (typeof LIST_SORT_FIELDS.users)[number];
+export type AuditLogSortField = (typeof LIST_SORT_FIELDS.auditLog)[number];
 export type AttendanceSortField = (typeof LIST_SORT_FIELDS.attendance)[number];
 export type StockEntrySortField = (typeof LIST_SORT_FIELDS.stockEntries)[number];
 export type StockBalanceSortField = (typeof LIST_SORT_FIELDS.stockBalances)[number];

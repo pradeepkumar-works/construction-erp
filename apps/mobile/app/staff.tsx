@@ -72,7 +72,7 @@ function LeaveRow({ l, mine, busy, onCancel, onApprove, onReject }: { l: LeaveRe
       {(l.canDecide && onApprove) || (l.canCancel && onCancel) ? (
         <View style={styles.actions}>
           {l.canDecide && onReject ? <Button title={t('Reject')} size="sm" variant="secondary" disabled={busy} onPress={onReject} /> : null}
-          {l.canDecide && onApprove ? <Button title={t('Approve')} size="sm" disabled={busy} onPress={onApprove} /> : null}
+          {l.canDecide && onApprove ? <Button title={l.approval.callerRecommends ? t('Recommend') : t('Approve')} size="sm" disabled={busy} onPress={onApprove} /> : null}
           {l.canCancel && onCancel ? <Button title={t('Cancel leave')} size="sm" variant="secondary" disabled={busy} onPress={onCancel} /> : null}
         </View>
       ) : null}
@@ -112,7 +112,7 @@ function OvertimeRow({ a, busy, onApprove, onReject }: { a: StaffAttendanceDto; 
       {a.canDecideOvertime ? (
         <View style={styles.actions}>
           <Button title={t('Reject')} size="sm" variant="secondary" disabled={busy} onPress={onReject} />
-          <Button title={t('Approve')} size="sm" disabled={busy} onPress={onApprove} />
+          <Button title={a.overtimeApproval?.callerRecommends ? t('Recommend') : t('Approve')} size="sm" disabled={busy} onPress={onApprove} />
         </View>
       ) : null}
     </View>
@@ -335,7 +335,7 @@ export default function StaffScreen() {
               key={l.id}
               l={l}
               busy={busy}
-              onApprove={() => void run(() => api.post(`/staff/leave/${l.id}/approve`, {}), t('Leave approved for {name}', { name: l.employeeName }))}
+              onApprove={() => void run(() => api.post(`/staff/leave/${l.id}/approve`, {}), l.approval.callerRecommends ? t('Leave recommended to HR for {name}', { name: l.employeeName }) : t('Leave approved for {name}', { name: l.employeeName }))}
               onReject={() => setRejecting({ kind: 'leave', l })}
             />
           ))}
@@ -350,7 +350,7 @@ export default function StaffScreen() {
               key={a.id}
               a={a}
               busy={busy}
-              onApprove={() => void run(() => api.post(`/staff/attendance/${a.id}/overtime/approve`, {}), t('Overtime approved for {name}', { name: a.employeeName }))}
+              onApprove={() => void run(() => api.post(`/staff/attendance/${a.id}/overtime/approve`, {}), a.overtimeApproval?.callerRecommends ? t('Overtime recommended to HR for {name}', { name: a.employeeName }) : t('Overtime approved for {name}', { name: a.employeeName }))}
               onReject={() => setRejecting({ kind: 'overtime', a })}
             />
           ))}

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
   LEAVE_TYPE_LABELS,
   OTHER_DECISION_KINDS,
+  STAFF_ATTENDANCE_LABELS,
   canApprovePayroll,
   canApproveVouchers,
   canKeepBooks,
@@ -15,6 +16,7 @@ import { RequestUser } from '../common/current-user';
 import { formatDay } from '../common/serialize';
 import { todayIn } from '../notifications/time';
 import { StaffService } from '../staff/staff.service';
+import { AttendanceCorrectionsService } from '../staff/attendance-corrections.service';
 import { PayrollRunService } from '../payroll/payroll-run.service';
 import { BooksService } from '../books/books.service';
 import { CorrespondenceService } from '../correspondence/correspondence.service';
@@ -27,20 +29,28 @@ const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 /**
  * What waits on the caller outside the submission queue, read through each module's own list with the caller, so its
- * access rules apply: leave and overtime to decide, salary runs to approve, vouchers to approve and letters to sign.
+ * access rules apply: leave, overtime and attendance corrections to recommend or decide (each person only what waits on
+ * them in its two steps), salary runs to approve, vouchers to approve and letters to sign.
  * Each group links to where it is decided; a group the caller has no part in is left out.
  */
 @Injectable()
 export class OtherDecisionsService {
-  constructor(private staff: StaffService, private payroll: PayrollRunService, private books: BooksService, private letters: CorrespondenceService) {}
+  constructor(
+    private staff: StaffService,
+    private corrections: AttendanceCorrectionsService,
+    private payroll: PayrollRunService,
+    private books: BooksService,
+    private letters: CorrespondenceService,
+  ) {}
 
   /** Every kind, or only `kinds` (a module's screen asks for its own). */
   async forUser(user: RequestUser, kinds: readonly OtherDecisionKind[] = OTHER_DECISION_KINDS): Promise<OtherDecisionGroupDto[]> {
     const role = user.roleKey;
     const wants = (k: OtherDecisionKind) => kinds.includes(k);
-    const [leave, overtime, runs, vouchers, letters] = await Promise.all([
+    const [leave, overtime, corrections, runs, vouchers, letters] = await Promise.all([
       wants('LEAVE') ? this.staff.listLeave(user, { toDecide: true, sortBy: 'fromDate', sortOrder: 'asc', page: 1, pageSize: SHOWN }).catch(() => null) : null,
       wants('OVERTIME') ? this.staff.overtimeToDecide(user).catch(() => null) : null,
+      wants('CORRECTION') ? this.corrections.toDecide(user).catch(() => null) : null,
       wants('PAYROLL_RUN') && canApprovePayroll(role) ? this.payroll.list(user, {}).catch(() => null) : null,
       wants('VOUCHER') && canApproveVouchers(role) && canKeepBooks(role) ? this.books.vouchers(user, { toDecide: true, page: 1, pageSize: SHOWN }) : null,
       wants('LETTER') ? this.letters.list(user, { toSign: true, sortBy: 'letterDate', sortOrder: 'asc', page: 1, pageSize: SHOWN }).catch(() => null) : null,
@@ -81,6 +91,21 @@ export class OtherDecisionsService {
           href: '/staff?tab=overtime',
         })),
         '/staff?tab=overtime',
+      );
+    if (corrections)
+      add(
+        'CORRECTION',
+        corrections.length,
+        corrections.map((c) => ({
+          id: c.id,
+          title: `${c.employeeName} · ${STAFF_ATTENDANCE_LABELS[c.dayStatus]}`,
+          note: `${formatDay(c.date)}${c.approval.recommendedByName ? `, recommended by ${c.approval.recommendedByName}` : ''}`,
+          projectName: c.projectName,
+          amount: null,
+          since: c.createdAt.slice(0, 10),
+          href: '/staff?tab=corrections',
+        })),
+        '/staff?tab=corrections',
       );
     if (runs) {
       const waiting = runs.filter((r) => r.status === 'SUBMITTED' && r.can.approve);

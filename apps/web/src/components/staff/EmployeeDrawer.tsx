@@ -36,6 +36,7 @@ function EmployeeDetails({ data }: { data: EmployeeDto }) {
         <Descriptions.Item label="Department">{val(data.department)}</Descriptions.Item>
         <Descriptions.Item label="Posted at">{data.projectName ?? 'Head office'}</Descriptions.Item>
         <Descriptions.Item label="Reports to">{val(data.reportingToName)}</Descriptions.Item>
+        <Descriptions.Item label="Functional manager">{val(data.functionalManagerName)}</Descriptions.Item>
         <Descriptions.Item label="Employment">{data.employmentType ? EMPLOYMENT_TYPE_LABELS[data.employmentType] : none}</Descriptions.Item>
         <Descriptions.Item label="Grade">{val(data.grade)}</Descriptions.Item>
         <Descriptions.Item label="Joined">

@@ -5,7 +5,7 @@
  *   node dist/scripts/purchase-award-test.js
  */
 import assert from 'node:assert/strict';
-import { awardLowestPerItem, choiceProblem, finaliseProblem, isSplitWorthwhile, orderStage, rankQuotations, whatsAppShareUrl, type ComparativeStatementDto, type QuoteToRank, type QuotationDto } from '@erp/shared';
+import { awardLowestPerItem, choiceProblem, poBudgetCheck, poOverBudget, finaliseProblem, isSplitWorthwhile, orderStage, rankQuotations, whatsAppShareUrl, type ComparativeStatementDto, type QuoteToRank, type QuotationDto } from '@erp/shared';
 
 const tests: [string, () => void][] = [];
 const test = (name: string, fn: () => void) => tests.push([name, fn]);
@@ -243,6 +243,17 @@ test('an order on a request waits for its approved choice, and goes only to the 
   assert.match(choiceProblem('MR-1', { status: 'APPROVED', split: false, vendorId: 'vb', vendorName: 'B' }, order)!, /approved supplier on MR-1 is B/);
   assert.equal(choiceProblem('MR-1', { status: 'APPROVED', split: true, vendorId: null, vendorName: null }, order, ['va', 'vb']), null);
   assert.match(choiceProblem('MR-1', { status: 'APPROVED', split: true, vendorId: null, vendorName: null }, order, ['vb'])!, /not one of the vendors/);
+});
+
+test('an order against the material budget: left after it, over when negative, nothing without a budget', () => {
+  const within = poBudgetCheck(5_000_000, 3_200_000, 900_000)!;
+  assert.deepEqual(within, { budget: '5000000.00', ordered: '3200000.00', thisOrder: '900000.00', left: '900000.00' });
+  assert.equal(poOverBudget(within), false);
+  const over = poBudgetCheck(5_000_000, 4_600_000, 650_000.5)!;
+  assert.equal(over.left, '-250000.50');
+  assert.equal(poOverBudget(over), true);
+  assert.equal(poBudgetCheck(null, 100, 100), null, 'no budget row: no check');
+  assert.equal(poBudgetCheck(0, 100, 100), null, 'a material head of zero is a budget not set');
 });
 
 let failed = 0;

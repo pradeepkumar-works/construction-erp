@@ -77,7 +77,7 @@ export interface ModuleHomeDto {
 
 /** The decisions outside the submission queue that each module's screen shows as waiting (`OTHER_DECISION_KINDS`). */
 export const MODULE_OTHER_DECISIONS: Partial<Record<ModuleKey, readonly OtherDecisionKind[]>> = {
-  people: ['LEAVE', 'OVERTIME'],
+  people: ['LEAVE', 'OVERTIME', 'CORRECTION'],
   payroll: ['PAYROLL_RUN'],
   accounts: ['VOUCHER'],
   correspondence: ['LETTER'],

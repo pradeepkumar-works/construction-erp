@@ -1,8 +1,9 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import type { WarningDto, WarningKind, WarningOutcome, WarningRecordDto, WatchListDto } from '@erp/shared';
+import type { RoleKey, WarningDto, WarningKind, WarningOutcome, WarningRecordDto, WatchListDto } from '@erp/shared';
 import {
   reportingMonth,
+  roleApprover,
   RECALL_DAYS,
   copyLabel,
   DEFAULT_CLIENT_PAYMENT_DAYS,
@@ -1347,7 +1348,7 @@ export class WarningsService {
     ]);
     const limitOf = (role: string | undefined) => {
       if (!role || role === 'ADMIN') return null;
-      const r = rules.find((x) => x.roleKey === role && x.type === 'PURCHASE_ORDER' && x.level === 1);
+      const r = rules.find((x) => x.approver === roleApprover(role as RoleKey) && x.type === 'PURCHASE_ORDER' && x.level === 1);
       return r?.maxAmount ? Number(r.maxAmount) : null;
     };
     const receipts = orders.length

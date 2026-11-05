@@ -47,14 +47,25 @@ shapes of every API response, so web, mobile and API agree on one contract.
 
 - Company-wide roles (Admin, Management, Procurement, Accounts, HR) see all projects.
 - Everyone else sees projects they manage or are a member of (`ProjectMember`).
-- Approvers come from the organisation's approval matrix (`ApprovalRule`: role, submission type, optional
-  rupee limit), limited to projects they can see. Without rules the fixed rule applies (Admin, Management
-  and Project Manager approve everything). Admin always approves everything. `ApprovalRightsService`
-  (rights, the amount of a submission, which roles to notify) and
+- A head office manager outside those roles (QA/QC, stores, planning, technical) can be given every project by an admin
+  (`User.seesAllProjects`, the user form's Every project switch), so they oversee every site's staff without joining
+  each team: `seesEveryProject` (`@erp/shared/permissions.ts`) is what `ProjectAccessService` reads, and
+  `seesProjectWhere` counts them among a project's people. Guests and suppliers never get it (`mayGiveEveryProject`).
+- Approvers come from the organisation's approval matrix (`ApprovalRule`: a role or a position, submission type,
+  level, optional rupee limit), limited to projects they can see. Without rules the fixed rule applies (Admin, Management
+  and Project Manager approve everything). Admin always approves everything but their own entries. A position
+  (`UserPosition`: Site in-charge on a project, Managing director at head office) is a post someone holds; a rule can
+  name it, and it never changes what its holder sees or does beyond that (a position on a project only adds them to
+  its team). Someone away hands their approvals to a colleague for some days (`ApprovalDelegation`, see "Positions and
+  delegation" below). `ApprovalRightsService`
+  (rights, the amount of a submission, which approvers to notify) and
   `ProjectAccessService.assertCanApproveSubmission` hold this; `packages/shared/src/approvals.ts` mirrors it
   for the clients from `AuthUser.approvalRights`. Other approver-only actions (editing before approval,
   stock adjustments, deleting a risk) still use the fixed `APPROVER_ROLES`.
-- A submitter cannot approve their own entry unless they also hold an approver role.
+- Whoever made an entry never decides it, whatever their role, admin included (`ownEntryProblem` in
+  `@erp/shared/approvals.ts`): a submission (`mayDecide` reads the round's `Stage.submittedBy`, so the queue, the stage
+  card, bulk review and escalation all leave it to someone else), a salary run, a full and final settlement and a
+  hand-made voucher. The design review of November 2026 asked for it ("Users must not approve their own transactions").
 - `ProjectAccessService` is the single place that encodes these rules; every service calls it.
 
 ### Signing in and headers (finding 5 of the October review)
@@ -102,6 +113,11 @@ free. A type can register `onApproved` (run after approval) and `beforeApprove` 
 hold points use the latter on progress. The clients keep a few per-type maps (web drawers on the approvals and notifications pages,
 `approvalTypeParam`; mobile `TYPE_ICON`, `EDIT_PATH`, `REVIEW_PATH`, `OUTBOX_PATH`, push routes) that
 TypeScript flags when a type is added.
+
+The admin reads every module's `AuditLog` rows in one place at Admin › Audit log (`/audit-log`, `GET /audit-log`,
+`AuditLogService`, `canViewAuditLog`): searched by note, action and person, filtered by kind and by days in India time,
+sorted and exported like any list. A kind reads in words only through `auditKindLabel` and an action through
+`auditActionLabel` (`@erp/shared`), and a submission's line opens its record. Keep `src/scripts/audit-log-test.ts` passing.
 
 **Who is told.** An approval ask goes to the approvers on the project (its manager and members) through
 `NotificationsService.onProjectFirst`; company-wide approvers (management, admin) are asked only when nobody on the
@@ -406,7 +422,7 @@ dashboard is the My work page (`/my-work`, a tile of its own); `homeLayout(role)
 shows. Each desk has a queue of its own there (finding 8 of the October review): **Requests to order** (`toOrder`,
 `canPurchase`: approved material requests with something left to order, by the day needed), **Deliveries due this week**
 (`dueThisWeek`, purchase and store roles that see orders), **Leave and overtime to decide** (`staffToDecide`, the Staff
-page's Waiting on me rule `leaveDeciderWhere`; HR always, anyone else while something waits), **Certified, payment to come**
+page's waiting ids, leave, overtime and attendance corrections whose turn is the user's; HR always, anyone else while something waits), **Certified, payment to come**
 (`certifiedToReceive`, `canRecordReceipt`: open client bills with a certificate) and **Goods received, no bill yet**
 (`toMatch`, `canRecordVendorBill` and `canViewPayables`: GRNs against an order in the last 90 days whose order has no supplier
 bill, valued at the order's rates). Purchase and HR have layouts of their own. The `home` node has `tile: false`, so it is a sidebar link but never a tile.
@@ -1173,6 +1189,19 @@ allowance and the notes (the store covers it all or part, past the BOQ, no norm,
 (past the BOQ, or the store already has it all) counts the lines to look at. Advice only: a request over the BOQ can be
 approved. Pure in `@erp/shared/indent-check.ts`, tested in `src/scripts/indent-check-test.ts` (CI flows).
 
+An indent's worth for its approval limit (design review, November 2026: "GM/COO or delegated approver, per financial
+limits") is `indentEstimate`: each line at the item's last approved order rate in the company, before GST, read for a
+whole queue at once by `ApprovalRightsService.indentValues`. A line never ordered adds nothing, and an indent with no
+line ever ordered has no amount, so a limit does not hold it back.
+
+### Purchase orders against the budget (design review, November 2026)
+
+The design has accounts check the budget before a PO is approved. The order's own record (`GET /purchase-orders/:id`)
+carries `budgetCheck` for those who see cost (`canViewCost`): the project's material budget, the other approved orders
+of the project and this one, all before GST, and what is left (`poBudgetCheck`, `@erp/shared/po-budget.ts`, tested in
+`src/scripts/purchase-award-test.ts`). It is one row of the record's Checks, red when the order goes over; advice beside
+the decision, never a gate. A project with no material budget gets no row.
+
 ### Small purchase items (v5 item 95)
 
 **Stock first.** A material request's lines are free text; `StockService.requestStock` matches each to the item master
@@ -1272,8 +1301,10 @@ enquiry's answer carries each vendor's phone for this; nothing is sent until the
 ### Approval levels and escalation (v5 item 94)
 
 Who approves a type is the approval matrix (`ApprovalRule`, Settings > Approval rules), or the fixed rule while a company
-has none. A rule has a `level` (1 to 3): level 1 is the matrix as before (each role up to its `maxAmount`); levels 2 and 3
-apply from their `minAmount` (one amount per level, the third at least the second; no amount means every entry). An
+has none. A rule names a role or a position, never both (`roleId` or `positionCode`, a check constraint in the table and
+a 400 from `PUT /approval-rules`). A rule has a `level` (1 to 6, `MAX_APPROVAL_LEVELS`): level 1 is the matrix as before
+(each role or position up to its `maxAmount`); levels 2 to 6 apply from their `minAmount` (one amount per level, each at
+least the one below; no amount means every entry). An
 entry whose amount needs a higher level stays `SUBMITTED` after the level before approves it: `review()` writes an
 `ApprovalStep` (`APPROVED`, the level, who, the note, and the round, which is its `submittedAt`) and a `LEVEL_APPROVED`
 audit line, tells the next level, and returns `{ status, level, levels }`; the last level approves it as before. So the
@@ -1282,9 +1313,13 @@ Rejecting or sending back at any level ends the round; a resubmission starts a n
 count.
 
 All decisions read one pure module, `src/common/approval-levels.ts` (tested in `scripts/approval-levels-test.ts`):
-`stageOf` (the level an entry waits at, from the round's steps), `levelRoles`, `escalationRoles` (the next level's roles,
-management above the last), `queueRoles` and `mayDecide`, which also refuses the person who approved an earlier level of
-the same entry and says why ("It has moved on to level 2…"). `ApprovalRightsService.decide` loads the rules and steps
+`stageOf` (the level an entry waits at, from the round's steps), `levelKeys`, `escalationKeys` (the next level's
+approvers, management above the last), `queueKeys` and `mayDecide`, which also refuses the person who approved an earlier
+level of the same entry and says why ("It has moved on to level 2…"). They work on approver keys (`ApproverKey` in
+`@erp/shared/approvals.ts`, made only by `roleApprover` and `positionApprover`): a rule names one key, and a `Decider`
+carries the keys a person decides by on one entry, built by the pure `approverKeys` from their role, the positions they
+hold on the entry's project and at head office, and the keys of anyone whose approvals they hold today (`actingFor`).
+`rightsOf(decider, rules)` turns the keys into `AuthUser.approvalRights` (per type and level, the higher limit kept). `ApprovalRightsService.decide` loads the rules and steps
 for `ProjectAccessService.assertCanApproveSubmission`; `pending()` keeps only entries the caller decides now;
 `GET /approvals/:type/:id/stage` gives a record its levels, steps, whose queue it is in (`waitingWith`) and since when,
 `canReview` and the reason; `GET /approvals/waiting` lists the caller's own waiting entries (Home's Waiting with others
@@ -1305,8 +1340,25 @@ and a block in the service. Someone who approves submissions sees them as one li
 `ApprovalEscalation` (per type: `remindAfterHours`, `escalateAfterHours`) drives `NotificationJobsService.approvalEscalation`,
 run hourly (`GET /notifications/jobs/approval-escalation`, the in-process scheduler on the hour, and inside both daily
 crons): once per level it reminds the level's approvers (a `REMINDED` step), and after the escalation time it records
-`ESCALATED`, after which the next level's roles (management above the last level) may decide the entry too and are
+`ESCALATED`, after which the next level's approvers (management above the last level) may decide the entry too and are
 told by push and WhatsApp.
+
+**Positions and delegation.** Positions are the `position` master (Admin › Masters › Positions: Managing director,
+General manager / COO, Site in-charge, Billing engineer… sixteen standard ones, the company's own over them by code).
+`UserPosition` holds who holds which, on a project or at head office (`projectId` null), set from Users › Positions
+(`PUT /users/:id/positions`, guests and suppliers refused). A level that names a position is decided by whoever holds it
+on the entry's project or at head office, so the MD and the GM / COO can carry different limits though both are
+Management. `ApprovalDelegation` (from, to, `startsOn`, `endsOn` as dates, a note) hands someone's approvals to another
+person for those days, by the company's date (`todayIn`), never UTC's: anyone sets their own from the Approvals page
+(While you are away), an admin anyone's from Users (`GET/POST/DELETE /approval-delegations`). `delegationProblem` refuses
+oneself, a guest or supplier, a switched-off login, and an end before the start or in the past. While it runs, the
+delegate decides as the delegator (the delegator keeps their own rights), on the projects the delegate already sees:
+`mayDecide` returns `onBehalfOf`, the step keeps it (`ApprovalStep.onBehalfOfId`, shown as "for Suresh Nair") and the
+audit note starts "For Suresh Nair". The delegate never decides an entry the delegator made, nor a later level of one
+the delegator approved; Admin's catch-all is not passed on, and a delegation is not passed on again. Approval asks, the
+queue (`pending()`), the escalation and the digest find approvers by keys through `ProjectAccessService.usersWithKeys`
+(role holders, position holders who see the project, and their active delegates), leaving out whoever made the entry.
+A company with no position rules and no delegations behaves exactly as before.
 
 ### Undo after a delete
 
@@ -2274,20 +2326,52 @@ flow, not `SubmissionLifecycleService`: it is a person's request, not site data 
   the balance) and earned leave brought forward stands in for the carry; comp-off = weekly offs and holidays worked (half a day earns half),
   unpaid without limit. Waiting and approved requests both count. Applying or approving beyond the balance, or
   overlapping other waiting or approved leave, is refused; an advisory lock per employee serialises the check.
-- **Who.** `STAFF_ADMIN_ROLES` (admin, management, HR) keep the staff master and holidays, see everyone and decide
-  anyone's leave. Attendance recorders (`canMarkStaff`) see and mark the staff posted at their projects. The head office
+- **Who.** `STAFF_ADMIN_ROLES` (admin, management, HR) keep the staff master and holidays and see everyone.
+  Attendance recorders (`canMarkStaff`) see and mark the staff posted at their projects, and anyone sees the people
+  who report to them (`staffWhere`). The head office
   register (`GET|PUT /staff/register` with no `projectId`, Head office first in the web's Register for picker) is the
   staff posted at no site, marked only by staff admins (`canManageStaff`), so head office days are marked like a site's
-  instead of paid unmarked. Leave is
-  decided by a staff admin or the manager of the employee's posting project, never by the employee
-  (`ProjectAccessService.canDecideLeave` / `leaveDeciderWhere`). Everyone checks in and applies for their own leave
+  instead of paid unmarked. Saving the register calls `AttendanceService.assertDayUnlocked`, so a day in a month with an
+  approved or paid payroll run cannot change there either. Everyone checks in and applies for their own leave
   once HR links their login; a staff admin can apply for someone else. The employee (before it starts) or a staff
   admin (any time) cancels.
-- **Notification.** `LEAVE`: an application goes to HR managers and the posting's project manager (admins and
-  management when the company has no HR); a decision goes to the employee and whoever applied.
-- **Clients.** Web: People → Staff and leave with tabs My attendance and leave, Leave (`?leave=` opens one), Overtime,
-  Staff register, Staff and Holidays. Site app: My attendance & leave (`app/staff.tsx`: check in and out, balances,
-  apply, leave and overtime waiting on you) and Staff register (`app/staff-register.tsx`).
+- **Reporting lines.** `Employee.reportingToId` is the operational line: who someone reports to, whose
+  recommendation their leave, overtime and corrections wait on. `Employee.functionalManagerId` is the functional line
+  (a QA/QC engineer at a site who also answers to head office QA/QC, say), shown as Functional manager on the form and
+  the record and beside the name on the org chart; it routes nothing. Neither can be the person themselves.
+- **Two steps** (`@erp/shared/staff-approval.ts`, tested in `src/scripts/staff-approval-test.ts`). Leave, overtime and
+  attendance corrections all go through the same pure machine. Step one is the manager: the active login of the
+  person someone reports to, else the posting project's manager, else no step one (`firstDecider`, never the employee
+  themselves). Their approval is a recommendation (`recommendedById`, `recommendedAt`, `recommendNote`; overtime's
+  `overtimeRecommendedById` / `At`) and the request stays `PENDING`. Step two is HR (`STAFF_ADMIN_ROLES`). A manager who
+  is a staff admin approves in one go; HR cannot decide before the manager has recommended; a rejection at either step
+  ends it. `staffWaitsOn` says whose turn it is and `staffWaitWords` words it ("Suresh Nair, their manager", "HR");
+  `staffDecision` is the only rule for a decision, through `ProjectAccessService.staffDecision` / `staffTurn`. The line
+  is read when the request is read, never stored, so a changed Reports to moves what waits. Balance and overlap are
+  checked at the final approval, not at the recommendation. Lists and counts of what waits on someone
+  (`leaveWaitingIds`, `overtimeWaitingIds`, `AttendanceCorrectionsService.waitingIds`) filter by
+  `staffDeciderWhere` in the database and then by `staffTurn`, so the inbox, the Staff page's badges and My work show
+  each person only what waits on them. `LeaveRequestDto.approval`, `StaffAttendanceDto.overtimeApproval` and
+  `AttendanceCorrectionDto.approval` (`StaffApprovalDto`) carry the waiting-on words and the recommendation.
+- **Attendance corrections** (`AttendanceCorrection`, `AttendanceCorrectionsService`, `/staff/corrections`). Someone
+  asks for a day to read differently: its status, mark-in and mark-out (HH:mm, India time, through `atWallClock`),
+  overtime in half hours and why. Refused: a day after today or before joining, mark-out before mark-in, times on an
+  absent day, a second waiting request for the same day, and a day in a payroll-locked month (409, with the words
+  payroll uses). The final approval checks the lock again and writes the day through the attendance row (`writeDay`:
+  status, times, overtime approved, a "Corrected: …" note, marked by the approver). `OTHER_DECISION_KINDS` key
+  `CORRECTION`, notification `ATTENDANCE_CORRECTION`, audited as `ATTENDANCE_CORRECTION`.
+- **Org chart** (`/staff/org-chart`, node `people.orgChart`, access `markStaff`). `GET /staff/org-chart` gives the
+  people the caller may see (`orgPeople`, over `staffWhere`) and the web builds the tree with the pure `orgChart`
+  (`@erp/shared/org-chart.ts`, tested in `src/scripts/org-chart-test.ts`): someone with no manager, a manager outside
+  the list (left, or outside the head office or site filter) or a loop starts a tree, and a loop is marked so HR can fix
+  Reports to.
+- **Notification.** `LEAVE`, `OVERTIME` and `ATTENDANCE_CORRECTION` go to whoever acts next: the manager, then HR
+  (HR managers, else admins and management when the company has no HR, `hrDeciders`); a decision goes to the employee
+  and whoever applied.
+- **Clients.** Web: People → Staff and leave with tabs My attendance and leave (with My attendance corrections and Ask
+  to correct), Leave (`?leave=` opens one), Overtime, Corrections, Staff register, Staff and Holidays; People → Org chart.
+  Site app: My attendance & leave (`app/staff.tsx`: check in and out, balances, apply, leave and overtime waiting on
+  you, Recommend for a manager) and Staff register (`app/staff-register.tsx`). The phone cannot ask for a correction yet.
 
 ### Attendance extras (v5 item 97)
 
@@ -2311,11 +2395,11 @@ flow, not `SubmissionLifecycleService`: it is a person's request, not site data 
   column.
 - **Overtime approval.** `StaffAttendance.overtimeStatus` (`OvertimeStatus` PENDING / APPROVED / REJECTED, with who and
   when, and a note). Overtime from a check-out waits; overtime typed in the register is approved when the person
-  saving it may decide it (`canDecideLeave`: a staff admin or the posting's project manager), else it waits; an
-  unchanged value keeps its decision. `GET /staff/overtime` lists what waits on the caller (`leaveDeciderWhere`),
-  `POST /staff/attendance/:id/overtime/approve|reject` decides it (reject needs a reason), audited as
-  `STAFF_OVERTIME`. Notification `OVERTIME`: a check-out with overtime tells the leave approvers, a decision tells the
-  employee. `StaffSummaryDto.overtimeToDecide` badges the Overtime tab. Payroll's `overtimeHours` is approved overtime
+  saving it is its manager or HR (the two steps above: the manager's entry is recommended, HR's approved), else it
+  waits; an unchanged value keeps its decision. `GET /staff/overtime` lists what waits on the caller
+  (`overtimeWaitingIds`), `POST /staff/attendance/:id/overtime/approve|reject` decides it (reject needs a reason),
+  audited as `STAFF_OVERTIME`. Notification `OVERTIME`: a check-out with overtime tells whoever acts next, a decision
+  tells the employee. `StaffSummaryDto.overtimeToDecide` badges the Overtime tab. Payroll's `overtimeHours` is approved overtime
   only (rows from before the migration were set approved), and `overtimePendingHours` shows what still waits.
 
 ## Payroll inputs

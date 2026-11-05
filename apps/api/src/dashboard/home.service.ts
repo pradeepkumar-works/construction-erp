@@ -6,6 +6,7 @@ import {
   COMPLIANCE_DOC_KIND_LABELS,
   DEFAULT_CLIENT_PAYMENT_DAYS,
   LEAVE_TYPE_LABELS,
+  STAFF_ATTENDANCE_LABELS,
   ORDER_STAGE_LABELS,
   type OrderStage,
   billLabel,
@@ -59,6 +60,8 @@ import { RequestsToOrderService } from '../purchasing/requests-to-order.service'
 import { MeetingsService } from '../meetings/meetings.service';
 import { CorrespondenceService } from '../correspondence/correspondence.service';
 import { QaAuditsService } from '../qa/audits.service';
+import { StaffService } from '../staff/staff.service';
+import { AttendanceCorrectionsService } from '../staff/attendance-corrections.service';
 import { moduleOn } from '../common/module-switch.guard';
 
 type D = Prisma.Decimal;
@@ -129,12 +132,14 @@ export class HomeService {
     private toOrderList: RequestsToOrderService,
     private letters: CorrespondenceService,
     private qaAudits: QaAuditsService,
+    private staff: StaffService,
+    private corrections: AttendanceCorrectionsService,
   ) {}
 
   async myWork(user: RequestUser): Promise<MyWorkDto> {
     const role = user.roleKey;
     const today = todayIn();
-    const rights = await this.rights.rightsFor(user.organizationId, role);
+    const rights = await this.rights.rightsFor(user);
     const seesDue = canViewPurchaseOrders(role) && (canPurchase(role) || canKeepStock(role));
     const matches = canRecordVendorBill(role) && canViewPayables(role);
     const checks = canCheckGrn(role) && !isDirector(role);
@@ -415,15 +420,14 @@ export class HomeService {
     return rows.map((g) => ({ entryNo: g.entryNo, date: dateOnly(g.date), type: g.type, from: g.purchaseOrder?.vendor.name ?? g.vendor?.name ?? g.supplier, projectName: g.project.name }));
   }
 
-  /** Leave and overtime waiting on the caller (the same rule as the Staff page's Waiting on me), oldest first. */
+  /** Leave, overtime and attendance corrections waiting on the caller (the Staff page's own two-step rule), oldest first. */
   private async staffToDecide(user: RequestUser): Promise<{ count: number; items: (MyWorkItem & { waited: number })[] }> {
-    const where = { organizationId: user.organizationId, employee: this.access.leaveDeciderWhere(user) };
     const today = todayIn();
-    const [leave, overtime, leaveCount, overtimeCount] = await Promise.all([
-      this.prisma.leaveRequest.findMany({ where: { ...where, status: 'PENDING' }, select: { id: true, type: true, fromDate: true, toDate: true, days: true, createdAt: true, employee: { select: { fullName: true, project: { select: { name: true } } } } }, orderBy: { createdAt: 'asc' }, take: TOP }),
-      this.prisma.staffAttendance.findMany({ where: { ...where, overtimeStatus: 'PENDING' }, select: { date: true, overtimeHours: true, employee: { select: { fullName: true, project: { select: { name: true } } } } }, orderBy: { date: 'asc' }, take: TOP }),
-      this.prisma.leaveRequest.count({ where: { ...where, status: 'PENDING' } }),
-      this.prisma.staffAttendance.count({ where: { ...where, overtimeStatus: 'PENDING' } }),
+    const [leaveIds, overtimeIds, correctionIds] = await Promise.all([this.staff.leaveWaitingIds(user), this.staff.overtimeWaitingIds(user), this.corrections.waitingIds(user)]);
+    const [leave, overtime, corrections] = await Promise.all([
+      this.prisma.leaveRequest.findMany({ where: { id: { in: leaveIds } }, select: { id: true, type: true, fromDate: true, toDate: true, days: true, createdAt: true, employee: { select: { fullName: true, project: { select: { name: true } } } } }, orderBy: { createdAt: 'asc' }, take: TOP }),
+      this.prisma.staffAttendance.findMany({ where: { id: { in: overtimeIds } }, select: { date: true, overtimeHours: true, employee: { select: { fullName: true, project: { select: { name: true } } } } }, orderBy: { date: 'asc' }, take: TOP }),
+      this.prisma.attendanceCorrection.findMany({ where: { id: { in: correctionIds } }, select: { date: true, dayStatus: true, createdAt: true, employee: { select: { fullName: true, project: { select: { name: true } } } } }, orderBy: { createdAt: 'asc' }, take: TOP }),
     ]);
     const span = (from: string, to: string) => (from === to ? formatDay(from) : `${formatDay(from)} to ${formatDay(to)}`);
     const items = [
@@ -443,8 +447,16 @@ export class HomeService {
         href: '/staff?tab=overtime',
         waited: daysBetween(dateOnly(o.date), today) - 2,
       })),
+      ...corrections.map((c) => ({
+        label: `${c.employee.fullName} · Attendance correction`,
+        note: `${STAFF_ATTENDANCE_LABELS[c.dayStatus]} on ${formatDay(dateOnly(c.date))}`,
+        projectName: c.employee.project?.name ?? null,
+        amount: null,
+        href: '/staff?tab=corrections',
+        waited: daysBetween(todayIn(undefined, c.createdAt), today) - 2,
+      })),
     ].sort((a, b) => b.waited - a.waited);
-    return { count: leaveCount + overtimeCount, items };
+    return { count: leaveIds.length + overtimeIds.length + correctionIds.length, items };
   }
 
   /** GRNs against an order in the last 90 days that no supplier bill covers yet, oldest first, valued at the order's rates. */

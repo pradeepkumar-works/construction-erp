@@ -24,13 +24,14 @@ async function twoWorkingDays(token: string) {
 }
 
 /**
- * Staff and leave: a site engineer checks in and applies for leave, cannot approve it herself, and her
- * project manager approves it; the site in-charge marks the staff register; HR adds a staff member.
+ * Staff and leave: a site engineer checks in and applies for leave, cannot approve it herself, her
+ * project manager (her manager) recommends it and HR approves it; the site in-charge marks the staff register;
+ * HR adds a staff member.
  */
 test.describe.serial('staff attendance and leave', () => {
   const reason = `E2E leave ${Date.now()}`;
 
-  test('an engineer checks in and applies for leave, and her project manager approves it', async ({ page, browser }) => {
+  test('an engineer checks in and applies for leave, her manager recommends it and HR approves it', async ({ page, browser }) => {
     const se = await apiToken('engineer@demo.com');
     const pm = await apiToken('pm@demo.com');
     const hr = await apiToken('hr@demo.com');
@@ -72,8 +73,19 @@ test.describe.serial('staff attendance and leave', () => {
     await pmPage.goto(`/staff?tab=leave&leave=${id}`);
     const drawer = pmPage.locator('.ant-drawer-open');
     await expect(drawer.getByText(reason)).toBeVisible();
-    await drawer.getByRole('button', { name: 'Approve' }).click();
-    await expect(pmPage.getByText('Leave approved for Priya Mohanty')).toBeVisible();
+    await drawer.getByRole('button', { name: 'Recommend' }).click();
+    await expect(pmPage.getByText('Leave recommended for Priya Mohanty; it waits on HR now')).toBeVisible();
+    // Recommended, it still waits: nothing is taken until HR approves, and the manager cannot approve it again.
+    expect((await api<Me>(se, '/staff/me')).balances.find((b) => b.type === 'CASUAL')!.taken).toBe(casualBefore.taken);
+    await expect(api(pm, `/staff/leave/${id}/approve`, { method: 'POST', body: {} })).rejects.toThrow(/403/);
+
+    const hrPage = await (await browser.newContext()).newPage();
+    await signIn(hrPage, 'hr@demo.com');
+    await hrPage.goto(`/staff?tab=leave&leave=${id}`);
+    const hrDrawer = hrPage.locator('.ant-drawer-open');
+    await expect(hrDrawer.getByText(reason)).toBeVisible();
+    await hrDrawer.getByRole('button', { name: 'Approve' }).click();
+    await expect(hrPage.getByText('Leave approved for Priya Mohanty')).toBeVisible();
 
     const after = (await api<Me>(se, '/staff/me')).balances.find((b) => b.type === 'CASUAL')!;
     expect(after.taken).toBe(casualBefore.taken + 2);

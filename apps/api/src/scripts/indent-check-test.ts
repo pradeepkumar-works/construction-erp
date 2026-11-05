@@ -6,7 +6,7 @@
  *   node dist/scripts/indent-check-test.js
  */
 import assert from 'node:assert/strict';
-import { boqAllowance, indentLineCheck, indentLineFlagged } from '@erp/shared';
+import { boqAllowance, indentEstimate, indentLineCheck, indentLineFlagged, lastRateKey } from '@erp/shared';
 
 const cases: [string, () => void][] = [];
 const test = (name: string, fn: () => void) => cases.push([name, fn]);
@@ -60,6 +60,23 @@ test('an allowance used up leaves nothing, never less', () => {
   const v = indentLineCheck({ requested: 10, onHand: 0, allowance: 100, issued: 130, waiting: 0 });
   assert.equal(v.left, 0);
   assert.equal(v.over, 10);
+});
+
+test('an indent is worth its lines at their last order rates; a line never ordered adds nothing', () => {
+  const rates = new Map([
+    [lastRateKey('Cement OPC 53', 'bag'), 380],
+    [lastRateKey('TMT bar 12 mm', 'MT'), 58000],
+  ]);
+  const v = indentEstimate(
+    [
+      { itemName: 'cement opc 53 ', unit: 'Bag', quantity: 200 },
+      { itemName: 'TMT bar 12 mm', unit: 'MT', quantity: 2.5 },
+      { itemName: 'Shuttering oil', unit: 'litre', quantity: 40 },
+    ],
+    rates,
+  );
+  assert.deepEqual(v, { amount: '221000.00', priced: 2, lines: 3 });
+  assert.equal(indentEstimate([{ itemName: 'Shuttering oil', unit: 'litre', quantity: 40 }], rates).amount, null, 'nothing ever ordered: no amount, so no limit holds it');
 });
 
 let failed = 0;

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { App, Button, Form, Input, Radio, Select, Switch } from 'antd';
-import { MIN_PASSWORD_LENGTH, ROLE_LABELS, isCompanyWide, type CreateUserResultDto, type RoleKey, type UserSummary } from '@erp/shared';
+import { MIN_PASSWORD_LENGTH, ROLE_LABELS, mayGiveEveryProject, type CreateUserResultDto, type RoleKey, type UserSummary } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -19,6 +19,8 @@ interface FormValues {
   roleKey: RoleKey;
   password?: string;
   isActive?: boolean;
+  /** A head office manager who sees every project without joining each team */
+  seesAllProjects?: boolean;
   how?: 'invite' | 'password';
   /** The project teams they join as they are created */
   projectIds?: string[];
@@ -33,25 +35,35 @@ export function UserFormModal({ open, onClose, user, onInvited }: { open: boolea
   const [resetPwd, setResetPwd] = useState(false);
   const how = Form.useWatch('how', form);
   const roleKey = Form.useWatch('roleKey', form);
-  // A company-wide role sees every project, so there is nothing to pick; the rest see only the projects they are on.
+  const everyProject = Form.useWatch('seesAllProjects', form);
+  // A company-wide role sees every project, so there is nothing to pick; so does a head office manager given every
+  // project. The rest see only the projects they are on.
   const inGroup = !!useAuth().user?.group;
-  const perProject = !!roleKey && roleKey !== 'SUPPLIER' && !isCompanyWide(roleKey);
+  const mayGiveAll = !!roleKey && mayGiveEveryProject(roleKey);
+  const perProject = mayGiveAll && !everyProject;
 
   useEffect(() => {
     if (!open) return;
     setResetPwd(false);
     if (user) {
-      form.setFieldsValue({ email: user.email, fullName: user.fullName, phone: user.phone ?? undefined, roleKey: user.roleKey, isActive: user.isActive, password: undefined });
+      form.setFieldsValue({ email: user.email, fullName: user.fullName, phone: user.phone ?? undefined, roleKey: user.roleKey, isActive: user.isActive, seesAllProjects: user.seesAllProjects, password: undefined });
     } else {
       form.resetFields();
-      form.setFieldsValue({ roleKey: 'SITE_ENGINEER', isActive: true, how: 'invite' });
+      form.setFieldsValue({ roleKey: 'SITE_ENGINEER', isActive: true, seesAllProjects: false, how: 'invite' });
     }
   }, [open, user, form]);
 
   const mutation = useMutation({
     mutationFn: async (v: FormValues) => {
       if (isEdit && user) {
-        const body: Record<string, unknown> = { email: v.email.trim(), fullName: v.fullName.trim(), phone: v.phone || undefined, roleKey: v.roleKey, isActive: v.isActive };
+        const body: Record<string, unknown> = {
+          email: v.email.trim(),
+          fullName: v.fullName.trim(),
+          phone: v.phone || undefined,
+          roleKey: v.roleKey,
+          isActive: v.isActive,
+          seesAllProjects: mayGiveEveryProject(v.roleKey) && !!v.seesAllProjects,
+        };
         if (resetPwd && v.password) body.password = v.password;
         return (await api.patch(`/users/${user.id}`, body)).data;
       }
@@ -62,6 +74,7 @@ export function UserFormModal({ open, onClose, user, onInvited }: { open: boolea
           phone: v.phone || undefined,
           roleKey: v.roleKey,
           password: v.how === 'password' ? v.password : undefined,
+          seesAllProjects: mayGiveEveryProject(v.roleKey) && !!v.seesAllProjects,
           // The teams they join as they are made.
           projectIds: perProject && v.projectIds?.length ? v.projectIds : undefined,
         })
@@ -101,6 +114,16 @@ export function UserFormModal({ open, onClose, user, onInvited }: { open: boolea
         ) : (
           <Form.Item name="roleKey" label="Role" rules={[{ required: true, message: 'Choose the role' }]}>
             <Select showSearch={{ optionFilterProp: 'label' }} options={(roles ?? []).map((r) => ({ value: r.key, label: r.name }))} />
+          </Form.Item>
+        )}
+        {mayGiveAll && (
+          <Form.Item
+            name="seesAllProjects"
+            label="Every project"
+            valuePropName="checked"
+            extra="For a head office manager (QA/QC, stores, planning, technical) who oversees every site's staff. They see every project without joining each team."
+          >
+            <Switch />
           </Form.Item>
         )}
         {!isEdit && perProject && (

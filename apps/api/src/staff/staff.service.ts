@@ -43,13 +43,19 @@ import {
   type RoleKey,
   type SortOrder,
   type CheckInSiteDto,
+  type OrgPersonDto,
+  type StaffApprovalDto,
+  type StaffDecision,
+  type StaffRequestState,
   type StaffAttendanceDto,
   type StaffRegisterDto,
   type StaffSummaryDto,
 } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
-import { ProjectAccessService } from '../common/project-access.service';
+import { ProjectAccessService, staffLineSelect, staffRequestEmployeeSelect, type StaffLineRow } from '../common/project-access.service';
+import { AttendanceService } from '../attendance/attendance.service';
+import { AttendanceCorrectionsService } from './attendance-corrections.service';
 import { AuditService } from '../common/audit.service';
 import { UndoService } from '../common/undo.service';
 import { ATTACHMENT_FIELDS, AttachmentsService } from '../common/attachments.service';
@@ -80,22 +86,26 @@ const employeeInclude = {
   user: { select: { email: true } },
   project: { select: { name: true } },
   reportingTo: { select: { fullName: true } },
+  functionalManager: { select: { fullName: true } },
 } satisfies Prisma.EmployeeInclude;
+
 type EmployeeRow = Prisma.EmployeeGetPayload<{ include: typeof employeeInclude }>;
 
 const attendanceInclude = {
-  employee: { select: { fullName: true, employeeCode: true, userId: true, projectId: true, project: { select: { projectManagerId: true } } } },
+  employee: { select: staffRequestEmployeeSelect },
   project: { select: { name: true } },
   markedBy: { select: { fullName: true } },
   overtimeDecidedBy: { select: { fullName: true } },
+  overtimeRecommendedBy: { select: { fullName: true } },
   checkInPhoto: { select: ATTACHMENT_FIELDS },
   checkOutPhoto: { select: ATTACHMENT_FIELDS },
 } satisfies Prisma.StaffAttendanceInclude;
 type AttendanceRow = Prisma.StaffAttendanceGetPayload<{ include: typeof attendanceInclude }>;
 
 const leaveInclude = {
-  employee: { select: { fullName: true, employeeCode: true, designation: true, userId: true, projectId: true, project: { select: { name: true, projectManagerId: true } } } },
+  employee: { select: staffRequestEmployeeSelect },
   appliedBy: { select: { fullName: true } },
+  recommendedBy: { select: { fullName: true } },
   decidedBy: { select: { fullName: true } },
 } satisfies Prisma.LeaveRequestInclude;
 type LeaveRow = Prisma.LeaveRequestGetPayload<{ include: typeof leaveInclude }>;
@@ -142,6 +152,7 @@ function hrFields(dto: Partial<CreateEmployeeDto>, editing: boolean) {
     employmentType: opt(dto.employmentType, editing),
     grade: opt(dto.grade, editing),
     reportingToId: opt(dto.reportingToId, editing),
+    functionalManagerId: opt(dto.functionalManagerId, editing),
     probationEndsOn: optDate(dto.probationEndsOn, editing),
     confirmedOn: optDate(dto.confirmedOn, editing),
     noticeDays: opt(dto.noticeDays, editing),
@@ -157,6 +168,18 @@ export async function nextLetterNo(tx: Prisma.TransactionClient, organizationId:
   const n = last ? parseInt(last.letterNo.slice(prefix.length), 10) + 1 : 1;
   return `${prefix}${String(n).padStart(4, '0')}`;
 }
+
+/** Overtime as a request in the two steps of `staff-approval.ts`. */
+const overtimeState = (a: { overtimeStatus: 'PENDING' | 'APPROVED' | 'REJECTED' | null; overtimeRecommendedById: string | null }): StaffRequestState => ({
+  status: a.overtimeStatus ?? 'APPROVED',
+  appliedById: null,
+  recommendedById: a.overtimeRecommendedById,
+});
+/** A decision's columns on the day: a recommendation keeps it waiting, for HR. */
+const overtimeDecided = (result: 'RECOMMENDED' | 'APPROVED' | 'REJECTED', userId: string, note: string | null) =>
+  result === 'RECOMMENDED'
+    ? { overtimeRecommendedById: userId, overtimeRecommendedAt: new Date() }
+    : { overtimeStatus: result, overtimeDecidedById: userId, overtimeDecidedAt: new Date(), overtimeNote: note };
 
 /** Leave that counts: waiting or approved. */
 const LIVE_LEAVE = ['PENDING', 'APPROVED'] as const;
@@ -185,6 +208,8 @@ export class StaffService {
     private notifications: NotificationsService,
     private undo: UndoService,
     private attachments: AttachmentsService,
+    private attendanceLock: AttendanceService,
+    private corrections: AttendanceCorrectionsService,
   ) {
     undo.register('HOLIDAY', { entityType: 'HOLIDAY', check: (user) => this.access.assertCanManageStaff(user) });
   }
@@ -215,6 +240,8 @@ export class StaffService {
       grade: e.grade,
       reportingToId: e.reportingToId,
       reportingToName: e.reportingTo?.fullName ?? null,
+      functionalManagerId: e.functionalManagerId,
+      functionalManagerName: e.functionalManager?.fullName ?? null,
       probationEndsOn: dateOnly(e.probationEndsOn),
       confirmedOn: dateOnly(e.confirmedOn),
       noticeDays: e.noticeDays,
@@ -265,10 +292,22 @@ export class StaffService {
           : null,
       checkInPhoto: a.checkInPhoto ? this.attachments.toDto(a.checkInPhoto) : null,
       checkOutPhoto: a.checkOutPhoto ? this.attachments.toDto(a.checkOutPhoto) : null,
-      canDecideOvertime: a.overtimeStatus === 'PENDING' && this.access.canDecideLeave(user, a.employee),
+      ...this.overtimeTurn(a, user),
       note: a.note,
       markedByName: a.markedBy.fullName,
     };
+  }
+
+  /** Where a request stands in its two steps, for the caller. */
+  private approvalOf(user: RequestUser, req: StaffRequestState, e: StaffLineRow, rec: { name: string | null; at: Date | null; note: string | null }): { mine: boolean; approval: StaffApprovalDto } {
+    const turn = this.access.staffTurn(user, req, e);
+    return { mine: turn.mine, approval: { waitingOn: turn.waitingOn, recommendedByName: rec.name, recommendedAt: iso(rec.at), recommendNote: rec.note, callerRecommends: turn.recommends } };
+  }
+
+  private overtimeTurn(a: AttendanceRow, user: RequestUser): Pick<StaffAttendanceDto, 'canDecideOvertime' | 'overtimeApproval'> {
+    if (!a.overtimeStatus) return { canDecideOvertime: false, overtimeApproval: null };
+    const { mine, approval } = this.approvalOf(user, overtimeState(a), a.employee, { name: a.overtimeRecommendedBy?.fullName ?? null, at: a.overtimeRecommendedAt, note: null });
+    return { canDecideOvertime: mine, overtimeApproval: approval };
   }
 
   /** A site's location for GPS check-in, or null when the project has none. */
@@ -280,6 +319,7 @@ export class StaffService {
   private toLeaveDto(l: LeaveRow, user: RequestUser, today = todayIn()): LeaveRequestDto {
     const own = l.employee.userId === user.id || l.appliedById === user.id;
     const from = dateOnly(l.fromDate);
+    const turn = this.approvalOf(user, l, l.employee, { name: l.recommendedBy?.fullName ?? null, at: l.recommendedAt, note: l.recommendNote });
     return {
       id: l.id,
       employeeId: l.employeeId,
@@ -300,8 +340,9 @@ export class StaffService {
       decidedAt: iso(l.decidedAt),
       decisionNote: l.decisionNote,
       createdAt: l.createdAt.toISOString(),
-      canDecide: l.status === 'PENDING' && this.access.canDecideLeave(user, l.employee),
+      canDecide: turn.mine,
       canCancel: (l.status === 'PENDING' && (own || canManageStaff(user.roleKey))) || (l.status === 'APPROVED' && (canManageStaff(user.roleKey) || (own && from > today))),
+      approval: turn.approval,
     };
   }
 
@@ -335,17 +376,65 @@ export class StaffService {
 
   async summary(user: RequestUser): Promise<StaffSummaryDto> {
     const today = parseDate(todayIn());
-    const [leaveToDecide, overtimeToDecide] = await Promise.all([
-      this.prisma.leaveRequest.count({ where: { organizationId: user.organizationId, status: 'PENDING', employee: this.access.leaveDeciderWhere(user) } }),
-      this.prisma.staffAttendance.count({ where: { organizationId: user.organizationId, overtimeStatus: 'PENDING', employee: this.access.leaveDeciderWhere(user) } }),
-    ]);
-    if (!canMarkStaff(user.roleKey)) return { leaveToDecide, overtimeToDecide, employees: null, onLeaveToday: null };
+    const [leave, overtime, corrections] = await Promise.all([this.leaveWaitingIds(user), this.overtimeWaitingIds(user), this.corrections.waitingIds(user)]);
+    const waiting = { leaveToDecide: leave.length, overtimeToDecide: overtime.length, correctionsToDecide: corrections.length };
+    if (!canMarkStaff(user.roleKey)) return { ...waiting, employees: null, onLeaveToday: null };
     const staff = { ...this.access.staffWhere(user), isActive: true };
     const [employees, onLeaveToday] = await Promise.all([
       this.prisma.employee.count({ where: staff }),
       this.prisma.leaveRequest.count({ where: { status: 'APPROVED', fromDate: { lte: today }, toDate: { gte: today }, employee: staff } }),
     ]);
-    return { leaveToDecide, overtimeToDecide, employees, onLeaveToday };
+    return { ...waiting, employees, onLeaveToday };
+  }
+
+  /** Leave waiting on the user: the employees they may decide for, narrowed by the two-step rule. */
+  async leaveWaitingIds(user: RequestUser): Promise<string[]> {
+    const rows = await this.prisma.leaveRequest.findMany({
+      where: { organizationId: user.organizationId, status: 'PENDING', employee: this.access.staffDeciderWhere(user) },
+      select: { id: true, status: true, appliedById: true, recommendedById: true, employee: { select: staffLineSelect } },
+      take: 1000,
+    });
+    return rows.filter((r) => this.access.staffTurn(user, r, r.employee).mine).map((r) => r.id);
+  }
+
+  /** Days of overtime waiting on the user, the same way. */
+  async overtimeWaitingIds(user: RequestUser): Promise<string[]> {
+    const rows = await this.prisma.staffAttendance.findMany({
+      where: { organizationId: user.organizationId, overtimeStatus: 'PENDING', employee: this.access.staffDeciderWhere(user) },
+      select: { id: true, overtimeStatus: true, overtimeRecommendedById: true, employee: { select: staffLineSelect } },
+      take: 1000,
+    });
+    return rows.filter((r) => this.access.staffTurn(user, overtimeState(r), r.employee).mine).map((r) => r.id);
+  }
+
+  /**
+   * The org chart's people: every active employee the caller sees (`staffWhere`), with the names of both their lines. The
+   * tree itself is `orgChart` (`@erp/shared`), built where it is drawn.
+   */
+  async orgPeople(user: RequestUser): Promise<OrgPersonDto[]> {
+    const rows = await this.prisma.employee.findMany({
+      where: { ...this.access.staffWhere(user), isActive: true },
+      select: {
+        id: true,
+        employeeCode: true,
+        fullName: true,
+        designation: true,
+        department: true,
+        projectId: true,
+        project: { select: { name: true } },
+        reportingToId: true,
+        reportingTo: { select: { fullName: true } },
+        functionalManagerId: true,
+        functionalManager: { select: { fullName: true } },
+      },
+      orderBy: { fullName: 'asc' },
+    });
+    return rows.map(({ project, reportingTo, functionalManager, ...r }) => ({
+      ...r,
+      projectName: project?.name ?? null,
+      reportingToName: reportingTo?.fullName ?? null,
+      functionalManagerName: functionalManager?.fullName ?? null,
+    }));
   }
 
   async me(user: RequestUser): Promise<MyStaffDto> {
@@ -363,13 +452,14 @@ export class StaffService {
     const holidays = holidayRows.map((h) => this.toHolidayDto(h));
     const todayHoliday = holidays.find((h) => h.date === today)?.name ?? null;
     const todayOff = todayHoliday ?? (isWeeklyOff(today, weeklyOff) ? WEEKDAY_NAMES[weeklyOff] : null);
-    if (!e) return { employee: null, today: null, todayOff, year, yearLabel, yearStart, weeklyOff, balances: [], leave: [], holidays, site: null, monthPresent: '0' };
-    const [att, leave, balances, site, month] = await Promise.all([
+    if (!e) return { employee: null, today: null, todayOff, year, yearLabel, yearStart, weeklyOff, balances: [], leave: [], corrections: [], holidays, site: null, monthPresent: '0' };
+    const [att, leave, balances, site, month, corrections] = await Promise.all([
       this.prisma.staffAttendance.findUnique({ where: { employeeId_date: { employeeId: e.id, date: parseDate(today) } }, include: attendanceInclude }),
       this.prisma.leaveRequest.findMany({ where: { employeeId: e.id }, include: leaveInclude, orderBy: [{ fromDate: 'desc' }, { createdAt: 'desc' }], take: 20 }),
       this.balancesFor(e.id, e.projectId, year),
       e.projectId ? this.prisma.project.findUnique({ where: { id: e.projectId }, select: siteSelect }) : null,
       this.prisma.staffAttendance.groupBy({ by: ['status'], where: { employeeId: e.id, date: { gte: parseDate(`${today.slice(0, 7)}-01`), lte: parseDate(today) }, status: { in: ['PRESENT', 'HALF_DAY'] } }, _count: true }),
+      this.corrections.mine(user, e.id),
     ]);
     const present = month.reduce((n, r) => n + (r.status === 'HALF_DAY' ? r._count / 2 : r._count), 0);
     return {
@@ -382,6 +472,7 @@ export class StaffService {
       weeklyOff,
       balances,
       leave: leave.map((l) => this.toLeaveDto(l, user, today)),
+      corrections,
       holidays,
       site: this.toSite(site),
       monthPresent: String(present),
@@ -449,7 +540,7 @@ export class StaffService {
       include: attendanceInclude,
     });
     const out = this.toAttendanceDto(row, user);
-    if (ot) await this.notifyOvertime(user, out, e.projectId);
+    if (ot) await this.notifyOvertime(user, out, row);
     return out;
   }
 
@@ -493,9 +584,16 @@ export class StaffService {
     return rows.map((u) => ({ id: u.id, fullName: u.fullName, email: u.email, roleName: ROLE_LABELS[u.role.key as RoleKey] }));
   }
 
-  private async checkLinks(user: RequestUser, dto: { userId?: string | null; projectId?: string | null; reportingToId?: string | null }, self?: string) {
-    if (dto.reportingToId && (dto.reportingToId === self || !(await this.prisma.employee.findFirst({ where: { id: dto.reportingToId, organizationId: user.organizationId }, select: { id: true } }))))
-      throw new BadRequestException(dto.reportingToId === self ? 'Someone cannot report to themselves. Choose their manager.' : 'Reports to: employee not found');
+  private async checkLinks(user: RequestUser, dto: { userId?: string | null; projectId?: string | null; reportingToId?: string | null; functionalManagerId?: string | null }, self?: string) {
+    const lines = [
+      ['Reports to', dto.reportingToId],
+      ['Functional manager', dto.functionalManagerId],
+    ] as const;
+    for (const [label, id] of lines) {
+      if (!id) continue;
+      if (id === self) throw new BadRequestException(`${label}: someone cannot report to themselves. Choose their manager.`);
+      if (!(await this.prisma.employee.findFirst({ where: { id, organizationId: user.organizationId }, select: { id: true } }))) throw new BadRequestException(`${label}: employee not found`);
+    }
     if (dto.userId && !(await this.prisma.user.findFirst({ where: { id: dto.userId, organizationId: user.organizationId }, select: { id: true } }))) throw new BadRequestException('Login not found');
     if (dto.projectId && !(await this.prisma.project.findFirst({ where: { id: dto.projectId, organizationId: user.organizationId }, select: { id: true } }))) throw new BadRequestException('Project not found');
   }
@@ -650,6 +748,7 @@ export class StaffService {
     await this.assertMayMark(user, projectId);
     if (dto.date > todayIn()) throw new BadRequestException('Attendance cannot be marked for a future day');
     const day = parseDate(dto.date);
+    await this.attendanceLock.assertDayUnlocked(user.organizationId, projectId, day);
     const ids = [...new Set(dto.entries.map((e) => e.employeeId))];
     if (ids.length !== dto.entries.length) throw new BadRequestException('Each employee once per register');
     const allowed = await this.prisma.employee.findMany({
@@ -658,7 +757,7 @@ export class StaffService {
         organizationId: user.organizationId,
         OR: [{ projectId, isActive: true }, { attendance: { some: { date: day, projectId } } }, ...(canManageStaff(user.roleKey) ? [{ isActive: true }] : [])],
       },
-      select: { id: true, userId: true, project: { select: { projectManagerId: true } }, attendance: { where: { date: day }, select: { overtimeHours: true, overtimeStatus: true } } },
+      select: { id: true, ...staffLineSelect, attendance: { where: { date: day }, select: { overtimeHours: true, overtimeStatus: true } } },
     });
     if (allowed.length !== ids.length) throw new BadRequestException('Some of these people are not posted at this site');
     const byId = new Map(allowed.map((a) => [a.id, a]));
@@ -669,10 +768,13 @@ export class StaffService {
           await tx.staffAttendance.deleteMany({ where: { employeeId: e.employeeId, date: day } });
           continue;
         }
-        // Overtime the marker changes is approved when they may decide it, else it waits; unchanged keeps its decision.
+        // Overtime the marker changes counts as their decision where it is theirs to take (approved, or recommended to
+        // HR), else it waits; unchanged keeps its decision.
         const emp = byId.get(e.employeeId)!;
         const was = emp.attendance[0];
         const otChanged = e.overtimeHours !== undefined && Number(e.overtimeHours ?? 0) !== Number(was?.overtimeHours ?? 0);
+        const fresh = { overtimeStatus: 'PENDING' as const, overtimeDecidedById: null, overtimeDecidedAt: null, overtimeNote: null, overtimeRecommendedById: null, overtimeRecommendedAt: null };
+        const asMarker = this.access.staffDecision(user, overtimeState(fresh), emp, 'APPROVE');
         const data = {
           status: e.status,
           projectId,
@@ -680,10 +782,8 @@ export class StaffService {
           overtimeHours: e.overtimeHours === undefined ? undefined : e.overtimeHours,
           ...(otChanged
             ? e.overtimeHours
-              ? this.access.canDecideLeave(user, emp)
-                ? { overtimeStatus: 'APPROVED' as const, overtimeDecidedById: user.id, overtimeDecidedAt: new Date(), overtimeNote: null }
-                : { overtimeStatus: 'PENDING' as const, overtimeDecidedById: null, overtimeDecidedAt: null, overtimeNote: null }
-              : { overtimeStatus: null, overtimeDecidedById: null, overtimeDecidedAt: null, overtimeNote: null }
+              ? { ...fresh, ...(asMarker.ok ? overtimeDecided(asMarker.result, user.id, null) : {}) }
+              : { ...fresh, overtimeStatus: null }
             : {}),
           markedById: user.id,
         };
@@ -714,10 +814,10 @@ export class StaffService {
 
   // Overtime
 
-  /** Overtime waiting on the caller: the same people who decide the employee's leave, oldest first. */
+  /** Overtime waiting on the caller (the employee's manager, then HR), oldest first. */
   async overtimeToDecide(user: RequestUser): Promise<StaffAttendanceDto[]> {
     const rows = await this.prisma.staffAttendance.findMany({
-      where: { organizationId: user.organizationId, overtimeStatus: 'PENDING', employee: this.access.leaveDeciderWhere(user) },
+      where: { id: { in: await this.overtimeWaitingIds(user) } },
       include: attendanceInclude,
       orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
       take: 200,
@@ -725,20 +825,24 @@ export class StaffService {
     return rows.map((r) => this.toAttendanceDto(r, user));
   }
 
-  async decideOvertime(user: RequestUser, id: string, status: 'APPROVED' | 'REJECTED', note?: string | null): Promise<StaffAttendanceDto> {
-    const cur = await this.prisma.staffAttendance.findFirst({ where: { id, organizationId: user.organizationId }, include: attendanceInclude });
-    if (!cur) throw new NotFoundException('Attendance not found');
-    if (!this.access.canDecideLeave(user, cur.employee)) {
-      throw new ForbiddenException(cur.employee.userId === user.id ? 'You cannot decide your own overtime' : 'Only HR or the site manager can decide this overtime');
-    }
+  async decideOvertime(user: RequestUser, id: string, decision: StaffDecision, note?: string | null): Promise<StaffAttendanceDto> {
+    const cur = await this.prisma.staffAttendance.findFirst({ where: { id, organizationId: user.organizationId, overtimeStatus: { not: null } }, include: attendanceInclude });
+    if (!cur) throw new NotFoundException('Overtime not found');
+    const outcome = this.access.staffDecision(user, overtimeState(cur), cur.employee, decision);
+    if (!outcome.ok) throw cur.overtimeStatus === 'PENDING' ? new ForbiddenException(outcome.problem) : new BadRequestException('This overtime has already been decided');
     const { count } = await this.prisma.staffAttendance.updateMany({
-      where: { id, overtimeStatus: 'PENDING' },
-      data: { overtimeStatus: status, overtimeDecidedById: user.id, overtimeDecidedAt: new Date(), overtimeNote: note || null },
+      where: { id, overtimeStatus: 'PENDING', overtimeRecommendedById: cur.overtimeRecommendedById },
+      data: overtimeDecided(outcome.result, user.id, note || null),
     });
-    if (!count) throw new BadRequestException('This overtime has already been decided');
-    await this.audit.log(user, 'STAFF_OVERTIME', id, status, `${cur.employee.fullName}, ${dateOnly(cur.date)}: ${dec(cur.overtimeHours)} h${note ? ` (${note})` : ''}`);
+    if (!count) throw new BadRequestException('This overtime has just been decided by someone else. Open it again.');
+    await this.audit.log(user, 'STAFF_OVERTIME', id, outcome.result, `${cur.employee.fullName}, ${dateOnly(cur.date)}: ${dec(cur.overtimeHours)} h${note ? ` (${note})` : ''}`);
     const row = await this.prisma.staffAttendance.findUniqueOrThrow({ where: { id }, include: attendanceInclude });
     const out = this.toAttendanceDto(row, user);
+    if (outcome.result === 'RECOMMENDED') {
+      await this.notifyOvertime(user, out, row);
+      return out;
+    }
+    const status = outcome.result;
     if (cur.employee.userId && cur.employee.userId !== user.id) {
       await this.notifications
         .notify({
@@ -756,20 +860,21 @@ export class StaffService {
     return out;
   }
 
-  /** Overtime from a check-out: the site manager and HR are told it waits on them. */
-  private async notifyOvertime(user: RequestUser, a: StaffAttendanceDto, postingId: string | null) {
+  /** Waiting overtime: whoever acts next (the manager, then HR) is told it waits on them. */
+  private async notifyOvertime(user: RequestUser, a: StaffAttendanceDto, row: AttendanceRow) {
     try {
-      const to = (await this.access.leaveApprovers(user.organizationId, postingId)).filter((u) => u !== user.id);
+      const to = (await this.access.staffNextDeciders(user.organizationId, overtimeState(row), row.employee)).filter((u) => u !== user.id && u !== row.employee.userId);
       if (!to.length) return;
+      const recommended = a.overtimeApproval?.recommendedByName;
       await this.notifications.notify({
         organizationId: user.organizationId,
         userIds: to,
         type: 'OVERTIME',
-        title: `${a.employeeName} worked ${a.overtimeHours} h overtime`,
-        body: `${a.date}${a.projectName ? ` at ${a.projectName}` : ''}: approve it for payroll on the Staff page.`,
+        title: recommended ? `${recommended} recommended ${a.employeeName}'s ${a.overtimeHours} h overtime` : `${a.employeeName} worked ${a.overtimeHours} h overtime`,
+        body: `${a.date}${a.projectName ? ` at ${a.projectName}` : ''}: ${recommended ? 'approve it' : 'decide it'} for payroll on the Staff page.`,
         projectId: a.projectId,
         entityId: a.id,
-        dedupeKey: `OVERTIME_PENDING:${a.id}`,
+        dedupeKey: `OVERTIME_${recommended ? 'RECOMMENDED' : 'PENDING'}:${a.id}`,
       });
     } catch (e) {
       this.log.warn(`Overtime notification failed: ${(e as Error).message}`);
@@ -944,7 +1049,7 @@ export class StaffService {
 
   async listLeave(user: RequestUser, q: ListLeaveQuery): Promise<Paginated<LeaveRequestDto>> {
     const and: Prisma.LeaveRequestWhereInput[] = [this.leaveWhere(user)];
-    if (q.toDecide) and.push({ status: 'PENDING', employee: this.access.leaveDeciderWhere(user) });
+    if (q.toDecide) and.push({ id: { in: await this.leaveWaitingIds(user) } });
     if (q.status) and.push({ status: q.status });
     if (q.type) and.push({ type: q.type });
     if (q.employeeId) and.push({ employeeId: q.employeeId });
@@ -1034,33 +1139,41 @@ export class StaffService {
     });
     await this.audit.log(user, 'LEAVE', created.id, 'CREATED', `${LEAVE_TYPE_LABELS[dto.type]}, ${dec(created.days)} day(s)`);
     const out = this.toLeaveDto(created, user);
-    await this.notifyApplied(user, out, employee.userId);
+    await this.notifyWaiting(user, out, created);
     return out;
   }
 
+  /** The manager's approval recommends it to HR (or approves it, when they are HR themselves); HR's approves it. */
   async approveLeave(user: RequestUser, id: string, dto: DecideLeaveDto): Promise<LeaveRequestDto> {
-    return this.decide(user, id, 'APPROVED', dto.note);
+    return this.decide(user, id, 'APPROVE', dto.note);
   }
 
   async rejectLeave(user: RequestUser, id: string, dto: RejectLeaveDto): Promise<LeaveRequestDto> {
-    return this.decide(user, id, 'REJECTED', dto.note);
+    return this.decide(user, id, 'REJECT', dto.note);
   }
 
-  private async decide(user: RequestUser, id: string, status: 'APPROVED' | 'REJECTED', note?: string | null): Promise<LeaveRequestDto> {
+  private async decide(user: RequestUser, id: string, decision: StaffDecision, note?: string | null): Promise<LeaveRequestDto> {
     const cur = await this.visibleLeave(user, id);
-    if (!this.access.canDecideLeave(user, cur.employee)) {
-      throw new ForbiddenException(cur.employee.userId === user.id ? 'You cannot decide your own leave' : 'Only HR or the site manager can decide this leave');
-    }
+    const outcome = this.access.staffDecision(user, cur, cur.employee, decision);
+    if (!outcome.ok) throw cur.status === 'PENDING' ? new ForbiddenException(outcome.problem) : new BadRequestException('This leave has already been decided or cancelled');
+    const now = new Date();
     const updated = await this.prisma.$transaction(async (tx) => {
       await this.lockEmployee(tx, cur.employeeId);
-      const fresh = await tx.leaveRequest.findUnique({ where: { id }, select: { status: true } });
+      const fresh = await tx.leaveRequest.findUnique({ where: { id }, select: { status: true, recommendedById: true } });
       if (fresh?.status !== 'PENDING') throw new BadRequestException('This leave has already been decided or cancelled');
-      if (status === 'APPROVED') await this.assertBalance(tx, cur.employeeId, cur.employee.projectId, cur.type, dateOnly(cur.fromDate), num(cur.days), id);
-      return tx.leaveRequest.update({ where: { id }, data: { status, decidedById: user.id, decidedAt: new Date(), decisionNote: note || null }, include: leaveInclude });
+      if (fresh.recommendedById !== cur.recommendedById) throw new BadRequestException('This leave has just been recommended by someone else. Open it again.');
+      // Balance and overlap stand at the final approval, as when it was applied for.
+      if (outcome.result === 'APPROVED') await this.assertBalance(tx, cur.employeeId, cur.employee.projectId, cur.type, dateOnly(cur.fromDate), num(cur.days), id);
+      const data =
+        outcome.result === 'RECOMMENDED'
+          ? { recommendedById: user.id, recommendedAt: now, recommendNote: note || null }
+          : { status: outcome.result, decidedById: user.id, decidedAt: now, decisionNote: note || null };
+      return tx.leaveRequest.update({ where: { id }, data, include: leaveInclude });
     });
-    await this.audit.log(user, 'LEAVE', id, status, note || null);
+    await this.audit.log(user, 'LEAVE', id, outcome.result, note || null);
     const out = this.toLeaveDto(updated, user);
-    await this.notifyDecided(user, out, [updated.employee.userId, updated.appliedById]);
+    if (outcome.result === 'RECOMMENDED') await this.notifyWaiting(user, out, updated);
+    else await this.notifyDecided(user, out, [updated.employee.userId, updated.appliedById]);
     return out;
   }
 
@@ -1085,19 +1198,21 @@ export class StaffService {
     return l.fromDate === l.toDate ? `${l.fromDate}${l.halfDay ? ' (half day)' : ''}` : `${l.fromDate} to ${l.toDate}`;
   }
 
-  private async notifyApplied(user: RequestUser, l: LeaveRequestDto, employeeUserId: string | null) {
+  /** Waiting leave: whoever acts next (the manager when applied for, then HR once recommended) is told. */
+  private async notifyWaiting(user: RequestUser, l: LeaveRequestDto, row: LeaveRow) {
     try {
-      const to = (await this.access.leaveApprovers(user.organizationId, l.projectId)).filter((u) => u !== user.id && u !== employeeUserId);
+      const to = (await this.access.staffNextDeciders(user.organizationId, row, row.employee)).filter((u) => u !== user.id && u !== row.employee.userId);
       if (!to.length) return;
+      const recommended = l.approval.recommendedByName;
       await this.notifications.notify({
         organizationId: user.organizationId,
         userIds: to,
         type: 'LEAVE',
-        title: `${l.employeeName} applied for ${LEAVE_TYPE_LABELS[l.type].toLowerCase()}`,
-        body: `${l.days} day${l.days === '1' ? '' : 's'}, ${this.leaveSpan(l)}: ${l.reason}`,
+        title: recommended ? `${recommended} recommended ${l.employeeName}'s ${LEAVE_TYPE_LABELS[l.type].toLowerCase()}` : `${l.employeeName} applied for ${LEAVE_TYPE_LABELS[l.type].toLowerCase()}`,
+        body: `${l.days} day${l.days === '1' ? '' : 's'}, ${this.leaveSpan(l)}: ${l.approval.recommendNote ?? l.reason}`,
         projectId: l.projectId,
         entityId: l.id,
-        dedupeKey: `LEAVE_APPLIED:${l.id}`,
+        dedupeKey: `LEAVE_${recommended ? 'RECOMMENDED' : 'APPLIED'}:${l.id}`,
         // Leave waits on whoever decides it, and the days may already have started.
         email: { href: `/staff?tab=leave&leave=${l.id}`, cta: 'Decide it' },
       });

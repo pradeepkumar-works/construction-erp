@@ -4,6 +4,7 @@ import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import ArrowLeftRight from 'lucide-react-native/icons/arrow-left-right';
 import ArrowRight from 'lucide-react-native/icons/arrow-right';
 import Award from 'lucide-react-native/icons/award';
+import History from 'lucide-react-native/icons/history';
 import BadgeIndianRupee from 'lucide-react-native/icons/badge-indian-rupee';
 import Banknote from 'lucide-react-native/icons/banknote';
 import BookOpen from 'lucide-react-native/icons/book-open';
@@ -238,6 +239,7 @@ export const NAV_ICONS: Record<string, LucideIcon> = {
   'ruler': Ruler,
   'scale': Scale,
   'scroll-text': ScrollText,
+  'history': History,
   'send': Send,
   'server': Server,
   'settings': Settings,
