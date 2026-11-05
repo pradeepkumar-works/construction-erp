@@ -84,6 +84,7 @@ export interface ApprovalStageDto {
 /** What the amount of each type is; types not listed have no amount, so a limit does not apply to them. */
 export const APPROVAL_AMOUNT_BASIS: Partial<Record<SubmissionType, string>> = {
   PROGRESS: 'value of the quantity at the BOQ rate',
+  MATERIAL_REQUEST: 'items at their last approved order rate, before GST (an item never ordered adds nothing)',
   EXPENSE: 'bill total including GST',
   MEASUREMENT: 'measured quantity at the BOQ rate',
   MACHINERY: 'machine cost for the day at its hire rate',

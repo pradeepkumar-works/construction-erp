@@ -1171,6 +1171,11 @@ allowance and the notes (the store covers it all or part, past the BOQ, no norm,
 (past the BOQ, or the store already has it all) counts the lines to look at. Advice only: a request over the BOQ can be
 approved. Pure in `@erp/shared/indent-check.ts`, tested in `src/scripts/indent-check-test.ts` (CI flows).
 
+An indent's worth for its approval limit (design review, November 2026: "GM/COO or delegated approver, per financial
+limits") is `indentEstimate`: each line at the item's last approved order rate in the company, before GST, read for a
+whole queue at once by `ApprovalRightsService.indentValues`. A line never ordered adds nothing, and an indent with no
+line ever ordered has no amount, so a limit does not hold it back.
+
 ### Small purchase items (v5 item 95)
 
 **Stock first.** A material request's lines are free text; `StockService.requestStock` matches each to the item master

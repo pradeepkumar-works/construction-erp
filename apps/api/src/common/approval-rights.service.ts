@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { ALL_APPROVAL_RIGHTS, MAX_APPROVAL_LEVELS, ROLE_KEYS, SUBMISSION_TYPES, defaultApprovalRights, hasAmount, isGuest, machineryLogCost, type ApprovalRightDto, type RoleKey, type SubmissionType } from '@erp/shared';
+import { ALL_APPROVAL_RIGHTS, MAX_APPROVAL_LEVELS, ROLE_KEYS, SUBMISSION_TYPES, defaultApprovalRights, hasAmount, indentEstimate, isGuest, lastRateKey, machineryLogCost, type ApprovalRightDto, type RoleKey, type SubmissionType } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { money } from './serialize';
 import { levelRoles, mayDecide, stageOf, type LevelRule, type LevelStep, type Stage } from './approval-levels';
@@ -115,6 +115,38 @@ export class ApprovalRightsService {
     };
   }
 
+  /**
+   * Material requests' worth for their approval limits (`indentEstimate`): each line at the item's last approved order
+   * rate in the company, read for all the requests at once.
+   */
+  async indentValues(ids: string[]): Promise<Map<string, Prisma.Decimal | null>> {
+    const out = new Map<string, Prisma.Decimal | null>();
+    if (!ids.length) return out;
+    const lines = await this.prisma.materialRequestItem.findMany({ where: { requestId: { in: ids } }, select: { requestId: true, itemName: true, unit: true, quantity: true, request: { select: { organizationId: true } } } });
+    const rates = new Map<string, number>();
+    const wanted = new Map(lines.map((l) => [lastRateKey(l.itemName, l.unit), l]));
+    if (wanted.size) {
+      const ordered = await this.prisma.purchaseOrderLine.findMany({
+        where: {
+          OR: [...wanted.values()].map((l) => ({ itemName: { equals: l.itemName.trim(), mode: 'insensitive' as const }, unit: { equals: l.unit.trim(), mode: 'insensitive' as const } })),
+          purchaseOrder: { organizationId: { in: [...new Set(lines.map((l) => l.request.organizationId))] }, status: 'APPROVED' },
+        },
+        orderBy: [{ purchaseOrder: { poDate: 'desc' } }, { purchaseOrder: { createdAt: 'desc' } }],
+        select: { itemName: true, unit: true, rate: true },
+      });
+      // Newest first, so the first rate seen for an item is its last order's.
+      for (const o of ordered) if (!rates.has(lastRateKey(o.itemName, o.unit))) rates.set(lastRateKey(o.itemName, o.unit), o.rate.toNumber());
+    }
+    for (const id of ids) {
+      const { amount } = indentEstimate(
+        lines.filter((l) => l.requestId === id).map((l) => ({ itemName: l.itemName, unit: l.unit, quantity: l.quantity.toNumber() })),
+        rates,
+      );
+      out.set(id, amount === null ? null : new Prisma.Decimal(amount));
+    }
+    return out;
+  }
+
   /** The Prisma model of a submission type (every one has the six status columns). */
   submissionModel(type: SubmissionType): any {
     switch (type) {
@@ -159,6 +191,8 @@ export class ApprovalRightsService {
   /** The amount an approval limit is checked against (see APPROVAL_AMOUNT_BASIS); null when the type has none or it is unknown. */
   async amountOf(type: SubmissionType, id: string): Promise<Prisma.Decimal | null> {
     switch (type) {
+      case 'MATERIAL_REQUEST':
+        return (await this.indentValues([id])).get(id) ?? null;
       case 'EXPENSE': {
         const x = await this.prisma.expense.findUnique({ where: { id }, select: { totalAmount: true } });
         return x?.totalAmount ?? null;

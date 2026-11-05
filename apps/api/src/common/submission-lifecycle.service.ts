@@ -324,6 +324,7 @@ export class SubmissionLifecycleService {
         : none,
     ]);
     const amt = (d: Prisma.Decimal | null): string | null => (d === null ? null : d.toDecimalPlaces(2).toFixed(2));
+    const mrValues = await this.rights.indentValues(mrs.map((m) => m.id));
     const machineCost = (l: (typeof logs)[number]) => {
       const c = machineryLogCost(l.equipment.rate?.toString() ?? null, l.equipment.rateUnit, l.hoursWorked.toString());
       return c === null ? null : new Prisma.Decimal(c);
@@ -360,7 +361,7 @@ export class SubmissionLifecycleService {
         submittedByName: m.submittedBy.fullName,
         submittedById: m.submittedById,
         submittedAt: (m.submittedAt ?? m.createdAt).toISOString(),
-        amount: null,
+        amount: amt(mrValues.get(m.id) ?? null),
       })),
       ...logs.map((l) => ({
         type: 'MACHINERY' as const,
