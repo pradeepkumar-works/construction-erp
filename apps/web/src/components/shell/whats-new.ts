@@ -9,6 +9,19 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-approval-design',
+    date: '2026-11-05',
+    title: 'Approvals: no one decides their own entry, and head office sees every project',
+    points: [
+      'Whoever made an entry never approves it, admin included: a submission, a salary run or a full and final settlement goes to another approver.',
+      'An admin can give a head office manager every project from Users, so they need not be added to each team.',
+      'An indent now carries a value, its items at their last approved order rate, so approval limits route it like other entries.',
+      'A purchase order shows the project’s material budget, what is already ordered against it, and what this order leaves.',
+      'Admin has an audit log: every change any module recorded, searched by person, kind and day, and exported to Excel.',
+      'Masters has the standard designations from the site and head office org chart, and an IT and ERP department.',
+    ],
+  },
+  {
     id: '2026-11-correspondence-desk',
     date: '2026-11-05',
     title: 'Letters: approval by category, where each letter stands, kinds of office',
