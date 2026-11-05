@@ -46,7 +46,7 @@ const DESC_DEFAULT = new Set<string>(['date', 'totalWorkers', 'updatedAt']);
 /** Remark on a head-count sheet the roll call created. */
 const ROLL_CALL_REMARK = 'From the roll call';
 
-const dayKey = (projectId: string, date: Date) => `${projectId}|${dateOnly(date)}`;
+const dayKey = (projectId: string | null, date: Date) => `${projectId}|${dateOnly(date)}`;
 /** "2026-10-14" → "October 2026" */
 const monthName = (d: string) => new Date(`${d.slice(0, 7)}-01T00:00:00Z`).toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' });
 
@@ -118,12 +118,13 @@ export class AttendanceService {
    * The approved (or paid) payroll run covering each (project, day): the project's own run for the month, else the
    * company's. Only those lock attendance.
    */
-  async lockingRuns(organizationId: string, days: { projectId: string; date: Date }[]): Promise<Map<string, LockingRun>> {
+  async lockingRuns(organizationId: string, days: { projectId: string | null; date: Date }[]): Promise<Map<string, LockingRun>> {
     const out = new Map<string, LockingRun>();
     if (!days.length) return out;
     const months = [...new Set(days.map((d) => dateOnly(d.date).slice(0, 7)))];
+    const sites = [...new Set(days.map((d) => d.projectId).filter((p): p is string => !!p))];
     const runs = await this.prisma.payrollRun.findMany({
-      where: { organizationId, month: { in: months }, status: { in: ['APPROVED', 'PAID'] }, OR: [{ projectId: null }, { projectId: { in: [...new Set(days.map((d) => d.projectId))] } }] },
+      where: { organizationId, month: { in: months }, status: { in: ['APPROVED', 'PAID'] }, OR: [{ projectId: null }, { projectId: { in: sites } }] },
       select: { runNo: true, month: true, projectId: true, status: true },
     });
     for (const d of days) {
@@ -134,12 +135,17 @@ export class AttendanceService {
     return out;
   }
 
-  private async lockingRun(organizationId: string, projectId: string, date: Date) {
+  private async lockingRun(organizationId: string, projectId: string | null, date: Date) {
     return (await this.lockingRuns(organizationId, [{ projectId, date }])).get(dayKey(projectId, date)) ?? null;
   }
 
   async assertUnlocked(projectId: string, date: Date) {
     const { organizationId } = await this.prisma.project.findUniqueOrThrow({ where: { id: projectId }, select: { organizationId: true } });
+    return this.assertDayUnlocked(organizationId, projectId, date);
+  }
+
+  /** A day at a site, or with no project a head office staff day, which only the company's salary run locks. */
+  async assertDayUnlocked(organizationId: string, projectId: string | null, date: Date) {
     const run = await this.lockingRun(organizationId, projectId, date);
     if (isAttendanceLocked(run?.status))
       throw new ConflictException(

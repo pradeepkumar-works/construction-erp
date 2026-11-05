@@ -694,4 +694,8 @@ ALTER TABLE "HrLetterTemplate" NO FORCE ROW LEVEL SECURITY;
 ALTER TABLE "HrLetterTemplate" DISABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON "HrLetterTemplate";
 
+ALTER TABLE "AttendanceCorrection" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "AttendanceCorrection" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "AttendanceCorrection";
+
 DROP FUNCTION IF EXISTS app_current_org();

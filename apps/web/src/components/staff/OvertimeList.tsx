@@ -28,7 +28,7 @@ export function OvertimeList() {
     mutationFn: async ({ row, decision }: { row: StaffAttendanceDto; decision: 'approve' | 'reject' }) =>
       (await api.post<StaffAttendanceDto>(`/staff/attendance/${row.id}/overtime/${decision}`, { note: decision === 'reject' ? note.trim() : undefined })).data,
     onSuccess: (r, { decision }) => {
-      message.success(`${r.overtimeHours} h overtime ${decision === 'approve' ? 'approved' : 'rejected'} for ${r.employeeName}`);
+      message.success(`${r.overtimeHours} h overtime ${decision === 'reject' ? 'rejected' : r.overtimeStatus === 'APPROVED' ? 'approved' : 'recommended to HR'} for ${r.employeeName}`);
       setRejecting(null);
       setNote('');
       qc.invalidateQueries({ queryKey: ['staff'] });
@@ -60,6 +60,7 @@ export function OvertimeList() {
     },
     { title: 'Overtime', dataIndex: 'overtimeHours', width: 100, align: 'right', render: (v: string) => <span translate="no">{v} h</span> },
     { title: 'Mark-in place', key: 'place', width: 200, render: (_, r) => (r.checkInPlace ? <CheckInPlaceTag place={r.checkInPlace} /> : NO_VALUE) },
+    { title: 'Recommended by', key: 'recommended', width: 180, render: (_, r) => r.overtimeApproval?.recommendedByName ?? NO_VALUE },
     {
       title: '',
       key: 'actions',
@@ -71,8 +72,13 @@ export function OvertimeList() {
             <Button size="small" danger onClick={() => setRejecting(r)} aria-label={`Reject ${r.employeeName}'s overtime on ${formatDate(r.date)}`}>
               Reject
             </Button>
-            <Button size="small" loading={act.isPending && act.variables?.row.id === r.id} onClick={() => act.mutate({ row: r, decision: 'approve' })} aria-label={`Approve ${r.employeeName}'s overtime on ${formatDate(r.date)}`}>
-              Approve
+            <Button
+              size="small"
+              loading={act.isPending && act.variables?.row.id === r.id}
+              onClick={() => act.mutate({ row: r, decision: 'approve' })}
+              aria-label={`${r.overtimeApproval?.callerRecommends ? 'Recommend' : 'Approve'} ${r.employeeName}'s overtime on ${formatDate(r.date)}`}
+            >
+              {r.overtimeApproval?.callerRecommends ? 'Recommend' : 'Approve'}
             </Button>
           </Space>
         ) : null,
@@ -81,8 +87,8 @@ export function OvertimeList() {
 
   return (
     <div style={{ padding: tk.space[4] }}>
-      <Typography.Paragraph type="secondary">Overtime from marking out, and from the register when someone else marked it, at your sites. Payroll pays approved overtime only.</Typography.Paragraph>
-      <Table<StaffAttendanceDto> rowKey="id" size="small" columns={columns} dataSource={data} pagination={false} scroll={{ x: 1210 }} locale={{ emptyText: 'No overtime waiting on you' }} />
+      <Typography.Paragraph type="secondary">Overtime waiting on you: your reports' first, which you recommend to HR, then what their managers recommended once you are HR. Payroll pays approved overtime only.</Typography.Paragraph>
+      <Table<StaffAttendanceDto> rowKey="id" size="small" columns={columns} dataSource={data} pagination={false} scroll={{ x: 1390 }} locale={{ emptyText: 'No overtime waiting on you' }} />
       <Modal
         open={!!rejecting}
         title={rejecting ? `Reject ${rejecting.overtimeHours} h overtime for ${rejecting.employeeName}` : 'Reject overtime'}

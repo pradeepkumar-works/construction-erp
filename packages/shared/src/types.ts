@@ -3130,8 +3130,12 @@ export interface EmployeeDto {
   /** HR records: terms of employment, shown to whoever sees the staff record */
   employmentType: EmploymentType | null;
   grade: string | null;
+  /** The operational line: whose recommendation their leave, overtime and corrections wait on first */
   reportingToId: string | null;
   reportingToName: string | null;
+  /** The functional line (a site QA/QC engineer to the head office QA/QC manager): drawn on the org chart, routes nothing */
+  functionalManagerId: string | null;
+  functionalManagerName: string | null;
   probationEndsOn: string | null;
   confirmedOn: string | null;
   noticeDays: number | null;
@@ -3162,8 +3166,10 @@ export interface StaffAttendanceDto {
   /** Face attendance: the photo the phone took as they marked in and as they marked out */
   checkInPhoto: AttachmentDto | null;
   checkOutPhoto: AttachmentDto | null;
-  /** The caller may approve or reject the waiting overtime */
+  /** The caller may approve (or recommend) or reject the waiting overtime */
   canDecideOvertime: boolean;
+  /** Where waiting overtime stands in its two steps; null without overtime */
+  overtimeApproval: StaffApprovalDto | null;
   note: string | null;
   markedByName: string;
 }
@@ -3208,10 +3214,64 @@ export interface LeaveRequestDto {
   decidedAt: string | null;
   decisionNote: string | null;
   createdAt: string;
-  /** The caller may approve or reject it */
+  /** The caller may approve (or recommend) or reject it */
   canDecide: boolean;
   /** The caller may cancel it (their own or a staff admin, before it starts) */
   canCancel: boolean;
+  approval: StaffApprovalDto;
+}
+
+/** Where a leave, overtime or correction request stands in its two steps (`staff-approval.ts`). */
+export interface StaffApprovalDto {
+  /** Who it waits on, in words ("Ravi Kumar, their manager", "HR"); null once it has ended */
+  waitingOn: string | null;
+  recommendedByName: string | null;
+  recommendedAt: string | null;
+  recommendNote: string | null;
+  /** The caller's approval only recommends it, for HR to approve */
+  callerRecommends: boolean;
+}
+
+/** An employee's own request to correct one day of their attendance: a missed mark-in, a wrong status, overtime. */
+export interface AttendanceCorrectionDto {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  employeeCode: string;
+  projectName: string | null;
+  date: string;
+  /** The day as it stands now (null when nothing was marked) */
+  current: { status: StaffAttendanceStatus; checkIn: string | null; checkOut: string | null; overtimeHours: string | null } | null;
+  /** What they ask for; a time or overtime left empty stays as it is */
+  dayStatus: StaffAttendanceStatus;
+  checkIn: string | null;
+  checkOut: string | null;
+  overtimeHours: string | null;
+  reason: string;
+  status: LeaveStatus;
+  decidedByName: string | null;
+  decidedAt: string | null;
+  decisionNote: string | null;
+  createdAt: string;
+  canDecide: boolean;
+  canCancel: boolean;
+  approval: StaffApprovalDto;
+}
+
+/** One person on the org chart: what the chart shows, never their HR record. */
+export interface OrgPersonDto {
+  id: string;
+  employeeCode: string;
+  fullName: string;
+  designation: string;
+  department: string | null;
+  /** Posting; null = head office */
+  projectId: string | null;
+  projectName: string | null;
+  reportingToId: string | null;
+  reportingToName: string | null;
+  functionalManagerId: string | null;
+  functionalManagerName: string | null;
 }
 
 export interface LeaveBalanceDto {
@@ -3255,6 +3315,8 @@ export interface MyStaffDto {
   year: number;
   balances: LeaveBalanceDto[];
   leave: LeaveRequestDto[];
+  /** Their requests to correct a day, newest first */
+  corrections: AttendanceCorrectionDto[];
   holidays: HolidayDto[];
   /** Attendance extras: the site check-in is measured against (their posting); null when it has no location */
   site: CheckInSiteDto | null;
@@ -3278,6 +3340,8 @@ export interface StaffSummaryDto {
   leaveToDecide: number;
   /** Attendance extras: days of overtime waiting on the caller */
   overtimeToDecide: number;
+  /** Attendance corrections waiting on the caller */
+  correctionsToDecide: number;
   /** Active employees the caller can see (null when they cannot see the staff list) */
   employees: number | null;
   onLeaveToday: number | null;

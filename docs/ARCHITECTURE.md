@@ -406,7 +406,7 @@ dashboard is the My work page (`/my-work`, a tile of its own); `homeLayout(role)
 shows. Each desk has a queue of its own there (finding 8 of the October review): **Requests to order** (`toOrder`,
 `canPurchase`: approved material requests with something left to order, by the day needed), **Deliveries due this week**
 (`dueThisWeek`, purchase and store roles that see orders), **Leave and overtime to decide** (`staffToDecide`, the Staff
-page's Waiting on me rule `leaveDeciderWhere`; HR always, anyone else while something waits), **Certified, payment to come**
+page's waiting ids, leave, overtime and attendance corrections whose turn is the user's; HR always, anyone else while something waits), **Certified, payment to come**
 (`certifiedToReceive`, `canRecordReceipt`: open client bills with a certificate) and **Goods received, no bill yet**
 (`toMatch`, `canRecordVendorBill` and `canViewPayables`: GRNs against an order in the last 90 days whose order has no supplier
 bill, valued at the order's rates). Purchase and HR have layouts of their own. The `home` node has `tile: false`, so it is a sidebar link but never a tile.
@@ -2243,20 +2243,52 @@ flow, not `SubmissionLifecycleService`: it is a person's request, not site data 
   the balance) and earned leave brought forward stands in for the carry; comp-off = weekly offs and holidays worked (half a day earns half),
   unpaid without limit. Waiting and approved requests both count. Applying or approving beyond the balance, or
   overlapping other waiting or approved leave, is refused; an advisory lock per employee serialises the check.
-- **Who.** `STAFF_ADMIN_ROLES` (admin, management, HR) keep the staff master and holidays, see everyone and decide
-  anyone's leave. Attendance recorders (`canMarkStaff`) see and mark the staff posted at their projects. The head office
+- **Who.** `STAFF_ADMIN_ROLES` (admin, management, HR) keep the staff master and holidays and see everyone.
+  Attendance recorders (`canMarkStaff`) see and mark the staff posted at their projects, and anyone sees the people
+  who report to them (`staffWhere`). The head office
   register (`GET|PUT /staff/register` with no `projectId`, Head office first in the web's Register for picker) is the
   staff posted at no site, marked only by staff admins (`canManageStaff`), so head office days are marked like a site's
-  instead of paid unmarked. Leave is
-  decided by a staff admin or the manager of the employee's posting project, never by the employee
-  (`ProjectAccessService.canDecideLeave` / `leaveDeciderWhere`). Everyone checks in and applies for their own leave
+  instead of paid unmarked. Saving the register calls `AttendanceService.assertDayUnlocked`, so a day in a month with an
+  approved or paid payroll run cannot change there either. Everyone checks in and applies for their own leave
   once HR links their login; a staff admin can apply for someone else. The employee (before it starts) or a staff
   admin (any time) cancels.
-- **Notification.** `LEAVE`: an application goes to HR managers and the posting's project manager (admins and
-  management when the company has no HR); a decision goes to the employee and whoever applied.
-- **Clients.** Web: People → Staff and leave with tabs My attendance and leave, Leave (`?leave=` opens one), Overtime,
-  Staff register, Staff and Holidays. Site app: My attendance & leave (`app/staff.tsx`: check in and out, balances,
-  apply, leave and overtime waiting on you) and Staff register (`app/staff-register.tsx`).
+- **Reporting lines.** `Employee.reportingToId` is the operational line: who someone reports to, whose
+  recommendation their leave, overtime and corrections wait on. `Employee.functionalManagerId` is the functional line
+  (a QA/QC engineer at a site who also answers to head office QA/QC, say), shown as Functional manager on the form and
+  the record and beside the name on the org chart; it routes nothing. Neither can be the person themselves.
+- **Two steps** (`@erp/shared/staff-approval.ts`, tested in `src/scripts/staff-approval-test.ts`). Leave, overtime and
+  attendance corrections all go through the same pure machine. Step one is the manager: the active login of the
+  person someone reports to, else the posting project's manager, else no step one (`firstDecider`, never the employee
+  themselves). Their approval is a recommendation (`recommendedById`, `recommendedAt`, `recommendNote`; overtime's
+  `overtimeRecommendedById` / `At`) and the request stays `PENDING`. Step two is HR (`STAFF_ADMIN_ROLES`). A manager who
+  is a staff admin approves in one go; HR cannot decide before the manager has recommended; a rejection at either step
+  ends it. `staffWaitsOn` says whose turn it is and `staffWaitWords` words it ("Suresh Nair, their manager", "HR");
+  `staffDecision` is the only rule for a decision, through `ProjectAccessService.staffDecision` / `staffTurn`. The line
+  is read when the request is read, never stored, so a changed Reports to moves what waits. Balance and overlap are
+  checked at the final approval, not at the recommendation. Lists and counts of what waits on someone
+  (`leaveWaitingIds`, `overtimeWaitingIds`, `AttendanceCorrectionsService.waitingIds`) filter by
+  `staffDeciderWhere` in the database and then by `staffTurn`, so the inbox, the Staff page's badges and My work show
+  each person only what waits on them. `LeaveRequestDto.approval`, `StaffAttendanceDto.overtimeApproval` and
+  `AttendanceCorrectionDto.approval` (`StaffApprovalDto`) carry the waiting-on words and the recommendation.
+- **Attendance corrections** (`AttendanceCorrection`, `AttendanceCorrectionsService`, `/staff/corrections`). Someone
+  asks for a day to read differently: its status, mark-in and mark-out (HH:mm, India time, through `atWallClock`),
+  overtime in half hours and why. Refused: a day after today or before joining, mark-out before mark-in, times on an
+  absent day, a second waiting request for the same day, and a day in a payroll-locked month (409, with the words
+  payroll uses). The final approval checks the lock again and writes the day through the attendance row (`writeDay`:
+  status, times, overtime approved, a "Corrected: …" note, marked by the approver). `OTHER_DECISION_KINDS` key
+  `CORRECTION`, notification `ATTENDANCE_CORRECTION`, audited as `ATTENDANCE_CORRECTION`.
+- **Org chart** (`/staff/org-chart`, node `people.orgChart`, access `markStaff`). `GET /staff/org-chart` gives the
+  people the caller may see (`orgPeople`, over `staffWhere`) and the web builds the tree with the pure `orgChart`
+  (`@erp/shared/org-chart.ts`, tested in `src/scripts/org-chart-test.ts`): someone with no manager, a manager outside
+  the list (left, or outside the head office or site filter) or a loop starts a tree, and a loop is marked so HR can fix
+  Reports to.
+- **Notification.** `LEAVE`, `OVERTIME` and `ATTENDANCE_CORRECTION` go to whoever acts next: the manager, then HR
+  (HR managers, else admins and management when the company has no HR, `hrDeciders`); a decision goes to the employee
+  and whoever applied.
+- **Clients.** Web: People → Staff and leave with tabs My attendance and leave (with My attendance corrections and Ask
+  to correct), Leave (`?leave=` opens one), Overtime, Corrections, Staff register, Staff and Holidays; People → Org chart.
+  Site app: My attendance & leave (`app/staff.tsx`: check in and out, balances, apply, leave and overtime waiting on
+  you, Recommend for a manager) and Staff register (`app/staff-register.tsx`). The phone cannot ask for a correction yet.
 
 ### Attendance extras (v5 item 97)
 
@@ -2280,11 +2312,11 @@ flow, not `SubmissionLifecycleService`: it is a person's request, not site data 
   column.
 - **Overtime approval.** `StaffAttendance.overtimeStatus` (`OvertimeStatus` PENDING / APPROVED / REJECTED, with who and
   when, and a note). Overtime from a check-out waits; overtime typed in the register is approved when the person
-  saving it may decide it (`canDecideLeave`: a staff admin or the posting's project manager), else it waits; an
-  unchanged value keeps its decision. `GET /staff/overtime` lists what waits on the caller (`leaveDeciderWhere`),
-  `POST /staff/attendance/:id/overtime/approve|reject` decides it (reject needs a reason), audited as
-  `STAFF_OVERTIME`. Notification `OVERTIME`: a check-out with overtime tells the leave approvers, a decision tells the
-  employee. `StaffSummaryDto.overtimeToDecide` badges the Overtime tab. Payroll's `overtimeHours` is approved overtime
+  saving it is its manager or HR (the two steps above: the manager's entry is recommended, HR's approved), else it
+  waits; an unchanged value keeps its decision. `GET /staff/overtime` lists what waits on the caller
+  (`overtimeWaitingIds`), `POST /staff/attendance/:id/overtime/approve|reject` decides it (reject needs a reason),
+  audited as `STAFF_OVERTIME`. Notification `OVERTIME`: a check-out with overtime tells whoever acts next, a decision
+  tells the employee. `StaffSummaryDto.overtimeToDecide` badges the Overtime tab. Payroll's `overtimeHours` is approved overtime
   only (rows from before the migration were set approved), and `overtimePendingHours` shows what still waits.
 
 ## Payroll inputs

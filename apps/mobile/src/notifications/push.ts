@@ -131,7 +131,7 @@ export function notificationRoute(data: Record<string, unknown> | undefined): st
   // Meetings and material approvals (113) have no phone screen yet; the notice itself says what is due.
   if (entityType === 'MEETING' || entityType === 'MATERIAL_APPROVAL') return '/notifications';
   if (data?.type === 'DOCUMENT_ISSUED' && projectId) return `/documents?projectId=${projectId}`;
-  if (data?.type === 'LEAVE' || data?.type === 'OVERTIME') return '/staff';
+  if (data?.type === 'LEAVE' || data?.type === 'OVERTIME' || data?.type === 'ATTENDANCE_CORRECTION') return '/staff';
   if (data?.type === 'LOW_STOCK' && projectId) return `/stock?projectId=${projectId}&low=1`;
   if (data?.type === 'APPROVAL_DIGEST') return '/(tabs)/approvals';
   if (data?.type === 'IMPREST') return '/imprest';

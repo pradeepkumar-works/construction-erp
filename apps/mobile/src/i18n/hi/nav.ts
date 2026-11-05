@@ -257,6 +257,8 @@ export const NAV: Record<string, string> = {
   'Overtime to approve.': 'मंज़ूर करना बाकी ओवरटाइम।',
   "Today's staff attendance at your sites.": 'आपकी साइटों पर आज की स्टाफ़ हाज़िरी।',
   'Staff records, from joining to exit.': 'स्टाफ़ के रिकॉर्ड, जॉइनिंग से नौकरी छोड़ने तक।',
+  'Org chart': 'संगठन चार्ट',
+  'Who reports to whom, at head office and each site, with functional lines.': 'कौन किसे रिपोर्ट करता है, हेड ऑफ़िस और हर साइट पर, फ़ंक्शनल लाइनों के साथ।',
   'Service records': 'सेवा रिकॉर्ड',
   'Confirmations, transfers, promotions, increments and exits, with their letters.': 'पुष्टि, तबादले, पदोन्नति, वेतन वृद्धि और नौकरी छोड़ना, उनके पत्रों के साथ।',
   Holidays: 'छुट्टियाँ',

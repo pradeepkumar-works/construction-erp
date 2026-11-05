@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, Param, ParseEnumPipe, Patch, Post, Put, 
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { StaffService } from './staff.service';
+import { AttendanceCorrectionsService } from './attendance-corrections.service';
 import { HrService } from './hr.service';
 import { EmployeeDocumentsService } from './employee-documents.service';
 import { ExitClearanceService } from './exit-clearance.service';
@@ -10,6 +11,7 @@ import { HR_LETTER_KINDS, type HrLetterKind } from '@erp/shared';
 import { todayIn } from '../notifications/time';
 import {
   ApplyLeaveDto,
+  AskCorrectionDto,
   AttendanceQuery,
   BalanceQuery,
   CheckInDto,
@@ -45,7 +47,42 @@ export class StaffController {
     private docs: EmployeeDocumentsService,
     private clearance: ExitClearanceService,
     private letters: LetterTemplatesService,
+    private corrections: AttendanceCorrectionsService,
   ) {}
+
+  @ApiOperation({ summary: 'The org chart: active staff the caller sees, with whom each reports to and their functional manager' })
+  @Get('org-chart')
+  orgChart(@CurrentUser() user: RequestUser) {
+    return this.staff.orgPeople(user);
+  }
+
+  @ApiOperation({ summary: 'Attendance corrections waiting on the caller: their reports\' first, then HR once recommended' })
+  @Get('corrections')
+  correctionsToDecide(@CurrentUser() user: RequestUser) {
+    return this.corrections.toDecide(user);
+  }
+
+  @ApiOperation({ summary: "Ask to correct a day of one's own attendance; it waits on their manager, then HR" })
+  @Post('corrections')
+  askCorrection(@CurrentUser() user: RequestUser, @Body() dto: AskCorrectionDto) {
+    return this.corrections.ask(user, dto);
+  }
+
+  @ApiOperation({ summary: "Recommend (the employee's manager) or approve (HR) a correction; HR's approval writes the day" })
+  @Post('corrections/:id/approve')
+  approveCorrection(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: DecideLeaveDto) {
+    return this.corrections.decide(user, id, 'APPROVE', dto.note);
+  }
+
+  @Post('corrections/:id/reject')
+  rejectCorrection(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: RejectLeaveDto) {
+    return this.corrections.decide(user, id, 'REJECT', dto.note);
+  }
+
+  @Post('corrections/:id/cancel')
+  cancelCorrection(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    return this.corrections.cancel(user, id);
+  }
 
   @ApiOperation({ summary: 'Counts for the Staff page: leave waiting on the caller, employees, on leave today' })
   @Get('summary')
@@ -283,12 +320,12 @@ export class StaffController {
   @ApiOperation({ summary: 'Approve overtime: HR or the manager of the employee’s site, never their own' })
   @Post('attendance/:id/overtime/approve')
   approveOvertime(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: DecideLeaveDto) {
-    return this.staff.decideOvertime(user, id, 'APPROVED', dto.note);
+    return this.staff.decideOvertime(user, id, 'APPROVE', dto.note);
   }
 
   @Post('attendance/:id/overtime/reject')
   rejectOvertime(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: RejectLeaveDto) {
-    return this.staff.decideOvertime(user, id, 'REJECTED', dto.note);
+    return this.staff.decideOvertime(user, id, 'REJECT', dto.note);
   }
 
   @ApiOperation({ summary: 'Cancel leave: the employee before it starts, or HR at any time' })

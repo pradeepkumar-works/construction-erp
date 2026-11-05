@@ -285,6 +285,7 @@ enum NotificationType {
   DOCUMENT_ISSUED
   LEAVE
   OVERTIME
+  ATTENDANCE_CORRECTION
   PORTAL
   BILLS_DUE
   SAFETY
@@ -869,221 +870,222 @@ model Organization {
   cin                      String?
   gstin                    String?
 
-  users                User[]
-  roles                Role[]
-  projects             Project[]
-  boqItems             BoqItem[]
-  activities           Activity[]
-  workElements         WorkElement[]
-  progressMaterials    ProgressMaterial[]
-  pipeNodes            PipeNode[]
-  pipeSegments         PipeSegment[]
-  billingComponents    BillingComponent[]
-  billingStages        BillingStage[]
-  milestoneTargets     MilestoneTarget[]
-  slippageTiers        SlippageTier[]
-  epcDeliverables      EngineeringDeliverable[]
-  epcPackages          ProcurementPackage[]
-  epcPackageStages     PackageStageDate[]
-  omContracts          OmContract[]
-  omStaffNorms         OmStaffNorm[]
-  omStaffMonths        OmStaffMonth[]
-  omChemicalNorms      OmChemicalNorm[]
-  serviceLevelDays     ServiceLevelDay[]
-  pipeTestSegments     PipeTestSegment[]
-  milestones           Milestone[]
-  activityLinks        ActivityLink[]
-  workers              Worker[]
-  workerAttendance     WorkerAttendance[]
-  imprests             Imprest[]
-  imprestEntries       ImprestEntry[]
-  complianceDocs       ComplianceDoc[]
-  handovers            ProjectHandover[]
-  defects              Defect[]
-  closeoutItems        CloseoutItem[]
-  progressEntries      ProgressEntry[]
-  dailyReports         DailyReport[]
-  materialRequests     MaterialRequest[]
-  attachments          Attachment[]
-  auditLogs            AuditLog[]
-  notifications        Notification[]
-  attendanceSheets     AttendanceSheet[]
-  items                Item[]
-  units                Unit[]
-  masterEntries        MasterEntry[]
-  letterMarks          LetterMark[]
-  letterContacts       LetterContact[]
-  letterSeries         LetterSeries[]
-  letterTemplates      LetterTemplate[]
-  stockEntries         StockEntry[]
-  stockTxns            StockTxn[]
-  stockMinLevels       StockMinLevel[]
-  materialNorms        MaterialNorm[]
-  activityNorms        ActivityMaterialNorm[]
-  boqResources         BoqResource[]
-  excessRecoveries     ExcessMaterialRecovery[]
-  equipmentParts       EquipmentPart[]
-  equipment            Equipment[]
-  requestCovers        MaterialRequestCover[]
-  enquiries            Enquiry[]
-  enquiryTokens        EnquiryToken[]
-  machineryLogs        MachineryLog[]
-  expenses             Expense[]
-  risks                Risk[]
-  activityTemplates    ActivityTemplate[]
-  projectTypes         ProjectTypeConfig[]
-  dprForms             DprFormConfig[]
-  componentKinds       ComponentKind[]
-  approvalRules        ApprovalRule[]
-  approvalSteps        ApprovalStep[]
-  approvalEscalations  ApprovalEscalation[]
-  passwordTokens       PasswordToken[]
-  measurements         MeasurementSheet[]
-  labourRates          LabourRate[]
-  clients              Client[]
-  vendors              Vendor[]
-  quotations           Quotation[]
-  purchaseOrders       PurchaseOrder[]
-  vendorBills          VendorBill[]
-  debitNotes           DebitNote[]
-  workOrders           WorkOrder[]
-  scEnquiries          SubcontractEnquiry[]
-  scEnquiryItems       SubcontractEnquiryItem[]
-  scQuotes             SubcontractQuote[]
-  scQuoteLines         SubcontractQuoteLine[]
-  subcontractBills     SubcontractBill[]
-  raBills              RaBill[]
-  receipts             Receipt[]
-  vendorPayments       VendorPayment[]
-  paymentRequests      PaymentRequest[]
-  supplierChoices      SupplierChoice[]
-  tallyConfig          TallyConfig?
-  tallyExports         TallyExport[]
-  checklists           ChecklistTemplate[]
-  inspections          Inspection[]
-  qualityTests         QualityTest[]
-  ncrs                 Ncr[]
-  testTypes            TestType[]
-  qaPlanLines          QaPlanLine[]
-  pours                Pour[]
-  qaLabs               QaLab[]
-  qaInstruments        QaInstrument[]
-  qaCalibrations       QaCalibration[]
-  qaAudits             QaAudit[]
-  drawingNeeds         DrawingNeed[]
-  designSubmissions    DesignSubmission[]
-  designComments       DesignComment[]
-  controlledCopies     ControlledCopy[]
-  designRounds         DesignSubmissionRound[]
-  qaAuditFindings      QaAuditFinding[]
-  documents            Document[]
-  drawingMarkups       DrawingMarkup[]
-  transmittals         Transmittal[]
-  letters              Letter[]
-  employees            Employee[]
-  employeeEvents       EmployeeEvent[]
-  payrollSettings      PayrollSettings?
-  salaryStructures     SalaryStructure[]
-  staffLoans           StaffLoan[]
-  payrollRuns          PayrollRun[]
-  payslips             Payslip[]
-  payslipLines         PayslipLine[]
-  finalSettlements     FinalSettlement[]
-  biometricDevices     BiometricDevice[]
-  biometricUsers       BiometricUser[]
-  biometricPunches     BiometricPunch[]
-  biometricCommands    BiometricCommand[]
-  contractObligations  ContractObligation[]
-  officialReportIssues OfficialReportIssue[]
-  measurementChecks    MeasurementCheck[]
-  siteOrders           SiteOrder[]
-  programmeSubmissions ProgrammeSubmission[]
-  eotApplications      EotApplication[]
-  integrations         IntegrationConnection[]
-  connectorAgents      ConnectorAgent[]
-  integrationEvents    IntegrationEvent[]
-  deviceLinks          DeviceLink[]
-  machineReadings      MachineReading[]
-  machineDays          MachineDay[]
-  fuelDispenses        FuelDispense[]
-  weighings            Weighing[]
-  weighTickets         WeighTicket[]
-  plantBatchRows       PlantBatchRow[]
-  ledgerAccounts       LedgerAccount[]
-  bookVouchers         BookVoucher[]
-  bookLines            BookLine[]
-  booksState           BooksState?
-  bankStatementLines   BankStatementLine[]
-  mixDesigns           MixDesign[]
-  mixDesignLines       MixDesignLine[]
-  rmcOrders            RmcOrder[]
-  rmcBatches           RmcBatch[]
-  rmcBatchLines        RmcBatchLine[]
-  rmcInvoices          RmcInvoice[]
-  rmcReceipts          RmcReceipt[]
-  supplierDispatches   SupplierDispatch[]
-  supplierInvoices     SupplierInvoice[]
-  supplierChanges      SupplierChangeRequest[]
-  equipmentLoans       EquipmentLoan[]
-  loanEmis             LoanEmi[]
-  sorBooks             SorBook[]
-  sorItems             SorItem[]
-  tenders              Tender[]
-  tenderItems          TenderItem[]
-  tenderItemLines      TenderItemLine[]
-  tenderBids           TenderBid[]
-  staffAttendance      StaffAttendance[]
-  leaveRequests        LeaveRequest[]
-  leaveOpenings        LeaveOpening[]
-  exitClearanceLines   ExitClearanceLine[]
-  hrLetterTemplates    HrLetterTemplate[]
-  holidays             Holiday[]
-  outboundMessages     OutboundMessage[]
-  billingPayments      BillingPayment[]
-  variations           Variation[]
-  projectBudgets       ProjectBudget[]
-  projectOpenings      ProjectOpening[]
-  safetyIncidents      SafetyIncident[]
-  toolboxTalks         ToolboxTalk[]
-  ppeIssues            PpeIssue[]
-  rfis                 Rfi[]
-  workPermits          WorkPermit[]
-  variationLines       VariationLine[]
-  maintenanceJobs      MaintenanceJob[]
-  equipmentDocs        EquipmentDocument[]
-  drivers              Driver[]
-  pvComponents         PriceVariationComponent[]
-  savedViews           SavedView[]
-  navPins              NavPin[]
-  navVisits            NavVisit[]
-  launcherFlags        LauncherFlag[]
-  accessRequests       AccessRequest[]
-  aiThreads            AiThread[]
-  aiMessages           AiMessage[]
-  billCheckAcceptances BillCheckAcceptance[]
-  warningDismissals    WarningDismissal[]
-  warningOutcomes      WarningOutcomeLog[]
-  warningResumes       WarningKindResume[]
-  warningAlerts        WarningAlert[]
-  aiBriefs             AiBrief[]
-  documentPages        DocumentPage[]
-  photoChecks          PhotoCheck[]
-  billCheckSummaries   BillCheckSummary[]
-  aiDocumentReads      AiDocumentRead[]
-  meetings             Meeting[]
-  meetingAttendees     MeetingAttendee[]
-  meetingPoints        MeetingPoint[]
-  meetingActions       MeetingAction[]
-  materialApprovals    MaterialApproval[]
-  materialApprovalRevs MaterialApprovalRevision[]
-  comments             Comment[]
-  approvedMakes        ApprovedMake[]
-  drawingScales        DrawingScale[]
-  drawingTakeoffs      DrawingTakeoff[]
-  inboundMessages      InboundMessage[]
-  cashSnapshots        CashForecastSnapshot[]
-  hindranceChecks      HindranceCheck[]
-  employeeDocuments    EmployeeDocument[]
+  users                 User[]
+  roles                 Role[]
+  projects              Project[]
+  boqItems              BoqItem[]
+  activities            Activity[]
+  workElements          WorkElement[]
+  progressMaterials     ProgressMaterial[]
+  pipeNodes             PipeNode[]
+  pipeSegments          PipeSegment[]
+  billingComponents     BillingComponent[]
+  billingStages         BillingStage[]
+  milestoneTargets      MilestoneTarget[]
+  slippageTiers         SlippageTier[]
+  epcDeliverables       EngineeringDeliverable[]
+  epcPackages           ProcurementPackage[]
+  epcPackageStages      PackageStageDate[]
+  omContracts           OmContract[]
+  omStaffNorms          OmStaffNorm[]
+  omStaffMonths         OmStaffMonth[]
+  omChemicalNorms       OmChemicalNorm[]
+  serviceLevelDays      ServiceLevelDay[]
+  pipeTestSegments      PipeTestSegment[]
+  milestones            Milestone[]
+  activityLinks         ActivityLink[]
+  workers               Worker[]
+  workerAttendance      WorkerAttendance[]
+  imprests              Imprest[]
+  imprestEntries        ImprestEntry[]
+  complianceDocs        ComplianceDoc[]
+  handovers             ProjectHandover[]
+  defects               Defect[]
+  closeoutItems         CloseoutItem[]
+  progressEntries       ProgressEntry[]
+  dailyReports          DailyReport[]
+  materialRequests      MaterialRequest[]
+  attachments           Attachment[]
+  auditLogs             AuditLog[]
+  notifications         Notification[]
+  attendanceSheets      AttendanceSheet[]
+  items                 Item[]
+  units                 Unit[]
+  masterEntries         MasterEntry[]
+  letterMarks           LetterMark[]
+  letterContacts        LetterContact[]
+  letterSeries          LetterSeries[]
+  letterTemplates       LetterTemplate[]
+  stockEntries          StockEntry[]
+  stockTxns             StockTxn[]
+  stockMinLevels        StockMinLevel[]
+  materialNorms         MaterialNorm[]
+  activityNorms         ActivityMaterialNorm[]
+  boqResources          BoqResource[]
+  excessRecoveries      ExcessMaterialRecovery[]
+  equipmentParts        EquipmentPart[]
+  equipment             Equipment[]
+  requestCovers         MaterialRequestCover[]
+  enquiries             Enquiry[]
+  enquiryTokens         EnquiryToken[]
+  machineryLogs         MachineryLog[]
+  expenses              Expense[]
+  risks                 Risk[]
+  activityTemplates     ActivityTemplate[]
+  projectTypes          ProjectTypeConfig[]
+  dprForms              DprFormConfig[]
+  componentKinds        ComponentKind[]
+  approvalRules         ApprovalRule[]
+  approvalSteps         ApprovalStep[]
+  approvalEscalations   ApprovalEscalation[]
+  passwordTokens        PasswordToken[]
+  measurements          MeasurementSheet[]
+  labourRates           LabourRate[]
+  clients               Client[]
+  vendors               Vendor[]
+  quotations            Quotation[]
+  purchaseOrders        PurchaseOrder[]
+  vendorBills           VendorBill[]
+  debitNotes            DebitNote[]
+  workOrders            WorkOrder[]
+  scEnquiries           SubcontractEnquiry[]
+  scEnquiryItems        SubcontractEnquiryItem[]
+  scQuotes              SubcontractQuote[]
+  scQuoteLines          SubcontractQuoteLine[]
+  subcontractBills      SubcontractBill[]
+  raBills               RaBill[]
+  receipts              Receipt[]
+  vendorPayments        VendorPayment[]
+  paymentRequests       PaymentRequest[]
+  supplierChoices       SupplierChoice[]
+  tallyConfig           TallyConfig?
+  tallyExports          TallyExport[]
+  checklists            ChecklistTemplate[]
+  inspections           Inspection[]
+  qualityTests          QualityTest[]
+  ncrs                  Ncr[]
+  testTypes             TestType[]
+  qaPlanLines           QaPlanLine[]
+  pours                 Pour[]
+  qaLabs                QaLab[]
+  qaInstruments         QaInstrument[]
+  qaCalibrations        QaCalibration[]
+  qaAudits              QaAudit[]
+  drawingNeeds          DrawingNeed[]
+  designSubmissions     DesignSubmission[]
+  designComments        DesignComment[]
+  controlledCopies      ControlledCopy[]
+  designRounds          DesignSubmissionRound[]
+  qaAuditFindings       QaAuditFinding[]
+  documents             Document[]
+  drawingMarkups        DrawingMarkup[]
+  transmittals          Transmittal[]
+  letters               Letter[]
+  employees             Employee[]
+  employeeEvents        EmployeeEvent[]
+  payrollSettings       PayrollSettings?
+  salaryStructures      SalaryStructure[]
+  staffLoans            StaffLoan[]
+  payrollRuns           PayrollRun[]
+  payslips              Payslip[]
+  payslipLines          PayslipLine[]
+  finalSettlements      FinalSettlement[]
+  biometricDevices      BiometricDevice[]
+  biometricUsers        BiometricUser[]
+  biometricPunches      BiometricPunch[]
+  biometricCommands     BiometricCommand[]
+  contractObligations   ContractObligation[]
+  officialReportIssues  OfficialReportIssue[]
+  measurementChecks     MeasurementCheck[]
+  siteOrders            SiteOrder[]
+  programmeSubmissions  ProgrammeSubmission[]
+  eotApplications       EotApplication[]
+  integrations          IntegrationConnection[]
+  connectorAgents       ConnectorAgent[]
+  integrationEvents     IntegrationEvent[]
+  deviceLinks           DeviceLink[]
+  machineReadings       MachineReading[]
+  machineDays           MachineDay[]
+  fuelDispenses         FuelDispense[]
+  weighings             Weighing[]
+  weighTickets          WeighTicket[]
+  plantBatchRows        PlantBatchRow[]
+  ledgerAccounts        LedgerAccount[]
+  bookVouchers          BookVoucher[]
+  bookLines             BookLine[]
+  booksState            BooksState?
+  bankStatementLines    BankStatementLine[]
+  mixDesigns            MixDesign[]
+  mixDesignLines        MixDesignLine[]
+  rmcOrders             RmcOrder[]
+  rmcBatches            RmcBatch[]
+  rmcBatchLines         RmcBatchLine[]
+  rmcInvoices           RmcInvoice[]
+  rmcReceipts           RmcReceipt[]
+  supplierDispatches    SupplierDispatch[]
+  supplierInvoices      SupplierInvoice[]
+  supplierChanges       SupplierChangeRequest[]
+  equipmentLoans        EquipmentLoan[]
+  loanEmis              LoanEmi[]
+  sorBooks              SorBook[]
+  sorItems              SorItem[]
+  tenders               Tender[]
+  tenderItems           TenderItem[]
+  tenderItemLines       TenderItemLine[]
+  tenderBids            TenderBid[]
+  staffAttendance       StaffAttendance[]
+  leaveRequests         LeaveRequest[]
+  attendanceCorrections AttendanceCorrection[]
+  leaveOpenings         LeaveOpening[]
+  exitClearanceLines    ExitClearanceLine[]
+  hrLetterTemplates     HrLetterTemplate[]
+  holidays              Holiday[]
+  outboundMessages      OutboundMessage[]
+  billingPayments       BillingPayment[]
+  variations            Variation[]
+  projectBudgets        ProjectBudget[]
+  projectOpenings       ProjectOpening[]
+  safetyIncidents       SafetyIncident[]
+  toolboxTalks          ToolboxTalk[]
+  ppeIssues             PpeIssue[]
+  rfis                  Rfi[]
+  workPermits           WorkPermit[]
+  variationLines        VariationLine[]
+  maintenanceJobs       MaintenanceJob[]
+  equipmentDocs         EquipmentDocument[]
+  drivers               Driver[]
+  pvComponents          PriceVariationComponent[]
+  savedViews            SavedView[]
+  navPins               NavPin[]
+  navVisits             NavVisit[]
+  launcherFlags         LauncherFlag[]
+  accessRequests        AccessRequest[]
+  aiThreads             AiThread[]
+  aiMessages            AiMessage[]
+  billCheckAcceptances  BillCheckAcceptance[]
+  warningDismissals     WarningDismissal[]
+  warningOutcomes       WarningOutcomeLog[]
+  warningResumes        WarningKindResume[]
+  warningAlerts         WarningAlert[]
+  aiBriefs              AiBrief[]
+  documentPages         DocumentPage[]
+  photoChecks           PhotoCheck[]
+  billCheckSummaries    BillCheckSummary[]
+  aiDocumentReads       AiDocumentRead[]
+  meetings              Meeting[]
+  meetingAttendees      MeetingAttendee[]
+  meetingPoints         MeetingPoint[]
+  meetingActions        MeetingAction[]
+  materialApprovals     MaterialApproval[]
+  materialApprovalRevs  MaterialApprovalRevision[]
+  comments              Comment[]
+  approvedMakes         ApprovedMake[]
+  drawingScales         DrawingScale[]
+  drawingTakeoffs       DrawingTakeoff[]
+  inboundMessages       InboundMessage[]
+  cashSnapshots         CashForecastSnapshot[]
+  hindranceChecks       HindranceCheck[]
+  employeeDocuments     EmployeeDocument[]
 }
 
 model Role {
@@ -1351,6 +1353,11 @@ model User {
   defectsClosed           Defect[]                   @relation("DefectCloser")
   closeoutItemsDone       CloseoutItem[]
   leaveDecided            LeaveRequest[]             @relation("LeaveDecider")
+  leaveRecommended        LeaveRequest[]             @relation("LeaveRecommender")
+  overtimeRecommended     StaffAttendance[]          @relation("StaffOvertimeRecommender")
+  correctionsApplied      AttendanceCorrection[]     @relation("CorrectionApplicant")
+  correctionsRecommended  AttendanceCorrection[]     @relation("CorrectionRecommender")
+  correctionsDecided      AttendanceCorrection[]     @relation("CorrectionDecider")
   leaveApplied            LeaveRequest[]             @relation("LeaveApplicant")
   leaveOpeningsSet        LeaveOpening[]             @relation("LeaveOpeningBy")
   exitClearancesSigned    ExitClearanceLine[]        @relation("ExitClearedBy")
@@ -5534,41 +5541,47 @@ model Employee {
   updatedAt      DateTime     @updatedAt
 
   /// HR records. Personal details: shown to staff admins, payroll and the person themselves
-  dateOfBirth        DateTime?       @db.Date
-  gender             Gender?
-  fatherOrSpouseName String?
-  email              String?
-  address            String?
-  bloodGroup         String?
-  emergencyContact   String?
-  emergencyPhone     String?
+  dateOfBirth         DateTime?       @db.Date
+  gender              Gender?
+  fatherOrSpouseName  String?
+  email               String?
+  address             String?
+  bloodGroup          String?
+  emergencyContact    String?
+  emergencyPhone      String?
   /// Statutory numbers; for Aadhaar only the last four digits are kept
-  pan                String?
-  aadhaarLast4       String?
-  uan                String?
-  pfNumber           String?
-  esiNumber          String?
+  pan                 String?
+  aadhaarLast4        String?
+  uan                 String?
+  pfNumber            String?
+  esiNumber           String?
   /// Salary account
-  bankName           String?
-  bankAccountNo      String?
-  bankIfsc           String?
+  bankName            String?
+  bankAccountNo       String?
+  bankIfsc            String?
   /// Terms of employment
-  employmentType     EmploymentType?
-  grade              String?
-  reportingToId      String?
-  reportingTo        Employee?       @relation("ReportsTo", fields: [reportingToId], references: [id], onDelete: SetNull)
-  reports            Employee[]      @relation("ReportsTo")
-  probationEndsOn    DateTime?       @db.Date
-  confirmedOn        DateTime?       @db.Date
+  employmentType      EmploymentType?
+  grade               String?
+  /// The operational line: leave, overtime and attendance corrections wait on this person's login first
+  reportingToId       String?
+  reportingTo         Employee?       @relation("ReportsTo", fields: [reportingToId], references: [id], onDelete: SetNull)
+  reports             Employee[]      @relation("ReportsTo")
+  /// The functional line (a site QA/QC engineer to the head office QA/QC manager): on the org chart, routes nothing
+  functionalManagerId String?
+  functionalManager   Employee?       @relation("FunctionalLine", fields: [functionalManagerId], references: [id], onDelete: SetNull)
+  functionalReports   Employee[]      @relation("FunctionalLine")
+  probationEndsOn     DateTime?       @db.Date
+  confirmedOn         DateTime?       @db.Date
   /// Days of notice either side gives
-  noticeDays         Int?
+  noticeDays          Int?
   /// Cost to company a year, from the latest increment (payroll's salary structure starts from it)
-  ctcAnnual          Decimal?        @db.Decimal(18, 2)
+  ctcAnnual           Decimal?        @db.Decimal(18, 2)
   /// Why they left (resignation, termination, retirement), with the exit event
-  exitReason         String?
+  exitReason          String?
 
   attendance       StaffAttendance[]
   leave            LeaveRequest[]
+  corrections      AttendanceCorrection[]
   leaveOpenings    LeaveOpening[]
   clearance        ExitClearanceLine[]
   events           EmployeeEvent[]
@@ -5711,44 +5724,48 @@ model EmployeeEvent {
 }
 
 model StaffAttendance {
-  id                  String                @id @default(uuid())
-  organizationId      String
-  organization        Organization          @relation(fields: [organizationId], references: [id])
-  employeeId          String
-  employee            Employee              @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  date                DateTime              @db.Date
+  id                      String                @id @default(uuid())
+  organizationId          String
+  organization            Organization          @relation(fields: [organizationId], references: [id])
+  employeeId              String
+  employee                Employee              @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  date                    DateTime              @db.Date
   /// Where they worked that day (their posting unless marked elsewhere)
-  projectId           String?
-  project             Project?              @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  status              StaffAttendanceStatus
-  checkIn             DateTime?
-  checkOut            DateTime?
-  overtimeHours       Decimal?              @db.Decimal(4, 1)
+  projectId               String?
+  project                 Project?              @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  status                  StaffAttendanceStatus
+  checkIn                 DateTime?
+  checkOut                DateTime?
+  overtimeHours           Decimal?              @db.Decimal(4, 1)
   /// Attendance extras: where the phone or browser was at check-in, and whether that was inside the site's radius
-  checkInLat          Decimal?              @db.Decimal(9, 6)
-  checkInLng          Decimal?              @db.Decimal(9, 6)
-  checkInAccuracyM    Int?
-  checkInDistanceM    Int?
-  checkInInside       Boolean?
+  checkInLat              Decimal?              @db.Decimal(9, 6)
+  checkInLng              Decimal?              @db.Decimal(9, 6)
+  checkInAccuracyM        Int?
+  checkInDistanceM        Int?
+  checkInInside           Boolean?
   /// Overtime waits for a decision; payroll pays approved overtime only
-  overtimeStatus      OvertimeStatus?
-  overtimeDecidedById String?
-  overtimeDecidedBy   User?                 @relation("StaffOvertimeDecider", fields: [overtimeDecidedById], references: [id])
-  overtimeDecidedAt   DateTime?
-  overtimeNote        String?
-  note                String?
+  overtimeStatus          OvertimeStatus?
+  overtimeDecidedById     String?
+  overtimeDecidedBy       User?                 @relation("StaffOvertimeDecider", fields: [overtimeDecidedById], references: [id])
+  overtimeDecidedAt       DateTime?
+  overtimeNote            String?
+  /// Reporting lines: the manager who recommended it to HR (step 1 of 2)
+  overtimeRecommendedById String?
+  overtimeRecommendedBy   User?                 @relation("StaffOvertimeRecommender", fields: [overtimeRecommendedById], references: [id])
+  overtimeRecommendedAt   DateTime?
+  note                    String?
   /// Biometric attendance: the device whose punches set check-in and check-out
-  biometricDeviceId   String?
-  biometricDevice     BiometricDevice?      @relation(fields: [biometricDeviceId], references: [id], onDelete: SetNull)
+  biometricDeviceId       String?
+  biometricDevice         BiometricDevice?      @relation(fields: [biometricDeviceId], references: [id], onDelete: SetNull)
   /// Face attendance: the photo the phone took of the person as they marked in and as they marked out
-  checkInPhotoId      String?
-  checkInPhoto        Attachment?           @relation("StaffMarkInPhoto", fields: [checkInPhotoId], references: [id], onDelete: SetNull)
-  checkOutPhotoId     String?
-  checkOutPhoto       Attachment?           @relation("StaffMarkOutPhoto", fields: [checkOutPhotoId], references: [id], onDelete: SetNull)
-  markedById          String
-  markedBy            User                  @relation("StaffAttendanceMarker", fields: [markedById], references: [id])
-  createdAt           DateTime              @default(now())
-  updatedAt           DateTime              @updatedAt
+  checkInPhotoId          String?
+  checkInPhoto            Attachment?           @relation("StaffMarkInPhoto", fields: [checkInPhotoId], references: [id], onDelete: SetNull)
+  checkOutPhotoId         String?
+  checkOutPhoto           Attachment?           @relation("StaffMarkOutPhoto", fields: [checkOutPhotoId], references: [id], onDelete: SetNull)
+  markedById              String
+  markedBy                User                  @relation("StaffAttendanceMarker", fields: [markedById], references: [id])
+  createdAt               DateTime              @default(now())
+  updatedAt               DateTime              @updatedAt
 
   @@unique([employeeId, date])
   @@index([organizationId, date])
@@ -5756,31 +5773,70 @@ model StaffAttendance {
 }
 
 model LeaveRequest {
-  id             String       @id @default(uuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  employeeId     String
-  employee       Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  type           LeaveType
-  fromDate       DateTime     @db.Date
-  toDate         DateTime     @db.Date
+  id              String       @id @default(uuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  employeeId      String
+  employee        Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  type            LeaveType
+  fromDate        DateTime     @db.Date
+  toDate          DateTime     @db.Date
   /// A single half day
-  halfDay        Boolean      @default(false)
+  halfDay         Boolean      @default(false)
   /// Working days taken: weekly offs (Sunday) and the site's holidays are not counted
-  days           Decimal      @db.Decimal(4, 1)
-  reason         String
-  status         LeaveStatus  @default(PENDING)
-  appliedById    String
-  appliedBy      User         @relation("LeaveApplicant", fields: [appliedById], references: [id])
-  decidedById    String?
-  decidedBy      User?        @relation("LeaveDecider", fields: [decidedById], references: [id])
-  decidedAt      DateTime?
-  decisionNote   String?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  days            Decimal      @db.Decimal(4, 1)
+  reason          String
+  status          LeaveStatus  @default(PENDING)
+  appliedById     String
+  appliedBy       User         @relation("LeaveApplicant", fields: [appliedById], references: [id])
+  /// Reporting lines: the manager who recommended it to HR (step 1 of 2); HR's decision ends it
+  recommendedById String?
+  recommendedBy   User?        @relation("LeaveRecommender", fields: [recommendedById], references: [id])
+  recommendedAt   DateTime?
+  recommendNote   String?
+  decidedById     String?
+  decidedBy       User?        @relation("LeaveDecider", fields: [decidedById], references: [id])
+  decidedAt       DateTime?
+  decisionNote    String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
   @@index([organizationId, status])
   @@index([employeeId, fromDate])
+}
+
+/// An employee's own request to correct one day of their attendance (a missed mark-in, a wrong status, overtime),
+/// through the same two steps as leave (`staff-approval.ts`). The final approval writes it to the day's
+/// `StaffAttendance`, unless payroll for the month is approved.
+model AttendanceCorrection {
+  id              String                @id @default(uuid())
+  organizationId  String
+  organization    Organization          @relation(fields: [organizationId], references: [id])
+  employeeId      String
+  employee        Employee              @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  date            DateTime              @db.Date
+  /// The day as asked; a time or overtime left empty stays as it is
+  dayStatus       StaffAttendanceStatus
+  checkIn         DateTime?
+  checkOut        DateTime?
+  overtimeHours   Decimal?              @db.Decimal(4, 1)
+  reason          String
+  status          LeaveStatus           @default(PENDING)
+  appliedById     String
+  appliedBy       User                  @relation("CorrectionApplicant", fields: [appliedById], references: [id])
+  recommendedById String?
+  recommendedBy   User?                 @relation("CorrectionRecommender", fields: [recommendedById], references: [id])
+  recommendedAt   DateTime?
+  recommendNote   String?
+  decidedById     String?
+  decidedBy       User?                 @relation("CorrectionDecider", fields: [decidedById], references: [id])
+  decidedAt       DateTime?
+  decisionNote    String?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  @@index([organizationId, status])
+  @@index([employeeId, date])
 }
 
 /// One item of someone's exit clearance (no dues), by the code of the company's `exitClearance` master entry: cleared,
