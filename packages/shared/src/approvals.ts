@@ -132,6 +132,13 @@ export function mayApproveType(user: { roleKey: RoleKey; approvalRights?: Approv
 }
 
 /**
+ * Whoever made an entry never decides it, whatever their role (admin included): a submission, a salary run, a full and
+ * final settlement, a voucher. Null when `userId` may decide; else the words that say so.
+ */
+export const ownEntryProblem = (makerId: string | null | undefined, userId: string): string | null =>
+  makerId && makerId === userId ? 'You made this entry, so another approver decides it.' : null;
+
+/**
  * Decisions that wait on the caller outside the submission queue: each has its own approval in its module (leave and
  * overtime under Staff, a salary run under Payroll, a voucher in the Books, an outward letter's signature under
  * Correspondence). The Approvals inbox lists them so one page holds everything waiting on someone; deciding opens the

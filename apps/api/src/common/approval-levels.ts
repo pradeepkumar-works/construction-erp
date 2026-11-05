@@ -1,4 +1,4 @@
-import { defaultApproverRoles, hasAmount, levelsNeeded, type ApprovalStepAction, type RoleKey, type SubmissionType } from '@erp/shared';
+import { defaultApproverRoles, hasAmount, levelsNeeded, ownEntryProblem, type ApprovalStepAction, type RoleKey, type SubmissionType } from '@erp/shared';
 
 /**
  * Approval levels, as pure functions over the organisation's rules and one entry's steps, so the queue,
@@ -33,12 +33,14 @@ export interface Stage {
   reminded: boolean;
   /** Who approved earlier levels of this round */
   approvedBy: string[];
+  /** Who submitted this round: they never decide it */
+  submittedBy: string | null;
   /** Since when it has waited at this level */
   since: Date;
 }
 
-/** Where an entry stands: `round` is when it was last submitted; `steps` are that round's. */
-export function stageOf(type: SubmissionType, rules: LevelRule[], amount: string | number | null, round: Date, steps: LevelStep[]): Stage {
+/** Where an entry stands: `round` is when `submittedBy` last submitted it; `steps` are that round's. */
+export function stageOf(type: SubmissionType, rules: LevelRule[], amount: string | number | null, round: Date, steps: LevelStep[], submittedBy: string | null): Stage {
   const higher = rules.filter((r) => r.type === type && r.level > 1).map((r) => ({ level: r.level, minAmount: r.minAmount }));
   const levels = levelsNeeded(type, higher, amount);
   const approved = steps.filter((s) => s.action === 'APPROVED').sort((a, b) => a.level - b.level);
@@ -50,6 +52,7 @@ export function stageOf(type: SubmissionType, rules: LevelRule[], amount: string
     escalated: steps.some((s) => s.action === 'ESCALATED' && s.level === level),
     reminded: steps.some((s) => s.action === 'REMINDED' && s.level === level),
     approvedBy: approved.flatMap((s) => (s.actorId ? [s.actorId] : [])),
+    submittedBy,
     since: last > round ? last : round,
   };
 }
@@ -83,20 +86,22 @@ export function mayDecide(
   amount: string | number | null,
   stage: Stage,
 ): { ok: boolean; reason: string | null } {
+  const own = ownEntryProblem(stage.submittedBy, user.id);
+  if (own) return { ok: false, reason: own };
   if (user.roleKey === 'ADMIN') return { ok: true, reason: null };
   const of = stage.levels > 1 ? ` (level ${stage.level} of ${stage.levels})` : '';
   if (stage.approvedBy.includes(user.id)) return { ok: false, reason: `You approved an earlier level; another approver decides this one${of}.` };
-  const own: { level: number; maxAmount: string | null }[] = rules.length
+  const mine: { level: number; maxAmount: string | null }[] = rules.length
     ? rules.filter((r) => r.type === type && r.roleKey === user.roleKey)
     : defaultApproverRoles(type).includes(user.roleKey)
       ? [{ level: 1, maxAmount: null }]
       : [];
-  const atLevel = own.find((r) => r.level === stage.level);
+  const atLevel = mine.find((r) => r.level === stage.level);
   if (atLevel && within(atLevel.maxAmount, type, amount)) return { ok: true, reason: null };
   if (stage.escalated && escalationRoles(type, rules, stage.level).includes(user.roleKey)) return { ok: true, reason: null };
   if (atLevel) return { ok: false, reason: `This needs a higher approver: ₹${Number(amount).toFixed(2)} is above your limit of ₹${atLevel.maxAmount}.` };
-  if (own.length) {
-    const lowest = Math.min(...own.map((r) => r.level));
+  if (mine.length) {
+    const lowest = Math.min(...mine.map((r) => r.level));
     return { ok: false, reason: lowest > stage.level ? `It is waiting for level ${stage.level} first${of}.` : `It has moved on to level ${stage.level}${of}, which another role decides.` };
   }
   return { ok: false, reason: 'Your role cannot approve this type of submission.' };

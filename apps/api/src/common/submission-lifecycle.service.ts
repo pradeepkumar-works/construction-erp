@@ -166,7 +166,7 @@ export class SubmissionLifecycleService {
   /** The caller's own entries waiting for approval: at which level, in whose queue, since when (Waiting with others). */
   async waiting(user: RequestUser): Promise<WaitingEntryDto[]> {
     const mine = await this.mine(user, ['SUBMITTED']);
-    const entries: LevelEntry[] = mine.map((m) => ({ type: m.type, id: m.id, amount: m.amount, round: new Date(m.submittedAt) }));
+    const entries: LevelEntry[] = mine.map((m) => ({ type: m.type, id: m.id, amount: m.amount, round: new Date(m.submittedAt), submittedById: m.submittedById }));
     const { rules, stages } = await this.rights.stages(user.organizationId, entries);
     return mine
       .map((m) => {
@@ -212,7 +212,7 @@ export class SubmissionLifecycleService {
     const out = await this.describe((t) => (types.has(t) ? where : null));
     const { stages } = await this.rights.stages(
       user.organizationId,
-      out.map((p) => ({ type: p.type, id: p.id, amount: p.amount, round: new Date(p.submittedAt) })),
+      out.map((p) => ({ type: p.type, id: p.id, amount: p.amount, round: new Date(p.submittedAt), submittedById: p.submittedById })),
     );
     return out
       .flatMap((p) => {
@@ -241,7 +241,7 @@ export class SubmissionLifecycleService {
     if (!out.length) return [];
     const { rules, stages } = await this.rights.stages(
       user.organizationId,
-      out.map((p) => ({ type: p.type, id: p.id, amount: p.amount, round: new Date(p.submittedAt) })),
+      out.map((p) => ({ type: p.type, id: p.id, amount: p.amount, round: new Date(p.submittedAt), submittedById: p.submittedById })),
     );
     return out.map((p) => {
       const stage = stages.get(`${p.type}:${p.id}`)!;
@@ -336,6 +336,7 @@ export class SubmissionLifecycleService {
         projectName: p.project.name,
         title: progressTitle(p.activity.name, p.quantity.toString(), p.activity.unit, p.date),
         submittedByName: p.submittedBy.fullName,
+        submittedById: p.submittedById,
         submittedAt: (p.submittedAt ?? p.createdAt).toISOString(),
         amount: amt(p.activity.boqItem ? p.quantity.mul(p.activity.boqItem.rate) : null),
       })),
@@ -346,6 +347,7 @@ export class SubmissionLifecycleService {
         projectName: d.project.name,
         title: dprTitle(d.date),
         submittedByName: d.submittedBy.fullName,
+        submittedById: d.submittedById,
         submittedAt: (d.submittedAt ?? d.createdAt).toISOString(),
         amount: null,
       })),
@@ -356,6 +358,7 @@ export class SubmissionLifecycleService {
         projectName: m.project.name,
         title: `${m.requestNo}: ${m.items.length} item(s), ${m.priority.toLowerCase()} priority`,
         submittedByName: m.submittedBy.fullName,
+        submittedById: m.submittedById,
         submittedAt: (m.submittedAt ?? m.createdAt).toISOString(),
         amount: null,
       })),
@@ -366,6 +369,7 @@ export class SubmissionLifecycleService {
         projectName: l.project.name,
         title: machineryTitle(l.equipment.code, l.equipment.name, l.hoursWorked.toString(), l.breakdownHours.toString(), l.date),
         submittedByName: l.submittedBy.fullName,
+        submittedById: l.submittedById,
         submittedAt: (l.submittedAt ?? l.createdAt).toISOString(),
         amount: amt(machineCost(l)),
       })),
@@ -376,6 +380,7 @@ export class SubmissionLifecycleService {
         projectName: x.project.name,
         title: expenseTitle(x.expenseNo, x.totalAmount.toFixed(2), x.description),
         submittedByName: x.submittedBy.fullName,
+        submittedById: x.submittedById,
         submittedAt: (x.submittedAt ?? x.createdAt).toISOString(),
         amount: amt(x.totalAmount),
       })),
@@ -386,6 +391,7 @@ export class SubmissionLifecycleService {
         projectName: m.project.name,
         title: measurementTitle(m.mbNo, m.boqItem.itemNo, m.totalQty.toString(), m.boqItem.unit, m.location),
         submittedByName: m.submittedBy.fullName,
+        submittedById: m.submittedById,
         submittedAt: (m.submittedAt ?? m.createdAt).toISOString(),
         amount: amt(m.totalQty.mul(m.boqItem.rate)),
       })),
@@ -396,6 +402,7 @@ export class SubmissionLifecycleService {
         projectName: b.project.name,
         title: billTitle(b.billNo, b.isFinal, b.grossAmount.toFixed(2), b.omYear !== null),
         submittedByName: b.submittedBy.fullName,
+        submittedById: b.submittedById,
         submittedAt: (b.submittedAt ?? b.createdAt).toISOString(),
         amount: amt(b.grossAmount),
       })),
@@ -406,6 +413,7 @@ export class SubmissionLifecycleService {
         projectName: o.project.name,
         title: poTitle(o.poNo, o.total.toFixed(2), o.vendor.name),
         submittedByName: o.submittedBy.fullName,
+        submittedById: o.submittedById,
         submittedAt: (o.submittedAt ?? o.createdAt).toISOString(),
         amount: amt(o.total),
       })),
@@ -416,6 +424,7 @@ export class SubmissionLifecycleService {
         projectName: v.project.name,
         title: `${vendorBillTitle(v.billNo, v.invoiceNo, v.vendor.name, v.total.toFixed(2))}${v.matched ? '' : v.purchaseOrderId ? ' (does not match the PO)' : ' (has exceptions)'}`,
         submittedByName: v.submittedBy.fullName,
+        submittedById: v.submittedById,
         submittedAt: (v.submittedAt ?? v.createdAt).toISOString(),
         amount: amt(v.total),
       })),
@@ -426,6 +435,7 @@ export class SubmissionLifecycleService {
         projectName: w.project.name,
         title: woTitle(w.woNo, w.title, w.value.toFixed(2), w.vendor.name),
         submittedByName: w.submittedBy.fullName,
+        submittedById: w.submittedById,
         submittedAt: (w.submittedAt ?? w.createdAt).toISOString(),
         amount: amt(w.value),
       })),
@@ -436,6 +446,7 @@ export class SubmissionLifecycleService {
         projectName: b.project.name,
         title: subBillTitle(b.workOrder.woNo, b.billNo, b.isFinal, b.workOrder.vendor.name, b.grossAmount.toFixed(2)),
         submittedByName: b.submittedBy.fullName,
+        submittedById: b.submittedById,
         submittedAt: (b.submittedAt ?? b.createdAt).toISOString(),
         amount: amt(b.grossAmount),
       })),
@@ -446,6 +457,7 @@ export class SubmissionLifecycleService {
         projectName: i.project.name,
         title: inspectionTitle(i.inspectionNo, i.activity.name, i.location),
         submittedByName: i.submittedBy.fullName,
+        submittedById: i.submittedById,
         submittedAt: (i.submittedAt ?? i.createdAt).toISOString(),
         amount: null,
       })),
@@ -456,6 +468,7 @@ export class SubmissionLifecycleService {
         projectName: r.project.name,
         title: payRequestTitle(r),
         submittedByName: r.submittedBy.fullName,
+        submittedById: r.submittedById,
         submittedAt: (r.submittedAt ?? r.createdAt).toISOString(),
         amount: amt(r.amount),
       })),
@@ -466,6 +479,7 @@ export class SubmissionLifecycleService {
         projectName: c.project.name,
         title: supplierChoiceTitle(c.materialRequest.requestNo, c.quotation?.vendor.name ?? null, c.split, c.rank, c.amount.toFixed(2)),
         submittedByName: c.submittedBy.fullName,
+        submittedById: c.submittedById,
         submittedAt: (c.submittedAt ?? c.createdAt).toISOString(),
         amount: amt(c.amount),
       })),

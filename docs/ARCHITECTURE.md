@@ -54,7 +54,10 @@ shapes of every API response, so web, mobile and API agree on one contract.
   `ProjectAccessService.assertCanApproveSubmission` hold this; `packages/shared/src/approvals.ts` mirrors it
   for the clients from `AuthUser.approvalRights`. Other approver-only actions (editing before approval,
   stock adjustments, deleting a risk) still use the fixed `APPROVER_ROLES`.
-- A submitter cannot approve their own entry unless they also hold an approver role.
+- Whoever made an entry never decides it, whatever their role, admin included (`ownEntryProblem` in
+  `@erp/shared/approvals.ts`): a submission (`mayDecide` reads the round's `Stage.submittedBy`, so the queue, the stage
+  card, bulk review and escalation all leave it to someone else), a salary run, a full and final settlement and a
+  hand-made voucher. The design review of November 2026 asked for it ("Users must not approve their own transactions").
 - `ProjectAccessService` is the single place that encodes these rules; every service calls it.
 
 ### Signing in and headers (finding 5 of the October review)

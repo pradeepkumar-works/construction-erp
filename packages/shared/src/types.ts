@@ -411,6 +411,7 @@ export interface PendingApprovalDto {
   projectId: string;
   projectName: string;
   title: string;
+  submittedById: string;
   submittedByName: string;
   submittedAt: string;
   /** Rupees the approval limit is checked against (see APPROVAL_AMOUNT_BASIS); null for types without an amount. */

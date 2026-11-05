@@ -5,7 +5,7 @@
  *   node dist/scripts/approval-levels-test.js
  */
 import assert from 'node:assert/strict';
-import { levelsNeeded } from '@erp/shared';
+import { levelsNeeded, ownEntryProblem } from '@erp/shared';
 import { escalationRoles, levelRoles, mayDecide, queueRoles, stageOf, type LevelRule, type LevelStep } from '../common/approval-levels';
 
 const cases: [string, () => void][] = [];
@@ -26,6 +26,7 @@ const RULES: LevelRule[] = [
 const pm = { id: 'u-pm', roleKey: 'PROJECT_MANAGER' as const };
 const md = { id: 'u-md', roleKey: 'MANAGEMENT' as const };
 const accounts = { id: 'u-ac', roleKey: 'ACCOUNTS_MANAGER' as const };
+const SE = 'u-se';
 const approved = (level: number, actorId: string, h = level): LevelStep => ({ level, action: 'APPROVED', actorId, createdAt: at(h) });
 
 test('levels needed: one below the second threshold, two from it, three from the third', () => {
@@ -44,25 +45,25 @@ test('a level without an amount always applies; a type without amounts ignores t
 });
 
 test('the stage: waiting at level 1, then 2 after the first approval, since that approval', () => {
-  const fresh = stageOf('PURCHASE_ORDER', RULES, '400000', round, []);
+  const fresh = stageOf('PURCHASE_ORDER', RULES, '400000', round, [], SE);
   assert.deepEqual([fresh.level, fresh.levels, fresh.since.getTime()], [1, 2, round.getTime()]);
-  const next = stageOf('PURCHASE_ORDER', RULES, '400000', round, [approved(1, pm.id, 5)]);
+  const next = stageOf('PURCHASE_ORDER', RULES, '400000', round, [approved(1, pm.id, 5)], SE);
   assert.deepEqual([next.level, next.levels, next.since.getTime(), next.approvedBy], [2, 2, at(5).getTime(), [pm.id]]);
 });
 
 test('who decides: the level-1 role within its limit, then the level-2 role; not the same person twice', () => {
-  const s1 = stageOf('PURCHASE_ORDER', RULES, '400000', round, []);
+  const s1 = stageOf('PURCHASE_ORDER', RULES, '400000', round, [], SE);
   assert.equal(mayDecide(pm, 'PURCHASE_ORDER', RULES, '400000', s1).ok, true);
   const early = mayDecide(md, 'PURCHASE_ORDER', RULES, '400000', s1);
   assert.equal(early.ok, false);
   assert.match(early.reason!, /waiting for level 1 first/);
-  const s2 = stageOf('PURCHASE_ORDER', RULES, '400000', round, [approved(1, pm.id)]);
+  const s2 = stageOf('PURCHASE_ORDER', RULES, '400000', round, [approved(1, pm.id)], SE);
   assert.equal(mayDecide(md, 'PURCHASE_ORDER', RULES, '400000', s2).ok, true);
   const moved = mayDecide({ id: 'u-pm2', roleKey: 'PROJECT_MANAGER' }, 'PURCHASE_ORDER', RULES, '400000', s2);
   assert.equal(moved.ok, false);
   assert.match(moved.reason!, /moved on to level 2/);
   // Management at level 2 and 3: the person who approved level 2 cannot approve level 3 as well.
-  const s3 = stageOf('PURCHASE_ORDER', RULES, '1200000', round, [approved(1, 'u-proc'), approved(2, md.id)]);
+  const s3 = stageOf('PURCHASE_ORDER', RULES, '1200000', round, [approved(1, 'u-proc'), approved(2, md.id)], SE);
   assert.equal(s3.level, 3);
   assert.match(mayDecide(md, 'PURCHASE_ORDER', RULES, '1200000', s3).reason!, /approved an earlier level/);
   assert.equal(mayDecide({ id: 'u-md2', roleKey: 'MANAGEMENT' }, 'PURCHASE_ORDER', RULES, '1200000', s3).ok, true);
@@ -71,7 +72,7 @@ test('who decides: the level-1 role within its limit, then the level-2 role; not
 });
 
 test('the level-1 limit still sends a larger order to the role with the higher limit', () => {
-  const s = stageOf('PURCHASE_ORDER', RULES, '700000', round, []);
+  const s = stageOf('PURCHASE_ORDER', RULES, '700000', round, [], SE);
   const over = mayDecide(pm, 'PURCHASE_ORDER', RULES, '700000', s);
   assert.equal(over.ok, false);
   assert.match(over.reason!, /above your limit of ₹500000/);
@@ -80,23 +81,41 @@ test('the level-1 limit still sends a larger order to the role with the higher l
 
 test('escalation: past its time, the next level may decide too; above the top level, management', () => {
   const steps: LevelStep[] = [{ level: 1, action: 'ESCALATED', actorId: null, createdAt: at(48) }];
-  const s = stageOf('PURCHASE_ORDER', RULES, '400000', round, steps);
+  const s = stageOf('PURCHASE_ORDER', RULES, '400000', round, steps, SE);
   assert.equal(s.escalated, true);
   assert.equal(mayDecide(md, 'PURCHASE_ORDER', RULES, '400000', s).ok, true);
   assert.deepEqual(queueRoles('PURCHASE_ORDER', RULES, '400000', s).sort(), ['MANAGEMENT', 'PROCUREMENT_MANAGER', 'PROJECT_MANAGER']);
   assert.deepEqual(escalationRoles('PURCHASE_ORDER', RULES, 3), ['MANAGEMENT']);
   assert.deepEqual(escalationRoles('EXPENSE', [], 1), ['MANAGEMENT'], 'the fixed rule escalates to management');
   // A reminder or escalation at level 1 does not carry over to level 2.
-  const later = stageOf('PURCHASE_ORDER', RULES, '400000', round, [...steps, { level: 1, action: 'REMINDED', actorId: null, createdAt: at(24) }, approved(1, pm.id, 50)]);
+  const later = stageOf('PURCHASE_ORDER', RULES, '400000', round, [...steps, { level: 1, action: 'REMINDED', actorId: null, createdAt: at(24) }, approved(1, pm.id, 50)], SE);
   assert.deepEqual([later.level, later.escalated, later.reminded], [2, false, false]);
 });
 
 test('the fixed rule (no matrix): one level, the approver roles, as before', () => {
-  const s = stageOf('EXPENSE', [], '90000', round, []);
+  const s = stageOf('EXPENSE', [], '90000', round, [], SE);
   assert.equal(s.levels, 1);
   assert.equal(mayDecide({ id: 'x', roleKey: 'PROJECT_MANAGER' }, 'EXPENSE', [], '90000', s).ok, true);
   assert.equal(mayDecide({ id: 'y', roleKey: 'SITE_ENGINEER' }, 'EXPENSE', [], '90000', s).ok, false);
-  assert.equal(mayDecide({ id: 'z', roleKey: 'QA_QC_ENGINEER' }, 'INSPECTION', [], null, stageOf('INSPECTION', [], null, round, [])).ok, true);
+  assert.equal(mayDecide({ id: 'z', roleKey: 'QA_QC_ENGINEER' }, 'INSPECTION', [], null, stageOf('INSPECTION', [], null, round, [], SE)).ok, true);
+});
+
+test('whoever submitted an entry never decides it, admin included; anyone else with the right still does', () => {
+  const byPm = stageOf('PURCHASE_ORDER', RULES, '400000', round, [], pm.id);
+  assert.equal(byPm.submittedBy, pm.id);
+  const self = mayDecide(pm, 'PURCHASE_ORDER', RULES, '400000', byPm);
+  assert.equal(self.ok, false);
+  assert.match(self.reason!, /You made this entry/);
+  assert.equal(mayDecide({ id: 'u-pm2', roleKey: 'PROJECT_MANAGER' }, 'PURCHASE_ORDER', RULES, '400000', byPm).ok, true, 'another PM decides it');
+  const admin = { id: 'u-admin', roleKey: 'ADMIN' as const };
+  assert.equal(mayDecide(admin, 'EXPENSE', [], '90000', stageOf('EXPENSE', [], '90000', round, [], admin.id)).ok, false, 'admin does not approve their own entry');
+  assert.equal(mayDecide(admin, 'EXPENSE', [], '90000', stageOf('EXPENSE', [], '90000', round, [], SE)).ok, true);
+  // Escalated to management: the manager who submitted it still cannot take it.
+  const escalated = stageOf('PURCHASE_ORDER', RULES, '400000', round, [{ level: 1, action: 'ESCALATED', actorId: null, createdAt: at(48) }], md.id);
+  assert.equal(mayDecide(md, 'PURCHASE_ORDER', RULES, '400000', escalated).ok, false);
+  assert.equal(ownEntryProblem(null, pm.id), null, 'an entry with no maker on record stays decidable');
+  assert.equal(ownEntryProblem('u-hr', 'u-md'), null);
+  assert.match(ownEntryProblem('u-md', 'u-md')!, /another approver decides it/);
 });
 
 let failed = 0;

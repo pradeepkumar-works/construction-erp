@@ -1,6 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { canApprovePayroll, canPayPayroll, canRunPayroll, clearanceDues, clearanceProblem, type FinalSettlementDto } from '@erp/shared';
+import { canApprovePayroll, canPayPayroll, canRunPayroll, clearanceDues, clearanceProblem, ownEntryProblem, type FinalSettlementDto } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { AuditService } from '../common/audit.service';
@@ -76,7 +76,7 @@ export class SettlementService {
       createdAt: iso(s.createdAt),
       can: {
         edit: s.status === 'DRAFT' && canRunPayroll(user.roleKey),
-        approve: s.status === 'DRAFT' && canApprovePayroll(user.roleKey) && !problem,
+        approve: s.status === 'DRAFT' && canApprovePayroll(user.roleKey) && !problem && !ownEntryProblem(s.preparedById, user.id),
         pay: s.status === 'APPROVED' && canPayPayroll(user.roleKey),
       },
     };
@@ -165,6 +165,8 @@ export class SettlementService {
     const s = await this.rowFor(user, id);
     if (!canApprovePayroll(user.roleKey)) throw new ForbiddenException('Only management or an admin approves a settlement');
     if (s.status !== 'DRAFT') throw new BadRequestException('This settlement is already approved');
+    const own = ownEntryProblem(s.preparedById, user.id);
+    if (own) throw new ForbiddenException(own);
     const clearance = await this.clearanceOf(user, s.employeeId);
     if (clearance.problem) throw new BadRequestException(clearance.problem);
     if (Math.abs(clearance.dues - Number(s.clearanceRecovery)) > 0.005) throw new BadRequestException('The exit clearance changed after the settlement was worked out. Ask HR to work it out again.');

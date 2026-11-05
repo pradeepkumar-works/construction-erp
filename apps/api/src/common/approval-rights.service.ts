@@ -11,6 +11,8 @@ export interface LevelEntry {
   id: string;
   amount: string | null;
   round: Date;
+  /** Who submitted it (never its approver) */
+  submittedById: string | null;
 }
 
 /**
@@ -83,7 +85,7 @@ export class ApprovalRightsService {
   /** Where each entry stands in its levels, with the organisation's rules (one read of each). */
   async stages(organizationId: string, entries: LevelEntry[]): Promise<{ rules: LevelRule[]; stages: Map<string, Stage> }> {
     const [rules, steps] = await Promise.all([this.rules(organizationId), this.stepsOf(entries)]);
-    const stages = new Map(entries.map((e) => [`${e.type}:${e.id}`, stageOf(e.type, rules, e.amount, e.round, steps.get(`${e.type}:${e.id}`) ?? [])]));
+    const stages = new Map(entries.map((e) => [`${e.type}:${e.id}`, stageOf(e.type, rules, e.amount, e.round, steps.get(`${e.type}:${e.id}`) ?? [], e.submittedById)]));
     return { rules, stages };
   }
 
@@ -96,9 +98,21 @@ export class ApprovalRightsService {
 
   /** The round an entry is in: when it was last submitted (or created, for entries submitted with it). */
   async entryOf(type: SubmissionType, id: string): Promise<LevelEntry & { status: string }> {
-    const row = (await this.submissionModel(type).findUnique({ where: { id }, select: { status: true, submittedAt: true, createdAt: true } })) as { status: string; submittedAt: Date | null; createdAt: Date } | null;
+    const row = (await this.submissionModel(type).findUnique({ where: { id }, select: { status: true, submittedAt: true, createdAt: true, submittedById: true } })) as {
+      status: string;
+      submittedAt: Date | null;
+      createdAt: Date;
+      submittedById: string;
+    } | null;
     const amount = await this.amountOf(type, id);
-    return { type, id, amount: amount === null ? null : amount.toString(), round: row?.submittedAt ?? row?.createdAt ?? new Date(0), status: row?.status ?? 'DRAFT' };
+    return {
+      type,
+      id,
+      amount: amount === null ? null : amount.toString(),
+      round: row?.submittedAt ?? row?.createdAt ?? new Date(0),
+      submittedById: row?.submittedById ?? null,
+      status: row?.status ?? 'DRAFT',
+    };
   }
 
   /** The Prisma model of a submission type (every one has the six status columns). */

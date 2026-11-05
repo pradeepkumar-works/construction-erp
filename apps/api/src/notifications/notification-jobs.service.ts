@@ -65,11 +65,11 @@ export class NotificationJobsService {
       if (!model) continue;
       const rows = (await model.findMany({
         where: { organizationId: set.organizationId, status: 'SUBMITTED' },
-        select: { id: true, projectId: true, submittedAt: true, createdAt: true },
-      })) as { id: string; projectId: string; submittedAt: Date | null; createdAt: Date }[];
+        select: { id: true, projectId: true, submittedAt: true, createdAt: true, submittedById: true },
+      })) as { id: string; projectId: string; submittedAt: Date | null; createdAt: Date; submittedById: string }[];
       if (!rows.length) continue;
       const entries = await Promise.all(
-        rows.map(async (r) => ({ type, id: r.id, amount: (await this.rights.amountOf(type, r.id))?.toString() ?? null, round: r.submittedAt ?? r.createdAt, projectId: r.projectId })),
+        rows.map(async (r) => ({ type, id: r.id, amount: (await this.rights.amountOf(type, r.id))?.toString() ?? null, round: r.submittedAt ?? r.createdAt, submittedById: r.submittedById, projectId: r.projectId })),
       );
       const { rules, stages } = await this.rights.stages(set.organizationId, entries);
       for (const e of entries) {
@@ -85,7 +85,7 @@ export class NotificationJobsService {
           data: { organizationId: set.organizationId, entityType: type, entityId: e.id, level: stage.level, action: escalate ? 'ESCALATED' : 'REMINDED', round: e.round, note: `Waited ${Math.floor(hours)} hours` },
         });
         const roles: RoleKey[] = escalate ? escalationRoles(type, rules, stage.level) : ['ADMIN', ...levelRoles(type, rules, stage.level, e.amount)];
-        const users = await this.access.usersWithRoles(set.organizationId, e.projectId, [...new Set(roles)]);
+        const users = (await this.access.usersWithRoles(set.organizationId, e.projectId, [...new Set(roles)])).filter((u) => u.id !== e.submittedById);
         const r = await this.notifications.onWaiting(set.organizationId, type, e.id, users.map((u) => u.id), hours, escalate);
         result.created += r.created;
         result.pushed += r.pushed;
