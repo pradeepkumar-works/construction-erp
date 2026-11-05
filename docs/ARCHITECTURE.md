@@ -622,8 +622,9 @@ A department's screen (`DepartmentHome`) opens, under what waits for the user, w
 `GET /dashboard/departments/:key?projectId` (`DepartmentHomeService`, `DepartmentHomeDto`):
 
 - **Figures.** The area modules' own (`ModuleHomeService.figures`, `Figure[]`), picked per department by measure id in
-  `DEPARTMENT_FIGURES` and `departmentFigures` (`@erp/shared/department-home.ts`, at most `MAX_FIGURES`), drawn by `<Figures>`: purchase shows requests to approve and orders to
-  receive, the store its stock and late deliveries, accounts its books and what clients owe, quality its failed tests,
+  `DEPARTMENT_FIGURES` and `departmentFigures` (`@erp/shared/department-home.ts`, at most `MAX_FIGURES`), drawn by `<Figures>`: purchase shows the round (requests to approve,
+  waiting for quotations, choices to approve, orders to receive, late deliveries, received not billed; item 175), the
+  store its stock with the part at central stores and what is on the road, material to check and late deliveries, accounts its books and what clients owe, quality its failed tests,
   late results and open NCRs with safety incidents (near misses counted apart), contractor management its work orders and
   the retention kept from subcontractors, planning and estimation the tenders to submit and bids awaiting a result, HR and
   payroll its people with the last salary run's net pay, and administration who can sign in, access requests and failing
@@ -1847,7 +1848,10 @@ The store register per project, fed by approved material requests:
   `transferOutId`) for the full quantities, once, on or after the sent date. Until then the transfer is "on the
   way" (`GET /stock/transfers/incoming`) and the sender cannot delete it once received. `RETURN_TO_VENDOR`
   (`RTV-`, supplier and reason required) takes stock out; `RETURN_FROM_SITE` (`RFS-`) brings unused material
-  back, up to what is out on site (issued net of returns), and comes off the project's material cost. A stock
+  back, up to what is out on site (issued net of returns), and comes off the project's material cost. A return may
+  name the work order its material comes back from (`workOrderId`, an open order of the project; item 177): it is then
+  held per item to what was issued on that order net of its earlier returns, `issuedTo` defaults to the order's
+  subcontractor, and their bill credits it (see "A subcontractor's material"). A stock
   count (`POST /stock/counts`) posts the differences between counted and book quantities as one adjustment and
   returns `{counted, entry}` (`entry` null when everything matched). Balances show transfers in their own
   column; returns from site net off issued, returns to vendor off received.
@@ -1872,6 +1876,12 @@ The store register per project, fed by approved material requests:
   /stock/items/:id/merge`, store managers and approvers): every foreign key to `Item` (read from the Prisma schema)
   moves to the kept item, a minimum or norm both have keeps the kept one's, request and order lines take its name,
   and the merged names become its aliases. Rules in `@erp/shared/items.ts`, tested in `src/scripts/items-test.ts`.
+- **Code, standard and value (item 176).** `Item.code` is optional, written by `itemCodeOf` (capitals, spaces and `_` as
+  hyphens) and held by `itemCodeProblem` (letters, digits and `- / .`, up to 30) and unique per organisation;
+  `Item.standard` is free text (IS 1489, Fe 500D). The item list's `q` searches both. Stock on hand carries `itemCode`
+  and, for `canViewStockValue`, `value` (balance × item rate, sortable); `StockService.worth` gives the Materials
+  overview its stock value, the part at `STORE` projects and what is on the road (transfers out with no transfer in
+  yet), each at item rates.
 - **Valuation.** `GET /stock/valuation` values stock on hand at the item master rate and ages it first in,
   first out over the inward movements (0-30, 31-90, 91-180, over 180 days). Store managers, approvers and
   anyone who sees project cost.
@@ -1912,6 +1922,13 @@ The store register per project, fed by approved material requests:
   `StockService.issue`, so the stock check, minimum-level alert and numbering are the same as any issue; it refuses an
   item not marked as fuel and an inactive machine, and takes a client `id` (the phone's outbox, `FUEL_ISSUE`). Roles:
   `canIssueFuel` (whoever issues material).
+- **Pump readings (item 178).** A fuel slip may carry the dispenser's `pumpStart` and `pumpEnd` (`StockEntry`,
+  Decimal(18,2)); `pumpReadingProblem` (`@erp/shared/fleet.ts`) refuses an end below the start and litres off the
+  readings by more than `PUMP_TOLERANCE_LITRES` (0.5); a start with no end is no reading (`slipPumpReadings`), so a
+  slip whose pump nobody read still saves. The form starts from the fuel position's `lastPumpEnd` (the
+  latest slip at the site with a reading, up to the day) and fills the litres from the readings until they are typed.
+  Fuel issues carry the machine's `equipmentCategory` and `ownership`, and `fuelByKind` adds them up by kind for the
+  Fuel tab. Tested in `src/scripts/fuel-slips-test.ts`.
 - **Fuel position.** `GET /fleet/fuel-position?date&projectId` (`FleetService`): per site the user sees and fuel item,
   opening (all movements before the day), received (any positive movement), into machines (issues with a machine),
   other issues and closing, against the item's minimum level, with the day's issues into machines.
@@ -2825,6 +2842,9 @@ gets Handover › O&M (`canViewOm`: everyone but guests).
   one: `SubcontractBillsService.recompute` attaches recoveries with no bill and adds their total as `excessRecovery`
   ("Material used over the norm" among the deductions; Tally posts it with the material recovery). It can be removed
   until its bill is submitted.
+- **Returns credited (item 177).** The bill's material recovery (`recompute`) reads the order's `ISSUE` and
+  `RETURN_FROM_SITE` rows not yet on a bill up to its measured date, so a return comes off what the bill recovers; a period with more back
+  than out gives a negative line, which the posting handles as a credit.
 - **API.** `GET /reconciliation/projects/:id/subcontractors`, `POST .../work-orders/:workOrderId/recoveries`,
   `DELETE .../recoveries/:recoveryId`.
 

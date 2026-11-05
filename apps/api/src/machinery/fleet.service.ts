@@ -33,7 +33,7 @@ const share = (part: Decimal, whole: Decimal) => (whole.gt(0) ? Math.round(part.
 
 const issueInclude = {
   project: { select: { id: true } },
-  equipment: { select: { code: true, name: true } },
+  equipment: { select: { code: true, name: true, category: true, ownership: true } },
   lines: { select: { quantity: true, item: { select: { name: true, unit: true } } } },
   createdBy: { select: { fullName: true } },
 } satisfies Prisma.StockEntryInclude;
@@ -73,6 +73,10 @@ export class FleetService {
       unit: line?.item.unit ?? '',
       litres: dec(e.lines.reduce((s, l) => s.sub(l.quantity), ZERO)),
       meterReading: dec(e.meterReading),
+      pumpStart: dec(e.pumpStart),
+      pumpEnd: dec(e.pumpEnd),
+      equipmentCategory: e.equipment?.category ?? null,
+      ownership: e.equipment?.ownership ?? null,
       issuedTo: e.issuedTo,
       createdByName: e.createdBy.fullName,
     };
@@ -90,7 +94,7 @@ export class FleetService {
     const canIssue = canIssueFuel(user.roleKey);
     if (!projects.length || !items.length) return { date, rows: [], issues: [], canIssue };
     const where = { projectId: { in: projects.map((p) => p.id) }, itemId: { in: items.map((i) => i.id) } };
-    const [before, moves, mins, issues] = await Promise.all([
+    const [before, moves, mins, issues, lastPump] = await Promise.all([
       this.prisma.stockTxn.groupBy({ by: ['projectId', 'itemId'], where: { ...where, date: { lt: day } }, _sum: { quantity: true } }),
       this.prisma.stockTxn.findMany({ where: { ...where, date: day }, select: { projectId: true, itemId: true, quantity: true, type: true, entry: { select: { equipmentId: true } } } }),
       this.prisma.stockMinLevel.findMany({ where, select: { projectId: true, itemId: true, minQty: true } }),
@@ -99,6 +103,9 @@ export class FleetService {
         include: issueInclude,
         orderBy: { createdAt: 'desc' },
       }),
+      q.projectId
+        ? this.prisma.stockEntry.findFirst({ where: { projectId: q.projectId, type: 'ISSUE', pumpEnd: { not: null }, date: { lte: day } }, orderBy: [{ date: 'desc' }, { createdAt: 'desc' }], select: { pumpEnd: true } })
+        : null,
     ]);
     const k = (p: string, i: string) => `${p}|${i}`;
     const open = new Map(before.map((b) => [k(b.projectId, b.itemId), b._sum.quantity ?? ZERO]));
@@ -132,7 +139,7 @@ export class FleetService {
           minLevel: dec(minOf.get(k(p.id, i.id))),
         });
       }
-    return { date, rows, issues: issues.map((e) => this.toIssue(e)), canIssue };
+    return { date, rows, issues: issues.map((e) => this.toIssue(e)), canIssue, lastPumpEnd: dec(lastPump?.pumpEnd ?? null) };
   }
 
   /** GET /fleet/fuel-issues: fuel issued into machines over a period, newest first. */

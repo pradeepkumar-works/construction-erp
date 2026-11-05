@@ -9,6 +9,18 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-stores-purchase',
+    date: '2026-11-04',
+    title: 'Purchase and stores overviews, item codes and pump readings',
+    points: [
+      'The Purchases overview counts each step of buying: waiting for quotations, choices to approve, orders to receive, late deliveries, material to check and receipts not yet billed.',
+      'Materials leads with what the stock is worth, the part at central stores, and what is on the road between stores.',
+      'An item can have a code and the standard it is bought to. Stock on hand shows the code and, if you see stock value, each line’s value and the total.',
+      'A return from site can name the subcontractor’s work order. It is held to what was issued on that order, and their next bill credits it.',
+      'A fuel slip takes the pump’s start and end readings and fills the litres from them, on the web and the phone. The Fuel tab adds up litres by kind of machine.',
+    ],
+  },
+  {
     id: '2026-11-drawing-approvals',
     date: '2026-11-04',
     title: 'Drawing approvals stage by stage, and drawings by component',

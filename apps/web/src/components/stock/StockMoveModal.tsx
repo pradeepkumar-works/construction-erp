@@ -8,10 +8,11 @@ import { DeleteOutlined, PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { StockEntryDto } from '@erp/shared';
-import { MAX_PAGE_SIZE, unitLabel } from '@erp/shared';
+import { MAX_PAGE_SIZE, canViewWorkOrders, unitLabel } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
-import { useActivities, useAttendanceSuggestions, useProjects, useStockBalances, useStockDestinations } from '@/lib/queries';
+import { useActivities, useAttendanceSuggestions, useProjects, useStockBalances, useStockDestinations, useWorkOrders } from '@/lib/queries';
+import { useAuth } from '@/lib/auth';
 import { formatQty } from '@/lib/format';
 import { VendorPicker } from '@/components/vendors/VendorPicker';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
@@ -29,6 +30,7 @@ interface FormValues {
   date: dayjs.Dayjs;
   supplier?: string;
   issuedTo?: string;
+  workOrderId?: string;
   activityId?: string;
   challanNo?: string;
   vehicleNo?: string;
@@ -48,7 +50,7 @@ const COPY: Record<StockMove, { title: string; ok: string; path: string; help: s
     title: 'Return from site',
     ok: 'Save return',
     path: '/stock/site-returns',
-    help: "Unused material brought back to the store. It comes back into stock and off the project's material cost.",
+    help: "Unused material fit to issue again, brought back to the store. It comes back into stock and off the project's material cost; against a work order, off what the subcontractor's next bill recovers. Damaged material is wastage, not a return.",
   },
 };
 
@@ -67,6 +69,9 @@ export function StockMoveModal({ move, open, onClose, projectId }: { move: Stock
   const stock = useStockBalances({ projectId: scope, inStock: move !== 'site', pageSize: MAX_PAGE_SIZE, sortBy: 'item', sortOrder: 'asc' }, open && !!scope);
   const activities = useActivities(open && move === 'site' ? scope : undefined);
   const suggestions = useAttendanceSuggestions(open && move === 'site' ? scope : undefined);
+  const { user } = useAuth();
+  const wos = useWorkOrders({ projectId: scope, open: true, pageSize: 50 }, open && move === 'site' && !!scope && !!user && canViewWorkOrders(user.roleKey));
+  const workOrderId = Form.useWatch('workOrderId', form);
   const items = useMemo(() => (stock.data?.items ?? []).filter((i) => move !== 'site' || Number(i.issued) > 0), [stock.data, move]);
   const copy = COPY[move];
 
@@ -86,7 +91,7 @@ export function StockMoveModal({ move, open, onClose, projectId }: { move: Stock
           ? { ...base, toProjectId: v.toProjectId, challanNo: v.challanNo?.trim() || null, vehicleNo: v.vehicleNo?.trim() || null }
           : move === 'vendor'
             ? { ...base, supplier: v.supplier?.trim(), challanNo: v.challanNo?.trim() || null, vehicleNo: v.vehicleNo?.trim() || null }
-            : { ...base, issuedTo: v.issuedTo?.trim(), activityId: v.activityId ?? null };
+            : { ...base, issuedTo: v.issuedTo?.trim() || undefined, workOrderId: v.workOrderId, activityId: v.activityId ?? null };
       return (await api.post<StockEntryDto>(copy.path, body)).data;
     },
     onSuccess: (e) => {
@@ -111,7 +116,7 @@ export function StockMoveModal({ move, open, onClose, projectId }: { move: Stock
           <Select
             showSearch={{ optionFilterProp: 'label' }}
             placeholder="Choose a project"
-            onChange={() => form.setFieldsValue({ lines: [{}], activityId: undefined })}
+            onChange={() => form.setFieldsValue({ lines: [{}], activityId: undefined, workOrderId: undefined })}
             options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
           />
         </Form.Item>
@@ -142,7 +147,20 @@ export function StockMoveModal({ move, open, onClose, projectId }: { move: Stock
           )}
           {move === 'site' && (
             <>
-              <Form.Item name="issuedTo" label="Returned by" rules={[{ required: true, whitespace: true, message: 'Enter who brought it back' }]}>
+              {(wos.data?.items.length ?? 0) > 0 && (
+                <Form.Item name="workOrderId" label="From a subcontractor" tooltip="Their next bill takes it off the material recovered">
+                  <Select
+                    allowClear
+                    placeholder="No (departmental)"
+                    options={(wos.data?.items ?? []).map((w) => ({ value: w.id, label: `${w.woNo} · ${w.vendorName}` }))}
+                    onChange={(id) => {
+                      const w = wos.data?.items.find((x) => x.id === id);
+                      if (w) form.setFieldValue('issuedTo', w.vendorName);
+                    }}
+                  />
+                </Form.Item>
+              )}
+              <Form.Item name="issuedTo" label="Returned by" rules={[{ required: !workOrderId, whitespace: true, message: 'Enter who brought it back' }]}>
                 <AutoComplete
                   placeholder="Contractor, gang or person"
                   options={(suggestions.data?.contractors ?? []).map((c) => ({ value: c }))}
@@ -219,7 +237,11 @@ export function StockMoveModal({ move, open, onClose, projectId }: { move: Stock
             )}
           </Form.List>
         </Form.Item>
-        <Form.Item name="remarks" label={move === 'vendor' ? 'Reason' : 'Remarks'} rules={move === 'vendor' ? [{ required: true, whitespace: true, min: 3, message: 'Enter why it is going back' }] : []}>
+        <Form.Item
+          name="remarks"
+          label={move === 'transfer' ? 'Remarks' : 'Reason'}
+          rules={move === 'vendor' ? [{ required: true, whitespace: true, min: 3, message: 'Enter why it is going back' }] : move === 'site' ? [{ required: true, whitespace: true, min: 3, message: 'Enter why it came back, e.g. surplus after the pour' }] : []}
+        >
           <Input.TextArea rows={2} maxLength={1000} />
         </Form.Item>
       </Form>

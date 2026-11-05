@@ -5,7 +5,7 @@
  *   node dist/scripts/items-test.js
  */
 import assert from 'node:assert/strict';
-import { duplicateGroups, isItem, itemKey, masterItemFor, similarItems } from '@erp/shared';
+import { duplicateGroups, isItem, itemCodeOf, itemCodeProblem, itemKey, masterItemFor, similarItems } from '@erp/shared';
 
 const tests: [string, () => void][] = [];
 const test = (name: string, fn: () => void) => tests.push([name, fn]);
@@ -71,6 +71,17 @@ test('an old name counts as the item, but a name holding it is not a duplicate b
     { id: 'old', name: 'Cement', unit: 'bag', uses: 1 },
   ]);
   assert.deepEqual(groups.map((g) => [g.keep.id, g.merge.map((m) => m.id)]), [['opc', ['old']]]);
+});
+
+test('an item code is written in capitals with hyphens, and only letters, digits and - / . pass', () => {
+  assert.equal(itemCodeOf(' di k9_500 '), 'DI-K9-500');
+  assert.equal(itemCodeOf('   '), null);
+  assert.equal(itemCodeOf(undefined), null);
+  assert.equal(itemCodeProblem(itemCodeOf('mat/geo.300')), null);
+  assert.equal(itemCodeProblem(null), null);
+  assert.match(itemCodeProblem(itemCodeOf('DI#500'))!, /letters and digits/);
+  assert.match(itemCodeProblem(itemCodeOf('-DI'))!, /letters and digits/);
+  assert.match(itemCodeProblem('A'.repeat(31))!, /30 characters/);
 });
 
 let failed = 0;

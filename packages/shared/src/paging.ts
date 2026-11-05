@@ -16,7 +16,7 @@ export const LIST_SORT_FIELDS = {
   users: ['fullName', 'email', 'role', 'isActive', 'createdAt'],
   attendance: ['date', 'project', 'totalWorkers', 'recordedBy', 'updatedAt'],
   stockEntries: ['date', 'entryNo', 'type', 'project', 'createdBy', 'createdAt'],
-  stockBalances: ['item', 'project', 'balance', 'received', 'issued', 'lastMovement'],
+  stockBalances: ['item', 'project', 'balance', 'received', 'issued', 'lastMovement', 'value'],
   items: ['name', 'unit', 'category', 'createdAt'],
   machinery: ['date', 'createdAt', 'submittedAt', 'hoursWorked', 'status', 'project', 'equipment', 'submittedBy'],
   equipment: ['code', 'name', 'category', 'ownership', 'project', 'createdAt'],

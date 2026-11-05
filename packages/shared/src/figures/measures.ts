@@ -139,6 +139,10 @@ export const MEASURES = {
   daysToReceive: { label: 'Days from order to receipt', kind: 'days', better: 'down', define: 'Average, from the order to its first goods received note.' },
   ordersToReceive: { label: 'Orders to receive', kind: 'money', better: 'either', items: ['order', 'orders'], list: '/purchase-orders', define: 'Approved orders with material still to come, at their value.' },
   lateDeliveries: { label: 'Late deliveries', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'No delivery late' }, items: ['order', 'orders'], list: '/purchase-orders', define: 'Orders past their delivery date with material still to come.' },
+  waitingForQuotations: { label: 'Waiting for quotations', kind: 'count', better: 'down', items: ['indent', 'indents'], list: '/requests-to-order', define: 'Approved indents still to buy with no quotation yet or an enquiry still open.' },
+  choicesToApprove: { label: 'Supplier choices to approve', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'No supplier choice waiting' }, items: ['indent', 'indents'], list: '/requests-to-order?stage=AWAITING_APPROVAL', define: 'Supplier choices purchase finalised that wait for approval before the order.' },
+  materialToCheck: { label: 'Material to check', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'Every receipt checked' }, items: ['receipt', 'receipts'], list: '/inspections?tab=grns', define: 'Goods received notes QA/QC has not accepted or rejected yet.' },
+  receivedNotBilled: { label: 'Received, not billed', kind: 'count', better: 'down', items: ['receipt', 'receipts'], list: '/vendor-bills?tab=to-bill', define: 'Goods received against an order that no vendor bill covers yet.' },
   materialRequestsToApprove: { label: 'Material requests to approve', kind: 'count', better: 'down', items: ['request', 'requests'], list: '/material-requests', define: 'Raised by the sites, not yet decided.' },
   deliveredOnTime: { label: 'Delivered on time', kind: 'pct', better: 'up', define: 'Orders whose first goods received note came by the delivery date.' },
   // Labour
@@ -150,6 +154,8 @@ export const MEASURES = {
   tradesWithoutRate: { label: 'Trades without a rate', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'Every trade has a daily rate' }, items: ['trade', 'trades'], list: '/cost', define: 'Trades on a muster with no daily rate; set them on Project cost.' },
   // Stock
   stockValue: { label: 'Stock value', kind: 'money', better: 'either', list: '/stock', define: 'Stock on hand at item master rates.' },
+  stockAtStores: { label: 'Stock at central stores', asPart: 'at central stores', kind: 'money', better: 'either', list: '/stores', define: 'Of the stock value, what the company stores and yards hold.' },
+  stockOnTheRoad: { label: 'Stock on the road', kind: 'money', better: 'down', items: ['transfer', 'transfers'], list: '/stores', define: 'Transfers sent and not yet received, at item master rates.' },
   stockOver90: { label: 'Stock over 90 days old', asPart: 'over 90 days old', kind: 'money', better: 'down', flag: { level: 'watch', clear: 'No stock over 90 days old' }, list: '/stock', define: 'Stock held over 90 days, the oldest taken as used first.' },
   itemsBelowMinimum: { label: 'Items below minimum', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'No item below its minimum' }, items: ['item', 'items'], list: '/stock?low=1', define: 'Items whose stock is under the minimum set for them.' },
   itemsWithoutRate: { label: 'Items without a rate', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'Every item in stock has a rate' }, items: ['item', 'items'], list: '/stock', define: 'Items in stock with no rate in the item master, so not valued.' },
