@@ -127,6 +127,17 @@ export interface UserSummary {
   createdAt: string;
   /** Invited and has not set a password yet. */
   invitePending: boolean;
+  /** Positions they hold, for approval levels (each on a project or at head office) */
+  positions: UserPositionDto[];
+}
+
+/** A position a user holds: a code of the `position` master on one project, or at head office (projectId null). */
+export interface UserPositionDto {
+  positionCode: string;
+  positionName: string;
+  projectId: string | null;
+  /** null = head office */
+  projectName: string | null;
 }
 
 /** A set-password link made for a user (invite or reset). `link` is null when the web address is not known. */
@@ -1417,12 +1428,15 @@ export interface ApplyTemplateResultDto {
 
 // Approval matrix
 
+/** One rule: a role, or a position of the `position` master (exactly one of the two), approves a type at a level. */
 export interface ApprovalRuleDto {
-  roleKey: RoleKey;
+  roleKey: RoleKey | null;
+  /** A code of the `position` master; null for a role's rule */
+  positionCode?: string | null;
   type: SubmissionType;
   /** null = no limit */
   maxAmount: string | null;
-  /** 1 (the matrix) when left out; 2 or 3 for a higher level */
+  /** 1 (the first approval) when left out; 2 to 6 for a higher level */
   level?: number;
   /** Higher levels: the amount from which this level applies; null = always */
   minAmount?: string | null;
@@ -1432,6 +1446,8 @@ export interface ApprovalMatrixDto {
   /** False while the organisation uses the fixed rule (admin, management and project managers approve everything). */
   custom: boolean;
   roles: { roleKey: RoleKey; roleName: string; users: number }[];
+  /** The company's positions (switched on, or named by a rule), with how many people hold each */
+  positions: { code: string; name: string; holders: number }[];
   rules: ApprovalRuleDto[];
   /** Accounts pays a bill only against an approved payment request */
   paymentsNeedRequest: boolean;

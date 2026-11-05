@@ -1,7 +1,7 @@
-import { Body, Controller, Get, Headers, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Param, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UsersService } from './users.service';
-import { CreateUserDto, ListUsersQuery, UpdateUserDto } from './users.dto';
+import { CreateUserDto, ListUsersQuery, SetPositionsDto, UpdateUserDto } from './users.dto';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { Roles } from '../common/decorators';
 import { RolesGuard } from '../common/roles.guard';
@@ -36,6 +36,13 @@ export class UsersController {
   @Roles('ADMIN')
   passwordLink(@CurrentUser() user: RequestUser, @Param('id') id: string, @Headers('origin') origin?: string) {
     return this.users.passwordLink(user, id, origin);
+  }
+
+  @ApiOperation({ summary: "Set a user's positions (admin)", description: 'Replaces every position the user holds, each on a project or at head office (projectId null). Approval rules can name positions; a position on a project adds them to its team.' })
+  @Put(':id/positions')
+  @Roles('ADMIN')
+  setPositions(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: SetPositionsDto) {
+    return this.users.setPositions(user, id, dto);
   }
 
   @Patch(':id')

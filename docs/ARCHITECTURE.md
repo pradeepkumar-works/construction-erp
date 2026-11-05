@@ -47,10 +47,14 @@ shapes of every API response, so web, mobile and API agree on one contract.
 
 - Company-wide roles (Admin, Management, Procurement, Accounts, HR) see all projects.
 - Everyone else sees projects they manage or are a member of (`ProjectMember`).
-- Approvers come from the organisation's approval matrix (`ApprovalRule`: role, submission type, optional
-  rupee limit), limited to projects they can see. Without rules the fixed rule applies (Admin, Management
-  and Project Manager approve everything). Admin always approves everything. `ApprovalRightsService`
-  (rights, the amount of a submission, which roles to notify) and
+- Approvers come from the organisation's approval matrix (`ApprovalRule`: a role or a position, submission type,
+  level, optional rupee limit), limited to projects they can see. Without rules the fixed rule applies (Admin, Management
+  and Project Manager approve everything). Admin always approves everything but their own entries. A position
+  (`UserPosition`: Site in-charge on a project, Managing director at head office) is a post someone holds; a rule can
+  name it, and it never changes what its holder sees or does beyond that (a position on a project only adds them to
+  its team). Someone away hands their approvals to a colleague for some days (`ApprovalDelegation`, see "Positions and
+  delegation" below). `ApprovalRightsService`
+  (rights, the amount of a submission, which approvers to notify) and
   `ProjectAccessService.assertCanApproveSubmission` hold this; `packages/shared/src/approvals.ts` mirrors it
   for the clients from `AuthUser.approvalRights`. Other approver-only actions (editing before approval,
   stock adjustments, deleting a risk) still use the fixed `APPROVER_ROLES`.
@@ -1266,8 +1270,10 @@ enquiry's answer carries each vendor's phone for this; nothing is sent until the
 ### Approval levels and escalation (v5 item 94)
 
 Who approves a type is the approval matrix (`ApprovalRule`, Settings > Approval rules), or the fixed rule while a company
-has none. A rule has a `level` (1 to 3): level 1 is the matrix as before (each role up to its `maxAmount`); levels 2 and 3
-apply from their `minAmount` (one amount per level, the third at least the second; no amount means every entry). An
+has none. A rule names a role or a position, never both (`roleId` or `positionCode`, a check constraint in the table and
+a 400 from `PUT /approval-rules`). A rule has a `level` (1 to 6, `MAX_APPROVAL_LEVELS`): level 1 is the matrix as before
+(each role or position up to its `maxAmount`); levels 2 to 6 apply from their `minAmount` (one amount per level, each at
+least the one below; no amount means every entry). An
 entry whose amount needs a higher level stays `SUBMITTED` after the level before approves it: `review()` writes an
 `ApprovalStep` (`APPROVED`, the level, who, the note, and the round, which is its `submittedAt`) and a `LEVEL_APPROVED`
 audit line, tells the next level, and returns `{ status, level, levels }`; the last level approves it as before. So the
@@ -1276,9 +1282,13 @@ Rejecting or sending back at any level ends the round; a resubmission starts a n
 count.
 
 All decisions read one pure module, `src/common/approval-levels.ts` (tested in `scripts/approval-levels-test.ts`):
-`stageOf` (the level an entry waits at, from the round's steps), `levelRoles`, `escalationRoles` (the next level's roles,
-management above the last), `queueRoles` and `mayDecide`, which also refuses the person who approved an earlier level of
-the same entry and says why ("It has moved on to level 2…"). `ApprovalRightsService.decide` loads the rules and steps
+`stageOf` (the level an entry waits at, from the round's steps), `levelKeys`, `escalationKeys` (the next level's
+approvers, management above the last), `queueKeys` and `mayDecide`, which also refuses the person who approved an earlier
+level of the same entry and says why ("It has moved on to level 2…"). They work on approver keys (`ApproverKey` in
+`@erp/shared/approvals.ts`, made only by `roleApprover` and `positionApprover`): a rule names one key, and a `Decider`
+carries the keys a person decides by on one entry, built by the pure `approverKeys` from their role, the positions they
+hold on the entry's project and at head office, and the keys of anyone whose approvals they hold today (`actingFor`).
+`rightsOf(decider, rules)` turns the keys into `AuthUser.approvalRights` (per type and level, the higher limit kept). `ApprovalRightsService.decide` loads the rules and steps
 for `ProjectAccessService.assertCanApproveSubmission`; `pending()` keeps only entries the caller decides now;
 `GET /approvals/:type/:id/stage` gives a record its levels, steps, whose queue it is in (`waitingWith`) and since when,
 `canReview` and the reason; `GET /approvals/waiting` lists the caller's own waiting entries (Home's Waiting with others
@@ -1299,8 +1309,25 @@ and a block in the service. Someone who approves submissions sees them as one li
 `ApprovalEscalation` (per type: `remindAfterHours`, `escalateAfterHours`) drives `NotificationJobsService.approvalEscalation`,
 run hourly (`GET /notifications/jobs/approval-escalation`, the in-process scheduler on the hour, and inside both daily
 crons): once per level it reminds the level's approvers (a `REMINDED` step), and after the escalation time it records
-`ESCALATED`, after which the next level's roles (management above the last level) may decide the entry too and are
+`ESCALATED`, after which the next level's approvers (management above the last level) may decide the entry too and are
 told by push and WhatsApp.
+
+**Positions and delegation.** Positions are the `position` master (Admin › Masters › Positions: Managing director,
+General manager / COO, Site in-charge, Billing engineer… sixteen standard ones, the company's own over them by code).
+`UserPosition` holds who holds which, on a project or at head office (`projectId` null), set from Users › Positions
+(`PUT /users/:id/positions`, guests and suppliers refused). A level that names a position is decided by whoever holds it
+on the entry's project or at head office, so the MD and the GM / COO can carry different limits though both are
+Management. `ApprovalDelegation` (from, to, `startsOn`, `endsOn` as dates, a note) hands someone's approvals to another
+person for those days, by the company's date (`todayIn`), never UTC's: anyone sets their own from the Approvals page
+(While you are away), an admin anyone's from Users (`GET/POST/DELETE /approval-delegations`). `delegationProblem` refuses
+oneself, a guest or supplier, a switched-off login, and an end before the start or in the past. While it runs, the
+delegate decides as the delegator (the delegator keeps their own rights), on the projects the delegate already sees:
+`mayDecide` returns `onBehalfOf`, the step keeps it (`ApprovalStep.onBehalfOfId`, shown as "for Suresh Nair") and the
+audit note starts "For Suresh Nair". The delegate never decides an entry the delegator made, nor a later level of one
+the delegator approved; Admin's catch-all is not passed on, and a delegation is not passed on again. Approval asks, the
+queue (`pending()`), the escalation and the digest find approvers by keys through `ProjectAccessService.usersWithKeys`
+(role holders, position holders who see the project, and their active delegates), leaving out whoever made the entry.
+A company with no position rules and no delegations behaves exactly as before.
 
 ### Undo after a delete
 

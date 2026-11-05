@@ -335,7 +335,7 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
       sub('group', 'Group companies', 'admin.group'),
       sub('rules', 'Approval rules', 'admin.rules'),
       sub('modules', 'Modules and menu', 'admin.modules', 'admin.menu', 'admin.home'),
-      sub('masters', 'Masters', 'admin.masters'),
+      sub('masters', 'Masters', 'admin.masters', 'admin.positions'),
       sub('connections', 'Connections', 'admin.connections'),
       sub('data', 'Data and privacy', 'admin.data'),
       sub('ai', `Ask ${PRODUCT_NAME} settings`, 'admin.ai'),

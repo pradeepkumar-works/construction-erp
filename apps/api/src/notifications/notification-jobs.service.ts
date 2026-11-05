@@ -1,9 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { EMI_DUE_DAYS, TALLY_ROLES, COMPANY_WIDE_ROLES, COMPLIANCE_DOC_KIND_LABELS, COMPLIANCE_ROLES, DLP_ALERT_DAYS, DOC_ALERT_DAYS, EQUIPMENT_DOC_TYPE_LABELS, SERVICE_STATE_LABELS, expiryState, APPROVER_ROLES, DPR_SUBMITTER_ROLES, PAYMENT_ROLES, SPECIALIST_APPROVERS, SUBMISSION_TYPE_LABELS, TEST_KIND_LABELS, DAILY_WARNING_ALERTS, canSeeWatchList, canEditContract, daysFrom, obligationDue, obligationState, OBLIGATION_PENALTY_LABELS, type BriefLineDto, type NotificationJobResult, type PendingApprovalDto, type RoleKey, type SubmissionType } from '@erp/shared';
+import { EMI_DUE_DAYS, TALLY_ROLES, COMPANY_WIDE_ROLES, COMPLIANCE_DOC_KIND_LABELS, COMPLIANCE_ROLES, DLP_ALERT_DAYS, DOC_ALERT_DAYS, EQUIPMENT_DOC_TYPE_LABELS, SERVICE_STATE_LABELS, expiryState, APPROVER_ROLES, DPR_SUBMITTER_ROLES, PAYMENT_ROLES, SPECIALIST_APPROVERS, SUBMISSION_TYPE_LABELS, TEST_KIND_LABELS, DAILY_WARNING_ALERTS, canSeeWatchList, canEditContract, daysFrom, obligationDue, obligationState, OBLIGATION_PENALTY_LABELS, roleApprover, type BriefLineDto, type NotificationJobResult, type PendingApprovalDto, type RoleKey, type SubmissionType } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
 import { ApprovalRightsService } from '../common/approval-rights.service';
-import { escalationRoles, levelRoles } from '../common/approval-levels';
+import { escalationKeys, levelKeys } from '../common/approval-levels';
 import { ProjectAccessService } from '../common/project-access.service';
 import { RequestUser } from '../common/current-user';
 import { parseDate } from '../common/serialize';
@@ -84,8 +84,9 @@ export class NotificationJobsService {
         await this.prisma.approvalStep.create({
           data: { organizationId: set.organizationId, entityType: type, entityId: e.id, level: stage.level, action: escalate ? 'ESCALATED' : 'REMINDED', round: e.round, note: `Waited ${Math.floor(hours)} hours` },
         });
-        const roles: RoleKey[] = escalate ? escalationRoles(type, rules, stage.level) : ['ADMIN', ...levelRoles(type, rules, stage.level, e.amount)];
-        const users = (await this.access.usersWithRoles(set.organizationId, e.projectId, [...new Set(roles)])).filter((u) => u.id !== e.submittedById);
+        const keys = escalate ? escalationKeys(type, rules, stage.level) : [roleApprover('ADMIN'), ...levelKeys(type, rules, stage.level, e.amount)];
+        // The one who submitted it never decides it, nor does whoever holds their approvals.
+        const users = (await this.access.usersWithKeys(set.organizationId, e.projectId, [...new Set(keys)])).filter((u) => u.id !== e.submittedById && u.forUserId !== e.submittedById);
         const r = await this.notifications.onWaiting(set.organizationId, type, e.id, users.map((u) => u.id), hours, escalate);
         result.created += r.created;
         result.pushed += r.pushed;
@@ -301,11 +302,21 @@ export class NotificationJobsService {
   async approvalDigest(date = todayIn()): Promise<NotificationJobResult> {
     const result: NotificationJobResult = { job: 'APPROVAL_DIGEST', date, created: 0, pushed: 0, emailed: 0, messaged: 0, skipped: 0 };
     const dedupeKey = `APPROVAL_DIGEST:${date}`;
-    // Everyone whose role appears in an approval matrix, plus the fixed approver roles; pending() then applies each
-    // organisation's actual rights, so a user with nothing to approve gets nothing.
-    const ruleRoles = await this.prisma.approvalRule.findMany({ distinct: ['roleId'], select: { roleId: true } });
+    // Everyone whose role appears in an approval matrix, the fixed approver roles, anyone holding a position and anyone
+    // holding someone's approvals today; pending() then applies each organisation's actual rights, so a user with
+    // nothing to approve gets nothing.
+    const ruleRoles = await this.prisma.approvalRule.findMany({ where: { roleId: { not: null } }, distinct: ['roleId'], select: { roleId: true } });
+    const day = parseDate(date);
     const approvers = await this.prisma.user.findMany({
-      where: { isActive: true, OR: [{ role: { key: { in: [...APPROVER_ROLES, ...Object.values(SPECIALIST_APPROVERS).flat()] } } }, { roleId: { in: ruleRoles.map((r) => r.roleId) } }] },
+      where: {
+        isActive: true,
+        OR: [
+          { role: { key: { in: [...APPROVER_ROLES, ...Object.values(SPECIALIST_APPROVERS).flat()] } } },
+          { roleId: { in: ruleRoles.flatMap((r) => r.roleId ?? []) } },
+          { positions: { some: {} } },
+          { delegationsTo: { some: { startsOn: { lte: day }, endsOn: { gte: day } } } },
+        ],
+      },
       include: { role: { select: { key: true } }, organization: { select: { name: true } } },
     });
     for (const u of approvers) {

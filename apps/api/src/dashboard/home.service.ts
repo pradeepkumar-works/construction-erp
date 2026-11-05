@@ -134,7 +134,7 @@ export class HomeService {
   async myWork(user: RequestUser): Promise<MyWorkDto> {
     const role = user.roleKey;
     const today = todayIn();
-    const rights = await this.rights.rightsFor(user.organizationId, role);
+    const rights = await this.rights.rightsFor(user);
     const seesDue = canViewPurchaseOrders(role) && (canPurchase(role) || canKeepStock(role));
     const matches = canRecordVendorBill(role) && canViewPayables(role);
     const checks = canCheckGrn(role) && !isDirector(role);

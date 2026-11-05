@@ -13,7 +13,7 @@ import * as P from './permissions';
  * new one and switch the old one off, as with units.
  */
 
-export const MASTER_LISTS = ['trade', 'designation', 'department', 'itemCategory', 'equipmentCategory', 'letterCategory', 'letterParty', 'ncrCategory', 'ncrRootCause', 'instrumentKind', 'vertical', 'workTrade', 'exitClearance', 'reviewStage'] as const;
+export const MASTER_LISTS = ['trade', 'designation', 'department', 'itemCategory', 'equipmentCategory', 'letterCategory', 'letterParty', 'ncrCategory', 'ncrRootCause', 'instrumentKind', 'vertical', 'workTrade', 'exitClearance', 'reviewStage', 'position'] as const;
 export type MasterList = (typeof MASTER_LISTS)[number];
 
 export interface MasterStandardEntry {
@@ -361,6 +361,34 @@ export const MASTER_LIST_DEFS: Record<MasterList, MasterListDef> = {
     usedOn: 'submittals',
     manage: (role) => P.canManageDocuments(role),
     standard: entries(['Proof checker', 'प्रूफ़ चेकर'], ['TPIA', 'टीपीआईए'], ['PIU', 'पीआईयू'], ['Client', 'क्लाइंट'], ['Head office', 'मुख्य कार्यालय']),
+  },
+  position: {
+    key: 'position',
+    label: 'Positions',
+    singular: 'position',
+    description: "Posts people hold on a project or at head office, such as site in-charge or general manager. Approval levels can name a position; what a person sees still comes from their role.",
+    slug: 'position',
+    node: 'admin.positions',
+    usedOn: 'positions people hold and approval rules',
+    manage: (role) => P.canManageUsers(role),
+    standard: entries(
+      'Managing director',
+      'General manager / COO',
+      'Deputy project manager',
+      'Construction manager',
+      'Site in-charge',
+      'Section engineer',
+      'Junior engineer',
+      'Work inspector',
+      'Foreman',
+      'Billing engineer',
+      'Purchase executive',
+      'Purchase manager',
+      'Planning manager',
+      'Technical manager',
+      'QA/QC manager',
+      'Store manager',
+    ),
   },
 };
 

@@ -1,12 +1,13 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { ROLE_KEYS, ROLE_LABELS, SUBMISSION_TYPES, SUBMISSION_TYPE_LABELS, defaultApprovalRights, hasAmount, isGuest, type ApprovalEscalationDto, type ApprovalMatrixDto, type ApprovalRuleDto, type RoleKey, type SubmissionType } from '@erp/shared';
+import { MAX_APPROVAL_LEVELS, ROLE_KEYS, ROLE_LABELS, SUBMISSION_TYPES, SUBMISSION_TYPE_LABELS, defaultApprovalRights, hasAmount, isGuest, type ApprovalEscalationDto, type ApprovalMatrixDto, type ApprovalRuleDto, type RoleKey, type SubmissionType } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { money } from '../common/serialize';
+import { MastersService } from '../masters/masters.service';
 import { SaveApprovalRulesDto } from './approval-rules.dto';
 
-const order = (r: ApprovalRuleDto) => (r.level ?? 1) * 10_000 + ROLE_KEYS.indexOf(r.roleKey) * 100 + SUBMISSION_TYPES.indexOf(r.type);
+const ORDINAL = ['', 'first', 'second', 'third', 'fourth', 'fifth', 'sixth'];
 
 /**
  * The organisation's approval matrix (who approves which submission type, up to what amount), its higher levels above
@@ -14,26 +15,37 @@ const order = (r: ApprovalRuleDto) => (r.level ?? 1) * 10_000 + ROLE_KEYS.indexO
  */
 @Injectable()
 export class ApprovalRulesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private masters: MastersService,
+  ) {}
 
   async get(user: RequestUser): Promise<ApprovalMatrixDto> {
-    const [org, roles, rules, escalations] = await Promise.all([
+    const [org, roles, rules, escalations, positions, held] = await Promise.all([
       this.prisma.organization.findUniqueOrThrow({ where: { id: user.organizationId }, select: { paymentsNeedRequest: true, progressFromDpr: true, ordersNeedApprovedChoice: true } }),
       this.prisma.role.findMany({ where: { organizationId: user.organizationId }, include: { _count: { select: { users: { where: { isActive: true } } } } } }),
       this.prisma.approvalRule.findMany({ where: { organizationId: user.organizationId }, include: { role: { select: { key: true } } } }),
       this.prisma.approvalEscalation.findMany({ where: { organizationId: user.organizationId } }),
+      this.masters.entriesFor(user.organizationId, 'position'),
+      this.prisma.userPosition.findMany({ where: { organizationId: user.organizationId, user: { isActive: true } }, select: { positionCode: true, userId: true } }),
     ]);
     // Guests (client, consultant) never approve, so the matrix leaves them out.
     const known = roles.filter((r) => (ROLE_KEYS as readonly string[]).includes(r.key) && !isGuest(r.key as RoleKey)).sort((a, b) => ROLE_KEYS.indexOf(a.key as RoleKey) - ROLE_KEYS.indexOf(b.key as RoleKey));
     const custom = rules.length > 0;
+    const named = new Set(rules.flatMap((r) => r.positionCode ?? []));
+    const shown = positions.filter((p) => p.isActive || named.has(p.code));
+    const posOrder = new Map(shown.map((p, i) => [p.code, i]));
+    const order = (r: ApprovalRuleDto) => (r.level ?? 1) * 1_000_000 + (r.positionCode ? 1000 + (posOrder.get(r.positionCode) ?? 999) : ROLE_KEYS.indexOf(r.roleKey!)) * 100 + SUBMISSION_TYPES.indexOf(r.type);
     const list: ApprovalRuleDto[] = custom
       ? rules
-          .filter((r) => r.role.key !== 'ADMIN' && (SUBMISSION_TYPES as readonly string[]).includes(r.submissionType))
-          .map((r) => ({ roleKey: r.role.key as RoleKey, type: r.submissionType as SubmissionType, maxAmount: money(r.maxAmount), level: r.level, minAmount: money(r.minAmount) }))
-      : ROLE_KEYS.filter((k) => k !== 'ADMIN' && !isGuest(k)).flatMap((roleKey) => defaultApprovalRights(roleKey).map((r) => ({ roleKey, type: r.type, maxAmount: null, level: 1, minAmount: null })));
+          .filter((r) => r.role?.key !== 'ADMIN' && (SUBMISSION_TYPES as readonly string[]).includes(r.submissionType))
+          .map((r) => ({ roleKey: (r.role?.key as RoleKey | undefined) ?? null, positionCode: r.positionCode, type: r.submissionType as SubmissionType, maxAmount: money(r.maxAmount), level: r.level, minAmount: money(r.minAmount) }))
+      : ROLE_KEYS.filter((k) => k !== 'ADMIN' && !isGuest(k)).flatMap((roleKey) => defaultApprovalRights(roleKey).map((r) => ({ roleKey, positionCode: null, type: r.type, maxAmount: null, level: 1, minAmount: null })));
+    const holders = (code: string) => new Set(held.filter((h) => h.positionCode === code).map((h) => h.userId)).size;
     return {
       custom,
       roles: known.map((r) => ({ roleKey: r.key as RoleKey, roleName: ROLE_LABELS[r.key as RoleKey], users: r._count.users })),
+      positions: shown.map((p) => ({ code: p.code, name: p.name, holders: holders(p.code) })),
       rules: list.sort((a, b) => order(a) - order(b)),
       paymentsNeedRequest: org.paymentsNeedRequest,
       progressFromDpr: org.progressFromDpr,
@@ -52,22 +64,30 @@ export class ApprovalRulesService {
     if (dto.ordersNeedApprovedChoice !== undefined) await this.prisma.organization.update({ where: { id: user.organizationId }, data: { ordersNeedApprovedChoice: dto.ordersNeedApprovedChoice } });
     if (dto.escalations !== undefined) await this.saveEscalations(user, dto.escalations);
     if (dto.rules === undefined) return this.get(user);
-    const roles = await this.prisma.role.findMany({ where: { organizationId: user.organizationId }, select: { id: true, key: true } });
+    const [roles, positions] = await Promise.all([
+      this.prisma.role.findMany({ where: { organizationId: user.organizationId }, select: { id: true, key: true } }),
+      this.masters.entriesFor(user.organizationId, 'position'),
+    ]);
     const roleId = new Map(roles.map((r) => [r.key, r.id]));
+    const positionName = new Map(positions.map((p) => [p.code, p.name]));
     const seen = new Set<string>();
     const data: Prisma.ApprovalRuleCreateManyInput[] = [];
     for (const r of dto.rules) {
+      if (r.roleKey && r.positionCode) throw new BadRequestException('Give each rule a role or a position, not both');
       if (r.roleKey === 'ADMIN') continue;
-      if (isGuest(r.roleKey)) throw new BadRequestException('Client and consultant guests cannot approve submissions');
-      const id = roleId.get(r.roleKey);
-      if (!id) throw new BadRequestException(`Role ${r.roleKey} does not exist in this organisation`);
+      if (r.roleKey && isGuest(r.roleKey)) throw new BadRequestException('Client and consultant guests cannot approve submissions');
+      const id = r.roleKey ? roleId.get(r.roleKey) : undefined;
+      if (r.roleKey && !id) throw new BadRequestException(`Role ${r.roleKey} does not exist in this organisation`);
+      if (r.positionCode && !positionName.has(r.positionCode)) throw new BadRequestException(`${r.positionCode} is not in the company's positions; add it under Administration, Masters, Positions`);
+      const who = r.roleKey ? ROLE_LABELS[r.roleKey] : positionName.get(r.positionCode!)!;
       const level = r.level ?? 1;
-      const key = `${r.roleKey}:${r.type}:${level}`;
-      if (seen.has(key)) throw new BadRequestException(`${r.roleKey} / ${r.type} appears twice at level ${level}`);
+      const key = `${r.roleKey ?? `position:${r.positionCode}`}:${r.type}:${level}`;
+      if (seen.has(key)) throw new BadRequestException(`${who} / ${SUBMISSION_TYPE_LABELS[r.type]} appears twice at level ${level}`);
       seen.add(key);
       data.push({
         organizationId: user.organizationId,
-        roleId: id,
+        roleId: id ?? null,
+        positionCode: r.positionCode ?? null,
         submissionType: r.type,
         level,
         maxAmount: hasAmount(r.type) && r.maxAmount != null ? new Prisma.Decimal(r.maxAmount) : null,
@@ -80,21 +100,26 @@ export class ApprovalRulesService {
     return this.get(user);
   }
 
-  /** Levels run in order (a third needs a second, a second needs someone at the first), one amount per level, rising. */
+  /** Levels run in order (each needs the one below it, the second someone at the first), one amount per level, never falling. */
   private checkLevels(data: Prisma.ApprovalRuleCreateManyInput[]) {
     for (const type of SUBMISSION_TYPES) {
       const of = data.filter((d) => d.submissionType === type);
       const at = (level: number) => of.filter((d) => (d.level ?? 1) === level);
       const name = SUBMISSION_TYPE_LABELS[type];
-      if (at(2).length && !at(1).length) throw new BadRequestException(`${name}: a second approval needs someone to approve first`);
-      if (at(3).length && !at(2).length) throw new BadRequestException(`${name}: a third approval needs a second one`);
       const from = (level: number) => {
         const amounts = [...new Set(at(level).map((d) => (d.minAmount == null ? null : new Prisma.Decimal(d.minAmount as Prisma.Decimal.Value).toFixed(2))))];
-        if (amounts.length > 1) throw new BadRequestException(`${name}: give every role at level ${level} the same amount`);
+        if (amounts.length > 1) throw new BadRequestException(`${name}: give every approver at level ${level} the same amount`);
         return amounts[0] ?? null;
       };
-      const [two, three] = [from(2), from(3)];
-      if (two !== null && three !== null && Number(three) < Number(two)) throw new BadRequestException(`${name}: the third approval's amount must be at least the second's`);
+      let floor: string | null = null;
+      for (let level = 2; level <= MAX_APPROVAL_LEVELS; level++) {
+        if (!at(level).length) continue;
+        if (!at(level - 1).length)
+          throw new BadRequestException(level === 2 ? `${name}: a second approval needs someone to approve first` : `${name}: a ${ORDINAL[level]} approval needs a ${ORDINAL[level - 1]} one`);
+        const amount = from(level);
+        if (amount !== null && floor !== null && Number(amount) < Number(floor)) throw new BadRequestException(`${name}: the ${ORDINAL[level]} approval's amount must be at least the ${ORDINAL[level - 1]}'s`);
+        if (amount !== null) floor = amount;
+      }
     }
   }
 

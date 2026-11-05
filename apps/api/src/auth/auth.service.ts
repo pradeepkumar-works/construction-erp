@@ -164,7 +164,7 @@ export class AuthService {
       roleName: ROLE_LABELS[user.role.key as RoleKey],
       organizationId: user.organizationId,
       organizationName: user.organization.name,
-      approvalRights: await this.rights.rightsFor(user.organizationId, user.role.key as RoleKey),
+      approvalRights: await this.rights.rightsFor({ id: user.id, organizationId: user.organizationId, roleKey: user.role.key as RoleKey }),
       ...(isPlatformAdmin(user.email) ? { platformAdmin: true } : {}),
       ...billingOf(user.organization),
       ...modulesOf(user.organization),
