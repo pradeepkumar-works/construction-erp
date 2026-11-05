@@ -18,10 +18,11 @@ import { EmployeeDrawer } from '@/components/staff/EmployeeDrawer';
 import { EmployeeFormModal } from '@/components/staff/EmployeeFormModal';
 import { HolidayList } from '@/components/staff/HolidayList';
 import { OvertimeList } from '@/components/staff/OvertimeList';
+import { CorrectionList } from '@/components/staff/CorrectionList';
 import { ServiceRecords } from '@/components/staff/ServiceRecords';
 import { MyPayslips } from '@/components/payroll/MyPayslips';
 
-const TABS = ['me', 'payslips', 'leave', 'overtime', 'register', 'staff', 'service', 'holidays'] as const;
+const TABS = ['me', 'payslips', 'leave', 'overtime', 'corrections', 'register', 'staff', 'service', 'holidays'] as const;
 type Tab = (typeof TABS)[number];
 
 function StaffPage() {
@@ -35,8 +36,9 @@ function StaffPage() {
   const hr = admin || (!!user && canViewEmployeePrivate(user.roleKey));
   const deciding = marks || !!summary?.leaveToDecide;
   const overtime = marks || !!summary?.overtimeToDecide;
+  const corrections = marks || !!summary?.correctionsToDecide;
   const raw = search.get('tab') as Tab | null;
-  const allowed = (t: Tab) => t === 'me' || t === 'payslips' || t === 'holidays' || (t === 'leave' && deciding) || (t === 'overtime' && overtime) || ((t === 'register' || t === 'staff') && marks) || (t === 'service' && hr);
+  const allowed = (t: Tab) => t === 'me' || t === 'payslips' || t === 'holidays' || (t === 'leave' && deciding) || (t === 'overtime' && overtime) || (t === 'corrections' && corrections) || ((t === 'register' || t === 'staff') && marks) || (t === 'service' && hr);
   const tab: Tab = raw && TABS.includes(raw) && allowed(raw) ? raw : 'me';
   // Leave notifications link here with ?tab=leave&leave=<id>
   const [leaveId, setLeaveId] = useState<string | null>(search.get('leave'));
@@ -77,6 +79,18 @@ function StaffPage() {
                     countLabel: 'waiting for you',
                     attention: true,
                     children: <OvertimeList />,
+                  },
+                ]
+              : []),
+            ...(corrections
+              ? [
+                  {
+                    key: 'corrections',
+                    label: 'Corrections',
+                    count: summary?.correctionsToDecide,
+                    countLabel: 'waiting for you',
+                    attention: true,
+                    children: <CorrectionList />,
                   },
                 ]
               : []),

@@ -286,6 +286,14 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/leave-policy-test.js
+      - name: Leave, overtime and corrections wait on the manager, then HR, and nobody decides their own
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/staff-approval-test.js
+      - name: The org chart draws everyone once under whom they report to, whatever loops the records hold
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/org-chart-test.js
       - name: HR reports balance the head count, date the PF and ESI deposit and keep pay to the people who see payroll
         if: matrix.suite == 'flows'
         working-directory: apps/api

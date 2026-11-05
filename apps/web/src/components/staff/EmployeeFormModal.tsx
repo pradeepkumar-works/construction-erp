@@ -28,6 +28,7 @@ interface FormValues {
   employmentType?: EmploymentType | null;
   grade?: string;
   reportingToId?: string | null;
+  functionalManagerId?: string | null;
   probationEndsOn?: dayjs.Dayjs | null;
   noticeDays?: number | null;
   ctcAnnual?: number | null;
@@ -87,6 +88,7 @@ export function EmployeeFormModal({ open, onClose, employee, onSaved }: { open: 
         employmentType: employee.employmentType,
         grade: employee.grade ?? undefined,
         reportingToId: employee.reportingToId,
+        functionalManagerId: employee.functionalManagerId,
         probationEndsOn: day(employee.probationEndsOn),
         noticeDays: employee.noticeDays,
         ...(p
@@ -129,6 +131,7 @@ export function EmployeeFormModal({ open, onClose, employee, onSaved }: { open: 
         employmentType: v.employmentType ?? null,
         grade: t(v.grade),
         reportingToId: v.reportingToId ?? null,
+        functionalManagerId: v.functionalManagerId ?? null,
         probationEndsOn: ymd(v.probationEndsOn),
         noticeDays: v.noticeDays ?? null,
       };
@@ -187,7 +190,10 @@ export function EmployeeFormModal({ open, onClose, employee, onSaved }: { open: 
             <Form.Item name="projectId" label="Posted at" extra="Blank for head office">
               <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Head office" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))} />
             </Form.Item>
-            <Form.Item name="reportingToId" label="Reports to">
+            <Form.Item name="reportingToId" label="Reports to" extra="Recommends their leave, overtime and corrections before HR approves">
+              <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Nobody" options={managers} />
+            </Form.Item>
+            <Form.Item name="functionalManagerId" label="Functional manager" extra="Their discipline's head, such as the head office QA/QC manager; shown on the org chart">
               <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Nobody" options={managers} />
             </Form.Item>
             <Form.Item name="phone" label="Phone" rules={[phoneRule]}>

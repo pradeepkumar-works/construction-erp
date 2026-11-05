@@ -298,7 +298,7 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
     // letters, full and final, and the department and designation masters; everyone's own attendance and payslips first.
     subs: [
       sub('self', 'My HR', 'people.me', 'people.payslips'),
-      sub('employees', 'Employee master', 'people.employees'),
+      sub('employees', 'Employee master', 'people.employees', 'people.orgChart'),
       sub('attendance', 'Attendance', 'people.register', 'people.biometric'),
       sub('leave', 'Leave management', 'people.leave', 'people.overtime', 'people.holidays'),
       sub('salary', 'Salary master', 'payroll.structures'),

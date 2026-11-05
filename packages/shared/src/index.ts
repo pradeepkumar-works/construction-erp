@@ -28,6 +28,8 @@ export * from './tally';
 export * from './quality';
 export * from './documents';
 export * from './staff';
+export * from './staff-approval';
+export * from './org-chart';
 export * from './messaging';
 export * from './portal';
 export * from './company-data';

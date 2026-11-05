@@ -354,6 +354,8 @@ import type {
   LeaveStatus,
   LeaveType,
   MyStaffDto,
+  AttendanceCorrectionDto,
+  OrgPersonDto,
   StaffAttendanceDto,
   StaffRegisterDto,
   StaffSummaryDto,
@@ -2377,6 +2379,21 @@ export const useOvertimeToDecide = (enabled = true) =>
     queryKey: ['staff', 'overtime'],
     queryFn: async () => (await api.get<StaffAttendanceDto[]>('/staff/overtime')).data,
     enabled,
+  });
+
+/** Attendance corrections waiting on the caller (their reports' first, then HR's once recommended), oldest day first. */
+export const useCorrectionsToDecide = (enabled = true) =>
+  useQuery({
+    queryKey: ['staff', 'corrections'],
+    queryFn: async () => (await api.get<AttendanceCorrectionDto[]>('/staff/corrections')).data,
+    enabled,
+  });
+
+/** The org chart's people: the active staff the caller sees, with both their lines; the tree is `orgChart`. */
+export const useOrgPeople = () =>
+  useQuery({
+    queryKey: ['staff', 'org-chart'],
+    queryFn: async () => (await api.get<OrgPersonDto[]>('/staff/org-chart')).data,
   });
 
 export const useMyStaff = () =>

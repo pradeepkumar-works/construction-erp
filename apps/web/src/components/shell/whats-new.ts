@@ -9,6 +9,18 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-reporting-lines',
+    date: '2026-11-05',
+    title: 'Reporting lines: manager first, then HR, attendance corrections and the org chart',
+    points: [
+      'Leave and overtime wait first on the person someone reports to, who recommends or rejects them, then on HR, who approves. Without a manager with a login it goes to the site’s project manager, else straight to HR. A manager who is HR themselves approves it outright.',
+      'A missed mark-in or a wrong day: Ask to correct on My attendance and leave. It goes the same way, and HR’s approval changes the day, unless payroll for the month is approved.',
+      'Each request shows whom it waits on and who recommended it. The Approvals inbox and My work show each person only what waits on them.',
+      'A staff record can name a functional manager, such as the head office QA/QC manager for a site engineer. It is shown on the org chart and routes nothing.',
+      'People › Org chart shows who reports to whom, for everyone, head office or one site.',
+    ],
+  },
+  {
     id: '2026-11-positions-delegation',
     date: '2026-11-05',
     title: 'Approval chains by position, up to six levels, and approvals while you are away',

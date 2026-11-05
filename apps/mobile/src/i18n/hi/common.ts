@@ -174,6 +174,7 @@ export const COMMON: Record<string, string> = {
   'On duty': 'ऑन ड्यूटी',
   Tour: 'दौरा',
   Overtime: 'ओवरटाइम',
+  'Attendance correction': 'हाज़िरी सुधार',
   Present: 'हाज़िर',
   'Half day': 'आधा दिन',
   Absent: 'गैरहाज़िर',

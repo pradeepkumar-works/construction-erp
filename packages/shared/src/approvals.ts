@@ -205,11 +205,12 @@ export const ownEntryProblem = (makerId: string | null | undefined, userId: stri
  * Correspondence). The Approvals inbox lists them so one page holds everything waiting on someone; deciding opens the
  * module's own page.
  */
-export const OTHER_DECISION_KINDS = ['LEAVE', 'OVERTIME', 'PAYROLL_RUN', 'VOUCHER', 'LETTER'] as const;
+export const OTHER_DECISION_KINDS = ['LEAVE', 'OVERTIME', 'CORRECTION', 'PAYROLL_RUN', 'VOUCHER', 'LETTER'] as const;
 export type OtherDecisionKind = (typeof OTHER_DECISION_KINDS)[number];
 export const OTHER_DECISION_LABELS: Record<OtherDecisionKind, string> = {
   LEAVE: 'Leave',
   OVERTIME: 'Overtime',
+  CORRECTION: 'Attendance corrections',
   PAYROLL_RUN: 'Salary runs',
   VOUCHER: 'Vouchers',
   LETTER: 'Letters to sign',
