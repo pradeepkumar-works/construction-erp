@@ -51,20 +51,21 @@ export default function AuditLogPage() {
           key: 'note',
           title: 'Note',
           dataIndex: 'note',
-          render: (v: string | null, r) => {
+          render: (v: string | null) => (v ? v : <span style={{ color: tk.color.text.muted }}>{NO_VALUE}</span>),
+        },
+        {
+          key: 'open',
+          title: '',
+          label: 'Record',
+          card: false,
+          width: 90,
+          render: (_: unknown, r) => {
             const href = linkOf(r);
-            const open = href ? (
-              <Link href={href} onClick={(e) => e.stopPropagation()}>
+            return href ? (
+              <Link href={href} onClick={(e) => e.stopPropagation()} aria-label={`Open the ${auditKindLabel(r.entityType).toLowerCase()}`}>
                 Open
               </Link>
             ) : null;
-            if (!v) return open ?? <span style={{ color: tk.color.text.muted }}>{NO_VALUE}</span>;
-            return (
-              <span>
-                {v}
-                {open ? <> {open}</> : null}
-              </span>
-            );
           },
         },
       ];
