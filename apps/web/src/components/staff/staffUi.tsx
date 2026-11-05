@@ -4,7 +4,7 @@ import React from 'react';
 import { Image, Space } from 'antd';
 import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
-import type { LeaveRequestDto, LeaveStatus, OvertimeStatus, StaffAttendanceDto, StaffAttendanceStatus } from '@erp/shared';
+import type { AttendanceCorrectionDto, LeaveRequestDto, LeaveStatus, OvertimeStatus, StaffAttendanceDto, StaffAttendanceStatus } from '@erp/shared';
 import { LEAVE_STATUS_LABELS, OVERTIME_STATUS_LABELS, STAFF_ATTENDANCE_LABELS } from '@erp/shared';
 import { formatDate, formatDayMonth, formatTime } from '@/lib/format';
 import { fileUrl } from '@/lib/api';
@@ -24,6 +24,25 @@ export const days = (n: string | number) => `${n} day${Number(n) === 1 ? '' : 's
 
 /** Clock time of an ISO timestamp, in the browser's zone. */
 export const clock = (iso: string | null) => formatTime(iso);
+
+/** A day as marked now, for a correction: "Absent", "Present, 09:10 to 18:05", or nothing marked. */
+export function correctionNow(c: AttendanceCorrectionDto) {
+  if (!c.current) return 'Nothing marked';
+  const times = c.current.checkIn || c.current.checkOut ? `, ${clock(c.current.checkIn)} to ${clock(c.current.checkOut)}` : '';
+  return `${STAFF_ATTENDANCE_LABELS[c.current.status]}${times}`;
+}
+
+/** What a correction asks for, leaving out what stays as it is: "Present, in 09:05, out 18:30, 1.5 h overtime". */
+export function correctionAsked(c: AttendanceCorrectionDto) {
+  return [
+    STAFF_ATTENDANCE_LABELS[c.dayStatus],
+    c.checkIn ? `in ${clock(c.checkIn)}` : null,
+    c.checkOut ? `out ${clock(c.checkOut)}` : null,
+    c.overtimeHours !== null ? (Number(c.overtimeHours) > 0 ? `${c.overtimeHours} h overtime` : 'no overtime') : null,
+  ]
+    .filter(Boolean)
+    .join(', ');
+}
 
 /** Metres as "120 m" or "1.4 km". */
 export const metres = (m: number) => (m < 1000 ? `${m} m` : `${(m / 1000).toFixed(1)} km`);

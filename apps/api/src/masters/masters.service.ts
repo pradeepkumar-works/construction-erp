@@ -122,6 +122,16 @@ export class MastersService {
         for (const r of await this.prisma.designSubmission.findMany({ where: { organizationId: org, NOT: { stages: { isEmpty: true } } }, select: { stages: true } })) r.stages.forEach((c) => add(names.get(c) ?? null, 1));
         break;
       }
+      case 'position': {
+        // Holders and approval rules keep the position's code.
+        const names = new Map((await this.entriesFor(org, list)).map((e) => [e.code, e.name]));
+        const [held, rules] = await Promise.all([
+          this.prisma.userPosition.groupBy({ by: ['positionCode'], where: { organizationId: org }, _count: { _all: true } }),
+          this.prisma.approvalRule.groupBy({ by: ['positionCode'], where: { organizationId: org, positionCode: { not: null } }, _count: { _all: true } }),
+        ]);
+        [...held, ...rules].forEach((r) => add(names.get(r.positionCode!) ?? null, r._count._all));
+        break;
+      }
       case 'workTrade':
         (await this.prisma.defect.groupBy({ by: ['trade'], where: { organizationId: org, trade: { not: null } }, _count: { _all: true } })).forEach((r) => add(r.trade, r._count._all));
         break;

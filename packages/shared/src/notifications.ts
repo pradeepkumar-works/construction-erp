@@ -24,6 +24,7 @@ export const NOTIFICATION_TAB_OF: Record<NotificationType, NotificationTab> = {
   DOCUMENT_ISSUED: 'FOR_ME',
   LEAVE: 'FOR_ME',
   OVERTIME: 'FOR_ME',
+  ATTENDANCE_CORRECTION: 'FOR_ME',
   PORTAL: 'FOR_ME',
   SAFETY: 'FOR_ME',
   IMPREST: 'FOR_ME',

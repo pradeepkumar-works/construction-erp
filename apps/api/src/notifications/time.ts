@@ -15,6 +15,14 @@ export function todayIn(timeZone = JOB_TIMEZONE, now = new Date()): string {
   return `${p.year}-${String(p.month).padStart(2, '0')}-${String(p.day).padStart(2, '0')}`;
 }
 
+/** The instant a YYYY-MM-DD day's "HH:mm" wall clock reads in the given time zone. */
+export function atWallClock(date: string, hhmm: string, timeZone = JOB_TIMEZONE): Date {
+  const guess = new Date(`${date}T${hhmm}:00.000Z`);
+  const p = parts(guess, timeZone);
+  const shown = Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second);
+  return new Date(guess.getTime() - (shown - guess.getTime()));
+}
+
 /** "HH:mm" wall-clock of `now` in the given time zone. */
 export function wallClockIn(timeZone = JOB_TIMEZONE, now = new Date()): string {
   const p = parts(now, timeZone);

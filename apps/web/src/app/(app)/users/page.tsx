@@ -7,7 +7,7 @@ import { AppTag } from '@/components/common/AppTag';
 import { useSearchParams } from 'next/navigation';
 import { EditOutlined, LinkOutlined, PlusOutlined } from '@/components/common/icons';
 import type { PasswordLinkDto, RoleKey, UserSortField, UserSummary } from '@erp/shared';
-import { LIST_SORT_FIELDS, ROLE_KEYS, ROLE_LABELS, canManageUsers } from '@erp/shared';
+import { LIST_SORT_FIELDS, ROLE_KEYS, ROLE_LABELS, canManageUsers, isGuest } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
@@ -21,6 +21,8 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
 import { UserFormModal } from '@/components/users/UserFormModal';
 import { PasswordLinkModal } from '@/components/users/PasswordLinkModal';
+import { PositionsModal } from '@/components/users/PositionsModal';
+import { DelegationsAdmin } from '@/components/approvals/Delegations';
 import { ListToolbar } from '@/components/common/ListToolbar';
 import { EmptyArt } from '@/components/common/EmptyArt';
 import { DataTable, type ListColumn } from '@/components/list/DataTable';
@@ -40,6 +42,7 @@ export default function UsersPage() {
   const { message, modal } = App.useApp();
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<UserSummary | null>(null);
+  const [positionsOf, setPositionsOf] = useState<UserSummary | null>(null);
   const [linkResult, setLinkResult] = useState<{ name: string; email: string; invite: boolean; link: PasswordLinkDto } | null>(null);
   const welcome = useSearchParams().get('welcome') === '1';
 
@@ -103,6 +106,26 @@ export default function UsersPage() {
         },
         { key: 'phone', title: 'Phone', dataIndex: 'phone', width: 140, render: (v) => v ?? NO_VALUE },
         { title: 'Role', dataIndex: 'roleKey', width: 220, render: (k: RoleKey) => <AppTag variant="kind" style={{ margin: 0 }}>{ROLE_LABELS[k]}</AppTag>, ...sort('role') },
+        {
+          key: 'positions',
+          title: 'Positions',
+          dataIndex: 'positions',
+          width: 260,
+          defaultFrom: 1200,
+          render: (ps: UserSummary['positions']) =>
+            ps.length ? (
+              <div>
+                {ps.map((p) => (
+                  <div key={`${p.positionCode}:${p.projectId ?? ''}`}>
+                    {p.positionName}
+                    <Sub>{p.projectName ?? 'Head office'}</Sub>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              NO_VALUE
+            ),
+        },
         { title: 'Created', dataIndex: 'createdAt', width: 130, render: (v) => formatDate(v), ...sort('createdAt') },
         {
           title: 'Active',
@@ -116,10 +139,13 @@ export default function UsersPage() {
           key: 'actions',
           label: 'Actions',
           locked: true,
-          width: 130,
+          width: 220,
           fixed: 'right' as const,
           render: (_, r) => (
             <Space size={4}>
+              <Button size="small" disabled={isGuest(r.roleKey)} onClick={() => setPositionsOf(r)} aria-label={`Positions of ${r.fullName}`}>
+                Positions
+              </Button>
               <Button
                 size="small"
                 icon={<EditOutlined />}
@@ -230,6 +256,10 @@ export default function UsersPage() {
           emptyAction={newButton}
         />
       </Card>
+      <Card size="small" title="Approvals while people are away" style={{ marginTop: tk.space[4] }}>
+        <DelegationsAdmin />
+      </Card>
+      <PositionsModal user={positionsOf} onClose={() => setPositionsOf(null)} />
       <UserFormModal open={formOpen} onClose={() => setFormOpen(false)} user={editing} onInvited={(c) => c.invite && setLinkResult({ name: c.fullName, email: c.email, invite: true, link: c.invite })} />
       <PasswordLinkModal result={linkResult} onClose={() => setLinkResult(null)} />
     </div>

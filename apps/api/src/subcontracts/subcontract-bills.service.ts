@@ -173,7 +173,7 @@ export class SubcontractBillsService {
   /** Billing roles, plus any role the approval matrix lets approve subcontractor bills. */
   private async assertCanSee(user: RequestUser) {
     if (canPrepareSubcontractBill(user.roleKey)) return;
-    const rights = await this.rights.rightsFor(user.organizationId, user.roleKey);
+    const rights = await this.rights.rightsFor(user);
     if (!rights.some((r) => r.type === 'SUBCONTRACT_BILL')) throw new ForbiddenException('Your role cannot see subcontractor bills');
   }
 

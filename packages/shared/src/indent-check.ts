@@ -5,6 +5,7 @@
  * whole BOQ, with their wastage; what is left of it is the allowance less what was issued to the work, what the store
  * holds now and what other requests still waiting for approval ask for. Advice only: a request over it can be approved.
  */
+import { lastRateKey } from './small-purchase';
 
 const r3 = (n: number) => Math.round(n * 1000) / 1000;
 
@@ -107,4 +108,21 @@ export interface IndentCheckDto {
   lines: IndentCheckLineDto[];
   /** Lines that need the approver's eye */
   flagged: number;
+}
+
+/**
+ * What an indent is worth for its approval limit: each line at the item's last approved order rate (matched by name and
+ * unit, ignoring case; `rates` is keyed by `lastRateKey`), before GST. A line never ordered adds nothing; an indent with
+ * no line ever ordered has no amount (null), so a limit does not hold it back. `priced` says how many lines had a rate.
+ */
+export function indentEstimate(lines: { itemName: string; unit: string; quantity: number }[], rates: Map<string, number>): { amount: string | null; priced: number; lines: number } {
+  let total = 0;
+  let priced = 0;
+  for (const l of lines) {
+    const rate = rates.get(lastRateKey(l.itemName, l.unit));
+    if (rate === undefined) continue;
+    priced++;
+    total += Math.round(l.quantity * rate * 100) / 100;
+  }
+  return { amount: priced ? total.toFixed(2) : null, priced, lines: lines.length };
 }

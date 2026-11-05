@@ -2,11 +2,13 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import * as bcrypt from 'bcryptjs';
 import { Prisma } from '@prisma/client';
 import { randomBytes } from 'crypto';
-import { ROLE_LABELS, type CreateUserResultDto, type Paginated, type PasswordLinkDto, type RoleKey, type SortOrder, type UserSortField, type UserSummary } from '@erp/shared';
+import { ROLE_LABELS, isCompanyWide, isGuest, mayGiveEveryProject, type CreateUserResultDto, type Paginated, type PasswordLinkDto, type RoleKey, type SortOrder, type UserSortField, type UserSummary } from '@erp/shared';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
-import { CreateUserDto, ListUsersQuery, UpdateUserDto } from './users.dto';
+import { CreateUserDto, ListUsersQuery, SetPositionsDto, UpdateUserDto } from './users.dto';
+import { MastersService } from '../masters/masters.service';
+import { AuditService } from '../common/audit.service';
 import { PasswordLinksService } from '../auth/password-links.service';
 import { ProjectsService } from '../projects/projects.service';
 import { withoutTenant } from '../prisma/tenant-context';
@@ -29,8 +31,15 @@ const USER_FIELDS = {
   isActive: true,
   invitedAt: true,
   createdAt: true,
+  seesAllProjects: true,
   role: { select: { key: true, name: true } },
+  positions: { select: { positionCode: true, projectId: true, project: { select: { name: true } } }, orderBy: [{ projectId: 'asc' }, { positionCode: 'asc' }] },
 } satisfies Prisma.UserSelect;
+
+/** A user's positions, with the project's name, as the list and the forms read them. */
+const POSITIONS = USER_FIELDS.positions;
+
+type Held = { positionCode: string; projectId: string | null; project: { name: string } | null };
 
 @Injectable()
 export class UsersService {
@@ -38,10 +47,59 @@ export class UsersService {
     private prisma: PrismaService,
     private links: PasswordLinksService,
     private projects: ProjectsService,
+    private masters: MastersService,
+    private audit: AuditService,
   ) {}
 
-  private toDto(u: { id: string; email: string; fullName: string; phone: string | null; isActive: boolean; invitedAt: Date | null; createdAt: Date; role: { key: string; name: string } }): UserSummary {
-    return { id: u.id, email: u.email, fullName: u.fullName, phone: u.phone, isActive: u.isActive, roleKey: u.role.key as RoleKey, roleName: ROLE_LABELS[u.role.key as RoleKey], createdAt: u.createdAt.toISOString(), invitePending: u.invitedAt !== null };
+  private toDto(
+    u: { id: string; email: string; fullName: string; phone: string | null; isActive: boolean; invitedAt: Date | null; createdAt: Date; seesAllProjects: boolean; role: { key: string; name: string }; positions?: Held[] },
+    positionNames: Map<string, string> = new Map(),
+  ): UserSummary {
+    const roleKey = u.role.key as RoleKey;
+    return {
+      id: u.id,
+      email: u.email,
+      fullName: u.fullName,
+      phone: u.phone,
+      isActive: u.isActive,
+      roleKey,
+      roleName: ROLE_LABELS[roleKey],
+      seesAllProjects: u.seesAllProjects && mayGiveEveryProject(roleKey),
+      createdAt: u.createdAt.toISOString(),
+      invitePending: u.invitedAt !== null,
+      positions: (u.positions ?? []).map((h) => ({ positionCode: h.positionCode, positionName: positionNames.get(h.positionCode) ?? h.positionCode, projectId: h.projectId, projectName: h.project?.name ?? null })),
+    };
+  }
+
+  private async positionNames(organizationId: string) {
+    return new Map((await this.masters.entriesFor(organizationId, 'position')).map((e) => [e.code, e.name]));
+  }
+
+  /**
+   * Replace the positions a user holds (admin). A position on a project brings them onto its team, so they can see what
+   * waits there; positions never change what their role may do.
+   */
+  async setPositions(req: RequestUser, id: string, dto: SetPositionsDto): Promise<UserSummary> {
+    const existing = await this.prisma.user.findFirst({ where: { id, organizationId: req.organizationId }, select: { id: true, fullName: true, role: { select: { key: true } } } });
+    if (!existing) throw new NotFoundException('User not found');
+    const roleKey = existing.role.key as RoleKey;
+    if (dto.positions.length && isGuest(roleKey)) throw new BadRequestException('Positions are for the company’s staff; a guest or supplier login cannot hold one');
+    const names = await this.positionNames(req.organizationId);
+    const active = new Set((await this.masters.entriesFor(req.organizationId, 'position')).filter((e) => e.isActive).map((e) => e.code));
+    const wanted = [...new Map(dto.positions.map((p) => [`${p.positionCode}:${p.projectId ?? ''}`, { positionCode: p.positionCode, projectId: p.projectId ?? null }])).values()];
+    const off = wanted.find((p) => !active.has(p.positionCode));
+    if (off) throw new BadRequestException(`${names.get(off.positionCode) ?? off.positionCode} is not in the company's positions; add it or switch it on under Administration, Masters, Positions`);
+    const projectIds = [...new Set(wanted.flatMap((p) => p.projectId ?? []))];
+    const found = await this.prisma.project.count({ where: { organizationId: req.organizationId, id: { in: projectIds } } });
+    if (found !== projectIds.length) throw new BadRequestException('Choose a project of this company, or Head office');
+    await this.prisma.$transaction([
+      this.prisma.userPosition.deleteMany({ where: { userId: id } }),
+      this.prisma.userPosition.createMany({ data: wanted.map((p) => ({ organizationId: req.organizationId, userId: id, ...p })) }),
+    ]);
+    if (projectIds.length && !isCompanyWide(roleKey)) await this.projects.addToProjects(req, id, projectIds);
+    await this.audit.log(req, 'USER', id, 'POSITIONS', wanted.length ? `${existing.fullName}: ${wanted.map((p) => names.get(p.positionCode) ?? p.positionCode).join(', ')}` : `${existing.fullName}: no positions`);
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id }, select: USER_FIELDS });
+    return this.toDto(user, names);
   }
 
   /** Sign-in is by email alone, so an email belongs to one sign-in across all organisations. */
@@ -66,11 +124,12 @@ export class UsersService {
     const sortBy = q.sortBy ?? 'fullName';
     const order = q.sortOrder ?? (sortBy === 'createdAt' ? 'desc' : 'asc');
     const args = pageArgs(q);
-    const [rows, total] = await Promise.all([
+    const [rows, total, names] = await Promise.all([
       this.prisma.user.findMany({ where, select: USER_FIELDS, orderBy: [...ORDER[sortBy](order), { id: 'asc' }], skip: args.skip, take: args.take }),
       this.prisma.user.count({ where }),
+      this.positionNames(req.organizationId),
     ]);
-    return paginated(rows.map((u) => this.toDto(u)), total, args);
+    return paginated(rows.map((u) => this.toDto(u, names)), total, args);
   }
 
   async roles(req: RequestUser) {
@@ -110,6 +169,7 @@ export class UsersService {
         fullName: dto.fullName,
         phone: dto.phone ?? null,
         roleId: role.id,
+        seesAllProjects: !!dto.seesAllProjects && mayGiveEveryProject(dto.roleKey),
         invitedAt: invite ? new Date() : null,
       },
       include: { role: true },
@@ -163,7 +223,12 @@ export class UsersService {
       const role = await this.prisma.role.findUniqueOrThrow({ where: { organizationId_key: { organizationId: req.organizationId, key: dto.roleKey } } });
       data.roleId = role.id;
     }
-    const user = await this.prisma.user.update({ where: { id }, data, include: { role: true } });
-    return this.toDto(user);
+    if (dto.seesAllProjects !== undefined) {
+      const roleKey = dto.roleKey ?? ((await this.prisma.role.findUniqueOrThrow({ where: { id: existing.roleId }, select: { key: true } })).key as RoleKey);
+      if (dto.seesAllProjects && !mayGiveEveryProject(roleKey)) throw new BadRequestException('This role already sees every project, and a guest never does. Leave Every project off.');
+      data.seesAllProjects = dto.seesAllProjects;
+    }
+    const user = await this.prisma.user.update({ where: { id }, data, include: { role: true, positions: POSITIONS } });
+    return this.toDto(user, await this.positionNames(req.organizationId));
   }
 }

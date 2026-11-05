@@ -268,6 +268,7 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   DOCUMENT_ISSUED: 'Drawing issued',
   LEAVE: 'Leave',
   OVERTIME: 'Overtime',
+  ATTENDANCE_CORRECTION: 'Attendance correction',
   BILLS_DUE: 'Payments due',
   PORTAL: 'Client portal',
   SAFETY: 'Safety',

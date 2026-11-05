@@ -10,6 +10,7 @@ type Day = {
   overtimeHours: string | null;
   overtimeStatus: string | null;
   canDecideOvertime: boolean;
+  overtimeApproval: { waitingOn: string | null; recommendedByName: string | null; callerRecommends: boolean } | null;
   checkInPlace: { distanceM: number | null; inside: boolean | null } | null;
   checkInPhoto: { id: string; url: string } | null;
   checkOutPhoto: { id: string; url: string } | null;
@@ -100,10 +101,11 @@ test('mark in and mark out keep the photo the person took', async () => {
 });
 
 /**
- * Overtime approval: overtime the site supervisor marks waits for the project manager; the manager's own
- * entries are approved as saved. Payroll pays approved overtime only and shows what still waits.
+ * Overtime approval in two steps: overtime the site supervisor marks waits for the staff's manager (the project
+ * manager here), who recommends or rejects it; what the manager marks themselves counts as recommended. HR approves
+ * what was recommended. Payroll pays approved overtime only and shows what still waits.
  */
-test('overtime waits for the site manager and payroll pays approved overtime only', async ({ page }) => {
+test('overtime waits for the manager, then HR, and payroll pays approved overtime only', async ({ page }) => {
   const tl = await apiToken('tl@demo.com');
   const pm = await apiToken('pm@demo.com');
   const hr = await apiToken('hr@demo.com');
@@ -127,13 +129,17 @@ test('overtime waits for the site manager and payroll pays approved overtime onl
   await api(pm, '/staff/register', { method: 'PUT', body: { projectId, date: yesterday, entries: [{ employeeId: sanjay.id, status: 'PRESENT', overtimeHours: 1.5 }] } });
   const marked = await api<Register>(pm, `/staff/register?projectId=${projectId}&date=${yesterday}`);
   const status = (id: string) => marked.rows.find((r) => r.employee.id === id)!.attendance!.overtimeStatus;
-  expect([status(bikash.id), status(laxmidhar.id), status(sanjay.id)]).toEqual(['PENDING', 'PENDING', 'APPROVED']);
-  const waiting = row(await payroll(), 'EMP-014');
-  expect(waiting.overtimePendingHours).toBe(row(before, 'EMP-014').overtimePendingHours + 2);
-  expect(waiting.overtimeHours).toBe(row(before, 'EMP-014').overtimeHours);
-  expect(row(await payroll(), 'EMP-015').overtimeHours).toBe(row(before, 'EMP-015').overtimeHours + 1.5);
+  // All three wait; the manager's own entry for Sanjay is already recommended, so it waits on HR.
+  expect([status(bikash.id), status(laxmidhar.id), status(sanjay.id)]).toEqual(['PENDING', 'PENDING', 'PENDING']);
+  const sanjayDay = marked.rows.find((r) => r.employee.id === sanjay.id)!.attendance!;
+  expect(sanjayDay.overtimeApproval).toMatchObject({ waitingOn: 'HR', recommendedByName: expect.any(String) });
+  const waiting = await payroll();
+  expect(row(waiting, 'EMP-014').overtimePendingHours).toBe(row(before, 'EMP-014').overtimePendingHours + 2);
+  expect(row(waiting, 'EMP-014').overtimeHours).toBe(row(before, 'EMP-014').overtimeHours);
+  expect(row(waiting, 'EMP-015').overtimePendingHours).toBe(row(before, 'EMP-015').overtimePendingHours + 1.5);
+  expect(row(waiting, 'EMP-015').overtimeHours).toBe(row(before, 'EMP-015').overtimeHours);
 
-  // The supervisor cannot decide it; the project manager approves Bikash's on the Staff page.
+  // The supervisor cannot decide it; the project manager recommends Bikash's on the Staff page.
   const toDecide = await api<Day[]>(pm, '/staff/overtime');
   const bikashDay = toDecide.find((d) => d.employeeName === bikash.fullName && d.date === yesterday)!;
   expect(bikashDay.canDecideOvertime).toBe(true);
@@ -146,8 +152,19 @@ test('overtime waits for the site manager and payroll pays approved overtime onl
   await expect(page.getByRole('tab', { name: /Overtime/ })).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByRole('cell', { name: /Bikash Swain/ }).first()).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
-  await page.getByRole('button', { name: `Approve Bikash Swain's overtime on ${fmt(yesterday)}` }).click();
-  await expect(page.getByText('2 h overtime approved for Bikash Swain')).toBeVisible();
+  await page.getByRole('button', { name: `Recommend Bikash Swain's overtime on ${fmt(yesterday)}` }).click();
+  await expect(page.getByText('2 h overtime recommended to HR for Bikash Swain')).toBeVisible();
+  // Recommended is not approved: the manager cannot approve it again, and payroll still holds it back.
+  await expect(api(pm, `/staff/attendance/${bikashDay.id}/overtime/approve`, { method: 'POST', body: {} })).rejects.toThrow(/403/);
+  expect(row(await payroll(), 'EMP-014').overtimeHours).toBe(row(before, 'EMP-014').overtimeHours);
+
+  // HR approves both recommended days.
+  const forHr = await api<Day[]>(hr, '/staff/overtime');
+  for (const name of [bikash.fullName, sanjay.fullName]) {
+    const d = forHr.find((x) => x.employeeName === name && x.date === yesterday)!;
+    expect(d.canDecideOvertime).toBe(true);
+    expect((await api<Day>(hr, `/staff/attendance/${d.id}/overtime/approve`, { method: 'POST', body: {} })).overtimeStatus).toBe('APPROVED');
+  }
 
   // Laxmidhar's is rejected with a reason; neither waits any more.
   const lDay = (await api<Day[]>(pm, '/staff/overtime')).find((d) => d.employeeName === laxmidhar.fullName && d.date === yesterday)!;
@@ -158,13 +175,14 @@ test('overtime waits for the site manager and payroll pays approved overtime onl
   const after = await payroll();
   expect(row(after, 'EMP-014').overtimeHours).toBe(row(before, 'EMP-014').overtimeHours + 2);
   expect(row(after, 'EMP-014').overtimePendingHours).toBe(row(before, 'EMP-014').overtimePendingHours);
+  expect(row(after, 'EMP-015').overtimeHours).toBe(row(before, 'EMP-015').overtimeHours + 1.5);
   expect(row(after, 'EMP-016').overtimeHours).toBe(row(before, 'EMP-016').overtimeHours);
   expect(row(after, 'EMP-016').overtimePendingHours).toBe(row(before, 'EMP-016').overtimePendingHours);
 });
 
 /**
- * On duty and tour: approved like leave, but there is no balance to run out and payroll counts the day
- * present and paid.
+ * On duty and tour: approved like leave (the manager recommends, HR approves), but there is no balance to run
+ * out and payroll counts the day present and paid.
  */
 test('on-duty days count as present and paid, with no balance', async () => {
   const se2 = await apiToken('engineer2@demo.com');
@@ -189,7 +207,9 @@ test('on-duty days count as present and paid, with no balance', async () => {
   const before = await payroll();
   const leave = await api<{ id: string; status: string }>(se2, '/staff/leave', { method: 'POST', body: { type: 'ON_DUTY', fromDate: date, toDate: date, halfDay: false, reason } });
   try {
-    await api(pm2, `/staff/leave/${leave.id}/approve`, { method: 'POST', body: {} });
+    expect((await api<{ status: string }>(pm2, `/staff/leave/${leave.id}/approve`, { method: 'POST', body: {} })).status).toBe('PENDING');
+    expect((await payroll()).leave.ON_DUTY).toBe(before.leave.ON_DUTY);
+    expect((await api<{ status: string }>(hr, `/staff/leave/${leave.id}/approve`, { method: 'POST', body: {} })).status).toBe('APPROVED');
     const after = await payroll();
     expect(after.leave.ON_DUTY).toBe(before.leave.ON_DUTY + 1);
     expect(after.present).toBe(before.present + 1);

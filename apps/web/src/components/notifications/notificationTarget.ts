@@ -59,6 +59,8 @@ export function notificationHref(n: NotificationDto): string {
   if (n.type === 'PORTAL' && n.projectId) return `/portal/${n.projectId}${n.entityId ? `?open=${n.entityId}` : ''}`;
   if (n.type === 'LEAVE' && n.entityId) return `/staff?tab=leave&leave=${n.entityId}`;
   if (n.type === 'OVERTIME') return '/staff?tab=overtime';
+  // The employee, with nothing to decide, lands on My attendance and leave instead.
+  if (n.type === 'ATTENDANCE_CORRECTION') return '/staff?tab=corrections';
   if (n.type === 'BILLS_DUE') return '/payables';
   if (n.type === 'LOW_STOCK' && n.projectId) return `/stock?projectId=${n.projectId}&low=1`;
   return '/notifications';

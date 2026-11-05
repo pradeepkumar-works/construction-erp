@@ -1,7 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import {
-  ROLE_LABELS,
   canApprove,
   canEditSubmission,
   canResubmit,
@@ -20,7 +19,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from './current-user';
 import { ProjectAccessService } from './project-access.service';
 import { ApprovalRightsService, type LevelEntry } from './approval-rights.service';
-import { mayDecide, queueRoles } from './approval-levels';
+import { approverName, mayDecide, queueKeys, rightsOf, type Decider, type LevelRule, type Stage } from './approval-levels';
 import { AuditService } from './audit.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { dprTitle, expenseTitle, machineryTitle, measurementTitle, progressTitle, billTitle, poTitle, vendorBillTitle, woTitle, subBillTitle, inspectionTitle, payRequestTitle, PAY_REQUEST_TITLE, supplierChoiceTitle, SUPPLIER_CHOICE_TITLE } from './submission-titles';
@@ -44,6 +43,9 @@ interface SubmissionRow {
  * review history stays on one record. A DPR's work lines are progress entries that follow their DPR (`onStatus`,
  * `partOf`). Every submission type (progress, DPRs, material requests, machinery logs, expenses, measurements, bills, orders, inspections, payment requests, supplier choices) goes through here.
  */
+/** A queue line as an entry to place in its approval levels. */
+const entryOf = (p: PendingApprovalDto): LevelEntry => ({ type: p.type, id: p.id, projectId: p.projectId, amount: p.amount, round: new Date(p.submittedAt), submittedById: p.submittedById });
+
 /** The queue's line reads only the project's and the submitter's names. */
 const NAME = { select: { name: true } } as const;
 const BY = { select: { fullName: true } } as const;
@@ -120,20 +122,22 @@ export class SubmissionLifecycleService {
     const row = await this.load(user, type, id);
     if (row.status !== 'SUBMITTED') throw new BadRequestException(`Only submitted entries can be reviewed (current status ${row.status})`);
     await this.assertStandsAlone(type, id);
-    const { stage } = await this.access.assertCanApproveSubmission(user, type, id, row.projectId);
+    const { stage, onBehalfOf, onBehalfOfName } = await this.access.assertCanApproveSubmission(user, type, id, row.projectId);
     const round = row.submittedAt ?? row.createdAt;
+    // Deciding for someone away: the step and the audit line say whom for.
+    const forWhom = onBehalfOfName ? `for ${onBehalfOfName}` : null;
+    const step = { organizationId: user.organizationId, entityType: type, entityId: id, level: stage.level, action: 'APPROVED' as const, round, actorId: user.id, onBehalfOfId: onBehalfOf, note: note ?? null };
     if (decision === 'APPROVE') await this.beforeApproveHooks.get(type)?.(user, id);
     if (decision === 'APPROVE' && stage.level < stage.levels) {
-      await this.prisma.approvalStep.create({ data: { organizationId: user.organizationId, entityType: type, entityId: id, level: stage.level, action: 'APPROVED', round, actorId: user.id, note: note ?? null } });
-      await this.audit.log(user, type, id, 'LEVEL_APPROVED', `Level ${stage.level} of ${stage.levels}${note ? `: ${note}` : ''}`);
+      await this.prisma.approvalStep.create({ data: step });
+      await this.audit.log(user, type, id, 'LEVEL_APPROVED', `Level ${stage.level} of ${stage.levels}${forWhom ? ` ${forWhom}` : ''}${note ? `: ${note}` : ''}`);
       await this.notifications.onLevelApproved(user, type, id, stage.level + 1, stage.levels);
       return { status: 'SUBMITTED' as const, level: stage.level, levels: stage.levels };
     }
     const status = decision === 'APPROVE' ? 'APPROVED' : decision === 'REJECT' ? 'REJECTED' : 'CHANGES_REQUESTED';
-    if (status === 'APPROVED' && stage.levels > 1)
-      await this.prisma.approvalStep.create({ data: { organizationId: user.organizationId, entityType: type, entityId: id, level: stage.level, action: 'APPROVED', round, actorId: user.id, note: note ?? null } });
+    if (status === 'APPROVED' && (stage.levels > 1 || onBehalfOf)) await this.prisma.approvalStep.create({ data: step });
     await this.delegate(type).update({ where: { id }, data: { status, reviewedById: user.id, reviewedAt: new Date(), reviewNote: note ?? null } });
-    await this.audit.log(user, type, id, status, note);
+    await this.audit.log(user, type, id, status, forWhom ? `${forWhom.replace(/^f/, 'F')}${note ? `: ${note}` : ''}` : note);
     await this.statusHooks.get(type)?.(user, id, status);
     if (status === 'APPROVED') await this.approvedHooks.get(type)?.(user, id);
     await this.notifications.onReviewed(user, type, id, status, note);
@@ -147,16 +151,16 @@ export class SubmissionLifecycleService {
     const steps = (await this.rights.stepsOf([entry])).get(`${type}:${id}`) ?? [];
     const { rules, stage, ok, reason } = await this.rights.decide(user, entry);
     const submitted = row.status === 'SUBMITTED';
-    const rights = await this.rights.rightsFor(user.organizationId, user.roleKey);
+    const [rights, names] = await Promise.all([this.rights.rightsFor(user), submitted ? this.rights.positionNames(user.organizationId) : new Map<string, string>()]);
     return {
       type,
       id,
       status: row.status,
       level: stage.level,
       levels: stage.levels,
-      steps: steps.map((s) => ({ level: s.level, action: s.action, byName: s.actorName, at: s.createdAt.toISOString(), note: s.note })),
+      steps: steps.map((s) => ({ level: s.level, action: s.action, byName: s.actorName, forName: s.forName, at: s.createdAt.toISOString(), note: s.note })),
       escalated: submitted && stage.escalated,
-      waitingWith: submitted ? queueRoles(type, rules, entry.amount, stage).map((r) => ROLE_LABELS[r] ?? r) : [],
+      waitingWith: submitted ? this.waitingWith(type, rules, entry.amount, stage, names) : [],
       waitingSince: submitted ? stage.since.toISOString() : null,
       canReview: submitted && ok,
       reason: submitted && !ok && rights.some((r) => r.type === type) ? reason : null,
@@ -166,8 +170,8 @@ export class SubmissionLifecycleService {
   /** The caller's own entries waiting for approval: at which level, in whose queue, since when (Waiting with others). */
   async waiting(user: RequestUser): Promise<WaitingEntryDto[]> {
     const mine = await this.mine(user, ['SUBMITTED']);
-    const entries: LevelEntry[] = mine.map((m) => ({ type: m.type, id: m.id, amount: m.amount, round: new Date(m.submittedAt) }));
-    const { rules, stages } = await this.rights.stages(user.organizationId, entries);
+    const { rules, stages } = await this.rights.stages(user.organizationId, mine.map(entryOf));
+    const names = mine.length ? await this.rights.positionNames(user.organizationId) : new Map<string, string>();
     return mine
       .map((m) => {
         const stage = stages.get(`${m.type}:${m.id}`)!;
@@ -176,7 +180,7 @@ export class SubmissionLifecycleService {
           level: stage.level,
           levels: stage.levels,
           escalated: stage.escalated,
-          waitingWith: queueRoles(m.type, rules, m.amount, stage).map((r) => ROLE_LABELS[r] ?? r),
+          waitingWith: this.waitingWith(m.type, rules, m.amount, stage, names),
           waitingSince: stage.since.toISOString(),
         };
       })
@@ -194,30 +198,26 @@ export class SubmissionLifecycleService {
 
   /**
    * Everything awaiting the current user's decision, across all submission types: the types the approval matrix gives
-   * the user's role at the level each entry waits at, within its amount limit (anything above goes to a higher
-   * approver), and entries escalated to the role. An entry whose earlier level this user approved waits
-   * for someone else.
+   * the user's role, their positions on the entry's project or at head office, and the people whose approvals they hold
+   * today, at the level each entry waits at, within its amount limit (anything above goes to a higher approver), and
+   * entries escalated to them. An entry whose earlier level this user (or someone they act for) approved waits for someone else.
    */
   async pending(user: RequestUser): Promise<PendingApprovalDto[]> {
-    const rules = await this.rights.rules(user.organizationId);
-    const rights = await this.rights.rightsFor(user.organizationId, user.roleKey);
-    // Escalation can bring any type to management, or to a role that decides a higher level of it.
-    const types = new Set<SubmissionType>([
-      ...rights.map((r) => r.type),
-      ...(user.roleKey === 'MANAGEMENT' ? (await this.escalatedTypes(user.organizationId)) : []),
-      ...rules.filter((r) => r.level > 1 && r.roleKey === user.roleKey).map((r) => r.type),
-    ]);
+    const [rules, facts] = await Promise.all([this.rights.rules(user.organizationId), this.rights.deciderFacts(user)]);
+    const rights = rightsOf(this.rights.decider(user, null, facts), rules);
+    // Escalation above the top level brings any type to management, the user's own role or that of someone they act for.
+    const management = [user.roleKey, ...facts.actingFor.map((a) => a.roleKey)].includes('MANAGEMENT');
+    const types = new Set<SubmissionType>([...rights.map((r) => r.type), ...(management ? await this.escalatedTypes(user.organizationId) : [])]);
     if (!types.size) return [];
     const where = { ...this.access.submissionWhere(user), status: 'SUBMITTED' as const };
     const out = await this.describe((t) => (types.has(t) ? where : null));
-    const { stages } = await this.rights.stages(
-      user.organizationId,
-      out.map((p) => ({ type: p.type, id: p.id, amount: p.amount, round: new Date(p.submittedAt) })),
-    );
+    const { stages } = await this.rights.stages(user.organizationId, out.map(entryOf));
+    const deciders = new Map<string, Decider>();
+    const deciderOn = (projectId: string) => deciders.get(projectId) ?? deciders.set(projectId, this.rights.decider(user, projectId, facts)).get(projectId)!;
     return out
       .flatMap((p) => {
         const stage = stages.get(`${p.type}:${p.id}`)!;
-        if (!mayDecide(user, p.type, rules, p.amount, stage).ok) return [];
+        if (!mayDecide(deciderOn(p.projectId), p.type, rules, p.amount, stage).ok) return [];
         return [stage.levels > 1 || stage.escalated ? { ...p, level: stage.level, levels: stage.levels, escalated: stage.escalated || undefined } : p];
       })
       .sort((a, b) => a.submittedAt.localeCompare(b.submittedAt));
@@ -239,20 +239,23 @@ export class SubmissionLifecycleService {
     const where = { ...this.access.submissionWhere(user), projectId, status: 'SUBMITTED' as const };
     const out = await this.describe((t) => (only.has(t) ? where : null));
     if (!out.length) return [];
-    const { rules, stages } = await this.rights.stages(
-      user.organizationId,
-      out.map((p) => ({ type: p.type, id: p.id, amount: p.amount, round: new Date(p.submittedAt) })),
-    );
+    const [{ rules, stages }, facts, names] = await Promise.all([this.rights.stages(user.organizationId, out.map(entryOf)), this.rights.deciderFacts(user), this.rights.positionNames(user.organizationId)]);
+    const me = this.rights.decider(user, projectId, facts);
     return out.map((p) => {
       const stage = stages.get(`${p.type}:${p.id}`)!;
       return {
         type: p.type,
         amount: p.amount,
         waitingSince: stage.since.toISOString(),
-        waitingWith: queueRoles(p.type, rules, p.amount, stage).map((r) => ROLE_LABELS[r] ?? r),
-        yours: mayDecide(user, p.type, rules, p.amount, stage).ok,
+        waitingWith: this.waitingWith(p.type, rules, p.amount, stage, names),
+        yours: mayDecide(me, p.type, rules, p.amount, stage).ok,
       };
     });
+  }
+
+  /** Whose queue an entry is in, in words: role labels and position names. */
+  private waitingWith(type: SubmissionType, rules: LevelRule[], amount: string | null, stage: Stage, names: Map<string, string>): string[] {
+    return queueKeys(type, rules, amount, stage).map((k) => approverName(k, names));
   }
 
   /** Types with an entry escalated in the last 90 days (management's queue looks at these too). */
@@ -324,6 +327,7 @@ export class SubmissionLifecycleService {
         : none,
     ]);
     const amt = (d: Prisma.Decimal | null): string | null => (d === null ? null : d.toDecimalPlaces(2).toFixed(2));
+    const mrValues = await this.rights.indentValues(mrs.map((m) => m.id));
     const machineCost = (l: (typeof logs)[number]) => {
       const c = machineryLogCost(l.equipment.rate?.toString() ?? null, l.equipment.rateUnit, l.hoursWorked.toString());
       return c === null ? null : new Prisma.Decimal(c);
@@ -336,6 +340,7 @@ export class SubmissionLifecycleService {
         projectName: p.project.name,
         title: progressTitle(p.activity.name, p.quantity.toString(), p.activity.unit, p.date),
         submittedByName: p.submittedBy.fullName,
+        submittedById: p.submittedById,
         submittedAt: (p.submittedAt ?? p.createdAt).toISOString(),
         amount: amt(p.activity.boqItem ? p.quantity.mul(p.activity.boqItem.rate) : null),
       })),
@@ -346,6 +351,7 @@ export class SubmissionLifecycleService {
         projectName: d.project.name,
         title: dprTitle(d.date),
         submittedByName: d.submittedBy.fullName,
+        submittedById: d.submittedById,
         submittedAt: (d.submittedAt ?? d.createdAt).toISOString(),
         amount: null,
       })),
@@ -356,8 +362,9 @@ export class SubmissionLifecycleService {
         projectName: m.project.name,
         title: `${m.requestNo}: ${m.items.length} item(s), ${m.priority.toLowerCase()} priority`,
         submittedByName: m.submittedBy.fullName,
+        submittedById: m.submittedById,
         submittedAt: (m.submittedAt ?? m.createdAt).toISOString(),
-        amount: null,
+        amount: amt(mrValues.get(m.id) ?? null),
       })),
       ...logs.map((l) => ({
         type: 'MACHINERY' as const,
@@ -366,6 +373,7 @@ export class SubmissionLifecycleService {
         projectName: l.project.name,
         title: machineryTitle(l.equipment.code, l.equipment.name, l.hoursWorked.toString(), l.breakdownHours.toString(), l.date),
         submittedByName: l.submittedBy.fullName,
+        submittedById: l.submittedById,
         submittedAt: (l.submittedAt ?? l.createdAt).toISOString(),
         amount: amt(machineCost(l)),
       })),
@@ -376,6 +384,7 @@ export class SubmissionLifecycleService {
         projectName: x.project.name,
         title: expenseTitle(x.expenseNo, x.totalAmount.toFixed(2), x.description),
         submittedByName: x.submittedBy.fullName,
+        submittedById: x.submittedById,
         submittedAt: (x.submittedAt ?? x.createdAt).toISOString(),
         amount: amt(x.totalAmount),
       })),
@@ -386,6 +395,7 @@ export class SubmissionLifecycleService {
         projectName: m.project.name,
         title: measurementTitle(m.mbNo, m.boqItem.itemNo, m.totalQty.toString(), m.boqItem.unit, m.location),
         submittedByName: m.submittedBy.fullName,
+        submittedById: m.submittedById,
         submittedAt: (m.submittedAt ?? m.createdAt).toISOString(),
         amount: amt(m.totalQty.mul(m.boqItem.rate)),
       })),
@@ -396,6 +406,7 @@ export class SubmissionLifecycleService {
         projectName: b.project.name,
         title: billTitle(b.billNo, b.isFinal, b.grossAmount.toFixed(2), b.omYear !== null),
         submittedByName: b.submittedBy.fullName,
+        submittedById: b.submittedById,
         submittedAt: (b.submittedAt ?? b.createdAt).toISOString(),
         amount: amt(b.grossAmount),
       })),
@@ -406,6 +417,7 @@ export class SubmissionLifecycleService {
         projectName: o.project.name,
         title: poTitle(o.poNo, o.total.toFixed(2), o.vendor.name),
         submittedByName: o.submittedBy.fullName,
+        submittedById: o.submittedById,
         submittedAt: (o.submittedAt ?? o.createdAt).toISOString(),
         amount: amt(o.total),
       })),
@@ -416,6 +428,7 @@ export class SubmissionLifecycleService {
         projectName: v.project.name,
         title: `${vendorBillTitle(v.billNo, v.invoiceNo, v.vendor.name, v.total.toFixed(2))}${v.matched ? '' : v.purchaseOrderId ? ' (does not match the PO)' : ' (has exceptions)'}`,
         submittedByName: v.submittedBy.fullName,
+        submittedById: v.submittedById,
         submittedAt: (v.submittedAt ?? v.createdAt).toISOString(),
         amount: amt(v.total),
       })),
@@ -426,6 +439,7 @@ export class SubmissionLifecycleService {
         projectName: w.project.name,
         title: woTitle(w.woNo, w.title, w.value.toFixed(2), w.vendor.name),
         submittedByName: w.submittedBy.fullName,
+        submittedById: w.submittedById,
         submittedAt: (w.submittedAt ?? w.createdAt).toISOString(),
         amount: amt(w.value),
       })),
@@ -436,6 +450,7 @@ export class SubmissionLifecycleService {
         projectName: b.project.name,
         title: subBillTitle(b.workOrder.woNo, b.billNo, b.isFinal, b.workOrder.vendor.name, b.grossAmount.toFixed(2)),
         submittedByName: b.submittedBy.fullName,
+        submittedById: b.submittedById,
         submittedAt: (b.submittedAt ?? b.createdAt).toISOString(),
         amount: amt(b.grossAmount),
       })),
@@ -446,6 +461,7 @@ export class SubmissionLifecycleService {
         projectName: i.project.name,
         title: inspectionTitle(i.inspectionNo, i.activity.name, i.location),
         submittedByName: i.submittedBy.fullName,
+        submittedById: i.submittedById,
         submittedAt: (i.submittedAt ?? i.createdAt).toISOString(),
         amount: null,
       })),
@@ -456,6 +472,7 @@ export class SubmissionLifecycleService {
         projectName: r.project.name,
         title: payRequestTitle(r),
         submittedByName: r.submittedBy.fullName,
+        submittedById: r.submittedById,
         submittedAt: (r.submittedAt ?? r.createdAt).toISOString(),
         amount: amt(r.amount),
       })),
@@ -466,6 +483,7 @@ export class SubmissionLifecycleService {
         projectName: c.project.name,
         title: supplierChoiceTitle(c.materialRequest.requestNo, c.quotation?.vendor.name ?? null, c.split, c.rank, c.amount.toFixed(2)),
         submittedByName: c.submittedBy.fullName,
+        submittedById: c.submittedById,
         submittedAt: (c.submittedAt ?? c.createdAt).toISOString(),
         amount: amt(c.amount),
       })),

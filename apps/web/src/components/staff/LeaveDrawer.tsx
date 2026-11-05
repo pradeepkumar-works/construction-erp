@@ -26,7 +26,15 @@ export function LeaveDrawer({ id, open, onClose }: { id: string | null; open: bo
   const act = useMutation({
     mutationFn: async (a: 'approve' | 'reject' | 'cancel') => (await api.post<LeaveRequestDto>(`/staff/leave/${id}/${a}`, a === 'cancel' ? undefined : { note: note.trim() || undefined })).data,
     onSuccess: (l, a) => {
-      message.success(a === 'approve' ? `Leave approved for ${l.employeeName}` : a === 'reject' ? `Leave rejected for ${l.employeeName}` : 'Leave cancelled');
+      message.success(
+        a === 'approve'
+          ? l.status === 'APPROVED'
+            ? `Leave approved for ${l.employeeName}`
+            : `Leave recommended for ${l.employeeName}; it waits on HR now`
+          : a === 'reject'
+            ? `Leave rejected for ${l.employeeName}`
+            : 'Leave cancelled',
+      );
       setRejecting(false);
       setNote('');
       qc.invalidateQueries({ queryKey: ['staff'] });
@@ -54,7 +62,7 @@ export function LeaveDrawer({ id, open, onClose }: { id: string | null; open: bo
                   Reject
                 </Button>
                 <Button type="primary" loading={act.isPending} onClick={() => act.mutate('approve')}>
-                  Approve
+                  {data.approval.callerRecommends ? 'Recommend' : 'Approve'}
                 </Button>
               </>
             )}
@@ -84,6 +92,13 @@ export function LeaveDrawer({ id, open, onClose }: { id: string | null; open: bo
                 </Typography.Text>
               )}
             </Descriptions.Item>
+            {data.approval.waitingOn && <Descriptions.Item label="Waiting on">{data.approval.waitingOn}</Descriptions.Item>}
+            {data.approval.recommendedByName && (
+              <Descriptions.Item label="Recommended by">
+                {data.approval.recommendedByName}, {formatDateTime(data.approval.recommendedAt)}
+                {data.approval.recommendNote ? <Typography.Text type="secondary">: {data.approval.recommendNote}</Typography.Text> : null}
+              </Descriptions.Item>
+            )}
             <Descriptions.Item label="Applied by">
               {data.appliedByName}, {formatDateTime(data.createdAt)}
             </Descriptions.Item>

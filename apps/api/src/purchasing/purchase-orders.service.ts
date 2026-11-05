@@ -5,6 +5,8 @@ import {
   SUBMISSION_STATUS_LABELS,
   canPurchase,
   canViewPurchaseOrders,
+  canViewCost,
+  poBudgetCheck,
   LAST_RATES_COUNT,
   RATE_WINDOW_DAYS,
   lastRateKey,
@@ -342,6 +344,16 @@ export class PurchaseOrdersService {
     return out;
   }
 
+  /** The order against its project's material budget (`poBudgetCheck`): other approved orders and this one, before GST. */
+  private async budgetCheck(po: { id: string; projectId: string; subtotal: Prisma.Decimal; freight: Prisma.Decimal }) {
+    const [budget, others] = await Promise.all([
+      this.prisma.projectBudget.findUnique({ where: { projectId: po.projectId }, select: { material: true } }),
+      this.prisma.purchaseOrder.aggregate({ where: { projectId: po.projectId, status: 'APPROVED', id: { not: po.id } }, _sum: { subtotal: true, freight: true } }),
+    ]);
+    const ordered = (others._sum.subtotal?.toNumber() ?? 0) + (others._sum.freight?.toNumber() ?? 0);
+    return poBudgetCheck(budget ? budget.material.toNumber() : null, ordered, po.subtotal.toNumber() + po.freight.toNumber());
+  }
+
   async get(user: RequestUser, id: string): Promise<PurchaseOrderDto> {
     this.assertCanView(user);
     const row = await this.prisma.purchaseOrder.findFirst({
@@ -355,9 +367,10 @@ export class PurchaseOrdersService {
     });
     if (!row) throw new NotFoundException('Purchase order not found');
     const dto = this.toDto(row);
-    const checks = await this.lineRateChecks(user, row);
+    const [checks, budgetCheck] = await Promise.all([this.lineRateChecks(user, row), canViewCost(user.roleKey) ? this.budgetCheck(row) : undefined]);
     return {
       ...dto,
+      ...(budgetCheck !== undefined ? { budgetCheck } : {}),
       lines: dto.lines.map((l) => ({ ...l, rateCheck: checks.get(l.id) ?? null })),
       grns: row.stockEntries.map((e) => ({ id: e.id, entryNo: e.entryNo, date: dateOnly(e.date), lines: e._count.lines })),
       dispatches: row.dispatches.map((d) => ({ id: d.id, dispatchNo: d.dispatchNo, date: dateOnly(d.date), vehicleNo: d.vehicleNo, status: d.cancelledAt ? 'CANCELLED' : d.grn ? 'RECEIVED' : 'ON_THE_WAY', grnNo: d.grn?.entryNo ?? null })),

@@ -22,7 +22,7 @@ export class ApprovalRulesController {
 
   @ApiOperation({
     summary: 'Replace the approval matrix (admin)',
-    description: 'Send every rule. A role not listed for a type cannot approve it. maxAmount applies to progress, expenses, measurements and machinery logs. An empty list goes back to the fixed rule. Admin can always approve everything.',
+    description: 'Send every rule, each naming a role or a position. A role or position not listed for a type cannot approve it. Levels 2 to 6 apply from their minAmount, in order. maxAmount applies to types with an amount. An empty list goes back to the fixed rule. Admin can always approve everything.',
   })
   @Put()
   save(@CurrentUser() user: RequestUser, @Body() dto: SaveApprovalRulesDto) {

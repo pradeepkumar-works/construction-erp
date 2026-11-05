@@ -7,6 +7,7 @@ import { ModuleSwitchGuard } from './common/module-switch.guard';
 import { SupportReadOnlyGuard } from './common/support.guard';
 import { BillingReadOnlyGuard } from './common/billing';
 import { PortalModule } from './portal/portal.module';
+import { AuditLogModule } from './audit/audit-log.module';
 import { PlatformModule } from './platform/platform.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { CommonModule } from './common/common.module';
@@ -113,6 +114,7 @@ import { VitalsController } from './vitals.controller';
     CommonModule,
     AuthModule,
     UsersModule,
+    AuditLogModule,
     ProjectsModule,
     PlanningModule,
     StructureModule,

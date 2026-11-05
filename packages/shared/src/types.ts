@@ -1,3 +1,4 @@
+import type { PoBudgetCheckDto } from './po-budget';
 import type { MachineEngineDto } from './telematics';
 import type { VendorRecordDto } from './vendor-score';
 import type { LetterAction, LetterGate, LetterMarkDto, LetterMode, LetterPriority, LetterStatus } from './correspondence';
@@ -76,6 +77,8 @@ export interface AuthUser {
   organizationName: string;
   /** What this user may approve (from the organisation's approval matrix, or the fixed role rule). */
   approvalRights?: ApprovalRightDto[];
+  /** A head office manager given every project (`seesEveryProject`) */
+  seesAllProjects?: boolean;
   /** Nirmaan staff who may use the platform console (PLATFORM_ADMIN_EMAILS) */
   platformAdmin?: boolean;
   /** Set when this is a read-only support session: who from Nirmaan is looking, and until when */
@@ -124,9 +127,22 @@ export interface UserSummary {
   isActive: boolean;
   roleKey: RoleKey;
   roleName: string;
+  /** A head office manager given every project (`seesEveryProject`) */
+  seesAllProjects: boolean;
   createdAt: string;
   /** Invited and has not set a password yet. */
   invitePending: boolean;
+  /** Positions they hold, for approval levels (each on a project or at head office) */
+  positions: UserPositionDto[];
+}
+
+/** A position a user holds: a code of the `position` master on one project, or at head office (projectId null). */
+export interface UserPositionDto {
+  positionCode: string;
+  positionName: string;
+  projectId: string | null;
+  /** null = head office */
+  projectName: string | null;
 }
 
 /** A set-password link made for a user (invite or reset). `link` is null when the web address is not known. */
@@ -411,6 +427,7 @@ export interface PendingApprovalDto {
   projectId: string;
   projectName: string;
   title: string;
+  submittedById: string;
   submittedByName: string;
   submittedAt: string;
   /** Rupees the approval limit is checked against (see APPROVAL_AMOUNT_BASIS); null for types without an amount. */
@@ -1416,12 +1433,15 @@ export interface ApplyTemplateResultDto {
 
 // Approval matrix
 
+/** One rule: a role, or a position of the `position` master (exactly one of the two), approves a type at a level. */
 export interface ApprovalRuleDto {
-  roleKey: RoleKey;
+  roleKey: RoleKey | null;
+  /** A code of the `position` master; null for a role's rule */
+  positionCode?: string | null;
   type: SubmissionType;
   /** null = no limit */
   maxAmount: string | null;
-  /** 1 (the matrix) when left out; 2 or 3 for a higher level */
+  /** 1 (the first approval) when left out; 2 to 6 for a higher level */
   level?: number;
   /** Higher levels: the amount from which this level applies; null = always */
   minAmount?: string | null;
@@ -1431,6 +1451,8 @@ export interface ApprovalMatrixDto {
   /** False while the organisation uses the fixed rule (admin, management and project managers approve everything). */
   custom: boolean;
   roles: { roleKey: RoleKey; roleName: string; users: number }[];
+  /** The company's positions (switched on, or named by a rule), with how many people hold each */
+  positions: { code: string; name: string; holders: number }[];
   rules: ApprovalRuleDto[];
   /** Accounts pays a bill only against an approved payment request */
   paymentsNeedRequest: boolean;
@@ -2000,6 +2022,11 @@ export interface PurchaseOrderLineDto {
 }
 
 export interface PurchaseOrderDto extends SubmissionBase {
+  /**
+   * On the order's own record only, for those who see cost: the order against its project's material budget; null
+   * when the project has none, absent in lists.
+   */
+  budgetCheck?: PoBudgetCheckDto | null;
   poNo: string;
   poDate: string;
   vendorId: string;
@@ -3129,8 +3156,12 @@ export interface EmployeeDto {
   /** HR records: terms of employment, shown to whoever sees the staff record */
   employmentType: EmploymentType | null;
   grade: string | null;
+  /** The operational line: whose recommendation their leave, overtime and corrections wait on first */
   reportingToId: string | null;
   reportingToName: string | null;
+  /** The functional line (a site QA/QC engineer to the head office QA/QC manager): drawn on the org chart, routes nothing */
+  functionalManagerId: string | null;
+  functionalManagerName: string | null;
   probationEndsOn: string | null;
   confirmedOn: string | null;
   noticeDays: number | null;
@@ -3161,8 +3192,10 @@ export interface StaffAttendanceDto {
   /** Face attendance: the photo the phone took as they marked in and as they marked out */
   checkInPhoto: AttachmentDto | null;
   checkOutPhoto: AttachmentDto | null;
-  /** The caller may approve or reject the waiting overtime */
+  /** The caller may approve (or recommend) or reject the waiting overtime */
   canDecideOvertime: boolean;
+  /** Where waiting overtime stands in its two steps; null without overtime */
+  overtimeApproval: StaffApprovalDto | null;
   note: string | null;
   markedByName: string;
 }
@@ -3207,10 +3240,64 @@ export interface LeaveRequestDto {
   decidedAt: string | null;
   decisionNote: string | null;
   createdAt: string;
-  /** The caller may approve or reject it */
+  /** The caller may approve (or recommend) or reject it */
   canDecide: boolean;
   /** The caller may cancel it (their own or a staff admin, before it starts) */
   canCancel: boolean;
+  approval: StaffApprovalDto;
+}
+
+/** Where a leave, overtime or correction request stands in its two steps (`staff-approval.ts`). */
+export interface StaffApprovalDto {
+  /** Who it waits on, in words ("Ravi Kumar, their manager", "HR"); null once it has ended */
+  waitingOn: string | null;
+  recommendedByName: string | null;
+  recommendedAt: string | null;
+  recommendNote: string | null;
+  /** The caller's approval only recommends it, for HR to approve */
+  callerRecommends: boolean;
+}
+
+/** An employee's own request to correct one day of their attendance: a missed mark-in, a wrong status, overtime. */
+export interface AttendanceCorrectionDto {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  employeeCode: string;
+  projectName: string | null;
+  date: string;
+  /** The day as it stands now (null when nothing was marked) */
+  current: { status: StaffAttendanceStatus; checkIn: string | null; checkOut: string | null; overtimeHours: string | null } | null;
+  /** What they ask for; a time or overtime left empty stays as it is */
+  dayStatus: StaffAttendanceStatus;
+  checkIn: string | null;
+  checkOut: string | null;
+  overtimeHours: string | null;
+  reason: string;
+  status: LeaveStatus;
+  decidedByName: string | null;
+  decidedAt: string | null;
+  decisionNote: string | null;
+  createdAt: string;
+  canDecide: boolean;
+  canCancel: boolean;
+  approval: StaffApprovalDto;
+}
+
+/** One person on the org chart: what the chart shows, never their HR record. */
+export interface OrgPersonDto {
+  id: string;
+  employeeCode: string;
+  fullName: string;
+  designation: string;
+  department: string | null;
+  /** Posting; null = head office */
+  projectId: string | null;
+  projectName: string | null;
+  reportingToId: string | null;
+  reportingToName: string | null;
+  functionalManagerId: string | null;
+  functionalManagerName: string | null;
 }
 
 export interface LeaveBalanceDto {
@@ -3254,6 +3341,8 @@ export interface MyStaffDto {
   year: number;
   balances: LeaveBalanceDto[];
   leave: LeaveRequestDto[];
+  /** Their requests to correct a day, newest first */
+  corrections: AttendanceCorrectionDto[];
   holidays: HolidayDto[];
   /** Attendance extras: the site check-in is measured against (their posting); null when it has no location */
   site: CheckInSiteDto | null;
@@ -3277,6 +3366,8 @@ export interface StaffSummaryDto {
   leaveToDecide: number;
   /** Attendance extras: days of overtime waiting on the caller */
   overtimeToDecide: number;
+  /** Attendance corrections waiting on the caller */
+  correctionsToDecide: number;
   /** Active employees the caller can see (null when they cannot see the staff list) */
   employees: number | null;
   onLeaveToday: number | null;

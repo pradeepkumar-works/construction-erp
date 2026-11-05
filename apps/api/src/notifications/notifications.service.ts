@@ -368,15 +368,28 @@ export class NotificationsService {
     return title.startsWith(SUBMISSION_LABEL[type]) ? title : `${SUBMISSION_LABEL[type]} (${title})`;
   }
 
+  /**
+   * Who an approval ask goes to: the level's approvers, those on the project first, and whoever holds a chosen
+   * approver's approvals while they are away. Never the actor or the one who submitted it, nor a delegate of either.
+   */
+  private async approversToAsk(actor: RequestUser, s: { projectId: string; submittedById: string }, type: SubmissionType, id: string, level: number): Promise<{ id: string }[]> {
+    const all = await this.access.approversForProject(actor.organizationId, s.projectId, type, await this.rights.amountOf(type, id), level);
+    const out = new Set([actor.id, s.submittedById]);
+    const chosen = await this.onProjectFirst(
+      all.filter((a) => !a.forUserId && !out.has(a.id)),
+      s.projectId,
+    );
+    const ids = new Set(chosen.map((a) => a.id));
+    const delegates = all.filter((a) => a.forUserId && ids.has(a.forUserId) && !out.has(a.id));
+    return [...new Set([...ids, ...delegates.map((d) => d.id)])].map((uid) => ({ id: uid }));
+  }
+
   /** Tell the project's approvers that something new is waiting for them. */
   async onSubmitted(actor: RequestUser, type: SubmissionType, id: string) {
     try {
       const s = await this.describeSubmission(type, id);
       if (!s) return;
-      const approvers = await this.onProjectFirst(
-        (await this.access.approversForProject(actor.organizationId, s.projectId, type, await this.rights.amountOf(type, id))).filter((a) => a.id !== actor.id),
-        s.projectId,
-      );
+      const approvers = await this.approversToAsk(actor, s, type, id, 1);
       await this.notify({
         organizationId: actor.organizationId,
         userIds: approvers.map((a) => a.id),
@@ -413,10 +426,7 @@ export class NotificationsService {
     try {
       const s = await this.describeSubmission(type, id);
       if (!s) return;
-      const approvers = await this.onProjectFirst(
-        (await this.access.approversForProject(actor.organizationId, s.projectId, type, await this.rights.amountOf(type, id), nextLevel)).filter((a) => a.id !== actor.id),
-        s.projectId,
-      );
+      const approvers = await this.approversToAsk(actor, s, type, id, nextLevel);
       await this.notify({
         organizationId: actor.organizationId,
         userIds: approvers.map((a) => a.id),

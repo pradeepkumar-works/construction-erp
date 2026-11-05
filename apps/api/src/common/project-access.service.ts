@@ -1,9 +1,38 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { APPROVER_ROLES, type RoleKey, type SubmissionType, COMPANY_WIDE_ROLES, isCompanyWide, canAdjustStock, canApprove, canKeepStock, canLogMachinery, canManageEquipment, canManageStore, canMeasure, canRaiseRisk, canRecordAttendance, canRequestInspection, canSubmitExpense, canRecordTest, canRaiseNcr, canCheckGrn, canManageDocuments, canViewLetters, canManageStaff, canMarkStaff, canViewEmployeePrivate, canViewMessageLog, canReportSafety, canManageSafety, canIssuePpe, canManageMaintenance, canFreezeBaseline, canManageWorkers, canViewWorkers, canReportDefect, canCloseDefect, canManageHandover, CLIENT_GUEST_ROLES, isClientGuest, isGuest, isSupplier, canManageSupplierLogins, canCheckSupplierInvoices, canApproveSupplierChange } from '@erp/shared';
+import { APPROVER_ROLES, GUEST_ROLES, approverOf, type ApproverKey, type RoleKey, type SubmissionType, COMPANY_WIDE_ROLES, seesEveryProject, canAdjustStock, canApprove, canKeepStock, canLogMachinery, canManageEquipment, canManageStore, canMeasure, canRaiseRisk, canRecordAttendance, canRequestInspection, canSubmitExpense, canRecordTest, canRaiseNcr, canCheckGrn, canManageDocuments, canViewLetters, canManageStaff, canMarkStaff, canViewEmployeePrivate, canViewMessageLog, canReportSafety, canManageSafety, canIssuePpe, canManageMaintenance, canFreezeBaseline, canManageWorkers, canViewWorkers, canReportDefect, canCloseDefect, canManageHandover, CLIENT_GUEST_ROLES, isClientGuest, isGuest, isSupplier, canManageSupplierLogins, canCheckSupplierInvoices, canApproveSupplierChange, staffDecision, staffTurn, staffWaitWords, staffWaitsOn, type StaffDecision, type StaffLine, type StaffRequestState } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { ApprovalRightsService } from './approval-rights.service';
 import { RequestUser } from './current-user';
+import { parseDate } from './serialize';
+import { todayIn } from '../notifications/time';
+
+/** A user who decides by a key, or (with `forUserId`) holds that user's approvals while they are away. */
+export interface KeyHolder {
+  id: string;
+  email: string;
+  fullName: string;
+  forUserId?: string;
+}
+
+/** What an employee's reporting line is read from: their manager's login, else their posting's project manager. */
+export const staffLineSelect = {
+  userId: true,
+  reportingTo: { select: { isActive: true, user: { select: { id: true, fullName: true, isActive: true } } } },
+  project: { select: { projectManager: { select: { id: true, fullName: true, isActive: true } } } },
+} satisfies Prisma.EmployeeSelect;
+export type StaffLineRow = Prisma.EmployeeGetPayload<{ select: typeof staffLineSelect }>;
+
+/** The employee on a leave, overtime or correction: who they are and their reporting line (`staffLineSelect`). */
+export const staffRequestEmployeeSelect = {
+  fullName: true,
+  employeeCode: true,
+  designation: true,
+  userId: true,
+  projectId: true,
+  reportingTo: staffLineSelect.reportingTo,
+  project: { select: { name: true, projectManager: staffLineSelect.project.select.projectManager } },
+} satisfies Prisma.EmployeeSelect;
 
 /**
  * Central place for "which projects can this user see / act on".
@@ -15,8 +44,8 @@ export class ProjectAccessService {
   constructor(private prisma: PrismaService, private rights: ApprovalRightsService) {}
 
   /** Prisma where-clause restricting projects to those visible to the user. */
-  projectWhere(user: Pick<RequestUser, 'id' | 'organizationId' | 'roleKey'>): Prisma.ProjectWhereInput {
-    if (isCompanyWide(user.roleKey)) return { organizationId: user.organizationId };
+  projectWhere(user: Pick<RequestUser, 'id' | 'organizationId' | 'roleKey' | 'seesAllProjects'>): Prisma.ProjectWhereInput {
+    if (seesEveryProject(user)) return { organizationId: user.organizationId };
     return {
       organizationId: user.organizationId,
       OR: [{ projectManagerId: user.id }, { members: { some: { userId: user.id } } }],
@@ -34,7 +63,7 @@ export class ProjectAccessService {
 
   /** Where-clause for submissions (progress/DPR/MR) visible to the user. */
   submissionWhere(user: RequestUser): { organizationId: string; project?: Prisma.ProjectWhereInput } {
-    if (isCompanyWide(user.roleKey)) return { organizationId: user.organizationId };
+    if (seesEveryProject(user)) return { organizationId: user.organizationId };
     return { organizationId: user.organizationId, project: this.projectWhere(user) };
   }
 
@@ -44,7 +73,7 @@ export class ProjectAccessService {
     return project;
   }
 
-  async userSeesProject(u: Pick<RequestUser, 'id' | 'organizationId' | 'roleKey'>, projectId: string) {
+  async userSeesProject(u: Pick<RequestUser, 'id' | 'organizationId' | 'roleKey' | 'seesAllProjects'>, projectId: string) {
     return (await this.prisma.project.count({ where: { id: projectId, ...this.projectWhere(u) } })) > 0;
   }
 
@@ -52,6 +81,7 @@ export class ProjectAccessService {
     return {
       OR: [
         { role: { key: { in: COMPANY_WIDE_ROLES } } },
+        { seesAllProjects: true, role: { key: { notIn: GUEST_ROLES } } },
         { managedProjects: { some: { id: projectId } } },
         { memberships: { some: { projectId } } },
       ],
@@ -61,10 +91,40 @@ export class ProjectAccessService {
   /**
    * Inverse of the visibility rule: every active user who may approve submissions of this project
    * (company-wide approvers plus approvers who manage or are a member of it). With a submission type (and amount),
-   * only the roles the organisation's approval matrix allows for it; without one, the fixed approver roles.
+   * those the organisation's approval matrix names at `level` (roles and positions) and whoever holds their approvals
+   * while they are away; without one, the fixed approver roles.
    */
-  async approversForProject(organizationId: string, projectId: string, type?: SubmissionType, amount: Prisma.Decimal | null = null, level = 1) {
-    return this.usersWithRoles(organizationId, projectId, type ? await this.rights.roleKeysFor(organizationId, type, amount, level) : APPROVER_ROLES);
+  async approversForProject(organizationId: string, projectId: string, type?: SubmissionType, amount: Prisma.Decimal | null = null, level = 1): Promise<KeyHolder[]> {
+    if (!type) return this.usersWithRoles(organizationId, projectId, APPROVER_ROLES);
+    return this.usersWithKeys(organizationId, projectId, await this.rights.levelKeysFor(organizationId, type, amount, level));
+  }
+
+  /**
+   * Active users who see the project and decide by one of these keys: the roles, the positions held on the project or at
+   * head office, and (with `forUserId`) the delegates of those users today, who see the project too.
+   */
+  async usersWithKeys(organizationId: string, projectId: string, keys: ApproverKey[]): Promise<KeyHolder[]> {
+    const roles = keys.flatMap((k) => approverOf(k).roleKey ?? []);
+    const positions = keys.flatMap((k) => approverOf(k).positionCode ?? []);
+    const holders = await this.prisma.user.findMany({
+      where: {
+        organizationId,
+        isActive: true,
+        AND: [
+          { OR: [...(roles.length ? [{ role: { key: { in: roles } } }] : []), ...(positions.length ? [{ positions: { some: { positionCode: { in: positions }, OR: [{ projectId: null }, { projectId }] } } }] : [])] },
+          this.seesProjectWhere(projectId),
+        ],
+      },
+      select: { id: true, email: true, fullName: true },
+    });
+    if (!holders.length) return [];
+    const today = parseDate(todayIn());
+    const delegations = await this.prisma.approvalDelegation.findMany({
+      where: { organizationId, fromUserId: { in: holders.map((h) => h.id) }, startsOn: { lte: today }, endsOn: { gte: today }, toUser: { isActive: true, role: { key: { notIn: GUEST_ROLES } }, ...this.seesProjectWhere(projectId) } },
+      select: { fromUserId: true, toUser: { select: { id: true, email: true, fullName: true } } },
+    });
+    const own = new Set(holders.map((h) => h.id));
+    return [...holders, ...delegations.filter((d) => !own.has(d.toUser.id)).map((d) => ({ ...d.toUser, forUserId: d.fromUserId }))];
   }
 
   /** Active users of these roles who see the project (company-wide roles, its manager and its members). */
@@ -239,13 +299,14 @@ export class ProjectAccessService {
 
   /**
    * Employees the user may see: staff admins see everyone; attendance recorders see the staff posted at their projects;
-   * anyone else only themselves.
+   * anyone else themselves. Everyone also sees the people who report to them, whose requests they recommend.
    */
   staffWhere(user: RequestUser): Prisma.EmployeeWhereInput {
     // Payroll (accounts) sees every employee too, for salaries and bank details.
     if (canManageStaff(user.roleKey) || canViewEmployeePrivate(user.roleKey)) return { organizationId: user.organizationId };
-    if (canMarkStaff(user.roleKey)) return { organizationId: user.organizationId, OR: [{ userId: user.id }, { project: this.projectWhere(user) }] };
-    return { organizationId: user.organizationId, userId: user.id };
+    const reports: Prisma.EmployeeWhereInput = { reportingTo: { userId: user.id } };
+    if (canMarkStaff(user.roleKey)) return { organizationId: user.organizationId, OR: [{ userId: user.id }, reports, { project: this.projectWhere(user) }] };
+    return { organizationId: user.organizationId, OR: [{ userId: user.id }, reports] };
   }
 
   /** Mark the staff register of a site: staff admins, or attendance recorders on the project. */
@@ -254,30 +315,51 @@ export class ProjectAccessService {
     await this.assertCanAccessProject(user, projectId);
   }
 
-  /** Approve or reject leave: a staff admin, or the manager of the project the employee is posted at; never their own. */
-  canDecideLeave(user: RequestUser, employee: { userId: string | null; project: { projectManagerId: string | null } | null }) {
-    if (employee.userId === user.id) return false;
-    return canManageStaff(user.roleKey) || (!!employee.project && employee.project.projectManagerId === user.id);
+  /** An employee's reporting line (`staffLineSelect`) as the two-step approval reads it. */
+  staffLineOf(e: StaffLineRow): StaffLine {
+    const r = e.reportingTo;
+    const pm = e.project?.projectManager;
+    return {
+      employeeUserId: e.userId,
+      reportsTo: r?.user ? { userId: r.user.id, name: r.user.fullName, active: r.isActive && r.user.isActive } : null,
+      siteManager: pm ? { userId: pm.id, name: pm.fullName, active: pm.isActive } : null,
+    };
   }
 
-  /** Leave waiting on this user: the same rule as canDecideLeave, as a where-clause on the employee. */
-  leaveDeciderWhere(user: RequestUser): Prisma.EmployeeWhereInput {
+  /** Leave, overtime or a correction: what the user's decision does to it (`staffDecision`), or why they may not take it. */
+  staffDecision(user: RequestUser, req: StaffRequestState, employee: StaffLineRow, decision: StaffDecision) {
+    return staffDecision(req, this.staffLineOf(employee), user, decision);
+  }
+
+  /** Whether a request waits on the user, whether their approval only recommends it, and who it waits on in words. */
+  staffTurn(user: RequestUser, req: StaffRequestState, employee: StaffLineRow) {
+    const line = this.staffLineOf(employee);
+    return { ...staffTurn(req, line, user), waitingOn: staffWaitWords(staffWaitsOn(req, line)) };
+  }
+
+  /** Who a waiting request goes to now: its manager's login, or HR (`hrDeciders`). */
+  async staffNextDeciders(organizationId: string, req: StaffRequestState, employee: StaffLineRow): Promise<string[]> {
+    const wait = staffWaitsOn(req, this.staffLineOf(employee));
+    if (!wait) return [];
+    return wait.step === 'MANAGER' ? [wait.by.userId] : this.hrDeciders(organizationId);
+  }
+
+  /**
+   * Employees whose waiting requests may be the user's to decide, a superset `staffDecision` narrows: a staff admin
+   * any of them, anyone else the people who report to them or are posted at a project they manage.
+   */
+  staffDeciderWhere(user: RequestUser): Prisma.EmployeeWhereInput {
     const notSelf: Prisma.EmployeeWhereInput = { OR: [{ userId: null }, { userId: { not: user.id } }] };
     if (canManageStaff(user.roleKey)) return notSelf;
-    return { AND: [notSelf, { project: { projectManagerId: user.id } }] };
+    return { AND: [notSelf, { OR: [{ reportingTo: { userId: user.id } }, { project: { projectManagerId: user.id } }] }] };
   }
 
-  /** Who decides an employee's leave: HR managers and the manager of their site (admins and management when there is no HR). */
-  async leaveApprovers(organizationId: string, projectId: string | null) {
-    const pm = projectId ? (await this.prisma.project.findUnique({ where: { id: projectId }, select: { projectManagerId: true } }))?.projectManagerId : null;
+  /** HR's step: HR managers, else admins and management when the company has no HR. */
+  async hrDeciders(organizationId: string) {
     const hr = await this.prisma.user.findMany({ where: { organizationId, isActive: true, role: { key: 'HR_MANAGER' } }, select: { id: true } });
-    const ids = hr.map((u) => u.id);
-    if (!ids.length) {
-      const admins = await this.prisma.user.findMany({ where: { organizationId, isActive: true, role: { key: { in: ['ADMIN', 'MANAGEMENT'] } } }, select: { id: true } });
-      ids.push(...admins.map((u) => u.id));
-    }
-    if (pm) ids.push(pm);
-    return [...new Set(ids)];
+    if (hr.length) return hr.map((u) => u.id);
+    const admins = await this.prisma.user.findMany({ where: { organizationId, isActive: true, role: { key: { in: ['ADMIN', 'MANAGEMENT'] } } }, select: { id: true } });
+    return admins.map((u) => u.id);
   }
 
   /** Everyone on a project: its manager and members. */
@@ -356,7 +438,7 @@ export class ProjectAccessService {
 
   /** Job cards a user sees: company-wide roles all; others those at their projects, plus machines in the yard for maintenance managers. */
   maintenanceWhere(user: RequestUser): Prisma.MaintenanceJobWhereInput {
-    if (isCompanyWide(user.roleKey)) return { organizationId: user.organizationId };
+    if (seesEveryProject(user)) return { organizationId: user.organizationId };
     return {
       organizationId: user.organizationId,
       OR: [{ project: this.projectWhere(user) }, ...(canManageMaintenance(user.roleKey) ? [{ projectId: null }] : [])],

@@ -55,6 +55,9 @@ import {
   type StockEntryDto,
   type StockLineDto,
   type UserSummary,
+  type AuditLogEntryDto,
+  auditKindLabel,
+  auditActionLabel,
   type VendorDto,
 } from '@erp/shared';
 import type { ExportColumn } from './exportExcel';
@@ -150,6 +153,15 @@ export const USER_EXPORT: ExportColumn<UserSummary>[] = [
   { header: 'Active', value: (r) => (r.isActive ? 'Yes' : 'No') },
   { header: 'Invite pending', value: (r) => (r.invitePending ? 'Yes' : 'No') },
   { header: 'Created', value: (r) => r.createdAt.slice(0, 10), width: 12 },
+];
+
+export const AUDIT_LOG_EXPORT: ExportColumn<AuditLogEntryDto>[] = [
+  { header: 'When', value: (r) => r.createdAt.replace('T', ' ').slice(0, 19), width: 20 },
+  { header: 'Who', value: (r) => r.actorName, width: 24 },
+  { header: 'Kind', value: (r) => auditKindLabel(r.entityType), width: 22 },
+  { header: 'Action', value: (r) => auditActionLabel(r.action), width: 22 },
+  { header: 'Note', value: (r) => r.note, width: 48 },
+  { header: 'Record id', value: (r) => r.entityId, width: 28 },
 ];
 
 export const ACTIVITY_EXPORT: ExportColumn<ActivityDto>[] = [

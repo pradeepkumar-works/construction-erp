@@ -1,21 +1,35 @@
 /**
- * Approval matrix: which roles may approve which submission types, and up to what amount.
+ * Approval matrix: which roles and positions may approve which submission types, at which level, and up to what amount.
  * An organisation without a saved matrix uses the fixed rule (APPROVER_ROLES approve everything, no limit).
  * Admin can always approve everything, so nothing is ever left without an approver.
  */
 import { SUBMISSION_TYPES, type ApprovalStepAction, type RoleKey, type SubmissionStatus, type SubmissionType } from './enums';
-import { APPROVER_ROLES } from './permissions';
+import { APPROVER_ROLES, GUEST_ROLES } from './permissions';
 
 /** One right: approve `type`, up to `maxAmount` rupees (null = no limit), at approval `level` (1 when left out). */
 export interface ApprovalRightDto {
   type: SubmissionType;
   maxAmount: string | null;
-  /** 2 or 3 for a higher level; absent or 1 for the first approval */
+  /** 2 to 6 for a higher level; absent or 1 for the first approval */
   level?: number;
 }
 
-/** Up to three approvals of one entry: level 1 is the matrix; levels 2 and 3 apply above their amount. */
-export const MAX_APPROVAL_LEVELS = 3;
+/** Up to six approvals of one entry, in order: level 1 always; levels 2 to 6 apply from their amount. */
+export const MAX_APPROVAL_LEVELS = 6;
+
+/**
+ * Who a level of the approval matrix names: a role ("role:PROJECT_MANAGER") or a position of the `position` master
+ * ("position:site-in-charge"). Built only by `roleApprover` and `positionApprover`, so the two never mix up.
+ */
+export type ApproverKey = string & { readonly __approver: unique symbol };
+export const roleApprover = (role: RoleKey): ApproverKey => `role:${role}` as ApproverKey;
+export const positionApprover = (code: string): ApproverKey => `position:${code}` as ApproverKey;
+/** The role or the position code a key names (the other one null). */
+export function approverOf(key: ApproverKey): { roleKey: RoleKey | null; positionCode: string | null } {
+  return key.startsWith('role:') ? { roleKey: key.slice(5) as RoleKey, positionCode: null } : { roleKey: null, positionCode: key.slice(9) };
+}
+/** A rule's approver as a key: its role, else its position. */
+export const ruleApprover = (r: { roleKey: RoleKey | null; positionCode: string | null }): ApproverKey => (r.positionCode ? positionApprover(r.positionCode) : roleApprover(r.roleKey!));
 
 /** A higher level of one submission type: who approves it, and the amount from which it applies (null = always). */
 export interface ApprovalLevelRule {
@@ -26,7 +40,7 @@ export interface ApprovalLevelRule {
 /**
  * How many approvals an entry needs: level 1 always, and each higher level whose amount the entry reaches (a level
  * without an amount, or any level of a type without an amount, always applies). An unknown amount counts as nil, so
- * it needs only the levels that always apply. Levels run in order: level 3 applies only when level 2 does.
+ * it needs only the levels that always apply. Levels run in order: a level applies only when the one below it does.
  */
 export function levelsNeeded(type: SubmissionType, higher: ApprovalLevelRule[], amount: string | number | null): number {
   let levels = 1;
@@ -46,7 +60,7 @@ export interface ApprovalEscalationDto {
   type: SubmissionType;
   /** Remind the approvers once the entry has waited this many hours at its level */
   remindAfterHours: number | null;
-  /** After this many hours, the next level's roles (management above the top level) may decide it too, and are told */
+  /** After this many hours, the next level's approvers (management above the top level) may decide it too, and are told */
   escalateAfterHours: number | null;
 }
 
@@ -55,6 +69,8 @@ export interface ApprovalStepDto {
   level: number;
   action: ApprovalStepAction;
   byName: string | null;
+  /** The approver `byName` decided for while they were away; null when they decided as themselves */
+  forName: string | null;
   at: string;
   note: string | null;
 }
@@ -70,9 +86,9 @@ export interface ApprovalStageDto {
   levels: number;
   /** Steps since it was last submitted, oldest first */
   steps: ApprovalStepDto[];
-  /** Waiting long enough that the next level's roles may decide it too */
+  /** Waiting long enough that the next level's approvers may decide it too */
   escalated: boolean;
-  /** Roles whose queue it is in now */
+  /** Roles and positions whose queue it is in now */
   waitingWith: string[];
   /** Since when it has waited at this level (submission, or the last step) */
   waitingSince: string | null;
@@ -84,6 +100,7 @@ export interface ApprovalStageDto {
 /** What the amount of each type is; types not listed have no amount, so a limit does not apply to them. */
 export const APPROVAL_AMOUNT_BASIS: Partial<Record<SubmissionType, string>> = {
   PROGRESS: 'value of the quantity at the BOQ rate',
+  MATERIAL_REQUEST: 'items at their last approved order rate, before GST (an item never ordered adds nothing)',
   EXPENSE: 'bill total including GST',
   MEASUREMENT: 'measured quantity at the BOQ rate',
   MACHINERY: 'machine cost for the day at its hire rate',
@@ -132,16 +149,68 @@ export function mayApproveType(user: { roleKey: RoleKey; approvalRights?: Approv
 }
 
 /**
+ * Approvals while someone is away: from `startsOn` to `endsOn` (company dates, both days included) `toUserId` decides
+ * what waits on `fromUserId` as well as their own, with their limits, and is told of it. The delegator keeps their rights.
+ */
+export interface ApprovalDelegationDto {
+  id: string;
+  fromUserId: string;
+  fromName: string;
+  toUserId: string;
+  toName: string;
+  /** YYYY-MM-DD */
+  startsOn: string;
+  /** YYYY-MM-DD */
+  endsOn: string;
+  note: string | null;
+  /** Today is within its dates */
+  active: boolean;
+  createdByName: string | null;
+}
+
+/** YYYY-MM-DD, both days included. */
+export const delegationActive = (d: { startsOn: string; endsOn: string }, today: string): boolean => d.startsOn <= today && today <= d.endsOn;
+
+const DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * What is wrong with a delegation about to be saved, or null. `to` is the delegate as found in the company (null when
+ * not found); `today` the company's date.
+ */
+export function delegationProblem(
+  d: { fromUserId: string; toUserId: string; startsOn: string; endsOn: string },
+  to: { roleKey: RoleKey; isActive: boolean; fullName: string } | null,
+  today: string,
+): string | null {
+  if (!to) return 'Choose who approves while they are away';
+  if (d.toUserId === d.fromUserId) return 'Choose someone else: a person cannot approve for themselves';
+  if (GUEST_ROLES.includes(to.roleKey)) return `${to.fullName} signs in as a guest or supplier and cannot approve; choose someone on the company's staff`;
+  if (!to.isActive) return `${to.fullName}'s login is switched off; choose someone else`;
+  if (!DAY.test(d.startsOn) || !DAY.test(d.endsOn)) return 'Enter the first and last day as dates';
+  if (d.endsOn < d.startsOn) return 'Choose a last day on or after the first day';
+  if (d.endsOn < today) return 'Choose a last day from today on';
+  return null;
+}
+
+/**
+ * Whoever made an entry never decides it, whatever their role (admin included): a submission, a salary run, a full and
+ * final settlement, a voucher. Null when `userId` may decide; else the words that say so.
+ */
+export const ownEntryProblem = (makerId: string | null | undefined, userId: string): string | null =>
+  makerId && makerId === userId ? 'You made this entry, so another approver decides it.' : null;
+
+/**
  * Decisions that wait on the caller outside the submission queue: each has its own approval in its module (leave and
  * overtime under Staff, a salary run under Payroll, a voucher in the Books, an outward letter's signature under
  * Correspondence). The Approvals inbox lists them so one page holds everything waiting on someone; deciding opens the
  * module's own page.
  */
-export const OTHER_DECISION_KINDS = ['LEAVE', 'OVERTIME', 'PAYROLL_RUN', 'VOUCHER', 'LETTER'] as const;
+export const OTHER_DECISION_KINDS = ['LEAVE', 'OVERTIME', 'CORRECTION', 'PAYROLL_RUN', 'VOUCHER', 'LETTER'] as const;
 export type OtherDecisionKind = (typeof OTHER_DECISION_KINDS)[number];
 export const OTHER_DECISION_LABELS: Record<OtherDecisionKind, string> = {
   LEAVE: 'Leave',
   OVERTIME: 'Overtime',
+  CORRECTION: 'Attendance corrections',
   PAYROLL_RUN: 'Salary runs',
   VOUCHER: 'Vouchers',
   LETTER: 'Letters to sign',

@@ -24,6 +24,7 @@ import { singleKeysOn } from '@/lib/shortcuts';
 import { ApprovalQueue } from '@/components/approvals/ApprovalQueue';
 import { ApprovalPane } from '@/components/approvals/ApprovalPane';
 import { ReviewedToday } from '@/components/approvals/ReviewedToday';
+import { AwayButton } from '@/components/approvals/Delegations';
 import { OtherDecisions, OtherDecisionsLine } from '@/components/approvals/OtherDecisions';
 import { decidedInPlace, groupQueue, QUEUE_TYPE_LABELS, QUEUE_TYPES, queueKey, recordPage } from '@/components/approvals/queue';
 import { ProgressDrawer } from '@/components/progress/ProgressDrawer';
@@ -283,7 +284,18 @@ export default function ApprovalsPage() {
 
   return (
     <div className="page-container">
-      <PageHeader title="Approvals" subtitle={subtitle} extra={approver ? <ReviewedToday onOpen={(r) => setDrawer({ type: r.type, id: r.id })} /> : undefined} />
+      <PageHeader
+        title="Approvals"
+        subtitle={subtitle}
+        extra={
+          approver ? (
+            <Flex wrap gap={tk.space[2]} align="center">
+              <AwayButton />
+              <ReviewedToday onOpen={(r) => setDrawer({ type: r.type, id: r.id })} />
+            </Flex>
+          ) : undefined
+        }
+      />
       {!approver && !others.length && <Alert type="info" showIcon title="Nothing waits on you here. Submissions are approved by the managers; leave, overtime and letters to sign that wait on you show here." style={{ marginBottom: tk.space[4] }} />}
       {!!error && <QueryError error={error} onRetry={() => refetch()} />}
       {approver && (

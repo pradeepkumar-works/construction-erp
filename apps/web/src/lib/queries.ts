@@ -2,6 +2,7 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
 import type {
+  AuditLogEntryDto,
   LetterheadDto,
   DocumentCheckDecision,
   EmployeeDocumentKind,
@@ -184,6 +185,8 @@ import type {
   DprFormDto,
   DprFormVersionsDto,
   ApprovalMatrixDto,
+  ApprovalDelegationDto,
+  UserPositionDto,
   AuthOptionsDto,
   MeasurementSheetDto,
   ToMeasureItemDto,
@@ -351,6 +354,8 @@ import type {
   LeaveStatus,
   LeaveType,
   MyStaffDto,
+  AttendanceCorrectionDto,
+  OrgPersonDto,
   StaffAttendanceDto,
   StaffRegisterDto,
   StaffSummaryDto,
@@ -491,6 +496,14 @@ export interface ProjectFilters extends PageParams {
 export interface UserFilters extends PageParams {
   roleKey?: RoleKey;
   isActive?: boolean;
+}
+
+export interface AuditLogFilters extends PageParams {
+  kind?: string;
+  action?: string;
+  actorId?: string;
+  from?: string;
+  to?: string;
 }
 
 export interface AttendanceFilters extends PageParams {
@@ -759,6 +772,14 @@ export const useProjectsPage = (filters: ProjectFilters) =>
   });
 
 export const useProject = (id: string | undefined) => useQuery({ ...recordQuery<ProjectDetail>('/projects', id), enabled: !!id });
+
+/** The company's audit log (admin): a page of lines and the kinds of record in it. */
+export const useAuditLog = (filters: AuditLogFilters) =>
+  useQuery({
+    queryKey: ['audit-log', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<AuditLogEntryDto> & { kinds: string[] }>('/audit-log', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+  });
 
 export const useUsersPage = (filters: UserFilters, enabled = true) =>
   useQuery({
@@ -1310,6 +1331,50 @@ export const useAuthOptions = () =>
 
 export const useApprovalMatrix = (enabled = true) =>
   useQuery({ queryKey: ['approval-rules'], queryFn: async () => (await api.get<ApprovalMatrixDto>('/approval-rules')).data, enabled });
+
+/** Approvals while someone is away: the caller's own (from or to them), or with `all` everyone's (admin). */
+export const useApprovalDelegations = (all = false, enabled = true) =>
+  useQuery({ queryKey: ['approval-delegations', all], queryFn: async () => (await api.get<ApprovalDelegationDto[]>('/approval-delegations', { params: all ? { all: true } : {} })).data, enabled });
+
+export interface NewDelegation {
+  fromUserId?: string;
+  toUserId: string;
+  startsOn: string;
+  endsOn: string;
+  note?: string;
+}
+
+export function useCreateDelegation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: NewDelegation) => (await api.post<ApprovalDelegationDto>('/approval-delegations', body)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['approval-delegations'] }),
+    meta: FAIL_NOTICE,
+  });
+}
+
+export function useEndDelegation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => (await api.delete(`/approval-delegations/${id}`)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['approval-delegations'] }),
+    meta: FAIL_NOTICE,
+  });
+}
+
+/** Replace the positions a user holds (admin). */
+export function useSetPositions() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ userId, positions }: { userId: string; positions: Pick<UserPositionDto, 'positionCode' | 'projectId'>[] }) => (await api.put<UserSummary>(`/users/${userId}/positions`, { positions })).data,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['users'] });
+      qc.invalidateQueries({ queryKey: ['approval-rules'] });
+      qc.invalidateQueries({ queryKey: ['projects'] });
+    },
+    meta: FAIL_NOTICE,
+  });
+}
 
 export const useActivityTemplates = (enabled = true) =>
   useQuery({ queryKey: ['activity-templates'], queryFn: async () => (await api.get<ActivityTemplateDto[]>('/activity-templates')).data, enabled });
@@ -2314,6 +2379,21 @@ export const useOvertimeToDecide = (enabled = true) =>
     queryKey: ['staff', 'overtime'],
     queryFn: async () => (await api.get<StaffAttendanceDto[]>('/staff/overtime')).data,
     enabled,
+  });
+
+/** Attendance corrections waiting on the caller (their reports' first, then HR's once recommended), oldest day first. */
+export const useCorrectionsToDecide = (enabled = true) =>
+  useQuery({
+    queryKey: ['staff', 'corrections'],
+    queryFn: async () => (await api.get<AttendanceCorrectionDto[]>('/staff/corrections')).data,
+    enabled,
+  });
+
+/** The org chart's people: the active staff the caller sees, with both their lines; the tree is `orgChart`. */
+export const useOrgPeople = () =>
+  useQuery({
+    queryKey: ['staff', 'org-chart'],
+    queryFn: async () => (await api.get<OrgPersonDto[]>('/staff/org-chart')).data,
   });
 
 export const useMyStaff = () =>
