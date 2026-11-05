@@ -335,4 +335,5 @@ export const COMMON: Record<string, string> = {
   'Letters open': 'खुले पत्र',
   'Each indent from approval through quotations and the order to the last delivery.': 'हर इंडेंट, मंज़ूरी से कोटेशन और ऑर्डर होते हुए आख़िरी डिलीवरी तक।',
   'Waiting for signature': 'दस्तख़त का इंतज़ार',
+  'Waiting for the seal': 'मुहर का इंतज़ार',
 };

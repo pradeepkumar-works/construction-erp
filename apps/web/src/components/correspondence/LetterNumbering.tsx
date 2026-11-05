@@ -1,16 +1,19 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Button, Card, Flex, Form, Input, Radio, Select, Table, Typography } from 'antd';
+import { Button, Card, Flex, Form, Input, Radio, Segmented, Select, Table, Typography } from 'antd';
 import { tk } from '@/ds';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { LetterApprovalRule, LetterDirection, LetterSeriesDto, LetterSettingsDto } from '@erp/shared';
+import { AppTag } from '@/components/common/AppTag';
+import { useIsPhone } from '@/lib/screen';
+import type { LetterDirection, LetterGate, LetterSeriesDto, LetterSettingsDto } from '@erp/shared';
 import {
-  CONTRACTUAL_LETTER_CATEGORIES,
   HEAD_OFFICE_PREFIX,
-  LETTER_APPROVAL_RULES,
-  LETTER_APPROVAL_RULE_LABELS,
-  letterRulesProblem,
+  LETTER_GATES,
+  LETTER_GATE_LABELS,
+  NO_LETTER_CATEGORY,
+  isContractualCategory,
+  letterGate,
   LETTER_DIRECTION_LABELS,
   LETTER_NUMBER_PATTERN,
   formatLetterNo,
@@ -29,6 +32,9 @@ import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { todayDate } from '@/lib/format';
 
 const HO = 'HO';
+
+/** The three gates as the choice reads beside a category. */
+const GATE_WORDS: Record<LetterGate, string> = { NONE: 'None', SIGN: 'Signatory', SEAL: 'Signatory and seal' };
 
 interface SeriesForm {
   projectId: string;
@@ -115,15 +121,19 @@ export function LetterNumbering() {
   const { data, isLoading, error, refetch } = useLetterSettings();
   const { data: categories } = useMasterList('letter-category');
   const [editing, setEditing] = useState<LetterSeriesDto | 'new' | null>(null);
-  const saveRule = useMutation({
-    mutationFn: async (rules: { approval: LetterApprovalRule; seal: LetterApprovalRule }) => (await api.put<LetterSettingsDto>('/letters/settings', rules)).data,
-    onSuccess: (s) => {
+  const phone = useIsPhone();
+  const saveGate = useMutation({
+    mutationFn: async (v: { category: string | null; gate: LetterGate }) => (await api.put<LetterSettingsDto>('/letters/settings/gate', v)).data,
+    onSuccess: (s, v) => {
       qc.setQueryData(['letters', 'settings'], s);
-      notify.success('Approval rule saved');
+      notify.success(`${v.category ? (categories?.entries.find((e) => e.code === v.category)?.name ?? v.category) : 'Letters with no category'}: ${LETTER_GATE_LABELS[v.gate].toLowerCase()}`);
     },
     meta: FAIL_NOTICE,
   });
-  const contractual = useMemo(() => CONTRACTUAL_LETTER_CATEGORIES.map((c) => categories?.entries.find((e) => e.code === c)?.name ?? c).join(', '), [categories]);
+  const rows = useMemo(
+    () => [...(categories?.entries ?? []).filter((e) => e.isActive).map((e) => ({ code: e.code as string | null, name: e.name })), { code: null, name: 'Letters with no category' }],
+    [categories],
+  );
 
   if (isLoading) return <PageSkeleton shape="list" />;
   if (error || !data) return <QueryError error={error} onRetry={() => refetch()} />;
@@ -143,31 +153,39 @@ export function LetterNumbering() {
         }
       />
       <Flex vertical gap={tk.space[4]}>
-        <Card title="Approval before numbering" size="small">
-          <Radio.Group
-            value={data.approval}
-            disabled={!manage || saveRule.isPending}
-            onChange={(e) => saveRule.mutate({ approval: e.target.value, seal: letterRulesProblem(e.target.value, data.seal) ? e.target.value : data.seal })}
-            aria-label="Approval before numbering"
-            options={LETTER_APPROVAL_RULES.map((r) => ({ value: r, label: LETTER_APPROVAL_RULE_LABELS[r] }))}
-            orientation="vertical"
-          />
-          <Typography.Paragraph type="secondary" style={{ marginTop: tk.space[3], marginBottom: 0 }}>
-            Contractual letters are those in the categories {contractual}. Once sent, they also need proof of delivery.
-          </Typography.Paragraph>
-        </Card>
-        <Card title="Seal at head office" size="small">
+        <Card title="Approval by category" size="small">
           <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
-            After its signatory approves it, a letter can wait for a director at head office before it gets a number. A letter a director signs needs no seal.
+            What an outward letter of each category passes before it gets its number: nothing, its signatory, or its signatory and then a director at head office, who seals it. A letter a director signs needs no seal.
           </Typography.Paragraph>
-          <Radio.Group
-            value={data.seal}
-            disabled={!manage || saveRule.isPending}
-            onChange={(e) => saveRule.mutate({ approval: data.approval, seal: e.target.value })}
-            aria-label="Seal at head office"
-            options={LETTER_APPROVAL_RULES.map((r) => ({ value: r, label: r === 'NONE' ? 'None: numbered when signed' : LETTER_APPROVAL_RULE_LABELS[r], disabled: !!letterRulesProblem(data.approval, r) }))}
-            orientation="vertical"
-          />
+          <ul aria-label="Approval by category" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+            {rows.map((r) => {
+              const gate = letterGate(data, r.code);
+              const pending = saveGate.isPending && saveGate.variables?.category === r.code;
+              return (
+                <li
+                  key={r.code ?? NO_LETTER_CATEGORY}
+                  style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: tk.space[2], minHeight: 44, padding: `${tk.space[2]}px 0`, borderTop: `1px solid ${tk.color.line.hairline}` }}
+                >
+                  <span>
+                    {r.name}
+                    {isContractualCategory(r.code) ? (
+                      <AppTag variant="kind" style={{ marginInlineStart: tk.space[2] }}>
+                        Needs proof of delivery
+                      </AppTag>
+                    ) : null}
+                  </span>
+                  <Segmented<LetterGate>
+                    size={phone ? 'small' : 'middle'}
+                    value={gate}
+                    disabled={!manage || pending}
+                    aria-label={`Approval for ${r.name.toLowerCase()}`}
+                    onChange={(g) => saveGate.mutate({ category: r.code, gate: g })}
+                    options={LETTER_GATES.map((g) => ({ value: g, label: GATE_WORDS[g] }))}
+                  />
+                </li>
+              );
+            })}
+          </ul>
         </Card>
         <Card title="Series" size="small">
           <Table<LetterSeriesDto>

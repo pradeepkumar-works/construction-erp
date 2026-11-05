@@ -999,6 +999,30 @@ and a second top bar to switch depots.
      and the phone; the Fuel tab shows each machine's kind and whether it is hired, the pump readings, and the litres by
      kind of machine for the period. ARCHITECTURE "Fuel and fleet use".
 
+## From a business user's correspondence screens (items 179 to 182)
+
+Asked by Pradeep on 5 Nov 2026: a business user sketched the correspondence desk they expect (five screens: the overview,
+the inward register, the outward register, the approvals desk for the project manager's signature and head office's seal,
+and the masters). The analysis is "Correspondence mockups, screen by screen" in the project files
+(`correspondence-mockups/analysis.md`); the overview, both registers, the two-level approval and the masters were in
+Nirmaan already (item 136, item 169). These four were thin, built as one round. Left out on purpose: the role switcher
+(a demo device: each person signs in as themselves), a combined audit log (each letter keeps its own History, and the
+registers sort newest first) and a second header for the vertical (the header has one).
+
+179. ~~**Approval per letter category** (S).~~ Done: Numbering and approval sets each category, and letters with no
+     category, to numbered when saved, its signatory, or its signatory and then head office's seal; a category the company
+     has not set follows the two company-wide rules it started with (`letterGate`, `Organization.letterGates`).
+     ARCHITECTURE "Correspondence".
+180. ~~**Where an outward letter stands** (S).~~ Done: the outward register shows the signatory's step and head office's
+     (`letterSignOff`), then who signed and whether it is dispatched or delivered; a letter waiting for the seal says so
+     on its tag (`letterStatusLabel`), on the phone too; a Signature and seal view, and Letters to sign and seal in the
+     menu with the count of letters waiting for the user; the drafter is a column the register can show.
+181. ~~**The scanned copy from the inward register** (XS).~~ Done: a received letter with its scan kept opens it from the
+     row.
+182. ~~**Kinds of office** (S).~~ Done: an address book entry is a client, consultant, third-party inspection agency,
+     government authority, subcontractor, supplier, bank or other (the `letterParty` master, Correspondence › Masters ›
+     Kinds of office); the address book shows and filters it, and both registers filter letters by it.
+
 ## Definition of done for every item
 Prisma migration, API endpoints with Swagger, shared types, web screen, mobile screen where site
 staff use it, seed data updated, `pnpm typecheck` + `next build` + mobile `tsc` clean, smoke test

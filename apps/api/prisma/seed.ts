@@ -19,7 +19,7 @@ import { seedConsultantChecks } from './seed-consultant-checks';
 import { seedProgramme } from './seed-programme';
 import { seedJoiningDocuments } from './seed-joining-documents';
 import { seedOm } from './seed-om';
-import { seedCorrespondence } from './seed-correspondence';
+import { seedCorrespondence, seedLetterPartyKinds } from './seed-correspondence';
 import { seedQa } from './seed-qa';
 import { seedQaRegisters } from './seed-qa-registers';
 import { seedQaAudits } from './seed-qa-audits';
@@ -1846,6 +1846,7 @@ async function modulesPass(organizationId: string, passwordHash: string) {
   await seedTestsAndNcrs(organizationId);
   await seedDocuments(organizationId);
   await seedCorrespondence(prisma, organizationId);
+  await seedLetterPartyKinds(prisma, organizationId);
   await seedQa(prisma, organizationId);
   await seedQaRegisters(prisma, organizationId);
   await seedQaAudits(prisma, organizationId);

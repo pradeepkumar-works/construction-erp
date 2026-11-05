@@ -587,7 +587,9 @@ Letters in and out for every project and for head office (`CorrespondenceService
   text we send), `category` (the `letterCategory` master), `priority`, `confidential`, `mode` (hand, post, speed post…),
   `replyBy`, `inReplyToId`, `riskId`, `markedToId` / `action` / `actionDue`, `signatoryId`, `sentForApprovalAt`,
   `approvedAt`, `returnNote`, `docketNo`, `dispatchedOn`, `deliveredOn`, `deliveryProof`, `closedAt` / `closedNote`.
-  `LetterMark` keeps every mark and forward (from, to, action, due, note, done). `LetterContact` (the address book),
+  `LetterMark` keeps every mark and forward (from, to, action, due, note, done). `LetterContact` (the address book, with
+  its `kind`, a code of the `letterParty` master: client, consultant, third-party inspection…; the registers filter by it
+  as `partyKind`),
   `LetterSeries` (per project or head office and direction: `prefix`, `pattern`) with `LetterSeriesCounter` (one per
   financial year), `LetterTemplate`. All four have RLS. `Organization.letterApproval` is the approval rule.
 - **Numbers.** `formatLetterNo(pattern, …)` over `{PREFIX}/{DIR}/{FY}/{NNN}` by default: `P07/OUT/26-27/042`,
@@ -608,6 +610,13 @@ Letters in and out for every project and for head office (`CorrespondenceService
   sending it back clears the signature. `letterApprovalStage` says which of the two it waits for. It prints on the letterhead (`GET /letters/:id/print`),
   and the desk records dispatch and delivery; a contractual letter issued with no delivery date shows "no proof"
   (`proofMissing`). An "already sent" letter is numbered at once.
+  Since item 179 the approval is set per category (`LETTER_GATES`: `NONE` numbered when saved, `SIGN` its signatory,
+  `SEAL` its signatory and then the seal), kept by code in `Organization.letterGates` with `(none)` for letters with no
+  category; `letterGate(rules, category)` reads a category's own gate, else the two rules above, so a category added later
+  starts where they put it and a seal can never come without a signature. Numbering and approval sets them one at a time
+  (`PUT /letters/settings/gate`). The outward register reads `letterSignOff` (the signatory's step and head office's:
+  done, waiting, not yet, not needed), and a letter's tag `letterStatusLabel` ("Waiting for the seal" once signed).
+  Letters to sign and seal (`correspondence.approvals`) is the register at the letters waiting for approval.
 - **Who.** `canViewLetters` (admin, management, PM, QS, document controller) keep the registers of their projects;
   `canHeadLetters` (admin, management, document controller) also see head office and confidential letters and change
   numbering; `canSignLetters` sign. Anyone sees a letter marked to them or waiting for their signature (`mine`, `toSign`).

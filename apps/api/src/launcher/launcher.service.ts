@@ -205,7 +205,7 @@ export class LauncherService {
     addEither('quality.ncrs', [own.ncrsToRectify, 'to put right'], [own.ncrsToClose, 'to close']);
     addEither('documents.rfis', [own.rfisToChase, 'to chase'], [own.rfisToClose, 'to close']);
     add('documents.letters', own.lettersToAnswer, 'to answer');
-    add('correspondence.outward', own.lettersToSign, 'to sign');
+    add('correspondence.approvals', own.lettersToSign, 'to sign');
     // Warnings are there to read; everything else counted here waits on the user's own move.
     const info = ['watch'].filter((id) => nodes[id]);
     return { nodes, words, info, approvals: approvals.filter((a) => a.count > 0) };

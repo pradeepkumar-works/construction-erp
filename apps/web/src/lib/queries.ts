@@ -1975,6 +1975,8 @@ export interface LetterFilters extends PageParams {
   direction?: LetterDirection;
   status?: LetterStatus;
   category?: string;
+  /** From or to an office of this kind (a letterParty code) */
+  partyKind?: string;
   riskId?: string;
   mine?: boolean;
   toSign?: boolean;

@@ -161,7 +161,8 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
     subs: [
       sub('inward', 'Inward register', 'documents.letters'),
       sub('outward', 'Outward register', 'correspondence.outward'),
-      sub('masters', 'Masters', 'correspondence.contacts', 'correspondence.templates', 'correspondence.categories', 'correspondence.numbering'),
+      sub('approvals', 'Approvals', 'correspondence.approvals'),
+      sub('masters', 'Masters', 'correspondence.contacts', 'correspondence.templates', 'correspondence.categories', 'correspondence.partyKinds', 'correspondence.numbering'),
     ],
   },
   {

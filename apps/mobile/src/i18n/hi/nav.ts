@@ -421,4 +421,8 @@ export const NAV: Record<string, string> = {
   'Standard letters a draft starts from, with placeholders filled in.': 'मानक पत्र जिनसे मसौदा शुरू होता है, खाली जगहें भरी हुई।',
   'Letter categories': 'पत्रों की श्रेणियाँ',
   'What letters are about; the contractual ones need approval and proof.': 'पत्र किस बारे में हैं; अनुबंध वाले पत्रों को मंज़ूरी और सबूत चाहिए।',
+  'Letters to sign and seal': 'हस्ताक्षर और मुहर के लिए पत्र',
+  'Outward letters waiting for their signatory or for the seal at head office, and where each stands.': 'जावक पत्र जो हस्ताक्षर करने वाले या मुख्य कार्यालय की मुहर का इंतज़ार कर रहे हैं, और हर एक कहाँ है।',
+  'Kinds of office': 'दफ़्तरों के प्रकार',
+  'Client, consultant, third-party inspection, authority: what each office in the address book is.': 'क्लाइंट, सलाहकार, थर्ड पार्टी निरीक्षण, सरकारी विभाग: पता पुस्तिका में हर दफ़्तर क्या है।',
 };

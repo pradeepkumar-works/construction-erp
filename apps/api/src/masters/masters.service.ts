@@ -88,6 +88,11 @@ export class MastersService {
         (await this.prisma.letter.groupBy({ by: ['category'], where: { organizationId: org, category: { not: null } }, _count: { _all: true } })).forEach((r) => add(names.get(r.category!) ?? null, r._count._all));
         break;
       }
+      case 'letterParty': {
+        const names = new Map((await this.entriesFor(org, list)).map((e) => [e.code, e.name]));
+        (await this.prisma.letterContact.groupBy({ by: ['kind'], where: { organizationId: org, kind: { not: null } }, _count: { _all: true } })).forEach((r) => add(names.get(r.kind!) ?? null, r._count._all));
+        break;
+      }
       case 'ncrCategory':
       case 'ncrRootCause': {
         // NCRs keep the code, like letters.

@@ -135,7 +135,7 @@ export function LetterForm({
   );
   const riskOptions = useMemo(() => (delays?.items ?? []).map((r) => ({ value: r.id, label: `${r.riskNo} ${RISK_KIND_LABELS[r.kind]}: ${r.title}` })), [delays]);
   const signatories = (people ?? []).filter((p) => p.canSign);
-  const needsApproval = !!settings && letterNeedsApproval(settings.approval, category);
+  const needsApproval = !!settings && letterNeedsApproval(settings, category);
 
   useEffect(() => {
     if (!open) return;

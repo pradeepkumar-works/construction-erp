@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { LetterDto } from '@erp/shared';
-import { LETTER_ACTION_LABELS, LETTER_DIRECTION_LABELS, LETTER_MODE_LABELS, LETTER_STATUS_LABELS } from '@erp/shared';
+import { LETTER_ACTION_LABELS, LETTER_DIRECTION_LABELS, LETTER_MODE_LABELS, letterStatusLabel } from '@erp/shared';
 import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
 import { AttachmentGallery, Button, Card, ErrorBanner, ErrorState, Input, KeyValue, Loading, Pill, RecordHead, Screen, useSnackbar } from '../../src/components';
@@ -54,7 +54,7 @@ export default function LetterScreen() {
         title={data.subject}
         pills={
           <>
-            <Pill text={t(LETTER_STATUS_LABELS[data.status])} fg={tone.fg} bg={tone.bg} icon={tone.icon} />
+            <Pill text={t(letterStatusLabel(data))} fg={tone.fg} bg={tone.bg} icon={tone.icon} />
             {data.priority === 'URGENT' ? <Pill text={t('Urgent')} fg={colors.danger} bg={colors.dangerSoft} icon={toneIcon.warning} /> : null}
             {data.actionOverdue || data.overdue ? <Pill text={t('Overdue')} fg={colors.danger} bg={colors.dangerSoft} icon={toneIcon.alert} /> : null}
           </>

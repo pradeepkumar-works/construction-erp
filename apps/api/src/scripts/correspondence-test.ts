@@ -22,6 +22,11 @@ import {
   formatLetterNo,
   letterFy,
   letterApprovalStage,
+  letterGate,
+  letterSignOff,
+  letterStatusLabel,
+  readLetterGates,
+  NO_LETTER_CATEGORY,
   letterNeedsApproval,
   letterNeedsSeal,
   letterRulesProblem,
@@ -33,10 +38,13 @@ import {
   navSidebar,
   proofMissing,
   replyOverdue,
+  type LetterApprovalRule,
   type LetterFacts,
+  type LetterRules,
 } from '@erp/shared';
 
 const cases: [string, () => void][] = [];
+const rules = (approval: LetterApprovalRule, seal: LetterApprovalRule = 'NONE', gates: LetterRules['gates'] = {}): LetterRules => ({ approval, seal, gates });
 const test = (name: string, fn: () => void) => cases.push([name, fn]);
 const facts = (f: Partial<LetterFacts>): LetterFacts => ({ direction: 'IN', status: 'OPEN', replyBy: null, replied: false, category: null, dispatchedOn: null, deliveredOn: null, actionDue: null, markedToId: null, ...f });
 
@@ -73,11 +81,11 @@ test('a pattern needs the running number, the year and the direction, and only k
 });
 
 test('approval before numbering: every letter, only contractual ones (the default), or none', () => {
-  for (const c of CONTRACTUAL_LETTER_CATEGORIES) assert.equal(letterNeedsApproval('CONTRACTUAL', c), true, c);
-  assert.equal(letterNeedsApproval('CONTRACTUAL', 'general'), false);
-  assert.equal(letterNeedsApproval('CONTRACTUAL', null), false);
-  assert.equal(letterNeedsApproval('ALL', null), true);
-  assert.equal(letterNeedsApproval('NONE', 'notice'), false);
+  for (const c of CONTRACTUAL_LETTER_CATEGORIES) assert.equal(letterNeedsApproval(rules('CONTRACTUAL'), c), true, c);
+  assert.equal(letterNeedsApproval(rules('CONTRACTUAL'), 'general'), false);
+  assert.equal(letterNeedsApproval(rules('CONTRACTUAL'), null), false);
+  assert.equal(letterNeedsApproval(rules('ALL'), null), true);
+  assert.equal(letterNeedsApproval(rules('NONE'), 'notice'), false);
   const standard = new Set(MASTER_LIST_DEFS.letterCategory.standard.map((e) => e.code));
   for (const c of CONTRACTUAL_LETTER_CATEGORIES) assert.ok(standard.has(c), `${c} is a standard letter category`);
 });
@@ -122,11 +130,13 @@ test('who keeps letters: the document controller heads them, project managers si
 });
 
 test('the module: registers and masters in the tree, in the department menu, and in the sidebar of whoever keeps letters', () => {
-  for (const id of ['documents.letters', 'correspondence.outward', 'correspondence.contacts', 'correspondence.numbering', 'correspondence.templates', 'correspondence.categories']) assert.equal(navNode(id)?.parent, 'correspondence', id);
+  for (const id of ['documents.letters', 'correspondence.outward', 'correspondence.approvals', 'correspondence.contacts', 'correspondence.numbering', 'correspondence.templates', 'correspondence.categories', 'correspondence.partyKinds']) assert.equal(navNode(id)?.parent, 'correspondence', id);
   assert.equal(navNode('documents.letters')?.route, '/correspondence', 'the old Letters node keeps its id (pins) and opens the inward register');
   assert.equal(navNode(MASTER_LIST_DEFS.letterCategory.node)?.route, '/masters/letter-category');
+  assert.equal(navNode(MASTER_LIST_DEFS.letterParty.node)?.route, '/masters/letter-party');
+  assert.equal(navNode('correspondence.approvals')?.route, '/correspondence/outward?status=AWAITING_APPROVAL', 'the desk is the outward register at the letters waiting for approval');
   const dept = DEPARTMENT_MODULES.find((m) => m.key === 'correspondence')!;
-  assert.deepEqual(dept.subs.map((s) => s.key), ['inward', 'outward', 'masters']);
+  assert.deepEqual(dept.subs.map((s) => s.key), ['inward', 'outward', 'approvals', 'masters']);
   const hrefs = (roleKey: 'DOCUMENT_CONTROLLER' | 'SITE_ENGINEER' | 'PROJECT_MANAGER') => navSidebar({ roleKey }).flatMap((s) => s.links.map((l) => l.href));
   assert.ok(hrefs('DOCUMENT_CONTROLLER').includes('/correspondence/numbering'));
   assert.ok(hrefs('PROJECT_MANAGER').includes('/correspondence/outward') && !hrefs('PROJECT_MANAGER').includes('/correspondence/numbering'));
@@ -134,11 +144,11 @@ test('the module: registers and masters in the tree, in the department menu, and
 });
 
 test('the seal at head office: after a signature that is not a director\'s, for the categories its rule names', () => {
-  assert.equal(letterNeedsSeal('CONTRACTUAL', 'claim', 'PROJECT_MANAGER'), true, 'a claim signed by the PM waits for head office');
-  assert.equal(letterNeedsSeal('CONTRACTUAL', 'general', 'PROJECT_MANAGER'), false, 'a general letter is numbered when signed');
-  assert.equal(letterNeedsSeal('ALL', 'general', 'PROJECT_MANAGER'), true);
-  assert.equal(letterNeedsSeal('ALL', 'claim', 'MANAGEMENT'), false, 'a director signing has sealed it already');
-  assert.equal(letterNeedsSeal('NONE', 'claim', 'PROJECT_MANAGER'), false);
+  assert.equal(letterNeedsSeal(rules('ALL', 'CONTRACTUAL'), 'claim', 'PROJECT_MANAGER'), true, 'a claim signed by the PM waits for head office');
+  assert.equal(letterNeedsSeal(rules('ALL', 'CONTRACTUAL'), 'general', 'PROJECT_MANAGER'), false, 'a general letter is numbered when signed');
+  assert.equal(letterNeedsSeal(rules('ALL', 'ALL'), 'general', 'PROJECT_MANAGER'), true);
+  assert.equal(letterNeedsSeal(rules('ALL', 'ALL'), 'claim', 'MANAGEMENT'), false, 'a director signing has sealed it already');
+  assert.equal(letterNeedsSeal(rules('ALL', 'NONE'), 'claim', 'PROJECT_MANAGER'), false);
   assert.ok(maySealLetters('ADMIN') && maySealLetters('MANAGEMENT') && !maySealLetters('PROJECT_MANAGER') && !maySealLetters('DOCUMENT_CONTROLLER'));
 });
 
@@ -148,6 +158,40 @@ test('the seal never reaches a letter the signature does not', () => {
   assert.equal(letterRulesProblem('ALL', 'NONE'), null);
   assert.match(letterRulesProblem('CONTRACTUAL', 'ALL')!, /signed first/);
   assert.match(letterRulesProblem('NONE', 'CONTRACTUAL')!, /signature first/);
+});
+
+test('each category passes its own gate; one the company has not set follows the two rules it started with', () => {
+  const r = rules('CONTRACTUAL', 'NONE', { 'bill-and-payment': 'SIGN', notice: 'SEAL', claim: 'NONE', [NO_LETTER_CATEGORY]: 'SIGN' });
+  assert.equal(letterGate(r, 'notice'), 'SEAL');
+  assert.equal(letterGate(r, 'bill-and-payment'), 'SIGN', 'a general category the company asks to be signed');
+  assert.equal(letterGate(r, 'claim'), 'NONE', 'a contractual category the company numbers when saved');
+  assert.equal(letterGate(r, 'hindrance'), 'SIGN', 'not set: contractual, so signed under the default rule');
+  assert.equal(letterGate(r, 'general'), 'NONE');
+  assert.equal(letterGate(r, null), 'SIGN', 'letters with no category keep a gate of their own');
+  assert.equal(letterGate(rules('ALL', 'CONTRACTUAL'), 'notice'), 'SEAL', 'the rules alone give the same answers as before');
+  assert.equal(letterGate(rules('ALL', 'CONTRACTUAL'), 'general'), 'SIGN');
+  assert.equal(letterNeedsApproval(r, 'claim'), false);
+  assert.equal(letterNeedsSeal(r, 'notice', 'PROJECT_MANAGER'), true);
+  assert.equal(letterNeedsSeal(r, 'notice', 'ADMIN'), false, "a director's signature is the seal");
+  assert.equal(letterNeedsSeal(r, 'bill-and-payment', 'PROJECT_MANAGER'), false, 'signed is enough');
+  assert.deepEqual(readLetterGates({ notice: 'SEAL', claim: 'MAYBE', general: 3 }), { notice: 'SEAL' }, 'anything that is not a gate is dropped');
+  assert.deepEqual(readLetterGates(null), {});
+  assert.deepEqual(readLetterGates(['SEAL']), {});
+});
+
+test('the outward register shows where the signature and the seal stand', () => {
+  const at = '2026-10-30T10:00:00Z';
+  assert.deepEqual(letterSignOff({ status: 'DRAFT', gate: 'SEAL', signedAt: null, signatoryId: null }), { sign: 'LATER', seal: 'LATER' });
+  assert.deepEqual(letterSignOff({ status: 'DRAFT', gate: 'NONE', signedAt: null, signatoryId: null }), { sign: 'NOT_NEEDED', seal: 'NOT_NEEDED' });
+  assert.deepEqual(letterSignOff({ status: 'AWAITING_APPROVAL', gate: 'SEAL', signedAt: null, signatoryId: 'pm' }), { sign: 'WAITING', seal: 'LATER' });
+  assert.deepEqual(letterSignOff({ status: 'AWAITING_APPROVAL', gate: 'SIGN', signedAt: null, signatoryId: 'pm' }), { sign: 'WAITING', seal: 'NOT_NEEDED' });
+  assert.deepEqual(letterSignOff({ status: 'AWAITING_APPROVAL', gate: 'SEAL', signedAt: at, signatoryId: 'pm' }), { sign: 'DONE', seal: 'WAITING' });
+  assert.deepEqual(letterSignOff({ status: 'ISSUED', gate: 'SEAL', signedAt: at, signatoryId: 'pm' }), { sign: 'DONE', seal: 'DONE' });
+  assert.deepEqual(letterSignOff({ status: 'ISSUED', gate: 'SEAL', signedAt: null, signatoryId: 'md' }), { sign: 'DONE', seal: 'NOT_NEEDED' }, "a director signed: the signature was the seal");
+  assert.deepEqual(letterSignOff({ status: 'ISSUED', gate: 'NONE', signedAt: null, signatoryId: null }), { sign: 'NOT_NEEDED', seal: 'NOT_NEEDED' });
+  assert.equal(letterStatusLabel({ status: 'AWAITING_APPROVAL', signedAt: null }), 'Waiting for signature');
+  assert.equal(letterStatusLabel({ status: 'AWAITING_APPROVAL', signedAt: at }), 'Waiting for the seal');
+  assert.equal(letterStatusLabel({ status: 'ISSUED', signedAt: at }), 'Issued');
 });
 
 test('where a letter waiting for approval stands', () => {
