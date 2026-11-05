@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-pipeline-layout',
+    date: '2026-11-05',
+    title: 'Pipeline layout in Drawings: upload a KMZ from Google Earth',
+    points: [
+      'Drawings has a Pipeline layout page. Choose a water project, then Import network, and drop a KMZ or KML drawn in Google Earth, an EPANET file or an Excel sheet.',
+      'Valves and tanks named on the path become nodes at their chainage. Short names like AV-01, WO-2, SV-3 and NRV read as air valves, scours and valves.',
+      'A KMZ with valves between the 500 m marks now saves; before, Save network stayed greyed out.',
+      'Click a pipe on the map (or in the list) to open it: each stage done against its length, what waits for approval, its valves, the next and previous pipe, and Edit pipe. Record work opens the daily report with a line for that pipe already filled in.',
+    ],
+  },
+  {
     id: '2026-11-correspondence-desk',
     date: '2026-11-05',
     title: 'Letters: approval by category, where each letter stands, kinds of office',
