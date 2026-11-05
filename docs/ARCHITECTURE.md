@@ -1176,6 +1176,14 @@ limits") is `indentEstimate`: each line at the item's last approved order rate i
 whole queue at once by `ApprovalRightsService.indentValues`. A line never ordered adds nothing, and an indent with no
 line ever ordered has no amount, so a limit does not hold it back.
 
+### Purchase orders against the budget (design review, November 2026)
+
+The design has accounts check the budget before a PO is approved. The order's own record (`GET /purchase-orders/:id`)
+carries `budgetCheck` for those who see cost (`canViewCost`): the project's material budget, the other approved orders
+of the project and this one, all before GST, and what is left (`poBudgetCheck`, `@erp/shared/po-budget.ts`, tested in
+`src/scripts/purchase-award-test.ts`). It is one row of the record's Checks, red when the order goes over; advice beside
+the decision, never a gate. A project with no material budget gets no row.
+
 ### Small purchase items (v5 item 95)
 
 **Stock first.** A material request's lines are free text; `StockService.requestStock` matches each to the item master

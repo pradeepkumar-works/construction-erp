@@ -1,3 +1,4 @@
+import type { PoBudgetCheckDto } from './po-budget';
 import type { MachineEngineDto } from './telematics';
 import type { VendorRecordDto } from './vendor-score';
 import type { LetterAction, LetterGate, LetterMarkDto, LetterMode, LetterPriority, LetterStatus } from './correspondence';
@@ -2005,6 +2006,11 @@ export interface PurchaseOrderLineDto {
 }
 
 export interface PurchaseOrderDto extends SubmissionBase {
+  /**
+   * On the order's own record only, for those who see cost: the order against its project's material budget; null
+   * when the project has none, absent in lists.
+   */
+  budgetCheck?: PoBudgetCheckDto | null;
   poNo: string;
   poDate: string;
   vendorId: string;

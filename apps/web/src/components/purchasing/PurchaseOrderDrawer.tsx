@@ -7,8 +7,8 @@ import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { ImportOutlined, MailOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { BillCheckDto, PurchaseOrderDto, PurchaseOrderLineDto, SupplierDispatchStatus } from '@erp/shared';
-import { MSME_CATEGORY_LABELS, PO_RECEIPT_STATE_LABELS, canViewMaterialApprovals, canEditSubmission, canKeepStock, canPurchase, canRecordVendorBill, canResubmit, canViewCost, canViewPaymentRequests, canViewVendorBills, figure } from '@erp/shared';
+import type { BillCheckDto, PoBudgetCheckDto, PurchaseOrderDto, PurchaseOrderLineDto, SupplierDispatchStatus } from '@erp/shared';
+import { MSME_CATEGORY_LABELS, PO_RECEIPT_STATE_LABELS, canViewMaterialApprovals, canEditSubmission, canKeepStock, canPurchase, canRecordVendorBill, canResubmit, canViewCost, canViewPaymentRequests, canViewVendorBills, figure, poOverBudget } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
@@ -41,6 +41,18 @@ const billedAboveReceived = (l: PurchaseOrderLineDto) => toNumber(l.billedQty) >
 
 /** A check that passed or found something, in the shape the checks pattern draws. */
 const check = (key: string, ok: boolean, title: string, detail: string | null = null, links: BillCheckDto['links'] = []): BillCheckDto => ({ key, ok, title, detail, links, accepted: null });
+
+/** The order against its project's material budget, before GST (shown to those who see cost). */
+function budgetCheckRow(b: PoBudgetCheckDto, projectId: string): BillCheckDto {
+  const over = poOverBudget(b);
+  return check(
+    'budget',
+    !over,
+    over ? `Over the material budget by ${formatINR(-Number(b.left), true)}` : `Within the material budget, ${formatINR(b.left, true)} left after this order`,
+    `Budget ${formatINR(b.budget, true)}, other approved orders ${formatINR(b.ordered, true)}, this order ${formatINR(b.thisOrder, true)}, all before GST`,
+    [{ label: 'Budget', href: `/projects/${projectId}?tab=budget` }],
+  );
+}
 
 /** Tag for where an approved order stands: open, fully received or closed short. */
 export function PoStateTag({ order }: { order: Pick<PurchaseOrderDto, 'status' | 'closedAt' | 'open'> }) {
@@ -84,6 +96,7 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
               ),
             )
           : [check('rate', true, 'Rates within what other sites paid')]),
+        ...(data.budgetCheck ? [budgetCheckRow(data.budgetCheck, data.projectId)] : []),
       ]
     : [];
   const flags = checks.filter((c) => !c.ok).length;
