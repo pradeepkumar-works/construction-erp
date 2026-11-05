@@ -19,7 +19,7 @@ import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { LineTable } from '@/components/form/LineTable';
 import { aiFlagItem, draftDate } from '@/components/ai/drafts';
 import { recordPage } from '@/components/approvals/queue';
-import { DprLinesField, copiedLine, followNorms, lineValues, linesBody, type DprLineValues } from './DprLinesField';
+import { DprLinesField, copiedLine, followNorms, lineValues, linesBody, newLine, type DprLineValues } from './DprLinesField';
 import { OwnFieldItems, extraBody } from './OwnFields';
 
 interface FormValues {
@@ -185,6 +185,8 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
           issues: v.issues,
           nextDayPlan: v.nextDayPlan,
           extra: v.extra ?? {},
+          // A line started from a pipe on the network (its stage's activity and the pipe), the metres left to type
+          ...(Array.isArray(v.lines) ? { lines: v.lines.map((l) => newLine(l)) } : {}),
         });
       }
     }

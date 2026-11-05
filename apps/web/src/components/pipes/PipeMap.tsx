@@ -81,10 +81,23 @@ function layout(nodes: PipeNodeDto[], segments: PipeSegmentDto[]): { at: Map<str
 
 /**
  * A zone's network drawn from its nodes and pipes: each pipe in the state of its work, thicker for larger
- * diameters, the tank or source as a square and valves as diamonds (filled once fixed). The pipe list beside it says
- * the same in words, so the drawing is a picture, not a control.
+ * diameters, the tank or source as a square and valves as diamonds (filled once fixed). A pipe clicked opens it; the
+ * pipe list beside it says the same in words and is the way in by keyboard.
  */
-export function PipeMap({ nodes, segments, selected, label }: { nodes: PipeNodeDto[]; segments: PipeSegmentDto[]; selected?: string | null; label: string }) {
+export function PipeMap({
+  nodes,
+  segments,
+  selected,
+  label,
+  onSelect,
+}: {
+  nodes: PipeNodeDto[];
+  segments: PipeSegmentDto[];
+  selected?: string | null;
+  label: string;
+  /** A pipe clicked on the drawing (the pipe list below does the same by keyboard) */
+  onSelect?: (id: string) => void;
+}) {
   // SVG attributes take colour values, not CSS variables, so the map reads the resolved roles.
   const { color } = useResolved();
   const { at, height } = useMemo(() => layout(nodes, segments), [nodes, segments]);
@@ -119,6 +132,10 @@ export function PipeMap({ nodes, segments, selected, label }: { nodes: PipeNodeD
                 <line x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} stroke={st.color} strokeWidth={width(s.diameterMm)} strokeDasharray={st.dash} strokeLinecap="round">
                   <title>{`${s.code}, ${s.fromCode} to ${s.toCode}: ${formatQty(s.lengthM)} m, ${s.diameterMm} mm, ${SEGMENT_STATE_LABELS[segmentState(s)].toLowerCase()}`}</title>
                 </line>
+                {onSelect ? (
+                  // A wider, unseen line under the pointer, so a thin pipe is easy to click or tap
+                  <line x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} stroke="transparent" strokeWidth={22} strokeLinecap="round" style={{ cursor: 'pointer' }} onClick={() => onSelect(s.id)} />
+                ) : null}
                 {labels ? (
                   <text x={(a[0] + b[0]) / 2} y={(a[1] + b[1]) / 2 - 8} textAnchor="middle" fontSize={13} fill={color.text.muted} paintOrder="stroke" stroke={color.surface.base} strokeWidth={4}>
                     {s.code}

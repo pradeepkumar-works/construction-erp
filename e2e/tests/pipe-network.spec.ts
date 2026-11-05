@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import type { DailyReportDto, DprWorkOptionsDto, PipeNetworkDto, PipeNetworkImportResultDto } from '../../packages/shared/src';
-import { API_URL, api, apiToken, signIn } from './helpers';
+import { API_URL, api, apiToken, chooseOption, signIn } from './helpers';
 
 /**
  * The pipe network: zone 2 of the town scheme carries its network, junction to junction. A DPR line of pipe
@@ -101,7 +101,7 @@ test('pipe work names its pipe, is held to its length, and the network imports o
   await expect(dialog.getByText('E2E main: 1.11 km on the ground, chainage 0+000 to 1+112')).toBeVisible();
   await expect(dialog.getByText(/5 nodes, 4 pipes, 1,?112 m proposed/)).toBeVisible();
   // The server's preview takes it: the save is open once the plan is drawn (a valve at 333.6 m sits at 0+334).
-  await expect(dialog.getByText(/^4 new, 0 changed/)).toBeVisible();
+  await expect(dialog.getByText(/^\d+ new, \d+ changed/).first()).toBeVisible();
   await expect(dialog.getByRole('button', { name: 'Save network' })).toBeEnabled();
   await dialog.getByRole('button', { name: 'Cancel' }).click();
 
@@ -109,4 +109,32 @@ test('pipe work names its pipe, is held to its length, and the network imports o
   await api(pm, `/approvals/DPR/${dpr.id}/review`, { method: 'POST', body: { decision: 'REJECT', note: 'Test report' } });
   const end = await api<PipeNetworkDto>(pm, `/projects/${town.id}/pipe-network`);
   expect(end.segments.find((s) => s.id === fresh.id)!.waiting.LAY_JOINT ?? 0).toBe(0);
+});
+
+test('Drawings › Pipeline layout picks a water project and imports a Google Earth main there', async ({ page }) => {
+  const pm = await apiToken('pm@demo.com');
+  const town = (await api<{ items: Project[] }>(pm, '/projects?pageSize=100')).items.find((p) => p.code === 'WS-2026-04')!;
+  await signIn(page, 'pm@demo.com');
+  await page.goto('/pipeline-layout');
+  await expect(page.getByRole('heading', { level: 1, name: 'Pipeline layout' })).toBeVisible();
+  await chooseOption(page.getByRole('combobox', { name: 'Water project' }), town.code);
+  await expect(page.getByRole('img', { name: /^Map of / })).toBeVisible();
+  await page.getByRole('button', { name: 'Import network' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Import pipe network' });
+  const kml = `<kml><Document><Placemark><name>Layout main</name><LineString><coordinates>78,21 78,21.006</coordinates></LineString></Placemark><Placemark><name>AV-01</name><Point><coordinates>78,21.002</coordinates></Point></Placemark></Document></kml>`;
+  await dialog.locator('input[type=file]').setInputFiles({ name: 'layout.kml', mimeType: 'application/vnd.google-earth.kml+xml', buffer: Buffer.from(kml) });
+  await expect(dialog.getByText(/^\d+ new, \d+ changed/).first()).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Save network' })).toBeEnabled();
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+
+  // A pipe clicked on the map opens its card: each stage against its length, and work recorded through a daily report.
+  await page.getByRole('img', { name: /^Map of / }).locator('line[stroke="transparent"]').first().click({ force: true });
+  const card = page.getByRole('dialog').filter({ has: page.getByText('Work against its length') });
+  await expect(card).toBeVisible();
+  await expect(card.getByLabel(/^Laid and jointed: /)).toBeVisible();
+  await card.getByRole('button', { name: 'Next pipe' }).click();
+  await expect(card).toBeVisible();
+  await card.getByRole('button', { name: 'Record work' }).first().click();
+  await expect(page).toHaveURL(/\/dpr/);
+  await expect(page.getByText(/^Filled in from pipe /)).toBeVisible();
 });

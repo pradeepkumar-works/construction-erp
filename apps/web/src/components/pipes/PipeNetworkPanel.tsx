@@ -30,6 +30,7 @@ import { Section } from '@/components/common/Section';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { QuantityInput } from '@/components/form/inputs';
 import { PipeImportModal } from './PipeImportModal';
+import { PipeCard } from './PipeCard';
 import { PipeMap, SEGMENT_STATE_LABELS, segmentState, type SegmentState } from './PipeMap';
 
 type StateFilter = 'all' | SegmentState;
@@ -65,8 +66,8 @@ export function PipeNetworkPanel({ project }: { project: ProjectDetail }) {
     return (
       <div style={{ padding: tk.space[6] }}>
         <p>
-          No pipe zones yet. Add a component of kind Pipe network zone, Rising main or Feeder main in Structure, then load its network here from the design
-          office&apos;s EPANET or Excel file.
+          No pipe zones yet. Add a component of kind Pipe network zone, Rising main or Feeder main in Structure, then load its network here from a Google Earth
+          KMZ, or the design office&apos;s EPANET or Excel file.
         </p>
         <LinkButton href={`/projects/${project.id}?tab=structure`}>Open Components</LinkButton>
       </div>
@@ -157,7 +158,8 @@ export function PipeNetworkPanel({ project }: { project: ProjectDetail }) {
             nodes={nodes}
             segments={segments}
             selected={selected}
-            label={`Map of ${zone!.label}: ${segments.length} pipes, ${formatQty(total.laidM)} of ${formatQty(total.scopeM)} m laid. The pipe list below gives each pipe.`}
+            onSelect={setSelected}
+            label={`Map of ${zone!.label}: ${segments.length} pipes, ${formatQty(total.laidM)} of ${formatQty(total.scopeM)} m laid. Click a pipe to open it; the pipe list below gives each pipe.`}
           />
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))', gap: tk.space[4] }}>
@@ -237,7 +239,7 @@ export function PipeNetworkPanel({ project }: { project: ProjectDetail }) {
                   title: 'Pipe',
                   width: 170,
                   render: (_, s) => (
-                    <Button type="link" size="small" style={{ paddingInline: 0 }} aria-pressed={s.id === selected} onClick={() => setSelected(s.id === selected ? null : s.id)}>
+                    <Button type="link" size="small" style={{ paddingInline: 0 }} aria-haspopup="dialog" onClick={() => setSelected(s.id)}>
                       <span translate="no">{`${s.code}, ${s.fromCode} to ${s.toCode}`}</span>
                     </Button>
                   ),
@@ -277,6 +279,24 @@ export function PipeNetworkPanel({ project }: { project: ProjectDetail }) {
         </>
       )}
       {data.canEdit ? <PipeImportModal key={importOpen ? `open-${zone!.id}` : 'closed'} open={importOpen} onClose={() => setImportOpen(false)} projectId={project.id} zones={data.zones} zoneId={zone!.id} /> : null}
+      {zone ? (
+        <PipeCard
+          projectId={project.id}
+          projectName={project.name}
+          zone={zone}
+          segment={segments.find((s) => s.id === selected) ?? null}
+          nodes={nodes}
+          canEdit={data.canEdit}
+          onEdit={setEditing}
+          onStep={(by) => {
+            const list = shown.some((s) => s.id === selected) ? shown : segments;
+            const i = list.findIndex((s) => s.id === selected);
+            const to = list[i + by];
+            return i >= 0 && to ? () => setSelected(to.id) : null;
+          }}
+          onClose={() => setSelected(null)}
+        />
+      ) : null}
       {data.canEdit ? <SegmentFormModal projectId={project.id} segment={editing} onClose={() => setEditing(null)} /> : null}
     </div>
   );

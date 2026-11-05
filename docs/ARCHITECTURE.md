@@ -1508,8 +1508,12 @@ commissioned, with valves fixed at their points.
   `PATCH .../segments/:id` corrects one pipe (not below its work).
 - **Screens.** Web: Project › Plan › Pipe network on water supply and sewerage projects (`components/pipes/`: the zone
   map drawn from coordinates or as a tree from the tank, pipes in the state of their work and thicker by diameter, the
-  pipe sheet, ready to start, the pipe list with search, state filter, Export and Correct, and the import dialog); the
-  DPR form's Where picks the segment or valve (`DprLinesField`), the test form the pipes tested. Phone: the DPR line's
+  pipe sheet, ready to start, the pipe list with search, state filter, Export and Correct, and the import dialog), and
+  the same panel at Drawings › Pipeline layout (`/pipeline-layout`, a water project picked there). A pipe clicked on the
+  map or the list opens its card (`PipeCard`: each stage done and waiting against its length, its ends and valves, the
+  pipe before and after, Edit pipe); Record work opens a daily report with a line for the pipe and the stage's activity
+  (`stageActivities`), so work done still comes in only through an approved DPR. The DPR form's Where picks the segment
+  or valve (`DprLinesField`), the test form the pipes tested. Phone: the DPR line's
   segment and valve pickers (`src/forms/dprLines.tsx`).
 - **Code.** The arithmetic and readers are pure in `packages/shared/src/pipe-network.ts`, tested in
   `src/scripts/pipe-network-test.ts` (CI flows); `e2e/tests/pipe-network.spec.ts` covers a line held to its pipe, the
