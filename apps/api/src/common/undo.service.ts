@@ -4,6 +4,7 @@ import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'crypt
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from './audit.service';
 import { RequestUser } from './current-user';
+import { jwtSecret } from './jwt-secret';
 
 /** How long after a delete its Undo still works. The web offers it for ten seconds; the rest is for a slow network. */
 const UNDO_WINDOW_MS = 60_000;
@@ -51,7 +52,7 @@ const scalarFields = new Map(
 @Injectable()
 export class UndoService {
   private kinds = new Map<string, UndoKind>();
-  private key = createHash('sha256').update(`undo:${process.env.JWT_SECRET || 'dev-secret'}`).digest();
+  private key = createHash('sha256').update(`undo:${jwtSecret()}`).digest();
 
   constructor(
     private prisma: PrismaService,

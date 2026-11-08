@@ -6,13 +6,14 @@ import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
 import { PasswordLinksService } from './password-links.service';
 import { LoginGuardService } from './login-guard.service';
+import { jwtSecret } from '../common/jwt-secret';
 
 @Module({
   imports: [
     PassportModule,
     JwtModule.registerAsync({
       useFactory: () => ({
-        secret: process.env.JWT_SECRET || 'dev-secret',
+        secret: jwtSecret(),
         signOptions: { expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as any },
       }),
     }),
