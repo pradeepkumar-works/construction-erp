@@ -12,7 +12,7 @@ on:
 jobs:
   suite:
     name: e2e (${{ matrix.suite }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -545,6 +545,6 @@ jobs:
     name: e2e
     needs: suite
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - run: '[ "${{ needs.suite.result }}" = "success" ] || { echo "e2e jobs: ${{ needs.suite.result }}"; exit 1; }'
