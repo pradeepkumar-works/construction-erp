@@ -8,8 +8,8 @@ import type { RoleKey } from './enums';
  * accounts, who span the company) gets every module it may open.
  */
 const SITE: readonly string[] = [
-  'project-management', 'quality-control', 'design-drawings', 'store-inventory', 'machinery-vehicles', 'labour-management', 'hr-payroll',
-  'projects', 'site', 'quality', 'safety', 'documents', 'materials', 'plant', 'people',
+  'project-management', 'quality-control', 'design-drawings', 'store-inventory', 'purchase-management', 'machinery-vehicles', 'labour-management', 'hr-payroll',
+  'projects', 'site', 'quality', 'safety', 'documents', 'materials', 'purchases', 'plant', 'people',
 ];
 
 export const ROLE_MENU: Partial<Record<RoleKey, readonly string[]>> = {

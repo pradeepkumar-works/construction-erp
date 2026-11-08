@@ -14,7 +14,7 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useActivities, useRollCall } from '@/lib/queries';
-import { QueryError } from '@/components/common/QueryState';
+import { Loading, QueryError } from '@/components/common/QueryState';
 import { CardToolbar } from '@/components/common/CardToolbar';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { useOneProject } from '@/lib/project-scope';
@@ -49,7 +49,7 @@ export function RollCallPanel({ projectId: fixedProject }: { projectId?: string 
   const { message } = App.useApp();
   const qc = useQueryClient();
   // The header's project: picking one here picks it for every list.
-  const [projectPick, setProjectPick] = useOneProject();
+  const [projectPick, setProjectPick, deciding] = useOneProject();
   const projectId = fixedProject ?? projectPick;
   const [date, setDate] = useState<Dayjs>(dayjs());
   const dateStr = date.format('YYYY-MM-DD');
@@ -224,7 +224,9 @@ export function RollCallPanel({ projectId: fixedProject }: { projectId?: string 
         ) : null}
       </CardToolbar>
       {error ? <QueryError error={error} onRetry={() => refetch()} /> : null}
-      {!projectId ? (
+      {!projectId && !fixedProject && deciding ? (
+        <Loading />
+      ) : !projectId ? (
         <div className="text-muted" style={{ padding: tk.space[4] }}>
           Choose a project to see its roll call.
         </div>

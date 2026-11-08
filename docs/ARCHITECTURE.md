@@ -546,8 +546,8 @@ in `DEPARTMENT_MODULES`: `src/scripts/nav-menu-test.ts` (CI) fails on a live pag
 
 ### Menu by role
 
-A role may open far more pages than it works in: a site engineer could open 116, the RMC plant, purchase pages and the
-company's masters among them. `ROLE_MENU` (`@erp/shared/role-menu.ts`) names, by module key of both sets, the modules each
+A role may open far more pages than it works in: a site engineer could open 116, the RMC plant, the planning pages and the
+company's masters among them (purchase stays in its menu: it raises indents and follows the orders to its site). `ROLE_MENU` (`@erp/shared/role-menu.ts`) names, by module key of both sets, the modules each
 office or site role works in; `navMenuFor` and `navSidebar` keep to them (`inRoleMenu`), and site roles (engineer, team
 leader, safety, document controller) also leave each department's Masters to Admin › Masters (`roleMenuHasMasters`).
 Nothing is refused by it: Home's All modules (`useNavMenu().allMenu`), a module's screen, Search and links still open

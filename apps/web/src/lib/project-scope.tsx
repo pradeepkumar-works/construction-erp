@@ -72,16 +72,17 @@ export function useProjectScope(initial?: string): [string | undefined, (id?: st
 /**
  * The project a page that shows one project at a time opens on: the header's project, else the busiest running site (most
  * entries waiting, then first in the header's list; never a store or plant), so the page opens on a project rather than "Choose a
- * project". Picking one sets the header's project, as any list's filter does.
+ * project". Picking one sets the header's project, as any list's filter does. The third value is true while the projects are
+ * still loading and none is picked, so the page shows its loading state then rather than flashing "Choose a project".
  */
-export function useOneProject(initial?: string): [string | undefined, (id?: string) => void] {
+export function useOneProject(initial?: string): [string | undefined, (id?: string) => void, boolean] {
   const [scoped, setScoped] = useProjectScope(initial);
-  const { data: projects } = useProjects();
+  const { data: projects, isLoading } = useProjects();
   const busiest = useMemo(() => {
     const sites = (projects ?? []).filter((p) => p.type !== 'STORE' && p.type !== 'PLANT' && p.status === 'ACTIVE');
     return [...sites].sort((a, b) => b.pendingApprovals - a.pendingApprovals || a.code.localeCompare(b.code))[0]?.id;
   }, [projects]);
-  return [scoped ?? busiest, setScoped];
+  return [scoped ?? busiest, setScoped, !scoped && isLoading];
 }
 
 const noVertical = () => {};

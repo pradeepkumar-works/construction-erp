@@ -206,7 +206,7 @@ function PlanTable({ plan, onEdit }: { plan: QaPlanDto; onEdit: (l: QaPlanLineDt
 
 /** The quality plan: a project's tests, what each is counted against, how often and who witnesses. */
 export function QualityPlanPage() {
-  const [projectId, setProjectId] = useOneProject();
+  const [projectId, setProjectId, deciding] = useOneProject();
   const { data: plan, isLoading, error, refetch } = useQaPlan(projectId);
   const [editing, setEditing] = useState<QaPlanLineDto | 'new' | null>(null);
   const qc = useQueryClient();
@@ -241,9 +241,9 @@ export function QualityPlanPage() {
         <Flex gap={tk.space[3]} wrap align="center" style={{ marginBottom: tk.space[4] }}>
           <ProjectSelect value={projectId} onChange={(v) => setProjectId(v)} placeholder="Choose a project" allowClear={false} style={{ minWidth: 260, maxWidth: '100%' }} />
         </Flex>
-        {!projectId ? (
+        {!projectId && !deciding ? (
           <Empty description="Choose a project to see its quality plan." />
-        ) : isLoading ? (
+        ) : deciding || isLoading ? (
           <PageSkeleton shape="list" />
         ) : error || !plan ? (
           <QueryError error={error} onRetry={() => refetch()} />

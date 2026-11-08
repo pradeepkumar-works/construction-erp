@@ -71,7 +71,7 @@ export function QueryError({ error, onRetry }: { error: unknown; onRetry?: () =>
 /** Placeholder while a panel loads, shaped like a card of text rather than a spinner. */
 export function Loading({ tip }: { tip?: string }) {
   return (
-    <div style={{ padding: tk.space[6] }} aria-busy="true" aria-label={tip ?? 'Loading'}>
+    <div role="status" style={{ padding: tk.space[6] }} aria-busy="true" aria-label={tip ?? 'Loading'}>
       <Skeleton active paragraph={{ rows: 5 }} />
     </div>
   );
@@ -83,7 +83,7 @@ export function PageSkeleton({ shape = 'list', header = true }: { shape?: 'list'
     <div style={{ flex, minWidth: 220, background: tk.color.surface.base, border: `1px solid ${tk.color.line.hairline}`, borderRadius: tk.radius.lg, padding: tk.space[4] }}>{children}</div>
   );
   return (
-    <div aria-busy="true" aria-label="Loading">
+    <div role="status" aria-busy="true" aria-label="Loading">
       {header ? <Skeleton active title={{ width: 280 }} paragraph={{ rows: 1, width: 420 }} style={{ marginBottom: tk.space[6] }} /> : null}
       {shape === 'home' || shape === 'workspace' ? (
         <Flex gap={tk.space[4]} wrap style={{ marginBottom: tk.space[4] }}>

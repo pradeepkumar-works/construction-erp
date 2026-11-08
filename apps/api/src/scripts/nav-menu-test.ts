@@ -99,9 +99,10 @@ test('HR and payroll is one module with the brief’s sub-modules, and a site en
 
 test('a role’s menu keeps to its own modules; every module still opens, and the menu is no wider than access', () => {
   const keys = (u: NavUser, all = false) => navMenuFor(u, departments, { allModules: all }).map((m) => m.key);
-  assert.ok(!keys(engineer).includes('purchase-management'), 'no purchase management in a site engineer’s menu');
+  assert.ok(keys(engineer).includes('purchase-management'), 'a site engineer raises indents and follows orders from the menu');
+  assert.ok(!keys(engineer).includes('plant-production'), 'no RMC plant in a site engineer’s menu');
   assert.ok(!keys(engineer).includes('accounts-finance'), 'no accounts in a site engineer’s menu');
-  assert.ok(keys(engineer, true).includes('purchase-management'), 'a site engineer may still open purchase pages');
+  assert.ok(keys(engineer, true).includes('plant-production'), 'a site engineer may still open the plant pages');
   assert.ok(keys(engineer).length < keys(engineer, true).length);
   assert.ok(!navMenuFor(engineer, departments).some((m) => m.subs.some((s) => s.key === 'masters')), 'masters stay in Admin › Masters');
   assert.deepEqual(keys(admin), keys(admin, true), 'admin keeps every module');
