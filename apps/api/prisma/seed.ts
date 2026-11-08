@@ -1250,7 +1250,8 @@ async function seedBudgetRevisions(organizationId: string) {
     subcontract: v1.subcontract!.add(extra.mul(0.4)).toDecimalPlaces(0),
   };
   await prisma.$transaction([
-    prisma.projectBudget.update({ where: { id: v1.id }, data: { status: 'SUPERSEDED' } }),
+    // A budget set before versions became version 1 on the day it was last set; the story has it approved at award.
+    prisma.projectBudget.update({ where: { id: v1.id }, data: { status: 'SUPERSEDED', submittedAt: day(-122), decidedById: md.id, decidedAt: day(-120), approvedAt: day(-120) } }),
     prisma.projectBudget.create({
       data: {
         organizationId,
