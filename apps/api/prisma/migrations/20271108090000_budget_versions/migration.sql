@@ -1,13 +1,14 @@
 -- A project's budget is approved and revised (ARCHITECTURE "Budget and cash flow"): one ProjectBudget row per version,
 -- the BOQ budget rates of each version in ProjectBudgetLine. Each budget already set becomes version 1, approved by
--- whoever last set it; BoqItem.budgetRate stays as the approved figure. Only additions the code before versions still
--- reads past (its column keeps its name, no version without cost heads is made), so a deploy can roll out after it.
+-- whoever last set it; BoqItem.budgetRate stays as the approved figure.
 
 CREATE TYPE "BudgetStatus" AS ENUM ('DRAFT', 'SUBMITTED', 'APPROVED', 'RETURNED', 'SUPERSEDED');
 
+ALTER TABLE "ProjectBudget" DROP CONSTRAINT "ProjectBudget_updatedById_fkey";
 DROP INDEX "ProjectBudget_organizationId_idx";
 DROP INDEX "ProjectBudget_projectId_key";
 
+ALTER TABLE "ProjectBudget" RENAME COLUMN "updatedById" TO "preparedById";
 ALTER TABLE "ProjectBudget"
 ADD COLUMN     "versionNo" INTEGER NOT NULL DEFAULT 1,
 ADD COLUMN     "status" "BudgetStatus" NOT NULL DEFAULT 'DRAFT',
@@ -31,7 +32,7 @@ ALTER COLUMN "subcontract" DROP NOT NULL,
 ALTER COLUMN "subcontract" DROP DEFAULT;
 
 UPDATE "ProjectBudget"
-SET "status" = 'APPROVED', "submittedAt" = "updatedAt", "decidedById" = "updatedById", "decidedAt" = "updatedAt", "approvedAt" = "updatedAt";
+SET "status" = 'APPROVED', "submittedAt" = "updatedAt", "decidedById" = "preparedById", "decidedAt" = "updatedAt", "approvedAt" = "updatedAt";
 
 ALTER TABLE "ProjectBudget" ALTER COLUMN "versionNo" DROP DEFAULT;
 
@@ -58,9 +59,24 @@ CREATE UNIQUE INDEX "ProjectBudget_projectId_versionNo_key" ON "ProjectBudget"("
 CREATE UNIQUE INDEX "ProjectBudget_one_open_per_project" ON "ProjectBudget"("projectId") WHERE "status" IN ('DRAFT', 'SUBMITTED', 'RETURNED');
 
 ALTER TABLE "ProjectBudget" ADD CONSTRAINT "ProjectBudget_variationId_fkey" FOREIGN KEY ("variationId") REFERENCES "Variation"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "ProjectBudget" ADD CONSTRAINT "ProjectBudget_preparedById_fkey" FOREIGN KEY ("preparedById") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 ALTER TABLE "ProjectBudget" ADD CONSTRAINT "ProjectBudget_decidedById_fkey" FOREIGN KEY ("decidedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 ALTER TABLE "ProjectBudgetLine" ADD CONSTRAINT "ProjectBudgetLine_budgetId_fkey" FOREIGN KEY ("budgetId") REFERENCES "ProjectBudget"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "ProjectBudgetLine" ADD CONSTRAINT "ProjectBudgetLine_boqItemId_fkey" FOREIGN KEY ("boqItemId") REFERENCES "BoqItem"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- A project with BOQ budget rates and no budget row gets a version 1 with no cost-head budget, approved by the
+-- project's manager (else its creator), so its forecast still reads the BOQ budget.
+INSERT INTO "ProjectBudget" ("id", "organizationId", "projectId", "versionNo", "status", "notes", "preparedById", "submittedAt", "decidedById", "decidedAt", "approvedAt", "createdAt", "updatedAt")
+SELECT gen_random_uuid()::text, p."organizationId", p."id", 1, 'APPROVED', NULL, u."id", now(), u."id", now(), now(), now(), now()
+FROM "Project" p
+JOIN LATERAL (
+  SELECT x."id" FROM "User" x
+  WHERE x."id" = p."projectManagerId" OR (x."organizationId" = p."organizationId")
+  ORDER BY (x."id" = p."projectManagerId") DESC, x."createdAt" ASC
+  LIMIT 1
+) u ON true
+WHERE EXISTS (SELECT 1 FROM "BoqItem" b WHERE b."projectId" = p."id" AND b."budgetRate" IS NOT NULL)
+  AND NOT EXISTS (SELECT 1 FROM "ProjectBudget" pb WHERE pb."projectId" = p."id");
 
 -- Each project's BOQ budget rates are the lines of its version 1.
 INSERT INTO "ProjectBudgetLine" ("id", "budgetId", "boqItemId", "budgetRate")
