@@ -103,6 +103,7 @@ export function ContractPanel({ projectId }: { projectId: string }) {
               {k === 'securityDepositPct' && c.securityDepositCapPct !== null && <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>up to {c.securityDepositCapPct}% of the contract</div>}
             </Descriptions.Item>
           ))}
+          <Descriptions.Item label="Secured advance">{c.securedAdvancePct !== null ? `${c.securedAdvancePct}% of material at site` : 'None'}</Descriptions.Item>
         </Descriptions>
       </Section>
       <ObligationsCard projectId={projectId} />

@@ -27,6 +27,8 @@ import { InTallyTag } from '@/components/tally/InTallyTag';
 import { BillPriceVariation } from './BillPriceVariation';
 import { BillStages, SlippageNotes } from './BillStages';
 import { ObligationRecoveryNotes } from './BillRecoveries';
+import { BillSecuredAdvance } from './BillSecuredAdvance';
+import { BillHolds, HoldLines, holdLinesOf, holdsBody, type HoldLine } from './BillHolds';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
 import { checksSection, useChecksFigure } from '@/components/checks/ChecksSection';
 import { projectContext } from '@/components/record/RecordParts';
@@ -39,7 +41,7 @@ import { OmBillSection } from '@/components/om/OmBillSection';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
 
 type StageAction = 'send' | 'certify';
-type CertifyValues = { date: dayjs.Dayjs; certificateNo?: string; qty: Record<string, number | null>; stagePct?: Record<string, number | null> };
+type CertifyValues = { date: dayjs.Dayjs; certificateNo?: string; qty: Record<string, number | null>; stagePct?: Record<string, number | null>; holds?: HoldLine[] };
 const ACTION_TITLES: Record<StageAction, string> = { send: 'Record sent to client', certify: 'Record certificate' };
 
 const money = (v: string, c: ContractCurrency) => <span className="mono" translate="no">{formatMoney(v, c, true)}</span>;
@@ -109,6 +111,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
       certificateNo: b.certificateNo ?? undefined,
       qty: Object.fromEntries(b.items.map((i) => [i.boqItemId, toNumber(i.certifiedQty ?? i.thisQty)])),
       stagePct: Object.fromEntries(b.stageLines.map((l) => [l.stageId, toNumber(l.certifiedPct ?? l.thisPct)])),
+      holds: holdLinesOf(b),
     });
     setAction(act);
   };
@@ -122,7 +125,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
     const stages = data.stageLines
       .filter((l) => v.stagePct?.[l.stageId] !== undefined && v.stagePct[l.stageId] !== null && v.stagePct[l.stageId] !== toNumber(l.thisPct))
       .map((l) => ({ stageId: l.stageId, certifiedPct: String(v.stagePct![l.stageId]) }));
-    return stage.mutateAsync({ act: 'certify', body: { date, certificateNo: v.certificateNo?.trim() || null, items, stages } });
+    return stage.mutateAsync({ act: 'certify', body: { date, certificateNo: v.certificateNo?.trim() || null, items, stages, holds: holdsBody(v.holds) } });
   };
 
   const editable = !!data && !!user && preparer && canEditSubmission(user, data);
@@ -270,6 +273,24 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                 </>
               ),
             },
+            ...(data.om
+              ? []
+              : [
+                  {
+                    key: 'securedAdvance',
+                    title: 'Secured advance',
+                    count: data.securedAdvanceLines.length,
+                    empty: !data.securedAdvanceLines.length && toNumber(data.securedAdvanceRecovered) === 0 && !editable,
+                    children: <BillSecuredAdvance bill={data} editable={editable} />,
+                  },
+                ]),
+            {
+              key: 'withheld',
+              title: 'Withheld',
+              count: data.holds.length + data.releases.length,
+              empty: !data.holds.length && !data.releases.length && !editable,
+              children: <BillHolds bill={data} editable={editable} preparer={preparer} />,
+            },
             {
               key: 'amounts',
               title: 'Amount and deductions',
@@ -283,6 +304,9 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                     <Divider style={{ margin: `${tk.space[2]} 0` }} />
                     <Row c={data} label={`GST @ ${formatPct(data.gstRate)}`} value={data.gstAmount} />
                     <Row c={data} label="Bill amount with GST" value={data.invoiceAmount} strong />
+                    {data.additions.map((a) => (
+                      <Row c={data} key={a.key} label={`Add ${a.label.toLowerCase()}`} value={a.amount} />
+                    ))}
                     <Row c={data} label="Less deductions" value={data.totalDeductions} />
                     <Divider style={{ margin: `${tk.space[2]} 0` }} />
                     <Row c={data} label={<span style={{ fontSize: tk.type.lead.fontSize }}>Net payable</span>} value={data.netPayable} strong />
@@ -464,6 +488,11 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                   ]}
                 />
               ) : null}
+              <Typography.Title level={5} style={{ marginTop: tk.space[4] }}>
+                Withheld on the certificate
+              </Typography.Title>
+              <Typography.Paragraph type="secondary">Amounts the engineer held back for disputed items. A later bill releases them as the disputes are settled.</Typography.Paragraph>
+              <HoldLines />
             </>
           )}
         </Form>

@@ -431,8 +431,8 @@ export class ManagementReportsService {
     const projects = r.projects
       .filter((p) => N(p.billed) > 0 || N(p.notSent) > 0)
       .map((p) => ({ _href: projectHref(p.projectId), project: projectCell({ code: p.projectCode, name: p.projectName }), client: p.clientName, outstanding: N(p.outstanding), ...ageing(p.ageing), notSent: N(p.notSent), retention: N(p.retentionHeld), release: p.retentionReleaseDate }));
-    const billCols = [col('bill', 'Bill', 'text'), projectCol, col('stage', 'Stage', 'text'), col('sent', 'Sent', 'date'), col('invoice', 'Invoice'), col('settled', 'Settled'), col('outstanding', 'Outstanding'), col('days', 'Days', 'days')];
-    const bills = r.openBills.map((b) => ({ _href: `/bills/${b.billId}`, bill: b.billLabel, project: projectCell({ code: b.projectCode, name: b.projectName }), stage: BILL_STAGE_LABELS[b.stage], sent: b.sentDate, invoice: N(b.invoiceAmount), settled: N(b.settledAmount), outstanding: N(b.outstanding), days: b.daysOutstanding }));
+    const billCols = [col('bill', 'Bill', 'text'), projectCol, col('stage', 'Stage', 'text'), col('sent', 'Sent', 'date'), col('invoice', 'Owed'), col('settled', 'Settled'), col('outstanding', 'Outstanding'), col('days', 'Days', 'days')];
+    const bills = r.openBills.map((b) => ({ _href: `/bills/${b.billId}`, bill: b.billLabel, project: projectCell({ code: b.projectCode, name: b.projectName }), stage: BILL_STAGE_LABELS[b.stage], sent: b.sentDate, invoice: N(b.owedAmount), settled: N(b.settledAmount), outstanding: N(b.outstanding), days: b.daysOutstanding }));
     return {
       figures: [
         figure('clientsOwe', N(r.totals.outstanding), { count: bills.length, versus: { part: figure('clientsOweOver90', N(r.totals.ageing.over90)) } }),

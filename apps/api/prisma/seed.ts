@@ -13,7 +13,7 @@ import { addMonths, schedule as loanSchedule } from '../src/machine-loans/loan-r
 import { seedTownDprs, seedWorkBreakdown } from './seed-structure';
 import { placeTownNetwork, seedTownNetwork } from './seed-pipes';
 import { seedTownStock } from './seed-stock';
-import { seedTownBilling } from './seed-billing';
+import { seedTownAdvancesAndHolds, seedTownBilling } from './seed-billing';
 import { seedEpc } from './seed-epc';
 import { seedConsultantChecks } from './seed-consultant-checks';
 import { seedProgramme } from './seed-programme';
@@ -1911,6 +1911,7 @@ async function modulesPass(organizationId: string, passwordHash: string) {
   await placeTownNetwork(prisma, organizationId);
   await seedTownStock(prisma, organizationId);
   await seedTownBilling(prisma, organizationId);
+  await seedTownAdvancesAndHolds(prisma, organizationId);
   await seedEpc(prisma, organizationId);
   await seedOm(prisma, organizationId);
   await seedProjectTypes(prisma, organizationId);

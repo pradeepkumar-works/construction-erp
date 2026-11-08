@@ -3140,10 +3140,11 @@ retention, advance, TDS and material recovery (`apps/api/src/subcontracts`).
   `projectId`, `receiptDate`, `amount` credited to the bank, `mode` and `reference` (UTR, cheque), and what the client
   deducted on that payment: `tdsAmount`, `gstTdsAmount`, `retentionAmount`, `securityDepositAmount`,
   `advanceRecoveryAmount`, `labourCessAmount`, `otherDeduction` with a note.
-- **Settling a bill** (`src/receivables/bill-settlement.ts`). A bill's invoice is work + GST; a receipt settles its
+- **Settling a bill** (`src/receivables/bill-settlement.ts`). A bill owes `billOwed`: its invoice (work + PV + GST) with
+  the secured advance and amounts withheld netted in (Price variation, Secured advance and withheld amounts); a receipt settles its
   amount plus its deductions. Payments go only against approved bills that were sent, and may not settle more than
   is outstanding (₹1 tolerance), under advisory lock `RCPT:<projectId>`. `syncBillStage` moves the bill to PAID (paid
-  date = last receipt) once settled ≥ invoice, and back to CERTIFIED / SENT when a receipt is corrected or taken off
+  date = last receipt) once settled ≥ owed, and back to CERTIFIED / SENT when a receipt is corrected or taken off
   or a certificate raises the amount. A first payment is pre-filled with the bill's own deductions.
 - **Releases.** Retention or deposit released is recorded against the project and may not exceed what payments
   deducted less what was released; a bill receipt cannot be changed so that releases would exceed it.
@@ -3407,6 +3408,34 @@ are on work value + price variation: `netPayable = gross + pv + GST − deductio
 value in cost reports); work-value measures (financial progress, billed against the contract value, approval limits) stay
 on the work value alone. Web: a Price variation card on the Contract tab, a section in the bill drawer, the print and the
 export; the client portal and the phone app show the amount.
+
+### Secured advance and withheld amounts
+
+Two CPWD practices on a client RA bill, both outside the base of GST and every contract deduction.
+
+- **Secured advance.** `Project.securedAdvancePct` (null = the contract gives none; a contract term, copied with
+  `COPIED_TERMS`) is paid on non-perishable material brought to site and not yet used. While a bill is not approved the
+  preparer lists the material (`PUT /ra-bills/:id/secured-advance`, lines replace the bill's `RaBillSecuredAdvance`;
+  `GET /ra-bills/:id/secured-advance/from-stock` starts them from the site store at the measurement date, at each item's
+  last receipt rate through `StockService.onHandAt`). Each bill declares the material again: it pays `securedAdvance` =
+  Σ value × % and recovers the previous bill's as `securedAdvanceRecovered`. A final or O&M bill takes none
+  (`securedAdvanceProblem`), so the final bill recovers the last advance. The arithmetic is `securedAdvanceOf`
+  (`@erp/shared/secured-advance.ts`); `billTotals` copies the % to `RaBill.securedAdvancePct`.
+- **Withheld.** `RaBillHold` (tenant table) is an amount the engineer holds back on a bill for a disputed item
+  (description, reason, optional BOQ item), set on a draft (`PUT /ra-bills/:id/holds`, `holds` and `releases`, each
+  replacing the bill's own) or on the certificate (`holds` on `POST /ra-bills/:id/certify`). `RaBillHoldRelease` gives
+  part of an earlier bill's hold back on a later bill, up to its balance (`holdReleaseProblem`, `holdBalance` in
+  `@erp/shared/bill-holds.ts`); a hold a later bill released from cannot shrink below it. Once the client has certified
+  the holding bill and no unapproved bill releases from it, `POST /ra-bills/holds/:id/close` gives the rest up as
+  `lostAmount` (`holdCloseProblem`). `GET /ra-bills/holds?projectId` lists the open holds. The bill carries `withheld`
+  and `withheldReleased`.
+- **Net payable** = work + PV + GST + secured advance + released − (contract deductions + secured advance recovered +
+  withheld). What the client owes on a bill is `billOwed` (`receivables/bill-settlement.ts`): the invoice + SA − SAR +
+  released − withheld. Receipts settle it, the receivables summary, cash forecast and management figures read it, and
+  the sales voucher debits the client with it: Cr `SECURED_ADVANCE` (a liability) with SA − SAR, Dr `WITHHELD_BY_CLIENT`
+  (an asset) with withheld − released (`raBillSaleLines`). A closed hold posts a `WITHHELD_LOST` journal: Dr client
+  deductions, Cr amounts withheld (`holdLostLines`). Web: the bill record's Secured advance and Withheld sections, the
+  Amount block's "Add …" rows, the print, the Excel export and the bill email; the contract terms take the %.
 
 ### Contract obligations and recoveries (item 171)
 

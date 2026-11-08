@@ -21,6 +21,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { dateOnly } from '../common/serialize';
 import { bankCredit } from '../epc/epc-rules';
 import { Lines, balanced, credits, debits, gstLines, isInterState, moneyLedger, type LedgerName, type LineSite, type Voucher } from '../tally/vouchers';
+import { holdLostLines, raBillSaleLines } from './client-bill-lines';
 
 type Tx = Prisma.TransactionClient | PrismaService;
 const D = (v: Prisma.Decimal.Value) => new Prisma.Decimal(v);
@@ -100,7 +101,7 @@ export class PostingService {
     const tally = opts.unexported;
     const open = { organizationId: org, ...(tally ? { tallyExportId: null } : {}) };
     const range = (field: string) => (opts.range ? { [field]: { lte: opts.range.upTo, ...(opts.range.from ? { gte: opts.range.from } : {}) } } : {});
-    const [raBills, awaitingCertification, receipts, vendorBills, subBills, payments, expenses, debitNotes] = await Promise.all([
+    const [raBills, awaitingCertification, receipts, vendorBills, subBills, payments, expenses, debitNotes, lostHolds] = await Promise.all([
       db.raBill.findMany({ where: { ...open, status: 'APPROVED', stage: { in: ['CERTIFIED', 'PAID'] }, ...range('billDate') }, include: { project: { select: projectSelect } } }),
       db.raBill.count({ where: { ...open, status: 'APPROVED', stage: { in: ['NOT_SENT', 'SENT'] }, ...range('billDate') } }),
       db.receipt.findMany({ where: { ...open, ...range('receiptDate') }, include: { project: { select: projectSelect }, bill: { select: { id: true, billNo: true, tallyExportId: true } } } }),
@@ -131,6 +132,10 @@ export class PostingService {
           subcontractBill: { select: { billNo: true, isFinal: true, workOrder: { select: { woNo: true } } } },
         },
       }),
+      db.raBillHold.findMany({
+        where: { ...open, closedAt: opts.range ? { lte: opts.range.upTo, ...(opts.range.from ? { gte: opts.range.from } : {}) } : { not: null }, lostAmount: { gt: 0 } },
+        include: { project: { select: projectSelect }, bill: { select: { id: true, billNo: true, tallyExportId: true } } },
+      }),
     ]);
 
     const vouchers: Voucher[] = [];
@@ -141,16 +146,13 @@ export class PostingService {
     };
     const cc = { costCentre: true };
 
-    // RA bills: Dr client (work + GST), Cr works receipts, Cr output GST. Works on a site are supplied where the site is,
-    // which is where the contractor bills from, so GST is CGST + SGST.
+    // RA bills: Dr client, Cr works receipts (work value + price variation), Cr output GST, and the secured advance and the
+    // amounts withheld to their own ledgers (`raBillSaleLines`).
     const exportedBills = new Set<string>();
     for (const b of raBills) {
       const client = clientOf(b.project);
       const ref = raBillRef(b.project.code, b.billNo);
-      // Price variation is part of the sale: works receipts carry work value + price variation.
-      const sale = b.grossAmount.add(b.pvAmount);
-      const l = new Lines(name).dr(client.key, sale.add(b.gstAmount), { fallback: client.name, party: true }).cr('SALES', sale, cc);
-      gstLines(l, 'cr', 'OUTPUT', b.gstAmount, false);
+      const lines = raBillSaleLines(name, b, client);
       exportedBills.add(b.id);
       add({
         kind: 'SALES',
@@ -162,9 +164,33 @@ export class PostingService {
         projectId: b.project.id,
         projectCode: b.project.code,
         projectName: b.project.name,
-        narration: `${b.omYear !== null ? `O&M bill ${b.billNo}` : `RA bill ${b.billNo}${b.isFinal ? ' (final)' : ''}`} of ${b.project.name}: ${b.omYear !== null ? 'operation and maintenance' : 'work'} ₹${b.grossAmount.toFixed(2)}${b.pvAmount.isZero() ? '' : ` + price variation ₹${b.pvAmount.toFixed(2)}`} + GST ₹${b.gstAmount.toFixed(2)}${b.certificateNo ? `, certificate ${b.certificateNo}` : ''}`,
+        narration: `${b.omYear !== null ? `O&M bill ${b.billNo}` : `RA bill ${b.billNo}${b.isFinal ? ' (final)' : ''}`} of ${b.project.name}: ${b.omYear !== null ? 'operation and maintenance' : 'work'} ₹${b.grossAmount.toFixed(2)}${b.pvAmount.isZero() ? '' : ` + price variation ₹${b.pvAmount.toFixed(2)}`} + GST ₹${b.gstAmount.toFixed(2)}${b.securedAdvance.isZero() ? '' : ` + secured advance ₹${b.securedAdvance.toFixed(2)}`}${b.securedAdvanceRecovered.isZero() ? '' : ` − secured advance recovered ₹${b.securedAdvanceRecovered.toFixed(2)}`}${b.withheldReleased.isZero() ? '' : ` + released ₹${b.withheldReleased.toFixed(2)}`}${b.withheld.isZero() ? '' : ` − withheld ₹${b.withheld.toFixed(2)}`}${b.certificateNo ? `, certificate ${b.certificateNo}` : ''}`,
         billRef: { name: ref, type: 'New Ref' },
-        lines: l.lines,
+        lines,
+      });
+    }
+
+    // Holds closed with part never to be paid: Dr deductions by clients, Cr amounts withheld by clients.
+    for (const h of lostHolds) {
+      const client = clientOf(h.project);
+      const number = `WL/${shortId(h.id)}`;
+      if (tally && !h.bill.tallyExportId && !exportedBills.has(h.bill.id)) {
+        held.push({ kind: 'WITHHELD_LOST', sourceId: h.id, date: dateOnly(h.closedAt!), number, party: client.name, reason: `Its RA bill ${h.bill.billNo} goes to Tally once the client certifies it` });
+        continue;
+      }
+      add({
+        kind: 'WITHHELD_LOST',
+        sourceId: h.id,
+        date: h.closedAt!,
+        number,
+        reference: null,
+        party: client.name,
+        projectId: h.project.id,
+        projectCode: h.project.code,
+        projectName: h.project.name,
+        narration: `Withheld on RA bill ${h.bill.billNo} of ${h.project.name} for ${h.description} and never released: ₹${h.lostAmount.toFixed(2)} lost${h.closeNote ? ` (${h.closeNote})` : ''}`,
+        billRef: null,
+        lines: holdLostLines(name, h.lostAmount),
       });
     }
 

@@ -2,7 +2,7 @@
 import type { ExpenseCategory } from './enums';
 
 /** What a Nirmaan record becomes in Tally. */
-export const TALLY_VOUCHER_KINDS = ['SALES', 'RECEIPT', 'PURCHASE', 'SUBCONTRACT', 'PAYMENT', 'EXPENSE', 'DEBIT_NOTE', 'SALARY', 'SALARY_PAYMENT', 'STAFF_LOAN', 'RMC_SALE', 'RMC_RECEIPT', 'MACHINE_LOAN', 'LOAN_EMI'] as const;
+export const TALLY_VOUCHER_KINDS = ['SALES', 'RECEIPT', 'PURCHASE', 'SUBCONTRACT', 'PAYMENT', 'EXPENSE', 'DEBIT_NOTE', 'SALARY', 'SALARY_PAYMENT', 'STAFF_LOAN', 'RMC_SALE', 'RMC_RECEIPT', 'MACHINE_LOAN', 'LOAN_EMI', 'WITHHELD_LOST'] as const;
 export type TallyVoucherKind = (typeof TALLY_VOUCHER_KINDS)[number];
 export const TALLY_VOUCHER_KIND_LABELS: Record<TallyVoucherKind, string> = {
   SALES: 'RA bills',
@@ -19,6 +19,7 @@ export const TALLY_VOUCHER_KIND_LABELS: Record<TallyVoucherKind, string> = {
   RMC_RECEIPT: 'RMC money received',
   MACHINE_LOAN: 'Machine loans taken',
   LOAN_EMI: 'Machine loan EMIs paid',
+  WITHHELD_LOST: 'Withheld amounts lost',
 };
 /** The Tally voucher type each kind is imported as. */
 export const TALLY_VOUCHER_TYPES: Record<TallyVoucherKind, string> = {
@@ -36,6 +37,7 @@ export const TALLY_VOUCHER_TYPES: Record<TallyVoucherKind, string> = {
   RMC_RECEIPT: 'Receipt',
   MACHINE_LOAN: 'Journal',
   LOAN_EMI: 'Payment',
+  WITHHELD_LOST: 'Journal',
 };
 
 /** A ledger Nirmaan posts to that is not a client, vendor or expense category. */
@@ -61,6 +63,8 @@ export const TALLY_FIXED_LEDGERS: TallyFixedLedger[] = [
   { key: 'CLIENT_ADVANCE', use: 'Mobilisation advance recovered by clients', name: 'Mobilisation Advance from Clients', group: 'Current Liabilities' },
   { key: 'LABOUR_CESS', use: 'Labour welfare cess deducted by clients', name: 'Labour Welfare Cess', group: 'Direct Expenses' },
   { key: 'CLIENT_DEDUCTIONS', use: 'Other deductions by clients', name: 'Deductions by Clients', group: 'Indirect Expenses' },
+  { key: 'SECURED_ADVANCE', use: 'Secured advance clients paid on material at site, until recovered', name: 'Secured Advance from Clients', group: 'Current Liabilities' },
+  { key: 'WITHHELD_BY_CLIENT', use: 'Amounts clients withheld on bills for disputed items, until released', name: 'Amounts Withheld by Clients', group: 'Current Assets' },
   { key: 'PURCHASE', use: 'Material on vendor bills', name: 'Purchase of Materials', group: 'Purchase Accounts' },
   { key: 'FREIGHT', use: 'Freight on vendor bills', name: 'Freight Inward', group: 'Direct Expenses' },
   { key: 'MACHINE_HIRE', use: 'Hire bills for hired machines', name: 'Machinery Hire Charges', group: 'Direct Expenses' },

@@ -26,6 +26,7 @@ const bill: BillEmailInput = {
   gstRate: '18',
   gstAmount: '660960.00',
   grossUpto: '9120000.00',
+  additions: [],
   deductions: [
     { label: 'Retention', amount: '183600.00' },
     { label: 'Labour cess', amount: '36720.00' },
@@ -53,6 +54,32 @@ test('deductions are shown as money off, not added', () => {
   const m = billEmail(bill);
   assert.ok(m.html.includes('-₹1,83,600.00'));
   assert.match(m.text, /Less retention: -₹1,83,600\.00/);
+});
+
+test('a secured advance and a release are added after GST, before the deductions', () => {
+  const m = billEmail({
+    ...bill,
+    additions: [
+      { label: 'Secured advance on material at site', amount: '369000.00' },
+      { label: 'Released from amounts withheld', amount: '148000.00' },
+    ],
+    deductions: [...bill.deductions, { label: 'Secured advance recovered', amount: '246000.00' }, { label: 'Withheld (disputed)', amount: '185000.00' }],
+    netPayable: '4198640.00',
+  });
+  assert.ok(m.html.includes('Add secured advance on material at site'));
+  assert.ok(!m.html.includes('-₹3,69,000.00'), 'an addition is not money off');
+  const t = m.text;
+  const at = (s: string) => {
+    const i = t.indexOf(s);
+    assert.ok(i >= 0, `text has ${s}`);
+    return i;
+  };
+  assert.ok(at('GST 18%') < at('Add secured advance on material at site: ₹3,69,000.00'));
+  assert.ok(at('Add secured advance') < at('Add released from amounts withheld: ₹1,48,000.00'));
+  assert.ok(at('Add released') < at('Less retention'));
+  assert.ok(at('Less secured advance recovered: -₹2,46,000.00') < at('Net payable: '));
+  assert.match(t, /Less withheld \(disputed\): -₹1,85,000\.00/);
+  assert.ok(!billEmail(bill).text.includes('Add '), 'none when the bill has none');
 });
 
 test('item descriptions and names are escaped in the HTML', () => {

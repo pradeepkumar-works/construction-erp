@@ -32,6 +32,8 @@ export interface BillEmailInput {
   gstAmount: string;
   /** Work value up to and including this bill */
   grossUpto: string;
+  /** Added after GST and outside its base: the secured advance on material at site, amounts released of earlier holds */
+  additions: { label: string; amount: string }[];
   /** Retention, TDS, cess and the rest, zero ones already left out */
   deductions: { label: string; amount: string }[];
   netPayable: string;
@@ -76,6 +78,7 @@ export function billEmail(b: BillEmailInput): { subject: string; html: string; t
     sumRow('Value of work', b.grossAmount),
     ...(Number(b.pvAmount) !== 0 ? [sumRow('Price variation', b.pvAmount)] : []),
     sumRow(`GST ${b.gstRate}%`, b.gstAmount),
+    ...b.additions.map((a) => sumRow(`Add ${a.label.toLowerCase()}`, a.amount)),
     ...b.deductions.map((d) => sumRow(`Less ${d.label.toLowerCase()}`, `-${d.amount}`)),
     sumRow('Net payable', b.netPayable, true),
   ].join('');
@@ -120,6 +123,7 @@ export function billEmail(b: BillEmailInput): { subject: string; html: string; t
     `Value of work: ${money(b.grossAmount)}`,
     ...(Number(b.pvAmount) !== 0 ? [`Price variation: ${money(b.pvAmount)}`] : []),
     `GST ${b.gstRate}%: ${money(b.gstAmount)}`,
+    ...b.additions.map((a) => `Add ${a.label.toLowerCase()}: ${money(a.amount)}`),
     ...b.deductions.map((d) => `Less ${d.label.toLowerCase()}: ${money(`-${d.amount}`)}`),
     `Net payable: ${money(b.netPayable)}`,
     '',

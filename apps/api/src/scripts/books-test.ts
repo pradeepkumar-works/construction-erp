@@ -7,7 +7,11 @@
  */
 import assert from 'node:assert/strict';
 import { ACCOUNT_GROUP_LABELS, ACCOUNT_GROUP_NATURE, ACCOUNT_GROUPS, TALLY_CLIENT_GROUP, TALLY_EXPENSE_GROUP, TALLY_FIXED_LEDGERS, TALLY_VENDOR_GROUP, accountGroupOf } from '@erp/shared';
+import { Prisma } from '@prisma/client';
 import { againstOf, fyCode, runningBalances, voucherHash, voucherNumber, voucherProblem, voucherSeq } from '../books/books-rules';
+import { holdLostLines, raBillSaleLines } from '../posting/client-bill-lines';
+import { billOwed } from '../receivables/bill-settlement';
+import { balanced } from '../tally/vouchers';
 
 const cases: [string, () => void][] = [];
 const test = (name: string, fn: () => void) => cases.push([name, fn]);
@@ -67,6 +71,30 @@ test('a posted voucher is rewritten only when what it was built from changes', (
   const v = { date: '2026-10-01', number: 'VB-1', reference: 'INV 9', narration: 'Invoice 9', projectId: 'p1', lines: [{ key: 'PURCHASE', projectId: 'p1', amount: '100.00' }] };
   assert.equal(voucherHash(v), voucherHash({ ...v, lines: [...v.lines] }));
   assert.notEqual(voucherHash(v), voucherHash({ ...v, lines: [{ ...v.lines[0], amount: '100.01' }] }));
+});
+
+test('an RA bill debits the client what it owes, the secured advance and amounts withheld on their own ledgers', () => {
+  const D = (v: string) => new Prisma.Decimal(v);
+  const name = (key: string, fallback?: string) => fallback ?? key;
+  const client = { key: 'CLIENT:1', name: 'Works Department' };
+  const b = { grossAmount: D('1000000'), pvAmount: D('20000'), gstAmount: D('183600'), securedAdvance: D('369000'), securedAdvanceRecovered: D('246000'), withheld: D('185000'), withheldReleased: D('148000') };
+  const lines = raBillSaleLines(name, b, client);
+  const on = (ls: typeof lines, key: string) => ls.find((l) => l.ledgerKey === key)?.amount.toFixed(2);
+  assert.ok(balanced(lines));
+  assert.equal(on(lines, 'CLIENT:1'), billOwed(b).toFixed(2));
+  assert.equal(on(lines, 'SALES'), '-1020000.00');
+  assert.equal(on(lines, 'SECURED_ADVANCE'), '-123000.00', 'Cr the advance paid less the one recovered');
+  assert.equal(on(lines, 'WITHHELD_BY_CLIENT'), '37000.00', 'Dr what is withheld less what is released');
+  const used = raBillSaleLines(name, { ...b, securedAdvance: D('0'), withheld: D('0') }, client);
+  assert.ok(balanced(used));
+  assert.equal(on(used, 'SECURED_ADVANCE'), '246000.00', 'material used: the advance comes back off the liability');
+  assert.equal(on(used, 'WITHHELD_BY_CLIENT'), '-148000.00');
+  const plain = raBillSaleLines(name, { ...b, securedAdvance: D('0'), securedAdvanceRecovered: D('0'), withheld: D('0'), withheldReleased: D('0') }, client);
+  assert.deepEqual(plain.map((l) => l.ledgerKey).sort(), ['CLIENT:1', 'OUTPUT_CGST', 'OUTPUT_SGST', 'SALES']);
+  const lost = holdLostLines(name, D('37000'));
+  assert.ok(balanced(lost));
+  assert.deepEqual(lost.map((l) => [l.ledgerKey, l.amount.toFixed(2)]), [['CLIENT_DEDUCTIONS', '37000.00'], ['WITHHELD_BY_CLIENT', '-37000.00']]);
+  for (const k of ['SECURED_ADVANCE', 'WITHHELD_BY_CLIENT']) assert.ok(TALLY_FIXED_LEDGERS.some((l) => l.key === k), k);
 });
 
 test('every ledger the posting service uses has its group in the chart of accounts', () => {

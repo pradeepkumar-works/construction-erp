@@ -47,6 +47,7 @@ export const COPIED_TERMS = [
   'retentionPct',
   'securityDepositPct',
   'advanceRecoveryPct',
+  'securedAdvancePct',
   'tdsPct',
   'gstTdsPct',
   'labourCessPct',

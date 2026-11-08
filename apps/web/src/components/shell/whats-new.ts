@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-bill-secured-advance-holds',
+    date: '2026-11-08',
+    title: 'Secured advance on material at site, and amounts withheld on RA bills',
+    points: [
+      'The contract terms take a secured advance % (CPWD: 75). A draft RA bill’s Secured advance section lists the material brought to site and not yet used, or fills it from the site store, and the bill pays the % of its value and recovers the previous bill’s.',
+      'The Withheld section, and the certificate, record what the engineer held back for a disputed item and why. A later bill releases it, in part or in full, and once the dispute is lost the rest is closed and written off.',
+      'Net payable, the print, Excel and the bill email show them after GST as Add rows, and as Secured advance recovered and Withheld (disputed) among the deductions. GST and the contract deductions are not charged on any of them.',
+      'Receivables reads what each bill is owed with them, so a payment of the full net payable settles the bill.',
+    ],
+  },
+  {
     id: '2026-11-leave-year-weekly-off',
     date: '2026-11-05',
     title: 'April to March leave year, a weekly off per site, and what payroll owes',

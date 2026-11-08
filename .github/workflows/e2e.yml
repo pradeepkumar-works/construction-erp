@@ -414,6 +414,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/contract-obligations-test.js
+      - name: A bill pays a secured advance on material at site and recovers the last one, withholds for disputes and releases them later, and the client is debited what it owes
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/secured-advance-test.js
       - name: Consultants check their share of the measurements before certifying, hidden work is countersigned above its sign-off, and site orders run to their compliance
         if: matrix.suite == 'flows'
         working-directory: apps/api

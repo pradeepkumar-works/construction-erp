@@ -956,6 +956,7 @@ model Organization {
   scQuoteLines          SubcontractQuoteLine[]
   subcontractBills      SubcontractBill[]
   raBills               RaBill[]
+  raBillHolds           RaBillHold[]
   receipts              Receipt[]
   vendorPayments        VendorPayment[]
   paymentRequests       PaymentRequest[]
@@ -1312,6 +1313,7 @@ model User {
   submittedMeasures       MeasurementSheet[]         @relation("MeasurementSubmitter")
   reviewedMeasures        MeasurementSheet[]         @relation("MeasurementReviewer")
   submittedBills          RaBill[]                   @relation("BillSubmitter")
+  closedBillHolds         RaBillHold[]               @relation("HoldCloser")
   reviewedBills           RaBill[]                   @relation("BillReviewer")
   receiptsRecorded        Receipt[]                  @relation("ReceiptCreator")
   tallyExports            TallyExport[]
@@ -1533,6 +1535,9 @@ model Project {
   mobilisationAdvance    Decimal        @default(0) @db.Decimal(18, 2)
   /// Advance recovered from each bill, % of the work value, until all of it is recovered
   advanceRecoveryPct     Decimal        @default(0) @db.Decimal(5, 2)
+  /// Secured advance on non-perishable material brought to site and not yet used, % of its value; null = the
+  /// contract gives none
+  securedAdvancePct      Decimal?       @db.Decimal(5, 2)
   defectLiabilityMonths  Int?
   /// The contract has a price variation (escalation) clause
   priceVariation         Boolean        @default(false)
@@ -1635,6 +1640,7 @@ model Project {
   risks              Risk[]
   measurements       MeasurementSheet[]
   raBills            RaBill[]
+  raBillHolds        RaBillHold[]
   receipts           Receipt[]
   vendorPayments     VendorPayment[]
   paymentRequests    PaymentRequest[]
@@ -2422,6 +2428,7 @@ model BoqItem {
   pipeSegments      PipeSegment[]
   measurements      MeasurementSheet[]
   billItems         RaBillItem[]
+  billHolds         RaBillHold[]
   workOrderLines    WorkOrderLine[]
   scEnquiryItems    SubcontractEnquiryItem[]
   variationLines    VariationLine[]
@@ -3187,6 +3194,7 @@ model Item {
   updatedAt      DateTime      @updatedAt
 
   txns              StockTxn[]
+  securedAdvances   RaBillSecuredAdvance[]
   minLevels         StockMinLevel[]
   recoveries        SubcontractBillMaterial[]
   norms             MaterialNorm[]
@@ -3787,90 +3795,102 @@ model MeasurementLine {
 /// A submission like the others (six status columns, approval matrix); once approved it is sent, certified, paid.
 /// Amounts are on the claimed quantities until the client certifies, then on the certified ones (claimed* keep the claim).
 model RaBill {
-  id                    String           @id @default(uuid())
-  organizationId        String
-  organization          Organization     @relation(fields: [organizationId], references: [id])
-  projectId             String
-  project               Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  id                      String           @id @default(uuid())
+  organizationId          String
+  organization            Organization     @relation(fields: [organizationId], references: [id])
+  projectId               String
+  project                 Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
   /// 1, 2, 3 ... per project
-  billNo                Int
-  isFinal               Boolean          @default(false)
-  billDate              DateTime         @db.Date
+  billNo                  Int
+  isFinal                 Boolean          @default(false)
+  billDate                DateTime         @db.Date
   /// Approved measurements dated up to this day and not in an earlier bill are billed
-  measuredUpTo          DateTime         @db.Date
-  remarks               String?
+  measuredUpTo            DateTime         @db.Date
+  remarks                 String?
   /// Value of work up to the previous bill / in this bill (taxable) / up to date
-  grossPrevious         Decimal          @db.Decimal(18, 2)
-  grossAmount           Decimal          @db.Decimal(18, 2)
-  grossUpto             Decimal          @db.Decimal(18, 2)
-  gstRate               Decimal          @db.Decimal(5, 2)
-  gstAmount             Decimal          @db.Decimal(18, 2)
+  grossPrevious           Decimal          @db.Decimal(18, 2)
+  grossAmount             Decimal          @db.Decimal(18, 2)
+  grossUpto               Decimal          @db.Decimal(18, 2)
+  gstRate                 Decimal          @db.Decimal(5, 2)
+  gstAmount               Decimal          @db.Decimal(18, 2)
   // Contract percentages taken when the bill was prepared, and the deductions they give
-  retentionPct          Decimal          @db.Decimal(5, 2)
-  securityDepositPct    Decimal          @db.Decimal(5, 2)
-  advanceRecoveryPct    Decimal          @db.Decimal(5, 2)
-  tdsPct                Decimal          @db.Decimal(5, 2)
-  gstTdsPct             Decimal          @db.Decimal(5, 2)
-  labourCessPct         Decimal          @db.Decimal(5, 2)
-  retentionAmount       Decimal          @db.Decimal(18, 2)
-  securityDepositAmount Decimal          @db.Decimal(18, 2)
-  advanceRecoveryAmount Decimal          @db.Decimal(18, 2)
-  tdsAmount             Decimal          @db.Decimal(18, 2)
-  gstTdsAmount          Decimal          @db.Decimal(18, 2)
-  labourCessAmount      Decimal          @db.Decimal(18, 2)
-  otherDeduction        Decimal          @default(0) @db.Decimal(18, 2)
-  otherDeductionNote    String?
+  retentionPct            Decimal          @db.Decimal(5, 2)
+  securityDepositPct      Decimal          @db.Decimal(5, 2)
+  advanceRecoveryPct      Decimal          @db.Decimal(5, 2)
+  tdsPct                  Decimal          @db.Decimal(5, 2)
+  gstTdsPct               Decimal          @db.Decimal(5, 2)
+  labourCessPct           Decimal          @db.Decimal(5, 2)
+  retentionAmount         Decimal          @db.Decimal(18, 2)
+  securityDepositAmount   Decimal          @db.Decimal(18, 2)
+  advanceRecoveryAmount   Decimal          @db.Decimal(18, 2)
+  tdsAmount               Decimal          @db.Decimal(18, 2)
+  gstTdsAmount            Decimal          @db.Decimal(18, 2)
+  labourCessAmount        Decimal          @db.Decimal(18, 2)
+  otherDeduction          Decimal          @default(0) @db.Decimal(18, 2)
+  otherDeductionNote      String?
   /// Milestone slippage: withheld on this bill (negative when caught-up work releases what earlier bills held),
   /// and the components behind it (SlippageLineDto[])
-  slippageWithheld      Decimal          @default(0) @db.Decimal(18, 2)
-  slippageLines         Json?
+  slippageWithheld        Decimal          @default(0) @db.Decimal(18, 2)
+  slippageLines           Json?
   /// Contract obligations: penalties and withholdings due by the bill's date less what earlier bills took (negative
   /// when a withholding is given back), and the obligations behind it (ObligationBillLine[])
-  obligationRecovery    Decimal          @default(0) @db.Decimal(18, 2)
-  obligationLines       Json?
+  obligationRecovery      Decimal          @default(0) @db.Decimal(18, 2)
+  obligationLines         Json?
   /// O&M bills: the O&M year and the instalment of it this bill is for (null on a works bill), the
   /// penalty for service levels missed in the period (a deduction) and the figures behind it (OmBillDetail)
-  omYear                Int?
-  omInstalment          Int?
-  omPenalty             Decimal          @default(0) @db.Decimal(18, 2)
-  omDetail              Json?
-  totalDeductions       Decimal          @db.Decimal(18, 2)
-  /// gross + GST - deductions
-  netPayable            Decimal          @db.Decimal(18, 2)
+  omYear                  Int?
+  omInstalment            Int?
+  omPenalty               Decimal          @default(0) @db.Decimal(18, 2)
+  omDetail                Json?
+  /// Secured advance: the contract's % when the bill was priced, the advance on the material at site on this bill's
+  /// lines (paid on this bill), and the previous bill's advance, recovered on this one (its material is used or
+  /// declared again). Neither is in the GST or deduction base.
+  securedAdvancePct       Decimal          @default(0) @db.Decimal(5, 2)
+  securedAdvance          Decimal          @default(0) @db.Decimal(18, 2)
+  securedAdvanceRecovered Decimal          @default(0) @db.Decimal(18, 2)
+  /// Disputed items: withheld by the holds placed on this bill (a deduction), and released on it from earlier holds
+  withheld                Decimal          @default(0) @db.Decimal(18, 2)
+  withheldReleased        Decimal          @default(0) @db.Decimal(18, 2)
+  totalDeductions         Decimal          @db.Decimal(18, 2)
+  /// gross + price variation + GST + secured advance + released - deductions
+  netPayable              Decimal          @db.Decimal(18, 2)
   /// Price variation on this bill's work value (negative when the indices fell); in the GST and deduction base
-  pvAmount              Decimal          @default(0) @db.Decimal(18, 2)
+  pvAmount                Decimal          @default(0) @db.Decimal(18, 2)
   /// The month the current indices are for, and any note on where they came from
-  pvIndexMonth          DateTime?        @db.Date
-  pvNote                String?
+  pvIndexMonth            DateTime?        @db.Date
+  pvNote                  String?
   /// What was claimed, kept when the client certifies a different amount
-  claimedGross          Decimal?         @db.Decimal(18, 2)
-  claimedNet            Decimal?         @db.Decimal(18, 2)
-  stage                 BillStage        @default(NOT_SENT)
-  sentDate              DateTime?        @db.Date
-  certifiedDate         DateTime?        @db.Date
+  claimedGross            Decimal?         @db.Decimal(18, 2)
+  claimedNet              Decimal?         @db.Decimal(18, 2)
+  stage                   BillStage        @default(NOT_SENT)
+  sentDate                DateTime?        @db.Date
+  certifiedDate           DateTime?        @db.Date
   /// The client's certificate / measurement check reference
-  certificateNo         String?
-  paidDate              DateTime?        @db.Date
-  status                SubmissionStatus @default(DRAFT)
-  submittedById         String
-  submittedBy           User             @relation("BillSubmitter", fields: [submittedById], references: [id])
-  submittedAt           DateTime?
-  reviewedById          String?
-  reviewedBy            User?            @relation("BillReviewer", fields: [reviewedById], references: [id])
-  reviewedAt            DateTime?
-  reviewNote            String?
+  certificateNo           String?
+  paidDate                DateTime?        @db.Date
+  status                  SubmissionStatus @default(DRAFT)
+  submittedById           String
+  submittedBy             User             @relation("BillSubmitter", fields: [submittedById], references: [id])
+  submittedAt             DateTime?
+  reviewedById            String?
+  reviewedBy              User?            @relation("BillReviewer", fields: [reviewedById], references: [id])
+  reviewedAt              DateTime?
+  reviewNote              String?
   /// Set once the voucher is in a Tally export; undoing the export clears it
-  tallyExportId         String?
-  tallyExport           TallyExport?     @relation(fields: [tallyExportId], references: [id], onDelete: SetNull)
-  createdAt             DateTime         @default(now())
-  updatedAt             DateTime         @updatedAt
+  tallyExportId           String?
+  tallyExport             TallyExport?     @relation(fields: [tallyExportId], references: [id], onDelete: SetNull)
+  createdAt               DateTime         @default(now())
+  updatedAt               DateTime         @updatedAt
 
-  items        RaBillItem[]
-  pvLines      RaBillPvLine[]
-  stageLines   RaBillStageLine[]
-  measurements MeasurementSheet[]
-  attachments  Attachment[]
-  receipts     Receipt[]
+  items           RaBillItem[]
+  pvLines         RaBillPvLine[]
+  stageLines      RaBillStageLine[]
+  measurements    MeasurementSheet[]
+  attachments     Attachment[]
+  receipts        Receipt[]
+  securedAdvances RaBillSecuredAdvance[]
+  holds           RaBillHold[]
+  holdReleases    RaBillHoldRelease[]
 
   @@unique([projectId, billNo])
   @@unique([projectId, omYear, omInstalment])
@@ -3902,6 +3922,79 @@ model RaBillItem {
 
   @@unique([billId, boqItemId])
   @@index([boqItemId])
+}
+
+/// Material brought to site for the work and not yet used, on which a bill pays a secured advance (CPWD): its value at
+/// the rate it was bought at, and the advance = value × the bill's securedAdvancePct.
+model RaBillSecuredAdvance {
+  id          String  @id @default(uuid())
+  billId      String
+  bill        RaBill  @relation(fields: [billId], references: [id], onDelete: Cascade)
+  /// The item master's item, when picked
+  itemId      String?
+  item        Item?   @relation(fields: [itemId], references: [id], onDelete: SetNull)
+  description String
+  unit        String
+  qtyAtSite   Decimal @db.Decimal(18, 3)
+  rate        Decimal @db.Decimal(18, 2)
+  value       Decimal @db.Decimal(18, 2)
+  advance     Decimal @db.Decimal(18, 2)
+  sortOrder   Int     @default(0)
+
+  @@index([billId])
+  @@index([itemId])
+}
+
+/// An amount the engineer withheld on a bill for a disputed item, released on later bills as it is settled (wholly or
+/// in part). Closed with the rest lost when it will never be paid.
+model RaBillHold {
+  id             String              @id @default(uuid())
+  organizationId String
+  organization   Organization        @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// The bill that withheld it
+  billId         String
+  bill           RaBill              @relation(fields: [billId], references: [id], onDelete: Cascade)
+  boqItemId      String?
+  boqItem        BoqItem?            @relation(fields: [boqItemId], references: [id], onDelete: SetNull)
+  description    String
+  reason         String
+  amount         Decimal             @db.Decimal(18, 2)
+  sortOrder      Int                 @default(0)
+  /// Closed: what was still withheld then is lost
+  closedAt       DateTime?           @db.Date
+  lostAmount     Decimal             @default(0) @db.Decimal(18, 2)
+  closeNote      String?
+  closedById     String?
+  closedBy       User?               @relation("HoldCloser", fields: [closedById], references: [id])
+  /// Set once the lost amount's journal is in a Tally export
+  tallyExportId  String?
+  tallyExport    TallyExport?        @relation(fields: [tallyExportId], references: [id], onDelete: SetNull)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  releases       RaBillHoldRelease[]
+
+  @@index([organizationId])
+  @@index([projectId])
+  @@index([billId])
+  @@index([boqItemId])
+  @@index([tallyExportId])
+}
+
+/// Part (or all) of a hold given back on a later bill.
+model RaBillHoldRelease {
+  id     String     @id @default(uuid())
+  holdId String
+  hold   RaBillHold @relation(fields: [holdId], references: [id], onDelete: Cascade)
+  /// The bill that releases it
+  billId String
+  bill   RaBill     @relation(fields: [billId], references: [id], onDelete: Cascade)
+  amount Decimal    @db.Decimal(18, 2)
+  note   String?
+
+  @@unique([holdId, billId])
+  @@index([billId])
 }
 
 /// One component of a contract's price variation formula: its share of the work value and the index it
@@ -4841,6 +4934,7 @@ model TallyExport {
   createdBy        User              @relation(fields: [createdById], references: [id])
   createdAt        DateTime          @default(now())
   raBills          RaBill[]
+  raBillHolds      RaBillHold[]
   receipts         Receipt[]
   vendorBills      VendorBill[]
   debitNotes       DebitNote[]

@@ -526,6 +526,10 @@ export class BillChecksService {
       slippageWithheld: n(bill.slippageWithheld),
       omPenalty: n(bill.omPenalty),
       obligationRecovery: n(bill.obligationRecovery),
+      securedAdvance: n(bill.securedAdvance),
+      securedAdvanceRecovered: n(bill.securedAdvanceRecovered),
+      withheld: n(bill.withheld),
+      withheldReleased: n(bill.withheldReleased),
       totalDeductions: n(bill.totalDeductions),
       netPayable: n(bill.netPayable),
     });

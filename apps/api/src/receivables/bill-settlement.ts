@@ -32,8 +32,21 @@ export function settlement(receipts: ReceiptSums[]) {
   return { received, settled };
 }
 
-/** Work value + price variation + GST: what the client owes on a bill before its own deductions. */
+/** Work value + price variation + GST: the bill amount with GST, the tax invoice. */
 export const invoiceOf = (b: { grossAmount: Prisma.Decimal; pvAmount: Prisma.Decimal; gstAmount: Prisma.Decimal }) => b.grossAmount.add(b.pvAmount).add(b.gstAmount);
+
+/** The bill columns `billOwed` reads. */
+export const OWED_SELECT = { grossAmount: true, pvAmount: true, gstAmount: true, securedAdvance: true, securedAdvanceRecovered: true, withheld: true, withheldReleased: true } as const;
+export type OwedColumns = { [K in keyof typeof OWED_SELECT]: Prisma.Decimal };
+
+/**
+ * What a bill's receipts settle (received plus what the client deducted on them): the invoice, plus the secured advance
+ * paid on it and the amounts it released, less the previous advance it recovered and what it withheld. Those four are
+ * the bill's own and never a receipt's deductions, so a payment of the full net payable with the bill's deductions
+ * settles the bill. The sales voucher debits the client with the same.
+ */
+export const billOwed = (b: OwedColumns) =>
+  invoiceOf(b).add(b.securedAdvance).sub(b.securedAdvanceRecovered).add(b.withheldReleased).sub(b.withheld);
 
 /**
  * Move a bill to PAID once its receipts settle it, or back to CERTIFIED / SENT when a receipt is taken off or the
@@ -43,7 +56,7 @@ export async function syncBillStage(tx: Prisma.TransactionClient, billId: string
   const bill = await tx.raBill.findUniqueOrThrow({ where: { id: billId }, include: { receipts: { select: RECEIPT_SUMS } } });
   if (bill.stage === 'NOT_SENT') return;
   const { settled } = settlement(bill.receipts);
-  const paid = bill.receipts.length > 0 && settled.gte(invoiceOf(bill));
+  const paid = bill.receipts.length > 0 && settled.gte(billOwed(bill));
   if (paid) {
     const last = bill.receipts.reduce((d, r) => (r.receiptDate > d ? r.receiptDate : d), bill.receipts[0].receiptDate);
     if (bill.stage !== 'PAID' || bill.paidDate?.getTime() !== last.getTime()) await tx.raBill.update({ where: { id: billId }, data: { stage: 'PAID', paidDate: last } });

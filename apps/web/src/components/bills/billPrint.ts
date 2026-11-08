@@ -234,6 +234,33 @@ ${
   </table>`
     : ''
 }
+${
+  b.securedAdvanceLines.length
+    ? `
+  <h2>Secured advance on material at site (${esc(b.securedAdvancePct)}% of its value)</h2>
+  <table>
+    <thead><tr><th>Material</th><th>Unit</th><th class="num">Quantity at site</th><th class="num">Rate (${sym})</th><th class="num">Value (${sym})</th><th class="num">Advance (${sym})</th></tr></thead>
+    <tbody>
+      ${b.securedAdvanceLines.map((l) => `<tr><td>${esc(l.description)}</td><td>${esc(l.unit)}</td><td class="num">${qty(l.qtyAtSite)}</td><td class="num">${inr(l.rate)}</td><td class="num">${inr(l.value)}</td><td class="num">${inr(l.advance)}</td></tr>`).join('')}
+      <tr class="total"><td colspan="5">Secured advance on this bill</td><td class="num">${inr(b.securedAdvance)}</td></tr>
+    </tbody>
+  </table>`
+    : ''
+}
+${
+  b.holds.length || b.releases.length
+    ? `
+  <h2>Withheld for disputed items</h2>
+  <table>
+    <thead><tr><th>Bill</th><th>Item</th><th>Reason or note</th><th class="num">Withheld (${sym})</th><th class="num">Released (${sym})</th></tr></thead>
+    <tbody>
+      ${b.holds.map((h) => `<tr><td>${esc(b.billLabel)}</td><td>${esc(h.description)}</td><td>${esc(h.reason)}</td><td class="num">${inr(h.amount)}</td><td class="num"></td></tr>`).join('')}
+      ${b.releases.map((r) => `<tr><td>${esc(r.holdBillLabel)}</td><td>${esc(r.description)}</td><td>${esc(r.note ?? '')}</td><td class="num"></td><td class="num">${inr(r.amount)}</td></tr>`).join('')}
+      <tr class="total"><td colspan="3">This bill</td><td class="num">${inr(b.withheld)}</td><td class="num">${inr(b.withheldReleased)}</td></tr>
+    </tbody>
+  </table>`
+    : ''
+}
 
   <div class="summary">
     <div>
@@ -243,6 +270,7 @@ ${
         ${b.pvLines.length ? `<tr><td>Price variation${b.pvIndexMonth ? ` (indices for ${esc(formatMonth(b.pvIndexMonth))})` : ''}</td><td class="num">${inr(b.pvAmount)}</td></tr>` : ''}
         <tr><td>GST @ ${esc(b.gstRate)}%</td><td class="num">${inr(b.gstAmount)}</td></tr>
         <tr class="total"><td>Bill amount with GST</td><td class="num">${inr(b.invoiceAmount)}</td></tr>
+        ${b.additions.map((a) => `<tr><td>Add ${esc(a.label.toLowerCase())}</td><td class="num">${inr(a.amount)}</td></tr>`).join('')}
         <tr><td>Less deductions</td><td class="num">${inr(b.totalDeductions)}</td></tr>
         <tr class="total"><td>Net payable</td><td class="num">${inr(b.netPayable)}</td></tr>
       </table>

@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Put, 
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { RaBillsService } from './ra-bills.service';
-import { BillDateDto, BillPriceVariationDto, CertifyBillDto, CreateRaBillDto, ListRaBillsQuery, UpdateRaBillDto } from './ra-bills.dto';
+import { BillDateDto, BillHoldsDto, BillPriceVariationDto, BillSecuredAdvanceDto, CertifyBillDto, CloseHoldDto, CreateRaBillDto, ListHoldsQuery, ListRaBillsQuery, UpdateRaBillDto } from './ra-bills.dto';
 import { ClaimStageDto } from '../stage-billing/stage-billing.dto';
 
 @ApiTags('ra-bills')
@@ -15,6 +15,23 @@ export class RaBillsController {
   @Get()
   list(@CurrentUser() user: RequestUser, @Query() q: ListRaBillsQuery) {
     return this.bills.list(user, q);
+  }
+
+  @ApiOperation({ summary: "A project's amounts withheld on its bills and not yet closed", description: 'With what each still withholds: what a later bill can release.' })
+  @Get('holds')
+  holds(@CurrentUser() user: RequestUser, @Query() q: ListHoldsQuery) {
+    return this.bills.openHolds(user, q.projectId);
+  }
+
+  @ApiOperation({
+    summary: 'Close a hold, the rest of it lost',
+    description:
+      'Once the client has certified the bill that withheld it and no bill not yet approved releases from it. What is still withheld is lost: the books ' +
+      'write it off as a deduction by the client.',
+  })
+  @Post('holds/:holdId/close')
+  closeHold(@CurrentUser() user: RequestUser, @Param('holdId', ParseUUIDPipe) holdId: string, @Body() dto: CloseHoldDto) {
+    return this.bills.closeHold(user, holdId, dto);
   }
 
   @ApiOperation({ summary: 'An RA bill with its abstract, deductions and the measurements it bills' })
@@ -51,6 +68,36 @@ export class RaBillsController {
   @Put(':id/price-variation')
   setPriceVariation(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: BillPriceVariationDto) {
     return this.bills.setPriceVariation(user, id, dto);
+  }
+
+  @ApiOperation({
+    summary: "Set a bill's secured advance on material at site",
+    description:
+      'While the bill is not approved: the non-perishable material brought to site and not yet used, with its quantity and purchase rate. The bill pays ' +
+      "the contract's secured advance % of its value and recovers the previous bill's advance; neither is in the base of GST or the deductions. A final " +
+      'or O&M bill takes none. No lines takes it off.',
+  })
+  @Put(':id/secured-advance')
+  setSecuredAdvance(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: BillSecuredAdvanceDto) {
+    return this.bills.setSecuredAdvance(user, id, dto);
+  }
+
+  @ApiOperation({ summary: "The site store at the bill's measurement date", description: 'What is in stock, at the rate of its last receipt against an order: a start for the material at site.' })
+  @Get(':id/secured-advance/from-stock')
+  securedAdvanceFromStock(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    return this.bills.securedAdvanceFromStock(user, id);
+  }
+
+  @ApiOperation({
+    summary: 'Set what a bill withholds and releases',
+    description:
+      'While the bill is not approved: `holds` are the amounts the engineer withholds on this bill for disputed items, `releases` what it releases of holds ' +
+      "placed on earlier bills (each up to what the hold still withholds). Each list replaces the bill's own; a hold a later bill released from stays. " +
+      'Holds can also be set when the bill is certified (`holds` on POST /ra-bills/:id/certify).',
+  })
+  @Put(':id/holds')
+  setHolds(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: BillHoldsDto) {
+    return this.bills.setHolds(user, id, dto);
   }
 
   @ApiOperation({

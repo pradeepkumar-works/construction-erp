@@ -28,7 +28,7 @@ import { bankCredit } from '../epc/epc-rules';
 import { todayIn } from '../notifications/time';
 import { isUniqueViolation } from '../common/idempotency';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
-import { deductedOn, invoiceOf, RECEIPT_SUMS, settlement, syncBillStage } from './bill-settlement';
+import { billOwed, deductedOn, invoiceOf, OWED_SELECT, RECEIPT_SUMS, settlement, syncBillStage } from './bill-settlement';
 import { CreateReceiptDto, ListReceiptsQuery, ReceivablesQuery, UpdateReceiptDto } from './receivables.dto';
 import { assertNotExported } from '../tally/exported';
 
@@ -211,7 +211,7 @@ export class ReceivablesService {
   /** A receipt against a bill must not settle more than the bill has outstanding (other receipts excluded). */
   private async checkBillBalance(tx: Prisma.TransactionClient, billId: string, excludeId: string | null, adds: Prisma.Decimal) {
     const bill = await tx.raBill.findUniqueOrThrow({ where: { id: billId }, include: { receipts: { where: excludeId ? { id: { not: excludeId } } : {}, select: RECEIPT_SUMS } } });
-    const outstanding = invoiceOf(bill).sub(settlement(bill.receipts).settled);
+    const outstanding = billOwed(bill).sub(settlement(bill.receipts).settled);
     if (adds.gt(outstanding.add(TOLERANCE))) {
       throw new BadRequestException(`This settles ₹${adds.toFixed(2)} (received plus deducted) but only ₹${Prisma.Decimal.max(outstanding, ZERO).toFixed(2)} is outstanding on the bill`);
     }
@@ -409,7 +409,7 @@ export class ReceivablesService {
     const [bills, receipts] = await Promise.all([
       this.prisma.raBill.findMany({
         where: { projectId: { in: ids }, status: 'APPROVED' },
-        select: { id: true, projectId: true, billNo: true, isFinal: true, omYear: true, stage: true, billDate: true, sentDate: true, certifiedDate: true, grossAmount: true, pvAmount: true, gstAmount: true, receipts: { select: RECEIPT_SUMS } },
+        select: { id: true, projectId: true, billNo: true, isFinal: true, omYear: true, stage: true, billDate: true, sentDate: true, certifiedDate: true, ...OWED_SELECT, receipts: { select: RECEIPT_SUMS } },
         orderBy: [{ projectId: 'asc' }, { billNo: 'asc' }],
       }),
       this.prisma.receipt.findMany({ where: { projectId: { in: ids } }, select: { projectId: true, kind: true, ...RECEIPT_SUMS } }),
@@ -420,13 +420,14 @@ export class ReceivablesService {
     for (const b of bills) {
       const t = byProject.get(b.projectId)!;
       const invoice = invoiceOf(b);
+      const owed = billOwed(b);
       if (b.stage === 'NOT_SENT' || !b.sentDate) {
-        t.notSent = t.notSent.add(invoice);
+        t.notSent = t.notSent.add(owed);
         continue;
       }
       const { received, settled } = settlement(b.receipts);
-      const outstanding = Prisma.Decimal.max(invoice.sub(settled), ZERO);
-      t.billed = t.billed.add(invoice);
+      const outstanding = Prisma.Decimal.max(owed.sub(settled), ZERO);
+      t.billed = t.billed.add(owed);
       t.received = t.received.add(received);
       t.deducted = t.deducted.add(settled.sub(received));
       t.outstanding = t.outstanding.add(outstanding);
@@ -447,6 +448,7 @@ export class ReceivablesService {
           sentDate: dateOnly(b.sentDate),
           certifiedDate: dateOnly(b.certifiedDate),
           invoiceAmount: money(invoice),
+          owedAmount: money(owed),
           settledAmount: money(settled),
           outstanding: money(outstanding),
           daysOutstanding: days,

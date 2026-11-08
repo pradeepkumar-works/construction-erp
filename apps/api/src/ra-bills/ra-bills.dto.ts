@@ -71,6 +71,48 @@ export class BillPriceVariationDto {
   @ApiProperty({ type: [PvIndexDto] }) @IsArray() @ArrayMaxSize(12) @ValidateNested({ each: true }) @Type(() => PvIndexDto) indices!: PvIndexDto[];
 }
 
+export class SecuredAdvanceLineDto {
+  @ApiPropertyOptional({ description: "The item master's item, when picked" }) @IsOptional() @IsUUID() itemId?: string | null;
+  @ApiProperty({ example: 'Cement OPC 53 grade' }) @trim() @IsString() @MaxLength(300) description!: string;
+  @ApiProperty({ example: 'Bag' }) @trim() @IsString() @MaxLength(30) unit!: string;
+  @ApiProperty({ example: '1200', description: 'Brought to site for the work and not yet used' }) @num() @IsNumberString() qtyAtSite!: string;
+  @ApiProperty({ example: '410', description: 'The rate it was bought at (₹)' }) @num() @IsNumberString() rate!: string;
+}
+
+/** The material at site this bill pays a secured advance on; an empty list takes it off. */
+export class BillSecuredAdvanceDto {
+  @ApiProperty({ type: [SecuredAdvanceLineDto] }) @IsArray() @ArrayMaxSize(200) @ValidateNested({ each: true }) @Type(() => SecuredAdvanceLineDto) lines!: SecuredAdvanceLineDto[];
+}
+
+export class BillHoldDto {
+  @ApiPropertyOptional({ description: 'A hold already on this bill, to change it; left out for a new one' }) @IsOptional() @IsUUID() id?: string;
+  @ApiPropertyOptional({ description: 'The BOQ item in dispute, when it is one' }) @IsOptional() @IsUUID() boqItemId?: string | null;
+  @ApiProperty({ example: 'Extra lead on earthwork, item 2.04' }) @trim() @IsString() @MaxLength(300) description!: string;
+  @ApiProperty({ example: 'Lead beyond 5 km not accepted by the EE pending the SE’s decision' }) @trim() @IsString() @MaxLength(500) reason!: string;
+  @ApiProperty({ example: '185000' }) @num() @IsNumberString() amount!: string;
+}
+
+export class BillHoldReleaseDto {
+  @ApiProperty({ description: 'A hold placed on an earlier bill of the project' }) @IsUUID() holdId!: string;
+  @ApiProperty({ example: '148000' }) @num() @IsNumberString() amount!: string;
+  @ApiPropertyOptional({ example: 'SE allowed 80% on interim certificates' }) @IsOptional() @trim() @IsString() @MaxLength(300) note?: string | null;
+}
+
+/** What this bill withholds for disputed items and what it releases of earlier holds; each list replaces the bill's own. */
+export class BillHoldsDto {
+  @ApiProperty({ type: [BillHoldDto] }) @IsArray() @ArrayMaxSize(100) @ValidateNested({ each: true }) @Type(() => BillHoldDto) holds!: BillHoldDto[];
+  @ApiProperty({ type: [BillHoldReleaseDto] }) @IsArray() @ArrayMaxSize(100) @ValidateNested({ each: true }) @Type(() => BillHoldReleaseDto) releases!: BillHoldReleaseDto[];
+}
+
+export class CloseHoldDto {
+  @ApiProperty({ example: '2026-11-08', description: 'The day the rest was given up' }) @IsDateString() date!: string;
+  @ApiPropertyOptional({ example: 'SE rejected the claim; not taken to arbitration' }) @IsOptional() @trim() @IsString() @MaxLength(300) note?: string | null;
+}
+
+export class ListHoldsQuery {
+  @ApiProperty() @IsUUID() projectId!: string;
+}
+
 export class CertifyBillDto extends BillDateDto {
   @ApiPropertyOptional({ example: 'EE/RD/2026/114' }) @IsOptional() @trim() @IsString() @MaxLength(100) certificateNo?: string | null;
   @ApiPropertyOptional({ type: [CertifiedItemDto], description: 'Items the client cut; items left out are certified as claimed' })
@@ -87,6 +129,13 @@ export class CertifyBillDto extends BillDateDto {
   @ValidateNested({ each: true })
   @Type(() => CertifiedStageDto)
   stages?: CertifiedStageDto[];
+  @ApiPropertyOptional({ type: [BillHoldDto], description: 'What the engineer withheld on the certificate for disputed items; replaces the holds on this bill. Left out keeps them.' })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(100)
+  @ValidateNested({ each: true })
+  @Type(() => BillHoldDto)
+  holds?: BillHoldDto[];
 }
 
 /** `q` matches the project, its client, the certificate number and remarks. */

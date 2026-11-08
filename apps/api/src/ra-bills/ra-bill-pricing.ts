@@ -2,7 +2,7 @@ import { Prisma } from '@prisma/client';
 import { BILLABLE_BOQ_ITEM } from '../variations/variations.service';
 import type { BillStagePlan } from '../stage-billing/stage-plan';
 import { windowRecovery } from '../stage-billing/stage-billing-rules';
-import { cappedSecurityDeposit } from '@erp/shared';
+import { cappedSecurityDeposit, securedAdvanceOf } from '@erp/shared';
 import { obligationRecovery } from '../contracts/obligation-recovery';
 
 /*
@@ -35,7 +35,8 @@ export const PCT_DEDUCTIONS = [
   ['labourCess', 'labourCessPct', 'labourCessAmount'],
 ] as const;
 
-export type Percentages = Record<(typeof PCT_DEDUCTIONS)[number][1] | 'gstRate', Prisma.Decimal>;
+/** The deduction percentages and GST, and the secured advance's % (null when the contract gives none). */
+export type Percentages = Record<(typeof PCT_DEDUCTIONS)[number][1] | 'gstRate', Prisma.Decimal> & { securedAdvancePct: Prisma.Decimal | null };
 
 /** One price variation component on a bill: a share of the work value that moves with an index. */
 interface PvLine {
@@ -63,7 +64,7 @@ export const TERMS_SELECT = { mobilisationAdvance: true, contractValue: true, ad
 export type Terms = Prisma.ProjectGetPayload<{ select: typeof TERMS_SELECT }>;
 
 /** The project's percentages and terms a bill is priced with. */
-export const BILL_TERMS_SELECT = { retentionPct: true, securityDepositPct: true, advanceRecoveryPct: true, tdsPct: true, gstTdsPct: true, labourCessPct: true, gstRate: true, ...TERMS_SELECT } satisfies Prisma.ProjectSelect;
+export const BILL_TERMS_SELECT = { retentionPct: true, securityDepositPct: true, advanceRecoveryPct: true, tdsPct: true, gstTdsPct: true, labourCessPct: true, gstRate: true, securedAdvancePct: true, ...TERMS_SELECT } satisfies Prisma.ProjectSelect;
 
 /**
  * Take the approved measurements up to the bill's date that no earlier bill took (not extra items waiting for their
@@ -103,7 +104,9 @@ export async function measuredLines(tx: Prisma.TransactionClient, bill: { id: st
  * Work value, price variation, GST, deductions and net payable of a set of lines priced on certified (else claimed)
  * quantities, with the stages' amounts and the slippage withheld. GST and the deductions are on work value +
  * price variation. A works bill also deducts what the contract's missed obligations cost as of its date, and holds the
- * security deposit to its cap.
+ * security deposit to its cap. The secured advance on material at site and the amounts released from earlier holds are
+ * added after GST, and the previous bill's secured advance and this bill's holds deducted, all outside that base: none is
+ * a supply.
  */
 export async function billTotals(
   tx: Prisma.TransactionClient,
@@ -119,12 +122,26 @@ export async function billTotals(
   const amounts = lines.map((l) => round2((l.certifiedQty ?? l.thisQty).mul(l.rate)));
   const grossAmount = amounts.reduce((s, a) => s.add(a), plan?.stageAmount ?? om?.amount ?? ZERO);
   const grossPrevious = lines.reduce((s, l) => s.add(round2(l.prevQty.mul(l.rate))), plan?.stagePrevious ?? om?.previous ?? ZERO);
-  const [recovered, pvLines, obligations] = await Promise.all([
+  const [recovered, pvLines, obligations, atSite, previousBill, held, released] = await Promise.all([
     tx.raBill.aggregate({ where: { projectId: bill.projectId, billNo: { lt: bill.billNo } }, _sum: { advanceRecoveryAmount: true, securityDepositAmount: true } }),
     tx.raBillPvLine.findMany({ where: { billId: bill.id }, select: { id: true, sharePct: true, baseIndex: true, currentIndex: true } }),
     // An O&M bill takes no works obligations: those belonged to the construction contract.
     om ? null : obligationRecovery(tx, bill, terms.contractValue),
+    tx.raBillSecuredAdvance.findMany({ where: { billId: bill.id }, orderBy: { sortOrder: 'asc' }, select: { id: true, description: true, unit: true, qtyAtSite: true, rate: true } }),
+    tx.raBill.findFirst({ where: { projectId: bill.projectId, billNo: bill.billNo - 1 }, select: { securedAdvance: true } }),
+    tx.raBillHold.aggregate({ where: { billId: bill.id }, _sum: { amount: true } }),
+    tx.raBillHoldRelease.aggregate({ where: { billId: bill.id }, _sum: { amount: true } }),
   ]);
+  const secured = securedAdvanceOf({
+    pct: om ? null : (pcts.securedAdvancePct?.toString() ?? null),
+    lines: om ? [] : atSite.map((l) => ({ ...l, qtyAtSite: l.qtyAtSite.toString(), rate: l.rate.toString() })),
+    previous: previousBill?.securedAdvance.toString() ?? 0,
+  });
+  for (const [i, l] of secured.lines.entries()) await tx.raBillSecuredAdvance.update({ where: { id: atSite[i].id }, data: { value: D(l.value.toFixed(2)), advance: D(l.advance.toFixed(2)) } });
+  const securedAdvance = D(secured.securedAdvance.toFixed(2));
+  const securedAdvanceRecovered = D(secured.recovered.toFixed(2));
+  const withheld = held._sum.amount ?? ZERO;
+  const withheldReleased = released._sum.amount ?? ZERO;
   const outstanding = Prisma.Decimal.max(advance.sub(recovered._sum.advanceRecoveryAmount ?? ZERO), ZERO);
   const pvAmounts = pvLines.map((l) => ({ id: l.id, amount: pvLineAmount(grossAmount, l) }));
   const pvAmount = pvAmounts.reduce((s, l) => s.add(l.amount), ZERO);
@@ -166,12 +183,32 @@ export async function billTotals(
   };
   const omPenalty = om?.penalty ?? ZERO;
   const obligationAmount = obligations?.total ?? ZERO;
-  const totalDeductions = PCT_DEDUCTIONS.reduce((s, [, , k]) => s.add(data[k]), ZERO).add(bill.otherDeduction).add(slippageWithheld).add(omPenalty).add(obligationAmount);
+  const totalDeductions = PCT_DEDUCTIONS.reduce((s, [, , k]) => s.add(data[k]), ZERO)
+    .add(bill.otherDeduction)
+    .add(slippageWithheld)
+    .add(omPenalty)
+    .add(obligationAmount)
+    .add(securedAdvanceRecovered)
+    .add(withheld);
   const slippageLines = (plan?.slippageLines ?? []) as unknown as Prisma.InputJsonValue;
   const obligationLines = (obligations?.lines ?? []) as unknown as Prisma.InputJsonValue;
   return {
     amounts,
-    data: { ...data, slippageWithheld, slippageLines, omPenalty, obligationRecovery: obligationAmount, obligationLines, totalDeductions, netPayable: grossAmount.add(pvAmount).add(data.gstAmount).sub(totalDeductions) },
+    data: {
+      ...data,
+      slippageWithheld,
+      slippageLines,
+      omPenalty,
+      obligationRecovery: obligationAmount,
+      obligationLines,
+      securedAdvancePct: om ? ZERO : (pcts.securedAdvancePct ?? ZERO),
+      securedAdvance,
+      securedAdvanceRecovered,
+      withheld,
+      withheldReleased,
+      totalDeductions,
+      netPayable: grossAmount.add(pvAmount).add(data.gstAmount).add(securedAdvance).add(withheldReleased).sub(totalDeductions),
+    },
   };
 }
 
