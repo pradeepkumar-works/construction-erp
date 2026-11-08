@@ -171,13 +171,13 @@ export function AttendanceFormModal({ open, onClose, projectId, sheet: initial }
               {fields.map((f, i) => (
                 <div key={f.key} style={{ display: 'flex', gap: tk.space[2] }} data-line-label={`Workers on site, line ${i + 1}`}>
                   <Form.Item name={[f.name, 'contractor']} noStyle rules={[{ required: true, whitespace: true, message: '' }]}>
-                    <AutoComplete style={{ flex: 3, minWidth: 0 }} options={contractorOptions} placeholder="Contractor" showSearch={{ filterOption: (input, o) => (o?.value ?? '').toLowerCase().includes(input.toLowerCase()) }} />
+                    <AutoComplete style={{ flex: 3, minWidth: 0 }} options={contractorOptions} placeholder="Contractor" aria-label={`Contractor of line ${i + 1}`} showSearch={{ filterOption: (input, o) => (o?.value ?? '').toLowerCase().includes(input.toLowerCase()) }} />
                   </Form.Item>
                   <Form.Item name={[f.name, 'category']} noStyle rules={[{ required: true, whitespace: true, message: '' }]}>
-                    <AutoComplete style={{ flex: 2, minWidth: 0 }} options={categoryOptions} placeholder="Trade" showSearch={{ filterOption: (input, o) => (o?.value ?? '').toLowerCase().includes(input.toLowerCase()) }} />
+                    <AutoComplete style={{ flex: 2, minWidth: 0 }} options={categoryOptions} placeholder="Trade" aria-label={`Trade of line ${i + 1}`} showSearch={{ filterOption: (input, o) => (o?.value ?? '').toLowerCase().includes(input.toLowerCase()) }} />
                   </Form.Item>
                   <Form.Item name={[f.name, 'count']} noStyle rules={[{ required: true, message: '' }]}>
-                    <InputNumber min={0} precision={0} inputMode="numeric" placeholder="Nos" style={{ width: 72 }} />
+                    <InputNumber min={0} precision={0} inputMode="numeric" placeholder="Nos" aria-label={`Workers of line ${i + 1}`} style={{ width: 72 }} />
                   </Form.Item>
                   <Button icon={<DeleteOutlined />} onClick={() => removeLine(f.name)} aria-label="Remove row" />
                 </div>

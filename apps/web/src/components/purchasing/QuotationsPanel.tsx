@@ -10,6 +10,7 @@ import { useAuth } from '@/lib/auth';
 import { useComparative, usePurchaseOrders } from '@/lib/queries';
 import { toNumber } from '@/lib/format';
 import { LinkButton } from '@/components/common/LinkButton';
+import { QueryError } from '@/components/common/QueryState';
 import { PurchaseOrderDrawer } from './PurchaseOrderDrawer';
 import { EnquiriesList } from './Enquiries';
 import { ComparativeTable, RequestOrders } from './RequestBuying';
@@ -22,11 +23,23 @@ import { ComparativeTable, RequestOrders } from './RequestBuying';
 export function QuotationsPanel({ request }: { request: MaterialRequestDto }) {
   const { user } = useAuth();
   const buyer = !!user && canPurchase(user.roleKey);
-  const { data, isLoading } = useComparative(request.id);
+  const { data, isLoading, error, refetch } = useComparative(request.id);
   const orders = usePurchaseOrders({ materialRequestId: request.id, pageSize: 50 });
   const [openPo, setOpenPo] = useState<string | null>(null);
   const remaining = request.items.some((i) => toNumber(i.toOrderQty) > 0);
   const quotes = data?.quotations ?? [];
+  // A comparative that failed to load is not "no quotations yet".
+  const failed = error && !data ? error : orders.error && !orders.data ? orders.error : null;
+  if (failed)
+    return (
+      <QueryError
+        error={failed}
+        onRetry={() => {
+          void refetch();
+          void orders.refetch();
+        }}
+      />
+    );
 
   return (
     <>

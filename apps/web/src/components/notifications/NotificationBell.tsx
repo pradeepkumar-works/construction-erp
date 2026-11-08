@@ -12,6 +12,7 @@ import type { NotificationDto, NotificationTab, SubmissionType } from '@erp/shar
 import { NOTIFICATION_TABS, NOTIFICATION_TAB_LABELS, SUBMISSION_TYPES } from '@erp/shared';
 import { useMarkAllNotificationsRead, useMarkNotificationRead, useNotifications } from '@/lib/queries';
 import { EmptyArt } from '@/components/common/EmptyArt';
+import { QueryError } from '@/components/common/QueryState';
 import { notificationHref } from './notificationTarget';
 import { NotificationFeed } from './NotificationFeed';
 import type { OpenSubmission } from './SubmissionRecordDrawer';
@@ -46,7 +47,7 @@ export function NotificationBell() {
   const [recordsUsed, setRecordsUsed] = useState(false);
   // The badge needs only the counts; the drawer's list is fetched while it is open.
   const { data: counts } = useNotifications({ limit: 1 });
-  const { data, isLoading } = useNotifications({ tab, limit: 60, unreadOnly: unreadOnly || undefined }, open);
+  const { data, isLoading, error, refetch } = useNotifications({ tab, limit: 60, unreadOnly: unreadOnly || undefined }, open);
   const markRead = useMarkNotificationRead();
   const markAll = useMarkAllNotificationsRead();
   const unread = counts?.unreadCount ?? 0;
@@ -95,6 +96,10 @@ export function NotificationBell() {
         <NotificationFeed items={items} onOpen={openItem} compact />
       ) : isLoading ? (
         <div style={{ minHeight: 160 }} />
+      ) : error ? (
+        <div style={{ padding: tk.space[4] }}>
+          <QueryError error={error} onRetry={() => void refetch()} />
+        </div>
       ) : (
         <div style={{ padding: tk.space[6] }}>
           <EmptyArt art="approved" title={unreadOnly ? 'You are all caught up.' : `No ${inSentence(NOTIFICATION_TAB_LABELS[tab])} notifications yet`}>

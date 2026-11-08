@@ -165,7 +165,7 @@ export function StaffRegister() {
     {
       title: 'Note',
       key: 'note',
-      render: (_, r) => <Input size="small" maxLength={300} value={marks[r.employee.id]?.note ?? ''} disabled={!marks[r.employee.id]?.status} onChange={(e) => set(r.employee.id, { note: e.target.value })} />,
+      render: (_, r) => <Input size="small" maxLength={300} aria-label={`Note for ${r.employee.fullName}`} value={marks[r.employee.id]?.note ?? ''} disabled={!marks[r.employee.id]?.status} onChange={(e) => set(r.employee.id, { note: e.target.value })} />,
     },
   ];
 
