@@ -7,7 +7,7 @@ import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { AppTabs } from '@/components/common/AppTabs';
 import dayjs from 'dayjs';
-import { canViewLabourSummary, canViewPayroll } from '@erp/shared';
+import { canViewLabourSummary, canViewPayroll, reportingMonth } from '@erp/shared';
 import { useProjectScope } from '@/lib/project-scope';
 import { useAuth } from '@/lib/auth';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -19,14 +19,14 @@ import { Salaries } from '@/components/payroll/Salaries';
 import { Loans } from '@/components/payroll/Loans';
 import { Settlements } from '@/components/payroll/Settlements';
 import { PayrollSettings } from '@/components/payroll/PayrollSettings';
-import { MONTH_PICKER_FORMAT } from '@/lib/format';
+import { MONTH_PICKER_FORMAT, todayDate } from '@/lib/format';
 
 const STAFF_TABS = ['runs', 'salaries', 'loans', 'settlements', 'staff', 'settings'] as const;
 
 /** The month's inputs (attendance, leave, overtime) for staff and labour contractors, behind a month and site filter. */
 function MonthInputs({ kind }: { kind: 'staff' | 'contractors' }) {
-  // Inputs are usually wanted for the month just ended.
-  const [month, setMonth] = useState(() => (dayjs().date() <= 10 ? dayjs().subtract(1, 'month') : dayjs()).startOf('month'));
+  // The month just ended until this one has settled (the reporting month), so the 1st never opens on an empty month.
+  const [month, setMonth] = useState(() => dayjs(`${reportingMonth(todayDate())}-01`));
   const [projectId, setProjectId] = useProjectScope();
   const m = month.format('YYYY-MM');
   return (
