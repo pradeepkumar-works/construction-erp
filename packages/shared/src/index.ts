@@ -67,6 +67,7 @@ export * from './ppe';
 export * from './rfi';
 export * from './small-purchase';
 export * from './po-budget';
+export * from './budget-versions';
 export * from './audit-log';
 export * from './indent-check';
 export * from './verticals';

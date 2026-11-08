@@ -1,5 +1,6 @@
 import type { LeaveYearStart, Weekday } from './staff';
 import type { PoBudgetCheckDto } from './po-budget';
+import type { BudgetOpenVersionDto, BudgetVersionDto } from './budget-versions';
 import type { MachineEngineDto } from './telematics';
 import type { VendorRecordDto } from './vendor-score';
 import type { LetterAction, LetterGate, LetterMarkDto, LetterMode, LetterPriority, LetterStatus } from './correspondence';
@@ -648,7 +649,7 @@ export interface NotificationDto {
    * Set when the notification points at a submission (or, for SAFETY, an incident or permit; for MACHINERY, a machine
    * due for service, a job card, a vehicle paper or a driver); open it with entityType + entityId.
    */
-  entityType: SubmissionType | 'SAFETY_INCIDENT' | 'WORK_PERMIT' | 'EQUIPMENT' | 'MAINTENANCE_JOB' | 'EQUIPMENT_DOCUMENT' | 'DRIVER' | 'IMPREST' | 'COMPLIANCE_DOC' | 'DEFECT' | 'HANDOVER' | 'RFI' | 'EQUIPMENT_LOAN' | 'MEETING' | 'MATERIAL_APPROVAL' | 'ACCESS_REQUEST' | 'ACCESS_DECISION' | 'GRN' | 'GRN_CHECK' | 'GRN_TO_BILL' | 'DEBIT_TO_RAISE' | 'TRANSFER_IN' | 'PROJECT' | 'LETTER' | 'CONTRACT_OBLIGATION' | 'SITE_ORDER' | 'PROGRAMME' | 'EOT' | 'PAYROLL_RUN' | 'FINAL_SETTLEMENT' | SupplierNoticeEntity | null;
+  entityType: SubmissionType | 'SAFETY_INCIDENT' | 'WORK_PERMIT' | 'EQUIPMENT' | 'MAINTENANCE_JOB' | 'EQUIPMENT_DOCUMENT' | 'DRIVER' | 'IMPREST' | 'COMPLIANCE_DOC' | 'DEFECT' | 'HANDOVER' | 'RFI' | 'EQUIPMENT_LOAN' | 'MEETING' | 'MATERIAL_APPROVAL' | 'ACCESS_REQUEST' | 'ACCESS_DECISION' | 'GRN' | 'GRN_CHECK' | 'GRN_TO_BILL' | 'DEBIT_TO_RAISE' | 'TRANSFER_IN' | 'PROJECT' | 'LETTER' | 'CONTRACT_OBLIGATION' | 'SITE_ORDER' | 'PROGRAMME' | 'EOT' | 'PAYROLL_RUN' | 'FINAL_SETTLEMENT' | 'BUDGET' | SupplierNoticeEntity | null;
   entityId: string | null;
   readAt: string | null;
   createdAt: string;
@@ -1219,9 +1220,16 @@ export interface ProjectBudgetDto {
   revisedContractValue: string | null;
   /** revisedContractValue − forecastAtCompletion */
   forecastMargin: string | null;
+  /** The version in force's notes */
   notes: string | null;
-  updatedAt: string | null;
-  updatedByName: string | null;
+  /** The approved version every figure above is read from; null while none is approved */
+  inForce: BudgetVersionDto | null;
+  /** Every version, newest first */
+  versions: BudgetVersionDto[];
+  /** The revision being prepared or waiting for a decision */
+  open: BudgetOpenVersionDto | null;
+  /** The caller may start a revision now: they set budgets and none is open */
+  canRevise: boolean;
 }
 
 export type CashFlowGranularity = 'MONTH' | 'WEEK';

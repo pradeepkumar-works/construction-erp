@@ -9,10 +9,11 @@ import { COST_HEAD_LABELS, EAC_METHOD_NOTES, canSetBudget, unitLabel } from '@er
 import { CostBookedNote } from './EarnedValuePanel';
 import { useAuth } from '@/lib/auth';
 import { useProjectBudget } from '@/lib/queries';
-import { formatDateTime, formatINR, formatPct, formatQty, toNumber, NO_VALUE } from '@/lib/format';
+import { formatINR, formatPct, formatQty, toNumber, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { HEAD_COLORS } from './CostBar';
 import { BudgetFormModal } from './BudgetFormModal';
+import { BudgetHistorySection, OpenVersionSection, inForceLine } from './BudgetVersions';
 import { CashFlowPanel } from './CashFlowPanel';
 import { OpeningSection } from './OpeningSection';
 import { AskButton } from '@/components/ai/AskButton';
@@ -24,7 +25,10 @@ const GREEN = tk.color.tone.success.fg;
 const variance = (v: string | null) =>
   v === null ? <span className="text-muted">{NO_VALUE}</span> : <span className="mono" translate="no" style={{ color: toNumber(v) < 0 ? RED : GREEN }}>{formatINR(v)}</span>;
 
-/** A project's budget against actual cost, the forecast to complete, and its cash-flow forecast. */
+/**
+ * A project's budget against actual cost, the forecast to complete, and its cash-flow forecast. The figures are the
+ * approved version's; a revision being prepared or decided shows above them, and every version under History.
+ */
 export function ProjectBudgetPanel({ projectId }: { projectId: string }) {
   const { user } = useAuth();
   const [editing, setEditing] = useState(false);
@@ -41,21 +45,22 @@ export function ProjectBudgetPanel({ projectId }: { projectId: string }) {
         <>
           <div style={{ display: 'flex', gap: tk.space[3], flexWrap: 'wrap', alignItems: 'center', marginBottom: tk.space[3] }}>
             <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
-              {data.updatedAt ? `Budget last set by ${data.updatedByName} on ${formatDateTime(data.updatedAt)}` : data.boqBudget ? 'Budget from BOQ budget rates' : 'No budget yet'}
+              {inForceLine(data)}
             </Typography.Text>
-            {canEdit && (
-              <Button type={data.budgetAtCompletion ? 'default' : 'primary'} icon={<EditOutlined />} onClick={() => setEditing(true)} style={{ marginLeft: 'auto' }}>
-                {data.budgetAtCompletion ? 'Edit budget' : 'Set budget'}
+            {data.canRevise && (
+              <Button type={data.inForce ? 'default' : 'primary'} icon={<EditOutlined />} onClick={() => setEditing(true)} style={{ marginLeft: 'auto' }}>
+                {data.versions.length ? 'Revise budget' : 'Set budget'}
               </Button>
             )}
           </div>
-          {!data.budgetAtCompletion && (
+          <OpenVersionSection budget={data} onEdit={() => setEditing(true)} />
+          {!data.budgetAtCompletion && !data.open && (
             <Alert
               type="info"
               showIcon
               style={{ marginBottom: tk.space[3] }}
               title="This project has no budget yet"
-              description={`Set a budget by cost head, or a budget rate on the BOQ items, to see budget against actual and the forecast to complete.${canEdit ? '' : ' Admin, management or the project manager can set it.'}`}
+              description={`Set a budget by cost head, or a budget rate on the BOQ items, to see budget against actual and the forecast to complete. Admin or management approve it.${canEdit ? '' : ' Admin, management or the project manager can prepare it.'}`}
             />
           )}
           {differs ? (
@@ -229,6 +234,8 @@ export function ProjectBudgetPanel({ projectId }: { projectId: string }) {
               <strong>Notes:</strong> {data.notes}
             </Typography.Paragraph>
           ) : null}
+
+          <BudgetHistorySection versions={data.versions} />
 
           <Section style={{ marginTop: tk.space[4] }} title="Cash-flow forecast">
             <CashFlowPanel projectId={projectId} />

@@ -229,6 +229,10 @@ export type CheckLevel = (typeof CHECK_LEVELS)[number];
 export const SITE_ORDER_STATUSES = ['OPEN', 'REPLIED', 'CLOSED'] as const;
 export type SiteOrderStatus = (typeof SITE_ORDER_STATUSES)[number];
 
+/** A version of a project's budget: prepared, waiting for admin or management, approved (in force), returned, or replaced by a later one. */
+export const BUDGET_STATUSES = ['DRAFT', 'SUBMITTED', 'APPROVED', 'RETURNED', 'SUPERSEDED'] as const;
+export type BudgetStatus = (typeof BUDGET_STATUSES)[number];
+
 /** A programme revision with the Engineer: waiting, approved, or returned with comments for a new revision. */
 export const PROGRAMME_STATUSES = ['SUBMITTED', 'APPROVED', 'RETURNED'] as const;
 export type ProgrammeStatus = (typeof PROGRAMME_STATUSES)[number];

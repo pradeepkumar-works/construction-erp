@@ -31,6 +31,7 @@ import {
 } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { MastersService } from '../masters/masters.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { RequestUser } from '../common/current-user';
 import { AuditService } from '../common/audit.service';
 import { AttachmentsService, ATTACHMENT_FIELDS } from '../common/attachments.service';
@@ -105,6 +106,7 @@ export class TendersService {
     private attachments: AttachmentsService,
     private projects: ProjectsService,
     private masters: MastersService,
+    private notifications: NotificationsService,
   ) {}
 
   private assertView(user: RequestUser) {
@@ -864,6 +866,7 @@ export class TendersService {
       projectManagerId: dto.projectManagerId ?? undefined,
       applyTemplate: dto.applyTemplate ?? false,
     });
+    let budgetId: string | null = null;
     try {
       await this.prisma.$transaction(async (tx) => {
         await tx.project.update({ where: { id: project.id }, data: { estimateOverheadPct: t.overheadPct, estimateProfitPct: t.profitPct, agreementNo: dto.agreementNo ?? null, agreementDate: parseDate(start) } });
@@ -871,6 +874,7 @@ export class TendersService {
         let labour = ZERO;
         let machinery = ZERO;
         let expenses = ZERO;
+        const budgetLines: { boqItemId: string; budgetRate: Prisma.Decimal }[] = [];
         for (const [n, { row, priced }] of p.items.entries()) {
           const boq = await tx.boqItem.create({
             data: {
@@ -881,11 +885,11 @@ export class TendersService {
               unit: row.unit,
               rate: priced.quotedRate ?? ZERO,
               originalQty: row.qty,
-              budgetRate: priced.cost ? r2(priced.cost.plus(priced.overheads!)) : null,
               sortOrder: n,
             },
           });
           if (priced.cost) {
+            budgetLines.push({ boqItemId: boq.id, budgetRate: r2(priced.cost.plus(priced.overheads!)) });
             material = material.plus(r2(row.qty.mul(priced.material!)));
             labour = labour.plus(r2(row.qty.mul(priced.labour!)));
             machinery = machinery.plus(r2(row.qty.mul(priced.equipment!)));
@@ -904,8 +908,27 @@ export class TendersService {
           if (norms.size) await tx.materialNorm.createMany({ data: [...norms.values()] });
           if (resources.size) await tx.boqResource.createMany({ data: [...resources.values()] });
         }
+        // Version 1 of the budget goes to management for approval; until then the project has no budget in force.
         if (p.totals.analysedCount) {
-          await tx.projectBudget.create({ data: { organizationId: user.organizationId, projectId: project.id, material, labour, machinery, expenses, subcontract: ZERO, notes: `From the rate analysis of tender ${t.tenderNo}`, updatedById: user.id } });
+          budgetId = (
+            await tx.projectBudget.create({
+              data: {
+                organizationId: user.organizationId,
+                projectId: project.id,
+                versionNo: 1,
+                status: 'SUBMITTED',
+                submittedAt: new Date(),
+                material,
+                labour,
+                machinery,
+                expenses,
+                subcontract: ZERO,
+                notes: `From the rate analysis of tender ${t.tenderNo}`,
+                preparedById: user.id,
+                lines: { createMany: { data: budgetLines } },
+              },
+            })
+          ).id;
         }
         if (t.emdDoc) await tx.complianceDoc.update({ where: { id: t.emdDoc.id }, data: { projectId: project.id } });
         if (dto.guarantee) {
@@ -934,6 +957,18 @@ export class TendersService {
       throw e;
     }
     await this.audit.log(user, 'TENDER', id, 'PROJECT_MADE', project.code);
+    if (budgetId)
+      await this.notifications.handoff({
+        organizationId: user.organizationId,
+        projectId: project.id,
+        roles: ['MANAGEMENT', 'ADMIN'],
+        exceptUserIds: [user.id],
+        title: `Budget version 1 of ${project.name} to approve`,
+        body: `From the rate analysis of tender ${t.tenderNo}, from ${user.fullName}`,
+        entityType: 'BUDGET',
+        entityId: budgetId,
+        email: { href: `/projects/${project.id}?tab=budget`, cta: 'Review the budget' },
+      });
     return { projectId: project.id, projectCode: project.code };
   }
 }

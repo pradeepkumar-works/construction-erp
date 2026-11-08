@@ -1,6 +1,7 @@
 import type {
   AccessRequestStatus,
   BillStage,
+  BudgetStatus,
   ComplianceDocStatus,
   DefectStatus,
   DeliverableStatus,
@@ -110,6 +111,7 @@ export const STATUS_TONES = {
   variation: meanings<VariationStatus>({ DRAFT: 'inHand', SUBMITTED: 'waiting', APPROVED: 'done', REJECTED: 'failed' }),
   bookVoucher: meanings<BookVoucherStatus>({ DRAFT: 'inHand', SUBMITTED: 'waiting', APPROVED: 'done', REJECTED: 'failed', CANCELLED: 'closed' }),
   imprestEntry: meanings<ImprestEntryStatus>({ REQUESTED: 'waiting', PAID: 'done', REJECTED: 'failed' }),
+  budget: meanings<BudgetStatus>({ DRAFT: 'inHand', SUBMITTED: 'waiting', APPROVED: 'done', RETURNED: 'failed', SUPERSEDED: 'closed' }),
   payrollRun: meanings<PayrollRunStatus>({ DRAFT: 'inHand', SUBMITTED: 'waiting', APPROVED: 'done', PAID: 'done' }),
   settlement: meanings<SettlementStatus>({ DRAFT: 'inHand', APPROVED: 'done', PAID: 'done' }),
   clearance: meanings<ClearanceState>({ PENDING: 'waiting', CLEARED: 'done', DUES: 'failed', NOT_APPLICABLE: 'closed' }),

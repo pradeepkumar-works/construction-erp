@@ -1360,7 +1360,8 @@ model User {
   letterMarksFrom         LetterMark[]               @relation("LetterMarkFrom")
   letterMarksTo           LetterMark[]               @relation("LetterMarkTo")
   variationsCreated       Variation[]                @relation("VariationCreator")
-  budgetsUpdated          ProjectBudget[]            @relation("BudgetUpdater")
+  budgetsPrepared         ProjectBudget[]            @relation("BudgetPreparer")
+  budgetsDecided          ProjectBudget[]            @relation("BudgetDecider")
   openingsUpdated         ProjectOpening[]           @relation("OpeningUpdater")
   incidentsReported       SafetyIncident[]           @relation("IncidentReporter")
   incidentsClosed         SafetyIncident[]           @relation("IncidentCloser")
@@ -1685,7 +1686,7 @@ model Project {
   staffAttendance    StaffAttendance[]
   holidays           Holiday[]
   variations         Variation[]
-  budget             ProjectBudget?
+  budgets            ProjectBudget[]
   opening            ProjectOpening?
   /// The tender this project was won from
   tender             Tender?
@@ -2429,6 +2430,8 @@ model BoqItem {
   resources         BoqResource[]
   rfis              Rfi[]
   materialApprovals MaterialApproval[]
+
+  budgetLines ProjectBudgetLine[]
 
   @@unique([projectId, itemNo])
   @@index([organizationId])
@@ -6074,6 +6077,7 @@ model Variation {
   eotApplications EotApplication[]
   lines           VariationLine[]
   attachments     Attachment[]
+  budgets         ProjectBudget[]
   rfis            Rfi[]
   meetingActions  MeetingAction[]
 
@@ -6110,24 +6114,57 @@ model VariationLine {
 }
 
 /// A project's cost budget by cost head (the heads of the cost view). One per project.
+/// One version of a project's budget (ARCHITECTURE "Budget and cash flow"): its cost heads and the BOQ budget rates in
+/// `lines`. A version is prepared, submitted and approved by admin or management (never by its preparer); approving it
+/// supersedes the one before and copies its lines onto `BoqItem.budgetRate`. Forecasts read only the approved version.
+/// Heads are all null when the version has no cost-head budget (the forecast then reads the BOQ budget).
 model ProjectBudget {
-  id             String       @id @default(uuid())
+  id             String              @id @default(uuid())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  projectId      String       @unique
-  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  expenses       Decimal      @default(0) @db.Decimal(18, 2)
-  material       Decimal      @default(0) @db.Decimal(18, 2)
-  machinery      Decimal      @default(0) @db.Decimal(18, 2)
-  labour         Decimal      @default(0) @db.Decimal(18, 2)
-  subcontract    Decimal      @default(0) @db.Decimal(18, 2)
+  organization   Organization        @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  versionNo      Int
+  status         BudgetStatus        @default(DRAFT)
+  expenses       Decimal?            @db.Decimal(18, 2)
+  material       Decimal?            @db.Decimal(18, 2)
+  machinery      Decimal?            @db.Decimal(18, 2)
+  labour         Decimal?            @db.Decimal(18, 2)
+  subcontract    Decimal?            @db.Decimal(18, 2)
   notes          String?
-  updatedById    String
-  updatedBy      User         @relation("BudgetUpdater", fields: [updatedById], references: [id])
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  /// Why it was revised: a code of the `budgetRevision` master; null only on version 1
+  reasonCode     String?
+  reasonNote     String?
+  /// The approved variation that brought the revision
+  variationId    String?
+  variation      Variation?          @relation(fields: [variationId], references: [id], onDelete: SetNull)
+  preparedById   String
+  preparedBy     User                @relation("BudgetPreparer", fields: [preparedById], references: [id])
+  submittedAt    DateTime?
+  decidedById    String?
+  decidedBy      User?               @relation("BudgetDecider", fields: [decidedById], references: [id])
+  decidedAt      DateTime?
+  decisionNote   String?
+  approvedAt     DateTime?
+  lines          ProjectBudgetLine[]
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
 
-  @@index([organizationId])
+  @@unique([projectId, versionNo])
+  @@index([organizationId, status])
+}
+
+/// A BOQ item's budgeted cost per unit in one budget version.
+model ProjectBudgetLine {
+  id         String        @id @default(uuid())
+  budgetId   String
+  budget     ProjectBudget @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  boqItemId  String
+  boqItem    BoqItem       @relation(fields: [boqItemId], references: [id], onDelete: Restrict)
+  budgetRate Decimal       @db.Decimal(18, 2)
+
+  @@unique([budgetId, boqItemId])
+  @@index([boqItemId])
 }
 
 /// What a project had spent, by head, and the work it had done, on the day it came on Nirmaan (ARCHITECTURE "Opening
@@ -9710,6 +9747,14 @@ model SiteOrder {
 }
 
 /// Programme and EOT: a programme revision with the Engineer
+enum BudgetStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  RETURNED
+  SUPERSEDED
+}
+
 enum ProgrammeStatus {
   SUBMITTED
   APPROVED

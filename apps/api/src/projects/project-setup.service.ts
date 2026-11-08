@@ -63,7 +63,7 @@ export class ProjectSetupService {
       this.boqTotals([projectId]),
       this.prisma.boqItem.count({ where: { projectId, originalQty: { gt: 0 }, activities: { none: {} } } }),
       this.prisma.activity.findMany({ where: { projectId }, select: { id: true, parentActivityId: true, plannedStart: true, plannedEnd: true } }),
-      this.prisma.projectBudget.findUnique({ where: { projectId }, select: { expenses: true, material: true, machinery: true, labour: true, subcontract: true } }),
+      this.prisma.projectBudget.findMany({ where: { projectId, status: { in: ['APPROVED', 'SUBMITTED'] } }, select: { status: true } }),
       this.prisma.materialNorm.count({ where: { projectId } }),
       this.prisma.activityMaterialNorm.count({ where: { projectId } }),
     ]);
@@ -87,7 +87,8 @@ export class ProjectSetupService {
       activitiesUndated: activities.filter((a) => !parents.has(a.id) && (!a.plannedStart || !a.plannedEnd)).length,
       baselineAt: p.baselineAt?.toISOString() ?? null,
       agreementNo: p.agreementNo,
-      budgetSet: !!budget && [budget.expenses, budget.material, budget.machinery, budget.labour, budget.subcontract].some((v) => Number(v) > 0),
+      budgetSet: budget.some((v) => v.status === 'APPROVED'),
+      budgetWaiting: budget.some((v) => v.status === 'SUBMITTED'),
       sectorSet: sector === 'chainage' ? p.chainageStart !== null && p.chainageEnd !== null : sector === 'floors' ? p.floors.length > 0 : sector === 'villages' ? p.villages.length > 0 : true,
       norms: norms + activityNorms,
       openingMissing: openingMissing({ type: p.type, startDate: dateOnly(p.startDate), enteredOn: dateOnly(p.createdAt), hasOpening: !!p.opening }),
@@ -105,6 +106,7 @@ export class ProjectSetupService {
       done,
       total: steps.length,
       boqGap: boqContractGap(f),
+      budgetWaiting: !!f.budgetWaiting,
       problems: dataProblems(f, user.roleKey),
     };
   }

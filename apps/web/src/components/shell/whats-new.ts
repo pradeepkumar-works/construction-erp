@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-budget-versions',
+    date: '2026-11-08',
+    title: 'A project budget is approved, and revised with a reason',
+    points: [
+      'The project manager prepares the budget and sends it for approval; admin or management approve it or return it with what to change. Nobody approves a version they prepared.',
+      'Revise budget starts version 2 from the one in force. Each revision names its reason (a variation, a rate change, a change of scope, an estimate corrected) and shows what it changes by cost head.',
+      'Cost against budget, the forecast, the cash flow and the purchase order budget check read only the approved version, so a draft never moves them. The Budget tab names the version in force and lists every version under History.',
+      'Budgets waiting for you show under Also waiting for you in Approvals and on the Projects screen. A project made from a won tender sends its first budget for approval.',
+    ],
+  },
+  {
     id: '2026-11-leave-year-weekly-off',
     date: '2026-11-05',
     title: 'April to March leave year, a weekly off per site, and what payroll owes',
