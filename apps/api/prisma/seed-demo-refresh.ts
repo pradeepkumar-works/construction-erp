@@ -39,7 +39,7 @@ export async function seedWhatsappEntries(prisma: PrismaClient, organizationId: 
   const progress = await prisma.progressEntry.findFirst({ where: { organizationId, projectId: road.id, dailyReportId: null }, orderBy: { date: 'desc' }, select: { id: true } });
   const at = (offset: number, hour: number) => new Date(day(offset).getTime() + (hour - 5.5) * 3_600_000);
   const draft = (kind: string, title: string, values: Record<string, unknown>) => ({ kind, title, projectId: road.id, projectName: road.name, values: { projectId: road.id, ...values }, flags: [] }) as unknown as Prisma.InputJsonValue;
-  const rows: Prisma.InboundMessageUncheckedCreateInput[] = [
+  const rows: Omit<Prisma.InboundMessageUncheckedCreateInput, 'organizationId' | 'fromPhone' | 'recordClientId'>[] = [
     {
       userId: engineer.id,
       type: 'TEXT',
