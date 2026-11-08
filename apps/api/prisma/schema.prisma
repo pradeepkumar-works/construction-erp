@@ -5988,8 +5988,9 @@ enum BillingPaymentStatus {
 /// One payment for the subscription: a Razorpay order, and once paid, the GST invoice for it.
 model BillingPayment {
   id                String               @id @default(uuid())
-  organizationId    String
-  organization      Organization         @relation(fields: [organizationId], references: [id])
+  /// Empty once the company is erased: its GST invoices are kept for the tax records, with the buyer's details on them
+  organizationId    String?
+  organization      Organization?        @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   status            BillingPaymentStatus @default(CREATED)
   razorpayOrderId   String               @unique
   razorpayPaymentId String?              @unique
