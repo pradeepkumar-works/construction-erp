@@ -12,7 +12,12 @@ const D = (v: number | string) => new Prisma.Decimal(v);
 
 export async function seedIsStandards(prisma: PrismaClient, organizationId: string) {
   if (await prisma.isStandard.count({ where: { organizationId } })) return;
-  const water = await prisma.project.findFirst({ where: { organizationId, type: 'WATER_SUPPLY' }, orderBy: { code: 'asc' }, select: { id: true } });
+  // A water scheme QA/QC is on, so the tests count in their compliance (a later pass finds it if it is not there yet).
+  const water = await prisma.project.findFirst({
+    where: { organizationId, type: 'WATER_SUPPLY', members: { some: { user: { email: 'qaqc@demo.com' } } } },
+    orderBy: { code: 'asc' },
+    select: { id: true },
+  });
   const qa = await prisma.user.findFirst({ where: { organizationId, email: 'qaqc@demo.com' }, select: { id: true } });
   if (!water || !qa) return;
 
