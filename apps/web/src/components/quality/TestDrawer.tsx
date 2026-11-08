@@ -7,11 +7,12 @@ import { tk } from '@/ds';
 import { EditOutlined, WarningOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { QualityTestDto, QualityTestReadingDto } from '@erp/shared';
-import { TEST_KIND_LABELS, canEditTest, canRaiseNcr, canRecordTest, specRange } from '@erp/shared';
+import { TEST_KIND_LABELS, canEditTest, canRaiseNcr, canRecordTest, isStandardLabel, specRange, standardsForTestType } from '@erp/shared';
+import Link from 'next/link';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
-import { useNcrs, useQualityTest } from '@/lib/queries';
+import { useIsStandards, useNcrs, useQualityTest } from '@/lib/queries';
 import { formatDate, formatDateTime, formatINR } from '@/lib/format';
 import { AppTag } from '@/components/common/AppTag';
 import { QueryError } from '@/components/common/QueryState';
@@ -49,6 +50,7 @@ export function TestDrawer({ id, open, onClose, onOpenNcr }: { id: string | null
   const { user } = useAuth();
   const qc = useQueryClient();
   const { data, isLoading, error, refetch } = useQualityTest(id ?? undefined);
+  const { data: standards } = useIsStandards();
   const { data: ncrs } = useNcrs(id ? { qualityTestId: id, pageSize: 50 } : undefined);
   const [editing, setEditing] = useState(false);
   const [ncrPrefill, setNcrPrefill] = useState<NcrPrefill | null>(null);
@@ -66,6 +68,7 @@ export function TestDrawer({ id, open, onClose, onOpenNcr }: { id: string | null
   });
 
   const spec = data ? specRange(data.specMin, data.specMax, data.unit) : null;
+  const proves = standardsForTestType(data?.testTypeCode, standards ?? []);
   return (
     <Drawer
       open={open}
@@ -136,6 +139,29 @@ export function TestDrawer({ id, open, onClose, onOpenNcr }: { id: string | null
               { key: 'location', label: 'Location', children: data.location ?? '-' },
               ...(data.segments.length ? [{ key: 'pipes', label: 'Pipes tested', children: <span translate="no">{data.segments.map((x) => x.label).join('; ')}</span>, span: 2 }] : []),
               { key: 'spec', label: 'Specification', children: data.specification ?? '-', span: 2 },
+              ...(proves.length
+                ? [
+                    {
+                      key: 'proves',
+                      label: 'Proves',
+                      span: 2,
+                      children: (
+                        <span>
+                          {proves.map((p, i) => (
+                            <React.Fragment key={`${p.standard.code}-${i}`}>
+                              {i ? '; ' : ''}
+                              <Link href={`/is-standards/${p.standard.code}`} translate="no">
+                                {isStandardLabel(p.standard)}
+                                {p.clause.ref ? ` cl. ${p.clause.ref}` : ''}
+                              </Link>{' '}
+                              {p.clause.title}
+                            </React.Fragment>
+                          ))}
+                        </span>
+                      ),
+                    },
+                  ]
+                : []),
               { key: 'range', label: 'Passes at', children: spec ?? 'As judged by the tester' },
               { key: 'result', label: 'Result', children: <TestResultTag result={data.result} /> },
               ...(data.labName

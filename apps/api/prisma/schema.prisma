@@ -967,6 +967,7 @@ model Organization {
   qualityTests          QualityTest[]
   ncrs                  Ncr[]
   testTypes             TestType[]
+  isStandards           IsStandard[]
   qaPlanLines           QaPlanLine[]
   pours                 Pour[]
   qaLabs                QaLab[]
@@ -1338,6 +1339,7 @@ model User {
   pours                   Pour[]                     @relation("PourCreator")
   qaCalibrations          QaCalibration[]            @relation("CalibrationBy")
   qaAudits                QaAudit[]                  @relation("QaAuditBy")
+  isStandardsChecked      IsStandard[]               @relation("IsStandardCheckedBy")
   drawingNeeds            DrawingNeed[]              @relation("DrawingNeedBy")
   designSubmissions       DesignSubmission[]         @relation("DesignSubmissionBy")
   designRounds            DesignSubmissionRound[]    @relation("DesignRoundBy")
@@ -5067,6 +5069,36 @@ model Ncr {
   @@index([organizationId, status])
 }
 
+/// A company's copy of a catalogue Indian Standard or one of its own (`STANDARD_IS_CODES` in shared): matched by code,
+/// so a company with no rows uses the catalogue as shipped. ARCHITECTURE "Indian Standards".
+model IsStandard {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  /// IS_456, IS_2720_PART_8: from the number, fixed once saved
+  code           String
+  /// IS 456, IS 2720 (Part 8)
+  number         String
+  /// The edition's year
+  year           Int
+  /// The year BIS last reaffirmed the edition
+  reaffirmed     Int?
+  title          String
+  discipline     IsDiscipline
+  subject        String
+  /// [{ ref, title, requirement, check: { by, testTypeCode? }, sampling, tolerance }] (`IsClauseDef`)
+  clauses        Json
+  isActive       Boolean      @default(true)
+  /// The day someone last checked the edition against BIS, and who
+  checkedOn      DateTime?    @db.Date
+  checkedById    String?
+  checkedBy      User?        @relation("IsStandardCheckedBy", fields: [checkedById], references: [id], onDelete: SetNull)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, code])
+}
+
 /// A company's copy of a standard test type or one of its own (`STANDARD_TEST_TYPES` in shared): matched by
 /// code, so a company that never edits its tests needs no rows.
 model TestType {
@@ -6211,6 +6243,13 @@ enum RfiStatus {
 }
 
 /// A consultant engineer's level on a project, lowest first
+/// The discipline an Indian Standard belongs to (`IS_DISCIPLINES` in shared)
+enum IsDiscipline {
+  CIVIL
+  MECHANICAL
+  ELECTRICAL
+}
+
 enum CheckLevel {
   ASSISTANT_ENGINEER
   RESIDENT_ENGINEER

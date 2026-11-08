@@ -66,6 +66,10 @@ export const STANDARD_TEST_TYPES: TestTypeDef[] = [
   t('PENETRATION', 'Bitumen penetration', 'BITUMEN', 'Bitumen', 'IS 1203', { unit: 'dmm' }),
   t('WATER', 'Water for construction: pH', 'WATER', 'Water', 'IS 3025', { specMin: 6 }),
   t('HYDRO', 'Pipeline hydraulic test', 'HYDRAULIC', 'Pipes', 'IS 5822 / IS 3114'),
+  t('EARTH', 'Earth electrode resistance', 'OTHER', 'Earthing', 'IS 3043', { unit: 'Ω', readings: [{ label: 'Resistance', days: 0 }] }),
+  t('INSULATION', 'Insulation resistance', 'OTHER', 'Cables, wiring and windings', 'IS 732', { unit: 'MΩ', specMin: 1, readings: [{ label: 'At 500 V DC', days: 0 }] }),
+  t('PUMP', 'Pump duty and efficiency', 'OTHER', 'Pumps', 'IS 9137', { unit: '%', readings: [{ label: 'Efficiency at the duty point', days: 0 }] }),
+  t('VESSEL_HYDRO', 'Pressure vessel hydrostatic test', 'OTHER', 'Pressure vessels', 'IS 2825', { unit: 'bar', readings: [{ label: 'Pressure held', days: 0 }] }),
 ];
 
 export const TEST_TYPE_CODE = /^[A-Z][A-Z0-9_]{1,29}$/;
