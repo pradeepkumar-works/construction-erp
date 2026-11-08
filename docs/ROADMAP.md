@@ -1025,7 +1025,7 @@ registers sort newest first) and a second header for the vertical (the header ha
 
 ## Day-one gaps from the readiness review (November 2026)
 
-183. ~~**Budget approval and revisions** (M).~~ Done: a project's budget is a series of versions, each prepared, sent to
+187. ~~**Budget approval and revisions** (M).~~ Done: a project's budget is a series of versions, each prepared, sent to
      admin or management and approved by someone other than its preparer, or returned with what to change; a revision
      starts from the version in force and names its reason (the `budgetRevision` master) and, for a variation, which
      one. Only the approved version is read by the forecast, the cash flow, the PO budget check and the BOQ budget rates;
