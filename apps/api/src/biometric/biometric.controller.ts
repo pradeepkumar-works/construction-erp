@@ -4,6 +4,7 @@ import type { RawBodyRequest } from '@nestjs/common';
 import type { Request } from 'express';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { Public, ModuleSwitch } from '../common/decorators';
+import { clientIp } from '../auth/login-guard.service';
 import { BiometricService } from './biometric.service';
 import { BiometricCommandsService } from './biometric-commands.service';
 import { AddToDevicesDto, CommandQuery, CreateDeviceDto, ImportPunchesDto, MatchUserDto, PunchQuery, RemoveFromDevicesDto, UpdateDeviceDto, WebhookPunchesDto } from './biometric.dto';
@@ -39,6 +40,18 @@ export class BiometricController {
   @Post('devices/:id/new-key')
   newKey(@CurrentUser() user: RequestUser, @Param('id') id: string) {
     return this.bio.newKey(user, id);
+  }
+
+  @ApiOperation({ summary: 'An ADMS device that called from a new address is held to that address from now on' })
+  @Post('devices/:id/approve-address')
+  approveAddress(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    return this.bio.settleAddress(user, id, true);
+  }
+
+  @ApiOperation({ summary: 'An ADMS device that called from a new address stays held to its old one' })
+  @Post('devices/:id/dismiss-address')
+  dismissAddress(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    return this.bio.settleAddress(user, id, false);
   }
 
   @Delete('devices/:id')
@@ -131,8 +144,8 @@ export class IclockController {
   @ApiOperation({ summary: 'ADMS handshake: the device asks for its options' })
   @Get('cdata')
   @Header('Content-Type', 'text/plain')
-  async options(@Query('SN') sn: string) {
-    const d = await this.bio.admsDevice(sn);
+  async options(@Query('SN') sn: string, @Req() req: Request) {
+    const d = await this.bio.admsDevice(sn, clientIp(req));
     await this.commands.onHandshake(d);
     return [
       `GET OPTION FROM: ${sn}`,
@@ -155,7 +168,7 @@ export class IclockController {
   @HttpCode(200)
   @Header('Content-Type', 'text/plain')
   async upload(@Query('SN') sn: string, @Query('table') table: string, @Req() req: RawBodyRequest<Request>) {
-    const d = await this.bio.admsDevice(sn);
+    const d = await this.bio.admsDevice(sn, clientIp(req));
     if (table !== 'ATTLOG') return 'OK';
     // The bytes as sent: some devices label the table as a form, which the form parser would take apart.
     const body = req.rawBody ? req.rawBody.toString('utf8') : typeof req.body === 'string' ? req.body : '';
@@ -166,8 +179,8 @@ export class IclockController {
   @ApiOperation({ summary: 'ADMS: the device asks for commands: users to add or remove and its clock, a line each, or OK' })
   @Get('getrequest')
   @Header('Content-Type', 'text/plain')
-  async getRequest(@Query('SN') sn: string) {
-    const d = await this.bio.admsDevice(sn);
+  async getRequest(@Query('SN') sn: string, @Req() req: Request) {
+    const d = await this.bio.admsDevice(sn, clientIp(req));
     return this.commands.handOut(d);
   }
 
@@ -176,7 +189,7 @@ export class IclockController {
   @HttpCode(200)
   @Header('Content-Type', 'text/plain')
   async deviceCmd(@Query('SN') sn: string, @Req() req: RawBodyRequest<Request>) {
-    const d = await this.bio.admsDevice(sn);
+    const d = await this.bio.admsDevice(sn, clientIp(req));
     const body = req.rawBody ? req.rawBody.toString('utf8') : typeof req.body === 'string' ? req.body : '';
     await this.commands.takeReplies(d, body);
     return 'OK';

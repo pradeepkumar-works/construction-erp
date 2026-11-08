@@ -7373,6 +7373,11 @@ model BiometricDevice {
   isActive       Boolean           @default(true)
   lastSeenAt     DateTime?
   lastPunchAt    DateTime?
+  /// ADMS: the internet address the device calls from, kept on its first call; a call from another waits for an admin
+  pinnedAddress    String?
+  /// ADMS: another address the device called from, and when it first did, until an admin approves the move
+  pendingAddress   String?
+  pendingAddressAt DateTime?
   createdById    String
   createdBy      User              @relation("BiometricDeviceCreator", fields: [createdById], references: [id])
   createdAt      DateTime          @default(now())
