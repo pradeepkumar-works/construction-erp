@@ -960,6 +960,7 @@ model Organization {
   vendorPayments        VendorPayment[]
   paymentRequests       PaymentRequest[]
   supplierChoices       SupplierChoice[]
+  workOrderAmendments   WorkOrderAmendment[]
   tallyConfig           TallyConfig?
   tallyExports          TallyExport[]
   checklists            ChecklistTemplate[]
@@ -1116,7 +1117,7 @@ model ApprovalRule {
   role           Role?        @relation(fields: [roleId], references: [id], onDelete: Cascade)
   /// A code of the `position` master: whoever holds it on the entry's project, or at head office
   positionCode   String?
-  /// SubmissionType: PROGRESS | DPR | MATERIAL_REQUEST | MACHINERY | EXPENSE | MEASUREMENT | BILL | PURCHASE_ORDER | VENDOR_BILL | WORK_ORDER | SUBCONTRACT_BILL | INSPECTION | PAYMENT_REQUEST | SUPPLIER_CHOICE
+  /// SubmissionType: PROGRESS | DPR | MATERIAL_REQUEST | MACHINERY | EXPENSE | MEASUREMENT | BILL | PURCHASE_ORDER | VENDOR_BILL | WORK_ORDER | SUBCONTRACT_BILL | INSPECTION | PAYMENT_REQUEST | SUPPLIER_CHOICE | WO_AMENDMENT
   submissionType String
   maxAmount      Decimal?     @db.Decimal(18, 2)
   /// 1 is the first approval; 2 to 6 are further approvals of the same entry
@@ -1320,6 +1321,8 @@ model User {
   reviewedPayRequests     PaymentRequest[]           @relation("PayRequestReviewer")
   submittedChoices        SupplierChoice[]           @relation("SupplierChoiceSubmitter")
   reviewedChoices         SupplierChoice[]           @relation("SupplierChoiceReviewer")
+  submittedWoAmendments   WorkOrderAmendment[]       @relation("WoAmendmentSubmitter")
+  reviewedWoAmendments    WorkOrderAmendment[]       @relation("WoAmendmentReviewer")
   quotationsEntered       Quotation[]                @relation("QuotationCreator")
   submittedPos            PurchaseOrder[]            @relation("PoSubmitter")
   reviewedPos             PurchaseOrder[]            @relation("PoReviewer")
@@ -1639,6 +1642,7 @@ model Project {
   vendorPayments     VendorPayment[]
   paymentRequests    PaymentRequest[]
   supplierChoices    SupplierChoice[]
+  woAmendments       WorkOrderAmendment[]
   fundRequestsRaised PaymentRequest[]         @relation("FundRequestRaisedAt")
   quotations         Quotation[]
   purchaseOrders     PurchaseOrder[]
@@ -2208,6 +2212,8 @@ model WorkOrder {
   /// Closed: no more measurements, issues or bills against it
   closedAt             DateTime?
   closeNote            String?
+  /// Amendments in force: approved WorkOrderAmendment rows applied to its lines (0 = as first approved)
+  amendmentNo          Int              @default(0)
   /// The subcontractor accepted it on the supplier portal, with their remark
   supplierAcceptedAt   DateTime?
   supplierAcceptedById String?
@@ -2235,6 +2241,7 @@ model WorkOrder {
   progressLines    ProgressEntry[]
   supplierInvoices SupplierInvoice[]
   scEnquiry        SubcontractEnquiry?
+  amendments       WorkOrderAmendment[]
 
   @@unique([organizationId, woNo])
   @@index([organizationId, status])
@@ -2258,10 +2265,73 @@ model WorkOrderLine {
   amount      Decimal   @db.Decimal(18, 2)
   sortOrder   Int       @default(0)
 
-  billLines SubcontractBillLine[]
+  billLines      SubcontractBillLine[]
+  amendmentLines WorkOrderAmendmentLine[]
 
   @@unique([workOrderId, boqItemId])
   @@index([boqItemId])
+}
+
+/// An amendment to an approved work order: lines changed (quantity, rate) or added and a new end date, approved through
+/// the approval matrix (submission type WO_AMENDMENT, its amount the order's value after it) and applied to the order's
+/// lines in place when approved. Numbered 1, 2, … per order; at most one is open (not approved, not rejected) at a time.
+model WorkOrderAmendment {
+  id             String           @id @default(uuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  workOrderId    String
+  workOrder      WorkOrder        @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  amendmentNo    Int
+  reason         String
+  /// The new end date; null leaves the order's as it is
+  endDate        DateTime?        @db.Date
+  /// The order's end date when the amendment was last saved
+  endDateBefore  DateTime?        @db.Date
+  valueBefore    Decimal          @db.Decimal(18, 2)
+  valueAfter     Decimal          @db.Decimal(18, 2)
+  /// When the approved amendment was written to the order's lines
+  appliedAt      DateTime?
+  status         SubmissionStatus @default(DRAFT)
+  submittedById  String
+  submittedBy    User             @relation("WoAmendmentSubmitter", fields: [submittedById], references: [id])
+  submittedAt    DateTime?
+  reviewedById   String?
+  reviewedBy     User?            @relation("WoAmendmentReviewer", fields: [reviewedById], references: [id])
+  reviewedAt     DateTime?
+  reviewNote     String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  lines WorkOrderAmendmentLine[]
+
+  @@unique([workOrderId, amendmentNo])
+  @@index([organizationId, status])
+  @@index([projectId, status])
+}
+
+/// One line of an amendment: an order line with what it was (qtyBefore, rateBefore) and what it becomes, or a new item
+/// (qtyBefore null; workOrderLineId set to the line it became once applied).
+model WorkOrderAmendmentLine {
+  id              String             @id @default(uuid())
+  amendmentId     String
+  amendment       WorkOrderAmendment @relation(fields: [amendmentId], references: [id], onDelete: Cascade)
+  workOrderLineId String?
+  workOrderLine   WorkOrderLine?     @relation(fields: [workOrderLineId], references: [id], onDelete: SetNull)
+  boqItemId       String?
+  boqItem         BoqItem?           @relation(fields: [boqItemId], references: [id], onDelete: Restrict)
+  description     String
+  unit            String
+  qtyBefore       Decimal?           @db.Decimal(18, 3)
+  rateBefore      Decimal?           @db.Decimal(18, 2)
+  quantity        Decimal            @db.Decimal(18, 3)
+  rate            Decimal            @db.Decimal(18, 2)
+  amount          Decimal            @db.Decimal(18, 2)
+  sortOrder       Int                @default(0)
+
+  @@index([amendmentId])
+  @@index([workOrderLineId])
 }
 
 /// Running bill N of a subcontractor under a work order: measured work (or quantities entered for the work order's own
@@ -2351,6 +2421,8 @@ model SubcontractBillLine {
   workOrderLineId String
   workOrderLine   WorkOrderLine   @relation(fields: [workOrderLineId], references: [id], onDelete: Restrict)
   rate            Decimal         @db.Decimal(18, 2)
+  /// What earlier bills paid for this line (each at its own rate), so an amended rate never restates them
+  prevAmount      Decimal         @default(0) @db.Decimal(18, 2)
   prevQty         Decimal         @db.Decimal(18, 3)
   thisQty         Decimal         @db.Decimal(18, 3)
   uptoQty         Decimal         @db.Decimal(18, 3)
@@ -2423,6 +2495,7 @@ model BoqItem {
   measurements      MeasurementSheet[]
   billItems         RaBillItem[]
   workOrderLines    WorkOrderLine[]
+  woAmendmentLines  WorkOrderAmendmentLine[]
   scEnquiryItems    SubcontractEnquiryItem[]
   variationLines    VariationLine[]
   materialNorms     MaterialNorm[]

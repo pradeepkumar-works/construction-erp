@@ -140,6 +140,7 @@ import type {
   DebitNoteDto,
   DebitNoteReason,
   WorkOrderDto,
+  WorkOrderAmendmentDto,
   WorkOrderMarginDto,
   SubcontractBillDto,
   PayablesDto,
@@ -449,7 +450,7 @@ export interface RoleDto {
   name: string;
 }
 
-export type ApprovalTypeParam = 'progress' | 'dpr' | 'material_request' | 'machinery' | 'expense' | 'measurement' | 'bill' | 'purchase_order' | 'vendor_bill' | 'work_order' | 'subcontract_bill' | 'inspection' | 'payment_request' | 'supplier_choice';
+export type ApprovalTypeParam = 'progress' | 'dpr' | 'material_request' | 'machinery' | 'expense' | 'measurement' | 'bill' | 'purchase_order' | 'vendor_bill' | 'work_order' | 'subcontract_bill' | 'inspection' | 'payment_request' | 'supplier_choice' | 'wo_amendment';
 
 export const approvalTypeParam: Record<SubmissionType, ApprovalTypeParam> = {
   PROGRESS: 'progress',
@@ -466,6 +467,7 @@ export const approvalTypeParam: Record<SubmissionType, ApprovalTypeParam> = {
   INSPECTION: 'inspection',
   PAYMENT_REQUEST: 'payment_request',
   SUPPLIER_CHOICE: 'supplier_choice',
+  WO_AMENDMENT: 'wo_amendment',
 };
 
 /** Paging, search and sort understood by every paged list endpoint. */
@@ -597,6 +599,7 @@ const RECORD_QUERIES = {
   '/inspections': { key: (id: string) => ['inspections', 'detail', id], path: '/inspections' },
   '/payment-requests': { key: (id: string) => ['payment-requests', 'detail', id], path: '/payment-requests' },
   '/supplier-choices': { key: (id: string) => ['supplier-choices', 'detail', id], path: '/supplier-choices' },
+  '/work-order-amendments': { key: (id: string) => ['work-orders', 'amendments', 'detail', id], path: '/work-order-amendments' },
   '/debit-notes': { key: (id: string) => ['debit-notes', 'detail', id], path: '/debit-notes' },
   '/projects': { key: (id: string) => ['projects', id], path: '/projects' },
 } satisfies Record<string, { key: (id: string) => QueryKey; path: string }>;
@@ -3286,6 +3289,16 @@ export const useWorkOrders = (filters: WorkOrderFilters, enabled = true) =>
   });
 
 export const useWorkOrder = (id: string | undefined) => useQuery({ ...recordQuery<WorkOrderDto>('/work-orders', id), enabled: !!id });
+
+export const useWoAmendment = (id: string | undefined) => useQuery({ ...recordQuery<WorkOrderAmendmentDto>('/work-order-amendments', id), enabled: !!id });
+
+/** A work order's amendments with their lines, oldest first (its history of versions). */
+export const useWoAmendments = (workOrderId: string | undefined, enabled = true) =>
+  useQuery({
+    queryKey: ['work-orders', 'amendments', 'of', workOrderId],
+    queryFn: async () => (await api.get<WorkOrderAmendmentDto[]>(`/work-orders/${workOrderId}/amendments`)).data,
+    enabled: enabled && !!workOrderId,
+  });
 
 /** Client rate against subcontract rate per BOQ item of a project (billing roles). */
 export const useWorkOrderMargin = (projectId: string | undefined, enabled = true) =>

@@ -424,6 +424,11 @@ and the pre-delivery checklist.
   leave the plant's store only through `StockService.issue`, and cubes are a quality test through `QualityService`. Its
   figures are pure functions in `rmc-rules.ts` tested in `src/scripts/rmc-test.ts` (CI runs it); bills and receipts post
   through the posting service (`RMC_SALE`, `RMC_RECEIPT`).
+- Work order amendments (ARCHITECTURE "Subcontracts", Amendments): an approved work order's lines, value and end date
+  change only through `WorkOrderAmendmentsService` (`apply` on approval), held by `amendmentOpenProblem` and
+  `amendmentLineProblem`; the order as it stood after an amendment is only `workOrderAsOf`, and a bill's previous value is
+  what earlier bills charged (`subBillLines`), never today's rate (`@erp/shared/work-order-amendment.ts`). Keep
+  `src/scripts/work-order-amendment-test.ts` passing.
 - Supplier portal (item 105, `apps/api/src/supplier`, ARCHITECTURE "Supplier portal"): a `SUPPLIER` login has a `vendorId`
   and sees only that vendor; its routes are `@SupplierAllowed()` (`/supplier/*` also `@SupplierOnly()`), and every query
   filters by `supplierVendor(user)`. Logins are given from Vendors, never Users. Its figures are in `supplier-rules.ts`

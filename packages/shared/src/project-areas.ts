@@ -81,6 +81,7 @@ export const SUBMISSION_AREA: Record<SubmissionType, SubmissionPlace> = {
   BILL: { area: 'money', tab: 'bills', seen: canViewContract },
   EXPENSE: { area: 'money', tab: 'expenses', seen: internal },
   WORK_ORDER: { area: 'money', tab: 'subcontracts', seen: canViewWorkOrders },
+  WO_AMENDMENT: { area: 'money', tab: 'subcontracts', seen: canViewWorkOrders },
   SUBCONTRACT_BILL: { area: 'money', tab: 'subcontracts', seen: canViewWorkOrders },
   VENDOR_BILL: { area: 'money', tab: null, seen: canViewVendorBills },
   PAYMENT_REQUEST: { area: 'money', tab: null, seen: canViewPaymentRequests },

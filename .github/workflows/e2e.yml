@@ -130,6 +130,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/purchase-award-test.js
+      - name: A work order amendment holds its lines to the work done, and bills after it keep earlier rates
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/work-order-amendment-test.js
       - name: Intelligence quick wins (insights, margin fade, cube strength, DPR, vendors, purchase controls, stages, bids)
         if: matrix.suite == 'flows'
         working-directory: apps/api

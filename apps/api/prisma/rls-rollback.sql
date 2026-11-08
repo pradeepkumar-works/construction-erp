@@ -703,5 +703,8 @@ DROP POLICY IF EXISTS tenant_isolation ON "ApprovalDelegation";
 ALTER TABLE "AttendanceCorrection" NO FORCE ROW LEVEL SECURITY;
 ALTER TABLE "AttendanceCorrection" DISABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON "AttendanceCorrection";
+ALTER TABLE "WorkOrderAmendment" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "WorkOrderAmendment" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "WorkOrderAmendment";
 
 DROP FUNCTION IF EXISTS app_current_org();

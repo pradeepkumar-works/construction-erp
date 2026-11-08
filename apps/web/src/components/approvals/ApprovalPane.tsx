@@ -24,6 +24,7 @@ import { SubBillRecord } from '@/components/subcontracts/SubBillDrawer';
 import { InspectionRecord } from '@/components/inspections/InspectionDrawer';
 import { PaymentRequestRecord } from '@/components/payables/PaymentRequestRecord';
 import { SupplierChoiceRecord } from '@/components/purchasing/SupplierChoiceRecord';
+import { WoAmendmentRecord } from '@/components/subcontracts/WoAmendmentRecord';
 import { decidedInPlace } from './queue';
 import { TypeTag } from './ApprovalQueue';
 import { Money } from '@/components/common/Money';
@@ -109,6 +110,8 @@ function PaneRecord({ item, onOpenDetails }: { item: PendingApprovalDto; onOpenD
       return <PaymentRequestRecord mode="pane" id={item.id} />;
     case 'SUPPLIER_CHOICE':
       return <SupplierChoiceRecord mode="pane" id={item.id} />;
+    case 'WO_AMENDMENT':
+      return <WoAmendmentRecord mode="pane" id={item.id} />;
     default:
       return <PendingSummary item={item} onOpenDetails={onOpenDetails} />;
   }

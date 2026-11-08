@@ -19,6 +19,7 @@ const RECORDS: Record<string, string> = {
   'subcontract-bills': '/subcontract-bill/',
   'payment-requests': '/payment-request/',
   'supplier-choices': '/supplier-choice/',
+  'work-order-amendments': '/wo-amendment/',
   projects: '/project/',
 };
 
