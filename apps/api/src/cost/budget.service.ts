@@ -247,7 +247,9 @@ export class BudgetService {
             preparedById: user.id,
           },
         });
-        if (from?.lines.length) await tx.projectBudgetLine.createMany({ data: from.lines.map((l) => ({ budgetId: v.id, boqItemId: l.boqItemId, budgetRate: l.budgetRate })) });
+        // With no version yet, the BOQ budget rates set before budgets had versions are the start.
+        const lines = from ? from.lines : await tx.boqItem.findMany({ where: { projectId, budgetRate: { not: null } }, select: { id: true, budgetRate: true } }).then((items) => items.map((i) => ({ boqItemId: i.id, budgetRate: i.budgetRate! })));
+        if (lines.length) await tx.projectBudgetLine.createMany({ data: lines.map((l) => ({ budgetId: v.id, boqItemId: l.boqItemId, budgetRate: l.budgetRate })) });
         await this.apply(tx, user, { id: v.id, projectId, versionNo }, dto);
       });
     } catch (e) {

@@ -6138,7 +6138,8 @@ model ProjectBudget {
   /// The approved variation that brought the revision
   variationId    String?
   variation      Variation?          @relation(fields: [variationId], references: [id], onDelete: SetNull)
-  preparedById   String
+  /// Kept as the column `updatedById`, so the code before versions still reads it while a deploy rolls out
+  preparedById   String              @map("updatedById")
   preparedBy     User                @relation("BudgetPreparer", fields: [preparedById], references: [id])
   submittedAt    DateTime?
   decidedById    String?
