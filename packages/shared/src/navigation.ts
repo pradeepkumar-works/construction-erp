@@ -3,6 +3,7 @@ import { approvalRightsOf, mayApprove } from './approvals';
 import { PRODUCT_NAME } from './brand';
 import type { RoleKey } from './enums';
 import * as P from './permissions';
+import { inRoleMenu } from './role-menu';
 import { canManageAi } from './ai';
 import { canSeeWatchList } from './warnings';
 import { canUseWhatsappCapture } from './whatsapp';
@@ -561,6 +562,7 @@ export function navSidebar(user: NavUser): NavSidebarSection[] {
       add(top, mod);
       continue;
     }
+    if (!inRoleMenu(user.roleKey, mod.id)) continue;
     const tiles = navTilesFor(user, mod.id);
     const links: NavSidebarLink[] = [];
     for (const tile of tiles) add(tile.top ? top : links, tile);

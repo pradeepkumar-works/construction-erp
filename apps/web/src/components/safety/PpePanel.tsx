@@ -10,7 +10,7 @@ import type { PpeIssueDto, PpeKind, PpeWorkerDto } from '@erp/shared';
 import { PPE_ISSUE_STATUS_LABELS, PPE_KIND_LABELS, canEditSafetyRecord } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useDeletePpe, usePpeIssues, usePpeRegister } from '@/lib/queries';
-import { useProjectScope } from '@/lib/project-scope';
+import { useOneProject } from '@/lib/project-scope';
 import { formatDate } from '@/lib/format';
 import { downloadWorkbook, exportFileName, workbookSheet } from '@/lib/exportExcel';
 import { QueryError } from '@/components/common/QueryState';
@@ -45,7 +45,7 @@ interface CloseTarget {
  */
 export function PpePanel({ projectId: fixedProject }: { projectId?: string }) {
   const { user } = useAuth();
-  const [scoped, setScoped] = useProjectScope();
+  const [scoped, setScoped] = useOneProject();
   const projectId = fixedProject ?? scoped;
   const { data: reg, isLoading, error, refetch } = usePpeRegister(projectId);
   const [show, setShow] = useState<Show>('all');

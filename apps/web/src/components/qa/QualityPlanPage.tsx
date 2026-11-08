@@ -19,7 +19,7 @@ import {
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
 import { useQaPlan, useTestTypes } from '@/lib/queries';
-import { useProjectScope } from '@/lib/project-scope';
+import { useOneProject } from '@/lib/project-scope';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
@@ -206,7 +206,7 @@ function PlanTable({ plan, onEdit }: { plan: QaPlanDto; onEdit: (l: QaPlanLineDt
 
 /** The quality plan: a project's tests, what each is counted against, how often and who witnesses. */
 export function QualityPlanPage() {
-  const [projectId, setProjectId] = useProjectScope();
+  const [projectId, setProjectId] = useOneProject();
   const { data: plan, isLoading, error, refetch } = useQaPlan(projectId);
   const [editing, setEditing] = useState<QaPlanLineDto | 'new' | null>(null);
   const qc = useQueryClient();

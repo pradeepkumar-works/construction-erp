@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-menu-by-role',
+    date: '2026-11-08',
+    title: 'A menu that keeps to your work',
+    points: [
+      'The menu now shows the modules your role works in: a site engineer sees site work, quality, drawings, stores, machinery and labour, not purchase, accounts or the RMC plant. Admin, management, project managers and accounts see every module.',
+      'Nothing is taken away: every page you could open before still opens from Home’s All modules, from Search and from links.',
+      'PPE, the quality plan, the roll call and the muster roll open on the busiest site when no project is chosen in the header.',
+    ],
+  },
+  {
     id: '2026-11-leave-year-weekly-off',
     date: '2026-11-05',
     title: 'April to March leave year, a weekly off per site, and what payroll owes',

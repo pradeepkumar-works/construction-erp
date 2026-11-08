@@ -90,7 +90,7 @@ function Capture() {
   const data = list.data;
 
   return (
-    <>
+    <div className="page-container">
       <PageHeader title="WhatsApp entries" subtitle={`Send what happened on site as a text, a photo or a voice note. ${PRODUCT_NAME} drafts the entry and you save it with one tap.`} />
       <Flex vertical gap={tk.space[5]}>
         <SetupCard setup={setup.data} />
@@ -150,7 +150,7 @@ function Capture() {
         )}
         {data.total > PAGE_SIZE && <Pagination align="end" current={page} pageSize={PAGE_SIZE} total={data.total} onChange={setPage} showSizeChanger={false} />}
       </Flex>
-    </>
+    </div>
   );
 }
 

@@ -26,7 +26,7 @@ export default function ModuleScreen() {
   const launcher = useLauncher();
   const { open, sheet } = useOpenNode(launcher.webUrl);
   const { openMenu, menu } = useTileMenu(launcher);
-  const inMenu = user && !isGuest(user.roleKey) && !isSupplier(user.roleKey) ? navMenuFor(user, navSettingsOf(user)).find((m) => m.key === key) : undefined;
+  const inMenu = user && !isGuest(user.roleKey) && !isSupplier(user.roleKey) ? navMenuFor(user, navSettingsOf(user), { allModules: true }).find((m) => m.key === key) : undefined;
   // One of the tree's modules opened from a pin or Recent while the company's menu is in departments.
   const treeModule = key ? navNode(key) : undefined;
   const ownTree = !!user && !!treeModule && treeModule.parent === null && !treeModule.route && canSeeNav(user, treeModule);

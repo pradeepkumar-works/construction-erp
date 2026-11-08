@@ -17,7 +17,7 @@ import { useActivities, useRollCall } from '@/lib/queries';
 import { QueryError } from '@/components/common/QueryState';
 import { CardToolbar } from '@/components/common/CardToolbar';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
-import { useProjectScope } from '@/lib/project-scope';
+import { useOneProject } from '@/lib/project-scope';
 import { formatMonthLong } from '@/lib/format';
 
 interface Mark {
@@ -49,7 +49,7 @@ export function RollCallPanel({ projectId: fixedProject }: { projectId?: string 
   const { message } = App.useApp();
   const qc = useQueryClient();
   // The header's project: picking one here picks it for every list.
-  const [projectPick, setProjectPick] = useProjectScope();
+  const [projectPick, setProjectPick] = useOneProject();
   const projectId = fixedProject ?? projectPick;
   const [date, setDate] = useState<Dayjs>(dayjs());
   const dateStr = date.format('YYYY-MM-DD');

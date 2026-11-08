@@ -8,6 +8,8 @@
 import assert from 'node:assert/strict';
 import {
   AREA_MODULES,
+  ROLE_MENU,
+  navSidebar,
   DEFAULT_NAV_SETTINGS,
   DEPARTMENT_MODULES,
   NAV_LAYOUTS,
@@ -93,6 +95,21 @@ test('HR and payroll is one module with the brief’s sub-modules, and a site en
   const hr = navMenuFor({ roleKey: 'HR_MANAGER' }, departments).find((m) => m.key === 'hr-payroll')!;
   for (const id of ['people.employees', 'people.leave', 'payroll.structures', 'payroll.runs', 'people.letters', 'payroll.settlement'])
     assert.ok(hr.subs.some((s) => s.nodes.some((n) => n.id === id)), `${id} is in HR and payroll`);
+});
+
+test('a role’s menu keeps to its own modules; every module still opens, and the menu is no wider than access', () => {
+  const keys = (u: NavUser, all = false) => navMenuFor(u, departments, { allModules: all }).map((m) => m.key);
+  assert.ok(!keys(engineer).includes('purchase-management'), 'no purchase management in a site engineer’s menu');
+  assert.ok(!keys(engineer).includes('accounts-finance'), 'no accounts in a site engineer’s menu');
+  assert.ok(keys(engineer, true).includes('purchase-management'), 'a site engineer may still open purchase pages');
+  assert.ok(keys(engineer).length < keys(engineer, true).length);
+  assert.ok(!navMenuFor(engineer, departments).some((m) => m.subs.some((s) => s.key === 'masters')), 'masters stay in Admin › Masters');
+  assert.deepEqual(keys(admin), keys(admin, true), 'admin keeps every module');
+  assert.deepEqual(keys({ roleKey: 'PROJECT_MANAGER' }), keys({ roleKey: 'PROJECT_MANAGER' }, true), 'the PM keeps every module');
+  const known = new Set([...DEPARTMENT_MODULES, ...AREA_MODULES].map((m) => m.key));
+  for (const [role, list] of Object.entries(ROLE_MENU)) for (const k of list!) assert.ok(known.has(k), `${role}: ${k} is no module`);
+  const areaSections = navSidebar(engineer).map((s) => s.key);
+  assert.ok(!areaSections.includes('rmc') && !areaSections.includes('accounts'), 'the area sidebar keeps to the role too');
 });
 
 test('a module turned off leaves the menu', () => {

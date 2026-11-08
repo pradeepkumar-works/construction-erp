@@ -802,6 +802,10 @@ model Organization {
   supportAccessUntil         DateTime?
   supportAccessGrantedByName String?
 
+  /// A demo company's day its records were last dated to (ARCHITECTURE "Demo clock"): the daily job moves every date
+  /// forward by the days since. Set only by the demo seed; null on every customer's company, which is never moved.
+  demoDatedOn DateTime? @db.Date
+
   /// Subscription. Last day of the free trial; set when billing is on (at sign-up, or by the daily job)
   trialEndsAt        DateTime? @db.Date
   /// Last day paid for

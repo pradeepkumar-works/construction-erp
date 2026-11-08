@@ -13,7 +13,7 @@ import { downloadXlsx, exportFileName, type ExportColumn } from '@/lib/exportExc
 import { QueryError } from '@/components/common/QueryState';
 import { CardToolbar } from '@/components/common/CardToolbar';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
-import { useProjectScope } from '@/lib/project-scope';
+import { useOneProject } from '@/lib/project-scope';
 import { ExportButton } from '@/components/common/ExportButton';
 import { unitLabel } from '@erp/shared';
 
@@ -44,7 +44,7 @@ const musterExport = (m: MusterDto): ExportColumn<MusterRowDto>[] => [
  */
 export function MusterPanel({ projectId: fixedProject }: { projectId?: string }) {
   // The header's project: picking one here picks it for every list.
-  const [projectPick, setProjectPick] = useProjectScope();
+  const [projectPick, setProjectPick] = useOneProject();
   const projectId = fixedProject ?? projectPick;
   const [month, setMonth] = useState<Dayjs>(dayjs());
   const monthStr = month.format('YYYY-MM');

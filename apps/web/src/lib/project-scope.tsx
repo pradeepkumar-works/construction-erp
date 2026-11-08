@@ -69,6 +69,21 @@ export function useProjectScope(initial?: string): [string | undefined, (id?: st
   return [linked ?? ctx.projectId, ctx.setProjectId];
 }
 
+/**
+ * The project a page that shows one project at a time opens on: the header's project, else the busiest running site (most
+ * entries waiting, then first in the header's list; never a store or plant), so the page opens on a project rather than "Choose a
+ * project". Picking one sets the header's project, as any list's filter does.
+ */
+export function useOneProject(initial?: string): [string | undefined, (id?: string) => void] {
+  const [scoped, setScoped] = useProjectScope(initial);
+  const { data: projects } = useProjects();
+  const busiest = useMemo(() => {
+    const sites = (projects ?? []).filter((p) => p.type !== 'STORE' && p.type !== 'PLANT' && p.status === 'ACTIVE');
+    return [...sites].sort((a, b) => b.pendingApprovals - a.pendingApprovals || a.code.localeCompare(b.code))[0]?.id;
+  }, [projects]);
+  return [scoped ?? busiest, setScoped];
+}
+
 const noVertical = () => {};
 
 /** The header's vertical, for the pages it narrows; every vertical outside the app shell. */

@@ -186,6 +186,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/reporting-period-test.js
+      - name: The demo clock moves a demo company's dates up to today, as the API's own role, and never a customer's
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: DATABASE_URL="$RUNTIME_URL" node dist/scripts/demo-clock-test.js --db
       - name: The RA bill email carries the bill, and the weekly summary adds up the money in
         if: matrix.suite == 'flows'
         working-directory: apps/api
