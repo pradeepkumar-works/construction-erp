@@ -52,9 +52,10 @@ const BY = { select: { fullName: true } } as const;
 
 @Injectable()
 export class SubmissionLifecycleService {
-  private readonly approvedHooks = new Map<SubmissionType, (user: RequestUser, id: string) => Promise<void>>();
+  private readonly approvedHooks = new Map<SubmissionType, (tx: Prisma.TransactionClient, user: RequestUser, id: string) => Promise<void>>();
+  private readonly afterApprovedHooks = new Map<SubmissionType, (user: RequestUser, id: string) => Promise<void>>();
   private readonly beforeApproveHooks = new Map<SubmissionType, (user: RequestUser, id: string) => Promise<void>>();
-  private readonly statusHooks = new Map<SubmissionType, (user: RequestUser, id: string, status: SubmissionStatus) => Promise<void>>();
+  private readonly statusHooks = new Map<SubmissionType, (tx: Prisma.TransactionClient, user: RequestUser, id: string, status: SubmissionStatus) => Promise<void>>();
   private readonly partOfHooks = new Map<SubmissionType, (id: string) => Promise<string | null>>();
 
   constructor(private prisma: PrismaService, private access: ProjectAccessService, private audit: AuditService, private notifications: NotificationsService, private rights: ApprovalRightsService) {}
@@ -77,9 +78,17 @@ export class SubmissionLifecycleService {
     return tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`submission:${type}:${id}`}))`;
   }
 
-  /** Run `hook` after an entry of `type` is approved (e.g. a purchase order updates item rates). One per type. */
-  onApproved(type: SubmissionType, hook: (user: RequestUser, id: string) => Promise<void>) {
+  /**
+   * Run `hook` as an entry of `type` is approved, in the approval's own transaction: it writes through `tx`, and if it
+   * throws the entry stays SUBMITTED (e.g. a purchase order updates item rates). One per type.
+   */
+  onApproved(type: SubmissionType, hook: (tx: Prisma.TransactionClient, user: RequestUser, id: string) => Promise<void>) {
     this.approvedHooks.set(type, hook);
+  }
+
+  /** Run `hook` once an approval of `type` is saved, for what leaves the app (e.g. emailing the order); it cannot undo it. One per type. */
+  afterApproved(type: SubmissionType, hook: (user: RequestUser, id: string) => Promise<void>) {
+    this.afterApprovedHooks.set(type, hook);
   }
 
   /** Run `check` before an entry of `type` is approved; it throws to stop the approval (e.g. a hold point). One per type. */
@@ -88,10 +97,10 @@ export class SubmissionLifecycleService {
   }
 
   /**
-   * Run `hook` after an entry of `type` moves to SUBMITTED or a final decision (approved, rejected, sent back); a DPR's
-   * work lines follow the DPR this way. One per type.
+   * Run `hook` as an entry of `type` moves to SUBMITTED or a final decision (approved, rejected, sent back), in the same
+   * transaction through `tx`; a DPR's work lines follow the DPR this way. One per type.
    */
-  onStatus(type: SubmissionType, hook: (user: RequestUser, id: string, status: SubmissionStatus) => Promise<void>) {
+  onStatus(type: SubmissionType, hook: (tx: Prisma.TransactionClient, user: RequestUser, id: string, status: SubmissionStatus) => Promise<void>) {
     this.statusHooks.set(type, hook);
   }
 
@@ -122,10 +131,12 @@ export class SubmissionLifecycleService {
     if (!canResubmit(user, row)) throw new BadRequestException(`Cannot submit an entry in status ${row.status}`);
     const resubmit = row.status === 'REJECTED' || row.status === 'CHANGES_REQUESTED';
     // Only from the status just checked: a second submit at the same moment changes nothing and is told so.
-    const moved = await this.delegate(type).updateMany({ where: { id, status: row.status }, data: { status: 'SUBMITTED', submittedAt: new Date(), reviewedById: null, reviewedAt: null, reviewNote: null } });
-    if (!moved.count) throw new ConflictException('This entry was just submitted or changed by someone else. Reload it to see where it stands.');
+    await this.prisma.$transaction(async (tx) => {
+      const moved = await this.txDelegate(tx, type).updateMany({ where: { id, status: row.status }, data: { status: 'SUBMITTED', submittedAt: new Date(), reviewedById: null, reviewedAt: null, reviewNote: null } });
+      if (!moved.count) throw new ConflictException('This entry was just submitted or changed by someone else. Reload it to see where it stands.');
+      await this.statusHooks.get(type)?.(tx, user, id, 'SUBMITTED');
+    });
     await this.audit.log(user, type, id, resubmit ? 'RESUBMITTED' : 'SUBMITTED');
-    await this.statusHooks.get(type)?.(user, id, 'SUBMITTED');
     await this.notifications.onSubmitted(user, type, id);
   }
 
@@ -146,7 +157,8 @@ export class SubmissionLifecycleService {
     if (decision === 'APPROVE') await this.beforeApproveHooks.get(type)?.(user, id);
     const levelOnly = decision === 'APPROVE' && stage.level < stage.levels;
     const status = decision === 'APPROVE' ? 'APPROVED' : decision === 'REJECT' ? 'REJECTED' : 'CHANGES_REQUESTED';
-    // The checks above read the entry as it was; under the entry's lock, make sure no one decided it since, then write.
+    // The checks above read the entry as it was; under the entry's lock, make sure no one decided it since, then write
+    // the decision and what it moves (a DPR's work lines, an amendment's order) together, so a failure leaves neither.
     await this.prisma.$transaction(async (tx) => {
       await this.lockEntry(tx, type, id);
       const now = await this.txDelegate(tx, type).findFirst({ where: { id }, select: { status: true, submittedAt: true, createdAt: true } });
@@ -156,7 +168,10 @@ export class SubmissionLifecycleService {
         throw new ConflictException('Someone decided this entry a moment ago. Reload it to see where it stands.');
       }
       if (levelOnly || (status === 'APPROVED' && (stage.levels > 1 || onBehalfOf))) await tx.approvalStep.create({ data: step });
-      if (!levelOnly) await this.txDelegate(tx, type).update({ where: { id }, data: { status, reviewedById: user.id, reviewedAt: new Date(), reviewNote: note ?? null } });
+      if (levelOnly) return;
+      await this.txDelegate(tx, type).update({ where: { id }, data: { status, reviewedById: user.id, reviewedAt: new Date(), reviewNote: note ?? null } });
+      await this.statusHooks.get(type)?.(tx, user, id, status);
+      if (status === 'APPROVED') await this.approvedHooks.get(type)?.(tx, user, id);
     });
     if (levelOnly) {
       await this.audit.log(user, type, id, 'LEVEL_APPROVED', `Level ${stage.level} of ${stage.levels}${forWhom ? ` ${forWhom}` : ''}${note ? `: ${note}` : ''}`);
@@ -164,8 +179,7 @@ export class SubmissionLifecycleService {
       return { status: 'SUBMITTED' as const, level: stage.level, levels: stage.levels };
     }
     await this.audit.log(user, type, id, status, forWhom ? `${forWhom.replace(/^f/, 'F')}${note ? `: ${note}` : ''}` : note);
-    await this.statusHooks.get(type)?.(user, id, status);
-    if (status === 'APPROVED') await this.approvedHooks.get(type)?.(user, id);
+    if (status === 'APPROVED') await this.afterApprovedHooks.get(type)?.(user, id);
     await this.notifications.onReviewed(user, type, id, status, note);
     return { status, level: stage.level, levels: stage.levels };
   }
@@ -536,4 +550,5 @@ export class SubmissionLifecycleService {
 interface EntryTable {
   findFirst(args: { where: { id: string }; select: { status: true; submittedAt: true; createdAt: true } }): Promise<{ status: string; submittedAt: Date | null; createdAt: Date } | null>;
   update(args: { where: { id: string }; data: { status: string; reviewedById: string; reviewedAt: Date; reviewNote: string | null } }): Promise<unknown>;
+  updateMany(args: { where: { id: string; status: string }; data: { status: 'SUBMITTED'; submittedAt: Date; reviewedById: null; reviewedAt: null; reviewNote: null } }): Promise<{ count: number }>;
 }

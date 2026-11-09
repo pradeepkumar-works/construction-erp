@@ -109,8 +109,12 @@ out are detached. Adding a new submission type
 (for example measurements) means adding a table with the same six status columns, adding the type to
 `SUBMISSION_TYPES` in shared and registering it in the lifecycle service (`delegate`, `pending`) and in
 `NotificationsService.describeSubmission`; the approvals queue, review endpoint and audit trail come
-free. A type can register `onApproved` (run after approval) and `beforeApprove` (throw to refuse it) hooks; inspection
-hold points use the latter on progress. The clients keep a few per-type maps (web drawers on the approvals and notifications pages,
+free. A type can register `beforeApprove` (throw to refuse it), `onStatus` and `onApproved` hooks; inspection hold points
+use the first on progress. `onStatus` and `onApproved` run inside the decision's own transaction and write through the
+`tx` they are given (a DPR's work lines, an amendment's work order, a PO's item rates), so if one fails the entry stays
+where it was and the approver is told, never APPROVED with its work left behind. What leaves the app (the PO's email to
+the vendor) is `afterApproved`, run once the approval is saved; it cannot undo it. The audit line and notices follow
+the commit. Keep `src/scripts/approval-hooks-test.ts` passing. The clients keep a few per-type maps (web drawers on the approvals and notifications pages,
 `approvalTypeParam`; mobile `TYPE_ICON`, `EDIT_PATH`, `REVIEW_PATH`, `OUTBOX_PATH`, push routes) that
 TypeScript flags when a type is added.
 

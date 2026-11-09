@@ -96,8 +96,8 @@ export class WorkOrderAmendmentsService {
     private lifecycle: SubmissionLifecycleService,
   ) {
     lifecycle.beforeApprove('WO_AMENDMENT', (_user, id) => this.assertStillFits(id));
-    lifecycle.onApproved('WO_AMENDMENT', async (_user, id) => {
-      await this.apply(id);
+    lifecycle.onApproved('WO_AMENDMENT', async (tx, _user, id) => {
+      await this.applyIn(tx, id);
     });
   }
 
@@ -366,32 +366,35 @@ export class WorkOrderAmendmentsService {
    * then the order's value, end date and the amendment in force. Runs once: `appliedAt` marks it done.
    */
   async apply(id: string): Promise<boolean> {
-    return this.prisma.$transaction(async (tx) => {
-      const head = await tx.workOrderAmendment.findUniqueOrThrow({ where: { id }, select: { workOrderId: true } });
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`WOA:${head.workOrderId}`}))`;
-      const am = await tx.workOrderAmendment.findUniqueOrThrow({ where: { id }, include: { lines: { orderBy: { sortOrder: 'asc' } } } });
-      if (am.status !== 'APPROVED' || am.appliedAt) return false;
-      const top = await tx.workOrderLine.aggregate({ where: { workOrderId: am.workOrderId }, _max: { sortOrder: true } });
-      let next = (top._max.sortOrder ?? -1) + 1;
-      for (const l of am.lines) {
-        if (l.qtyBefore !== null && l.workOrderLineId) {
-          await tx.workOrderLine.update({ where: { id: l.workOrderLineId }, data: { quantity: l.quantity, rate: l.rate, amount: l.amount } });
-        } else if (l.qtyBefore === null) {
-          const made = await tx.workOrderLine.create({
-            data: { workOrderId: am.workOrderId, boqItemId: l.boqItemId, description: l.description, unit: l.unit, quantity: l.quantity, rate: l.rate, amount: l.amount, sortOrder: next++ },
-            select: { id: true },
-          });
-          await tx.workOrderAmendmentLine.update({ where: { id: l.id }, data: { workOrderLineId: made.id } });
-        }
+    return this.prisma.$transaction((tx) => this.applyIn(tx, id));
+  }
+
+  /** `apply` inside `tx`: the approval's own transaction, so the order changes with the amendment's status or not at all. */
+  private async applyIn(tx: Prisma.TransactionClient, id: string): Promise<boolean> {
+    const head = await tx.workOrderAmendment.findUniqueOrThrow({ where: { id }, select: { workOrderId: true } });
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`WOA:${head.workOrderId}`}))`;
+    const am = await tx.workOrderAmendment.findUniqueOrThrow({ where: { id }, include: { lines: { orderBy: { sortOrder: 'asc' } } } });
+    if (am.status !== 'APPROVED' || am.appliedAt) return false;
+    const top = await tx.workOrderLine.aggregate({ where: { workOrderId: am.workOrderId }, _max: { sortOrder: true } });
+    let next = (top._max.sortOrder ?? -1) + 1;
+    for (const l of am.lines) {
+      if (l.qtyBefore !== null && l.workOrderLineId) {
+        await tx.workOrderLine.update({ where: { id: l.workOrderLineId }, data: { quantity: l.quantity, rate: l.rate, amount: l.amount } });
+      } else if (l.qtyBefore === null) {
+        const made = await tx.workOrderLine.create({
+          data: { workOrderId: am.workOrderId, boqItemId: l.boqItemId, description: l.description, unit: l.unit, quantity: l.quantity, rate: l.rate, amount: l.amount, sortOrder: next++ },
+          select: { id: true },
+        });
+        await tx.workOrderAmendmentLine.update({ where: { id: l.id }, data: { workOrderLineId: made.id } });
       }
-      const value = await tx.workOrderLine.aggregate({ where: { workOrderId: am.workOrderId }, _sum: { amount: true } });
-      await tx.workOrder.update({
-        where: { id: am.workOrderId },
-        data: { value: value._sum.amount ?? ZERO, amendmentNo: am.amendmentNo, ...(am.endDate ? { endDate: am.endDate } : {}) },
-      });
-      await tx.workOrderAmendment.update({ where: { id }, data: { appliedAt: new Date() } });
-      return true;
+    }
+    const value = await tx.workOrderLine.aggregate({ where: { workOrderId: am.workOrderId }, _sum: { amount: true } });
+    await tx.workOrder.update({
+      where: { id: am.workOrderId },
+      data: { value: value._sum.amount ?? ZERO, amendmentNo: am.amendmentNo, ...(am.endDate ? { endDate: am.endDate } : {}) },
     });
+    await tx.workOrderAmendment.update({ where: { id }, data: { appliedAt: new Date() } });
+    return true;
   }
 
   /** An approval whose writing to the order did not finish (a crash between the two) is finished first. */
