@@ -16,6 +16,7 @@ import { usePlantScope } from '@/components/rmc/rmcUi';
 import { MixDesigns } from '@/components/rmc/MixDesigns';
 import { Bills } from '@/components/rmc/Bills';
 import { NoAccess } from '@/components/common/NoAccess';
+import { QueryError } from '@/components/common/QueryState';
 
 const TABS = ['day', 'orders', 'batcher', 'batches', 'designs', 'bills'] as const;
 
@@ -25,7 +26,7 @@ function RmcPage() {
   const pathname = usePathname();
   const { user } = useAuth();
   const allowed = !!user && canViewRmc(user.roleKey);
-  const { data: plants, isLoading } = useRmcPlants(allowed);
+  const { data: plants, isLoading, error, refetch } = useRmcPlants(allowed);
   const sees = !!user && (canSellRmc(user.roleKey) || canBillRmc(user.roleKey));
   const [plantId] = usePlantScope();
   const { data: board } = usePlantBatches(plantId, allowed && !!plants?.length);
@@ -36,6 +37,8 @@ function RmcPage() {
       <PageHeader title="RMC plant" subtitle="Ready-mix concrete: the plant's day, quotes and orders, trucks and their challans, mix designs approved by quality, and bills with GST." />
       {!allowed ? (
         <NoAccess title="Your role does not see RMC" />
+      ) : error && !plants ? (
+        <QueryError error={error} onRetry={() => void refetch()} />
       ) : !isLoading && !plants?.length ? (
         <Result status="info" title="No RMC plant yet" subTitle="Add a project of type RMC plant (Projects, New project); its store, materials and staff work as at any site. You see the plants you are a member of." />
       ) : (

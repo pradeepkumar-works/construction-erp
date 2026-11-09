@@ -23,6 +23,7 @@ import { seedCorrespondence, seedLetterPartyKinds } from './seed-correspondence'
 import { seedQa } from './seed-qa';
 import { seedQaRegisters } from './seed-qa-registers';
 import { seedQaAudits } from './seed-qa-audits';
+import { seedIsStandards } from './seed-is-standards';
 import { seedDrawingSchedule } from './seed-drawing-schedule';
 import { seedDesignSubmissions } from './seed-design-submissions';
 import { seedComponentDrawings } from './seed-component-drawings';
@@ -40,6 +41,7 @@ import { seedProjectTypes } from './seed-project-types';
 import { DEFAULT_SETTINGS, computePayslip, structureCost, type RulesStructure } from '../src/payroll/payroll-rules';
 import { COMPANY_KIND_INFO, DEFAULT_CLOSEOUT_ITEMS, PAYSLIP_CODES, PERMIT_PRECAUTIONS, ROLE_KEYS, ROLE_LABELS, STANDARD_CHECKLISTS, gstinCheckChar, isWeeklyOff, leaveDays, ppeReplaceBy, ranBeforeNirmaan, scaleFrom, takeoffValue, VERTICAL_OF_TYPE, type MarkupPoint, type ProjectType, type PpeKind, type TakeoffKind } from '@erp/shared';
 import { day } from './seed-clock';
+import { markDemoDated, redateDemo, seedWhatsappEntries } from './seed-demo-refresh';
 
 const prisma = new PrismaClient();
 const D = (v: string | number) => new Prisma.Decimal(v);
@@ -1895,11 +1897,14 @@ async function seedVerticals(organizationId: string) {
  * Every module's demo records. Each step writes only what its module is missing, so this runs after a fresh seed, on
  * every re-run, and alone (`--modules`) on a live demo that no longer takes the full seed. It goes round twice: some steps
  * build on projects and records a later step adds (attendance and machinery for the EPC and O&M projects, the RMC
- * plant's issues), and the second pass fills those in, so one deploy lands everything. A third pass adds nothing.
+ * plant's issues), and the second pass fills those in, so one deploy lands everything. A third pass adds nothing. A demo
+ * dated on an earlier day is first moved up to today (ARCHITECTURE "Demo clock"), then marked dated today.
  */
 async function topUp(organizationId: string, passwordHash: string) {
+  await redateDemo(prisma);
   await modulesPass(organizationId, passwordHash);
   await modulesPass(organizationId, passwordHash);
+  await markDemoDated(prisma, organizationId);
 }
 
 async function modulesPass(organizationId: string, passwordHash: string) {
@@ -1932,6 +1937,7 @@ async function modulesPass(organizationId: string, passwordHash: string) {
   await seedQa(prisma, organizationId);
   await seedQaRegisters(prisma, organizationId);
   await seedQaAudits(prisma, organizationId);
+  await seedIsStandards(prisma, organizationId);
   await seedDrawingSchedule(prisma, organizationId);
   await seedDesignSubmissions(prisma, organizationId);
   await seedControlledCopies(prisma, organizationId);
@@ -2005,6 +2011,7 @@ async function modulesPass(organizationId: string, passwordHash: string) {
   await seedProjectOpenings(organizationId);
   // The town scheme's components exist by now (seedWorkBreakdown); their drawings and staged submittals.
   await seedComponentDrawings(prisma, organizationId);
+  await seedWhatsappEntries(prisma, organizationId);
 }
 
 /**

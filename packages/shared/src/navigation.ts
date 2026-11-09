@@ -3,6 +3,7 @@ import { approvalRightsOf, mayApprove } from './approvals';
 import { PRODUCT_NAME } from './brand';
 import type { RoleKey } from './enums';
 import * as P from './permissions';
+import { inRoleMenu } from './role-menu';
 import { canManageAi } from './ai';
 import { canSeeWatchList } from './warnings';
 import { canUseWhatsappCapture } from './whatsapp';
@@ -243,6 +244,8 @@ export const NAV_TREE: NavNode[] = [
   { id: 'quality.calibration', parent: 'quality', label: 'Calibration register', icon: 'gauge', route: '/calibration', access: 'onSite', status: 'live', newUntil: '2027-04-30', description: 'Lab and survey instruments with their certificates and when each falls due.', keywords: 'calibration instrument ctm compression testing machine total station level certificate due' },
   { id: 'quality.audits', parent: 'quality', label: 'Audits and visits', icon: 'scan-search', route: '/qa-audits', access: 'onSite', status: 'live', newUntil: '2027-04-30', description: 'Internal audits and visits by the client, consultant, third-party inspector or department, with their findings.', keywords: 'audit visit tpi third party inspection quality control wing findings observation compliance' },
   { id: 'quality.report', parent: 'quality', label: 'Quality report', icon: 'chart-column', route: '/qa-report', access: 'onSite', status: 'live', newUntil: '2027-04-30', description: "The month's tests and pass rate, NCRs by age and cause, rework, audits and calibration, by project.", keywords: 'qa qc dashboard monthly quality report mis pass rate ncr' },
+  { id: 'quality.standards', parent: 'quality', label: 'IS standards', icon: 'book-open', route: '/is-standards', access: 'onSite', status: 'live', newUntil: '2027-05-31', description: 'The Indian Standards the company works to, each clause with the test, certificate or inspection that proves it.', keywords: 'is code bis bureau of indian standards clause tolerance specification library is 456 codebook' },
+  { id: 'quality.compliance', parent: 'quality', label: 'IS compliance', icon: 'shield-check', route: '/is-compliance', access: 'onSite', status: 'live', newUntil: '2027-05-31', description: 'Tests passed and failed by Indian Standard and by discipline: civil, mechanical and electrical.', keywords: 'compliance bis is code discipline pass rate civil mechanical electrical dashboard' },
   { id: 'quality.ncrs', parent: 'quality', label: 'NCRs', icon: 'shield-alert', route: '/inspections?tab=ncrs', access: 'onSite', status: 'live', badge: 'ncrsOpen', description: 'Non-conformance reports until closed.', concord: ['p5-safety'] },
   { id: 'quality.checklists', parent: 'quality', label: 'Checklists', icon: 'list-checks', route: '/inspections?tab=checklists', access: 'checklists', status: 'live', description: "The company's inspection checklists." },
   { id: 'quality.testTypes', parent: 'quality', label: 'Test types', icon: 'test-tubes', route: '/test-types', access: 'checklists', status: 'live', description: "The company's tests: method, unit, limits, readings and specimens.", keywords: 'is code method test master' },
@@ -562,6 +565,7 @@ export function navSidebar(user: NavUser): NavSidebarSection[] {
       add(top, mod);
       continue;
     }
+    if (!inRoleMenu(user.roleKey, mod.id)) continue;
     const tiles = navTilesFor(user, mod.id);
     const links: NavSidebarLink[] = [];
     for (const tile of tiles) add(tile.top ? top : links, tile);

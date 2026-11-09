@@ -135,8 +135,8 @@ export function HomeLauncher() {
   useImportOnce(user);
   usePageTitle('Home');
 
-  const { settings, menu } = useNavMenu(user);
-  const waiting = useMenuWaiting(user, menu);
+  const { settings, menu, allMenu } = useNavMenu(user);
+  const waiting = useMenuWaiting(user, allMenu);
   const topBar = settings.layout === 'TOP_BAR' && menu.length > 0;
   // The sidebar with the work-area set keeps Home's tiles as they were (pages at the top of the tree too), under the
   // company's names; anything else shows the company's modules.
@@ -266,7 +266,7 @@ export function HomeLauncher() {
             ) : recentShown.length ? (
               <ul className={s.recentList}>
                 {recentShown.map((v) => (
-                  <RecentLink key={`${v.kind}:${v.target}`} visit={v} user={user} menu={menu} />
+                  <RecentLink key={`${v.kind}:${v.target}`} visit={v} user={user} menu={allMenu} />
                 ))}
               </ul>
             ) : (
@@ -284,7 +284,7 @@ export function HomeLauncher() {
               {treeTiles ? (
                 <TileGrid entries={tileEntries(modules, badges).map((e) => ({ ...e, label: settings.names[e.key]?.trim() || undefined }))} label="All modules" menu={tileMenu} />
               ) : (
-                <MenuModules menu={menu} look="SIDEBAR" waiting={waiting} label="All modules" menuFor={tileMenu} />
+                <MenuModules menu={allMenu} look="SIDEBAR" waiting={waiting} label="All modules" menuFor={tileMenu} />
               )}
             </section>
           )}

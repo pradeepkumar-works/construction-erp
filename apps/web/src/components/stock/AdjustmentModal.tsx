@@ -122,10 +122,10 @@ export function AdjustmentModal({ open, onClose, projectId }: { open: boolean; o
                       {itemId === NEW ? (
                         <>
                           <Form.Item name={[f.name, 'itemName']} style={{ flex: '2 1 160px', marginBottom: 0 }} rules={[{ required: true, whitespace: true, message: 'Name the item' }]}>
-                            <Input placeholder="Item name" maxLength={200} />
+                            <Input placeholder="Item name" maxLength={200} aria-label={`New item name of line ${f.name + 1}`} />
                           </Form.Item>
                           <Form.Item name={[f.name, 'unit']} style={{ width: 100, marginBottom: 0 }} rules={[{ required: true, whitespace: true, message: 'Enter the unit' }]}>
-                            <UnitInput />
+                            <UnitInput aria-label={`Unit of line ${f.name + 1}`} />
                           </Form.Item>
                         </>
                       ) : null}

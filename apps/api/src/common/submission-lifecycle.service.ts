@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import {
   canApprove,
@@ -19,7 +19,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from './current-user';
 import { ProjectAccessService } from './project-access.service';
 import { ApprovalRightsService, type LevelEntry } from './approval-rights.service';
-import { approverName, mayDecide, queueKeys, rightsOf, type Decider, type LevelRule, type Stage } from './approval-levels';
+import { approverName, levelsPassed, mayDecide, queueKeys, rightsOf, type Decider, type LevelRule, type Stage } from './approval-levels';
 import { AuditService } from './audit.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { dprTitle, expenseTitle, machineryTitle, measurementTitle, progressTitle, billTitle, poTitle, vendorBillTitle, woTitle, subBillTitle, inspectionTitle, payRequestTitle, PAY_REQUEST_TITLE, supplierChoiceTitle, SUPPLIER_CHOICE_TITLE } from './submission-titles';
@@ -61,6 +61,20 @@ export class SubmissionLifecycleService {
 
   private delegate(type: SubmissionType): any {
     return this.rights.submissionModel(type);
+  }
+
+  /** The same table as `delegate(type)`, inside the transaction `tx`. */
+  private txDelegate(tx: Prisma.TransactionClient, type: SubmissionType): EntryTable {
+    const name = (this.delegate(type) as { $name: string }).$name;
+    return (tx as unknown as Record<string, EntryTable>)[name.charAt(0).toLowerCase() + name.slice(1)];
+  }
+
+  /**
+   * Holds the entry for the rest of `tx`: a second submit or decision on it waits for this one, then sees what it did.
+   * Without it two approvals at once both pass the status check, and two level approvals both write the same level.
+   */
+  private lockEntry(tx: Prisma.TransactionClient, type: SubmissionType, id: string) {
+    return tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`submission:${type}:${id}`}))`;
   }
 
   /** Run `hook` after an entry of `type` is approved (e.g. a purchase order updates item rates). One per type. */
@@ -107,7 +121,9 @@ export class SubmissionLifecycleService {
     if (row.submittedById !== user.id && !canApprove(user.roleKey)) throw new ForbiddenException('Only the author can submit this entry');
     if (!canResubmit(user, row)) throw new BadRequestException(`Cannot submit an entry in status ${row.status}`);
     const resubmit = row.status === 'REJECTED' || row.status === 'CHANGES_REQUESTED';
-    await this.delegate(type).update({ where: { id }, data: { status: 'SUBMITTED', submittedAt: new Date(), reviewedById: null, reviewedAt: null, reviewNote: null } });
+    // Only from the status just checked: a second submit at the same moment changes nothing and is told so.
+    const moved = await this.delegate(type).updateMany({ where: { id, status: row.status }, data: { status: 'SUBMITTED', submittedAt: new Date(), reviewedById: null, reviewedAt: null, reviewNote: null } });
+    if (!moved.count) throw new ConflictException('This entry was just submitted or changed by someone else. Reload it to see where it stands.');
     await this.audit.log(user, type, id, resubmit ? 'RESUBMITTED' : 'SUBMITTED');
     await this.statusHooks.get(type)?.(user, id, 'SUBMITTED');
     await this.notifications.onSubmitted(user, type, id);
@@ -128,15 +144,25 @@ export class SubmissionLifecycleService {
     const forWhom = onBehalfOfName ? `for ${onBehalfOfName}` : null;
     const step = { organizationId: user.organizationId, entityType: type, entityId: id, level: stage.level, action: 'APPROVED' as const, round, actorId: user.id, onBehalfOfId: onBehalfOf, note: note ?? null };
     if (decision === 'APPROVE') await this.beforeApproveHooks.get(type)?.(user, id);
-    if (decision === 'APPROVE' && stage.level < stage.levels) {
-      await this.prisma.approvalStep.create({ data: step });
+    const levelOnly = decision === 'APPROVE' && stage.level < stage.levels;
+    const status = decision === 'APPROVE' ? 'APPROVED' : decision === 'REJECT' ? 'REJECTED' : 'CHANGES_REQUESTED';
+    // The checks above read the entry as it was; under the entry's lock, make sure no one decided it since, then write.
+    await this.prisma.$transaction(async (tx) => {
+      await this.lockEntry(tx, type, id);
+      const now = await this.txDelegate(tx, type).findFirst({ where: { id }, select: { status: true, submittedAt: true, createdAt: true } });
+      const sameRound = !!now && (now.submittedAt ?? now.createdAt).getTime() === round.getTime();
+      const steps = sameRound ? await tx.approvalStep.findMany({ where: { entityType: type, entityId: id, round, action: 'APPROVED' }, select: { level: true, action: true } }) : [];
+      if (now?.status !== 'SUBMITTED' || !sameRound || Math.min(levelsPassed(steps) + 1, stage.levels) !== stage.level) {
+        throw new ConflictException('Someone decided this entry a moment ago. Reload it to see where it stands.');
+      }
+      if (levelOnly || (status === 'APPROVED' && (stage.levels > 1 || onBehalfOf))) await tx.approvalStep.create({ data: step });
+      if (!levelOnly) await this.txDelegate(tx, type).update({ where: { id }, data: { status, reviewedById: user.id, reviewedAt: new Date(), reviewNote: note ?? null } });
+    });
+    if (levelOnly) {
       await this.audit.log(user, type, id, 'LEVEL_APPROVED', `Level ${stage.level} of ${stage.levels}${forWhom ? ` ${forWhom}` : ''}${note ? `: ${note}` : ''}`);
       await this.notifications.onLevelApproved(user, type, id, stage.level + 1, stage.levels);
       return { status: 'SUBMITTED' as const, level: stage.level, levels: stage.levels };
     }
-    const status = decision === 'APPROVE' ? 'APPROVED' : decision === 'REJECT' ? 'REJECTED' : 'CHANGES_REQUESTED';
-    if (status === 'APPROVED' && (stage.levels > 1 || onBehalfOf)) await this.prisma.approvalStep.create({ data: step });
-    await this.delegate(type).update({ where: { id }, data: { status, reviewedById: user.id, reviewedAt: new Date(), reviewNote: note ?? null } });
     await this.audit.log(user, type, id, status, forWhom ? `${forWhom.replace(/^f/, 'F')}${note ? `: ${note}` : ''}` : note);
     await this.statusHooks.get(type)?.(user, id, status);
     if (status === 'APPROVED') await this.approvedHooks.get(type)?.(user, id);
@@ -490,4 +516,10 @@ export class SubmissionLifecycleService {
     ];
     return out;
   }
+}
+
+/** What a decision reads and writes of an entry's own table inside its transaction. */
+interface EntryTable {
+  findFirst(args: { where: { id: string }; select: { status: true; submittedAt: true; createdAt: true } }): Promise<{ status: string; submittedAt: Date | null; createdAt: Date } | null>;
+  update(args: { where: { id: string }; data: { status: string; reviewedById: string; reviewedAt: Date; reviewNote: string | null } }): Promise<unknown>;
 }

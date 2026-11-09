@@ -401,3 +401,6 @@ export type NavPaint = (typeof NAV_PAINTS)[number];
  *  company's own (`CUSTOM`, with its `NavFill`). The colours themselves are design tokens (web `ds/source/chrome.ts`). */
 export const NAV_PALETTES = ['QUIET', 'NAVY', 'GRAPHITE', 'FOREST', 'OXBLOOD', 'SAND', 'SKY', 'LAGOON', 'DUSK', 'OCEAN', 'WALNUT', 'MIDNIGHT', 'DAWN', 'CUSTOM'] as const;
 export type NavPalette = (typeof NAV_PALETTES)[number];
+/** The discipline an Indian Standard belongs to (`is-standards.ts`): the library filters and compliance groups by it. */
+export const IS_DISCIPLINES = ['CIVIL', 'MECHANICAL', 'ELECTRICAL'] as const;
+export type IsDiscipline = (typeof IS_DISCIPLINES)[number];

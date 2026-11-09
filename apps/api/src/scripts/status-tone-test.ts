@@ -6,6 +6,7 @@
  */
 import assert from 'node:assert/strict';
 import {
+  EDITION_STATES,
   ACCESS_REQUEST_STATUSES,
   AGENT_STATES,
   APPROVAL_CODES,
@@ -132,6 +133,7 @@ const VALUES: Record<StatusKind, readonly string[]> = {
   inspectionResult: INSPECTION_RESULTS,
   pour: POUR_STATUSES,
   accreditation: ['VALID', 'EXPIRING', 'EXPIRED', 'NONE'],
+  edition: EDITION_STATES,
   calibration: ['OK', 'DUE_SOON', 'OVERDUE', 'NEVER', 'OUT_OF_USE'],
   calibrationResult: CALIBRATION_RESULTS,
   checkOutcome: ['AGREED', 'LESS', 'MORE'],

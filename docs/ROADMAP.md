@@ -1023,6 +1023,28 @@ registers sort newest first) and a second header for the vertical (the header ha
      government authority, subcontractor, supplier, bank or other (the `letterParty` master, Correspondence › Masters ›
      Kinds of office); the address book shows and filters it, and both registers filter letters by it.
 
+## From a business user's IS compliance screens (items 183 to 186)
+
+Asked by Pradeep on 8 Nov 2026: a business user's mockup of an Indian Standards (BIS) compliance module (five screens:
+an executive dashboard, the IS standards library, a BIS reader with each clause's test method, sampling and tolerance, a
+site test log against the IS limits, and a material inspection register). The analysis is the Claude Doc "Indian
+Standards compliance: requirements and design". The test log and the material inspection register were in Nirmaan already
+(Material tests, Material to check, Test certificates, Material approvals). These four were new or thin, built as one
+round. Left out on purpose: a live BIS search (BIS has no open API, and a model answering for it can invent an amendment),
+the standards' own text and PDF (copyright, sold by BIS), a batch or heat number on a receipt line (later: it touches the
+GRN on the web and the phone), and a second quality dashboard.
+
+183. ~~**IS standards library** (M).~~ Done: a catalogue of the Indian Standards a contractor works to, civil, mechanical
+     and electrical, with their clauses; the company switches one off, edits its copy or adds its own (`IsStandard` over
+     `STANDARD_IS_CODES`). ARCHITECTURE "Indian Standards".
+184. ~~**Clauses that say how they are proved** (S).~~ Done: each clause is proved by a test of a test type, the maker's
+     certificate or inspection on site; a standard's page shows them with Record test, Test certificates or Inspections.
+185. ~~**Edition check against BIS** (S).~~ Done: Find on BIS, Mark checked with who and when, and Check due after a
+     year; the library counts editions to check.
+186. ~~**Compliance by discipline and standard, and electrical and mechanical tests** (M).~~ Done: `/is-compliance` with
+     the pass rate, failed tests and tests waiting by discipline and by standard; a test's record names the clauses it
+     proves; earth resistance, insulation resistance, pump duty and vessel hydro tests join the test types.
+
 ## Day-one gaps from the readiness review (November 2026)
 
 187. ~~**Budget approval and revisions** (M).~~ Done: a project's budget is a series of versions, each prepared, sent to

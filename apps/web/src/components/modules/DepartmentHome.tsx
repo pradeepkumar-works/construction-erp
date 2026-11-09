@@ -78,7 +78,7 @@ function PageRow({ node, badge, projectId, onPick }: { node: NavNode; badge?: Ti
 export function DepartmentHome({ moduleKey }: { moduleKey: string }) {
   const { user } = useAuth();
   const router = useRouter();
-  const { menu } = useNavMenu(user);
+  const { allMenu: menu } = useNavMenu(user);
   const mod = menu.find((m) => m.key === moduleKey);
   const { data: badges } = useLauncherBadges(!!mod);
   const approver = !!user && mayApprove(user);

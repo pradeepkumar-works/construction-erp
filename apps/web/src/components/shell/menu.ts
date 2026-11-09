@@ -8,12 +8,15 @@ import { isGuest, isSupplier, menuWaiting, navMenuFor, navMenuPlace, navNodeForP
 /**
  * The company's menu on the web (Menu and names): its settings with the person's own look, the modules this user sees in
  * the company's set and under its names, and where the page on screen is in it. The top bar, its module bar, Home's
- * tiles and a department module's screen read from here; the sidebar reads the same set through `navFor`.
+ * tiles and a department module's screen read from here; the sidebar reads the same set through `navFor`. `menu` keeps to
+ * the role's own modules (`ROLE_MENU`); `allMenu` is every module the user may open, for Home's All modules and a module's screen.
  */
-export function useNavMenu(user: AuthUser | null): { settings: NavSettingsDto; menu: NavMenuModule[] } {
+export function useNavMenu(user: AuthUser | null): { settings: NavSettingsDto; menu: NavMenuModule[]; allMenu: NavMenuModule[] } {
   const settings = useMemo(() => navSettingsOf(user ?? {}), [user]);
-  const menu = useMemo(() => (!user || isGuest(user.roleKey) || isSupplier(user.roleKey) ? [] : navMenuFor(user, settings)), [user, settings]);
-  return { settings, menu };
+  const staff = !!user && !isGuest(user.roleKey) && !isSupplier(user.roleKey);
+  const menu = useMemo(() => (staff ? navMenuFor(user, settings) : []), [staff, user, settings]);
+  const allMenu = useMemo(() => (staff ? navMenuFor(user, settings, { allModules: true }) : []), [staff, user, settings]);
+  return { settings, menu, allMenu };
 }
 
 /** Where the page is: a module's screen (no sub-module), or a page of a sub-module. */

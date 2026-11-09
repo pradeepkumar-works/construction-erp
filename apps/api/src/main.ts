@@ -9,8 +9,11 @@ import { AppModule } from './app.module';
 import { tenantMiddleware } from './prisma/tenant-context';
 import { SANDBOXED_FILE_CSP, securityHeaders } from './common/security-headers';
 import { PRODUCT_NAME } from '@erp/shared';
+import { jwtSecretProblem } from './common/jwt-secret';
 
 async function bootstrap() {
+  const secretProblem = jwtSecretProblem();
+  if (secretProblem) throw new Error(secretProblem);
   // rawBody: the Razorpay webhook signature is over the exact bytes sent
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { rawBody: true });
   // Biometric devices with the ADMS push protocol call /iclock/… at the server's root, so it stays outside /api.

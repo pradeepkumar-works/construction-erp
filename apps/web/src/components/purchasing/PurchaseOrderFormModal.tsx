@@ -323,7 +323,7 @@ export function PurchaseOrderFormModal({
                         />
                       </Form.Item>
                       <Form.Item name={[f.name, 'specification']} noStyle>
-                        <Input placeholder="Specification" maxLength={300} style={{ marginTop: tk.space[1] }} />
+                        <Input placeholder="Specification" maxLength={300} aria-label={`Specification of line ${f.name + 1}`} style={{ marginTop: tk.space[1] }} />
                       </Form.Item>
                     </div>
                   ),

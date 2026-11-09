@@ -10,10 +10,10 @@ import type { MusterDto, MusterRowDto, OutputRowDto, StaffAttendanceStatus } fro
 import { useMuster, useWorkerOutput } from '@/lib/queries';
 import { formatINR, formatQty, MONTH_PICKER_FORMAT } from '@/lib/format';
 import { downloadXlsx, exportFileName, type ExportColumn } from '@/lib/exportExcel';
-import { QueryError } from '@/components/common/QueryState';
+import { Loading, QueryError } from '@/components/common/QueryState';
 import { CardToolbar } from '@/components/common/CardToolbar';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
-import { useProjectScope } from '@/lib/project-scope';
+import { useOneProject } from '@/lib/project-scope';
 import { ExportButton } from '@/components/common/ExportButton';
 import { unitLabel } from '@erp/shared';
 
@@ -44,7 +44,7 @@ const musterExport = (m: MusterDto): ExportColumn<MusterRowDto>[] => [
  */
 export function MusterPanel({ projectId: fixedProject }: { projectId?: string }) {
   // The header's project: picking one here picks it for every list.
-  const [projectPick, setProjectPick] = useProjectScope();
+  const [projectPick, setProjectPick, deciding] = useOneProject();
   const projectId = fixedProject ?? projectPick;
   const [month, setMonth] = useState<Dayjs>(dayjs());
   const monthStr = month.format('YYYY-MM');
@@ -117,7 +117,9 @@ export function MusterPanel({ projectId: fixedProject }: { projectId?: string })
         ) : null}
       </CardToolbar>
       {muster.error ? <QueryError error={muster.error} onRetry={() => muster.refetch()} /> : null}
-      {!projectId ? (
+      {!projectId && !fixedProject && deciding ? (
+        <Loading />
+      ) : !projectId ? (
         <div className="text-muted" style={{ padding: tk.space[4] }}>
           Choose a project to see its muster roll.
         </div>

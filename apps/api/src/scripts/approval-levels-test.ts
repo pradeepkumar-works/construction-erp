@@ -6,7 +6,7 @@
  */
 import assert from 'node:assert/strict';
 import { delegationActive, delegationProblem, levelsNeeded, ownEntryProblem, positionApprover, roleApprover, type RoleKey } from '@erp/shared';
-import { approverKeys, approverName, escalationKeys, levelKeys, mayDecide, queueKeys, rightsOf, stageOf, type Holding, type LevelRule, type LevelStep } from '../common/approval-levels';
+import { approverKeys, approverName, escalationKeys, levelKeys, levelsPassed, mayDecide, queueKeys, rightsOf, stageOf, type Holding, type LevelRule, type LevelStep } from '../common/approval-levels';
 
 const cases: [string, () => void][] = [];
 const test = (name: string, fn: () => void) => cases.push([name, fn]);
@@ -52,6 +52,17 @@ test('the stage: waiting at level 1, then 2 after the first approval, since that
   assert.deepEqual([fresh.level, fresh.levels, fresh.since.getTime()], [1, 2, round.getTime()]);
   const next = stageOf('PURCHASE_ORDER', RULES, '400000', round, [approved(1, pm.id, 5)], SE);
   assert.deepEqual([next.level, next.levels, next.since.getTime(), next.approvedBy], [2, 2, at(5).getTime(), [pm.id]]);
+});
+
+test('two approvals at level 1 at once pass level 1 once: the entry still waits for level 2', () => {
+  // A double tap, or the PM and procurement approving within the same moment, used to read as two levels done.
+  const steps = [approved(1, pm.id, 5), approved(1, 'u-proc', 5.01)];
+  assert.equal(levelsPassed(steps), 1);
+  const s = stageOf('PURCHASE_ORDER', RULES, '1200000', round, steps, SE);
+  assert.deepEqual([s.level, s.levels, s.since.getTime()], [2, 3, at(5).getTime()]);
+  assert.equal(mayDecide(accounts, 'PURCHASE_ORDER', RULES, '1200000', s).ok, false, 'level 3 has not been reached');
+  assert.equal(stageOf('PURCHASE_ORDER', RULES, '1200000', round, [...steps, approved(2, md.id, 6)], SE).level, 3);
+  assert.equal(levelsPassed([{ level: 1, action: 'REMINDED' }, { level: 1, action: 'ESCALATED' }]), 0, 'only approvals pass a level');
 });
 
 test('who decides: the level-1 role within its limit, then the level-2 role; not the same person twice', () => {

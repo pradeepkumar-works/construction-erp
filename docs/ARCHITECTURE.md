@@ -544,6 +544,37 @@ modules name is drawn once, in the module that names most of its tabs: Payroll u
 module screens (`/modules/site`…) still open by their address under the department menu. A page added to the tree needs a place
 in `DEPARTMENT_MODULES`: `src/scripts/nav-menu-test.ts` (CI) fails on a live page with none. The phone keeps its launcher.
 
+### Menu by role
+
+A role may open far more pages than it works in: a site engineer could open 116, the RMC plant, the planning pages and the
+company's masters among them (purchase stays in its menu: it raises indents and follows the orders to its site). `ROLE_MENU` (`@erp/shared/role-menu.ts`) names, by module key of both sets, the modules each
+office or site role works in; `navMenuFor` and `navSidebar` keep to them (`inRoleMenu`), and site roles (engineer, team
+leader, safety, document controller) also leave each department's Masters to Admin › Masters (`roleMenuHasMasters`).
+Nothing is refused by it: Home's All modules (`useNavMenu().allMenu`), a module's screen, Search and links still open
+every page the role's access allows, and the phone's Search and module screens read the whole menu (`allModules`).
+Admin, management, the project manager and accounts are not listed and see every module. A role's list may name only
+modules that exist (`nav-menu-test.ts`).
+
+Pages that show one project at a time (PPE, the quality plan, the roll call, the muster roll) open on the header's
+project, else on the busiest running site (`useOneProject` in `lib/project-scope.tsx`: most entries waiting, then furthest
+along), never on an empty "Choose a project".
+
+### Demo clock
+
+The demo seed dates its records around the day it runs (`day(offset)`, `prisma/seed-clock.ts`), and the live demo no
+longer takes the full seed, so left alone it ages: every card reads Overdue, approvals wait for weeks and month pages go
+empty. A demo company carries `Organization.demoDatedOn`, the day its records were last dated to (set only by the demo
+seed and, for the live demo, by its migration from its latest daily report; null on every customer's company, which is
+never moved). `redateDemos` (`apps/api/src/demo/redate.ts`) moves each demo company dated before today forward by the
+days since (`demoShiftDays`, `demo-clock-rules.ts`): every date and timestamp column of every table with its
+`organizationId`, and of a child table through its parent, in two steps through a far date so no unique key on a date
+trips half way, in one transaction per company; `YYYY-MM` months (salary runs and their numbers, loan starts) move by the
+months crossed (`demoShiftMonths`) and a leave opening's year by the years. Tokens' and pairing codes' expiry, sign-ins
+and push devices are never moved (`DEMO_CLOCK_SKIP_*`). It runs first in the daily digest job (`DEMO_CLOCK`, Vercel's plan
+has no spare cron), and before every seed top-up, which then marks the demo dated today (`markDemoDated`). Idempotent: a
+second run the same day moves nothing. Tested in `src/scripts/demo-clock-test.ts` (`--db` moves a seeded demo inside a
+transaction it rolls back).
+
 ### Menu colours
 
 The parts of the menu in colour (`navPainted`) and the `NAVY` top bar are painted in one fill: a plain colour or a gradient
@@ -759,6 +790,41 @@ Part 2 (`QaRegistersService`, rules pure in `@erp/shared/qa-registers.ts`, teste
   lab), from `testsShort`, `calibrationWarns` and `lateReportGroups` in `warning-rules.ts`, for the roles that manage the
   quality plan.
 - The phone shows My work's audit findings card; QA/QC screens of its own on the phone are later.
+
+### Indian Standards (items 183 to 186)
+
+The Indian Standards the company works to, each clause tied to the one way it is proved, and compliance read from the
+tests (`IsStandardsService`, `apps/api/src/is-standards`, routes under `/is-standards`). The rules are pure in
+`@erp/shared/is-standards.ts`, tested in `src/scripts/is-standards-test.ts` (CI runs it). From a business user's mockup of
+an IS compliance module; the analysis is the Claude Doc "Indian Standards compliance: requirements and design".
+
+- **Library.** `STANDARD_IS_CODES`: about twenty-four standards a building, water supply and plant contractor works to
+  (IS 456, 516, 10262, 383, 1786, 269, 1077, 2720 Part 8, 800, 8329, 12288, 5822, 3589, 4984; IS 2825, 9137, 5120, 1239;
+  IS 3043, 732, 7098 Part 2, 694, 2026 Part 1, 325), each with its number, edition, the year reaffirmed, discipline
+  (`IsDiscipline`: CIVIL, MECHANICAL, ELECTRICAL), subject, title and clauses. The company's `IsStandard` rows lay over them
+  by code (`isStandardsOf`), so nothing is seeded; a code is the number's (`isStandardCode`: IS 2720 (Part 8) is
+  IS_2720_PART_8) and a catalogue standard keeps its number. `isStandardProblem` checks a standard before saving.
+  `canManageQaPlan` (the test types' right) changes the library; everyone on site reads it.
+- **Clauses.** `IsClauseDef`: the reference (clause or table, or none), title, what it asks in the company's words (never
+  BIS's text, which is copyright), how often and what is allowed, and `check`, exactly one of `{ by: 'TEST', testTypeCode }`,
+  `{ by: 'CERTIFICATE' }` (the maker's test certificate, the Test certificates register) or `{ by: 'INSPECTION' }`. A test
+  clause names a test type the company has, so its method, unit and limits stay on the test type.
+- **Edition check.** `IsStandard.checkedOn` and `checkedById`: someone checked the edition against BIS
+  (`POST /is-standards/:code/checked`). `editionState`: never checked, check due after `EDITION_CHECK_DAYS` (365) or
+  checked. Find on BIS opens BIS Connect's own search (`BIS_STANDARDS_SEARCH_URL`); BIS has no open API for the
+  standards, so nothing is fetched from it and no model answers for it.
+- **Compliance.** `GET /is-standards/compliance?projectId=&from=&to=` (the financial year to date by default; not for
+  guests) reads the tests sampled in the period on the reader's projects and `isCompliance` counts passed, failed and
+  waiting with `passRate`: per tracked standard, every standard whose clause names a test's type (a cube counts under
+  IS 456 and IS 516), and per discipline, each test once under the first tracked standard that names its type, with the
+  rest as under no standard. `standardsForTestType` gives the clauses a test proves; the test's record shows them.
+- **Test types.** `STANDARD_TEST_TYPES` gains EARTH (IS 3043, Ω), INSULATION (IS 732, MΩ, at least 1), PUMP (IS 9137, %)
+  and VESSEL_HYDRO (IS 2825, bar), recorded as OTHER.
+- **Clients.** Web: `/is-standards` (Standards tracked and Editions to check, a discipline filter, `?discipline=`,
+  `?edition=due`), `/is-standards/[code]` (the clauses with Record test, Test certificates or Inspections, Find on BIS,
+  Mark checked, Edit and the ⋯ menu to put a catalogue standard back or delete one of the company's own) and
+  `/is-compliance` (Test pass rate, Failed tests, Tests waiting for a result, Standards tracked; by discipline and by
+  standard). Quality › Indian standards in the menu. The phone has no screen of its own yet.
 
 ### Design and drawings (item 138)
 

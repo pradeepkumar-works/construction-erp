@@ -6,6 +6,7 @@ import { NAV_TREE, canSeeNav, navNode, navNodeAt } from './navigation';
 import type { SubmissionType } from './enums';
 import { submissionListHref } from './links';
 import { PRODUCT_NAME } from './brand';
+import { inRoleMenu, roleMenuHasMasters } from './role-menu';
 
 /**
  * Menu and names (ARCHITECTURE "Menu and names"): each company chooses where its menu sits (`NavLayout`: the modules and
@@ -122,13 +123,14 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
     label: 'Quality',
     icon: 'shield-check',
     family: 'work',
-    description: 'Inspections and hold points, the quality plan and tests due, material tests, pours and samples at the labs, calibration, NCRs, audits and visits, the monthly report and material checked on arrival.',
+    description: 'Inspections and hold points, the quality plan and tests due, material tests, pours and samples at the labs, calibration, NCRs, audits and visits, the monthly report, material checked on arrival and the Indian Standards they answer to.',
     subs: [
       sub('inspections', 'Inspections', 'quality.inspections'),
       sub('plan', 'Plan', 'quality.plan', 'quality.due'),
       sub('tests', 'Tests', 'quality.tests', 'quality.pours', 'quality.samples', 'quality.certificates', 'quality.calibration'),
       sub('material', 'Material', 'quality.grns', 'materials.approvals'),
       sub('ncrs', 'NCRs and audits', 'quality.ncrs', 'quality.audits', 'quality.report'),
+      sub('standards', 'Indian standards', 'quality.standards', 'quality.compliance'),
       sub('masters', 'Masters', 'quality.checklists', 'quality.testTypes', 'quality.labs', 'quality.ncrCategories', 'quality.rootCauses', 'quality.instrumentKinds'),
     ],
   },
@@ -393,12 +395,16 @@ export interface NavMenuModule {
 }
 
 /** The modules this user sees in the company's set, under the company's names, each with the sub-modules and pages they
- *  may open (a sub-module with none, and a module with none, are left out). */
-export function navMenuFor(user: NavUser, settings: Pick<NavSettingsDto, 'moduleSet' | 'names'>): NavMenuModule[] {
+ *  may open (a sub-module with none, and a module with none, are left out). The menu keeps to the role's own modules
+ *  (`ROLE_MENU`) unless `allModules`. */
+export function navMenuFor(user: NavUser, settings: Pick<NavSettingsDto, 'moduleSet' | 'names'>, opts: { allModules?: boolean } = {}): NavMenuModule[] {
   const out: NavMenuModule[] = [];
+  const trim = !opts.allModules;
   for (const def of navModuleDefs(settings.moduleSet)) {
+    if (trim && !inRoleMenu(user.roleKey, def.key)) continue;
     const subs: NavMenuSub[] = [];
     for (const s of def.subs) {
+      if (trim && s.key === 'masters' && !roleMenuHasMasters(user.roleKey)) continue;
       const nodes = s.nodes.map((id) => navNode(id)).filter((n): n is NavNode => !!n && canSeeNav(user, n));
       if (nodes.length) subs.push({ key: s.key, label: s.label, nodes });
     }

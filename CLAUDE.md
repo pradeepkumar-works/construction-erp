@@ -188,6 +188,12 @@ and the pre-delivery checklist.
   Audits and visits and the monthly report (part 3) are `QaAuditsService` and `QaReportService` over the pure
   `@erp/shared/qa-audits.ts` (`findingState`, `findingOverdue`, `auditProblem`, `reportTotals`); a finding becomes an NCR
   only through `QaAuditsService.raiseNcr`. Keep `src/scripts/qa-audits-test.ts` passing.
+- Indian Standards (items 183 to 186, `apps/api/src/is-standards`, ARCHITECTURE "Indian Standards"): the library is
+  `STANDARD_IS_CODES` overlaid by the company's `IsStandard` rows by code (`isStandardsOf`), never seeded; a clause is
+  proved only one way (`IsClauseCheck`: a test naming its test type, the maker's certificate, or inspection), a standard is
+  saved only through `IsStandardsService.save` (`isStandardProblem`), an edition's state is only `editionState`, and
+  compliance is only `isCompliance` (`@erp/shared/is-standards.ts`). Clauses are the company's words, never BIS's text.
+  Keep `src/scripts/is-standards-test.ts` passing.
 - Design and drawings (item 138, `apps/api/src/design`, ARCHITECTURE "Design and drawings"): a drawing's state on the schedule
   is only `drawingNeedState` over the register's revisions, matched by `drawingNoKey`; a reminder is a letter drafted through
   `CorrespondenceService.create` (`reminderLetter`), a delay a risk through `RisksService.create`, and a new drawing number
@@ -208,6 +214,12 @@ and the pre-delivery checklist.
   modules' figures picked by `DEPARTMENT_FIGURES` and pipelines (`DEPARTMENT_PIPELINES`, `pipelineOf` in
   `@erp/shared/department-home.ts`) read through the modules' own list services in `DepartmentHomeService`, never a query of
   its own; a new pipeline is a `PIPELINE_KEYS` key with its stages and a branch there. Keep `src/scripts/department-home-test.ts` passing.
+- Menu by role (ARCHITECTURE "Menu by role"): which modules a role's menu shows is only `ROLE_MENU` / `inRoleMenu`
+  (`@erp/shared/role-menu.ts`); it trims the menu, never access, so a page left out still opens from Home's All modules
+  (`useNavMenu().allMenu`), Search and links. A page that shows one project at a time opens through `useOneProject()`.
+- Demo clock (ARCHITECTURE "Demo clock"): demo data ages unless moved; a demo company has `Organization.demoDatedOn` and
+  `redateDemos` (`apps/api/src/demo/redate.ts`) moves every date column forward, daily and before each seed top-up. A new
+  `YYYY-MM` or year field in a tenant table gets its line in `moveOrganization`. Keep `src/scripts/demo-clock-test.ts` passing.
 - Verticals (item 167, ARCHITECTURE "Verticals"): a vertical is a code of the `vertical` master on `Project.verticalCode` and
   `Tender.verticalCode`, checked by `verticalProblem`, a new project's from `verticalOfType`; filtering is `inVertical` and
   grouping `byVertical` (`@erp/shared/verticals.ts`), never a type check of a screen's own. The header's vertical is
