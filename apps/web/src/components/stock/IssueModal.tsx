@@ -156,6 +156,7 @@ export function IssueModal({ open, onClose, projectId }: { open: boolean; onClos
                         <Select
                           showSearch={{ optionFilterProp: 'label' }}
                           placeholder={scope ? 'Item' : 'Choose the project first'}
+                          aria-label={`Item of line ${f.name + 1}`}
                           disabled={!scope}
                           loading={stock.isLoading}
                           options={items.map((i) => ({
