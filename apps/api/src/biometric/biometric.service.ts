@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { randomBytes } from 'crypto';
 import {
@@ -442,11 +442,14 @@ export class BiometricService {
     if (map.employee) {
       const e = map.employee;
       if (e.leftOn && e.leftOn < date) return set('SKIPPED', 'Left before this day');
+      const cur = await this.prisma.staffAttendance.findUnique({ where: { employeeId_date: { employeeId: e.id, date } } });
+      const projectId = cur ? cur.projectId : (first.device.projectId ?? e.projectId);
+      const locked = await this.lockedNote(() => this.attendance.assertDayUnlocked(organizationId, projectId, date));
+      if (locked) return set('LOCKED', locked);
       const day = dayFromPunches(punches.map((p) => `${p.time}:00`), STANDARD_DAY_HOURS);
       const checkIn = first.punchedAt;
       const last = punches[punches.length - 1].punchedAt;
       const checkOut = day.outTime ? last : null;
-      const cur = await this.prisma.staffAttendance.findUnique({ where: { employeeId_date: { employeeId: e.id, date } } });
       const inAt = cur?.checkIn && cur.checkIn < checkIn ? cur.checkIn : checkIn;
       const outAt = checkOut && (!cur?.checkOut || cur.checkOut < checkOut) ? checkOut : cur?.checkOut ?? null;
       const ot = overtimeHours(inAt.toISOString(), outAt?.toISOString() ?? null);
@@ -461,7 +464,7 @@ export class BiometricService {
         biometricDeviceId: first.device.id,
       };
       if (cur) await this.prisma.staffAttendance.update({ where: { id: cur.id }, data });
-      else await this.prisma.staffAttendance.create({ data: { organizationId, employeeId: e.id, date, projectId: first.device.projectId ?? e.projectId, markedById: by.id, ...data } });
+      else await this.prisma.staffAttendance.create({ data: { organizationId, employeeId: e.id, date, projectId, markedById: by.id, ...data } });
       return set('APPLIED');
     }
 
@@ -470,11 +473,8 @@ export class BiometricService {
     if (!projectId) return set('SKIPPED', 'The device has no site, so a worker cannot be marked from it');
     const elsewhere = await this.prisma.workerAttendance.findFirst({ where: { workerId: w.id, date, projectId: { not: projectId } }, select: { project: { select: { name: true } } } });
     if (elsewhere) return set('SKIPPED', `Already marked at ${elsewhere.project.name}`);
-    try {
-      await this.attendance.assertUnlocked(projectId, date);
-    } catch {
-      return set('LOCKED', 'The DPR for the day is approved');
-    }
+    const locked = await this.lockedNote(() => this.attendance.assertUnlocked(projectId, date));
+    if (locked) return set('LOCKED', locked);
     const day = dayFromPunches(punches.map((p) => `${p.time}:00`), WORKER_SHIFT_HOURS);
     const inTime = day.inTime.slice(0, 5);
     const outTime = day.outTime?.slice(0, 5) ?? null;
@@ -492,6 +492,17 @@ export class BiometricService {
       { timeout: 30_000 },
     );
     return set('APPLIED');
+  }
+
+  /** The payroll lock's own words when the day is locked, else null. */
+  private async lockedNote(check: () => Promise<void>) {
+    try {
+      await check();
+      return null;
+    } catch (e) {
+      if (e instanceof ConflictException) return e.message;
+      throw e;
+    }
   }
 }
 

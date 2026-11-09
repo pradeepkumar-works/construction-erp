@@ -830,6 +830,7 @@ export class StaffService {
     if (!cur) throw new NotFoundException('Overtime not found');
     const outcome = this.access.staffDecision(user, overtimeState(cur), cur.employee, decision);
     if (!outcome.ok) throw cur.overtimeStatus === 'PENDING' ? new ForbiddenException(outcome.problem) : new BadRequestException('This overtime has already been decided');
+    await this.attendanceLock.assertDayUnlocked(user.organizationId, cur.projectId, cur.date);
     const { count } = await this.prisma.staffAttendance.updateMany({
       where: { id, overtimeStatus: 'PENDING', overtimeRecommendedById: cur.overtimeRecommendedById },
       data: overtimeDecided(outcome.result, user.id, note || null),
