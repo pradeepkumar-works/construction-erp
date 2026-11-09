@@ -134,7 +134,7 @@ function DeletionCard() {
         <>
           <Typography.Paragraph>
             Erases the company and everything in it: projects, reports, bills, photos and every user account. Nothing is erased for {DELETION_GRACE_DAYS} days,
-            and any admin can cancel until then. All admins get an email.
+            and any admin can cancel until then. All admins get an email. The GST invoices for your subscription are kept, as the tax law asks.
           </Typography.Paragraph>
           <Button danger icon={<DeleteOutlined />} onClick={() => setOpen(true)}>
             Delete this company

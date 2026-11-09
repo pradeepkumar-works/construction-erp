@@ -92,6 +92,8 @@ export interface AuthUser {
   vendor?: { id: string; name: string };
   /** The modules the company does not use: turned off by an admin or left out of its plan. Empty when all are on. */
   modulesOff?: SwitchableModule[];
+  /** The company records progress only as DPR work lines: no separate progress entry is offered or accepted */
+  progressFromDpr?: boolean;
   /** Menu and names: the company's menu, when it chose anything other than the default (`DEFAULT_NAV_SETTINGS`). */
   navigation?: NavSettingsDto;
   /** The look this person chose for themselves (used when the company lets people choose) */

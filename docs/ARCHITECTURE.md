@@ -791,6 +791,41 @@ Part 2 (`QaRegistersService`, rules pure in `@erp/shared/qa-registers.ts`, teste
   quality plan.
 - The phone shows My work's audit findings card; QA/QC screens of its own on the phone are later.
 
+### Indian Standards (items 183 to 186)
+
+The Indian Standards the company works to, each clause tied to the one way it is proved, and compliance read from the
+tests (`IsStandardsService`, `apps/api/src/is-standards`, routes under `/is-standards`). The rules are pure in
+`@erp/shared/is-standards.ts`, tested in `src/scripts/is-standards-test.ts` (CI runs it). From a business user's mockup of
+an IS compliance module; the analysis is the Claude Doc "Indian Standards compliance: requirements and design".
+
+- **Library.** `STANDARD_IS_CODES`: about twenty-four standards a building, water supply and plant contractor works to
+  (IS 456, 516, 10262, 383, 1786, 269, 1077, 2720 Part 8, 800, 8329, 12288, 5822, 3589, 4984; IS 2825, 9137, 5120, 1239;
+  IS 3043, 732, 7098 Part 2, 694, 2026 Part 1, 325), each with its number, edition, the year reaffirmed, discipline
+  (`IsDiscipline`: CIVIL, MECHANICAL, ELECTRICAL), subject, title and clauses. The company's `IsStandard` rows lay over them
+  by code (`isStandardsOf`), so nothing is seeded; a code is the number's (`isStandardCode`: IS 2720 (Part 8) is
+  IS_2720_PART_8) and a catalogue standard keeps its number. `isStandardProblem` checks a standard before saving.
+  `canManageQaPlan` (the test types' right) changes the library; everyone on site reads it.
+- **Clauses.** `IsClauseDef`: the reference (clause or table, or none), title, what it asks in the company's words (never
+  BIS's text, which is copyright), how often and what is allowed, and `check`, exactly one of `{ by: 'TEST', testTypeCode }`,
+  `{ by: 'CERTIFICATE' }` (the maker's test certificate, the Test certificates register) or `{ by: 'INSPECTION' }`. A test
+  clause names a test type the company has, so its method, unit and limits stay on the test type.
+- **Edition check.** `IsStandard.checkedOn` and `checkedById`: someone checked the edition against BIS
+  (`POST /is-standards/:code/checked`). `editionState`: never checked, check due after `EDITION_CHECK_DAYS` (365) or
+  checked. Find on BIS opens BIS Connect's own search (`BIS_STANDARDS_SEARCH_URL`); BIS has no open API for the
+  standards, so nothing is fetched from it and no model answers for it.
+- **Compliance.** `GET /is-standards/compliance?projectId=&from=&to=` (the financial year to date by default; not for
+  guests) reads the tests sampled in the period on the reader's projects and `isCompliance` counts passed, failed and
+  waiting with `passRate`: per tracked standard, every standard whose clause names a test's type (a cube counts under
+  IS 456 and IS 516), and per discipline, each test once under the first tracked standard that names its type, with the
+  rest as under no standard. `standardsForTestType` gives the clauses a test proves; the test's record shows them.
+- **Test types.** `STANDARD_TEST_TYPES` gains EARTH (IS 3043, Ω), INSULATION (IS 732, MΩ, at least 1), PUMP (IS 9137, %)
+  and VESSEL_HYDRO (IS 2825, bar), recorded as OTHER.
+- **Clients.** Web: `/is-standards` (Standards tracked and Editions to check, a discipline filter, `?discipline=`,
+  `?edition=due`), `/is-standards/[code]` (the clauses with Record test, Test certificates or Inspections, Find on BIS,
+  Mark checked, Edit and the ⋯ menu to put a catalogue standard back or delete one of the company's own) and
+  `/is-compliance` (Test pass rate, Failed tests, Tests waiting for a result, Standards tracked; by discipline and by
+  standard). Quality › Indian standards in the menu. The phone has no screen of its own yet.
+
 ### Design and drawings (item 138)
 
 On screen the module is **Drawings** (`docs/WRITING.md`): the Drawing register, Drawing schedule, Submittals (design

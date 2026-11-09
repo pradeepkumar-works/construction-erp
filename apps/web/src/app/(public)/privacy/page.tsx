@@ -92,6 +92,10 @@ export default function PrivacyPage() {
             An admin can ask for the whole company to be deleted from <b>Admin &gt; Data &amp; Privacy</b>. Nothing is erased for 30 days, and any admin can
             cancel until then. On that day every project, record, photo and user account of the company is erased.
           </li>
+          <li>
+            The GST invoices for the company&apos;s subscription are kept after that, with the billing name, GSTIN and address on them, because the
+            tax law asks us to keep invoices for six years.
+          </li>
           <li>Database backups roll over and the erased data leaves them within the provider&apos;s backup window.</li>
         </ul>
 

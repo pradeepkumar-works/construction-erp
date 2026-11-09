@@ -29,7 +29,14 @@ test('HR exports the payroll inputs and sees the labour contractors month', asyn
   await page.getByRole('button', { name: 'Export to Excel' }).click();
   expect((await download).suggestedFilename()).toBe(`payroll-inputs-${month}.xlsx`);
 
+  // Each tab keeps its own month, opening on the month just ended for the first ten days: choose this month here too.
   await page.getByRole('tab', { name: 'Labour contractors' }).click();
+  await expect(page.getByText('From the attendance register')).toBeVisible();
+  const contractorMonth = page.getByLabel('Month').filter({ visible: true });
+  await contractorMonth.blur(); // focus stays from the staff tab's field, and a click on a focused field does not open it
+  await contractorMonth.click();
+  await page.locator(`.ant-picker-dropdown .ant-picker-cell[title="${month}"]`).filter({ visible: true }).click();
+  await expect(contractorMonth).toHaveValue(monthLabel);
   await expect(page.getByText('Departmental').first()).toBeVisible();
   await expect(page.getByRole('row', { name: /Supervisor/ }).first()).toContainText('₹');
 

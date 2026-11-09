@@ -23,6 +23,7 @@ import { seedCorrespondence, seedLetterPartyKinds } from './seed-correspondence'
 import { seedQa } from './seed-qa';
 import { seedQaRegisters } from './seed-qa-registers';
 import { seedQaAudits } from './seed-qa-audits';
+import { seedIsStandards } from './seed-is-standards';
 import { seedDrawingSchedule } from './seed-drawing-schedule';
 import { seedDesignSubmissions } from './seed-design-submissions';
 import { seedComponentDrawings } from './seed-component-drawings';
@@ -1855,6 +1856,7 @@ async function modulesPass(organizationId: string, passwordHash: string) {
   await seedQa(prisma, organizationId);
   await seedQaRegisters(prisma, organizationId);
   await seedQaAudits(prisma, organizationId);
+  await seedIsStandards(prisma, organizationId);
   await seedDrawingSchedule(prisma, organizationId);
   await seedDesignSubmissions(prisma, organizationId);
   await seedControlledCopies(prisma, organizationId);

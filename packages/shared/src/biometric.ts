@@ -80,6 +80,11 @@ export interface BiometricDeviceDto {
   commandsFailed: number;
   /** ADMS: when its clock was last set */
   clockSetAt: string | null;
+  /** ADMS: the internet address it is held to (kept on its first call) */
+  pinnedAddress: string | null;
+  /** ADMS: another address it called from, and since when, held until an admin approves the move */
+  pendingAddress: string | null;
+  pendingAddressAt: string | null;
 }
 
 /** A user number seen on the devices or matched by HR, with who it is. */

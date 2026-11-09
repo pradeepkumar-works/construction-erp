@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Anchor, App, Button, Card, Col, Descriptions, Divider, Drawer, Flex, Row, Skeleton, Space, Tooltip } from 'antd';
+import { Anchor, App, Button, Card, Col, Descriptions, Drawer, Flex, Row, Skeleton, Space, Tooltip } from 'antd';
 import { tk } from '@/ds';
 import type { DescriptionsProps } from 'antd';
 import { ArrowLeftOutlined, ExpandOutlined, LinkOutlined, PrinterOutlined } from '@/components/common/icons';
 import { useComments, type ApprovalTypeParam } from '@/lib/queries';
 import type { CommentKind } from '@erp/shared';
 import { CommentsSection } from '@/components/comments/CommentsSection';
+import { Section } from '@/components/common/Section';
 import { useStickyTop } from '@/lib/sticky';
 import { useIsPhone } from '@/lib/screen';
 import { rememberRecord } from '@/lib/recent';
@@ -148,6 +149,8 @@ function useHeight<E extends HTMLElement>(): [React.RefObject<E | null>, number]
 
 /** On a phone the actions sit in a bar fixed to the bottom of the screen, above the home indicator. */
 const safeBottom = (padding: string) => `calc(${padding} + env(safe-area-inset-bottom))`;
+/** A record's parts in the drawer and the inbox pane: a `Section` each (a hairline and its title), never a divider. */
+const SECTION_GAP: React.CSSProperties = { marginTop: tk.space[4] };
 const sectionTitle = (s: RecordSection) => (s.count === undefined ? s.title : `${s.title} (${s.count})`);
 
 /**
@@ -213,21 +216,15 @@ function RecordPane({ loading, error, onRetry, record, children }: RecordFramePr
             </div>
           )}
           {shown.map((s) => (
-            <React.Fragment key={s.key}>
-              <Divider titlePlacement="start" plain>
-                {sectionTitle(s)}
-              </Divider>
+            <Section key={s.key} title={sectionTitle(s)} style={SECTION_GAP}>
               {s.children}
-            </React.Fragment>
+            </Section>
           ))}
           <FoldedLine folded={folded} open={open} />
           {record.activity && (
-            <>
-              <Divider titlePlacement="start" plain>
-                History
-              </Divider>
+            <Section title="History" style={SECTION_GAP}>
               <AuditTrail type={record.activity.type} id={record.activity.id} submission={record.activity.submission} />
-            </>
+            </Section>
           )}
         </>
       )}
@@ -306,21 +303,15 @@ function RecordDrawer({ open: isOpen, onClose, drawerSize = 820, kind, loading, 
             </div>
           )}
           {shown.map((s) => (
-            <React.Fragment key={s.key}>
-              <Divider titlePlacement="start" plain>
-                {sectionTitle(s)}
-              </Divider>
+            <Section key={s.key} title={sectionTitle(s)} style={SECTION_GAP}>
               {s.children}
-            </React.Fragment>
+            </Section>
           ))}
           <FoldedLine folded={folded} open={open} />
           {record.activity && (
-            <>
-              <Divider titlePlacement="start" plain>
-                History
-              </Divider>
+            <Section title="History" style={SECTION_GAP}>
               <AuditTrail type={record.activity.type} id={record.activity.id} submission={record.activity.submission} />
-            </>
+            </Section>
           )}
         </>
       )}

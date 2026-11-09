@@ -6,7 +6,7 @@ import { BILLING_GST_PCT, BILLING_REMIND_DAYS, BILLING_UNIT_LABELS, BILLING_YEAR
 import { PrismaService } from '../prisma/prisma.service';
 import { withoutTenant } from '../prisma/tenant-context';
 import { RequestUser } from '../common/current-user';
-import { BillingConfig, aiPlanAllowanceInr, billingConfig, billingState, billingUnits } from '../common/billing';
+import { BillingConfig, aiPlanAllowanceInr, billingConfig, billingState, billingUnits, nextInvoiceNo } from '../common/billing';
 import { EmailService, escapeHtml } from '../notifications/email.service';
 import { emailButton, emailLayout } from '../notifications/email-layout';
 import { MessagingService } from '../messaging/messaging.service';
@@ -191,7 +191,8 @@ export class BillingService {
         // One invoice number at a time across all companies (numbers run per financial year, without gaps).
         await tx.$queryRaw`SELECT 1 AS locked FROM (SELECT pg_advisory_xact_lock(hashtext('billing-invoice'))) l`;
         const row = await tx.billingPayment.findUniqueOrThrow({ where: { id } });
-        if (row.status === 'PAID') return null;
+        // Paid already, or an order left open by a company since erased: nothing to extend.
+        if (row.status === 'PAID' || !row.organizationId) return null;
         const org = await tx.organization.findUniqueOrThrow({ where: { id: row.organizationId } });
         let from = today;
         const trialEnd = org.trialEndsAt ? iso(org.trialEndsAt) : null;
@@ -200,8 +201,8 @@ export class BillingService {
         if (paidUntil && paidUntil >= today && addDays(paidUntil, 1) > from) from = addDays(paidUntil, 1);
         const to = periodEnd(from, row.months);
         const prefix = `${cfg.invoicePrefix}${fyCode(today)}-`;
-        const issued = await tx.billingPayment.count({ where: { invoiceNo: { startsWith: prefix } } });
-        const invoiceNo = `${prefix}${String(issued + 1).padStart(5, '0')}`;
+        const issued = await tx.billingPayment.findMany({ where: { invoiceNo: { startsWith: prefix } }, select: { invoiceNo: true } });
+        const invoiceNo = nextInvoiceNo(prefix, issued.map((r) => r.invoiceNo));
         const updated = await tx.billingPayment.update({
           where: { id },
           data: { status: 'PAID', razorpayPaymentId, paidAt: new Date(), invoiceNo, invoiceDate: day(today), periodFrom: day(from), periodTo: day(to) },

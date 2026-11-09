@@ -29,6 +29,7 @@ import { DatePicker } from '@/components/common/DatePicker';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
 import { MoreOutlined, PlusOutlined } from '@/components/common/icons';
 import { Section } from '@/components/common/Section';
+import { QueryError } from '@/components/common/QueryState';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
 
@@ -86,7 +87,7 @@ function stateNote(o: ContractObligationDto): string | null {
 export function ObligationsCard({ projectId }: { projectId: string }) {
   const { message } = App.useApp();
   const qc = useQueryClient();
-  const { data, isLoading } = useContractObligations(projectId);
+  const { data, isLoading, error, refetch } = useContractObligations(projectId);
   const [editing, setEditing] = useState<ContractObligationDto | 'new' | null>(null);
   const [askDelete, deleteDialog] = useConfirmDelete();
   const key = ['contract', projectId, 'obligations'];
@@ -144,7 +145,9 @@ export function ObligationsCard({ projectId }: { projectId: string }) {
         pagination={false}
         dataSource={rows}
         locale={{
-          emptyText: canEdit
+          emptyText: error ? (
+            <QueryError error={error} onRetry={() => void refetch()} />
+          ) : canEdit
             ? 'No obligations yet. Add the standard ones (programme, field laboratory, technical staff, final account) and set them as the contract says.'
             : 'No obligations recorded for this contract.',
         }}

@@ -21,7 +21,7 @@ import { setTenant, withoutTenant } from '../prisma/tenant-context';
 import { todayIn } from '../notifications/time';
 import { AttendanceService } from '../attendance/attendance.service';
 import { WorkersService } from '../workers/workers.service';
-import { cleanPin, codeNumber, dayFromPunches, userCommandState, localToUtc, parseAdmsAttlog, parsePunchFile, webhookLocal, type RawPunch } from './biometric-rules';
+import { admsAddressCheck, admsPunchesInWindow, cleanPin, codeNumber, dayFromPunches, deviceAddress, userCommandState, localToUtc, parseAdmsAttlog, parsePunchFile, webhookLocal, type RawPunch } from './biometric-rules';
 import type { CreateDeviceDto, ImportPunchesDto, PunchQuery, UpdateDeviceDto, WebhookPunchesDto } from './biometric.dto';
 
 type Device = Prisma.BiometricDeviceGetPayload<{ include: { project: { select: { name: true } } } }>;
@@ -68,6 +68,9 @@ export class BiometricService {
       commandsWaiting: cmd.waiting,
       commandsFailed: cmd.failed,
       clockSetAt: iso(cmd.clockSetAt),
+      pinnedAddress: d.pinnedAddress,
+      pendingAddress: d.pendingAddress,
+      pendingAddressAt: iso(d.pendingAddressAt),
     };
   }
 
@@ -138,6 +141,8 @@ export class BiometricService {
         name: dto.name?.trim(),
         model: dto.model === undefined ? undefined : dto.model?.trim() || null,
         serialNo,
+        // Another serial number is another device: it is held to the address of its own first call.
+        ...(serialNo !== undefined && serialNo !== d.serialNo ? { pinnedAddress: null, pendingAddress: null, pendingAddressAt: null } : {}),
         projectId: dto.projectId,
         utcOffsetMin: dto.utcOffsetMin,
         isActive: dto.isActive,
@@ -154,6 +159,23 @@ export class BiometricService {
     if (d.protocol !== 'WEBHOOK') throw new BadRequestException('Only a webhook device has a key');
     const row = await this.prisma.biometricDevice.update({ where: { id }, data: { apiKey: newKey() }, include: { project: { select: { name: true } } } });
     await this.audit.log(user, 'BIOMETRIC_DEVICE', id, 'UPDATED', 'New key');
+    return this.toDeviceDto(row, 0);
+  }
+
+  /**
+   * A call from a new address, settled by an admin: approved, the device moved (a new connection at the site) and is held
+   * to that address from now on; dismissed, it stays held to its old one and the new address keeps being refused.
+   */
+  async settleAddress(user: RequestUser, id: string, approve: boolean) {
+    this.assertManage(user);
+    const d = await this.deviceFor(user, id);
+    if (d.protocol !== 'ADMS' || !d.pendingAddress) throw new BadRequestException('This device is not waiting on a new address');
+    const row = await this.prisma.biometricDevice.update({
+      where: { id },
+      data: { ...(approve ? { pinnedAddress: d.pendingAddress } : {}), pendingAddress: null, pendingAddressAt: null },
+      include: { project: { select: { name: true } } },
+    });
+    await this.audit.log(user, 'BIOMETRIC_DEVICE', id, 'UPDATED', approve ? `Address ${d.pinnedAddress ?? 'none'} to ${d.pendingAddress}` : `Call from ${d.pendingAddress} dismissed`);
     return this.toDeviceDto(row, 0);
   }
 
@@ -314,19 +336,35 @@ export class BiometricService {
 
   // What devices send (no login)
 
-  /** An ADMS device by its serial number, when registered and switched on; it is marked as seen. */
-  async admsDevice(serialNo: string | undefined) {
+  /**
+   * An ADMS device by its serial number, when registered and switched on, calling from the address it is held to (its
+   * first call's); it is marked as seen. A call from another address is refused and kept for an admin to approve or dismiss.
+   */
+  async admsDevice(serialNo: string | undefined, ip: string | null) {
     const sn = serialNo?.trim().toUpperCase();
     const d = sn ? await withoutTenant(() => this.prisma.biometricDevice.findUnique({ where: { serialNo: sn }, include: { project: { select: { name: true } } } })) : null;
     if (!d || !d.isActive || d.protocol !== 'ADMS') throw new UnauthorizedException('Unknown device');
     setTenant(d.organizationId);
-    await this.prisma.biometricDevice.update({ where: { id: d.id }, data: { lastSeenAt: new Date() } });
+    const address = deviceAddress(ip);
+    const check = admsAddressCheck(d.pinnedAddress, address);
+    if (check === 'HOLD') {
+      if (d.pendingAddress !== address) await this.prisma.biometricDevice.update({ where: { id: d.id }, data: { pendingAddress: address, pendingAddressAt: new Date() } });
+      throw new UnauthorizedException('This device is calling from a new address. An admin approves it under Biometric devices; the device keeps its punches until then.');
+    }
+    await this.prisma.biometricDevice.update({
+      where: { id: d.id },
+      // A held address stays on show after the device calls again from its own: it may be a copied serial number.
+      data: { lastSeenAt: new Date(), ...(check === 'PIN' ? { pinnedAddress: address } : {}) },
+    });
     return d;
   }
 
-  /** The ATTLOG table an ADMS device uploads. */
+  /** The ATTLOG table an ADMS device uploads: only the last week's punches are taken (`admsPunchesInWindow`). */
   async admsAttlog(d: Device, body: string) {
-    return this.ingest(d, parseAdmsAttlog(body));
+    const all = parseAdmsAttlog(body);
+    const { take, tooOld } = admsPunchesInWindow(all, todayIn());
+    const r = await this.ingest(d, take);
+    return { ...r, received: all.length, notMarked: r.notMarked + tooOld };
   }
 
   /** Punches posted as JSON with the device's key. */

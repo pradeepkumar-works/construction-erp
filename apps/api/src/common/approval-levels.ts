@@ -99,13 +99,25 @@ export function approverKeys(user: { id: string; roleKey: RoleKey }, projectId: 
   return { id: user.id, roleKey: user.roleKey, keys: keysOf(user, false), actingFor: others.map((a) => ({ id: a.id, roleKey: a.roleKey, keys: keysOf(a, true) })) };
 }
 
+/**
+ * The first approval at each level, by level. Two approvals at one level (a double tap, two approvers at once) pass
+ * that level once: counting rows would let them skip the next level.
+ */
+function firstPerLevel<S extends { level: number }>(approvedByLevel: S[]): S[] {
+  return approvedByLevel.filter((s, i) => i === 0 || approvedByLevel[i - 1].level !== s.level);
+}
+
+/** How many levels this round's approvals have passed (each level once, however many approved it). */
+export const levelsPassed = (steps: { level: number; action: string }[]) => new Set(steps.filter((s) => s.action === 'APPROVED').map((s) => s.level)).size;
+
 /** Where an entry stands: `round` is when `submittedBy` last submitted it; `steps` are that round's. */
 export function stageOf(type: SubmissionType, rules: LevelRule[], amount: string | number | null, round: Date, steps: LevelStep[], submittedBy: string | null): Stage {
   const higher = rules.filter((r) => r.type === type && r.level > 1).map((r) => ({ level: r.level, minAmount: r.minAmount }));
   const levels = levelsNeeded(type, higher, amount);
-  const approved = steps.filter((s) => s.action === 'APPROVED').sort((a, b) => a.level - b.level);
-  const level = Math.min(approved.length + 1, levels);
-  const last = approved.length ? approved[approved.length - 1].createdAt : round;
+  const approved = steps.filter((s) => s.action === 'APPROVED').sort((a, b) => a.level - b.level || a.createdAt.getTime() - b.createdAt.getTime());
+  const passed = firstPerLevel(approved);
+  const level = Math.min(passed.length + 1, levels);
+  const last = passed.length ? passed[passed.length - 1].createdAt : round;
   return {
     levels,
     level,

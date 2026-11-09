@@ -368,6 +368,7 @@ export function VendorBillFormModal({
                       onChange={(v) => setLine(l.id, { gstRate: v })}
                       status={lines[l.id] && toNumber(lines[l.id].gstRate) !== toNumber(l.gstRate) ? 'warning' : undefined}
                       options={[...new Set([...GST_RATES, toNumber(l.gstRate)])].map((r) => ({ value: r, label: `${r}%` }))}
+                      aria-label={`GST rate of ${l.itemName}`}
                       style={{ width: '100%' }}
                     />
                   ),

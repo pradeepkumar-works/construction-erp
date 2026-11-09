@@ -450,6 +450,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/qa-plan-test.js
+      - name: The Indian Standards library lays over the catalogue, checks editions and counts compliance by standard and discipline
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/is-standards-test.js
       - name: Labs, samples, calibration and test certificates follow their rules
         if: matrix.suite == 'flows'
         working-directory: apps/api

@@ -137,7 +137,10 @@ Each user's **Send a test** button shows whether a channel works end to end.
 - **Git auto-deploy**: both Vercel projects are linked to `pradeepkumar-works/construction-erp`.
   Every push to the production branch (`claude/modest-brown-emrt4b` today; change it in each
   project's Settings → Git when you adopt `main`) builds and deploys automatically. Other branches
-  get preview deployments.
+  get preview deployments. A preview build of the API runs no migrations and no seed (`vercel-build.sh`), so an
+  unmerged PR never changes the database; a preview whose code needs a new migration fails on it until the PR merges.
+  A preview with a database of its own (a Neon branch) sets `MIGRATE_ON_PREVIEW=true`. A deployed API (Vercel, or
+  `NODE_ENV=production`) refuses to start without its own `JWT_SECRET`, in preview as well as production.
 
 ## Database
 

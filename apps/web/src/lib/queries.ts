@@ -2,6 +2,8 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
 import type {
+  IsComplianceDto,
+  IsStandardDto,
   AuditLogEntryDto,
   LetterheadDto,
   DocumentCheckDecision,
@@ -1745,6 +1747,26 @@ export const useQaReport = (month: string, projectId?: string) =>
   useQuery({
     queryKey: ['quality', 'qa', 'report', month, projectId ?? null],
     queryFn: async () => (await api.get<QaReportDto>('/qa/report', { params: clean({ month, projectId }) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+export const useIsStandards = () =>
+  useQuery({
+    queryKey: ['quality', 'is-standards'],
+    queryFn: async () => (await api.get<IsStandardDto[]>('/is-standards')).data,
+    staleTime: 5 * 60_000,
+  });
+
+export const useIsStandard = (code: string) =>
+  useQuery({
+    queryKey: ['quality', 'is-standards', code],
+    queryFn: async () => (await api.get<IsStandardDto>(`/is-standards/${encodeURIComponent(code)}`)).data,
+  });
+
+export const useIsCompliance = (p: { projectId?: string; from?: string; to?: string }) =>
+  useQuery({
+    queryKey: ['quality', 'is-standards', 'compliance', p.projectId ?? null, p.from ?? null, p.to ?? null],
+    queryFn: async () => (await api.get<IsComplianceDto>('/is-standards/compliance', { params: clean(p) })).data,
     placeholderData: keepPreviousData,
   });
 

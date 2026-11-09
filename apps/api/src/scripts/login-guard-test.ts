@@ -1,11 +1,13 @@
 /**
  * Sign-in guard tests: five wrong passwords lock an email for 15 minutes from the
  * fifth, old failures fall out of the window, an address trying many emails is held off, and reset links are limited.
+ * A deployed API refuses to start without its own JWT secret.
  *
  *   node dist/scripts/login-guard-test.js
  */
 import assert from 'node:assert/strict';
 import { ADDRESS_FAILURES, blockMessage, LOCK_AFTER_FAILURES, loginBlock, resetAllowed } from '../auth/login-guard-rules';
+import { jwtSecret, jwtSecretProblem } from '../common/jwt-secret';
 
 const tests: [string, () => void][] = [];
 const test = (name: string, fn: () => void) => tests.push([name, fn]);
@@ -52,6 +54,20 @@ test('the refusal says when to try again and how to get back in', () => {
   const at = () => '3:45 pm';
   assert.match(blockMessage({ reason: 'ACCOUNT', until: now }, at), /Try again after 3:45 pm, or reset your password/);
   assert.match(blockMessage({ reason: 'ADDRESS', until: now }, at), /from this network\. Try again after 3:45 pm/);
+});
+
+test('a deployed API will not sign tokens with the secret in the repository', () => {
+  for (const env of [{ NODE_ENV: 'production' }, { VERCEL: '1' }, { VERCEL: '1', JWT_SECRET: 'dev-secret' }, { NODE_ENV: 'production', JWT_SECRET: '  ' }]) {
+    assert.match(jwtSecretProblem(env) ?? '', /JWT_SECRET is not set/);
+    assert.throws(() => jwtSecret(env), /JWT_SECRET is not set/);
+  }
+});
+
+test('a deployed API with its own secret signs with it; a local run keeps the fallback', () => {
+  assert.equal(jwtSecret({ VERCEL: '1', JWT_SECRET: 'a-long-random-string' }), 'a-long-random-string');
+  assert.equal(jwtSecretProblem({ NODE_ENV: 'production', JWT_SECRET: 'a-long-random-string' }), null);
+  assert.equal(jwtSecret({}), 'dev-secret');
+  assert.equal(jwtSecret({ JWT_SECRET: 'e2e-secret' }), 'e2e-secret');
 });
 
 let failed = 0;
