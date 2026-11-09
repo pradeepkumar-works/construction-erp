@@ -113,6 +113,9 @@ export function SetupSteps({ d }: { d: BiometricDeviceDto }) {
         <Descriptions.Item label="Serial number it must report">
           <span translate="no">{d.serialNo}</span>
         </Descriptions.Item>
+        <Descriptions.Item label="Calls from">
+          {d.pinnedAddress ? <span translate="no">{d.pinnedAddress}</span> : 'The address of its first call, kept from then on'}
+        </Descriptions.Item>
       </Descriptions>
     );
   if (d.protocol === 'WEBHOOK')
@@ -154,7 +157,24 @@ export function Devices() {
     { title: 'Sends', dataIndex: 'protocol', width: 120, render: (v: BiometricProtocol) => BIOMETRIC_PROTOCOL_SHORT_LABELS[v] },
     { title: 'Serial number', dataIndex: 'serialNo', width: 160, render: (v: string | null) => (v ? <span translate="no">{v}</span> : NO_VALUE) },
     { title: 'Site', dataIndex: 'projectName', ellipsis: true, render: (v: string | null) => v ?? 'Head office' },
-    { title: 'Last heard', dataIndex: 'lastSeenAt', width: 170, render: (v: string | null, d) => (d.protocol === 'FILE' ? NO_VALUE : ago(v)) },
+    {
+      title: 'Last heard',
+      dataIndex: 'lastSeenAt',
+      width: 190,
+      render: (v: string | null, d) =>
+        d.protocol === 'FILE' ? (
+          NO_VALUE
+        ) : (
+          <div>
+            {ago(v)}
+            {d.pendingAddress ? (
+              <div>
+                <AppTag meaning="waiting">New address waiting</AppTag>
+              </div>
+            ) : null}
+          </div>
+        ),
+    },
     { title: 'Punches today', dataIndex: 'punchesToday', width: 120, align: 'right' },
     { title: 'Status', dataIndex: 'isActive', width: 90, render: (v: boolean) => (v ? <AppTag meaning="done">On</AppTag> : <AppTag meaning="closed">Off</AppTag>) },
     {
@@ -185,6 +205,7 @@ export function Devices() {
             label={`More for ${d.name}`}
             items={[
               { key: 'edit', label: 'Edit', onSelect: () => setEditing({ device: d }) },
+              ...(d.pendingAddress ? [{ key: 'address', label: 'Check new address', onSelect: () => setSetup(d.id) }] : []),
               ...(d.protocol === 'ADMS' && d.isActive
                 ? [{ key: 'clock', label: 'Set the clock', onSelect: () => run(act.mutateAsync({ path: `/biometric/devices/${d.id}/set-clock` }), `${d.name}'s clock is set when it next calls`) }]
                 : []),
@@ -242,6 +263,38 @@ export function Devices() {
       >
         {shown && (
           <Space orientation="vertical" size={12} style={{ width: '100%' }}>
+            {shown.pendingAddress ? (
+              <Alert
+                type="warning"
+                showIcon
+                title={`Calling from a new address since ${formatDateTime(shown.pendingAddressAt)}`}
+                description={
+                  <Space orientation="vertical" size={8}>
+                    <span>
+                      {shown.name} is held to <span translate="no">{shown.pinnedAddress}</span> and has now called from <span translate="no">{shown.pendingAddress}</span>, so its punches wait on the device. Approve the new address if the site changed its internet connection. If it did not, someone may be copying its serial number: keep the old address and check the device.
+                    </span>
+                    <Space wrap>
+                      <Popconfirm
+                        title="Approve the new address?"
+                        description="Punches from the old address will wait instead."
+                        okText="Approve"
+                        onConfirm={() => run(act.mutateAsync({ path: `/biometric/devices/${shown.id}/approve-address` }), `${shown.name} approved at its new address. Its punches come in when it next calls.`)}
+                      >
+                        <Button>Approve new address</Button>
+                      </Popconfirm>
+                      <Popconfirm
+                        title="Keep the old address?"
+                        description="Calls from the new address stay refused."
+                        okText="Keep old address"
+                        onConfirm={() => run(act.mutateAsync({ path: `/biometric/devices/${shown.id}/dismiss-address` }), `${shown.name} stays at its old address.`)}
+                      >
+                        <Button>Keep old address</Button>
+                      </Popconfirm>
+                    </Space>
+                  </Space>
+                }
+              />
+            ) : null}
             <SetupSteps d={shown} />
             {shown.protocol !== 'FILE' && (
               <Alert

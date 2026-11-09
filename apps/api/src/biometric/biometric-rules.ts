@@ -146,6 +146,34 @@ export function parsePunchFile(text: string): { punches: RawPunch[]; errors: str
 }
 
 /** Punches closer together than this are one punch pressed twice, not an in and an out. */
+/**
+ * An ADMS device names itself only by its serial number, which is printed on it and seen by anyone who reads its menu.
+ * So a device is held to the internet address it first called from: a call from another address is held until an admin
+ * approves the move (the device keeps its punches and sends them again), and punches older than a week are not taken
+ * from it at all, so a copied serial number cannot back-fill attendance.
+ */
+export const ADMS_MAX_AGE_DAYS = 7;
+
+/** An address as compared: an IPv4 address carried in IPv6 ("::ffff:1.2.3.4") reads as the IPv4 one. */
+export function deviceAddress(ip: string | null | undefined): string | null {
+  const a = ip?.trim().toLowerCase().replace(/^::ffff:(?=\d+\.\d+\.\d+\.\d+$)/, '');
+  return a || null;
+}
+
+/** PIN: the device's first call, so its address is kept; OK: the kept address; HOLD: another address, waiting for an admin. */
+export function admsAddressCheck(pinned: string | null, address: string | null): 'PIN' | 'OK' | 'HOLD' {
+  const [p, a] = [deviceAddress(pinned), deviceAddress(address)];
+  if (!p) return a ? 'PIN' : 'OK';
+  return p === a ? 'OK' : 'HOLD';
+}
+
+/** The punches an ADMS device may still send: none after today, none more than `days` days before it. */
+export function admsPunchesInWindow(punches: RawPunch[], today: string, days = ADMS_MAX_AGE_DAYS): { take: RawPunch[]; tooOld: number } {
+  const from = new Date(Date.parse(`${today}T00:00:00Z`) - days * 86_400_000).toISOString().slice(0, 10);
+  const take = punches.filter((p) => p.local.slice(0, 10) >= from && p.local.slice(0, 10) <= today);
+  return { take, tooOld: punches.filter((p) => p.local.slice(0, 10) < from).length };
+}
+
 export const DOUBLE_PUNCH_MINUTES = 10;
 
 /**
