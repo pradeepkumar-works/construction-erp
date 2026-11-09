@@ -153,7 +153,11 @@ export class OfficialReportsService {
     if (!canViewContract(user.roleKey) && snap.withMoney !== false) {
       throw new ForbiddenException('This issued copy has the contract’s figures in it; ask your project manager for it');
     }
-    return { ...snap, issue: this.issueDto(row) };
+    const chapters = snap.chapters.map((c) => ({
+      ...c,
+      blocks: c.blocks.map((b) => (b.type === 'photos' ? { ...b, photos: b.photos.map((p) => ({ ...p, url: this.attachments.relink(p.url) })) } : b)),
+    }));
+    return { ...snap, chapters, issue: this.issueDto(row) };
   }
 
   /** Issue the period's report: it is kept as it is now, with the next revision of the period. */

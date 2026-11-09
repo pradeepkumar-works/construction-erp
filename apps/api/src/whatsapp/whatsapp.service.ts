@@ -400,7 +400,7 @@ export class WhatsappService {
       type: r.type,
       text: r.text,
       transcript: r.transcript,
-      attachment: r.attachment ? { id: r.attachment.id, url: this.storage.toUrl(r.attachment.id, r.attachment.storagePath), mimeType: r.attachment.mimeType } : null,
+      attachment: r.attachment ? { id: r.attachment.id, url: this.storage.toUrl(r.attachment.id), mimeType: r.attachment.mimeType } : null,
       state: r.state,
       draft,
       reply: r.reply,

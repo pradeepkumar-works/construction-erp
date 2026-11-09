@@ -202,7 +202,7 @@ export class DocumentTextService {
     return {
       attachmentId: f.id,
       fileName: f.fileName,
-      url: this.storage.toUrl(f.id, f.storagePath),
+      url: this.storage.toUrl(f.id),
       page,
       pages: f.textPages ?? 0,
       title: r ? `${r.document.docNo} ${r.document.title}, rev ${r.revision}` : `${f.letter!.letterNo ?? 'Draft'} ${f.letter!.subject}`,

@@ -4,10 +4,9 @@ import type { IncomingMessage } from 'http';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { join } from 'path';
 import { AppModule } from './app.module';
 import { tenantMiddleware } from './prisma/tenant-context';
-import { SANDBOXED_FILE_CSP, securityHeaders } from './common/security-headers';
+import { securityHeaders } from './common/security-headers';
 import { PRODUCT_NAME } from '@erp/shared';
 import { jwtSecretProblem } from './common/jwt-secret';
 
@@ -30,14 +29,6 @@ async function bootstrap() {
   // the round trips; Server-Timing is exposed so the web app can report where a slow call spent its time.
   app.enableCors({ origin: origins.length ? origins : true, credentials: true, maxAge: 7200, exposedHeaders: ['Server-Timing'] });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true, transformOptions: { enableImplicitConversion: true } }));
-
-  const uploadDir = process.env.UPLOAD_DIR || './uploads';
-  app.useStaticAssets(join(process.cwd(), uploadDir), {
-    prefix: '/uploads/',
-    setHeaders: (res, path) => {
-      if (/\.(html?|xhtml|svg|xml)$/i.test(path)) res.setHeader('Content-Security-Policy', SANDBOXED_FILE_CSP);
-    },
-  });
 
   const config = new DocumentBuilder()
     .setTitle(`${PRODUCT_NAME} API`)
