@@ -122,6 +122,7 @@ export * from './correspondence';
 export * from './qa-plan';
 export * from './qa-registers';
 export * from './qa-audits';
+export * from './is-standards';
 export * from './reporting-period';
 export * from './drawing-schedule';
 export * from './design-submissions';
