@@ -44,6 +44,12 @@ export const SUPPLIER_CHOICE_TITLE = { materialRequest: { select: { requestNo: t
 /** "WO-2026-0003: Brickwork, Block A, ₹8,40,000.00 to Mahanadi Builders". */
 export const woTitle = (woNo: string, title: string, value: string, vendor: string) => `${woNo}: ${title}, ${inr(value)} to ${vendor}`;
 
+/** "WO-2026-0003 amendment 1 of Mahanadi Builders: ₹8,40,000.00 to ₹9,10,000.00". */
+export const woAmendmentTitle = (woNo: string, amendmentNo: number, vendor: string, before: string, after: string) => `${woNo} amendment ${amendmentNo} of ${vendor}: ${inr(before)} to ${inr(after)}`;
+
+/** The rows `woAmendmentTitle` reads. */
+export const WO_AMENDMENT_TITLE = { workOrder: { select: { woNo: true, vendor: { select: { name: true } } } } } as const;
+
 /** "WO-2026-0003 bill 2 of Mahanadi Builders: ₹1,20,000.00 of work". */
 export const subBillTitle = (woNo: string, billNo: number, isFinal: boolean, vendor: string, gross: string) =>
   `${woNo} bill ${billNo}${isFinal ? ' (final)' : ''} of ${vendor}: ${inr(gross)} of work`;

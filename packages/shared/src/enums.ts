@@ -96,7 +96,7 @@ export type ReviewDecision = (typeof REVIEW_DECISIONS)[number];
 export const MATERIAL_PRIORITIES = ['LOW', 'NORMAL', 'HIGH', 'URGENT'] as const;
 export type MaterialPriority = (typeof MATERIAL_PRIORITIES)[number];
 
-export const SUBMISSION_TYPES = ['PROGRESS', 'DPR', 'MATERIAL_REQUEST', 'MACHINERY', 'EXPENSE', 'MEASUREMENT', 'BILL', 'PURCHASE_ORDER', 'VENDOR_BILL', 'WORK_ORDER', 'SUBCONTRACT_BILL', 'INSPECTION', 'PAYMENT_REQUEST', 'SUPPLIER_CHOICE'] as const;
+export const SUBMISSION_TYPES = ['PROGRESS', 'DPR', 'MATERIAL_REQUEST', 'MACHINERY', 'EXPENSE', 'MEASUREMENT', 'BILL', 'PURCHASE_ORDER', 'VENDOR_BILL', 'WORK_ORDER', 'SUBCONTRACT_BILL', 'INSPECTION', 'PAYMENT_REQUEST', 'SUPPLIER_CHOICE', 'WO_AMENDMENT'] as const;
 export type SubmissionType = (typeof SUBMISSION_TYPES)[number];
 
 export const ROLE_KEYS = [
@@ -228,6 +228,10 @@ export type CheckLevel = (typeof CHECK_LEVELS)[number];
 /** A site order book entry: OPEN until the site replies with its compliance, REPLIED until the issuer accepts it. */
 export const SITE_ORDER_STATUSES = ['OPEN', 'REPLIED', 'CLOSED'] as const;
 export type SiteOrderStatus = (typeof SITE_ORDER_STATUSES)[number];
+
+/** A version of a project's budget: prepared, waiting for admin or management, approved (in force), returned, or replaced by a later one. */
+export const BUDGET_STATUSES = ['DRAFT', 'SUBMITTED', 'APPROVED', 'RETURNED', 'SUPERSEDED'] as const;
+export type BudgetStatus = (typeof BUDGET_STATUSES)[number];
 
 /** A programme revision with the Engineer: waiting, approved, or returned with comments for a new revision. */
 export const PROGRAMME_STATUSES = ['SUBMITTED', 'APPROVED', 'RETURNED'] as const;
@@ -397,3 +401,6 @@ export type NavPaint = (typeof NAV_PAINTS)[number];
  *  company's own (`CUSTOM`, with its `NavFill`). The colours themselves are design tokens (web `ds/source/chrome.ts`). */
 export const NAV_PALETTES = ['QUIET', 'NAVY', 'GRAPHITE', 'FOREST', 'OXBLOOD', 'SAND', 'SKY', 'LAGOON', 'DUSK', 'OCEAN', 'WALNUT', 'MIDNIGHT', 'DAWN', 'CUSTOM'] as const;
 export type NavPalette = (typeof NAV_PALETTES)[number];
+/** The discipline an Indian Standard belongs to (`is-standards.ts`): the library filters and compliance groups by it. */
+export const IS_DISCIPLINES = ['CIVIL', 'MECHANICAL', 'ELECTRICAL'] as const;
+export type IsDiscipline = (typeof IS_DISCIPLINES)[number];

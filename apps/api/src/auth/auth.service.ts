@@ -140,6 +140,7 @@ export class AuthService {
         ...billingOf(org),
         ...modulesOf(org),
         ...navigationOf(org),
+        ...(org.progressFromDpr ? { progressFromDpr: true } : {}),
       };
     }
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: req.id }, include: { role: true, organization: true } });
@@ -154,7 +155,7 @@ export class AuthService {
     return { ok: true, accessToken: await this.jwt.signAsync({ sub: user.id, org: user.organizationId }) };
   }
 
-  private async toAuthUser(user: { id: string; loginId: string; email: string; fullName: string; phone: string | null; organizationId: string; vendorId: string | null; seesAllProjects: boolean; navLook: NavLook | null; role: { key: string; name: string }; organization: BillingOrg & ModulesOrg & NavOrg & GroupOrg & { name: string; aiEnabled: boolean; aiRoles: string[] } }): Promise<AuthUser> {
+  private async toAuthUser(user: { id: string; loginId: string; email: string; fullName: string; phone: string | null; organizationId: string; vendorId: string | null; seesAllProjects: boolean; navLook: NavLook | null; role: { key: string; name: string }; organization: BillingOrg & ModulesOrg & NavOrg & GroupOrg & { name: string; aiEnabled: boolean; aiRoles: string[]; progressFromDpr: boolean } }): Promise<AuthUser> {
     return {
       id: user.id,
       email: user.email,
@@ -170,6 +171,7 @@ export class AuthService {
       ...billingOf(user.organization),
       ...modulesOf(user.organization),
       ...navigationOf(user.organization),
+      ...(user.organization.progressFromDpr ? { progressFromDpr: true } : {}),
       ...(user.navLook ? { ownLook: user.navLook } : {}),
       ...(user.organization.aiEnabled && aiConfigured() && aiRoleAllowed(user.role.key as RoleKey, user.organization.aiRoles) ? { ai: true } : {}),
       ...(user.vendorId ? { vendor: await this.prisma.vendor.findUniqueOrThrow({ where: { id: user.vendorId }, select: { id: true, name: true } }) } : {}),

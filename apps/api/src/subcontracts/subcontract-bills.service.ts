@@ -25,6 +25,7 @@ import { CreateSubcontractBillDto, ListSubcontractBillsQuery, OwnItemQtyInput, U
 import { pctStr } from './work-orders.service';
 import { workOrderAdvanceBase } from '../payables/advances';
 import { subBillPayable } from '../payables/payable';
+import { subBillLines } from './sub-bill-lines';
 
 type Tx = Prisma.TransactionClient;
 const round2 = (v: Prisma.Decimal) => v.toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
@@ -135,7 +136,7 @@ export class SubcontractBillsService {
       issueCount: r._count.issues,
       lines: r.lines.map((l) => {
         const wl = l.workOrderLine;
-        const prevAmount = round2(l.prevQty.mul(l.rate));
+        const prevAmount = l.prevAmount;
         const excess = l.uptoQty.sub(wl.quantity);
         return {
           id: l.id,
@@ -263,21 +264,13 @@ export class SubcontractBillsService {
     const earlier = { workOrderId: wo.id, billNo: { lt: bill.billNo } };
     const [measured, billed, issued, recovered, excess] = await Promise.all([
       tx.measurementSheet.groupBy({ by: ['boqItemId'], where: { workOrderId: wo.id, OR: [{ subcontractBillId: id }, { subcontractBill: earlier }] }, _sum: { totalQty: true } }),
-      tx.subcontractBillLine.findMany({ where: { bill: earlier }, select: { workOrderLineId: true, thisQty: true } }),
+      tx.subcontractBillLine.findMany({ where: { bill: earlier }, select: { workOrderLineId: true, thisQty: true, amount: true } }),
       tx.stockTxn.groupBy({ by: ['itemId'], where: { entry: { subcontractBillId: id } }, _sum: { quantity: true } }),
       tx.subcontractBill.aggregate({ where: earlier, _sum: { advanceRecoveryAmount: true } }),
       tx.excessMaterialRecovery.aggregate({ where: { subcontractBillId: id }, _sum: { amount: true } }),
     ]);
     const upto = new Map(measured.map((m) => [m.boqItemId, m._sum.totalQty ?? ZERO]));
-    const prev = new Map<string, Prisma.Decimal>();
-    for (const b of billed) prev.set(b.workOrderLineId, (prev.get(b.workOrderLineId) ?? ZERO).add(b.thisQty));
-
-    const lines = wo.lines.flatMap((l, i) => {
-      const prevQty = prev.get(l.id) ?? ZERO;
-      const thisQty = l.boqItemId ? (upto.get(l.boqItemId) ?? ZERO).sub(prevQty) : (ownQty.get(l.id) ?? ZERO);
-      if (prevQty.isZero() && thisQty.isZero()) return [];
-      return [{ workOrderLineId: l.id, rate: l.rate, prevQty, thisQty, uptoQty: prevQty.add(thisQty), amount: round2(thisQty.mul(l.rate)), sortOrder: i }];
-    });
+    const lines = subBillLines(wo.lines, billed, upto, ownQty);
 
     // Material issued to them less what they brought back, at each item's current rate (the last approved PO rate, or as
     // set in the item master). A return of material an earlier bill recovered comes off as a credit.
@@ -291,7 +284,7 @@ export class SubcontractBillsService {
       .filter((m) => !m.quantity.isZero());
 
     const grossAmount = sum(lines, (l) => l.amount);
-    const grossPrevious = sum(lines, (l) => round2(l.prevQty.mul(l.rate)));
+    const grossPrevious = sum(lines, (l) => l.prevAmount);
     const base = Prisma.Decimal.max(grossAmount, ZERO);
     // Recovered from what was actually paid against the order once an advance payment is on record.
     const advanceBase = await workOrderAdvanceBase(tx, wo);

@@ -16,6 +16,7 @@ import { PAYMENT_QUERY_KEYS, PaymentFormModal, type PayTarget } from './PaymentF
 import { InTallyTag } from '@/components/tally/InTallyTag';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 import { Money } from '@/components/common/Money';
+import { QueryError } from '@/components/common/QueryState';
 
 /** Tag for how much of an approved bill is paid. */
 export function PaidTag({ bill }: { bill: { status: string; paidAmount: string; outstanding: string; paidDate: string | null } }) {
@@ -36,7 +37,7 @@ export function BillPayments({ target, approved, heading = true }: { target: Pay
   const [editing, setEditing] = useState<VendorPaymentDto | null>(null);
   const visible = approved && !!user && canViewPayables(user.roleKey);
   const filter = target.billType === 'VENDOR_BILL' ? { vendorBillId: target.billId } : { subcontractBillId: target.billId };
-  const { data } = useVendorPayments({ ...filter, pageSize: 100, sortBy: 'paymentDate', sortOrder: 'asc' }, visible);
+  const { data, error, refetch } = useVendorPayments({ ...filter, pageSize: 100, sortBy: 'paymentDate', sortOrder: 'asc' }, visible);
   const accounts = !!user && canRecordPayment(user.roleKey);
   const remove = useMutation({
     mutationFn: async (id: string) => (await api.delete(`/vendor-payments/${id}`)).data,
@@ -77,7 +78,7 @@ export function BillPayments({ target, approved, heading = true }: { target: Pay
         size="small"
         pagination={false}
         dataSource={data?.items ?? []}
-        locale={{ emptyText: 'Nothing paid yet' }}
+        locale={{ emptyText: error ? <QueryError error={error} onRetry={() => void refetch()} /> : 'Nothing paid yet' }}
         columns={[
           { title: 'Date', dataIndex: 'paymentDate', width: 110, render: (v) => formatDate(v) },
           { title: 'Paid', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <Money value={v} paise strong /> },

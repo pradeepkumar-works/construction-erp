@@ -10,10 +10,10 @@ import type { PpeIssueDto, PpeKind, PpeWorkerDto } from '@erp/shared';
 import { PPE_ISSUE_STATUS_LABELS, PPE_KIND_LABELS, canEditSafetyRecord } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useDeletePpe, usePpeIssues, usePpeRegister } from '@/lib/queries';
-import { useProjectScope } from '@/lib/project-scope';
+import { useOneProject } from '@/lib/project-scope';
 import { formatDate } from '@/lib/format';
 import { downloadWorkbook, exportFileName, workbookSheet } from '@/lib/exportExcel';
-import { QueryError } from '@/components/common/QueryState';
+import { Loading, QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 import { Section } from '@/components/common/Section';
@@ -45,7 +45,7 @@ interface CloseTarget {
  */
 export function PpePanel({ projectId: fixedProject }: { projectId?: string }) {
   const { user } = useAuth();
-  const [scoped, setScoped] = useProjectScope();
+  const [scoped, setScoped, deciding] = useOneProject();
   const projectId = fixedProject ?? scoped;
   const { data: reg, isLoading, error, refetch } = usePpeRegister(projectId);
   const [show, setShow] = useState<Show>('all');
@@ -71,6 +71,7 @@ export function PpePanel({ projectId: fixedProject }: { projectId?: string }) {
   };
 
   const picker = fixedProject ? null : <ProjectSelect value={scoped} onChange={(v) => setScoped(v)} placeholder="Choose a project" style={{ minWidth: 260 }} />;
+  if (!projectId && !fixedProject && deciding) return <Loading />;
   if (!projectId)
     return (
       <div style={{ padding: tk.space[4] }}>

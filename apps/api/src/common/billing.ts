@@ -69,6 +69,20 @@ export function aiPlanAllowanceInr(cfg: BillingConfig, status: BillingStatus, un
   return cfg.aiPerUnitInr * Math.max(1, units);
 }
 
+/**
+ * The next GST invoice number in a series ("NIR/2627-" → "NIR/2627-00042"): one past the highest number issued so far,
+ * never a count of the rows, so a row gone from the table can never hand out a number that was already used.
+ */
+export function nextInvoiceNo(prefix: string, issued: (string | null)[]): string {
+  let last = 0;
+  for (const no of issued) {
+    if (!no?.startsWith(prefix)) continue;
+    const tail = no.slice(prefix.length);
+    if (/^\d+$/.test(tail)) last = Math.max(last, Number(tail));
+  }
+  return `${prefix}${String(last + 1).padStart(5, '0')}`;
+}
+
 const iso = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null);
 
 /** Where a company stands: exempt, paid up, in its trial (also before the trial has a date), or read-only. */

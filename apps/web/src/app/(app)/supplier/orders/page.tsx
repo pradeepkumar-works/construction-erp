@@ -16,6 +16,7 @@ import { AcceptForm, DispatchForm } from '@/components/supplier/SupplierForms';
 import { AcceptedTag, DispatchStatusTag } from '@/components/supplier/supplierUi';
 import { unitLabel } from '@erp/shared';
 import { Money } from '@/components/common/Money';
+import { Section } from '@/components/common/Section';
 
 /** The supplier's orders (purchase and work orders) to accept and send against, and the dispatch notes sent. */
 export default function SupplierOrdersPage() {
@@ -157,6 +158,23 @@ function OrderDrawer({ order, onClose, onAccept, onDispatch, canSend }: { order:
                 : [{ title: 'Amount', dataIndex: 'amount', align: 'right' as const, width: 140, render: (v: string) => <Money paise value={v} /> }]),
             ]}
           />
+          {o.amendments.length ? (
+            <Section title="Amendments" style={{ marginTop: tk.space[4] }}>
+              <Table
+                size="small"
+                rowKey="label"
+                pagination={false}
+                dataSource={o.amendments}
+                scroll={{ x: 640 }}
+                columns={[
+                  { title: 'Amendment', dataIndex: 'label', width: 200, render: (v: string) => <span translate="no">{v}</span> },
+                  { title: 'Why', dataIndex: 'reason' },
+                  { title: 'Value before GST', key: 'value', width: 230, align: 'right', render: (_, a) => <span><Money paise value={a.valueBefore} /> to <Money paise value={a.valueAfter} /></span> },
+                  { title: 'Approved', dataIndex: 'approvedAt', width: 120, render: (v: string | null) => (v ? formatDate(v.slice(0, 10)) : NO_VALUE) },
+                ]}
+              />
+            </Section>
+          ) : null}
         </>
       ) : null}
     </Drawer>

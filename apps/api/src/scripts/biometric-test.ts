@@ -6,11 +6,14 @@
  */
 import assert from 'node:assert/strict';
 import {
+  admsAddressCheck,
   admsCommandLine,
+  admsPunchesInWindow,
   cleanPin,
   codeNumber,
   commandsToSend,
   dayFromPunches,
+  deviceAddress,
   devicePinProblem,
   deviceUserName,
   localToUtc,
@@ -142,6 +145,24 @@ test('where a user number stands: on the devices its last finished command added
   ]);
   assert.deepEqual(state.get('14'), { onDevices: 1, commandsWaiting: 0, commandsFailed: 1 });
   assert.deepEqual(state.get('22'), { onDevices: 0, commandsWaiting: 1, commandsFailed: 0 });
+});
+
+test('ADMS address: the first call keeps its address, the same one passes, another is held', () => {
+  assert.equal(deviceAddress(' ::FFFF:49.36.10.2 '), '49.36.10.2');
+  assert.equal(deviceAddress('2401:4900::1'), '2401:4900::1');
+  assert.equal(deviceAddress(''), null);
+  assert.equal(admsAddressCheck(null, '49.36.10.2'), 'PIN');
+  assert.equal(admsAddressCheck(null, null), 'OK');
+  assert.equal(admsAddressCheck('49.36.10.2', '::ffff:49.36.10.2'), 'OK');
+  assert.equal(admsAddressCheck('49.36.10.2', '103.21.4.9'), 'HOLD');
+  assert.equal(admsAddressCheck('49.36.10.2', null), 'HOLD');
+});
+
+test('ADMS window: a week back to today is taken, older is counted, a future day is dropped', () => {
+  const p = (local: string) => ({ pin: '14', local });
+  const { take, tooOld } = admsPunchesInWindow([p('2026-11-01 09:00:00'), p('2026-10-31 23:59:00'), p('2026-11-08 18:00:00'), p('2026-11-09 08:00:00')], '2026-11-08');
+  assert.deepEqual(take.map((t) => t.local), ['2026-11-01 09:00:00', '2026-11-08 18:00:00']);
+  assert.equal(tooOld, 1);
 });
 
 let failed = 0;

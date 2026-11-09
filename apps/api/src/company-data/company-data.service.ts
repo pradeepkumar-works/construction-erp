@@ -17,6 +17,8 @@ type Field = Prisma.DMMF.Field;
 
 /** Tables left out of the export: sign-in secrets and device push tokens. */
 const NOT_EXPORTED = new Set(['PasswordToken', 'PushToken']);
+/** Kept when a company is erased, with the company link emptied: its GST invoices, which the tax records need and whose numbers must never be reused. */
+const KEPT_ON_ERASE = new Set(['BillingPayment']);
 /** Columns left out of the export (file bytes go in the photos folder instead). */
 const HIDDEN_COLUMN = /password|tokenHash|secret/i;
 
@@ -242,7 +244,7 @@ export class CompanyDataService {
     await this.prisma.organization.update({ where: { id: org.id }, data: { deletionRequestedAt: new Date(), deletionRequestedByName: user.fullName, deletionScheduledFor: day } });
     const on = formatDate(day.toISOString().slice(0, 10));
     await this.audit.log(user, 'COMPANY', org.id, 'DELETION_REQUESTED', `All company data will be erased on ${on}`);
-    await this.tellAdmins(org.id, org.name, `${org.name} is set to be deleted on ${on}`, `${user.fullName} asked for ${org.name} and all its data to be deleted. Everything (projects, reports, bills, photos and user accounts) will be erased on <b>${on}</b>. Until then nothing changes and any admin can cancel it.`);
+    await this.tellAdmins(org.id, org.name, `${org.name} is set to be deleted on ${on}`, `${user.fullName} asked for ${org.name} and all its data to be deleted. Everything (projects, reports, bills, photos and user accounts) will be erased on <b>${on}</b>, except the GST invoices for your ${PRODUCT_NAME} subscription, which the tax law asks us to keep. Until then nothing changes and any admin can cancel it.`);
     return this.deletion(user);
   }
 
@@ -292,13 +294,16 @@ export class CompanyDataService {
     const table = (m: Model) => q(m.dbName ?? m.name);
     await this.prisma.$transaction(
       async (tx) => {
+        for (const s of this.scopes.filter((k) => KEPT_ON_ERASE.has(k.model.name))) {
+          await tx.$executeRawUnsafe(`UPDATE ${table(s.model)} SET "organizationId" = NULL WHERE ${s.sql}`, orgId);
+        }
         // Clear optional links first so rows that point at each other (a user's manager, a revision's superseded one) can go.
         for (const s of this.scopes) {
           const optional = s.model.fields.filter((f) => f.kind === 'object' && f.relationFromFields?.length && f.relationFromFields.every((c) => !s.model.fields.find((x) => x.name === c)?.isRequired));
           const cols = optional.flatMap((f) => f.relationFromFields!);
           if (cols.length && s.model.name !== 'Organization') await tx.$executeRawUnsafe(`UPDATE ${table(s.model)} SET ${cols.map((c) => `${q(c)} = NULL`).join(', ')} WHERE ${s.sql}`, orgId);
         }
-        let left = this.scopes.filter((s) => s.model.name !== 'Organization');
+        let left = this.scopes.filter((s) => s.model.name !== 'Organization' && !KEPT_ON_ERASE.has(s.model.name));
         while (left.length) {
           const blocked: TableScope[] = [];
           for (const s of left) {

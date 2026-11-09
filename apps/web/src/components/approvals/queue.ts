@@ -1,6 +1,6 @@
 import { SUBMISSION_TYPE_PLURAL_LABELS, rankWaiting, toNumber, type PendingApprovalDto, type SubmissionType } from '@erp/shared';
 
-const QUEUE_ORDER: SubmissionType[] = ['PROGRESS', 'DPR', 'MATERIAL_REQUEST', 'MACHINERY', 'EXPENSE', 'MEASUREMENT', 'BILL', 'SUPPLIER_CHOICE', 'PURCHASE_ORDER', 'VENDOR_BILL', 'WORK_ORDER', 'SUBCONTRACT_BILL', 'PAYMENT_REQUEST', 'INSPECTION'];
+const QUEUE_ORDER: SubmissionType[] = ['PROGRESS', 'DPR', 'MATERIAL_REQUEST', 'MACHINERY', 'EXPENSE', 'MEASUREMENT', 'BILL', 'SUPPLIER_CHOICE', 'PURCHASE_ORDER', 'VENDOR_BILL', 'WORK_ORDER', 'WO_AMENDMENT', 'SUBCONTRACT_BILL', 'PAYMENT_REQUEST', 'INSPECTION'];
 
 /** Queue order of the groups, named as their lists are (the filter and the group headers). */
 export const QUEUE_TYPES: [SubmissionType, string][] = QUEUE_ORDER.map((t) => [t, SUBMISSION_TYPE_PLURAL_LABELS[t]]);
@@ -23,6 +23,7 @@ export const RECORD_PAGES: Partial<Record<SubmissionType, string>> = {
   INSPECTION: '/inspections',
   PAYMENT_REQUEST: '/payment-requests',
   SUPPLIER_CHOICE: '/supplier-choices',
+  WO_AMENDMENT: '/work-order-amendments',
 };
 
 export const recordPage = (type: SubmissionType, id: string) => (RECORD_PAGES[type] ? `${RECORD_PAGES[type]}/${id}` : null);

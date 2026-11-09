@@ -24,6 +24,17 @@ export const COMMERCIAL: Record<string, string> = {
   '{qty} received': '{qty} प्राप्त',
   '{from} to {to}': '{from} से {to} तक',
 
+  // Work order amendment: a change to an approved work order, sent for approval
+  'Work order amendment': 'वर्क ऑर्डर में संशोधन',
+  'Work order amendments': 'वर्क ऑर्डर में संशोधन',
+  '{amount} more than now, before GST': 'अभी से {amount} अधिक, जीएसटी से पहले',
+  '{amount} less than now, before GST': 'अभी से {amount} कम, जीएसटी से पहले',
+  'Value now': 'अभी का मूल्य',
+  'End date': 'समाप्ति तिथि',
+  'What changes': 'क्या बदलता है',
+  'New: {qty} {unit} at {rate}': 'नया: {qty} {unit}, {rate} की दर पर',
+  'Only the end date changes': 'केवल समाप्ति तिथि बदलती है',
+
   // Supplier choice: the finalised supplier sent for approval before the order
   'Supplier choice': 'सप्लायर का चयन',
   'Supplier Choice': 'सप्लायर का चयन',

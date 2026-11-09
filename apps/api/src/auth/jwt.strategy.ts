@@ -7,6 +7,7 @@ import { setTenant, withoutTenant } from '../prisma/tenant-context';
 import { isPlatformAdmin } from '../common/platform-admin';
 import { RequestUser } from '../common/current-user';
 import { billingConfig, billingState } from '../common/billing';
+import { jwtSecret } from '../common/jwt-secret';
 import { todayIn } from '../notifications/time';
 
 export interface JwtPayload {
@@ -25,7 +26,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET || 'dev-secret',
+      secretOrKey: jwtSecret(),
     });
   }
 

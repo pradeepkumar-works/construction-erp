@@ -9,7 +9,7 @@
  */
 import assert from 'node:assert/strict';
 import { AI_ROLE_CHOICES, aiRoleAllowed, type RoleKey } from '@erp/shared';
-import { aiPlanAllowanceInr, billingConfig } from '../common/billing';
+import { aiPlanAllowanceInr, billingConfig, nextInvoiceNo } from '../common/billing';
 
 // The test model and test billing keys, whatever the environment says: nothing here calls the real model or Razorpay.
 process.env.AI_PROVIDER = 'fake';
@@ -55,6 +55,15 @@ test('the allowance amounts fall back to their defaults when unset or not whole 
     process.env.BILLING_AI_INR_PER_UNIT = saved.per;
     process.env.BILLING_AI_TRIAL_INR = saved.trial;
   }
+});
+
+test('a GST invoice number is one past the highest issued in its series, never a count of the rows', () => {
+  assert.equal(nextInvoiceNo('NIR/2627-', []), 'NIR/2627-00001');
+  assert.equal(nextInvoiceNo('NIR/2627-', ['NIR/2627-00001', 'NIR/2627-00002']), 'NIR/2627-00003');
+  // An invoice gone from the middle (a count would say 2 and hand out 00003 again).
+  assert.equal(nextInvoiceNo('NIR/2627-', ['NIR/2627-00001', 'NIR/2627-00003']), 'NIR/2627-00004');
+  assert.equal(nextInvoiceNo('NIR/2627-', ['NIR/2526-00090', null, 'NIR/2627-00007', 'NIR/2627-draft']), 'NIR/2627-00008');
+  assert.equal(nextInvoiceNo('NIR/2627-', ['NIR/2627-99999']), 'NIR/2627-100000');
 });
 
 test('admins always have it, guests never, and an empty list opens it to all staff', () => {

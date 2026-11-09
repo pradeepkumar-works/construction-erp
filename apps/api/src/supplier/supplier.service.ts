@@ -10,6 +10,7 @@ import {
   STOCK_KEEPER_ROLES,
   VENDOR_BANK_ROLES,
   VENDOR_BILL_ROLES,
+  woAmendmentLabel,
   type SupplierBillDto,
   type SupplierChangeDto,
   type SupplierDispatchDto,
@@ -160,7 +161,12 @@ export class SupplierService {
         ? []
         : this.prisma.workOrder.findMany({
             where: { vendorId, status: 'APPROVED', ...(only ? { id: only.id } : {}) },
-            include: { project: { select: { name: true } }, supplierAcceptedBy: { select: { fullName: true } }, lines: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] } },
+            include: {
+              project: { select: { name: true } },
+              supplierAcceptedBy: { select: { fullName: true } },
+              lines: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] },
+              amendments: { where: { status: 'APPROVED', appliedAt: { not: null } }, orderBy: { amendmentNo: 'asc' } },
+            },
             orderBy: [{ woDate: 'desc' }, { woNo: 'desc' }],
             take: 200,
           }),
@@ -183,6 +189,7 @@ export class SupplierService {
         acceptedBy: p.supplierAcceptedBy?.fullName ?? null,
         supplierNote: p.supplierNote,
         closed: !!p.closedAt,
+        amendments: [],
         lines: p.lines.map((l) => {
           const received = sum(l.stockTxns, (t) => t.quantity);
           const onTheWay = sum(l.dispatchLines, (d) => d.quantity);
@@ -218,6 +225,14 @@ export class SupplierService {
         supplierNote: w.supplierNote,
         closed: !!w.closedAt,
         lines: w.lines.map((l) => ({ id: l.id, itemName: l.description, specification: null, unit: l.unit, quantity: dec(l.quantity), rate: money(l.rate), amount: money(l.amount), onTheWay: '0', received: '0', toSend: '0' })),
+        amendments: w.amendments.map((a) => ({
+          label: woAmendmentLabel(w.woNo, a.amendmentNo),
+          reason: a.reason,
+          valueBefore: money(a.valueBefore),
+          valueAfter: money(a.valueAfter),
+          endDate: dateOnly(a.endDate),
+          approvedAt: iso(a.reviewedAt),
+        })),
       })),
     ];
     return out.sort((a, b) => b.sortDate.localeCompare(a.sortDate) || b.number.localeCompare(a.number)).map(({ sortDate: _s, ...o }) => o);

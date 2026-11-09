@@ -36,7 +36,7 @@ export const MODULE_SUBMISSION_TYPES: Record<ModuleKey, SubmissionType[]> = {
   materials: ['MATERIAL_REQUEST'],
   plant: ['MACHINERY'],
   purchases: ['SUPPLIER_CHOICE', 'PURCHASE_ORDER', 'VENDOR_BILL'],
-  subcontracts: ['WORK_ORDER', 'SUBCONTRACT_BILL'],
+  subcontracts: ['WORK_ORDER', 'WO_AMENDMENT', 'SUBCONTRACT_BILL'],
   billing: ['BILL'],
   tenders: [],
   rmc: [],
@@ -81,4 +81,5 @@ export const MODULE_OTHER_DECISIONS: Partial<Record<ModuleKey, readonly OtherDec
   payroll: ['PAYROLL_RUN'],
   accounts: ['VOUCHER'],
   correspondence: ['LETTER'],
+  projects: ['BUDGET'],
 };

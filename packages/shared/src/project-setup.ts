@@ -128,7 +128,10 @@ export interface ProjectSetupFacts {
   activitiesUndated: number;
   baselineAt: string | null;
   agreementNo: string | null;
+  /** A version of the budget is approved */
   budgetSet: boolean;
+  /** A version waits for approval by admin or management */
+  budgetWaiting?: boolean;
   /** The chainage, floors or villages the sector view needs */
   sectorSet: boolean;
   norms: number;
@@ -151,6 +154,8 @@ export interface ProjectSetupDto {
   done: number;
   total: number;
   boqGap: BoqContractGap | null;
+  /** A version of the budget waits for approval, so the budget step says so */
+  budgetWaiting: boolean;
   /** What in the records makes the figures wrong, for everyone on the project, until it is fixed (`dataProblems`) */
   problems: DataProblemDto[];
 }

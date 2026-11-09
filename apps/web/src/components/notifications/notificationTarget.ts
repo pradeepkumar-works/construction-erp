@@ -45,6 +45,7 @@ export function notificationHref(n: NotificationDto): string {
   if (n.entityType === 'TRANSFER_IN') return `/stock${n.projectId ? `?projectId=${n.projectId}` : ''}`;
   if (n.entityType === 'PROJECT' && n.entityId) return `/projects/${n.entityId}`;
   if (n.entityType === 'PAYROLL_RUN' && n.entityId) return `/payroll?tab=runs&run=${n.entityId}`;
+  if (n.entityType === 'BUDGET' && n.projectId) return `/projects/${n.projectId}?tab=budget`;
   if (n.entityType === 'FINAL_SETTLEMENT') return '/payroll?tab=settlements';
   if (n.type === 'HANDOFF' && n.entityType === 'MATERIAL_REQUEST' && n.entityId) return `/requests-to-order/${n.entityId}`;
   if (n.type === 'HANDOFF' && n.entityType === 'PURCHASE_ORDER' && n.entityId) return `/purchase-orders/${n.entityId}`;

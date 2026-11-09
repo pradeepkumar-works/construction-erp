@@ -802,6 +802,10 @@ model Organization {
   supportAccessUntil         DateTime?
   supportAccessGrantedByName String?
 
+  /// A demo company's day its records were last dated to (ARCHITECTURE "Demo clock"): the daily job moves every date
+  /// forward by the days since. Set only by the demo seed; null on every customer's company, which is never moved.
+  demoDatedOn DateTime? @db.Date
+
   /// Subscription. Last day of the free trial; set when billing is on (at sign-up, or by the daily job)
   trialEndsAt        DateTime? @db.Date
   /// Last day paid for
@@ -961,6 +965,7 @@ model Organization {
   vendorPayments        VendorPayment[]
   paymentRequests       PaymentRequest[]
   supplierChoices       SupplierChoice[]
+  workOrderAmendments   WorkOrderAmendment[]
   tallyConfig           TallyConfig?
   tallyExports          TallyExport[]
   checklists            ChecklistTemplate[]
@@ -968,6 +973,7 @@ model Organization {
   qualityTests          QualityTest[]
   ncrs                  Ncr[]
   testTypes             TestType[]
+  isStandards           IsStandard[]
   qaPlanLines           QaPlanLine[]
   pours                 Pour[]
   qaLabs                QaLab[]
@@ -1117,7 +1123,7 @@ model ApprovalRule {
   role           Role?        @relation(fields: [roleId], references: [id], onDelete: Cascade)
   /// A code of the `position` master: whoever holds it on the entry's project, or at head office
   positionCode   String?
-  /// SubmissionType: PROGRESS | DPR | MATERIAL_REQUEST | MACHINERY | EXPENSE | MEASUREMENT | BILL | PURCHASE_ORDER | VENDOR_BILL | WORK_ORDER | SUBCONTRACT_BILL | INSPECTION | PAYMENT_REQUEST | SUPPLIER_CHOICE
+  /// SubmissionType: PROGRESS | DPR | MATERIAL_REQUEST | MACHINERY | EXPENSE | MEASUREMENT | BILL | PURCHASE_ORDER | VENDOR_BILL | WORK_ORDER | SUBCONTRACT_BILL | INSPECTION | PAYMENT_REQUEST | SUPPLIER_CHOICE | WO_AMENDMENT
   submissionType String
   maxAmount      Decimal?     @db.Decimal(18, 2)
   /// 1 is the first approval; 2 to 6 are further approvals of the same entry
@@ -1322,6 +1328,8 @@ model User {
   reviewedPayRequests     PaymentRequest[]           @relation("PayRequestReviewer")
   submittedChoices        SupplierChoice[]           @relation("SupplierChoiceSubmitter")
   reviewedChoices         SupplierChoice[]           @relation("SupplierChoiceReviewer")
+  submittedWoAmendments   WorkOrderAmendment[]       @relation("WoAmendmentSubmitter")
+  reviewedWoAmendments    WorkOrderAmendment[]       @relation("WoAmendmentReviewer")
   quotationsEntered       Quotation[]                @relation("QuotationCreator")
   submittedPos            PurchaseOrder[]            @relation("PoSubmitter")
   reviewedPos             PurchaseOrder[]            @relation("PoReviewer")
@@ -1340,6 +1348,7 @@ model User {
   pours                   Pour[]                     @relation("PourCreator")
   qaCalibrations          QaCalibration[]            @relation("CalibrationBy")
   qaAudits                QaAudit[]                  @relation("QaAuditBy")
+  isStandardsChecked      IsStandard[]               @relation("IsStandardCheckedBy")
   drawingNeeds            DrawingNeed[]              @relation("DrawingNeedBy")
   designSubmissions       DesignSubmission[]         @relation("DesignSubmissionBy")
   designRounds            DesignSubmissionRound[]    @relation("DesignRoundBy")
@@ -1362,7 +1371,8 @@ model User {
   letterMarksFrom         LetterMark[]               @relation("LetterMarkFrom")
   letterMarksTo           LetterMark[]               @relation("LetterMarkTo")
   variationsCreated       Variation[]                @relation("VariationCreator")
-  budgetsUpdated          ProjectBudget[]            @relation("BudgetUpdater")
+  budgetsPrepared         ProjectBudget[]            @relation("BudgetPreparer")
+  budgetsDecided          ProjectBudget[]            @relation("BudgetDecider")
   openingsUpdated         ProjectOpening[]           @relation("OpeningUpdater")
   incidentsReported       SafetyIncident[]           @relation("IncidentReporter")
   incidentsClosed         SafetyIncident[]           @relation("IncidentCloser")
@@ -1645,6 +1655,7 @@ model Project {
   vendorPayments     VendorPayment[]
   paymentRequests    PaymentRequest[]
   supplierChoices    SupplierChoice[]
+  woAmendments       WorkOrderAmendment[]
   fundRequestsRaised PaymentRequest[]         @relation("FundRequestRaisedAt")
   quotations         Quotation[]
   purchaseOrders     PurchaseOrder[]
@@ -1691,7 +1702,7 @@ model Project {
   staffAttendance    StaffAttendance[]
   holidays           Holiday[]
   variations         Variation[]
-  budget             ProjectBudget?
+  budgets            ProjectBudget[]
   opening            ProjectOpening?
   /// The tender this project was won from
   tender             Tender?
@@ -2214,6 +2225,8 @@ model WorkOrder {
   /// Closed: no more measurements, issues or bills against it
   closedAt             DateTime?
   closeNote            String?
+  /// Amendments in force: approved WorkOrderAmendment rows applied to its lines (0 = as first approved)
+  amendmentNo          Int              @default(0)
   /// The subcontractor accepted it on the supplier portal, with their remark
   supplierAcceptedAt   DateTime?
   supplierAcceptedById String?
@@ -2241,6 +2254,7 @@ model WorkOrder {
   progressLines    ProgressEntry[]
   supplierInvoices SupplierInvoice[]
   scEnquiry        SubcontractEnquiry?
+  amendments       WorkOrderAmendment[]
 
   @@unique([organizationId, woNo])
   @@index([organizationId, status])
@@ -2264,10 +2278,73 @@ model WorkOrderLine {
   amount      Decimal   @db.Decimal(18, 2)
   sortOrder   Int       @default(0)
 
-  billLines SubcontractBillLine[]
+  billLines      SubcontractBillLine[]
+  amendmentLines WorkOrderAmendmentLine[]
 
   @@unique([workOrderId, boqItemId])
   @@index([boqItemId])
+}
+
+/// An amendment to an approved work order: lines changed (quantity, rate) or added and a new end date, approved through
+/// the approval matrix (submission type WO_AMENDMENT, its amount the order's value after it) and applied to the order's
+/// lines in place when approved. Numbered 1, 2, … per order; at most one is open (not approved, not rejected) at a time.
+model WorkOrderAmendment {
+  id             String           @id @default(uuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  workOrderId    String
+  workOrder      WorkOrder        @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  amendmentNo    Int
+  reason         String
+  /// The new end date; null leaves the order's as it is
+  endDate        DateTime?        @db.Date
+  /// The order's end date when the amendment was last saved
+  endDateBefore  DateTime?        @db.Date
+  valueBefore    Decimal          @db.Decimal(18, 2)
+  valueAfter     Decimal          @db.Decimal(18, 2)
+  /// When the approved amendment was written to the order's lines
+  appliedAt      DateTime?
+  status         SubmissionStatus @default(DRAFT)
+  submittedById  String
+  submittedBy    User             @relation("WoAmendmentSubmitter", fields: [submittedById], references: [id])
+  submittedAt    DateTime?
+  reviewedById   String?
+  reviewedBy     User?            @relation("WoAmendmentReviewer", fields: [reviewedById], references: [id])
+  reviewedAt     DateTime?
+  reviewNote     String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  lines WorkOrderAmendmentLine[]
+
+  @@unique([workOrderId, amendmentNo])
+  @@index([organizationId, status])
+  @@index([projectId, status])
+}
+
+/// One line of an amendment: an order line with what it was (qtyBefore, rateBefore) and what it becomes, or a new item
+/// (qtyBefore null; workOrderLineId set to the line it became once applied).
+model WorkOrderAmendmentLine {
+  id              String             @id @default(uuid())
+  amendmentId     String
+  amendment       WorkOrderAmendment @relation(fields: [amendmentId], references: [id], onDelete: Cascade)
+  workOrderLineId String?
+  workOrderLine   WorkOrderLine?     @relation(fields: [workOrderLineId], references: [id], onDelete: SetNull)
+  boqItemId       String?
+  boqItem         BoqItem?           @relation(fields: [boqItemId], references: [id], onDelete: Restrict)
+  description     String
+  unit            String
+  qtyBefore       Decimal?           @db.Decimal(18, 3)
+  rateBefore      Decimal?           @db.Decimal(18, 2)
+  quantity        Decimal            @db.Decimal(18, 3)
+  rate            Decimal            @db.Decimal(18, 2)
+  amount          Decimal            @db.Decimal(18, 2)
+  sortOrder       Int                @default(0)
+
+  @@index([amendmentId])
+  @@index([workOrderLineId])
 }
 
 /// Running bill N of a subcontractor under a work order: measured work (or quantities entered for the work order's own
@@ -2357,6 +2434,8 @@ model SubcontractBillLine {
   workOrderLineId String
   workOrderLine   WorkOrderLine   @relation(fields: [workOrderLineId], references: [id], onDelete: Restrict)
   rate            Decimal         @db.Decimal(18, 2)
+  /// What earlier bills paid for this line (each at its own rate), so an amended rate never restates them
+  prevAmount      Decimal         @default(0) @db.Decimal(18, 2)
   prevQty         Decimal         @db.Decimal(18, 3)
   thisQty         Decimal         @db.Decimal(18, 3)
   uptoQty         Decimal         @db.Decimal(18, 3)
@@ -2430,12 +2509,15 @@ model BoqItem {
   billItems         RaBillItem[]
   billHolds         RaBillHold[]
   workOrderLines    WorkOrderLine[]
+  woAmendmentLines  WorkOrderAmendmentLine[]
   scEnquiryItems    SubcontractEnquiryItem[]
   variationLines    VariationLine[]
   materialNorms     MaterialNorm[]
   resources         BoqResource[]
   rfis              Rfi[]
   materialApprovals MaterialApproval[]
+
+  budgetLines ProjectBudgetLine[]
 
   @@unique([projectId, itemNo])
   @@index([organizationId])
@@ -5161,6 +5243,36 @@ model Ncr {
   @@index([organizationId, status])
 }
 
+/// A company's copy of a catalogue Indian Standard or one of its own (`STANDARD_IS_CODES` in shared): matched by code,
+/// so a company with no rows uses the catalogue as shipped. ARCHITECTURE "Indian Standards".
+model IsStandard {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  /// IS_456, IS_2720_PART_8: from the number, fixed once saved
+  code           String
+  /// IS 456, IS 2720 (Part 8)
+  number         String
+  /// The edition's year
+  year           Int
+  /// The year BIS last reaffirmed the edition
+  reaffirmed     Int?
+  title          String
+  discipline     IsDiscipline
+  subject        String
+  /// [{ ref, title, requirement, check: { by, testTypeCode? }, sampling, tolerance }] (`IsClauseDef`)
+  clauses        Json
+  isActive       Boolean      @default(true)
+  /// The day someone last checked the edition against BIS, and who
+  checkedOn      DateTime?    @db.Date
+  checkedById    String?
+  checkedBy      User?        @relation("IsStandardCheckedBy", fields: [checkedById], references: [id], onDelete: SetNull)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, code])
+}
+
 /// A company's copy of a standard test type or one of its own (`STANDARD_TEST_TYPES` in shared): matched by
 /// code, so a company that never edits its tests needs no rows.
 model TestType {
@@ -6082,8 +6194,9 @@ enum BillingPaymentStatus {
 /// One payment for the subscription: a Razorpay order, and once paid, the GST invoice for it.
 model BillingPayment {
   id                String               @id @default(uuid())
-  organizationId    String
-  organization      Organization         @relation(fields: [organizationId], references: [id])
+  /// Empty once the company is erased: its GST invoices are kept for the tax records, with the buyer's details on them
+  organizationId    String?
+  organization      Organization?        @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   status            BillingPaymentStatus @default(CREATED)
   razorpayOrderId   String               @unique
   razorpayPaymentId String?              @unique
@@ -6168,6 +6281,7 @@ model Variation {
   eotApplications EotApplication[]
   lines           VariationLine[]
   attachments     Attachment[]
+  budgets         ProjectBudget[]
   rfis            Rfi[]
   meetingActions  MeetingAction[]
 
@@ -6204,24 +6318,58 @@ model VariationLine {
 }
 
 /// A project's cost budget by cost head (the heads of the cost view). One per project.
+/// One version of a project's budget (ARCHITECTURE "Budget and cash flow"): its cost heads and the BOQ budget rates in
+/// `lines`. A version is prepared, submitted and approved by admin or management (never by its preparer); approving it
+/// supersedes the one before and copies its lines onto `BoqItem.budgetRate`. Forecasts read only the approved version.
+/// Heads are all null when the version has no cost-head budget (the forecast then reads the BOQ budget).
 model ProjectBudget {
-  id             String       @id @default(uuid())
+  id             String              @id @default(uuid())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  projectId      String       @unique
-  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  expenses       Decimal      @default(0) @db.Decimal(18, 2)
-  material       Decimal      @default(0) @db.Decimal(18, 2)
-  machinery      Decimal      @default(0) @db.Decimal(18, 2)
-  labour         Decimal      @default(0) @db.Decimal(18, 2)
-  subcontract    Decimal      @default(0) @db.Decimal(18, 2)
+  organization   Organization        @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  versionNo      Int
+  status         BudgetStatus        @default(DRAFT)
+  expenses       Decimal?            @db.Decimal(18, 2)
+  material       Decimal?            @db.Decimal(18, 2)
+  machinery      Decimal?            @db.Decimal(18, 2)
+  labour         Decimal?            @db.Decimal(18, 2)
+  subcontract    Decimal?            @db.Decimal(18, 2)
   notes          String?
-  updatedById    String
-  updatedBy      User         @relation("BudgetUpdater", fields: [updatedById], references: [id])
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  /// Why it was revised: a code of the `budgetRevision` master; null only on version 1
+  reasonCode     String?
+  reasonNote     String?
+  /// The approved variation that brought the revision
+  variationId    String?
+  variation      Variation?          @relation(fields: [variationId], references: [id], onDelete: SetNull)
+  /// Kept as the column `updatedById`, so the code before versions still reads it while a deploy rolls out
+  preparedById   String              @map("updatedById")
+  preparedBy     User                @relation("BudgetPreparer", fields: [preparedById], references: [id])
+  submittedAt    DateTime?
+  decidedById    String?
+  decidedBy      User?               @relation("BudgetDecider", fields: [decidedById], references: [id])
+  decidedAt      DateTime?
+  decisionNote   String?
+  approvedAt     DateTime?
+  lines          ProjectBudgetLine[]
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
 
-  @@index([organizationId])
+  @@unique([projectId, versionNo])
+  @@index([organizationId, status])
+}
+
+/// A BOQ item's budgeted cost per unit in one budget version.
+model ProjectBudgetLine {
+  id         String        @id @default(uuid())
+  budgetId   String
+  budget     ProjectBudget @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  boqItemId  String
+  boqItem    BoqItem       @relation(fields: [boqItemId], references: [id], onDelete: Restrict)
+  budgetRate Decimal       @db.Decimal(18, 2)
+
+  @@unique([budgetId, boqItemId])
+  @@index([boqItemId])
 }
 
 /// What a project had spent, by head, and the work it had done, on the day it came on Nirmaan (ARCHITECTURE "Opening
@@ -6305,6 +6453,13 @@ enum RfiStatus {
 }
 
 /// A consultant engineer's level on a project, lowest first
+/// The discipline an Indian Standard belongs to (`IS_DISCIPLINES` in shared)
+enum IsDiscipline {
+  CIVIL
+  MECHANICAL
+  ELECTRICAL
+}
+
 enum CheckLevel {
   ASSISTANT_ENGINEER
   RESIDENT_ENGINEER
@@ -7467,6 +7622,11 @@ model BiometricDevice {
   isActive       Boolean           @default(true)
   lastSeenAt     DateTime?
   lastPunchAt    DateTime?
+  /// ADMS: the internet address the device calls from, kept on its first call; a call from another waits for an admin
+  pinnedAddress    String?
+  /// ADMS: another address the device called from, and when it first did, until an admin approves the move
+  pendingAddress   String?
+  pendingAddressAt DateTime?
   createdById    String
   createdBy      User              @relation("BiometricDeviceCreator", fields: [createdById], references: [id])
   createdAt      DateTime          @default(now())
@@ -9804,6 +9964,14 @@ model SiteOrder {
 }
 
 /// Programme and EOT: a programme revision with the Engineer
+enum BudgetStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  RETURNED
+  SUPERSEDED
+}
+
 enum ProgrammeStatus {
   SUBMITTED
   APPROVED

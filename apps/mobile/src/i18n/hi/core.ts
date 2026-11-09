@@ -512,4 +512,6 @@ export const CORE: Record<string, string> = {
   Completion: 'पूरा होने की तारीख',
   '{executed} of {planned} {unit} done': '{planned} {unit} में से {executed} पूरा',
   'Opens a new progress entry for this activity': 'इस काम (एक्टिविटी) की नई प्रगति एंट्री खोलता है',
+  'Progress goes in the daily report': 'प्रगति दैनिक रिपोर्ट (DPR) में दर्ज होती है',
+  "Your company records progress in the DPR: add a work line to the day's DPR instead.": 'आपकी कंपनी प्रगति DPR में दर्ज करती है: इसकी जगह उस दिन की DPR में काम की एक लाइन जोड़ें।',
 };

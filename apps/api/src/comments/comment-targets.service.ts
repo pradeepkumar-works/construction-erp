@@ -13,6 +13,7 @@ import { PurchaseOrdersService } from '../purchasing/purchase-orders.service';
 import { VendorBillsService } from '../purchasing/vendor-bills.service';
 import { WorkOrdersService } from '../subcontracts/work-orders.service';
 import { SubcontractBillsService } from '../subcontracts/subcontract-bills.service';
+import { WorkOrderAmendmentsService } from '../subcontracts/work-order-amendments.service';
 import { InspectionsService } from '../inspections/inspections.service';
 import { PaymentRequestsService } from '../payables/payment-requests.service';
 import { RequestsToOrderService } from '../purchasing/requests-to-order.service';
@@ -54,6 +55,7 @@ export class CommentTargetsService {
     inspections: InspectionsService,
     paymentRequests: PaymentRequestsService,
     toOrder: RequestsToOrderService,
+    amendments: WorkOrderAmendmentsService,
   ) {
     this.getters = {
       PROGRESS: (u, id) => progress.get(u, id),
@@ -70,6 +72,7 @@ export class CommentTargetsService {
       INSPECTION: (u, id) => inspections.get(u, id),
       PAYMENT_REQUEST: (u, id) => paymentRequests.get(u, id),
       SUPPLIER_CHOICE: (u, id) => toOrder.choice(u, id),
+      WO_AMENDMENT: (u, id) => amendments.get(u, id),
     };
   }
 

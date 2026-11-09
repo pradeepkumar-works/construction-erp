@@ -132,9 +132,9 @@ export function MrFormModal({ open, onClose, projectId, defaultProjectId, entry,
               {
                 key: 'specification',
                 title: 'Specification',
-                render: (f) => (
+                render: (f, i) => (
                   <Form.Item name={[f.name, 'specification']} noStyle>
-                    <Input placeholder="Grade / brand / size" style={{ minWidth: 140 }} />
+                    <Input placeholder="Grade / brand / size" aria-label={`Specification of line ${i + 1}`} style={{ minWidth: 140 }} />
                   </Form.Item>
                 ),
               },

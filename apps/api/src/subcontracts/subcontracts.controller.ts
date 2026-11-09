@@ -3,14 +3,17 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { WorkOrdersService } from './work-orders.service';
 import { SubcontractBillsService } from './subcontract-bills.service';
+import { WorkOrderAmendmentsService } from './work-order-amendments.service';
 import {
   CloseWorkOrderDto,
   CreateSubcontractBillDto,
+  CreateWoAmendmentDto,
   CreateWorkOrderDto,
   ListSubcontractBillsQuery,
   ListWorkOrdersQuery,
   MarginQuery,
   UpdateSubcontractBillDto,
+  UpdateWoAmendmentDto,
   UpdateWorkOrderDto,
 } from './subcontracts.dto';
 
@@ -18,7 +21,7 @@ import {
 @ApiBearerAuth()
 @Controller()
 export class SubcontractsController {
-  constructor(private orders: WorkOrdersService, private bills: SubcontractBillsService) {}
+  constructor(private orders: WorkOrdersService, private bills: SubcontractBillsService, private amendments: WorkOrderAmendmentsService) {}
 
   @ApiOperation({ summary: 'Work orders to subcontractors and labour contractors', description: '`open` lists approved orders that are not closed; `boqItemId` those with a line on that BOQ item.' })
   @Get('work-orders')
@@ -66,6 +69,45 @@ export class SubcontractsController {
   @Delete('work-orders/:id')
   remove(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string) {
     return this.orders.remove(user, id);
+  }
+
+  @ApiOperation({ summary: "A work order's amendments, oldest first, each with its lines before and after" })
+  @Get('work-orders/:id/amendments')
+  listAmendments(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string) {
+    return this.amendments.forOrder(user, id);
+  }
+
+  @ApiOperation({
+    summary: 'Raise an amendment on an approved work order',
+    description: 'A draft on the order’s lines as they are, numbered after the last one. One open amendment per order; not on a closed order or after its final bill is approved.',
+  })
+  @Post('work-orders/:id/amendments')
+  createAmendment(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: CreateWoAmendmentDto) {
+    return this.amendments.create(user, id, dto);
+  }
+
+  @ApiOperation({ summary: 'A work order amendment', description: 'Approved through POST /approvals/wo_amendment/:id/review, then written to the order’s lines.' })
+  @Get('work-order-amendments/:id')
+  getAmendment(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string) {
+    return this.amendments.get(user, id);
+  }
+
+  @ApiOperation({ summary: 'Change an amendment before approval', description: 'Quantities not below what is billed or measured, rates above zero, new items not already on the order.' })
+  @Patch('work-order-amendments/:id')
+  updateAmendment(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateWoAmendmentDto) {
+    return this.amendments.update(user, id, dto);
+  }
+
+  @ApiOperation({ summary: 'Submit an amendment for approval', description: 'The approval matrix reads the order’s value after it.' })
+  @Post('work-order-amendments/:id/submit')
+  submitAmendment(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string) {
+    return this.amendments.submit(user, id);
+  }
+
+  @ApiOperation({ summary: 'Delete an amendment that is not decided' })
+  @Delete('work-order-amendments/:id')
+  removeAmendment(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string) {
+    return this.amendments.remove(user, id);
   }
 
   @ApiOperation({ summary: 'Subcontractor bills' })

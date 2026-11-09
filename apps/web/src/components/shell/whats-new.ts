@@ -20,6 +20,50 @@ export const WHATS_NEW: WhatsNew[] = [
     ],
   },
   {
+    id: '2026-11-work-order-amendments',
+    date: '2026-11-08',
+    title: 'Amend an approved work order',
+    points: [
+      'Amend order on an approved work order changes quantities and rates, adds items and moves the end date. It goes for approval like the order, at the order’s value after the change, and the order changes when it is approved.',
+      'A quantity cannot go below what is measured or billed on the line. Measurements, issues and bills go on against the order as it stands while the amendment waits.',
+      'The work order shows every amendment and each version of the order with its lines. The printed order names the amendment in force, and the subcontractor sees the approved ones on the supplier portal.',
+      'A subcontractor bill keeps the rates earlier bills charged: a new rate applies only to work billed after it.',
+    ],
+  },
+  {
+    id: '2026-11-budget-versions',
+    date: '2026-11-08',
+    title: 'A project budget is approved, and revised with a reason',
+    points: [
+      'The project manager prepares the budget and sends it for approval; admin or management approve it or return it with what to change. Nobody approves a version they prepared.',
+      'Revise budget starts version 2 from the one in force. Each revision names its reason (a variation, a rate change, a change of scope, an estimate corrected) and shows what it changes by cost head.',
+      'Cost against budget, the forecast, the cash flow and the purchase order budget check read only the approved version, so a draft never moves them. The Budget tab names the version in force and lists every version under History.',
+      'Budgets waiting for you show under Also waiting for you in Approvals and on the Projects screen. A project made from a won tender sends its first budget for approval.',
+    ],
+  },
+  {
+    id: '2026-11-menu-by-role',
+    date: '2026-11-08',
+    title: 'A menu that keeps to your work',
+    points: [
+      'The menu now shows the modules your role works in: a site engineer sees site work, quality, drawings, stores, indents and orders, machinery and labour, not accounts or the RMC plant. Admin, management, project managers and accounts see every module.',
+      'Nothing is taken away: every page you could open before still opens from Home’s All modules, from Search and from links.',
+      'PPE, the quality plan, the roll call and the muster roll open on the busiest site when no project is chosen in the header.',
+    ],
+  },
+  {
+    id: '2026-11-indian-standards',
+    date: '2026-11-08',
+    title: 'Indian Standards: a library of IS codes, and compliance by discipline',
+    points: [
+      'Quality › IS standards lists the Indian Standards the company works to, civil, mechanical and electrical: IS 456, IS 1786, IS 3043, IS 732 and twenty more. QA/QC switches off what you do not use, edits the clauses or adds your own.',
+      'Each standard has a page with its clauses: what each asks, whether a test, the maker’s certificate or an inspection proves it, how often and what is allowed. Record test on a clause opens the test form with its test.',
+      'Find on BIS opens BIS’s own search, and Mark checked records that someone checked the edition. Editions not checked for a year show as Check due.',
+      'Quality › IS compliance shows the pass rate, failed tests and tests waiting by discipline and by standard, for a project and a period. A test’s record names the standard and clause it proves.',
+      'Test types now include earth electrode resistance (IS 3043), insulation resistance (IS 732), pump duty (IS 9137) and a pressure vessel’s hydrostatic test (IS 2825).',
+    ],
+  },
+  {
     id: '2026-11-leave-year-weekly-off',
     date: '2026-11-05',
     title: 'April to March leave year, a weekly off per site, and what payroll owes',

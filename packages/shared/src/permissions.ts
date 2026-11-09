@@ -252,6 +252,8 @@ export const canSetLabourRates = (role: RoleKey) => LABOUR_RATE_ROLES.includes(r
 /** Set a project's cost budget and the budget rates of its BOQ items. */
 export const BUDGET_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
 export const canSetBudget = (role: RoleKey) => BUDGET_ROLES.includes(role);
+/** Approve or return a version of a project's budget: admin and management, never the version's own preparer. */
+export const canApproveBudget = (role: RoleKey) => role === 'ADMIN' || role === 'MANAGEMENT';
 
 /** Set material norms for reconciliation (quantity of an item per unit of a BOQ item): the QS and the project's managers. */
 export const MATERIAL_NORM_ROLES: RoleKey[] = ['QUANTITY_SURVEYOR', 'ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];

@@ -213,6 +213,8 @@ export class ApprovalRightsService {
         return this.prisma.paymentRequest;
       case 'SUPPLIER_CHOICE':
         return this.prisma.supplierChoice;
+      case 'WO_AMENDMENT':
+        return this.prisma.workOrderAmendment;
     }
   }
 
@@ -272,6 +274,11 @@ export class ApprovalRightsService {
       case 'SUPPLIER_CHOICE': {
         const c = await this.prisma.supplierChoice.findUnique({ where: { id }, select: { amount: true } });
         return c?.amount ?? null;
+      }
+      // The order's value after it, so a limit cannot be passed in small steps.
+      case 'WO_AMENDMENT': {
+        const a = await this.prisma.workOrderAmendment.findUnique({ where: { id }, select: { valueAfter: true } });
+        return a?.valueAfter ?? null;
       }
       default:
         return null;

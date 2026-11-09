@@ -1,5 +1,6 @@
 import type { LeaveYearStart, Weekday } from './staff';
 import type { PoBudgetCheckDto } from './po-budget';
+import type { BudgetOpenVersionDto, BudgetVersionDto } from './budget-versions';
 import type { MachineEngineDto } from './telematics';
 import type { VendorRecordDto } from './vendor-score';
 import type { LetterAction, LetterGate, LetterMarkDto, LetterMode, LetterPriority, LetterStatus } from './correspondence';
@@ -92,6 +93,8 @@ export interface AuthUser {
   vendor?: { id: string; name: string };
   /** The modules the company does not use: turned off by an admin or left out of its plan. Empty when all are on. */
   modulesOff?: SwitchableModule[];
+  /** The company records progress only as DPR work lines: no separate progress entry is offered or accepted */
+  progressFromDpr?: boolean;
   /** Menu and names: the company's menu, when it chose anything other than the default (`DEFAULT_NAV_SETTINGS`). */
   navigation?: NavSettingsDto;
   /** The look this person chose for themselves (used when the company lets people choose) */
@@ -648,7 +651,7 @@ export interface NotificationDto {
    * Set when the notification points at a submission (or, for SAFETY, an incident or permit; for MACHINERY, a machine
    * due for service, a job card, a vehicle paper or a driver); open it with entityType + entityId.
    */
-  entityType: SubmissionType | 'SAFETY_INCIDENT' | 'WORK_PERMIT' | 'EQUIPMENT' | 'MAINTENANCE_JOB' | 'EQUIPMENT_DOCUMENT' | 'DRIVER' | 'IMPREST' | 'COMPLIANCE_DOC' | 'DEFECT' | 'HANDOVER' | 'RFI' | 'EQUIPMENT_LOAN' | 'MEETING' | 'MATERIAL_APPROVAL' | 'ACCESS_REQUEST' | 'ACCESS_DECISION' | 'GRN' | 'GRN_CHECK' | 'GRN_TO_BILL' | 'DEBIT_TO_RAISE' | 'TRANSFER_IN' | 'PROJECT' | 'LETTER' | 'CONTRACT_OBLIGATION' | 'SITE_ORDER' | 'PROGRAMME' | 'EOT' | 'PAYROLL_RUN' | 'FINAL_SETTLEMENT' | SupplierNoticeEntity | null;
+  entityType: SubmissionType | 'SAFETY_INCIDENT' | 'WORK_PERMIT' | 'EQUIPMENT' | 'MAINTENANCE_JOB' | 'EQUIPMENT_DOCUMENT' | 'DRIVER' | 'IMPREST' | 'COMPLIANCE_DOC' | 'DEFECT' | 'HANDOVER' | 'RFI' | 'EQUIPMENT_LOAN' | 'MEETING' | 'MATERIAL_APPROVAL' | 'ACCESS_REQUEST' | 'ACCESS_DECISION' | 'GRN' | 'GRN_CHECK' | 'GRN_TO_BILL' | 'DEBIT_TO_RAISE' | 'TRANSFER_IN' | 'PROJECT' | 'LETTER' | 'CONTRACT_OBLIGATION' | 'SITE_ORDER' | 'PROGRAMME' | 'EOT' | 'PAYROLL_RUN' | 'FINAL_SETTLEMENT' | 'BUDGET' | SupplierNoticeEntity | null;
   entityId: string | null;
   readAt: string | null;
   createdAt: string;
@@ -1219,9 +1222,16 @@ export interface ProjectBudgetDto {
   revisedContractValue: string | null;
   /** revisedContractValue − forecastAtCompletion */
   forecastMargin: string | null;
+  /** The version in force's notes */
   notes: string | null;
-  updatedAt: string | null;
-  updatedByName: string | null;
+  /** The approved version every figure above is read from; null while none is approved */
+  inForce: BudgetVersionDto | null;
+  /** Every version, newest first */
+  versions: BudgetVersionDto[];
+  /** The revision being prepared or waiting for a decision */
+  open: BudgetOpenVersionDto | null;
+  /** The caller may start a revision now: they set budgets and none is open */
+  canRevise: boolean;
 }
 
 export type CashFlowGranularity = 'MONTH' | 'WEEK';
@@ -2319,8 +2329,77 @@ export interface WorkOrderDto extends SubmissionBase {
   billedAmount: string;
   billedPct: number;
   lines: WorkOrderLineDto[];
+  /** Amendments in force (approved and applied); the order as approved is version 0 */
+  amendmentNo: number;
+  /** Every amendment raised on it, oldest first */
+  amendments: WorkOrderAmendmentBriefDto[];
+  /** The amendment still in draft, waiting or sent back, if any (at most one) */
+  openAmendment: WorkOrderAmendmentBriefDto | null;
   /** Only on GET /work-orders/:id */
   bills?: { id: string; billNo: number; label: string; isFinal: boolean; billDate: string; grossAmount: string; netPayable: string; status: SubmissionStatus }[];
+}
+
+/** An amendment as its work order lists it. */
+export interface WorkOrderAmendmentBriefDto {
+  id: string;
+  amendmentNo: number;
+  /** "WO-2026-0003 amendment 1" */
+  label: string;
+  status: SubmissionStatus;
+  reason: string;
+  /** The new end date; null leaves it as it was */
+  endDate: string | null;
+  endDateBefore: string | null;
+  valueBefore: string;
+  valueAfter: string;
+  submittedByName: string;
+  submittedAt: string | null;
+  reviewedAt: string | null;
+  appliedAt: string | null;
+}
+
+/** One line of an amendment: an order line before and after, or a new item (no `workOrderLineId` before it is applied). */
+export interface WorkOrderAmendmentLineDto {
+  id: string;
+  /** The order line it changes; for a new item, the line it became once applied */
+  workOrderLineId: string | null;
+  boqItemId: string | null;
+  itemNo: string | null;
+  description: string;
+  unit: string;
+  /** Null for a new item */
+  qtyBefore: string | null;
+  rateBefore: string | null;
+  amountBefore: string | null;
+  quantity: string;
+  rate: string;
+  amount: string;
+  isNew: boolean;
+  /** Quantity or rate differs from before (always true for a new item) */
+  changed: boolean;
+  /** What is billed or measured against the line now, the least its quantity may be */
+  floorQty: string;
+}
+
+export interface WorkOrderAmendmentDto extends SubmissionBase {
+  workOrderId: string;
+  woNo: string;
+  woTitle: string;
+  vendorId: string;
+  vendorName: string;
+  amendmentNo: number;
+  label: string;
+  reason: string;
+  endDate: string | null;
+  endDateBefore: string | null;
+  valueBefore: string;
+  valueAfter: string;
+  /** valueAfter less valueBefore */
+  change: string;
+  changedLines: number;
+  addedLines: number;
+  appliedAt: string | null;
+  lines: WorkOrderAmendmentLineDto[];
 }
 
 export interface SubcontractBillLineDto {

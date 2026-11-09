@@ -24,6 +24,7 @@ export const TYPE_ICON: Record<EntryType, keyof typeof Ionicons.glyphMap> = {
   SUBCONTRACT_BILL: 'reader',
   PAYMENT_REQUEST: 'card',
   SUPPLIER_CHOICE: 'trophy',
+  WO_AMENDMENT: 'git-compare',
   INSPECTION: 'shield-checkmark',
   ATTENDANCE: 'people',
   RISK: 'alert-circle',

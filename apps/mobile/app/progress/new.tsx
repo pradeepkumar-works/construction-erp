@@ -1,16 +1,17 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import type { ActivityDto, ProgressEntryDto } from '@erp/shared';
 import { sectorLocation } from '@erp/shared';
 import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
-import { Button, Card, DatePicker, ErrorBanner, ErrorState, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto, type SelectOption } from '../../src/components';
+import { Button, Card, DatePicker, EmptyState, ErrorBanner, ErrorState, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto, type SelectOption } from '../../src/components';
 import { attachmentIds, photosFailed, photosQueued, photosUploading, QueuedSuccess, SubmitSuccess, toOutboxPhotos, useProjectOptions } from '../../src/forms/common';
 import { attachmentsToPhotos, outboxToPhotos, OutboxRefusal, ReviewerNote, useOutboxEntry } from '../../src/forms/edit';
 import { DraftNotice, restorePhotos, useFormDraft, useLeaveGuard } from '../../src/forms/draft';
 import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
 import { useSectorInputs, type SectorDraft } from '../../src/forms/sector';
+import { useAuth } from '../../src/auth/AuthContext';
 import { useT } from '../../src/i18n/LanguageContext';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
 import { colors, fontSize, maxFontScale, spacing, typography } from '../../src/theme';
@@ -26,6 +27,8 @@ export default function NewProgressScreen() {
   const editId = params.editId ?? null;
   const outboxId = params.outboxId ?? null;
   const t = useT();
+  const router = useRouter();
+  const { user } = useAuth();
   const field = useFieldChain();
   const api = useApi();
   const { online, enqueue, discard, newId } = useOffline();
@@ -238,6 +241,21 @@ export default function NewProgressScreen() {
         detailHref={`/progress/${created.id}`}
         onAnother={editId || outboxId ? undefined : reset}
       />
+    );
+  }
+  // A company that records progress only in the DPR refuses a separate entry, so a link here (Ask, a bookmark) points
+  // to the DPR instead of a form that cannot be sent. Fixing or editing one made before the switch still opens.
+  if (user?.progressFromDpr && !editId && !outboxId) {
+    return (
+      <Screen>
+        <Stack.Screen options={{ title: t('New progress entry') }} />
+        <EmptyState
+          icon="document-text-outline"
+          title={t('Progress goes in the daily report')}
+          subtitle={t("Your company records progress in the DPR: add a work line to the day's DPR instead.")}
+          action={<Button title={t('New daily report')} icon="document-text" onPress={() => router.replace(projectId ? `/dpr/new?projectId=${projectId}` : '/dpr/new')} />}
+        />
+      </Screen>
     );
   }
   if (projects.loading && !projects.data) return <Loading />;

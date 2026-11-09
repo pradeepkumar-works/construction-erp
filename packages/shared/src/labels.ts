@@ -1,4 +1,4 @@
-import type { ContractModel, WorkElementLevel, WorkElementType, PipeNodeKind, PipeMaterial, PipeScope, PipeStage, LdPeriod, GrnQcStatus, ComplianceDocKind, ComplianceDocStatus, DefectPhase, DefectPriority, DefectStatus, ImprestEntryKind, ImprestEntryStatus, WorkerIdType, WorkerSkill, EquipmentDocType, MaintenanceKind, MaintenanceStatus, BillStage, ReceiptKind, VendorKind, MsmeCategory, EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, WorkLocation, DelayParty, PasswordTokenPurpose, RiskCategory, RiskKind, RiskStatus, RoleKey, SafetyIncidentStatus, SafetyIncidentType, StockEntryType, SubmissionStatus, SubmissionType, Weather, WorkPermitStatus, WorkPermitType, PpeKind, PpeIssueStatus, RfiStatus, RfiPriority, PaymentRequestKind, FundPurpose, VendorBillKind, HireFuelBy, DebitNoteReason, BoqResourceKind, StockAdjustmentReason, FuelNormUnit, EquipmentPartKind, ApprovalStepAction, MarkupKind, MarkupStatus, MarkupColor, NavPinKind, NavVisitKind, AccessRequestStatus, NavLayout, NavLook, NavModuleSet, NavSidebarLook, NavPaint, NavPalette, CompanyKind, CheckLevel, SiteOrderStatus, ProgrammeStatus, EotBasis, EotStatus } from './enums';
+import type { ContractModel, WorkElementLevel, WorkElementType, PipeNodeKind, PipeMaterial, PipeScope, PipeStage, LdPeriod, GrnQcStatus, ComplianceDocKind, ComplianceDocStatus, DefectPhase, DefectPriority, DefectStatus, ImprestEntryKind, ImprestEntryStatus, WorkerIdType, WorkerSkill, EquipmentDocType, MaintenanceKind, MaintenanceStatus, BillStage, ReceiptKind, VendorKind, MsmeCategory, EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, WorkLocation, DelayParty, PasswordTokenPurpose, RiskCategory, RiskKind, RiskStatus, RoleKey, SafetyIncidentStatus, SafetyIncidentType, StockEntryType, SubmissionStatus, SubmissionType, Weather, WorkPermitStatus, WorkPermitType, PpeKind, PpeIssueStatus, RfiStatus, RfiPriority, PaymentRequestKind, FundPurpose, VendorBillKind, HireFuelBy, DebitNoteReason, BoqResourceKind, StockAdjustmentReason, FuelNormUnit, EquipmentPartKind, ApprovalStepAction, MarkupKind, MarkupStatus, MarkupColor, NavPinKind, NavVisitKind, AccessRequestStatus, NavLayout, NavLook, NavModuleSet, NavSidebarLook, NavPaint, NavPalette, CompanyKind, CheckLevel, SiteOrderStatus, ProgrammeStatus, EotBasis, EotStatus, BudgetStatus, IsDiscipline } from './enums';
 
 export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
   ROAD: 'Road or infrastructure',
@@ -104,6 +104,7 @@ export const SUBMISSION_TYPE_LABELS: Record<SubmissionType, string> = {
   INSPECTION: 'Inspection',
   PAYMENT_REQUEST: 'Payment request',
   SUPPLIER_CHOICE: 'Supplier choice',
+  WO_AMENDMENT: 'Work order amendment',
 };
 
 /** A group of entries of one type (the approvals inbox, on the web and the phone): the list's own name in the menu. */
@@ -122,6 +123,7 @@ export const SUBMISSION_TYPE_PLURAL_LABELS: Record<SubmissionType, string> = {
   INSPECTION: 'Inspections',
   PAYMENT_REQUEST: 'Payment requests',
   SUPPLIER_CHOICE: 'Supplier choices',
+  WO_AMENDMENT: 'Work order amendments',
 };
 
 export const PAYMENT_REQUEST_KIND_LABELS: Record<PaymentRequestKind, string> = {
@@ -533,6 +535,14 @@ export const SITE_ORDER_STATUS_LABELS: Record<SiteOrderStatus, string> = {
   CLOSED: 'Closed',
 };
 
+export const BUDGET_STATUS_LABELS: Record<BudgetStatus, string> = {
+  DRAFT: 'Draft',
+  SUBMITTED: 'Waiting for approval',
+  APPROVED: 'In force',
+  RETURNED: 'Returned',
+  SUPERSEDED: 'Superseded',
+};
+
 export const PROGRAMME_STATUS_LABELS: Record<ProgrammeStatus, string> = {
   SUBMITTED: 'With the Engineer',
   APPROVED: 'Approved',
@@ -630,4 +640,10 @@ export const COMPANY_KIND_LABELS: Record<CompanyKind, string> = {
   QUALITY_LAB: 'Quality lab',
   PLANT: 'RMC plant',
   HOLDING: 'Holding',
+};
+
+export const IS_DISCIPLINE_LABELS: Record<IsDiscipline, string> = {
+  CIVIL: 'Civil',
+  MECHANICAL: 'Mechanical',
+  ELECTRICAL: 'Electrical',
 };

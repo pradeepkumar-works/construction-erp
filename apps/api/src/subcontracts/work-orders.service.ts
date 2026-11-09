@@ -6,8 +6,10 @@ import {
   canViewWorkOrders,
   contractorTdsPct,
   subBillLabel,
+  woAmendmentLabel,
   type Paginated,
   type SortOrder,
+  type WorkOrderAmendmentBriefDto,
   type WorkOrderDto,
   type WorkOrderMarginDto,
   type WorkOrderSortField,
@@ -45,6 +47,10 @@ const include = {
   // Advances: paid with no bill, and asked for on open requests.
   advances: { where: { subcontractBillId: null }, select: { amount: true, tdsAmount: true, otherDeduction: true } },
   paymentRequests: { where: { kind: 'WO_ADVANCE' as const, status: { in: ['SUBMITTED' as const, 'APPROVED' as const] } }, select: { amount: true } },
+  amendments: {
+    orderBy: { amendmentNo: 'asc' as const },
+    select: { id: true, amendmentNo: true, status: true, reason: true, endDate: true, endDateBefore: true, valueBefore: true, valueAfter: true, submittedAt: true, reviewedAt: true, appliedAt: true, submittedBy: { select: { fullName: true } } },
+  },
 } satisfies Prisma.WorkOrderInclude;
 type Row = Prisma.WorkOrderGetPayload<{ include: typeof include }>;
 
@@ -93,6 +99,21 @@ export class WorkOrdersService {
   ) {}
 
   toDto(r: Row): WorkOrderDto {
+    const amendments = r.amendments.map((a): WorkOrderAmendmentBriefDto => ({
+      id: a.id,
+      amendmentNo: a.amendmentNo,
+      label: woAmendmentLabel(r.woNo, a.amendmentNo),
+      status: a.status,
+      reason: a.reason,
+      endDate: dateOnly(a.endDate),
+      endDateBefore: dateOnly(a.endDateBefore),
+      valueBefore: money(a.valueBefore),
+      valueAfter: money(a.valueAfter),
+      submittedByName: a.submittedBy.fullName,
+      submittedAt: iso(a.submittedAt),
+      reviewedAt: iso(a.reviewedAt),
+      appliedAt: iso(a.appliedAt),
+    }));
     const measured = new Map<string, Prisma.Decimal>();
     for (const m of r.measurements) measured.set(m.boqItemId, (measured.get(m.boqItemId) ?? ZERO).add(m.totalQty));
     const billed = sum(r.bills, (b) => b.grossAmount);
@@ -142,6 +163,9 @@ export class WorkOrdersService {
         measuredQty: dec(l.boqItemId ? (measured.get(l.boqItemId) ?? ZERO) : ZERO),
         billedQty: dec(sum(l.billLines, (b) => b.thisQty)),
       })),
+      amendmentNo: r.amendmentNo,
+      amendments,
+      openAmendment: amendments.find((a) => a.status !== 'APPROVED' && a.status !== 'REJECTED') ?? null,
       status: r.status,
       submittedById: r.submittedById,
       submittedByName: r.submittedBy.fullName,
