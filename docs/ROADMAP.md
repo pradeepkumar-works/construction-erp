@@ -1045,6 +1045,15 @@ GRN on the web and the phone), and a second quality dashboard.
      the pass rate, failed tests and tests waiting by discipline and by standard; a test's record names the clauses it
      proves; earth resistance, insulation resistance, pump duty and vessel hydro tests join the test types.
 
+## Day-one gaps from the readiness review (November 2026)
+
+187. ~~**Budget approval and revisions** (M).~~ Done: a project's budget is a series of versions, each prepared, sent to
+     admin or management and approved by someone other than its preparer, or returned with what to change; a revision
+     starts from the version in force and names its reason (the `budgetRevision` master) and, for a variation, which
+     one. Only the approved version is read by the forecast, the cash flow, the PO budget check and the BOQ budget rates;
+     the Budget tab shows the version in force, the open one and the history, and budgets waiting show under Also
+     waiting for you. ARCHITECTURE "Budget and cash flow".
+
 ## Definition of done for every item
 Prisma migration, API endpoints with Swagger, shared types, web screen, mobile screen where site
 staff use it, seed data updated, `pnpm typecheck` + `next build` + mobile `tsc` clean, smoke test

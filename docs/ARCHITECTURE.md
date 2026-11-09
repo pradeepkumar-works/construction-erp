@@ -1263,7 +1263,7 @@ line ever ordered has no amount, so a limit does not hold it back.
 ### Purchase orders against the budget (design review, November 2026)
 
 The design has accounts check the budget before a PO is approved. The order's own record (`GET /purchase-orders/:id`)
-carries `budgetCheck` for those who see cost (`canViewCost`): the project's material budget, the other approved orders
+carries `budgetCheck` for those who see cost (`canViewCost`): the project's approved material budget (the version in force), the other approved orders
 of the project and this one, all before GST, and what is left (`poBudgetCheck`, `@erp/shared/po-budget.ts`, tested in
 `src/scripts/purchase-award-test.ts`). It is one row of the record's Checks, red when the order goes over; advice beside
 the decision, never a gate. A project with no material budget gets no row.
@@ -1394,12 +1394,14 @@ The Approvals inbox groups its queue by type (`groupQueue`, `components/approval
 `rankWaiting`: the rupees a group adds up to, then the days its oldest entry has waited, then the type's usual place. Each
 group's header says "7 · ₹14.20 L · oldest 3 days"; Oldest first or Newest first orders the entries inside a group.
 
-Decisions with an approval of their own (leave and overtime, salary runs, hand-made vouchers, outward letters to sign)
+Decisions with an approval of their own (leave and overtime, salary runs, hand-made vouchers, outward letters to sign,
+project budgets)
 are not submissions, but the inbox lists them too, under Also waiting for you: `GET /approvals/others`
 (`OtherDecisionsService`) reads each module's own list with the caller (`listLeave` and `overtimeToDecide`, the payroll
-runs the caller may approve, `vouchers({ toDecide })`, letters `{ toSign }`), so each module's access rules apply, and
+runs the caller may approve, `vouchers({ toDecide })`, letters `{ toSign }`, `BudgetService.toDecide`), so each module's access rules apply, and
 returns `OtherDecisionGroupDto`s (`OTHER_DECISION_KINDS`) in `rankWaiting` order. Each entry links to the page where it is
-decided (`/payroll?tab=runs&run=`, `/books?tab=vouchers&voucher=`, the leave or letter itself); a new kind is a key there
+decided (`/payroll?tab=runs&run=`, `/books?tab=vouchers&voucher=`, the leave or letter itself, a project's
+`?tab=budget`); a new kind is a key there
 and a block in the service. Someone who approves submissions sees them as one line of counts above the queue
 (`OtherDecisionsLine`), since the queue and pane fill the window; anyone else sees the groups and their oldest entries.
 
@@ -2604,10 +2606,36 @@ Nirmaan hands the payroll provider its inputs; PF, ESI, professional tax and sal
 
 ## Budget and cash flow
 
-- **Tables.** `ProjectBudget` (one per project; an amount per cost head: expenses, material, machinery, labour,
-  subcontract; notes; who set it). `BoqItem.budgetRate` is our budgeted cost per unit (never sent in `BoqItemDto`, so
-  site roles do not see it). `Project.clientPaymentDays` is a contract term (null = 30 days, `DEFAULT_CLIENT_PAYMENT_DAYS`).
-- **Forecast** (`BudgetService`). % complete = executed value (approved progress × BOQ rate) ÷ BOQ value, capped at
+- **Tables.** `ProjectBudget` is one row per version of a project's budget (`versionNo`, unique per project): an amount
+  per cost head (expenses, material, machinery, labour, subcontract; all five null when the version has no cost-head
+  budget, held by a check constraint), notes, `status` (`BudgetStatus`), why it was revised (`reasonCode`, a code of the
+  `budgetRevision` master, null only on version 1; `reasonNote`; `variationId`, an approved variation), who prepared it,
+  when it was sent, who decided it, when and with what note, and `approvedAt`. `ProjectBudgetLine` holds a version's BOQ
+  budget rates (one per BOQ item, a child row with no organisation of its own, as `RaBillItem`). `BoqItem.budgetRate` is
+  our budgeted cost per unit as approved (never sent in `BoqItemDto`, so site roles do not see it).
+  `Project.clientPaymentDays` is a contract term (null = 30 days, `DEFAULT_CLIENT_PAYMENT_DAYS`).
+- **Versions** (`@erp/shared/budget-versions.ts`, tested in `src/scripts/budget-versions-test.ts`). A version is DRAFT
+  while it is prepared, SUBMITTED to admin and management, then APPROVED or RETURNED (with what to change) to be fixed and
+  sent again; approving one makes the version before SUPERSEDED. A partial unique index keeps at most one version of a
+  project DRAFT, SUBMITTED or RETURNED. A version may be sent when `budgetVersionProblem` is null (a revision names its
+  reason, "Other" says why in words, no amount below zero, something is set), and decided when `budgetDecisionProblem` is
+  null: `canApproveBudget` (admin, management), only a submitted one, and never by its preparer, who is whoever last
+  changed or sent it (`ownEntryProblem`). Approving, in one transaction, supersedes the version in force and writes the
+  approved lines onto `BoqItem.budgetRate` (items with no line get none), so every reader of the budget rate (the
+  forecast, earned value, subcontract enquiries, the BOQ budget) reads the approved figures, and only approval writes
+  them. `budgetChange` is what a version changes by head and in total against the one before it, for the open version
+  and the history. A BOQ item with a rate in an approved or superseded version cannot be deleted; one in an open version
+  leaves it.
+- **Where versions come from.** A revision starts as a copy of the version in force (blank when there is none). A project
+  made from a won tender gets version 1 SUBMITTED by whoever made it, with the rate analysis's heads and priced items'
+  budget rates as its lines, so management approves it; until then the project has no budget in force. The migration
+  that brought versions made each existing budget version 1, approved by whoever last set it, with its project's BOQ
+  budget rates as lines (and a version with no cost heads for a project that had rates but no budget row).
+- **Who is told.** Sending a version hands it to management and admins on the project (`handoff`, entity `BUDGET`, with
+  an email to the Budget tab); a decision tells its preparer. Versions waiting on the caller are `BUDGET` under the
+  Approvals inbox's Also waiting for you and on the Projects screen (`BudgetService.toDecide`, `OTHER_DECISION_KINDS`).
+  The setup checklist's budget step is done when a version is approved, and says so when one waits for approval.
+- **Forecast** (`BudgetService`, on the approved version only, so a draft or a version waiting never moves it). % complete = executed value (approved progress × BOQ rate) ÷ BOQ value, capped at
   100%. Budget at completion = the cost-head total, else Σ BOQ qty × budget rate. Actual cost is `CostService.compute`
   from the start of the project. Earned = budget × % complete; variance = earned − actual; forecast at completion =
   actual + budget × (1 − % complete); forecast margin = revised contract value − forecast.
@@ -2622,9 +2650,20 @@ Nirmaan hands the payroll provider its inputs; PF, ESI, professional tax and sal
   neither its billing nor its spending to come is forecast (`projectsWithoutBudget` with `why`), so the forecast never
   shows money in with nothing going out. One past or without a completion date is spread over the next 91 days.
   Completed and closed projects, stores and plants only contribute their open bills.
-- **Roles.** Seen by cost viewers (`COST_VIEW_ROLES`); set by `BUDGET_ROLES` (admin, management, PM).
-- **API.** `GET /cost/projects/:id/budget`, `PUT /cost/projects/:id/budget` (`heads` null removes the cost-head
-  budget; `items` sets BOQ budget rates, the rest keep theirs), `GET /cost/cash-flow?projectId&granularity=MONTH|WEEK`.
+- **Roles.** Seen by cost viewers (`COST_VIEW_ROLES`); prepared by `BUDGET_ROLES` (admin, management, PM); approved
+  by `canApproveBudget` (admin, management), never by the version's preparer.
+- **API.** `GET /cost/projects/:id/budget` (the approved figures, `inForce`, `versions` newest first with their change,
+  `open` with its heads, lines, `problem` and what the caller `can` do, `canRevise`), `POST /cost/projects/:id/budget/versions`
+  (start a revision with the same body as the edit; refused while one is open), `PATCH /cost/budget-versions/:vid`
+  (`heads` null for no cost-head budget; `items` sets this version's BOQ budget rates, the rest keep theirs; `notes`,
+  `reasonCode`, `reasonNote`, `variationId`; draft or returned only), `POST …/:vid/submit`, `POST …/:vid/decide
+  { decision: APPROVE | RETURN, note }` (a return needs the note), `DELETE …/:vid` (draft or returned), each answering
+  with the project's budget and audited on the project (`BUDGET_APPROVED` and the rest);
+  `GET /cost/cash-flow?projectId&granularity=MONTH|WEEK`.
+- **Screens.** The Budget tab names the version in force, shows the open version with its state, reason, change and its
+  steps (Edit, Send for approval, Approve, Return, Delete) per role, and a History of every version. Revise budget
+  (BUDGET_ROLES, nothing open) opens the form on a copy of the version in force; a revision asks for its reason
+  (Masters › Budget revision reasons) and, for a variation, which one.
 
 ## Opening cost
 

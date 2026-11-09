@@ -41,7 +41,8 @@ function stepText(s: SetupStepDto, project: ProjectDetail, setup: ProjectSetupDt
     case 'contract':
       return { title: 'Fill in the contract terms', detail: 'Agreement number and date, deductions, liquidated damages and the defect liability period.' };
     case 'budget':
-      return { title: 'Set the budget', detail: 'Material, labour, machinery, subcontract and expenses, for cost against budget.' };
+      if (!s.done && setup.budgetWaiting) return { title: 'Approve the budget', detail: 'A version waits for admin or management. Cost against budget starts once it is approved.' };
+      return { title: 'Set the budget', detail: s.done ? 'A version is approved and in force.' : 'Material, labour, machinery, subcontract and expenses, for cost against budget. Admin or management approve it.' };
     case 'sector': {
       const kind = sectorStepOf(project);
       return { title: kind === 'chainage' ? 'Set the chainage' : kind === 'floors' ? 'List the floors' : 'Add the villages', detail: 'So progress and measurements can say where the work is.' };

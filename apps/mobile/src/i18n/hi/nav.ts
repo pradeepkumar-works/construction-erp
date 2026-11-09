@@ -47,6 +47,8 @@ export const NAV: Record<string, string> = {
   'Bill of quantities: items, quantities and rates.': 'मात्रा का बिल (BOQ): आइटम, मात्रा और रेट।',
   'The activities under the BOQ, with their planned dates and quantities.': 'BOQ के तहत गतिविधियाँ, उनकी योजना वाली तारीख़ों और मात्रा के साथ।',
   'Budget and cash flow': 'बजट और कैश फ़्लो',
+  'Budget revision reasons': 'बजट संशोधन के कारण',
+  "Why a project's budget is revised, such as a variation or a rate change.": 'प्रोजेक्ट का बजट क्यों संशोधित हुआ, जैसे वेरिएशन या दर में बदलाव।',
   'Budget per cost head and the planned cash flow.': 'हर लागत मद का बजट और योजना वाला कैश फ़्लो।',
   'Earned value': 'अर्जित मूल्य',
   'Planned, earned and actual value; SPI, CPI, the forecast finish and the S-curve.': 'योजना, अर्जित और असल मूल्य; SPI, CPI, अनुमानित पूरा होना और S-कर्व।',
