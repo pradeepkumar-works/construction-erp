@@ -1,6 +1,27 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { BILL_DEDUCTION_LABELS, billLabel, canPrepareBill, isGuest, type BillDeductionKey, type BillSortField, type Paginated, type RaBillDeductionDto, type RaBillDto, type SlippageLineDto, type SortOrder } from '@erp/shared';
+import {
+  BILL_ADDITION_LABELS,
+  BILL_DEDUCTION_LABELS,
+  billLabel,
+  canPrepareBill,
+  holdBalance,
+  holdCloseProblem,
+  holdProblem,
+  holdReleaseProblem,
+  isGuest,
+  securedAdvanceProblem,
+  type BillDeductionKey,
+  type BillSortField,
+  type Paginated,
+  type RaBillAdditionDto,
+  type RaBillDeductionDto,
+  type RaBillDto,
+  type RaBillHoldDto,
+  type SecuredAdvanceStockLineDto,
+  type SlippageLineDto,
+  type SortOrder,
+} from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -12,13 +33,14 @@ import { UNAPPROVED_EXTRA_ITEM } from '../variations/variations.service';
 import { dateOnly, formatDay, dec, fxRate, iso, money, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
 import { ilike, pageArgs, paginated, searchWords, dateRange } from '../common/paging';
-import { BillDateDto, BillPriceVariationDto, CertifyBillDto, CreateRaBillDto, ListRaBillsQuery, UpdateRaBillDto } from './ra-bills.dto';
+import { BillDateDto, BillHoldDto, BillHoldsDto, BillPriceVariationDto, BillSecuredAdvanceDto, CertifyBillDto, CloseHoldDto, CreateRaBillDto, ListRaBillsQuery, UpdateRaBillDto } from './ra-bills.dto';
 import { StageBillingService } from '../stage-billing/stage-billing.service';
 import { ConsultantChecksService } from '../consultant-checks/consultant-checks.service';
 import { storedLines } from '../contracts/obligation-recovery';
 import { BILL_TERMS_SELECT, PCT_DEDUCTIONS, TERMS_SELECT, billTotals, measuredLines, writeBill, type Line } from './ra-bill-pricing';
 import { ClaimStageDto } from '../stage-billing/stage-billing.dto';
-import { invoiceOf, RECEIPT_SUMS, settlement, syncBillStage } from '../receivables/bill-settlement';
+import { billOwed, invoiceOf, RECEIPT_SUMS, settlement, syncBillStage } from '../receivables/bill-settlement';
+import { StockService } from '../stock/stock.service';
 import { ReceivablesService } from '../receivables/receivables.service';
 import { assertNotExported } from '../tally/exported';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -34,6 +56,38 @@ const ZERO = D(0);
 const round2 = (v: Prisma.Decimal) => v.toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
 const pctStr = (d: Prisma.Decimal) => d.toFixed(2).replace(/\.?0+$/, '') || '0';
 const pct3 = (d: Prisma.Decimal) => d.toFixed(3).replace(/\.?0+$/, '') || '0';
+
+const BILL_LABEL_SELECT = { billNo: true, isFinal: true, omYear: true } satisfies Prisma.RaBillSelect;
+const labelOf = (b: { billNo: number; isFinal: boolean; omYear: number | null }) => billLabel(b.billNo, b.isFinal, b.omYear !== null);
+const HOLD_INCLUDE = {
+  bill: { select: { id: true, ...BILL_LABEL_SELECT } },
+  boqItem: { select: { itemNo: true } },
+  releases: { include: { bill: { select: { id: true, status: true, ...BILL_LABEL_SELECT } } }, orderBy: { bill: { billNo: 'asc' } } },
+} satisfies Prisma.RaBillHoldInclude;
+type HoldRow = Prisma.RaBillHoldGetPayload<{ include: typeof HOLD_INCLUDE }>;
+const releasedOf = (h: { releases: { amount: Prisma.Decimal }[] }) => h.releases.reduce((s, r) => s.add(r.amount), ZERO);
+const balanceOf = (h: HoldRow) => holdBalance({ amount: h.amount.toString(), released: releasedOf(h).toString(), lost: h.lostAmount.toString() });
+
+function holdDto(h: HoldRow): RaBillHoldDto {
+  return {
+    id: h.id,
+    projectId: h.projectId,
+    billId: h.billId,
+    billNo: h.bill.billNo,
+    billLabel: labelOf(h.bill),
+    boqItemId: h.boqItemId,
+    boqItemNo: h.boqItem?.itemNo ?? null,
+    description: h.description,
+    reason: h.reason,
+    amount: money(h.amount),
+    released: money(releasedOf(h)),
+    lost: money(h.lostAmount),
+    balance: balanceOf(h).toFixed(2),
+    closedAt: dateOnly(h.closedAt),
+    closeNote: h.closeNote,
+    releases: h.releases.map((x) => ({ billId: x.bill.id, billLabel: labelOf(x.bill), amount: money(x.amount), note: x.note })),
+  };
+}
 
 const include = {
   project: {
@@ -53,6 +107,9 @@ const include = {
   stageLines: { include: { stage: { select: { name: true, pct: true, trigger: true, component: { select: { code: true, name: true } } } } }, orderBy: { sortOrder: 'asc' } },
   items: { include: { boqItem: { select: { itemNo: true, description: true, unit: true } } }, orderBy: { sortOrder: 'asc' } },
   pvLines: { orderBy: { sortOrder: 'asc' } },
+  securedAdvances: { orderBy: { sortOrder: 'asc' } },
+  holds: { include: HOLD_INCLUDE, orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }] },
+  holdReleases: { include: { hold: { select: { description: true, bill: { select: BILL_LABEL_SELECT } } } }, orderBy: { id: 'asc' } },
   submittedBy: { select: { fullName: true } },
   reviewedBy: { select: { fullName: true } },
   attachments: { select: ATTACHMENT_FIELDS },
@@ -105,6 +162,7 @@ export class RaBillsService {
     private stageBilling: StageBillingService,
     private email: EmailService,
     private checks: ConsultantChecksService,
+    private stock: StockService,
   ) {}
 
   private readonly log = new Logger(RaBillsService.name);
@@ -112,6 +170,8 @@ export class RaBillsService {
   toDto(r: Row, sheets?: SheetRow[], receipts?: RaBillDto['receipts']): RaBillDto {
     const { received, settled } = settlement(r.receipts);
     const invoice = invoiceOf(r);
+    const owed = billOwed(r);
+    const additions: RaBillAdditionDto[] = (['securedAdvance', 'withheldReleased'] as const).filter((k) => !r[k].isZero()).map((key) => ({ key, label: BILL_ADDITION_LABELS[key], amount: money(r[key]) }));
     const deductions: RaBillDeductionDto[] = [];
     for (const [key, pctKey, amountKey] of PCT_DEDUCTIONS) {
       if (r[amountKey].isZero()) continue;
@@ -128,6 +188,9 @@ export class RaBillsService {
     if (!r.obligationRecovery.isZero()) {
       const key: BillDeductionKey = 'obligations';
       deductions.push({ key, label: r.obligationRecovery.gt(0) ? BILL_DEDUCTION_LABELS.obligations : 'Contract recoveries given back', pct: null, amount: money(r.obligationRecovery) });
+    }
+    for (const key of ['securedAdvanceRecovered', 'withheld'] as const) {
+      if (!r[key].isZero()) deductions.push({ key, label: BILL_DEDUCTION_LABELS[key], pct: null, amount: money(r[key]) });
     }
     if (!r.otherDeduction.isZero()) {
       const key: BillDeductionKey = 'other';
@@ -190,6 +253,15 @@ export class RaBillsService {
       pvLines: r.pvLines.map((l) => ({ id: l.id, name: l.name, sharePct: pctStr(l.sharePct), baseIndex: idx(l.baseIndex), currentIndex: idx(l.currentIndex), amount: money(l.amount) })),
       gstRate: pctStr(r.gstRate),
       gstAmount: money(r.gstAmount),
+      securedAdvancePct: pctStr(r.securedAdvancePct),
+      securedAdvanceLines: r.securedAdvances.map((l) => ({ id: l.id, itemId: l.itemId, description: l.description, unit: l.unit, qtyAtSite: dec(l.qtyAtSite), rate: money(l.rate), value: money(l.value), advance: money(l.advance) })),
+      securedAdvance: money(r.securedAdvance),
+      securedAdvanceRecovered: money(r.securedAdvanceRecovered),
+      withheld: money(r.withheld),
+      withheldReleased: money(r.withheldReleased),
+      holds: r.holds.map((h) => holdDto(h)),
+      releases: r.holdReleases.map((x) => ({ id: x.id, holdId: x.holdId, holdBillLabel: labelOf(x.hold.bill), description: x.hold.description, amount: money(x.amount), note: x.note })),
+      additions,
       deductions,
       otherDeduction: money(r.otherDeduction),
       otherDeductionNote: r.otherDeductionNote,
@@ -205,9 +277,10 @@ export class RaBillsService {
       paidDate: dateOnly(r.paidDate),
       measurementCount: r._count.measurements,
       invoiceAmount: money(invoice),
+      owedAmount: money(owed),
       receivedAmount: money(received),
       settledAmount: money(settled),
-      outstanding: money(Prisma.Decimal.max(invoice.sub(settled), ZERO)),
+      outstanding: money(Prisma.Decimal.max(owed.sub(settled), ZERO)),
       receipts,
       items: r.items.map((i) => {
         const prevAmount = round2(i.prevQty.mul(i.rate));
@@ -456,6 +529,11 @@ export class RaBillsService {
       if (before && dateOnly(before.measuredUpTo) > measuredUpTo) throw new BadRequestException(`RA bill ${cur.billNo - 1} already took measurements up to ${dateOnly(before.measuredUpTo)}`);
       data.measuredUpTo = parseDate(dto.measuredUpTo);
     }
+    if (dto.isFinal) {
+      const atSite = await this.prisma.raBillSecuredAdvance.findMany({ where: { billId: id }, select: { description: true, unit: true, qtyAtSite: true, rate: true } });
+      const problem = securedAdvanceProblem({ pct: null, lines: atSite.map((l) => ({ ...l, qtyAtSite: l.qtyAtSite.toString(), rate: l.rate.toString() })), isFinal: true, om: false });
+      if (problem) throw new BadRequestException(`${problem}. Take the material at site off first`);
+    }
     if (dto.isFinal !== undefined) data.isFinal = dto.isFinal;
     if (dto.otherDeduction !== undefined) {
       if (Number(dto.otherDeduction) < 0) throw new BadRequestException('The other deduction cannot be negative');
@@ -507,6 +585,127 @@ export class RaBillsService {
     });
     await this.audit.log(user, 'BILL', id, 'PRICE_VARIATION', lines.length ? `${lines.length} component${lines.length === 1 ? '' : 's'}` : 'Cleared');
     return this.get(user, id);
+  }
+
+  /**
+   * The material at site a bill not yet approved pays a secured advance on, at the contract's %. The lines replace the
+   * bill's; none takes the advance off (the previous bill's is still recovered).
+   */
+  async setSecuredAdvance(user: RequestUser, id: string, dto: BillSecuredAdvanceDto): Promise<RaBillDto> {
+    const row = await this.lifecycle.load(user, 'BILL', id);
+    await this.assertCanPrepare(user, row.projectId);
+    await this.lifecycle.assertEditable(user, row);
+    const bill = await this.prisma.raBill.findUniqueOrThrow({ where: { id }, select: { isFinal: true, omYear: true, project: { select: { securedAdvancePct: true } } } });
+    const lines = dto.lines.map((l) => ({ ...l, itemId: l.itemId ?? null, description: l.description ?? '', unit: l.unit ?? '' }));
+    const problem = securedAdvanceProblem({ pct: bill.project.securedAdvancePct?.toString() ?? null, lines, isFinal: bill.isFinal, om: bill.omYear !== null });
+    if (problem) throw new BadRequestException(problem);
+    const itemIds = [...new Set(lines.map((l) => l.itemId).filter((v): v is string => !!v))];
+    if (itemIds.length && (await this.prisma.item.count({ where: { id: { in: itemIds }, organizationId: user.organizationId } })) < itemIds.length) {
+      throw new BadRequestException('An item is not in the item master; reload and try again');
+    }
+    await this.prisma.$transaction(async (tx) => {
+      await tx.raBillSecuredAdvance.deleteMany({ where: { billId: id } });
+      await tx.raBillSecuredAdvance.createMany({
+        data: lines.map((l, i) => ({ billId: id, itemId: l.itemId, description: l.description, unit: l.unit, qtyAtSite: D(l.qtyAtSite), rate: D(l.rate), value: ZERO, advance: ZERO, sortOrder: i })),
+      });
+      await this.recompute(tx, id, false);
+    });
+    await this.audit.log(user, 'BILL', id, 'SECURED_ADVANCE', lines.length ? `${lines.length} line${lines.length === 1 ? '' : 's'} of material at site` : 'Cleared');
+    return this.get(user, id);
+  }
+
+  /** The site's store at the bill's measurement date, to start the material at site from. */
+  async securedAdvanceFromStock(user: RequestUser, id: string): Promise<SecuredAdvanceStockLineDto[]> {
+    await this.assertCanSee(user);
+    const row = await this.prisma.raBill.findFirst({ where: { id, ...this.access.submissionWhere(user) }, select: { projectId: true, measuredUpTo: true } });
+    if (!row) throw new NotFoundException('RA bill not found');
+    return this.stock.onHandAt(user, row.projectId, dateOnly(row.measuredUpTo));
+  }
+
+  /**
+   * Replace the holds a bill places, under its project's bill lock. A hold a later bill has released from stays, at
+   * no less than it released; a closed hold stays as it was.
+   */
+  private async replaceHolds(tx: Prisma.TransactionClient, bill: { id: string; projectId: string; organizationId: string }, holds: BillHoldDto[]) {
+    const current = await tx.raBillHold.findMany({ where: { billId: bill.id }, include: { releases: { select: { amount: true } } } });
+    const byId = new Map(current.map((h) => [h.id, h]));
+    for (const [i, h] of holds.entries()) {
+      const problem = holdProblem({ description: h.description ?? '', reason: h.reason ?? '', amount: h.amount });
+      if (problem) throw new BadRequestException(`Withheld, line ${i + 1}: ${problem}`);
+      const was = h.id ? byId.get(h.id) : null;
+      if (h.id && !was) throw new BadRequestException('A hold is not on this bill; reload and try again');
+      if (was?.closedAt && !was.amount.eq(D(h.amount))) throw new BadRequestException(`"${was.description}" is closed and cannot change`);
+      if (was && D(h.amount).lt(releasedOf(was).add(was.lostAmount))) throw new BadRequestException(`"${was.description}": later bills released ₹${releasedOf(was).toFixed(2)} of it, so it cannot be less`);
+    }
+    const kept = new Set(holds.map((h) => h.id).filter(Boolean));
+    for (const c of current) {
+      if (kept.has(c.id)) continue;
+      if (c.releases.length || c.closedAt) throw new BadRequestException(`"${c.description}" was released in part on a later bill or closed, so it stays`);
+    }
+    const boqIds = [...new Set(holds.map((h) => h.boqItemId).filter((v): v is string => !!v))];
+    if (boqIds.length && (await tx.boqItem.count({ where: { id: { in: boqIds }, projectId: bill.projectId } })) < boqIds.length) throw new BadRequestException("A BOQ item is not in this project's BOQ");
+    await tx.raBillHold.deleteMany({ where: { billId: bill.id, id: { notIn: [...kept] as string[] } } });
+    for (const [i, h] of holds.entries()) {
+      const data = { boqItemId: h.boqItemId ?? null, description: h.description, reason: h.reason, amount: D(h.amount), sortOrder: i };
+      if (h.id) await tx.raBillHold.update({ where: { id: h.id }, data });
+      else await tx.raBillHold.create({ data: { ...data, organizationId: bill.organizationId, projectId: bill.projectId, billId: bill.id } });
+    }
+  }
+
+  /** What a bill not yet approved withholds for disputed items, and what it releases of earlier bills' holds. */
+  async setHolds(user: RequestUser, id: string, dto: BillHoldsDto): Promise<RaBillDto> {
+    const row = await this.lifecycle.load(user, 'BILL', id);
+    await this.assertCanPrepare(user, row.projectId);
+    await this.lifecycle.assertEditable(user, row);
+    if (new Set(dto.releases.map((r) => r.holdId)).size < dto.releases.length) throw new BadRequestException('A hold is released twice on this bill');
+    await this.prisma.$transaction(async (tx) => {
+      const bill = await tx.raBill.findUniqueOrThrow({ where: { id }, select: { id: true, projectId: true, organizationId: true, billNo: true } });
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`RA:${bill.projectId}`}))`;
+      await this.replaceHolds(tx, bill, dto.holds);
+      await tx.raBillHoldRelease.deleteMany({ where: { billId: id } });
+      const holds = await tx.raBillHold.findMany({ where: { id: { in: dto.releases.map((r) => r.holdId) }, projectId: bill.projectId }, include: { bill: { select: { billNo: true } }, releases: { select: { amount: true } } } });
+      for (const r of dto.releases) {
+        const h = holds.find((x) => x.id === r.holdId);
+        if (!h) throw new BadRequestException('A hold released is not on this project; reload and try again');
+        const balance = holdBalance({ amount: h.amount.toString(), released: releasedOf(h).toString(), lost: h.lostAmount.toString() });
+        const problem = holdReleaseProblem({ billNo: h.bill.billNo, closed: !!h.closedAt, balance }, { billNo: bill.billNo, amount: r.amount });
+        if (problem) throw new BadRequestException(`${h.description}: ${problem}`);
+      }
+      await tx.raBillHoldRelease.createMany({ data: dto.releases.map((r) => ({ holdId: r.holdId, billId: id, amount: D(r.amount), note: r.note || null })) });
+      await this.recompute(tx, id, false);
+    });
+    const held = dto.holds.reduce((s, h) => s.add(D(h.amount)), ZERO);
+    const released = dto.releases.reduce((s, r) => s.add(D(r.amount)), ZERO);
+    await this.audit.log(user, 'BILL', id, 'HOLDS', `Withheld ₹${held.toFixed(2)} on ${dto.holds.length} item${dto.holds.length === 1 ? '' : 's'}, released ₹${released.toFixed(2)}`);
+    return this.get(user, id);
+  }
+
+  /** A project's holds not yet closed, with what each still withholds: what a bill can release from. */
+  async openHolds(user: RequestUser, projectId: string): Promise<RaBillHoldDto[]> {
+    await this.assertCanSee(user);
+    await this.access.assertCanAccessProject(user, projectId);
+    const rows = await this.prisma.raBillHold.findMany({ where: { projectId, closedAt: null, bill: this.access.submissionWhere(user) }, include: HOLD_INCLUDE, orderBy: [{ bill: { billNo: 'asc' } }, { sortOrder: 'asc' }] });
+    return rows.map((h) => holdDto(h));
+  }
+
+  /** Give up what is left of a hold: it is lost, and the books write it off as a deduction by the client. */
+  async closeHold(user: RequestUser, holdId: string, dto: CloseHoldDto): Promise<RaBillHoldDto> {
+    const hold = await this.prisma.raBillHold.findFirst({ where: { id: holdId, organizationId: user.organizationId }, include: { ...HOLD_INCLUDE, bill: { select: { id: true, status: true, stage: true, billDate: true, ...BILL_LABEL_SELECT } } } });
+    if (!hold) throw new NotFoundException('Hold not found');
+    await this.assertCanPrepare(user, hold.projectId);
+    const balance = balanceOf(hold);
+    const problem = holdCloseProblem({
+      closed: !!hold.closedAt,
+      balance,
+      billCertified: hold.bill.status === 'APPROVED' && (hold.bill.stage === 'CERTIFIED' || hold.bill.stage === 'PAID'),
+      releasedOnOpenBill: hold.releases.some((r) => r.bill.status !== 'APPROVED'),
+    });
+    if (problem) throw new BadRequestException(problem);
+    checkNotFuture(dto.date, 'date');
+    if (dto.date < dateOnly(hold.bill.billDate)) throw new BadRequestException('A hold cannot close before the bill that withheld it');
+    await this.prisma.raBillHold.update({ where: { id: holdId }, data: { closedAt: parseDate(dto.date), lostAmount: D(balance.toFixed(2)), closeNote: dto.note || null, closedById: user.id } });
+    await this.audit.log(user, 'BILL', hold.billId, 'HOLD_CLOSED', `${hold.description}: ₹${balance.toFixed(2)} lost${dto.note ? ` (${dto.note})` : ''}`);
+    return holdDto(await this.prisma.raBillHold.findUniqueOrThrow({ where: { id: holdId }, include: HOLD_INCLUDE }));
   }
 
   /** Re-takes the measurements approved since the bill was prepared, then submits it. */
@@ -614,6 +813,7 @@ export class RaBillsService {
           gstRate: out.gstRate,
           gstAmount: out.gstAmount,
           grossUpto: out.grossUpto,
+          additions: out.additions.map((a) => ({ label: a.label, amount: a.amount })),
           deductions: out.deductions.map((d) => ({ label: d.label, amount: d.amount })),
           netPayable: out.netPayable,
           items: out.items.map((i) => ({ itemNo: i.itemNo, description: i.description, unit: i.unit, thisQty: i.thisQty, rate: i.rate, amount: i.amount })),
@@ -715,6 +915,10 @@ export class RaBillsService {
     }
     for (const l of bill.stageLines) if (!passed.has(l.stageId)) passed.set(l.stageId, l.thisPct);
     await this.prisma.$transaction(async (tx) => {
+      if (dto.holds) {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`RA:${bill.projectId}`}))`;
+        await this.replaceHolds(tx, bill, dto.holds);
+      }
       const plan = bill.stageLines.length ? await this.stageBilling.planFor(tx, bill, { certified: passed }) : null;
       if (plan) for (const l of plan.lines) await tx.raBillStageLine.update({ where: { billId_stageId: { billId: id, stageId: l.stageId } }, data: { certifiedPct: l.certifiedPct, amount: l.amount } });
       const { amounts, data } = await billTotals(tx, bill, lines, bill, bill.project, plan, bill.omYear !== null ? storedOmPricing(bill) : null);

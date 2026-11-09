@@ -496,6 +496,11 @@ and the pre-delivery checklist.
   `PlantBatchesService.take` (`readPlantRow`); a row is read only by `readBatchRow` through the plant's column map, which is
   checked only by `columnMapProblem` (`@erp/shared/batching.ts`), and becomes a challan only through `RmcService.dispatch`
   with `plantRowId` (one batch, one challan). Keep `src/scripts/batching-test.ts` and the Connector's `npm test` passing.
+- Secured advance and amounts withheld (ARCHITECTURE "Secured advance and withheld amounts"): what a client bill owes is only `billOwed` / `OWED_SELECT`
+  (`apps/api/src/receivables/bill-settlement.ts`), read by settlement, receivables, the cash forecast and the books; a bill's
+  advance on material at site is only `securedAdvanceOf` (checked by `securedAdvanceProblem`, `@erp/shared/secured-advance.ts`)
+  and a hold, its release and its close only `holdProblem` / `holdReleaseProblem` / `holdCloseProblem` (`@erp/shared/bill-holds.ts`).
+  Keep `src/scripts/secured-advance-test.ts` passing.
 - Contract obligations (item 171, `apps/api/src/contracts`, ARCHITECTURE "Contract obligations and recoveries"): a deadline is
   only `obligationDue` over the project's anchors (`anchorsOf`, completion after the extensions granted) and what one costs
   only `penaltyAsOf` (`@erp/shared/contract-obligations.ts`); a bill deducts them only through `billTotals`'

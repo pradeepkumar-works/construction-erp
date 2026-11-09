@@ -37,6 +37,7 @@ type FormValues = {
   ldPeriod?: LdPeriod;
   ldCapPct?: number | null;
   securityDepositCapPct?: number | null;
+  securedAdvancePct?: number | null;
 } & Partial<Record<ContractPercentField, number | null>>;
 
 const PCT_HELP: Record<ContractPercentField, string> = {
@@ -83,6 +84,7 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
       ldPeriod: contract.ldPeriod,
       ldCapPct: Number(contract.ldCapPct),
       securityDepositCapPct: contract.securityDepositCapPct !== null ? Number(contract.securityDepositCapPct) : null,
+      securedAdvancePct: contract.securedAdvancePct !== null ? Number(contract.securedAdvancePct) : null,
       ...Object.fromEntries(CONTRACT_PERCENT_FIELDS.map((k) => [k, Number(contract[k])])),
     });
   }, [open, contract, form]);
@@ -110,6 +112,7 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
         ldPeriod: v.ldPeriod ?? 'WEEK',
         ldCapPct: String(v.ldCapPct ?? 0),
         securityDepositCapPct: v.securityDepositCapPct ? String(v.securityDepositCapPct) : null,
+        securedAdvancePct: v.securedAdvancePct ? String(v.securedAdvancePct) : null,
         ...Object.fromEntries(CONTRACT_PERCENT_FIELDS.map((k) => [k, String(v[k] ?? 0)])),
       };
       return (await api.put<ProjectContractDto>(`/projects/${contract.projectId}/contract`, body)).data;
@@ -195,6 +198,13 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
                 tooltip="Where the contract takes the deposit from each bill only up to a share of the contract value (or of the work billed, if larger). Leave empty for no cap."
               >
                 <InputNumber<number> style={{ width: '100%' }} min={0.01} max={100} step={0.5} suffix="%" />
+              </Form.Item>
+              <Form.Item
+                name="securedAdvancePct"
+                label="Secured advance (% of material at site)"
+                tooltip="Paid on bills against non-perishable material brought to site and not yet used (CPWD: 75%), and recovered on the next bill. Leave empty when the contract gives none."
+              >
+                <InputNumber<number> style={{ width: '100%' }} min={0.01} max={100} step={5} suffix="%" />
               </Form.Item>
             </FormGrid>
             <FormGrid cols={3}>

@@ -197,6 +197,7 @@ import type {
   InspectionDto,
   ChecklistTemplateDto,
   RaBillDto,
+  RaBillHoldDto,
   ReceiptDto,
   ReceivablesDto,
   ReceiptKind,
@@ -2927,6 +2928,14 @@ export const useBills = (filters: BillFilters, enabled = true) =>
   });
 
 export const useBill = (id: string | undefined) => useQuery({ ...recordQuery<RaBillDto>('/bills', id), enabled: !!id });
+
+/** A project's amounts withheld on its bills and not yet closed: what a later bill can release. */
+export const useOpenHolds = (projectId: string | undefined, enabled = true) =>
+  useQuery({
+    queryKey: ['bills', 'holds', projectId],
+    queryFn: async () => (await api.get<RaBillHoldDto[]>('/ra-bills/holds', { params: { projectId } })).data,
+    enabled: !!projectId && enabled,
+  });
 
 export interface ReceiptFilters extends PageParams {
   projectId?: string;

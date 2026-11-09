@@ -30,6 +30,12 @@ export class UpdateContractDto {
   @ApiPropertyOptional({ example: '5', description: 'Security deposit stops at this % of the contract value, or of the work billed if larger; null for no cap' }) @IsOptional() @num() @ValidateIf((_, v) => v !== null) @IsNumberString() securityDepositCapPct?: string | null;
   @ApiPropertyOptional({ example: '9325000.00', description: 'Mobilisation advance received from the client' }) @IsOptional() @num() @IsNumberString() mobilisationAdvance?: string;
   @pct('10', 'Advance recovered from each bill until the whole advance is back') @IsOptional() @num() @IsNumberString() advanceRecoveryPct?: string;
+  @ApiPropertyOptional({ example: '75', description: 'Secured advance on non-perishable material brought to site, % of its value (CPWD: 75); null when the contract gives none' })
+  @IsOptional()
+  @num()
+  @ValidateIf((_, v) => v !== null)
+  @IsNumberString()
+  securedAdvancePct?: string | null;
   @ApiPropertyOptional({ example: 12 }) @IsOptional() @int() @ValidateIf((_, v) => v !== null) @IsInt() @Min(0) @Max(120) defectLiabilityMonths?: number | null;
   @ApiPropertyOptional({ example: 60, description: 'Days the client takes to pay a bill once sent' }) @IsOptional() @int() @ValidateIf((_, v) => v !== null) @IsInt() @Min(0) @Max(365) clientPaymentDays?: number | null;
   @ApiPropertyOptional({ example: 14, description: 'Days the contract allows to give notice of a hindrance' }) @IsOptional() @int() @ValidateIf((_, v) => v !== null) @IsInt() @Min(1) @Max(180) noticeDays?: number | null;

@@ -13,6 +13,8 @@ export * from './expense';
 export * from './measurement';
 export * from './contract';
 export * from './contract-obligations';
+export * from './secured-advance';
+export * from './bill-holds';
 export * from './cost';
 export * from './risk';
 export * from './templates';

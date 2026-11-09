@@ -1597,6 +1597,8 @@ export interface ProjectContractDto {
   securityDepositCapPct: string | null;
   mobilisationAdvance: string;
   advanceRecoveryPct: string;
+  /** Secured advance on material brought to site, % of its value; null = the contract gives none */
+  securedAdvancePct: string | null;
   defectLiabilityMonths: number | null;
   /** Days the client takes to pay a bill once sent; null = not set (the cash-flow forecast assumes 30) */
   clientPaymentDays: number | null;
@@ -1690,7 +1692,73 @@ export interface RaBillItemDto {
   extraItem: boolean;
 }
 
-export type BillDeductionKey = 'retention' | 'securityDeposit' | 'advanceRecovery' | 'tds' | 'gstTds' | 'labourCess' | 'slippage' | 'omPenalty' | 'obligations' | 'other';
+export type BillDeductionKey = 'retention' | 'securityDeposit' | 'advanceRecovery' | 'tds' | 'gstTds' | 'labourCess' | 'slippage' | 'omPenalty' | 'obligations' | 'securedAdvanceRecovered' | 'withheld' | 'other';
+
+/** What a bill adds after GST and before its deductions, outside the GST and deduction base. */
+export type BillAdditionKey = 'securedAdvance' | 'withheldReleased';
+
+export interface RaBillAdditionDto {
+  key: BillAdditionKey;
+  label: string;
+  amount: string;
+}
+
+/** Material at site on which a bill pays a secured advance. */
+export interface RaBillSecuredAdvanceLineDto {
+  id: string;
+  itemId: string | null;
+  description: string;
+  unit: string;
+  qtyAtSite: string;
+  rate: string;
+  /** qtyAtSite × rate */
+  value: string;
+  /** value × the bill's securedAdvancePct */
+  advance: string;
+}
+
+/** A line of the prefill from the site's store: an item on hand at the bill's date, at its last receipt rate. */
+export interface SecuredAdvanceStockLineDto {
+  itemId: string;
+  description: string;
+  unit: string;
+  qtyAtSite: string;
+  /** The rate of its last receipt against an order, else the item master's; null when neither is known */
+  rate: string | null;
+}
+
+/** An amount withheld on a bill for a disputed item, with what later bills released and what was lost. */
+export interface RaBillHoldDto {
+  id: string;
+  projectId: string;
+  /** The bill that withheld it */
+  billId: string;
+  billNo: number;
+  billLabel: string;
+  boqItemId: string | null;
+  boqItemNo: string | null;
+  description: string;
+  reason: string;
+  amount: string;
+  released: string;
+  lost: string;
+  /** amount − released − lost */
+  balance: string;
+  closedAt: string | null;
+  closeNote: string | null;
+  releases: { billId: string; billLabel: string; amount: string; note: string | null }[];
+}
+
+/** Part of an earlier hold released on this bill. */
+export interface RaBillHoldReleaseDto {
+  id: string;
+  holdId: string;
+  /** The bill that withheld it */
+  holdBillLabel: string;
+  description: string;
+  amount: string;
+  note: string | null;
+}
 
 export interface RaBillDeductionDto {
   key: BillDeductionKey;
@@ -1772,12 +1840,24 @@ export interface RaBillDto extends SubmissionBase {
   tenderFactor: string | null;
   gstRate: string;
   gstAmount: string;
+  /** Secured advance: the contract's % on this bill, the material at site, this bill's advance and the previous bill's, recovered here */
+  securedAdvancePct: string;
+  securedAdvanceLines: RaBillSecuredAdvanceLineDto[];
+  securedAdvance: string;
+  securedAdvanceRecovered: string;
+  /** Disputed items: withheld by the holds placed on this bill, and released on it from earlier holds */
+  withheld: string;
+  withheldReleased: string;
+  holds: RaBillHoldDto[];
+  releases: RaBillHoldReleaseDto[];
+  /** Secured advance and released amounts, added after GST (zero ones left out) */
+  additions: RaBillAdditionDto[];
   /** Retention, security deposit, advance recovery, TDS, GST TDS, labour cess and any other deduction, in that order (zero ones left out) */
   deductions: RaBillDeductionDto[];
   otherDeduction: string;
   otherDeductionNote: string | null;
   totalDeductions: string;
-  /** gross + price variation + GST - deductions */
+  /** gross + price variation + GST + additions - deductions */
   netPayable: string;
   /** What was claimed, when the certified amount differs */
   claimedGross: string | null;
@@ -1788,13 +1868,15 @@ export interface RaBillDto extends SubmissionBase {
   certificateNo: string | null;
   paidDate: string | null;
   measurementCount: number;
-  /** Work value + price variation + GST: what the client owes before its deductions */
+  /** Work value + price variation + GST: the bill amount with GST */
   invoiceAmount: string;
+  /** What the receipts settle: the invoice plus the secured advance and released, less recovered and withheld (`billOwed`) */
+  owedAmount: string;
   /** Received in the bank against this bill */
   receivedAmount: string;
   /** Received plus what the client deducted on its payments */
   settledAmount: string;
-  /** invoiceAmount − settledAmount */
+  /** owedAmount − settledAmount */
   outstanding: string;
   items: RaBillItemDto[];
   /** Only on GET /ra-bills/:id */
@@ -1897,7 +1979,10 @@ export interface OpenBillDto {
   sentDate: string;
   certifiedDate: string | null;
   invoiceAmount: string;
+  /** What the receipts settle: work + PV + GST, with the secured advance and the withheld amounts netted in (`billOwed`) */
+  owedAmount: string;
   settledAmount: string;
+  /** owedAmount − settledAmount */
   outstanding: string;
   daysOutstanding: number;
 }

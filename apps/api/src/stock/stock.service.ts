@@ -18,6 +18,7 @@ import {
   type ReceivableRequestDto,
   type SortOrder,
   type StockBalanceDto,
+  type SecuredAdvanceStockLineDto,
   type MaterialRequestStockDto,
   type IndentCheckDto,
   boqAllowance,
@@ -1215,6 +1216,36 @@ export class StockService {
     rows.sort((a, b) => dir * primary[sortBy](a, b) || text(a.itemName, b.itemName) || text(a.projectName, b.projectName));
     const args = pageArgs(q);
     return paginated(rows.slice(args.skip, args.skip + args.take), rows.length, args);
+  }
+
+  /**
+   * What a site's store held at the end of a day, item by item (only what was in stock), each at the rate of its last
+   * receipt against an order up to that day, else the item master's rate: an RA bill's material at site starts from it.
+   */
+  async onHandAt(user: RequestUser, projectId: string, asOf: string): Promise<SecuredAdvanceStockLineDto[]> {
+    await this.access.assertCanAccessProject(user, projectId);
+    const upTo = parseDate(asOf);
+    const sums = await this.prisma.stockTxn.groupBy({ by: ['itemId'], where: { organizationId: user.organizationId, projectId, date: { lte: upTo } }, _sum: { quantity: true } });
+    const held = sums.filter((s) => (s._sum.quantity ?? ZERO).gt(0));
+    if (!held.length) return [];
+    const ids = held.map((s) => s.itemId);
+    const [items, received] = await Promise.all([
+      this.prisma.item.findMany({ where: { id: { in: ids } }, select: { id: true, name: true, unit: true, rate: true } }),
+      this.prisma.stockTxn.findMany({
+        where: { projectId, itemId: { in: ids }, type: 'RECEIPT', date: { lte: upTo }, purchaseOrderLineId: { not: null } },
+        orderBy: [{ date: 'desc' }, { id: 'desc' }],
+        distinct: ['itemId'],
+        select: { itemId: true, purchaseOrderLine: { select: { rate: true } } },
+      }),
+    ]);
+    const lastRate = new Map(received.map((r) => [r.itemId, r.purchaseOrderLine?.rate ?? null]));
+    const itemOf = new Map(items.map((i) => [i.id, i]));
+    return held
+      .map((s) => {
+        const item = itemOf.get(s.itemId)!;
+        return { itemId: item.id, description: item.name, unit: item.unit, qtyAtSite: dec(s._sum.quantity)!, rate: money(lastRate.get(item.id) ?? item.rate) };
+      })
+      .sort((a, b) => a.description.localeCompare(b.description));
   }
 
   async setMinLevel(user: RequestUser, dto: SetMinLevelDto): Promise<StockBalanceDto> {

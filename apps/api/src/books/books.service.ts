@@ -71,6 +71,7 @@ function typeOf(v: Voucher): BookVoucherType {
     RMC_RECEIPT: 'RECEIPT',
     MACHINE_LOAN: 'JOURNAL',
     LOAN_EMI: 'PAYMENT',
+    WITHHELD_LOST: 'JOURNAL',
   };
   // An expense bought on credit moves no money: it is a journal to the vendor.
   if (v.kind === 'EXPENSE' && !v.lines.some((l) => l.ledgerKey === 'CASH' || l.ledgerKey === 'BANK')) return 'JOURNAL';

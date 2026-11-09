@@ -225,3 +225,65 @@ export async function seedTownBilling(prisma: PrismaClient, organizationId: stri
     });
   }
 }
+
+/**
+ * The town scheme's secured advance and a disputed amount: the contract pays 75% on material at site, bills 3 and 4
+ * declare cement and steel, and the engineer withheld an extra lead claim on bill 3's certificate and released 80% of it
+ * on bill 4. Both bills are re-priced through `billTotals`, and bill 3's receipt follows its new net payable. Writes
+ * nothing once the project has its %.
+ */
+export async function seedTownAdvancesAndHolds(prisma: PrismaClient, organizationId: string) {
+  const project = await prisma.project.findFirst({ where: { organizationId, code: 'WS-2026-04' }, select: { id: true, securedAdvancePct: true } });
+  if (!project || project.securedAdvancePct !== null) return;
+  const projectId = project.id;
+  const bills = await prisma.raBill.findMany({ where: { projectId, billNo: { in: [3, 4] } }, include: { items: true, stageLines: true }, orderBy: { billNo: 'asc' } });
+  if (bills.length !== 2 || (await prisma.raBill.count({ where: { projectId, billNo: { gt: 4 } } }))) return;
+  if (await prisma.raBillSecuredAdvance.count({ where: { bill: { projectId } } })) return;
+  const qs = (await prisma.user.findFirst({ where: { organizationId, email: 'qs@demo.com' }, select: { id: true } }))?.id;
+  if (!qs) return;
+  const [b3, b4] = bills;
+  const item = async (name: string) => (await prisma.item.findFirst({ where: { organizationId, name }, select: { id: true } }))?.id ?? null;
+  const [cement, steel] = await Promise.all([item('OPC 53 Grade Cement'), item('TMT Fe500D 12mm')]);
+
+  await prisma.project.update({ where: { id: projectId }, data: { securedAdvancePct: D(75) } });
+  const atSite: [string, [string | null, string, string, string, string][]][] = [
+    [b3.id, [[cement, 'OPC 53 Grade Cement, in the site godown', 'Bags', '1400', '405'], [steel, 'TMT Fe500D bars for the ESR staging', 'MT', '22.5', '57800']]],
+    [b4.id, [[cement, 'OPC 53 Grade Cement, in the site godown', 'Bags', '900', '410'], [steel, 'TMT Fe500D bars for the ESR staging', 'MT', '14', '58200']]],
+  ];
+  for (const [billId, lines] of atSite) {
+    await prisma.raBillSecuredAdvance.createMany({
+      data: lines.map(([itemId, description, unit, qty, rate], i) => ({ billId, itemId, description, unit, qtyAtSite: D(qty), rate: D(rate), value: 0, advance: 0, sortOrder: i })),
+    });
+  }
+  const hold = await prisma.raBillHold.create({
+    data: {
+      organizationId, projectId, billId: b3.id, description: 'Extra lead for pipe bedding sand beyond 5 km',
+      reason: 'Lead from the river bed not accepted by the EE pending the SE’s decision', amount: D(185000), createdAt: b3.certifiedDate ?? day(-80),
+    },
+  });
+  await prisma.raBillHoldRelease.create({ data: { holdId: hold.id, billId: b4.id, amount: D(148000), note: 'SE allowed 80% of the lead claim' } });
+
+  const terms = await prisma.project.findUniqueOrThrow({ where: { id: projectId }, select: BILL_TERMS_SELECT });
+  for (const bill of bills) {
+    const certified = new Map(bill.stageLines.map((l) => [l.stageId, l.certifiedPct ?? l.thisPct]));
+    const plan = await stagePlan(prisma, bill, { certified });
+    const lines = bill.items.map((i) => ({ ...i, certifiedQty: i.certifiedQty ?? i.thisQty }));
+    const priced = await billTotals(prisma, bill, lines, { ...bill, securedAdvancePct: D(75) }, terms, plan);
+    const moved = priced.data.netPayable.sub(bill.netPayable);
+    // The claim carried the material at site and the release; the hold came on the certificate.
+    const claimedNet = bill.claimedNet === null ? null : bill.claimedNet.add(moved).add(priced.data.withheld);
+    await prisma.raBill.update({ where: { id: bill.id }, data: { ...priced.data, claimedNet } });
+    const receipt = await prisma.receipt.findFirst({ where: { billId: bill.id }, orderBy: { receiptDate: 'asc' }, select: { id: true, amount: true } });
+    if (receipt) await prisma.receipt.update({ where: { id: receipt.id }, data: { amount: receipt.amount.add(moved) } });
+    await syncBillStage(prisma, bill.id);
+    await prisma.auditLog.create({
+      data: { organizationId, entityType: 'BILL', entityId: bill.id, action: 'SECURED_ADVANCE', actorId: qs, note: '2 lines of material at site', createdAt: bill.submittedAt ?? bill.billDate },
+    });
+  }
+  await prisma.auditLog.createMany({
+    data: [
+      { organizationId, entityType: 'BILL', entityId: b3.id, action: 'HOLDS', actorId: qs, note: 'Withheld ₹185000.00 on 1 item on the certificate', createdAt: b3.certifiedDate ?? day(-80) },
+      { organizationId, entityType: 'BILL', entityId: b4.id, action: 'HOLDS', actorId: qs, note: 'Released ₹148000.00 of RA bill 3’s hold', createdAt: b4.submittedAt ?? b4.billDate },
+    ],
+  });
+}

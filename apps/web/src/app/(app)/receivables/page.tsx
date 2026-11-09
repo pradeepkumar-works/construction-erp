@@ -321,7 +321,7 @@ export default function ReceivablesPage() {
     },
     { key: 'sentDate', title: 'Sent', dataIndex: 'sentDate', width: 110, card: 'date', render: (v) => formatDate(v) },
     { key: 'stage', title: 'With client', dataIndex: 'stage', width: 120, card: 'status', render: (s) => <BillStageTag stage={s} /> },
-    { key: 'invoiceAmount', title: 'Bill amount with GST', dataIndex: 'invoiceAmount', width: 140, kind: 'money', total: (rows) => sumMoney(rows.map((r) => r.invoiceAmount)) },
+    { key: 'invoiceAmount', title: 'Owed on the bill', dataIndex: 'owedAmount', width: 140, kind: 'money', total: (rows) => sumMoney(rows.map((r) => r.owedAmount)) },
     { key: 'settledAmount', title: 'Settled', dataIndex: 'settledAmount', width: 130, kind: 'money', total: (rows) => sumMoney(rows.map((r) => r.settledAmount)) },
   ];
   const openChoice = useColumnChoice('receivables-open', openColumns);

@@ -165,7 +165,7 @@ export function ReceiptFormModal({ open, onClose, bill, receipt }: { open: boole
           )}
           {kind === 'BILL' && target && !editing && (
             <Typography.Paragraph type="secondary">
-              {target.billLabel} of {formatDate(target.billDate)}: bill amount with GST {fm(target.invoiceAmount)}, settled so far {fm(target.settledAmount)}, outstanding{' '}
+              {target.billLabel} of {formatDate(target.billDate)}: owed on the bill {fm(target.owedAmount)}, settled so far {fm(target.settledAmount)}, outstanding{' '}
               <strong>{fm(target.outstanding)}</strong>.
             </Typography.Paragraph>
           )}

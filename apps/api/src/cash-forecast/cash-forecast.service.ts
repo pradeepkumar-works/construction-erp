@@ -25,6 +25,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { todayIn } from '../notifications/time';
 import { BooksService } from '../books/books.service';
 import { ReceivablesService } from '../receivables/receivables.service';
+import { billOwed, OWED_SELECT } from '../receivables/bill-settlement';
 import { PayablesService } from '../payables/payables.service';
 import { DocumentTextService } from '../documents/document-text.service';
 import { MeasurementsService } from '../measurements/measurements.service';
@@ -145,12 +146,12 @@ export class CashForecastService {
     const [recv, pay, nets, unbilled, lastBills, orders, works, payroll, emis, requests] = await Promise.all([
       this.receivables.summary(user),
       this.payables.summary(user),
-      this.prisma.raBill.findMany({ where: { projectId: { in: ids }, status: 'APPROVED', stage: { not: 'NOT_SENT' }, paidDate: null }, select: { id: true, grossAmount: true, pvAmount: true, gstAmount: true, netPayable: true } }),
+      this.prisma.raBill.findMany({ where: { projectId: { in: ids }, status: 'APPROVED', stage: { not: 'NOT_SENT' }, paidDate: null }, select: { id: true, ...OWED_SELECT, netPayable: true } }),
       this.prisma.measurementSheet.findMany({
         where: { projectId: { in: ids }, status: 'APPROVED', raBillId: null, workOrderId: null },
         select: { projectId: true, totalQty: true, date: true, boqItem: { select: { rate: true } } },
       }),
-      this.prisma.raBill.findMany({ where: { projectId: { in: ids }, status: 'APPROVED' }, orderBy: { billDate: 'desc' }, distinct: ['projectId'], select: { projectId: true, billDate: true, grossAmount: true, netPayable: true } }),
+      this.prisma.raBill.findMany({ where: { projectId: { in: ids }, status: 'APPROVED' }, orderBy: { billDate: 'desc' }, distinct: ['projectId'], select: { projectId: true, billDate: true, grossAmount: true, netPayable: true, securedAdvance: true, securedAdvanceRecovered: true, withheld: true, withheldReleased: true } }),
       this.prisma.purchaseOrder.findMany({
         where: { projectId: { in: ids }, status: 'APPROVED', closedAt: null },
         select: {
@@ -190,8 +191,8 @@ export class CashForecastService {
     for (const b of recv.openBills) {
       const t = clients.timingOf(b.projectId);
       const n = netOf.get(b.billId);
-      const invoice = n ? N(n.grossAmount) + N(n.pvAmount) + N(n.gstAmount) : N(b.invoiceAmount);
-      const share = n && invoice > 0 ? Math.min(1, N(n.netPayable) / invoice) : 1;
+      const owed = n ? N(billOwed(n)) : N(b.owedAmount);
+      const share = n && owed > 0 ? Math.min(1, N(n.netPayable) / owed) : 1;
       add({
         key: `bill:${b.billId}`,
         kind: 'CLIENT_BILL',
@@ -220,7 +221,9 @@ export class CashForecastService {
     for (const [projectId, v] of mbBy) {
       const p = projectOf.get(projectId)!;
       const last = lastOf.get(projectId);
-      const ratio = last && N(last.grossAmount) > 0 ? N(last.netPayable) / N(last.grossAmount) : 1;
+      // The secured advance and the disputed amounts are that bill's own, not a share of the work still to bill.
+      const workNet = last ? N(last.netPayable) - N(last.securedAdvance) + N(last.securedAdvanceRecovered) - N(last.withheldReleased) + N(last.withheld) : 0;
+      const ratio = last && N(last.grossAmount) > 0 ? workNet / N(last.grossAmount) : 1;
       const billOn = nextBillDate(last ? dateOnly(last.billDate) : null, today);
       const t = clients.timingOf(projectId);
       add({

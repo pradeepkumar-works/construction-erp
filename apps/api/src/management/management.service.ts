@@ -27,7 +27,7 @@ import { todayIn } from '../notifications/time';
 import { ProjectsService } from '../projects/projects.service';
 import { MastersService } from '../masters/masters.service';
 import { ReceivablesService } from '../receivables/receivables.service';
-import { invoiceOf, RECEIPT_SUMS, settlement } from '../receivables/bill-settlement';
+import { billOwed, OWED_SELECT, RECEIPT_SUMS, settlement } from '../receivables/bill-settlement';
 import { BudgetService } from '../cost/budget.service';
 import { CostService, total } from '../cost/cost.service';
 import { CashForecastService } from '../cash-forecast/cash-forecast.service';
@@ -222,7 +222,7 @@ export class ManagementService {
       this.prisma.measurementSheet.groupBy({ by: ['boqItemId'], where: { organizationId, projectId: { in: ids }, status: 'APPROVED' }, _sum: { totalQty: true } }),
       this.prisma.raBill.findMany({
         where: { organizationId, projectId: { in: ids }, status: 'APPROVED' },
-        select: { projectId: true, grossAmount: true, pvAmount: true, gstAmount: true, stage: true, certifiedDate: true, measuredUpTo: true, receipts: { select: RECEIPT_SUMS } },
+        select: { projectId: true, ...OWED_SELECT, stage: true, certifiedDate: true, measuredUpTo: true, receipts: { select: RECEIPT_SUMS } },
       }),
       this.receivables.summary(user),
       this.budget.forecasts(organizationId, projects.map((p) => ({ id: p.id, contractValue: p.contractValue ? new Prisma.Decimal(p.contractValue) : null }))),
@@ -276,7 +276,7 @@ export class ManagementService {
           const work = N(b.grossAmount) + N(b.pvAmount);
           billed += work;
           if (b.certifiedDate || b.stage === 'CERTIFIED' || b.stage === 'PAID') certified += work;
-          paid += paidWork(work, N(invoiceOf(b)), N(settlement(b.receipts).settled));
+          paid += paidWork(work, N(billOwed(b)), N(settlement(b.receipts).settled));
           const upTo = dateOnly(b.measuredUpTo);
           if (!billedUpTo || upTo > billedUpTo) billedUpTo = upTo;
         }

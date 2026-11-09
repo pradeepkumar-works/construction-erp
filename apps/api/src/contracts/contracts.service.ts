@@ -79,6 +79,7 @@ export class ContractsService {
       securityDepositCapPct: p.securityDepositCapPct ? pctStr(p.securityDepositCapPct) : null,
       mobilisationAdvance: money(p.mobilisationAdvance),
       advanceRecoveryPct: pctStr(p.advanceRecoveryPct),
+      securedAdvancePct: p.securedAdvancePct ? pctStr(p.securedAdvancePct) : null,
       defectLiabilityMonths: p.defectLiabilityMonths,
       clientPaymentDays: p.clientPaymentDays,
       noticeDays: p.noticeDays,
@@ -230,6 +231,11 @@ export class ContractsService {
       const n = dto.securityDepositCapPct === null ? null : new Prisma.Decimal(dto.securityDepositCapPct);
       if (n && (n.lte(0) || n.gt(100))) throw new BadRequestException('Give the security deposit cap as more than 0 and at most 100%, or clear it for no cap');
       data.securityDepositCapPct = n;
+    }
+    if (dto.securedAdvancePct !== undefined) {
+      const n = dto.securedAdvancePct === null ? null : new Prisma.Decimal(dto.securedAdvancePct);
+      if (n && (n.lte(0) || n.gt(100))) throw new BadRequestException('Give the secured advance as more than 0 and at most 100% of the material value, or clear it when the contract gives none');
+      data.securedAdvancePct = n;
     }
     if (dto.mobilisationAdvance !== undefined) {
       if (Number(dto.mobilisationAdvance) < 0) throw new BadRequestException('The mobilisation advance cannot be negative');

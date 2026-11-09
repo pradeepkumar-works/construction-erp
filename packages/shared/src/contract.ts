@@ -90,5 +90,13 @@ export const BILL_DEDUCTION_LABELS = {
   slippage: 'Milestone slippage withheld',
   omPenalty: 'Service level penalties',
   obligations: 'Contract recoveries',
+  securedAdvanceRecovered: 'Secured advance recovered',
+  withheld: 'Withheld (disputed)',
   other: 'Other deduction',
+} as const;
+
+/** What a bill adds after GST, in the order the bill shows them: neither is a supply, so neither takes GST or deductions. */
+export const BILL_ADDITION_LABELS = {
+  securedAdvance: 'Secured advance on material at site',
+  withheldReleased: 'Released from amounts withheld',
 } as const;
