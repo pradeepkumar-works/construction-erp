@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import { ArrayMaxSize, IsArray, IsDateString, IsIn, IsNumberString, IsOptional, IsString, IsUUID, MaxLength, MinLength, ValidateIf, ValidateNested } from 'class-validator';
-import type { CashFlowGranularity, EvBasis } from '@erp/shared';
+import type { BudgetDecision, CashFlowGranularity, EvBasis } from '@erp/shared';
 import { EV_BASES } from '@erp/shared';
 
 export class CostQuery {
@@ -44,21 +44,35 @@ export class BoqBudgetRateDto {
   budgetRate: string | null;
 }
 
-export class SetBudgetDto {
-  @ApiPropertyOptional({ type: BudgetHeadsInputDto, nullable: true, description: 'The budget by cost head; null removes it' })
+/** A budget version's figures, notes and reason; anything left out keeps what the version has. */
+export class SaveBudgetVersionDto {
+  @ApiPropertyOptional({ type: BudgetHeadsInputDto, nullable: true, description: 'The budget by cost head; null for none (the forecast then reads the BOQ budget)' })
   @IsOptional()
   @ValidateIf((_, v) => v !== null)
   @ValidateNested()
   @Type(() => BudgetHeadsInputDto)
   heads?: BudgetHeadsInputDto | null;
   @ApiPropertyOptional({ nullable: true }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsString() @MaxLength(2000) notes?: string | null;
-  @ApiPropertyOptional({ type: [BoqBudgetRateDto], description: 'Budget rates of BOQ items; items left out keep theirs' })
+  @ApiPropertyOptional({ type: [BoqBudgetRateDto], description: 'Budget rates of BOQ items in this version; items left out keep theirs, null removes one' })
   @IsOptional()
   @IsArray()
   @ArrayMaxSize(2000)
   @ValidateNested({ each: true })
   @Type(() => BoqBudgetRateDto)
   items?: BoqBudgetRateDto[];
+  @ApiPropertyOptional({ nullable: true, example: 'variation', description: 'Why it is revised: a code of the budgetRevision master (versions after the first)' })
+  @IsOptional()
+  @ValidateIf((_, v) => v !== null)
+  @IsString()
+  @MaxLength(60)
+  reasonCode?: string | null;
+  @ApiPropertyOptional({ nullable: true }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsString() @MaxLength(2000) reasonNote?: string | null;
+  @ApiPropertyOptional({ nullable: true, description: 'The approved variation of this project that brought the revision' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsUUID() variationId?: string | null;
+}
+
+export class DecideBudgetDto {
+  @ApiProperty({ enum: ['APPROVE', 'RETURN'] }) @IsIn(['APPROVE', 'RETURN']) decision: BudgetDecision;
+  @ApiPropertyOptional({ nullable: true, description: 'What to change; needed to return it' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsString() @MaxLength(2000) note?: string | null;
 }
 
 export class CashFlowQuery {

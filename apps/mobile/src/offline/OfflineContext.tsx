@@ -94,6 +94,8 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
   const save = useCallback(async (item: OutboxItem) => {
     const store = await getStore();
     await store.putOutbox(toRow(item));
+    // An entry of someone who has since signed out is kept on the phone, never shown in the next person's outbox.
+    if (item.userId !== userIdRef.current) return item;
     setItems((prev) => {
       const idx = prev.findIndex((i) => i.id === item.id);
       if (idx === -1) return [...prev, item].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
@@ -110,10 +112,12 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
     setItems((prev) => prev.filter((i) => i.id !== id));
   }, []);
 
-  /** Send one item: upload any photo not yet uploaded, then create the entry with its client id. */
+  /**
+   * Send one item as the person who made it (`tok`, captured when the sync began): upload any photo not yet uploaded,
+   * then create the entry with its client id.
+   */
   const sendItem = useCallback(
-    async (item: OutboxItem) => {
-      const tok = tokenRef.current;
+    async (item: OutboxItem, tok: string) => {
       const photos: OutboxPhoto[] = [...item.photos];
       for (let i = 0; i < photos.length; i++) {
         if (photos[i].attachmentId) continue;
@@ -140,8 +144,14 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
     [remove, save],
   );
 
+  const syncRef = useRef<() => Promise<void>>(async () => {});
   const sync = useCallback(async () => {
-    if (!tokenRef.current || !userIdRef.current) return;
+    // The person and token the queue is sent as, fixed for this run: if someone signs out, switches company or another
+    // person signs in part way, the run stops, so no entry ever goes out under someone else's name.
+    const uid = userIdRef.current;
+    const tok = tokenRef.current;
+    if (!tok || !uid) return;
+    const same = () => userIdRef.current === uid && tokenRef.current === tok;
     if (syncRunning.current) {
       syncAgain.current = true;
       return;
@@ -154,13 +164,13 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
       do {
         syncAgain.current = false;
         const store = await getStore();
-        const queue = (await store.listOutbox(userIdRef.current)).map(fromRow).filter((i) => i.status !== 'FAILED');
+        const queue = (await store.listOutbox(uid)).map(fromRow).filter((i) => i.status !== 'FAILED');
         for (const item of queue) {
-          if (!tokenRef.current) break;
+          if (!same()) break;
           const sending: OutboxItem = { ...item, status: 'SYNCING', error: null };
           await save(sending);
           try {
-            await sendItem(sending);
+            await sendItem(sending, tok);
             sent++;
             setSyncedCount((n) => n + 1);
             setLastSyncedAt(new Date().toISOString());
@@ -181,16 +191,19 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
             if (transient) break;
           }
         }
-      } while (syncAgain.current);
+      } while (syncAgain.current && same());
     } finally {
       syncRunning.current = false;
       setSyncing(false);
-      // Entries saved offline went out by themselves: say so, and say when one was refused.
+      // Stopped because the person changed: send the new person's queue as them (and tell them nothing of the last one's).
       const tr = tRef.current;
-      if (refused) snackbar.show(refused === 1 ? tr('1 entry was not accepted. Open the outbox to fix it.') : tr('{n} entries were not accepted. Open the outbox to fix them.', { n: refused }), { tone: 'error' });
+      if (!same()) setTimeout(() => void syncRef.current(), 0);
+      // Entries saved offline went out by themselves: say so, and say when one was refused.
+      else if (refused) snackbar.show(refused === 1 ? tr('1 entry was not accepted. Open the outbox to fix it.') : tr('{n} entries were not accepted. Open the outbox to fix them.', { n: refused }), { tone: 'error' });
       else if (sent) snackbar.show(sent === 1 ? tr('1 entry from the outbox was sent') : tr('{n} entries from the outbox were sent', { n: sent }));
     }
   }, [save, sendItem, setLastSyncedAt, snackbar]);
+  syncRef.current = sync;
 
   // Try to flush whenever we (re)connect, the app comes to the foreground, or a user signs in.
   useEffect(() => {

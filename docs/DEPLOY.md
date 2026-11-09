@@ -26,7 +26,7 @@ API (`apps/api`):
 | `STORAGE_MODE` | `db` on serverless hosts; unset = local disk; `BLOB_READ_WRITE_TOKEN` set = Vercel Blob |
 | `SEED_ON_BUILD` | `true` runs the demo seed during the Vercel build (idempotent: refreshes users, never duplicates projects). Set to `false` once real client data exists. |
 | `SEED_TOWN_ON_BUILD` | with `SEED_ON_BUILD` off, `true` adds only the Devgarh demo project (WS-2026-04: work breakdown, DPRs, pipe network) through `prisma/seed-town.ts`, writing nothing outside it; idempotent. Set it for one deploy, then remove it. |
-| `SEED_MODULES_ON_BUILD` | with `SEED_ON_BUILD` off, `true` runs `prisma/seed.ts --modules`: every module's demo step adds what that module is missing in the demo company and the group's companies (QA/QC, correspondence, drawings, design submissions, integrations and machines, stage billing, EPC, O&M, project types and so on), and demo users that do not exist yet are added. Existing users, roles, passwords, projects and records are left as they are; a second run adds nothing. Use it after new modules ship with demo data: set it for one deploy, then set it back to `false`. |
+| `SEED_MODULES_ON_BUILD` | with `SEED_ON_BUILD` off, `true` runs `prisma/seed.ts --modules`: every module's demo step adds what that module is missing in the demo company and the group's companies (QA/QC, correspondence, drawings, design submissions, integrations and machines, stage billing, EPC, O&M, project types and so on), and demo users that do not exist yet are added. Existing users, roles, passwords, projects and records are left as they are; a second run adds nothing. Use it after new modules ship with demo data: set it for one deploy, then set it back to `false`. A top-up first moves the demo's dates up to today (ARCHITECTURE "Demo clock"), which the daily digest job (`CRON_SECRET`) also does every morning. |
 | `SEED_GROUP_ON_BUILD` | with `SEED_ON_BUILD` off, `true` adds only the demo group's companies through `prisma/seed-companies.ts` (`seed-group.ts`): Demo Infra Holdings, Demo Buildcon, Demo Design Consultants and Demo Quality Labs with their people and records, and the sisters' work order and bills in the demo company. Idempotent; existing sign-ins keep their passwords. Set it for one deploy, then set it back to `false`. |
 | `CORS_ORIGINS` | optional comma-separated allow-list of browser origins; unset = any origin. Also the only sites that may frame a stored file (the web's document viewer); set it in production. |
 | `UPLOAD_DIR` | disk mode only |
@@ -137,7 +137,10 @@ Each user's **Send a test** button shows whether a channel works end to end.
 - **Git auto-deploy**: both Vercel projects are linked to `pradeepkumar-works/construction-erp`.
   Every push to the production branch (`claude/modest-brown-emrt4b` today; change it in each
   project's Settings → Git when you adopt `main`) builds and deploys automatically. Other branches
-  get preview deployments.
+  get preview deployments. A preview build of the API runs no migrations and no seed (`vercel-build.sh`), so an
+  unmerged PR never changes the database; a preview whose code needs a new migration fails on it until the PR merges.
+  A preview with a database of its own (a Neon branch) sets `MIGRATE_ON_PREVIEW=true`. A deployed API (Vercel, or
+  `NODE_ENV=production`) refuses to start without its own `JWT_SECRET`, in preview as well as production.
 
 ## Database
 

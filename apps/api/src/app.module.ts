@@ -72,6 +72,7 @@ import { GstModule } from './gst/gst.module';
 import { InspectionsModule } from './inspections/inspections.module';
 import { QualityModule } from './quality/quality.module';
 import { QaModule } from './qa/qa.module';
+import { IsStandardsModule } from './is-standards/is-standards.module';
 import { DesignModule } from './design/design.module';
 import { DocumentsModule } from './documents/documents.module';
 import { StaffModule } from './staff/staff.module';
@@ -149,6 +150,7 @@ import { VitalsController } from './vitals.controller';
     InspectionsModule,
     QualityModule,
     QaModule,
+    IsStandardsModule,
     DesignModule,
     DocumentsModule,
     StaffModule,

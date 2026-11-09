@@ -1,3 +1,4 @@
+import { DemoClockService } from '../demo/demo-clock.service';
 import { IntegrationsModule } from '../integrations/integrations.module';
 import { Global, Module } from '@nestjs/common';
 import { NotificationsController } from './notifications.controller';
@@ -25,7 +26,7 @@ import { BillingController } from '../billing/billing.controller';
 @Module({
   imports: [PayablesModule, WarningsModule, BriefsModule, DocumentsModule, IntegrationsModule],
   controllers: [NotificationsController, MessagingController, CompanyDataController, BillingController],
-  providers: [NotificationsService, NotificationJobsService, NotificationSchedulerService, ExpoPushService, EmailService, MessagingService, CompanyDataService, BillingService],
+  providers: [DemoClockService, NotificationsService, NotificationJobsService, NotificationSchedulerService, ExpoPushService, EmailService, MessagingService, CompanyDataService, BillingService],
   exports: [NotificationsService, NotificationJobsService, EmailService, MessagingService],
 })
 export class NotificationsModule {}

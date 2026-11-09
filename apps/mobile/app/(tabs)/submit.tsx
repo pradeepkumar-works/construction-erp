@@ -41,7 +41,8 @@ export default function SubmitHub() {
     {
       title: 'Site reports',
       forms: [
-        PROGRESS,
+        // A company that records progress only in the DPR takes no separate progress entry.
+        ...may(!user?.progressFromDpr, PROGRESS),
         DPR,
         ...may(role && canRecordAttendance(role), ATTENDANCE),
         ...may(role && canManageWorkers(role), ROLL_CALL),

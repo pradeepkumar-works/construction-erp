@@ -23,6 +23,7 @@ import { seedCorrespondence, seedLetterPartyKinds } from './seed-correspondence'
 import { seedQa } from './seed-qa';
 import { seedQaRegisters } from './seed-qa-registers';
 import { seedQaAudits } from './seed-qa-audits';
+import { seedIsStandards } from './seed-is-standards';
 import { seedDrawingSchedule } from './seed-drawing-schedule';
 import { seedDesignSubmissions } from './seed-design-submissions';
 import { seedComponentDrawings } from './seed-component-drawings';
@@ -40,6 +41,7 @@ import { seedProjectTypes } from './seed-project-types';
 import { DEFAULT_SETTINGS, computePayslip, structureCost, type RulesStructure } from '../src/payroll/payroll-rules';
 import { COMPANY_KIND_INFO, DEFAULT_CLOSEOUT_ITEMS, PAYSLIP_CODES, PERMIT_PRECAUTIONS, ROLE_KEYS, ROLE_LABELS, STANDARD_CHECKLISTS, gstinCheckChar, isWeeklyOff, leaveDays, ppeReplaceBy, ranBeforeNirmaan, scaleFrom, takeoffValue, VERTICAL_OF_TYPE, type MarkupPoint, type ProjectType, type PpeKind, type TakeoffKind } from '@erp/shared';
 import { day } from './seed-clock';
+import { markDemoDated, redateDemo, seedWhatsappEntries } from './seed-demo-refresh';
 
 const prisma = new PrismaClient();
 const D = (v: string | number) => new Prisma.Decimal(v);
@@ -1185,29 +1187,110 @@ async function seedRfis(organizationId: string) {
 /**
  * Demo budgets: the first road and building projects get a budget rate on every BOQ item (78 to 88% of the
  * client's rate) and a cost-head budget split from that total; the road's client pays in 45 days. Other projects are left
- * without a budget. Only when the organisation has no budget yet.
+ * without a budget. Each is version 1, prepared by the PM and approved by management. Only when the organisation has no
+ * budget yet.
  */
 async function seedBudgets(organizationId: string) {
   if (await prisma.projectBudget.count({ where: { organizationId } })) return;
-  const pm = await prisma.user.findFirst({ where: { organizationId, email: 'pm@demo.com' } });
-  if (!pm) return;
+  const [pm, md] = await Promise.all(['pm@demo.com', 'md@demo.com'].map((email) => prisma.user.findFirst({ where: { organizationId, email } })));
+  if (!pm || !md) return;
   const split = { material: 0.44, subcontract: 0.2, machinery: 0.16, labour: 0.12, expenses: 0.08 };
   for (const type of ['ROAD', 'BUILDING'] as const) {
     const project = await prisma.project.findFirst({ where: { organizationId, type }, orderBy: { code: 'asc' } });
     if (!project) continue;
     const items = await prisma.boqItem.findMany({ where: { projectId: project.id }, orderBy: [{ sortOrder: 'asc' }, { itemNo: 'asc' }] });
     let total = D(0);
+    const lines: { boqItemId: string; budgetRate: Prisma.Decimal }[] = [];
     for (const [i, b] of items.entries()) {
       const budgetRate = b.rate.mul(0.78 + (i % 6) * 0.02).toDecimalPlaces(2);
       await prisma.boqItem.update({ where: { id: b.id }, data: { budgetRate } });
+      lines.push({ boqItemId: b.id, budgetRate });
       total = total.add((b.revisedQty ?? b.originalQty).mul(budgetRate));
     }
     const heads = Object.fromEntries(Object.entries(split).map(([k, f]) => [k, total.mul(f).div(1000).toDecimalPlaces(0).mul(1000)])) as Record<keyof typeof split, Prisma.Decimal>;
     await prisma.projectBudget.create({
-      data: { organizationId, projectId: project.id, ...heads, notes: 'Budget from the tender rate analysis, revised after award.', updatedById: pm.id },
+      data: {
+        organizationId,
+        projectId: project.id,
+        versionNo: 1,
+        status: 'APPROVED',
+        ...heads,
+        notes: 'Budget from the tender rate analysis.',
+        preparedById: pm.id,
+        submittedAt: day(-122),
+        decidedById: md.id,
+        decidedAt: day(-120),
+        approvedAt: day(-120),
+        lines: { createMany: { data: lines } },
+      },
     });
     if (type === 'ROAD') await prisma.project.update({ where: { id: project.id }, data: { clientPaymentDays: 45 } });
   }
+}
+
+/**
+ * Demo budget revisions on the road: version 2 approved for the client's variation V-1 (more material and
+ * subcontract), and version 3 sent by the PM for higher steel and cement rates, waiting for management, so the history
+ * and Approvals' Also waiting for you show it. Only while the road has its version 1 alone.
+ */
+async function seedBudgetRevisions(organizationId: string) {
+  const road = await prisma.project.findFirst({ where: { organizationId, type: 'ROAD' }, orderBy: { code: 'asc' } });
+  if (!road) return;
+  const versions = await prisma.projectBudget.findMany({ where: { projectId: road.id }, include: { lines: true } });
+  const v1 = versions.find((v) => v.versionNo === 1);
+  if (versions.length !== 1 || v1?.status !== 'APPROVED' || v1.expenses === null) return;
+  const [pm, md] = await Promise.all(['pm@demo.com', 'md@demo.com'].map((email) => prisma.user.findFirst({ where: { organizationId, email } })));
+  const variation = await prisma.variation.findFirst({ where: { projectId: road.id, status: 'APPROVED' }, orderBy: { varNo: 'asc' } });
+  if (!pm || !md || !variation) return;
+  const extra = (variation.approvedAmount ?? D(0)).mul(0.8);
+  const lines = { createMany: { data: v1.lines.map((l) => ({ boqItemId: l.boqItemId, budgetRate: l.budgetRate })) } };
+  const v2 = {
+    expenses: v1.expenses,
+    material: v1.material!.add(extra.mul(0.6)).toDecimalPlaces(0),
+    machinery: v1.machinery!,
+    labour: v1.labour!,
+    subcontract: v1.subcontract!.add(extra.mul(0.4)).toDecimalPlaces(0),
+  };
+  await prisma.$transaction([
+    // A budget set before versions became version 1 on the day it was last set; the story has it approved at award.
+    prisma.projectBudget.update({ where: { id: v1.id }, data: { status: 'SUPERSEDED', submittedAt: day(-122), decidedById: md.id, decidedAt: day(-120), approvedAt: day(-120) } }),
+    prisma.projectBudget.create({
+      data: {
+        organizationId,
+        projectId: road.id,
+        versionNo: 2,
+        status: 'APPROVED',
+        ...v2,
+        notes: v1.notes,
+        reasonCode: 'variation',
+        reasonNote: 'Two more pipe culverts and a box culvert between Km 17 and Km 19, as the client approved them.',
+        variationId: variation.id,
+        preparedById: pm.id,
+        submittedAt: day(-42),
+        decidedById: md.id,
+        decidedAt: day(-40),
+        approvedAt: day(-40),
+        decisionNote: 'Approved with the variation.',
+        lines,
+      },
+    }),
+    prisma.projectBudget.create({
+      data: {
+        organizationId,
+        projectId: road.id,
+        versionNo: 3,
+        status: 'SUBMITTED',
+        ...v2,
+        material: v2.material.mul(1.05).toDecimalPlaces(0),
+        notes: v1.notes,
+        reasonCode: 'rate-change',
+        reasonNote: 'Steel and cement are about 5% above the rates in the tender analysis since the last quarter.',
+        preparedById: pm.id,
+        submittedAt: day(-2),
+        lines,
+      },
+    }),
+  ]);
 }
 
 /**
@@ -1814,11 +1897,14 @@ async function seedVerticals(organizationId: string) {
  * Every module's demo records. Each step writes only what its module is missing, so this runs after a fresh seed, on
  * every re-run, and alone (`--modules`) on a live demo that no longer takes the full seed. It goes round twice: some steps
  * build on projects and records a later step adds (attendance and machinery for the EPC and O&M projects, the RMC
- * plant's issues), and the second pass fills those in, so one deploy lands everything. A third pass adds nothing.
+ * plant's issues), and the second pass fills those in, so one deploy lands everything. A third pass adds nothing. A demo
+ * dated on an earlier day is first moved up to today (ARCHITECTURE "Demo clock"), then marked dated today.
  */
 async function topUp(organizationId: string, passwordHash: string) {
+  await redateDemo(prisma);
   await modulesPass(organizationId, passwordHash);
   await modulesPass(organizationId, passwordHash);
+  await markDemoDated(prisma, organizationId);
 }
 
 async function modulesPass(organizationId: string, passwordHash: string) {
@@ -1851,6 +1937,7 @@ async function modulesPass(organizationId: string, passwordHash: string) {
   await seedQa(prisma, organizationId);
   await seedQaRegisters(prisma, organizationId);
   await seedQaAudits(prisma, organizationId);
+  await seedIsStandards(prisma, organizationId);
   await seedDrawingSchedule(prisma, organizationId);
   await seedDesignSubmissions(prisma, organizationId);
   await seedControlledCopies(prisma, organizationId);
@@ -1868,6 +1955,7 @@ async function modulesPass(organizationId: string, passwordHash: string) {
   await seedDrawingMarkups(organizationId);
   await seedDrawingTakeoffs(organizationId);
   await seedBudgets(organizationId);
+  await seedBudgetRevisions(organizationId);
   await seedStoreMoves(organizationId);
   await seedReconciliation(organizationId);
   await seedRateAnalysis(organizationId);
@@ -1924,6 +2012,7 @@ async function modulesPass(organizationId: string, passwordHash: string) {
   // The town scheme's components exist by now (seedWorkBreakdown); their drawings and staged submittals.
   await seedComponentDrawings(prisma, organizationId);
   await seedWoAmendments(organizationId);
+  await seedWhatsappEntries(prisma, organizationId);
 }
 
 /**

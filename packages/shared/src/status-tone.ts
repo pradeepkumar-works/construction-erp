@@ -1,6 +1,7 @@
 import type {
   AccessRequestStatus,
   BillStage,
+  BudgetStatus,
   ComplianceDocStatus,
   DefectStatus,
   DeliverableStatus,
@@ -26,6 +27,7 @@ import type { CopyState, ImpactTone } from './design-control';
 import type { DesignCommentState, DesignSubmissionStatus } from './design-submissions';
 import type { RevisionStatus } from './documents';
 import type { DrawingNeedState } from './drawing-schedule';
+import type { EditionState } from './is-standards';
 import type { ApprovalCode } from './epc';
 import type { AgentState, ConnectionHealth, IntegrationEventStatus } from './integrations';
 import type { MatchState, PaidState, PoReceiptState } from './labels';
@@ -110,6 +112,7 @@ export const STATUS_TONES = {
   variation: meanings<VariationStatus>({ DRAFT: 'inHand', SUBMITTED: 'waiting', APPROVED: 'done', REJECTED: 'failed' }),
   bookVoucher: meanings<BookVoucherStatus>({ DRAFT: 'inHand', SUBMITTED: 'waiting', APPROVED: 'done', REJECTED: 'failed', CANCELLED: 'closed' }),
   imprestEntry: meanings<ImprestEntryStatus>({ REQUESTED: 'waiting', PAID: 'done', REJECTED: 'failed' }),
+  budget: meanings<BudgetStatus>({ DRAFT: 'inHand', SUBMITTED: 'waiting', APPROVED: 'done', RETURNED: 'failed', SUPERSEDED: 'closed' }),
   payrollRun: meanings<PayrollRunStatus>({ DRAFT: 'inHand', SUBMITTED: 'waiting', APPROVED: 'done', PAID: 'done' }),
   settlement: meanings<SettlementStatus>({ DRAFT: 'inHand', APPROVED: 'done', PAID: 'done' }),
   clearance: meanings<ClearanceState>({ PENDING: 'waiting', CLEARED: 'done', DUES: 'failed', NOT_APPLICABLE: 'closed' }),
@@ -135,6 +138,7 @@ export const STATUS_TONES = {
   inspectionResult: meanings<InspectionResult>({ PASS: 'done', FAIL: 'failed', NA: 'closed' }),
   pour: meanings<PourStatus>({ PLANNED: 'inHand', POURED: 'done', CANCELLED: 'closed' }),
   accreditation: meanings<AccreditationState>({ VALID: 'done', EXPIRING: 'waiting', EXPIRED: 'failed', NONE: 'closed' }),
+  edition: meanings<EditionState>({ NEVER: 'waiting', DUE: 'waiting', CURRENT: 'done' }),
   calibration: meanings<CalibrationState>({ OK: 'done', DUE_SOON: 'waiting', OVERDUE: 'failed', NEVER: 'failed', OUT_OF_USE: 'closed' }),
   calibrationResult: meanings<CalibrationResult>({ OK: 'done', ADJUSTED: 'done', FAILED: 'failed' }),
   checkOutcome: meanings<CheckOutcome>({ AGREED: 'done', LESS: 'failed', MORE: 'waiting' }),

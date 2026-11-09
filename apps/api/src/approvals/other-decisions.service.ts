@@ -3,6 +3,7 @@ import {
   LEAVE_TYPE_LABELS,
   OTHER_DECISION_KINDS,
   STAFF_ATTENDANCE_LABELS,
+  canApproveBudget,
   canApprovePayroll,
   canApproveVouchers,
   canKeepBooks,
@@ -20,6 +21,7 @@ import { AttendanceCorrectionsService } from '../staff/attendance-corrections.se
 import { PayrollRunService } from '../payroll/payroll-run.service';
 import { BooksService } from '../books/books.service';
 import { CorrespondenceService } from '../correspondence/correspondence.service';
+import { BudgetService } from '../cost/budget.service';
 
 /** Most entries a group lists; its count still says how many there are. */
 const SHOWN = 10;
@@ -30,7 +32,7 @@ const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 /**
  * What waits on the caller outside the submission queue, read through each module's own list with the caller, so its
  * access rules apply: leave, overtime and attendance corrections to recommend or decide (each person only what waits on
- * them in its two steps), salary runs to approve, vouchers to approve and letters to sign.
+ * them in its two steps), salary runs to approve, vouchers to approve, letters to sign and project budgets to approve.
  * Each group links to where it is decided; a group the caller has no part in is left out.
  */
 @Injectable()
@@ -41,19 +43,21 @@ export class OtherDecisionsService {
     private payroll: PayrollRunService,
     private books: BooksService,
     private letters: CorrespondenceService,
+    private budgets: BudgetService,
   ) {}
 
   /** Every kind, or only `kinds` (a module's screen asks for its own). */
   async forUser(user: RequestUser, kinds: readonly OtherDecisionKind[] = OTHER_DECISION_KINDS): Promise<OtherDecisionGroupDto[]> {
     const role = user.roleKey;
     const wants = (k: OtherDecisionKind) => kinds.includes(k);
-    const [leave, overtime, corrections, runs, vouchers, letters] = await Promise.all([
+    const [leave, overtime, corrections, runs, vouchers, letters, budgets] = await Promise.all([
       wants('LEAVE') ? this.staff.listLeave(user, { toDecide: true, sortBy: 'fromDate', sortOrder: 'asc', page: 1, pageSize: SHOWN }).catch(() => null) : null,
       wants('OVERTIME') ? this.staff.overtimeToDecide(user).catch(() => null) : null,
       wants('CORRECTION') ? this.corrections.toDecide(user).catch(() => null) : null,
       wants('PAYROLL_RUN') && canApprovePayroll(role) ? this.payroll.list(user, {}).catch(() => null) : null,
       wants('VOUCHER') && canApproveVouchers(role) && canKeepBooks(role) ? this.books.vouchers(user, { toDecide: true, page: 1, pageSize: SHOWN }) : null,
       wants('LETTER') ? this.letters.list(user, { toSign: true, sortBy: 'letterDate', sortOrder: 'asc', page: 1, pageSize: SHOWN }).catch(() => null) : null,
+      wants('BUDGET') && canApproveBudget(role) ? this.budgets.toDecide(user).catch(() => null) : null,
     ]);
     const groups: OtherDecisionGroupDto[] = [];
     const add = (kind: OtherDecisionKind, count: number, items: OtherDecisionDto[], href: string, money = false) => {
@@ -155,6 +159,22 @@ export class OtherDecisionsService {
           href: `/correspondence/${l.id}`,
         })),
         '/correspondence?toSign=1',
+      );
+    if (budgets)
+      add(
+        'BUDGET',
+        budgets.length,
+        budgets.map((b) => ({
+          id: b.id,
+          title: `${b.projectName} · version ${b.versionNo}`,
+          note: [b.reasonName ?? (b.versionNo === 1 ? 'First budget' : null), `prepared by ${b.preparedByName}`].filter(Boolean).join(', '),
+          projectName: b.projectName,
+          amount: b.total,
+          since: b.submittedAt.slice(0, 10),
+          href: `/projects/${b.projectId}?tab=budget`,
+        })),
+        budgets.length === 1 ? `/projects/${budgets[0].projectId}?tab=budget` : '/modules/projects',
+        true,
       );
     // In waiting order, as the queue's groups are: the rupees at stake, then how long the oldest has waited.
     const today = todayIn();

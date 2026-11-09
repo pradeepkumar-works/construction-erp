@@ -1,62 +1,79 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { App, Button, Form, Input, InputNumber, Space, Table, Tooltip, Typography } from 'antd';
+import React, { useEffect, useMemo, useState } from 'react';
+import { App, Button, Form, Input, InputNumber, Select, Space, Table, Tooltip, Typography } from 'antd';
 import { tk } from '@/ds';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { BudgetBoqItemDto, CostHead, ProjectBudgetDto } from '@erp/shared';
-import { COST_HEADS, COST_HEAD_LABELS, unitLabel } from '@erp/shared';
-import { api } from '@/lib/api';
-import { FAIL_NOTICE } from '@/lib/notify';
+import { BUDGET_REVISION_OTHER, COST_HEADS, COST_HEAD_LABELS, unitLabel } from '@erp/shared';
+import { useBudgetVersionSteps, useVariations } from '@/lib/queries';
 import { formatINR, formatQty, toNumber, NO_VALUE } from '@/lib/format';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
 import { Money } from '@/components/common/Money';
+import { useMasterOptions } from '@/components/quality/NcrFormModal';
 
 interface FormValues {
   heads: Partial<Record<CostHead, number | null>>;
   notes?: string;
   rates: Record<string, number | null>;
+  reasonCode?: string | null;
+  reasonNote?: string;
+  variationId?: string | null;
 }
 
-/** Set a project's budget by cost head and the budgeted cost per unit of its BOQ items. */
+const num = (v: string | null | undefined) => (v === null || v === undefined ? null : toNumber(v));
+
+/**
+ * Prepare a version of a project's budget: its cost heads and the budgeted cost per unit of its BOQ items, and for a
+ * revision why it is revised. It edits the open version, or starts one from the version in force when none is open.
+ */
 export function BudgetFormModal({ open, onClose, budget }: { open: boolean; onClose: () => void; budget: ProjectBudgetDto }) {
   const [form] = Form.useForm<FormValues>();
   const { message } = App.useApp();
-  const qc = useQueryClient();
+  const steps = useBudgetVersionSteps(budget.projectId);
   const [fillPct, setFillPct] = useState<number | null>(80);
   const heads = Form.useWatch('heads', form);
   const rates = Form.useWatch('rates', form);
+  const reasonCode = Form.useWatch('reasonCode', form);
   const headTotal = COST_HEADS.reduce((s, h) => s + (heads?.[h] ?? 0), 0);
   const boqTotal = budget.boqItems.reduce((s, b) => s + toNumber(b.qty) * (rates?.[b.boqItemId] ?? 0), 0);
+
+  const version = budget.open;
+  const versionNo = version?.versionNo ?? Math.max(0, ...budget.versions.map((v) => v.versionNo)) + 1;
+  const reasons = useMasterOptions('budget-revision', version?.reasonCode, open && versionNo > 1);
+  const variations = useVariations({ projectId: budget.projectId, status: 'APPROVED', page: 1, pageSize: 100 }, open && reasonCode === 'variation');
+
+  // What the version starts from: the open one's figures, else those in force (a new version copies them).
+  const start = useMemo(() => {
+    const lineRate = new Map(version?.lines.map((l) => [l.boqItemId, l.budgetRate]));
+    return {
+      heads: Object.fromEntries(COST_HEADS.map((h) => [h, num(version ? (version.heads?.[h] ?? null) : budget.heads.find((x) => x.head === h)?.budget)])) as Record<CostHead, number | null>,
+      rates: Object.fromEntries(budget.boqItems.map((b) => [b.boqItemId, num(version ? lineRate.get(b.boqItemId) : b.budgetRate)])) as Record<string, number | null>,
+      notes: (version ? version.notes : budget.notes) ?? undefined,
+    };
+  }, [version, budget]);
 
   useEffect(() => {
     if (!open) return;
     form.resetFields();
-    form.setFieldsValue({
-      heads: Object.fromEntries(budget.heads.map((h) => [h.head, h.budget === null ? null : toNumber(h.budget)])),
-      notes: budget.notes ?? undefined,
-      rates: Object.fromEntries(budget.boqItems.map((b) => [b.boqItemId, b.budgetRate === null ? null : toNumber(b.budgetRate)])),
-    });
-  }, [open, budget, form]);
+    form.setFieldsValue({ ...start, reasonCode: version?.reasonCode ?? null, reasonNote: version?.reasonNote ?? undefined, variationId: version?.variationId ?? null });
+  }, [open, start, version, form]);
 
-  const save = useMutation({
-    mutationFn: async ({ v, clearHeads }: { v: FormValues; clearHeads?: boolean }) => {
-      const anyHead = COST_HEADS.some((h) => v.heads?.[h] !== null && v.heads?.[h] !== undefined);
-      const changed = budget.boqItems.filter((b) => (b.budgetRate === null ? null : toNumber(b.budgetRate)) !== (v.rates?.[b.boqItemId] ?? null));
-      const body = {
-        heads: clearHeads ? null : anyHead ? Object.fromEntries(COST_HEADS.map((h) => [h, String(v.heads?.[h] ?? 0)])) : undefined,
-        notes: v.notes?.trim() || null,
-        items: changed.map((b) => ({ boqItemId: b.boqItemId, budgetRate: v.rates?.[b.boqItemId] === null || v.rates?.[b.boqItemId] === undefined ? null : String(v.rates[b.boqItemId]) })),
-      };
-      return (await api.put<ProjectBudgetDto>(`/cost/projects/${budget.projectId}/budget`, body)).data;
-    },
-    onSuccess: () => {
-      message.success('Budget saved');
-      qc.invalidateQueries({ queryKey: ['cost'] });
-    },
-    meta: FAIL_NOTICE,
-  });
+  const save = async (v: FormValues, submit: boolean) => {
+    const anyHead = COST_HEADS.some((h) => v.heads?.[h] !== null && v.heads?.[h] !== undefined);
+    const changed = budget.boqItems.filter((b) => start.rates[b.boqItemId] !== (v.rates?.[b.boqItemId] ?? null));
+    const saved = await steps.save.mutateAsync({
+      versionId: version?.id ?? null,
+      heads: anyHead ? (Object.fromEntries(COST_HEADS.map((h) => [h, String(v.heads?.[h] ?? 0)])) as Record<CostHead, string>) : null,
+      notes: v.notes?.trim() || null,
+      items: changed.map((b) => ({ boqItemId: b.boqItemId, budgetRate: v.rates?.[b.boqItemId] === null || v.rates?.[b.boqItemId] === undefined ? null : String(v.rates[b.boqItemId]) })),
+      ...(versionNo > 1 ? { reasonCode: v.reasonCode ?? null, reasonNote: v.reasonNote?.trim() || null, variationId: v.reasonCode === 'variation' ? (v.variationId ?? null) : null } : {}),
+    });
+    if (submit && saved.open) {
+      await steps.submit.mutateAsync(saved.open.id);
+      message.success(`Version ${versionNo} sent to management for approval`);
+    } else message.success(`Version ${versionNo} saved as a draft`);
+  };
 
   const fillRates = () => {
     if (!fillPct) return;
@@ -73,8 +90,44 @@ export function BudgetFormModal({ open, onClose, budget }: { open: boolean; onCl
   };
 
   return (
-    <FormShell open={open} onClose={onClose} form={form} layout="drawer" width={980} title={`Budget: ${budget.projectCode}`} okText="Save" onSubmit={(v) => save.mutateAsync({ v })}>
+    <FormShell
+      open={open}
+      onClose={onClose}
+      form={form}
+      layout="drawer"
+      width={980}
+      title={`Budget version ${versionNo}: ${budget.projectCode}`}
+      okText="Save and send for approval"
+      secondaryText="Save draft"
+      onSubmit={(v, secondary) => save(v, !secondary)}
+    >
       <Form form={form} layout="vertical">
+        {versionNo > 1 && (
+          <FormSection title="Why it is revised">
+            <FormGrid cols={2}>
+              <Form.Item name="reasonCode" label="Reason" rules={[{ required: true, message: 'Choose why the budget is revised' }]}>
+                <Select options={reasons.options} placeholder="Variation, rate change…" />
+              </Form.Item>
+              {reasonCode === 'variation' && (
+                <Form.Item name="variationId" label="Variation">
+                  <Select
+                    allowClear
+                    placeholder="The approved variation it follows"
+                    options={(variations.data?.items ?? []).map((x) => ({ value: x.id, label: `${x.label} · ${x.title}` }))}
+                    loading={variations.isLoading}
+                  />
+                </Form.Item>
+              )}
+            </FormGrid>
+            <Form.Item
+              name="reasonNote"
+              label="What changed"
+              rules={[{ required: reasonCode === BUDGET_REVISION_OTHER, message: 'Say why the budget is revised' }]}
+            >
+              <Input.TextArea rows={2} maxLength={2000} placeholder="Steel and cement above the tender rates since July" />
+            </Form.Item>
+          </FormSection>
+        )}
         <FormSection title="By cost head">
           <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginBottom: tk.space[2] }}>
             What the whole job should cost under each head of the cost view. This total is the budget at completion; without it, the BOQ budget below is used.
@@ -93,19 +146,9 @@ export function BudgetFormModal({ open, onClose, budget }: { open: boolean; onCl
                   Split the BOQ budget across heads
                 </Button>
               </Tooltip>
-              {budget.hasHeadBudget && (
-                <Button
-                  size="small"
-                  danger
-                  loading={save.isPending && save.variables?.clearHeads}
-                  onClick={() =>
-                    form
-                      .validateFields()
-                      .then((v) => save.mutateAsync({ v, clearHeads: true }))
-                      .then(onClose, () => undefined)
-                  }
-                >
-                  Remove the cost-head budget
+              {headTotal > 0 && (
+                <Button size="small" onClick={() => form.setFieldsValue({ heads: Object.fromEntries(COST_HEADS.map((h) => [h, null])) })}>
+                  Clear the cost-head budget
                 </Button>
               )}
             </Space>

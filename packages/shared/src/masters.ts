@@ -2,6 +2,9 @@ import type { RoleKey } from './enums';
 import { MANPOWER_CATEGORIES } from './labels';
 import * as P from './permissions';
 
+/** The `budgetRevision` code whose revision must say why in words. */
+export const BUDGET_REVISION_OTHER = 'other';
+
 /**
  * Masters (ARCHITECTURE "Masters"): the lists a company keeps itself. Each department's menu has a Masters
  * sub-module naming the pages that are masters (items, vendors, the chart of accounts…), and Administration › Masters
@@ -13,7 +16,7 @@ import * as P from './permissions';
  * new one and switch the old one off, as with units.
  */
 
-export const MASTER_LISTS = ['trade', 'designation', 'department', 'itemCategory', 'equipmentCategory', 'letterCategory', 'letterParty', 'ncrCategory', 'ncrRootCause', 'instrumentKind', 'vertical', 'workTrade', 'exitClearance', 'reviewStage', 'position'] as const;
+export const MASTER_LISTS = ['trade', 'designation', 'department', 'itemCategory', 'equipmentCategory', 'letterCategory', 'letterParty', 'ncrCategory', 'ncrRootCause', 'instrumentKind', 'vertical', 'workTrade', 'exitClearance', 'reviewStage', 'position', 'budgetRevision'] as const;
 export type MasterList = (typeof MASTER_LISTS)[number];
 
 export interface MasterStandardEntry {
@@ -377,6 +380,17 @@ export const MASTER_LIST_DEFS: Record<MasterList, MasterListDef> = {
     usedOn: 'submittals',
     manage: (role) => P.canManageDocuments(role),
     standard: entries(['Proof checker', 'प्रूफ़ चेकर'], ['TPIA', 'टीपीआईए'], ['PIU', 'पीआईयू'], ['Client', 'क्लाइंट'], ['Head office', 'मुख्य कार्यालय']),
+  },
+  budgetRevision: {
+    key: 'budgetRevision',
+    label: 'Budget revision reasons',
+    singular: 'revision reason',
+    description: "Why a project's budget is revised, chosen on each revision after the first and shown in its history.",
+    slug: 'budget-revision',
+    node: 'projects.budgetRevisions',
+    usedOn: 'budget revisions',
+    manage: (role) => P.canApproveBudget(role),
+    standard: entries(['Variation', 'वेरिएशन'], ['Rate change', 'दर में बदलाव'], ['Scope change', 'काम के दायरे में बदलाव'], ['Estimate corrected', 'अनुमान सुधारा'], ['Other', 'अन्य']),
   },
   position: {
     key: 'position',

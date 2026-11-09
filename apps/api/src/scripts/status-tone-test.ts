@@ -6,10 +6,12 @@
  */
 import assert from 'node:assert/strict';
 import {
+  EDITION_STATES,
   ACCESS_REQUEST_STATUSES,
   AGENT_STATES,
   APPROVAL_CODES,
   BILL_STAGES,
+  BUDGET_STATUSES,
   BIOMETRIC_COMMAND_STATUSES,
   BIOMETRIC_PUNCH_RESULTS,
   BOOK_VOUCHER_STATUSES,
@@ -105,6 +107,7 @@ const VALUES: Record<StatusKind, readonly string[]> = {
   variation: VARIATION_STATUSES,
   bookVoucher: BOOK_VOUCHER_STATUSES,
   imprestEntry: IMPREST_ENTRY_STATUSES,
+  budget: BUDGET_STATUSES,
   payrollRun: PAYROLL_RUN_STATUSES,
   settlement: SETTLEMENT_STATUSES,
   clearance: CLEARANCE_STATES,
@@ -130,6 +133,7 @@ const VALUES: Record<StatusKind, readonly string[]> = {
   inspectionResult: INSPECTION_RESULTS,
   pour: POUR_STATUSES,
   accreditation: ['VALID', 'EXPIRING', 'EXPIRED', 'NONE'],
+  edition: EDITION_STATES,
   calibration: ['OK', 'DUE_SOON', 'OVERDUE', 'NEVER', 'OUT_OF_USE'],
   calibrationResult: CALIBRATION_RESULTS,
   checkOutcome: ['AGREED', 'LESS', 'MORE'],

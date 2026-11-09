@@ -344,14 +344,14 @@ export class PurchaseOrdersService {
     return out;
   }
 
-  /** The order against its project's material budget (`poBudgetCheck`): other approved orders and this one, before GST. */
+  /** The order against its project's approved material budget (`poBudgetCheck`): other approved orders and this one, before GST. */
   private async budgetCheck(po: { id: string; projectId: string; subtotal: Prisma.Decimal; freight: Prisma.Decimal }) {
     const [budget, others] = await Promise.all([
-      this.prisma.projectBudget.findUnique({ where: { projectId: po.projectId }, select: { material: true } }),
+      this.prisma.projectBudget.findFirst({ where: { projectId: po.projectId, status: 'APPROVED' }, select: { material: true } }),
       this.prisma.purchaseOrder.aggregate({ where: { projectId: po.projectId, status: 'APPROVED', id: { not: po.id } }, _sum: { subtotal: true, freight: true } }),
     ]);
     const ordered = (others._sum.subtotal?.toNumber() ?? 0) + (others._sum.freight?.toNumber() ?? 0);
-    return poBudgetCheck(budget ? budget.material.toNumber() : null, ordered, po.subtotal.toNumber() + po.freight.toNumber());
+    return poBudgetCheck(budget?.material ? budget.material.toNumber() : null, ordered, po.subtotal.toNumber() + po.freight.toNumber());
   }
 
   async get(user: RequestUser, id: string): Promise<PurchaseOrderDto> {

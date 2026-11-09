@@ -81,4 +81,5 @@ export const MODULE_OTHER_DECISIONS: Partial<Record<ModuleKey, readonly OtherDec
   payroll: ['PAYROLL_RUN'],
   accounts: ['VOUCHER'],
   correspondence: ['LETTER'],
+  projects: ['BUDGET'],
 };

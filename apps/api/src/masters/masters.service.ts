@@ -132,6 +132,11 @@ export class MastersService {
         [...held, ...rules].forEach((r) => add(names.get(r.positionCode!) ?? null, r._count._all));
         break;
       }
+      case 'budgetRevision': {
+        const names = new Map((await this.entriesFor(org, list)).map((e) => [e.code, e.name]));
+        (await this.prisma.projectBudget.groupBy({ by: ['reasonCode'], where: { organizationId: org, reasonCode: { not: null } }, _count: { _all: true } })).forEach((r) => add(names.get(r.reasonCode!) ?? null, r._count._all));
+        break;
+      }
       case 'workTrade':
         (await this.prisma.defect.groupBy({ by: ['trade'], where: { organizationId: org, trade: { not: null } }, _count: { _all: true } })).forEach((r) => add(r.trade, r._count._all));
         break;

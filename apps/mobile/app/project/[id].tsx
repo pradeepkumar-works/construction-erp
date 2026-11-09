@@ -17,6 +17,7 @@ export default function ProjectScreen() {
   const router = useRouter();
   const t = useT();
   const { user } = useAuth();
+  const fromDpr = !!user?.progressFromDpr;
   const { data, loading, refreshing, error, refresh, reload } = useFetch(
     async (api) => {
       const [project, activities] = await Promise.all([api.get<ProjectDetail>(`/projects/${id}`), api.get<ActivityDto[]>(`/projects/${id}/activities`)]);
@@ -75,8 +76,9 @@ export default function ProjectScreen() {
       </View>
 
       <View style={styles.actions}>
-        <Button title={t('New progress entry')} icon="trending-up" onPress={() => router.push(`/progress/new?projectId=${project.id}`)} style={styles.flex} />
-        <Button title={t('New daily report')} icon="document-text" variant="secondary" onPress={() => router.push(`/dpr/new?projectId=${project.id}`)} style={styles.flex} />
+        {/* A company that records progress only in the DPR takes no separate progress entry. */}
+        {fromDpr ? null : <Button title={t('New progress entry')} icon="trending-up" onPress={() => router.push(`/progress/new?projectId=${project.id}`)} style={styles.flex} />}
+        <Button title={t('New daily report')} icon="document-text" variant={fromDpr ? 'primary' : 'secondary'} onPress={() => router.push(`/dpr/new?projectId=${project.id}`)} style={styles.flex} />
       </View>
       <Card style={styles.links}>
         {places.map((p, i) => (
@@ -95,12 +97,13 @@ export default function ProjectScreen() {
         <EmptyState title={t('No activities')} subtitle={t('Activities are set up by the planning team on the web.')} icon="list-outline" />
       ) : (
         activities.map((a) => (
-          // An activity made of parts takes its progress through them, so only a plain one opens the form.
+          // An activity made of parts takes its progress through them, so only a plain one opens the form (and none
+          // does where progress goes in the DPR).
           <Card
             key={a.id}
-            onPress={a.isSummary ? undefined : () => router.push(`/progress/new?projectId=${project.id}&activityId=${a.id}`)}
-            accessibilityLabel={a.isSummary ? undefined : `${a.boqItemNo ? `${a.boqItemNo} · ` : ''}${a.name}`}
-            accessibilityHint={a.isSummary ? undefined : t('Opens a new progress entry for this activity')}
+            onPress={a.isSummary || fromDpr ? undefined : () => router.push(`/progress/new?projectId=${project.id}&activityId=${a.id}`)}
+            accessibilityLabel={a.isSummary || fromDpr ? undefined : `${a.boqItemNo ? `${a.boqItemNo} · ` : ''}${a.name}`}
+            accessibilityHint={a.isSummary || fromDpr ? undefined : t('Opens a new progress entry for this activity')}
           >
             <View style={styles.actTop}>
               <View style={styles.flex}>

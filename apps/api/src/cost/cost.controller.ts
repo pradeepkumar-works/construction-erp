@@ -1,9 +1,9 @@
-import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CostService } from './cost.service';
 import { BudgetService } from './budget.service';
 import { CashFlowService } from './cash-flow.service';
-import { CashFlowQuery, CostQuery, EarnedValueQuery, SetBudgetDto, SetLabourRatesDto, SetOpeningDto } from './cost.dto';
+import { CashFlowQuery, CostQuery, DecideBudgetDto, EarnedValueQuery, SaveBudgetVersionDto, SetLabourRatesDto, SetOpeningDto } from './cost.dto';
 import { OpeningService } from './opening.service';
 import { EarnedValueService } from './earned-value.service';
 import { CurrentUser, RequestUser } from '../common/current-user';
@@ -66,10 +66,40 @@ export class CostController {
     return this.earnedValue.get(user, id, q.basis);
   }
 
-  @ApiOperation({ summary: 'Set the budget by cost head and the budget rates of BOQ items', description: 'Admin, management or the project manager.' })
-  @Put('projects/:id/budget')
-  setBudget(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: SetBudgetDto) {
-    return this.budget.set(user, id, dto);
+  @ApiOperation({
+    summary: "Start a version of a project's budget: a copy of the one in force (blank when none), with these changes",
+    description: 'Admin, management or the project manager. Refused while another version is open. Returns the project budget.',
+  })
+  @Post('projects/:id/budget/versions')
+  startBudgetVersion(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: SaveBudgetVersionDto) {
+    return this.budget.startVersion(user, id, dto);
+  }
+
+  @ApiOperation({ summary: 'Change a budget version while it is a draft or returned', description: 'Whoever changes it becomes its preparer, so another person decides it.' })
+  @Patch('budget-versions/:vid')
+  updateBudgetVersion(@CurrentUser() user: RequestUser, @Param('vid', ParseUUIDPipe) vid: string, @Body() dto: SaveBudgetVersionDto) {
+    return this.budget.updateVersion(user, vid, dto);
+  }
+
+  @ApiOperation({ summary: 'Send a budget version to admin and management for approval' })
+  @Post('budget-versions/:vid/submit')
+  submitBudgetVersion(@CurrentUser() user: RequestUser, @Param('vid', ParseUUIDPipe) vid: string) {
+    return this.budget.submit(user, vid);
+  }
+
+  @ApiOperation({
+    summary: 'Approve a submitted budget version, or return it with what to change',
+    description: 'Admin or management, never its preparer. Approving puts it in force: the version before is superseded and its BOQ budget rates are copied onto the BOQ.',
+  })
+  @Post('budget-versions/:vid/decide')
+  decideBudgetVersion(@CurrentUser() user: RequestUser, @Param('vid', ParseUUIDPipe) vid: string, @Body() dto: DecideBudgetDto) {
+    return this.budget.decide(user, vid, dto);
+  }
+
+  @ApiOperation({ summary: 'Delete a budget version that is a draft or was returned' })
+  @Delete('budget-versions/:vid')
+  removeBudgetVersion(@CurrentUser() user: RequestUser, @Param('vid', ParseUUIDPipe) vid: string) {
+    return this.budget.remove(user, vid);
   }
 
   @ApiOperation({

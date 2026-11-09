@@ -248,7 +248,9 @@ export function CommandPalette({
   };
 
   const placeholder = withProjects ? 'Search pages, projects, numbers (PO-2026-0012), vendors, staff, or “new daily report for …”' : 'Search pages';
-  const empty = results.length === 0 && !searching;
+  // Records come from the server; when that search fails, pages and actions still match here, so say which part is missing.
+  const searchFailed = !!search.error && !searching && term.trim().length >= SEARCH_MIN_LENGTH;
+  const empty = results.length === 0 && !searching && !searchFailed;
 
   return (
     <Modal open={open} onCancel={onClose} footer={null} closable={false} width={620} style={{ top: 88 }} destroyOnHidden styles={{ container: { padding: 0, overflow: 'hidden' } }} aria-label="Search">
@@ -271,6 +273,11 @@ export function CommandPalette({
           />
         </div>
         <ul ref={listRef} id="palette-results" role="listbox" className={s.paletteList}>
+          {searchFailed && (
+            <li className={s.paletteEmpty} role="presentation">
+              Records could not be searched just now; pages and actions still show. Type again to retry.
+            </li>
+          )}
           {empty && <li className={s.paletteEmpty}>Nothing matches “{query.trim()}”.</li>}
           {results.map((t, i) => {
             const Icon = t.icon;

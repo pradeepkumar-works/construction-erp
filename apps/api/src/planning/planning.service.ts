@@ -171,7 +171,11 @@ export class PlanningService {
     if (await this.prisma.raBillItem.count({ where: { boqItemId: id, bill: { projectId } } })) {
       throw new ConflictException('This BOQ item has been billed in an RA bill and cannot be deleted');
     }
-    await this.prisma.boqItem.deleteMany({ where: { id, projectId } });
+    // An approved budget is a record: its rates stay with their items. A version still being prepared just loses the line.
+    if (await this.prisma.projectBudgetLine.count({ where: { boqItemId: id, budget: { projectId, status: { in: ['APPROVED', 'SUPERSEDED'] } } } })) {
+      throw new ConflictException('This BOQ item has a rate in an approved budget and cannot be deleted');
+    }
+    await this.prisma.$transaction([this.prisma.projectBudgetLine.deleteMany({ where: { boqItemId: id, budget: { projectId } } }), this.prisma.boqItem.deleteMany({ where: { id, projectId } })]);
     await this.audit.log(user, 'BOQ_ITEM', id, 'DELETED');
     return { ok: true };
   }

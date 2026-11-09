@@ -203,10 +203,10 @@ export const ownEntryProblem = (makerId: string | null | undefined, userId: stri
 /**
  * Decisions that wait on the caller outside the submission queue: each has its own approval in its module (leave and
  * overtime under Staff, a salary run under Payroll, a voucher in the Books, an outward letter's signature under
- * Correspondence). The Approvals inbox lists them so one page holds everything waiting on someone; deciding opens the
+ * Correspondence, a project budget's version on its Budget tab). The Approvals inbox lists them so one page holds everything waiting on someone; deciding opens the
  * module's own page.
  */
-export const OTHER_DECISION_KINDS = ['LEAVE', 'OVERTIME', 'CORRECTION', 'PAYROLL_RUN', 'VOUCHER', 'LETTER'] as const;
+export const OTHER_DECISION_KINDS = ['LEAVE', 'OVERTIME', 'CORRECTION', 'PAYROLL_RUN', 'VOUCHER', 'LETTER', 'BUDGET'] as const;
 export type OtherDecisionKind = (typeof OTHER_DECISION_KINDS)[number];
 export const OTHER_DECISION_LABELS: Record<OtherDecisionKind, string> = {
   LEAVE: 'Leave',
@@ -215,6 +215,7 @@ export const OTHER_DECISION_LABELS: Record<OtherDecisionKind, string> = {
   PAYROLL_RUN: 'Salary runs',
   VOUCHER: 'Vouchers',
   LETTER: 'Letters to sign',
+  BUDGET: 'Budgets',
 };
 
 export interface OtherDecisionDto {

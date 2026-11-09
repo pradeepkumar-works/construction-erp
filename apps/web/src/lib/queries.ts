@@ -2,6 +2,8 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
 import type {
+  IsComplianceDto,
+  IsStandardDto,
   AuditLogEntryDto,
   LetterheadDto,
   DocumentCheckDecision,
@@ -202,6 +204,8 @@ import type {
   LabourRatesDto,
   ProjectCostDto,
   ProjectBudgetDto,
+  BudgetDecision,
+  CostHead,
   ProjectReconciliationDto,
   ProjectStructureReconDto,
   ProjectPipeReconDto,
@@ -1748,6 +1752,26 @@ export const useQaReport = (month: string, projectId?: string) =>
   useQuery({
     queryKey: ['quality', 'qa', 'report', month, projectId ?? null],
     queryFn: async () => (await api.get<QaReportDto>('/qa/report', { params: clean({ month, projectId }) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+export const useIsStandards = () =>
+  useQuery({
+    queryKey: ['quality', 'is-standards'],
+    queryFn: async () => (await api.get<IsStandardDto[]>('/is-standards')).data,
+    staleTime: 5 * 60_000,
+  });
+
+export const useIsStandard = (code: string) =>
+  useQuery({
+    queryKey: ['quality', 'is-standards', code],
+    queryFn: async () => (await api.get<IsStandardDto>(`/is-standards/${encodeURIComponent(code)}`)).data,
+  });
+
+export const useIsCompliance = (p: { projectId?: string; from?: string; to?: string }) =>
+  useQuery({
+    queryKey: ['quality', 'is-standards', 'compliance', p.projectId ?? null, p.from ?? null, p.to ?? null],
+    queryFn: async () => (await api.get<IsComplianceDto>('/is-standards/compliance', { params: clean(p) })).data,
     placeholderData: keepPreviousData,
   });
 
@@ -3392,6 +3416,42 @@ export const useProjectBudget = (projectId: string | undefined) =>
     queryFn: async () => (await api.get<ProjectBudgetDto>(`/cost/projects/${projectId}/budget`)).data,
     enabled: !!projectId,
   });
+
+/** A budget version's figures, notes and reason, as the form saves them; anything left out stays as it is. */
+export interface SaveBudgetVersionInput {
+  heads?: Record<CostHead, string> | null;
+  items?: { boqItemId: string; budgetRate: string | null }[];
+  notes?: string | null;
+  reasonCode?: string | null;
+  reasonNote?: string | null;
+  variationId?: string | null;
+}
+
+/**
+ * The steps of a project's budget versions (ARCHITECTURE "Budget and cash flow"): save (starting a revision when none is
+ * open), submit, approve or return, delete. Each answers with the project's budget, which replaces the cached one; the
+ * forecasts that read the approved version are refetched too.
+ */
+export function useBudgetVersionSteps(projectId: string) {
+  const qc = useQueryClient();
+  const done = (data: ProjectBudgetDto) => {
+    qc.setQueryData(['cost', 'budget', projectId], data);
+    return Promise.all([qc.invalidateQueries({ queryKey: ['cost'] }), qc.invalidateQueries({ queryKey: ['approvals', 'others'] }), qc.invalidateQueries({ queryKey: ['projects', projectId, 'setup'] })]);
+  };
+  const save = useMutation({
+    mutationFn: async ({ versionId, ...body }: SaveBudgetVersionInput & { versionId: string | null }) =>
+      (versionId ? await api.patch<ProjectBudgetDto>(`/cost/budget-versions/${versionId}`, body) : await api.post<ProjectBudgetDto>(`/cost/projects/${projectId}/budget/versions`, body)).data,
+    onSuccess: done,
+  });
+  const submit = useMutation({ mutationFn: async (versionId: string) => (await api.post<ProjectBudgetDto>(`/cost/budget-versions/${versionId}/submit`)).data, onSuccess: done, meta: FAIL_NOTICE });
+  const decide = useMutation({
+    mutationFn: async ({ versionId, ...body }: { versionId: string; decision: BudgetDecision; note?: string | null }) => (await api.post<ProjectBudgetDto>(`/cost/budget-versions/${versionId}/decide`, body)).data,
+    onSuccess: done,
+    meta: FAIL_NOTICE,
+  });
+  const remove = useMutation({ mutationFn: async (versionId: string) => (await api.delete<ProjectBudgetDto>(`/cost/budget-versions/${versionId}`)).data, onSuccess: done });
+  return { save, submit, decide, remove };
+}
 
 /** A project's opening cost: what it had spent and done when it came on Nirmaan (ARCHITECTURE "Opening cost"). */
 export const useProjectOpening = (projectId: string | undefined) =>

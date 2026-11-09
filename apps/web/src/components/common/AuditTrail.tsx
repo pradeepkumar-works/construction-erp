@@ -1,11 +1,12 @@
 'use client';
 
 import React from 'react';
-import { Timeline, Typography, Skeleton } from 'antd';
+import { Button, Timeline, Typography, Skeleton } from 'antd';
 import { tk } from '@/ds';
 import { auditActionLabel, type SubmissionBase } from '@erp/shared';
 import { useAudit, type ApprovalTypeParam } from '@/lib/queries';
 import { formatDateTime } from '@/lib/format';
+import { QueryError } from '@/components/common/QueryState';
 
 const COLORS: Record<string, string> = {
   CREATED: 'gray',
@@ -40,11 +41,14 @@ export function submissionTrail(s: SubmissionBase): TrailEntry[] {
 }
 
 export function AuditTrail({ type, id, submission }: { type: ApprovalTypeParam; id: string | undefined; submission?: SubmissionBase }) {
-  const { data, isLoading } = useAudit(type, id);
+  const { data, isLoading, error, refetch } = useAudit(type, id);
   if (isLoading) return <Skeleton active paragraph={{ rows: 3 }} />;
+  // A history that failed to load is not "no history yet": say so, falling back to the entry's own dates when there are any.
+  const failed = !!error && !data;
+  if (failed && !submission) return <QueryError error={error} onRetry={() => void refetch()} />;
   const entries: TrailEntry[] = data && data.length > 0 ? data : submission ? submissionTrail(submission) : [];
   if (entries.length === 0) return <Typography.Text type="secondary">No history yet.</Typography.Text>;
-  return (
+  const timeline = (
     <Timeline
       items={entries.map((log) => ({
         key: log.id,
@@ -63,5 +67,17 @@ export function AuditTrail({ type, id, submission }: { type: ApprovalTypeParam; 
         ),
       }))}
     />
+  );
+  if (!failed) return timeline;
+  return (
+    <>
+      <Typography.Paragraph type="secondary">
+        The full history could not load; these are the entry&apos;s own dates.{' '}
+        <Button type="link" size="small" onClick={() => void refetch()} style={{ padding: 0 }}>
+          Try again
+        </Button>
+      </Typography.Paragraph>
+      {timeline}
+    </>
   );
 }
