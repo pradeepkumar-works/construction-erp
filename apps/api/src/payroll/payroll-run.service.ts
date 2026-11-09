@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import {
   MANUAL_PAYSLIP_CODES,
@@ -40,6 +40,8 @@ type SlipRow = Prisma.PayslipGetPayload<{ include: typeof slipInclude }>;
 
 const ORDER = Object.keys(PAYSLIP_CODES) as PayslipCode[];
 const isManual = (c: string): c is ManualPayslipCode => (MANUAL_PAYSLIP_CODES as readonly string[]).includes(c);
+
+const MOVED_MEANWHILE = 'Someone else has just changed this salary run. Open it again to see where it stands.';
 
 /**
  * Salary runs: HR prepares a month's run for the company or one site from approved attendance and each
@@ -270,7 +272,7 @@ export class PayrollRunService {
   async submit(user: RequestUser, id: string) {
     const r = await this.runFor(user, id);
     if (!this.toRunDto(r, user).can.submit) throw new BadRequestException(r.status !== 'DRAFT' ? 'This run has already been submitted' : r._count.payslips ? 'Only HR or an admin submits the salary run' : 'No payslips in this run. Add salary structures first.');
-    await this.prisma.payrollRun.update({ where: { id }, data: { status: 'SUBMITTED', submittedAt: new Date(), reviewNote: null } });
+    await this.move(id, { status: 'DRAFT' }, { status: 'SUBMITTED', submittedAt: new Date(), reviewNote: null });
     await this.audit.log(user, 'PAYROLL_RUN', id, 'SUBMITTED', r.runNo);
     const done = await this.detail(user, id);
     await this.tell(user, r, { roles: ['MANAGEMENT'] }, `Salary run ${this.runWords(r)} waits for your approval`, `${done.employees} ${done.employees === 1 ? 'person' : 'people'}, net pay ${inr(done.net)}. Prepared by ${user.fullName}.`, 'Review the run');
@@ -283,7 +285,7 @@ export class PayrollRunService {
     if (r.status !== 'SUBMITTED') throw new BadRequestException('Only a submitted run can be approved');
     const own = ownEntryProblem(r.preparedById, user.id);
     if (own) throw new ForbiddenException(own);
-    await this.prisma.payrollRun.update({ where: { id }, data: { status: 'APPROVED', approvedById: user.id, approvedAt: new Date(), reviewNote: note ?? null } });
+    await this.move(id, { status: 'SUBMITTED' }, { status: 'APPROVED', approvedById: user.id, approvedAt: new Date(), reviewNote: note ?? null });
     await this.audit.log(user, 'PAYROLL_RUN', id, 'APPROVED', note ?? r.runNo);
     const done = await this.detail(user, id);
     await this.tell(user, r, { roles: ['ACCOUNTS_MANAGER'], users: [r.preparedById] }, `Salary run ${this.runWords(r)} approved: pay ${inr(done.net)}`, `${user.fullName} approved it${note ? `: ${note}` : ''}. Download the bank file from the run, pay it, then mark it paid.`, 'Pay the run');
@@ -295,7 +297,7 @@ export class PayrollRunService {
     const may = (r.status === 'SUBMITTED' && canApprovePayroll(user.roleKey)) || (r.status === 'APPROVED' && (canApprovePayroll(user.roleKey) || canPayPayroll(user.roleKey)));
     if (!may) throw new BadRequestException(r.status === 'PAID' ? 'A paid run is locked' : 'Only management (or accounts before paying) can send the run back');
     if (r.tallyExportId) throw new BadRequestException('Its salary journal has gone to Tally. Undo that Tally export first, then send the run back.');
-    await this.prisma.payrollRun.update({ where: { id }, data: { status: 'DRAFT', reviewNote: note, approvedById: null, approvedAt: null, submittedAt: null } });
+    await this.move(id, { status: r.status, tallyExportId: null }, { status: 'DRAFT', reviewNote: note, approvedById: null, approvedAt: null, submittedAt: null });
     await this.audit.log(user, 'PAYROLL_RUN', id, 'CHANGES_REQUESTED', note);
     await this.tell(user, r, { users: [r.preparedById] }, `Salary run ${this.runWords(r)} sent back`, `${user.fullName}: ${note}`, 'Change the run');
     return this.detail(user, id);
@@ -305,16 +307,23 @@ export class PayrollRunService {
     const r = await this.runFor(user, id);
     if (!canPayPayroll(user.roleKey)) throw new ForbiddenException('Only accounts or an admin marks salaries paid');
     if (r.status !== 'APPROVED') throw new BadRequestException('Only an approved run can be paid');
-    await this.prisma.payrollRun.update({ where: { id }, data: { status: 'PAID', paidById: user.id, paidOn: parseDate(dto.paidOn), paymentRef: dto.paymentRef ?? null } });
+    await this.move(id, { status: 'APPROVED' }, { status: 'PAID', paidById: user.id, paidOn: parseDate(dto.paidOn), paymentRef: dto.paymentRef ?? null });
     await this.audit.log(user, 'PAYROLL_RUN', id, 'PAID', `${dto.paidOn}${dto.paymentRef ? ` (${dto.paymentRef})` : ''}`);
     await this.tell(user, r, { users: [r.preparedById, r.approvedById] }, `Salary run ${this.runWords(r)} paid`, `${user.fullName} paid it on ${formatDay(dto.paidOn)}${dto.paymentRef ? `, reference ${dto.paymentRef}` : ''}. PF and ESI returns are next, by the 15th.`, 'Open the run');
     return this.detail(user, id);
   }
 
+  /** One step of the run, taken only from the state it was checked in, so two steps at once cannot both land. */
+  private async move(id: string, from: Prisma.PayrollRunWhereInput, data: Prisma.PayrollRunUncheckedUpdateManyInput) {
+    const { count } = await this.prisma.payrollRun.updateMany({ where: { id, ...from }, data });
+    if (!count) throw new ConflictException(MOVED_MEANWHILE);
+  }
+
   async remove(user: RequestUser, id: string) {
     const r = await this.runFor(user, id);
     if (!this.toRunDto(r, user).can.remove) throw new BadRequestException('Only a draft run can be deleted');
-    await this.prisma.payrollRun.delete({ where: { id } });
+    const { count } = await this.prisma.payrollRun.deleteMany({ where: { id, status: 'DRAFT' } });
+    if (!count) throw new ConflictException(MOVED_MEANWHILE);
     await this.audit.log(user, 'PAYROLL_RUN', id, 'DELETED', r.runNo);
     return { ok: true };
   }
