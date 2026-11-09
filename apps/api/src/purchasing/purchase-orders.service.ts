@@ -119,9 +119,9 @@ export class PurchaseOrdersService {
     private quotations: QuotationsService,
     private email: EmailService,
   ) {
-    lifecycle.onApproved('PURCHASE_ORDER', async (user, id) => {
-      await this.updateItemRates(user, id);
-      // The order is approved by now; a failed email is kept on the order and sent again from there.
+    lifecycle.onApproved('PURCHASE_ORDER', (tx, user, id) => this.updateItemRates(tx, user, id));
+    // The order is approved by now; a failed email is kept on the order and sent again from there.
+    lifecycle.afterApproved('PURCHASE_ORDER', async (user, id) => {
       await this.mailOrder(user, id).catch((e) => this.log.warn(`Emailing purchase order ${id} failed: ${(e as Error).message}`));
     });
   }
@@ -871,12 +871,12 @@ export class PurchaseOrdersService {
   }
 
   /** On approval: each line's rate becomes the item's standard rate (adding the item to the master if new). */
-  private async updateItemRates(user: RequestUser, id: string) {
-    const lines = await this.prisma.purchaseOrderLine.findMany({ where: { purchaseOrderId: id }, select: { itemName: true, unit: true, rate: true } });
+  private async updateItemRates(tx: Prisma.TransactionClient, user: RequestUser, id: string) {
+    const lines = await tx.purchaseOrderLine.findMany({ where: { purchaseOrderId: id }, select: { itemName: true, unit: true, rate: true } });
     for (const l of lines) {
-      const found = await findMasterItem(this.prisma, user.organizationId, l.itemName, l.unit);
-      if (found) await this.prisma.item.update({ where: { id: found.id }, data: { rate: l.rate } });
-      else await this.prisma.item.create({ data: { organizationId: user.organizationId, name: l.itemName, unit: l.unit, rate: l.rate } });
+      const found = await findMasterItem(tx, user.organizationId, l.itemName, l.unit);
+      if (found) await tx.item.update({ where: { id: found.id }, data: { rate: l.rate } });
+      else await tx.item.create({ data: { organizationId: user.organizationId, name: l.itemName, unit: l.unit, rate: l.rate } });
     }
   }
 }

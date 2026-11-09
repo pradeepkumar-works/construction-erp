@@ -68,7 +68,8 @@ export async function seedWhatsappEntries(prisma: PrismaClient, organizationId: 
       state: 'DRAFTED',
       draft: draft('expense', `Site expense on ${road.name}: ₹2,360 for fuel, today`, { date: seedToday(), category: 'FUEL', description: 'Diesel for the water tanker', vendor: 'Highway Fuels', billNo: '4471', amount: 2360, gstRate: 0, paymentMode: 'CASH' }),
       reply: 'Site expense of ₹2,360 for fuel drafted. Tap Save to submit it.',
-      createdAt: at(0, 8),
+      // Before 8 in the morning in India, 8 o'clock is still to come: a message is never from the future.
+      createdAt: new Date(Math.min(at(0, 8).getTime(), Date.now() - 60_000)),
     },
     {
       userId: pm.id,

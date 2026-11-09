@@ -526,6 +526,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: DATABASE_URL="$RUNTIME_URL" node dist/scripts/dpr-one-per-day-test.js
+      - name: A DPR's approval and its work lines land together, and a failed step leaves the DPR submitted
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: DATABASE_URL="$RUNTIME_URL" node dist/scripts/approval-hooks-test.js
       - name: Man-day bills checked against the head count, roll call and punches, with the labelled crew backtest
         if: matrix.suite == 'flows'
         working-directory: apps/api

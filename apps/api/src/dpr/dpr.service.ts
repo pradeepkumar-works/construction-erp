@@ -104,12 +104,12 @@ export class DprService {
     private types: ProjectTypesService,
   ) {
     // A DPR's work lines are submitted, approved and sent back with it.
-    lifecycle.onStatus('DPR', (_user, id, status) => this.syncLines(id, status));
+    lifecycle.onStatus('DPR', (tx, _user, id, status) => this.syncLines(tx, id, status));
   }
 
-  private async syncLines(id: string, status: SubmissionStatus) {
-    const dpr = await this.prisma.dailyReport.findUniqueOrThrow({ where: { id }, select: { submittedAt: true, reviewedById: true, reviewedAt: true, reviewNote: true } });
-    await this.prisma.progressEntry.updateMany({ where: { dailyReportId: id }, data: { status, ...dpr } });
+  private async syncLines(tx: Prisma.TransactionClient, id: string, status: SubmissionStatus) {
+    const dpr = await tx.dailyReport.findUniqueOrThrow({ where: { id }, select: { submittedAt: true, reviewedById: true, reviewedAt: true, reviewNote: true } });
+    await tx.progressEntry.updateMany({ where: { dailyReportId: id }, data: { status, ...dpr } });
   }
 
   toDto(r: Row): DailyReportDto {
