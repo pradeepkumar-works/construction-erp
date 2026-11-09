@@ -510,6 +510,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: DATABASE_URL="$RUNTIME_URL" node dist/scripts/cash-forecast-test.js
+      - name: Salary run steps taken at the same moment land once (approve, pay, send back)
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: DATABASE_URL="$RUNTIME_URL" node dist/scripts/payroll-run-race-test.js
       - name: Hindrances read from 100 labelled DPR remarks, recorded as delays, and the notice clock on the watch list
         if: matrix.suite == 'flows'
         working-directory: apps/api
