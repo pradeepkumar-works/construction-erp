@@ -299,7 +299,8 @@ and the pre-delivery checklist.
 - Structured DPR (item 127, ARCHITECTURE "Structured DPR"): a DPR's work lines are its `ProgressEntry` rows
   (`dailyReportId`), saved only through `DprService` and moved with the DPR by `SubmissionLifecycleService.onStatus`;
   anything that counts or queues progress entries waiting for approval leaves them out (`dailyReportId: null`). Line
-  arithmetic is pure in `@erp/shared/dpr-lines.ts`; keep `src/scripts/dpr-lines-test.ts` passing.
+  arithmetic is pure in `@erp/shared/dpr-lines.ts`; keep `src/scripts/dpr-lines-test.ts` passing. One DPR per site per
+  day (a rejected one aside) is also a unique index; keep `src/scripts/dpr-one-per-day-test.ts` passing.
 - Pipe network (item 126, ARCHITECTURE "Pipe network"): a pipe zone or main's nodes and segments come in only through the
   import (matched by code, previewed, never deleting a pipe or cutting it below its work); a DPR line of a length stage names
   its segment and is held to its length (`segmentCapProblem` over `heldOnSegments`); segment figures, readers, writers
