@@ -15,7 +15,12 @@ export class AttachmentsService {
   constructor(private prisma: PrismaService, private storage: StorageService) {}
 
   toDto(a: { id: string; fileName: string; mimeType: string; size: number; storagePath: string; createdAt: Date }): AttachmentDto {
-    return { id: a.id, fileName: a.fileName, mimeType: a.mimeType, size: a.size, url: this.storage.toUrl(a.id, a.storagePath), createdAt: a.createdAt.toISOString() };
+    return { id: a.id, fileName: a.fileName, mimeType: a.mimeType, size: a.size, url: this.storage.toUrl(a.id), createdAt: a.createdAt.toISOString() };
+  }
+
+  /** A file link kept in a saved copy, signed afresh for today's reader. */
+  relink(url: string): string {
+    return this.storage.relink(url);
   }
 
   /** Link previously uploaded (orphan) attachments to a parent entity. Only the uploader's own files within the org. */

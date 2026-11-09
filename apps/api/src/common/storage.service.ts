@@ -3,6 +3,8 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { extname, join } from 'path';
 import { randomUUID } from 'crypto';
 import { todayIn } from '../notifications/time';
+import { fileIdOfLink, fileLinkQuery } from './file-links';
+import { jwtSecret } from './jwt-secret';
 
 export type StorageMode = 'blob' | 'db' | 'disk';
 
@@ -16,8 +18,9 @@ export interface SavedFile {
 /**
  * Where uploaded files live. Chosen automatically:
  *  - blob : BLOB_READ_WRITE_TOKEN set            -> Vercel Blob, storagePath is an absolute https URL
- *  - db   : STORAGE_MODE=db or running on Vercel -> bytes kept in Attachment.data, served by GET /api/uploads/:id/content
- *  - disk : otherwise                            -> UPLOAD_DIR on local disk, served under /uploads/<path>
+ *  - db   : STORAGE_MODE=db or running on Vercel -> bytes kept in Attachment.data
+ *  - disk : otherwise                            -> UPLOAD_DIR on local disk
+ * Whichever it is, a reader opens a file only through its signed link, `toUrl` (`file-links.ts`).
  */
 @Injectable()
 export class StorageService {
@@ -74,10 +77,14 @@ export class StorageService {
     return readFileSync(join(process.cwd(), process.env.UPLOAD_DIR || './uploads', storagePath));
   }
 
-  /** Absolute URLs pass through; db-stored files are served by the API; disk files under /uploads. */
-  toUrl(id: string, storagePath: string): string {
-    if (/^https?:\/\//.test(storagePath)) return storagePath;
-    if (storagePath.startsWith('db:')) return `/api/uploads/${id}/content`;
-    return `/uploads/${storagePath}`;
+  /** The signed link that opens a file, served by GET /api/uploads/:id/content, for whoever was given its record. */
+  toUrl(id: string): string {
+    return `/api/uploads/${id}/content?${fileLinkQuery(id, Math.floor(Date.now() / 1000), jwtSecret())}`;
+  }
+
+  /** A file link kept in a saved copy (an issued report), signed afresh; any other URL as it was. */
+  relink(url: string): string {
+    const id = fileIdOfLink(url);
+    return id ? this.toUrl(id) : url;
   }
 }

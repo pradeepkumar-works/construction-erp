@@ -246,6 +246,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/login-guard-test.js
+      - name: A stored file opens only through its signed link, which lasts one to two hours
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/file-links-test.js
       - name: Project setup checklist, starting contract terms and the BOQ against the contract value
         if: matrix.suite == 'flows'
         working-directory: apps/api

@@ -4,7 +4,7 @@
  */
 const raw = process.env.EXPO_PUBLIC_API_URL || 'https://nirmaan-api.cogitrex.ai/api';
 export const API_URL = raw.replace(/\/+$/, '');
-/** Origin used to resolve relative attachment URLs (e.g. /uploads/...). */
+/** Origin used to resolve relative attachment URLs (the signed /api/uploads/<id>/content links). */
 export const API_ORIGIN = API_URL.replace(/\/api$/, '');
 
 export function absoluteUrl(url: string): string {

@@ -577,5 +577,7 @@ and the pre-delivery checklist.
   for one deploy (`seed.ts --modules`: missing demo users added, nothing existing changed). A child company's go in
   `seed-group-modules.ts`.
 - Uploads: `STORAGE_MODE=db` on Vercel (bytes in `Attachment.data`, served by
-  `GET /api/uploads/:id/content`), `BLOB_READ_WRITE_TOKEN` switches to Vercel Blob, local disk otherwise.
+  `GET /api/uploads/:id/content`), `BLOB_READ_WRITE_TOKEN` switches to Vercel Blob, local disk otherwise. Whichever it is,
+  a file opens only through the signed link in its record's attachments (`StorageService.toUrl`, ARCHITECTURE "Attachments");
+  never hand out a file's id or storage path as a link. Keep `src/scripts/file-links-test.ts` passing.
 - Demo accounts: see README (all `password123`).

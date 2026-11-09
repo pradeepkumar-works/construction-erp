@@ -2,7 +2,7 @@ import axios, { AxiosError } from 'axios';
 import { PRODUCT_NAME } from '@erp/shared';
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
-/** Origin of the API, used to resolve relative upload URLs (e.g. /uploads/...). */
+/** Origin of the API, used to resolve relative upload URLs (the signed /api/uploads/<id>/content links). */
 export const API_ORIGIN = API_URL.replace(/\/api\/?$/, '');
 
 export const TOKEN_KEY = 'erp_token';

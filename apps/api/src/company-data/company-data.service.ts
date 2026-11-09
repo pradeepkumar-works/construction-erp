@@ -174,7 +174,7 @@ export class CompanyDataService {
       total,
       items: rows.map((r) => {
         const link = this.fileLinks.find((l) => (r as Record<string, unknown>)[l.column]);
-        return { id: r.id, fileName: r.fileName, mimeType: r.mimeType, size: r.size, url: this.storage.toUrl(r.id, r.storagePath), folder: link?.folder ?? 'unlinked', createdAt: r.createdAt.toISOString() };
+        return { id: r.id, fileName: r.fileName, mimeType: r.mimeType, size: r.size, url: this.storage.toUrl(r.id), folder: link?.folder ?? 'unlinked', createdAt: r.createdAt.toISOString() };
       }),
     };
   }

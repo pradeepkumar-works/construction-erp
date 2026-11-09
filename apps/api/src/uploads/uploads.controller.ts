@@ -1,4 +1,4 @@
-import { BadRequestException, Body, ConflictException, Controller, Get, NotFoundException, Param, Post, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, ConflictException, Controller, ForbiddenException, Get, NotFoundException, Param, Post, Query, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { extname } from 'path';
 import type { Response } from 'express';
@@ -14,6 +14,8 @@ import { CAD_MIME_TYPES } from '@erp/shared';
 import { CompleteDirectUploadDto, StartDirectUploadDto } from './uploads.dto';
 import { todayIn } from '../notifications/time';
 import { ACTIVE_FILE, SANDBOXED_FILE_CSP } from '../common/security-headers';
+import { fileLinkProblem } from '../common/file-links';
+import { jwtSecret } from '../common/jwt-secret';
 
 const ALLOWED = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'application/pdf', ...Object.values(CAD_MIME_TYPES)];
 const ALLOWED_WORDS = 'jpeg, png, webp, heic, pdf, dxf, dwg';
@@ -105,18 +107,27 @@ export class UploadsController {
   }
 
   /**
-   * Serves files stored in the database (serverless hosts). Public by design so that <img> tags on web and
-   * mobile can load photos without an Authorization header; ids are unguessable UUIDs.
+   * Opens a stored file. An `<img>` or a new tab sends no Authorization header, so the signed link handed out in a
+   * record's attachments is the proof of sign-in and access (`file-links.ts`); a bare id opens nothing.
    */
+  @ApiOperation({ summary: "Open a stored file through the signed link in its record's attachments", description: '403 without a valid, unexpired `e` and `s`.' })
   @Public()
   @Get(':id/content')
-  async content(@Param('id') id: string, @Res() res: Response) {
-    const row = await this.prisma.attachment.findUnique({ where: { id }, select: { data: true, mimeType: true, fileName: true } });
-    if (!row || !row.data) throw new NotFoundException('File not found');
+  async content(@Param('id') id: string, @Query('e') e: unknown, @Query('s') s: unknown, @Res() res: Response) {
+    const now = Math.floor(Date.now() / 1000);
+    const problem = fileLinkProblem(id, e, s, now, jwtSecret());
+    if (problem === 'expired') throw new ForbiddenException('This file link has expired. Open the file again from its page.');
+    if (problem) throw new ForbiddenException('This file link is not valid. Open the file from its page, signed in.');
+    const row = await this.prisma.attachment.findUnique({ where: { id }, select: { data: true, storagePath: true, mimeType: true, fileName: true } });
+    if (!row) throw new NotFoundException('File not found');
+    res.setHeader('Cache-Control', `private, max-age=${Number(e) - now}`);
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    if (!row.data && /^https?:\/\//.test(row.storagePath)) return res.redirect(302, row.storagePath);
+    const bytes = await this.storage.read(row.storagePath, row.data).catch(() => null);
+    if (!bytes) throw new NotFoundException('File not found');
     res.setHeader('Content-Type', row.mimeType);
-    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
     res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(row.fileName)}"`);
     if (ACTIVE_FILE.test(row.mimeType)) res.setHeader('Content-Security-Policy', SANDBOXED_FILE_CSP);
-    res.send(Buffer.from(row.data));
+    res.send(bytes);
   }
 }

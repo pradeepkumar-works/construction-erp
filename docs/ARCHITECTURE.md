@@ -4861,6 +4861,16 @@ and lets a photo be taken before the form is finished. Local disk now, object st
 gives a client token for a path under the organisation's prefix, and `POST /uploads/direct/complete` checks the blob
 and creates the Attachment (up to 100 MB).
 
+A file opens only through its signed link (`apps/api/src/common/file-links.ts`, finding M1 of the November review). An
+attachment DTO's `url` is `/api/uploads/<id>/content?e=<expiry>&s=<signature>`: an HMAC of the id and the expiry under
+the sign-in key, made by `StorageService.toUrl` when a record is read by someone its own access rules let in. So the
+link is the proof of sign-in for an `<img>`, a new tab or the phone's browser, none of which send the Authorization
+header. A link lasts one to two hours and is the same URL within an hour, so browsers keep the file cached
+(`Cache-Control: private`). A bare id, an altered link or an expired one gets a 403 that says to open the file from
+its page. The endpoint serves every storage mode: bytes from the row (db), the disk (the upload folder is no longer
+served as static files), or a redirect to the Blob URL. A saved copy that kept links (an issued official report) is
+signed afresh when it is read (`AttachmentsService.relink`). Keep `src/scripts/file-links-test.ts` passing.
+
 ## Notifications
 
 `Notification` is one row per recipient (`userId`) with a `type`, title, body and an optional
