@@ -32,7 +32,7 @@ export default function FindScreen() {
   const { open, openVisit, sheet } = useOpenNode(launcher.webUrl);
   const { openMenu, menu: tileMenu } = useTileMenu(launcher);
   const [query, setQuery] = useState('');
-  const menu = useMemo(() => (!user || isGuest(user.roleKey) || isSupplier(user.roleKey) ? [] : navMenuFor(user, navSettingsOf(user))), [user]);
+  const menu = useMemo(() => (!user || isGuest(user.roleKey) || isSupplier(user.roleKey) ? [] : navMenuFor(user, navSettingsOf(user), { allModules: true })), [user]);
   const found = useMemo(() => findInMenu(menu, query, t), [menu, query, t]);
   const pinnedNodes = launcher.pins.flatMap((p) => (p.kind === 'NODE' ? (navNode(p.target) ?? []) : []));
   const openModule = (m: NavMenuModule) => router.push({ pathname: '/module/[key]', params: { key: m.key } });

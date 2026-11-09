@@ -544,6 +544,37 @@ modules name is drawn once, in the module that names most of its tabs: Payroll u
 module screens (`/modules/site`…) still open by their address under the department menu. A page added to the tree needs a place
 in `DEPARTMENT_MODULES`: `src/scripts/nav-menu-test.ts` (CI) fails on a live page with none. The phone keeps its launcher.
 
+### Menu by role
+
+A role may open far more pages than it works in: a site engineer could open 116, the RMC plant, the planning pages and the
+company's masters among them (purchase stays in its menu: it raises indents and follows the orders to its site). `ROLE_MENU` (`@erp/shared/role-menu.ts`) names, by module key of both sets, the modules each
+office or site role works in; `navMenuFor` and `navSidebar` keep to them (`inRoleMenu`), and site roles (engineer, team
+leader, safety, document controller) also leave each department's Masters to Admin › Masters (`roleMenuHasMasters`).
+Nothing is refused by it: Home's All modules (`useNavMenu().allMenu`), a module's screen, Search and links still open
+every page the role's access allows, and the phone's Search and module screens read the whole menu (`allModules`).
+Admin, management, the project manager and accounts are not listed and see every module. A role's list may name only
+modules that exist (`nav-menu-test.ts`).
+
+Pages that show one project at a time (PPE, the quality plan, the roll call, the muster roll) open on the header's
+project, else on the busiest running site (`useOneProject` in `lib/project-scope.tsx`: most entries waiting, then furthest
+along), never on an empty "Choose a project".
+
+### Demo clock
+
+The demo seed dates its records around the day it runs (`day(offset)`, `prisma/seed-clock.ts`), and the live demo no
+longer takes the full seed, so left alone it ages: every card reads Overdue, approvals wait for weeks and month pages go
+empty. A demo company carries `Organization.demoDatedOn`, the day its records were last dated to (set only by the demo
+seed and, for the live demo, by its migration from its latest daily report; null on every customer's company, which is
+never moved). `redateDemos` (`apps/api/src/demo/redate.ts`) moves each demo company dated before today forward by the
+days since (`demoShiftDays`, `demo-clock-rules.ts`): every date and timestamp column of every table with its
+`organizationId`, and of a child table through its parent, in two steps through a far date so no unique key on a date
+trips half way, in one transaction per company; `YYYY-MM` months (salary runs and their numbers, loan starts) move by the
+months crossed (`demoShiftMonths`) and a leave opening's year by the years. Tokens' and pairing codes' expiry, sign-ins
+and push devices are never moved (`DEMO_CLOCK_SKIP_*`). It runs first in the daily digest job (`DEMO_CLOCK`, Vercel's plan
+has no spare cron), and before every seed top-up, which then marks the demo dated today (`markDemoDated`). Idempotent: a
+second run the same day moves nothing. Tested in `src/scripts/demo-clock-test.ts` (`--db` moves a seeded demo inside a
+transaction it rolls back).
+
 ### Menu colours
 
 The parts of the menu in colour (`navPainted`) and the `NAVY` top bar are painted in one fill: a plain colour or a gradient

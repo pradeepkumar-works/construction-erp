@@ -29,6 +29,7 @@ import { API_URL, errorMessage, fileUrl } from '@/lib/api';
 import { formatDateTime } from '@/lib/format';
 import { requestNew } from '@/lib/new-intent';
 import { useCaptureMessages, useCaptureSetup, useDecideCapture, useUpdateCaptureSetup } from '@/lib/queries';
+import { Section } from '@/components/common/Section';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { LinkButton } from '@/components/common/LinkButton';
@@ -90,7 +91,7 @@ function Capture() {
   const data = list.data;
 
   return (
-    <>
+    <div className="page-container">
       <PageHeader title="WhatsApp entries" subtitle={`Send what happened on site as a text, a photo or a voice note. ${PRODUCT_NAME} drafts the entry and you save it with one tap.`} />
       <Flex vertical gap={tk.space[5]}>
         <SetupCard setup={setup.data} />
@@ -150,7 +151,7 @@ function Capture() {
         )}
         {data.total > PAGE_SIZE && <Pagination align="end" current={page} pageSize={PAGE_SIZE} total={data.total} onChange={setPage} showSizeChanger={false} />}
       </Flex>
-    </>
+    </div>
   );
 }
 
@@ -273,7 +274,7 @@ function MessageCard({ m, showSender, picked }: { m: InboundMessageDto; showSend
             </Typography.Link>
           ))}
         {m.draft && (
-          <Card size="small" type="inner" title={`${AI_DRAFT_LABELS[m.draft.kind]}${m.state === 'SAVED' ? '' : ', not saved'}`}>
+          <Section title={`${AI_DRAFT_LABELS[m.draft.kind]}${m.state === 'SAVED' ? '' : ', not saved'}`}>
             <Flex vertical gap={tk.space[2]}>
               <Typography.Text>{m.draft.title}</Typography.Text>
               {m.draft.flags.map((f) => (
@@ -302,7 +303,7 @@ function MessageCard({ m, showSender, picked }: { m: InboundMessageDto; showSend
                 </Typography.Text>
               )}
             </Flex>
-          </Card>
+          </Section>
         )}
         {m.reply && !m.draft && (
           <Typography.Paragraph type="secondary" style={{ marginBottom: 0, whiteSpace: 'pre-wrap' }}>
