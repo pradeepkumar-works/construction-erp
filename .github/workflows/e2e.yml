@@ -518,6 +518,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: DATABASE_URL="$RUNTIME_URL" node dist/scripts/hindrance-test.js
+      - name: Two phones filing one site's DPR for the same day at once get one DPR and a 409
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: DATABASE_URL="$RUNTIME_URL" node dist/scripts/dpr-one-per-day-test.js
       - name: Man-day bills checked against the head count, roll call and punches, with the labelled crew backtest
         if: matrix.suite == 'flows'
         working-directory: apps/api

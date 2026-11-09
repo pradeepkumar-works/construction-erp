@@ -562,6 +562,16 @@ export class DprService {
     if (dup) throw new ConflictException(`A DPR for ${dateOnly(date)} already exists for this project (status ${dup.status}). Edit it instead of creating another.`);
   }
 
+  /** The database's own hold on one DPR per day (`DailyReport_one_per_project_day`), for a report filed meanwhile. */
+  private async heldToOnePerDay<T>(id: string, projectId: string, date: Date, write: () => Promise<T>): Promise<T> {
+    try {
+      return await write();
+    } catch (e) {
+      if (isUniqueViolation(e)) await this.assertNoDuplicate(projectId, date, id);
+      throw e;
+    }
+  }
+
   /** Idempotent create: a DPR that already exists under the client-supplied id is returned as is. */
   private async findExisting(user: RequestUser, id: string | undefined) {
     if (!id) return null;
@@ -638,6 +648,7 @@ export class DprService {
         const winner = await this.findExisting(user, dto.id);
         if (winner) return winner;
       }
+      if (isUniqueViolation(e)) await this.assertNoDuplicate(dto.projectId, parseDate(dto.date));
       throw e;
     }
     await this.attachments.link(user, 'dailyReportId', row.id, dto.attachmentIds);
@@ -675,7 +686,7 @@ export class DprService {
     if (dto.issues !== undefined) data.issues = dto.issues;
     if (dto.nextDayPlan !== undefined) data.nextDayPlan = dto.nextDayPlan;
     let saved: { id: string; attachmentIds: string[] | undefined }[] = [];
-    await this.prisma.$transaction(async (tx) => {
+    const write = () => this.prisma.$transaction(async (tx) => {
       // Text written from the lines is written again when they change; text of the user's own stays.
       const before = await this.summaryOf(tx, id);
       const auto = data.workExecuted === undefined ? current.workExecuted === before : data.workExecuted === '' || data.workExecuted === before;
@@ -689,6 +700,7 @@ export class DprService {
       else if (!lines && !((data.workExecuted as string | undefined) ?? current.workExecuted).trim())
         throw new BadRequestException('Say what work was done today, or add a work line');
     });
+    await this.heldToOnePerDay(id, row.projectId, (data.date as Date | undefined) ?? current.date, write);
     await this.attachments.sync(user, 'dailyReportId', id, dto.attachmentIds);
     await this.linkLinePhotos(user, saved);
     await this.audit.log(user, 'DPR', id, 'UPDATED');
@@ -704,7 +716,7 @@ export class DprService {
     const current = await this.get(user, id);
     await this.assertComplete(user.organizationId, current);
     if (current.status === 'REJECTED') await this.assertNoDuplicate(current.projectId, parseDate(current.date), id);
-    await this.lifecycle.submit(user, 'DPR', id);
+    await this.heldToOnePerDay(id, current.projectId, parseDate(current.date), () => this.lifecycle.submit(user, 'DPR', id));
     return this.get(user, id);
   }
 
