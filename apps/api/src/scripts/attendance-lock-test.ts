@@ -59,7 +59,21 @@ async function main(): Promise<number> {
         const punches = await prisma.biometricPunch.findMany({ where: { deviceId: device.id, pin: map.pin, date: day.date, time: { in: ['06:01', '22:59'] } } });
         check('the punches are kept and marked Day locked', punches.length === 2 && punches.every((p) => p.result === 'LOCKED'), `results: ${punches.map((p) => p.result).join(', ')}; applied ${result.applied}`);
 
-        // 2. Overtime from the locked month, waiting for a decision.
+        // 2. The same file for a day after the locked month is still marked.
+        const { todayIn } = await import('../notifications/time');
+        const open = todayIn();
+        const openDay = new Date(`${open}T00:00:00Z`);
+        const before = await prisma.staffAttendance.findUnique({ where: { employeeId_date: { employeeId: map.employeeId!, date: openDay } } });
+        cleanup.push(() => prisma.biometricPunch.deleteMany({ where: { deviceId: device.id, pin: map.pin, date: openDay, time: { in: ['00:01', '00:02'] } } }));
+        cleanup.push(() =>
+          before
+            ? prisma.staffAttendance.update({ where: { id: before.id }, data: { checkIn: before.checkIn, checkOut: before.checkOut, status: before.status, overtimeHours: before.overtimeHours, overtimeStatus: before.overtimeStatus, biometricDeviceId: before.biometricDeviceId } })
+            : prisma.staffAttendance.deleteMany({ where: { employeeId: map.employeeId!, date: openDay } }),
+        );
+        const openResult = await biometric.importFile(admin, { deviceId: device.id, text: `${map.pin},${open} 00:01:00\n${map.pin},${open} 00:02:00\n` });
+        check(`the same file for ${open}, outside the locked month, is still marked`, openResult.applied === 2, JSON.stringify(openResult));
+
+        // 3. Overtime from the locked month, waiting for a decision.
         const ot = await prisma.staffAttendance.findFirstOrThrow({ where: { organizationId: org.id, overtimeStatus: { not: null }, date: { gte: new Date(`${run.month}-01`), lte: new Date(`${run.month}-28`) } }, orderBy: { date: 'asc' } });
         cleanup.push(() => prisma.staffAttendance.update({ where: { id: ot.id }, data: { overtimeStatus: ot.overtimeStatus, overtimeDecidedById: ot.overtimeDecidedById, overtimeDecidedAt: ot.overtimeDecidedAt, overtimeRecommendedById: ot.overtimeRecommendedById } }));
         await prisma.staffAttendance.update({ where: { id: ot.id }, data: { overtimeStatus: 'PENDING', overtimeDecidedById: null, overtimeDecidedAt: null, overtimeRecommendedById: null } });

@@ -515,7 +515,8 @@ and the pre-delivery checklist.
   history note's money is `inr` and its days `formatDay`. Keep `src/scripts/reporting-period-test.ts` passing.
 - Attendance first (ARCHITECTURE "Attendance"): a day's head count and roll call stay open after its DPR is approved and
   lock only with an approved or paid payroll run for the month (`isAttendanceLocked`, `AttendanceService.lockingRuns`);
-  anything that writes attendance calls `assertUnlocked`.
+  anything that writes attendance (device punches and overtime decisions too) calls `assertUnlocked`. Keep
+  `src/scripts/attendance-lock-test.ts` passing.
 - Project setup (ARCHITECTURE "Setting up a project"): a new project's terms come from `termsFor` / `COPIED_TERMS` in
   `@erp/shared/project-setup.ts` (copied project, else the client's usual terms, else `STANDARD_TERMS`), never zeros; the
   Overview checklist is `setupSteps` over `ProjectSetupService.facts`, so a new step is a key in `SETUP_STEPS`, a fact and

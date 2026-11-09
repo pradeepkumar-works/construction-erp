@@ -518,6 +518,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: DATABASE_URL="$RUNTIME_URL" node dist/scripts/attendance-check-test.js
+      - name: A paid month's attendance stays as paid, from late device punches and overtime decisions
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: DATABASE_URL="$RUNTIME_URL" node dist/scripts/attendance-lock-test.js
       - name: Site photo checks keep the confidence bar, the 50 labelled photos and the safety officer's switch
         working-directory: apps/api
         run: DATABASE_URL="$RUNTIME_URL" node dist/scripts/photo-checks-test.js
