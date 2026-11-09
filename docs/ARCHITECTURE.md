@@ -3208,7 +3208,22 @@ retention, advance, TDS and material recovery (`apps/api/src/subcontracts`).
   `StockEntry.workOrderId` tag work and issues to an order; `subcontractBillId` on both records which bill took
   them. `AttendanceLine.vendorId` links a contractor's gang to the vendor master. Work orders and their bills are
   approval submissions (`WORK_ORDER`, `SUBCONTRACT_BILL`); the matrix amount is the order value and the bill's work
-  value.
+  value. `WorkOrderAmendment` + `WorkOrderAmendmentLine` (below) change an approved order; `WorkOrder.amendmentNo` is
+  the one in force (0 for the order as approved).
+- **Amendments** (`WorkOrderAmendmentsService`, rules in `@erp/shared/work-order-amendment.ts`). An approved, open order
+  with no approved final bill is changed only by an amendment, a submission of its own (`WO_AMENDMENT`, its approval
+  rules copied from `WORK_ORDER` by the migration; the matrix amount is the order's value after it, before GST). It is
+  raised by `canIssueWorkOrder` as a draft holding every line with its quantity and rate then (`qtyBefore`,
+  `rateBefore`; a line it adds has neither) and the end date then; one open amendment per order (a partial unique
+  index, `amendmentOpenProblem`, advisory lock `WOA:<workOrderId>`). A line's quantity cannot go below what is
+  measured or billed on it (`amendFloorQty`), a rate must be above 0, a BOQ item comes once (`amendmentLineProblem`);
+  the value before and after is `amendmentSummary`. Submit needs a reason and a change; approval re-checks the lines
+  (`beforeApprove`) and applies them in place in one transaction (`onApproved`, idempotent on `appliedAt`): lines keep
+  their ids, a new line is created and linked from its amendment line, the order's value is its lines' sum and its
+  `amendmentNo` and end date move on. Measurements, issues and bills go on against the order as it stands meanwhile.
+  A rejected amendment is final (raise another). The order as it stood after amendment *n* is `workOrderAsOf`, which
+  walks the applied amendments back from today's lines. The print names the amendment in force; the supplier portal
+  shows the applied ones.
 - **Measurements are shared.** A sheet tagged to a work order still counts for the client's RA bill: the same work
   is billed to the client at the BOQ rate and paid to the subcontractor at the order rate. Tagging is allowed only
   for an approved, open order with a line on that BOQ item in the same project (`assertOpenWorkOrder`).
@@ -3219,7 +3234,9 @@ retention, advance, TDS and material recovery (`apps/api/src/subcontracts`).
   (capped at what is still outstanding), TDS % on the work value, material, other (with a note). Net payable = work
   + GST − deductions. Due date = bill date + the order's payment days (default 30, at most 45 for a micro or small
   enterprise). One open bill per order and nothing after the final bill, under advisory lock `SB:<workOrderId>`;
-  a draft is recomputed on every save. An issue recovered in an approved bill cannot be deleted.
+  a draft is recomputed on every save. An issue recovered in an approved bill cannot be deleted. The previous value
+  is what earlier bills charged (`SubcontractBillLine.prevAmount`, the sum of their own line amounts, `subBillLines`),
+  never the previous quantity at today's rate, so an amended rate applies only to work billed after it.
 - **Defaults.** TDS under section 194C from the PAN: 1% when its fourth letter is P or H, else 2% (no PAN is
   shown as a 20% warning, not defaulted). GST 18% when the vendor has a GSTIN, else 0.
 - **Margin.** `GET /work-orders/margin?projectId=` gives, per BOQ item on approved orders, the client rate against
@@ -3233,11 +3250,17 @@ retention, advance, TDS and material recovery (`apps/api/src/subcontracts`).
   those vendors.
 - **API.** `/work-orders` (paged; `projectId`, `vendorId`, `status`, `open`, `boqItemId`, `q`),
   `GET /work-orders/margin`, `POST /work-orders/:id/submit|close`, `/subcontract-bills` (paged; `projectId`,
-  `vendorId`, `workOrderId`, `status`, `q`), `POST /subcontract-bills/:id/submit`. `/measurements` and
+  `vendorId`, `workOrderId`, `status`, `q`), `POST /subcontract-bills/:id/submit`. `POST|GET
+  /work-orders/:id/amendments`, `GET|PATCH|DELETE /work-order-amendments/:id` (PATCH takes `lines`, `endDate`,
+  `reason` and `submit`), `POST /work-order-amendments/:id/submit`; decided through `/approvals/wo_amendment/:id/review`.
+  `/measurements` and
   `/stock/issues` take `workOrderId`; an issue against an order defaults "issued to" to the subcontractor.
 - **Clients.** Web: Purchases → Work Orders and Subcontractor Bills, a Subcontracts tab per project (orders, bills,
   margin), print views of the order and the bill (`components/subcontracts/subcontractPrint.ts`), and a work order
-  picker on the measurement and issue forms. Site app: approve orders and bills, and tag measurements and issues.
+  picker on the measurement and issue forms. The order's record has Amend order, the open amendment's changes and an
+  Amendments section (every amendment, and each version of the order with its lines); an amendment has its own record
+  (`/work-order-amendments/[id]`, `WoAmendmentRecord`, lines before and after) and form (`WoAmendmentForm`). Site app:
+  approve orders, amendments and bills, and tag measurements and issues.
 
 ## Receivables
 

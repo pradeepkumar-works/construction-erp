@@ -7,7 +7,7 @@ import { ProjectAccessService } from '../common/project-access.service';
 import { ApprovalRightsService } from '../common/approval-rights.service';
 import { dateOnly, iso } from '../common/serialize';
 import { ExpoPushService } from './expo-push.service';
-import { dprTitle, expenseTitle, machineryTitle, measurementTitle, progressTitle, billTitle, poTitle, vendorBillTitle, woTitle, subBillTitle, inspectionTitle, payRequestTitle, PAY_REQUEST_TITLE, supplierChoiceTitle, SUPPLIER_CHOICE_TITLE, inr, titleDate } from '../common/submission-titles';
+import { dprTitle, expenseTitle, machineryTitle, measurementTitle, progressTitle, billTitle, poTitle, vendorBillTitle, woTitle, subBillTitle, inspectionTitle, payRequestTitle, PAY_REQUEST_TITLE, supplierChoiceTitle, SUPPLIER_CHOICE_TITLE, woAmendmentTitle, WO_AMENDMENT_TITLE, inr, titleDate } from '../common/submission-titles';
 import { ListNotificationsQuery, RegisterPushTokenDto } from './notifications.dto';
 import { MessagingService, type OutgoingMessage } from '../messaging/messaging.service';
 import { EmailService, escapeHtml } from './email.service';
@@ -56,7 +56,7 @@ export interface HandoffInput {
 const include = { project: { select: { name: true } } } satisfies Prisma.NotificationInclude;
 type Row = Prisma.NotificationGetPayload<{ include: typeof include }>;
 
-const SUBMISSION_LABEL: Record<SubmissionType, string> = { PROGRESS: 'Progress entry', DPR: 'DPR', MATERIAL_REQUEST: 'Material request', MACHINERY: 'Machinery log', EXPENSE: 'Site expense', MEASUREMENT: 'Measurement', BILL: 'RA bill', PURCHASE_ORDER: 'Purchase order', VENDOR_BILL: 'Vendor bill', WORK_ORDER: 'Work order', SUBCONTRACT_BILL: 'Subcontractor bill', INSPECTION: 'Inspection', PAYMENT_REQUEST: 'Payment request', SUPPLIER_CHOICE: 'Supplier choice' };
+const SUBMISSION_LABEL: Record<SubmissionType, string> = { PROGRESS: 'Progress entry', DPR: 'DPR', MATERIAL_REQUEST: 'Material request', MACHINERY: 'Machinery log', EXPENSE: 'Site expense', MEASUREMENT: 'Measurement', BILL: 'RA bill', PURCHASE_ORDER: 'Purchase order', VENDOR_BILL: 'Vendor bill', WORK_ORDER: 'Work order', SUBCONTRACT_BILL: 'Subcontractor bill', INSPECTION: 'Inspection', PAYMENT_REQUEST: 'Payment request', SUPPLIER_CHOICE: 'Supplier choice', WO_AMENDMENT: 'Work order amendment' };
 
 /**
  * Creates in-app notifications and pushes them to the users' devices.
@@ -342,6 +342,11 @@ export class NotificationsService {
         const c = await this.prisma.supplierChoice.findUnique({ where: { id }, include: { project: { select: { name: true } }, ...SUPPLIER_CHOICE_TITLE } });
         if (!c) return null;
         return { title: supplierChoiceTitle(c.materialRequest.requestNo, c.quotation?.vendor.name ?? null, c.split, c.rank, c.amount.toFixed(2)), projectId: c.projectId, projectName: c.project.name, submittedById: c.submittedById };
+      }
+      case 'WO_AMENDMENT': {
+        const a = await this.prisma.workOrderAmendment.findUnique({ where: { id }, include: { project: { select: { name: true } }, ...WO_AMENDMENT_TITLE } });
+        if (!a) return null;
+        return { title: woAmendmentTitle(a.workOrder.woNo, a.amendmentNo, a.workOrder.vendor.name, a.valueBefore.toFixed(2), a.valueAfter.toFixed(2)), projectId: a.projectId, projectName: a.project.name, submittedById: a.submittedById };
       }
     }
   }

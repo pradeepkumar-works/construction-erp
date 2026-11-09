@@ -170,6 +170,7 @@ const DETAIL_API: Record<SubmissionType, string> = {
   INSPECTION: 'inspections',
   PAYMENT_REQUEST: 'payment-requests',
   SUPPLIER_CHOICE: 'supplier-choices',
+  WO_AMENDMENT: 'work-order-amendments',
 };
 
 /**

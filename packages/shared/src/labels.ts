@@ -104,6 +104,7 @@ export const SUBMISSION_TYPE_LABELS: Record<SubmissionType, string> = {
   INSPECTION: 'Inspection',
   PAYMENT_REQUEST: 'Payment request',
   SUPPLIER_CHOICE: 'Supplier choice',
+  WO_AMENDMENT: 'Work order amendment',
 };
 
 /** A group of entries of one type (the approvals inbox, on the web and the phone): the list's own name in the menu. */
@@ -122,6 +123,7 @@ export const SUBMISSION_TYPE_PLURAL_LABELS: Record<SubmissionType, string> = {
   INSPECTION: 'Inspections',
   PAYMENT_REQUEST: 'Payment requests',
   SUPPLIER_CHOICE: 'Supplier choices',
+  WO_AMENDMENT: 'Work order amendments',
 };
 
 export const PAYMENT_REQUEST_KIND_LABELS: Record<PaymentRequestKind, string> = {

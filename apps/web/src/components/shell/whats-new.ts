@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-work-order-amendments',
+    date: '2026-11-08',
+    title: 'Amend an approved work order',
+    points: [
+      'Amend order on an approved work order changes quantities and rates, adds items and moves the end date. It goes for approval like the order, at the order’s value after the change, and the order changes when it is approved.',
+      'A quantity cannot go below what is measured or billed on the line. Measurements, issues and bills go on against the order as it stands while the amendment waits.',
+      'The work order shows every amendment and each version of the order with its lines. The printed order names the amendment in force, and the subcontractor sees the approved ones on the supplier portal.',
+      'A subcontractor bill keeps the rates earlier bills charged: a new rate applies only to work billed after it.',
+    ],
+  },
+  {
     id: '2026-11-budget-versions',
     date: '2026-11-08',
     title: 'A project budget is approved, and revised with a reason',

@@ -123,3 +123,34 @@ export class ListSubcontractBillsQuery extends PageQuery {
   @ApiPropertyOptional({ example: '2026-10-31', description: 'Bills dated up to this day (inclusive)' }) @IsOptional() @IsDateString() to?: string;
   @ApiPropertyOptional({ description: 'Only entries the current user submitted' }) @IsOptional() @QueryBool() @IsBoolean() mine?: boolean;
 }
+
+export class WoAmendmentLineInput {
+  @ApiPropertyOptional({ description: 'The order line it changes; left out for a new item' }) @IsOptional() @IsUUID() workOrderLineId?: string;
+  @ApiPropertyOptional({ description: 'A new item: a BOQ item of the project not yet on the order' }) @IsOptional() @IsUUID() boqItemId?: string;
+  @ApiPropertyOptional({ example: 'Curing compound, supply and apply', description: "A new item of the order's own (no BOQ item)" }) @IsOptional() @trim() @IsString() @MaxLength(300) description?: string;
+  @ApiPropertyOptional({ example: 'Sqm' }) @IsOptional() @trim() @IsString() @MaxLength(30) unit?: string;
+  @ApiProperty({ example: '1400', description: 'The quantity after the amendment: not below what is billed or measured' }) @num() @IsNumberString() quantity: string;
+  @ApiProperty({ example: '320.00', description: 'Rate per unit before GST after the amendment' }) @num() @IsNumberString() rate: string;
+}
+
+export class CreateWoAmendmentDto {
+  @ApiPropertyOptional({ example: 'Block B added to the scope by the client letter of 2 Nov', description: 'Why the order changes; a draft can be saved without it' })
+  @IsOptional()
+  @trim()
+  @IsString()
+  @MaxLength(1000)
+  reason?: string | null;
+}
+
+export class UpdateWoAmendmentDto {
+  @ApiPropertyOptional({ example: 'Block B added to the scope by the client letter of 2 Nov' }) @IsOptional() @trim() @IsString() @MaxLength(1000) reason?: string | null;
+  @ApiPropertyOptional({ example: '2027-05-31', description: 'The new end date; null leaves it as it is' }) @IsOptional() @nullable() @IsDateString() endDate?: string | null;
+  @ApiPropertyOptional({ type: [WoAmendmentLineInput], description: 'The order lines as they should be, plus new items; an order line left out stays as it is' })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(500)
+  @ValidateNested({ each: true })
+  @Type(() => WoAmendmentLineInput)
+  lines?: WoAmendmentLineInput[];
+  @ApiPropertyOptional({ default: false, description: 'Submit for approval as well' }) @IsOptional() @IsBoolean() submit?: boolean;
+}

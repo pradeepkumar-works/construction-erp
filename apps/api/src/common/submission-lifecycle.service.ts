@@ -22,7 +22,7 @@ import { ApprovalRightsService, type LevelEntry } from './approval-rights.servic
 import { approverName, levelsPassed, mayDecide, queueKeys, rightsOf, type Decider, type LevelRule, type Stage } from './approval-levels';
 import { AuditService } from './audit.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { dprTitle, expenseTitle, machineryTitle, measurementTitle, progressTitle, billTitle, poTitle, vendorBillTitle, woTitle, subBillTitle, inspectionTitle, payRequestTitle, PAY_REQUEST_TITLE, supplierChoiceTitle, SUPPLIER_CHOICE_TITLE } from './submission-titles';
+import { dprTitle, expenseTitle, machineryTitle, measurementTitle, progressTitle, billTitle, poTitle, vendorBillTitle, woTitle, subBillTitle, inspectionTitle, payRequestTitle, PAY_REQUEST_TITLE, supplierChoiceTitle, SUPPLIER_CHOICE_TITLE, woAmendmentTitle, WO_AMENDMENT_TITLE } from './submission-titles';
 
 const REVIEW_ACTIONS = ['APPROVED', 'REJECTED', 'CHANGES_REQUESTED', 'LEVEL_APPROVED'] as const;
 
@@ -41,7 +41,7 @@ interface SubmissionRow {
  *   DRAFT / REJECTED / CHANGES_REQUESTED --submit--> SUBMITTED --review--> APPROVED | REJECTED | CHANGES_REQUESTED
  * A rejected or changes-requested entry is edited in place and resubmitted (audit action RESUBMITTED), so the
  * review history stays on one record. A DPR's work lines are progress entries that follow their DPR (`onStatus`,
- * `partOf`). Every submission type (progress, DPRs, material requests, machinery logs, expenses, measurements, bills, orders, inspections, payment requests, supplier choices) goes through here.
+ * `partOf`). Every submission type (progress, DPRs, material requests, machinery logs, expenses, measurements, bills, orders, inspections, payment requests, supplier choices, work order amendments) goes through here.
  */
 /** A queue line as an entry to place in its approval levels. */
 const entryOf = (p: PendingApprovalDto): LevelEntry => ({ type: p.type, id: p.id, projectId: p.projectId, amount: p.amount, round: new Date(p.submittedAt), submittedById: p.submittedById });
@@ -325,7 +325,7 @@ export class SubmissionLifecycleService {
     const none = Promise.resolve([] as never[]);
     const allowed = (t: SubmissionType) => whereFor(t) !== null;
     const where = (t: SubmissionType) => whereFor(t) as any;
-    const [progress, dprs, mrs, logs, expenses, mbs, bills, pos, vbills, wos, sbills, inspections, payRequests, choices] = await Promise.all([
+    const [progress, dprs, mrs, logs, expenses, mbs, bills, pos, vbills, wos, sbills, inspections, payRequests, choices, amendments] = await Promise.all([
       // A DPR's work lines wait and are decided with their DPR, not on their own.
       allowed('PROGRESS') ? this.prisma.progressEntry.findMany({ where: { ...where('PROGRESS'), dailyReportId: null }, include: { project: NAME, activity: { include: { boqItem: { select: { rate: true } } } }, submittedBy: BY }, orderBy: { submittedAt: 'asc' } }) : none,
       allowed('DPR') ? this.prisma.dailyReport.findMany({ where: where('DPR'), include: { project: NAME, submittedBy: BY }, orderBy: { submittedAt: 'asc' } }) : none,
@@ -350,6 +350,9 @@ export class SubmissionLifecycleService {
         : none,
       allowed('SUPPLIER_CHOICE')
         ? this.prisma.supplierChoice.findMany({ where: where('SUPPLIER_CHOICE'), include: { project: NAME, submittedBy: BY, ...SUPPLIER_CHOICE_TITLE }, orderBy: { submittedAt: 'asc' } })
+        : none,
+      allowed('WO_AMENDMENT')
+        ? this.prisma.workOrderAmendment.findMany({ where: where('WO_AMENDMENT'), include: { project: NAME, submittedBy: BY, ...WO_AMENDMENT_TITLE }, orderBy: { submittedAt: 'asc' } })
         : none,
     ]);
     const amt = (d: Prisma.Decimal | null): string | null => (d === null ? null : d.toDecimalPlaces(2).toFixed(2));
@@ -512,6 +515,17 @@ export class SubmissionLifecycleService {
         submittedById: c.submittedById,
         submittedAt: (c.submittedAt ?? c.createdAt).toISOString(),
         amount: amt(c.amount),
+      })),
+      ...amendments.map((a) => ({
+        type: 'WO_AMENDMENT' as const,
+        id: a.id,
+        projectId: a.projectId,
+        projectName: a.project.name,
+        title: woAmendmentTitle(a.workOrder.woNo, a.amendmentNo, a.workOrder.vendor.name, a.valueBefore.toFixed(2), a.valueAfter.toFixed(2)),
+        submittedByName: a.submittedBy.fullName,
+        submittedById: a.submittedById,
+        submittedAt: (a.submittedAt ?? a.createdAt).toISOString(),
+        amount: amt(a.valueAfter),
       })),
     ];
     return out;

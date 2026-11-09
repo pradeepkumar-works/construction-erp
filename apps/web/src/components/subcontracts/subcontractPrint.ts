@@ -64,6 +64,7 @@ export function buildWoPrintHtml(o: WorkOrderDto, orgName: string): string {
     o.paymentDays !== null ? `Payment within ${o.paymentDays} days of a certified bill.` : '',
     ...(o.terms ? o.terms.split(/\n+/).map(esc) : []),
   ].filter(Boolean);
+  const inForce = o.amendmentNo > 0 ? o.amendments.find((a) => a.amendmentNo === o.amendmentNo) : undefined;
   return `<!doctype html>
 <html><head><meta charset="utf-8"/>
 ${PRINT_FONT_LINKS}
@@ -72,7 +73,7 @@ ${PRINT_FONT_LINKS}
 <body>
   <div class="head">
     <div><div class="brand">${esc(orgName)}</div><div class="org">${esc(o.projectName)}</div></div>
-    <div style="text-align:right"><h1>Work Order ${esc(o.woNo)}</h1><div>${esc(formatDate(o.woDate))}</div>${draft ? `<div class="draft" style="margin-top:4px">Draft, not approved</div>` : ''}</div>
+    <div style="text-align:right"><h1>Work Order ${esc(o.woNo)}</h1><div>${esc(formatDate(o.woDate))}</div>${inForce ? `<div>As amended by amendment ${inForce.amendmentNo}${inForce.reviewedAt ? ` of ${esc(formatDate(inForce.reviewedAt.slice(0, 10)))}` : ''}</div>` : ''}${draft ? `<div class="draft" style="margin-top:4px">Draft, not approved</div>` : ''}</div>
   </div>
   <div class="meta">
     <div><b>To</b>${vendorBlock(o)}</div>

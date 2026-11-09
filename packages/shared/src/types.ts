@@ -2244,8 +2244,77 @@ export interface WorkOrderDto extends SubmissionBase {
   billedAmount: string;
   billedPct: number;
   lines: WorkOrderLineDto[];
+  /** Amendments in force (approved and applied); the order as approved is version 0 */
+  amendmentNo: number;
+  /** Every amendment raised on it, oldest first */
+  amendments: WorkOrderAmendmentBriefDto[];
+  /** The amendment still in draft, waiting or sent back, if any (at most one) */
+  openAmendment: WorkOrderAmendmentBriefDto | null;
   /** Only on GET /work-orders/:id */
   bills?: { id: string; billNo: number; label: string; isFinal: boolean; billDate: string; grossAmount: string; netPayable: string; status: SubmissionStatus }[];
+}
+
+/** An amendment as its work order lists it. */
+export interface WorkOrderAmendmentBriefDto {
+  id: string;
+  amendmentNo: number;
+  /** "WO-2026-0003 amendment 1" */
+  label: string;
+  status: SubmissionStatus;
+  reason: string;
+  /** The new end date; null leaves it as it was */
+  endDate: string | null;
+  endDateBefore: string | null;
+  valueBefore: string;
+  valueAfter: string;
+  submittedByName: string;
+  submittedAt: string | null;
+  reviewedAt: string | null;
+  appliedAt: string | null;
+}
+
+/** One line of an amendment: an order line before and after, or a new item (no `workOrderLineId` before it is applied). */
+export interface WorkOrderAmendmentLineDto {
+  id: string;
+  /** The order line it changes; for a new item, the line it became once applied */
+  workOrderLineId: string | null;
+  boqItemId: string | null;
+  itemNo: string | null;
+  description: string;
+  unit: string;
+  /** Null for a new item */
+  qtyBefore: string | null;
+  rateBefore: string | null;
+  amountBefore: string | null;
+  quantity: string;
+  rate: string;
+  amount: string;
+  isNew: boolean;
+  /** Quantity or rate differs from before (always true for a new item) */
+  changed: boolean;
+  /** What is billed or measured against the line now, the least its quantity may be */
+  floorQty: string;
+}
+
+export interface WorkOrderAmendmentDto extends SubmissionBase {
+  workOrderId: string;
+  woNo: string;
+  woTitle: string;
+  vendorId: string;
+  vendorName: string;
+  amendmentNo: number;
+  label: string;
+  reason: string;
+  endDate: string | null;
+  endDateBefore: string | null;
+  valueBefore: string;
+  valueAfter: string;
+  /** valueAfter less valueBefore */
+  change: string;
+  changedLines: number;
+  addedLines: number;
+  appliedAt: string | null;
+  lines: WorkOrderAmendmentLineDto[];
 }
 
 export interface SubcontractBillLineDto {

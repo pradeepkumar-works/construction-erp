@@ -2011,7 +2011,90 @@ async function modulesPass(organizationId: string, passwordHash: string) {
   await seedProjectOpenings(organizationId);
   // The town scheme's components exist by now (seedWorkBreakdown); their drawings and staged submittals.
   await seedComponentDrawings(prisma, organizationId);
+  await seedWoAmendments(organizationId);
   await seedWhatsappEntries(prisma, organizationId);
+}
+
+/**
+ * Demo work order amendments: the road's GSB and WMM order took more GSB for the service road at the Km 18 junction
+ * and a new item for kerb painting, approved by management last week and written to the order's lines; and the helpers'
+ * man-day order, raised by the QS for 100 more days at the revised minimum wage, waits for the project manager (within
+ * the ₹5 lakh limit). Only when the organisation has no amendments yet.
+ */
+async function seedWoAmendments(organizationId: string) {
+  if ((await prisma.workOrderAmendment.count({ where: { organizationId } })) > 0) return;
+  const userOf = async (role: string) => (await prisma.user.findFirst({ where: { organizationId, role: { key: role } }, orderBy: { createdAt: 'asc' }, select: { id: true } }))?.id;
+  const [pm, qs, md] = [await userOf('PROJECT_MANAGER'), await userOf('QUANTITY_SURVEYOR'), await userOf('MANAGEMENT')];
+  if (!pm || !md) return;
+  const orderOf = (title: string) =>
+    prisma.workOrder.findFirst({ where: { organizationId, title, status: 'APPROVED', closedAt: null }, include: { lines: { orderBy: { sortOrder: 'asc' } } }, orderBy: { createdAt: 'asc' } });
+  const amount = (q: Prisma.Decimal, r: Prisma.Decimal) => q.mul(r).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+
+  const road = await orderOf('GSB and WMM, Km 10 to 22');
+  const gsb = road?.lines.find((l) => l.description.includes('GSB'));
+  if (road && gsb) {
+    const kerb = { description: 'Kerb painting, black and white, both sides', unit: 'Km', quantity: D(12), rate: D(6500) };
+    const gsbQty = gsb.quantity.add(800);
+    const valueAfter = road.value.sub(gsb.amount).add(amount(gsbQty, gsb.rate)).add(amount(kerb.quantity, kerb.rate));
+    const a = await prisma.workOrderAmendment.create({
+      data: {
+        organizationId, projectId: road.projectId, workOrderId: road.id, amendmentNo: 1,
+        reason: 'Service road at the Km 18 junction added to the scope by the client letter of last month: 800 Cum more GSB, and kerb painting on the widened length.',
+        endDateBefore: road.endDate, valueBefore: road.value, valueAfter, status: 'APPROVED',
+        submittedById: pm, submittedAt: day(-8), reviewedById: md, reviewedAt: day(-7), reviewNote: 'Agreed at the same GSB rate.', appliedAt: day(-7), createdAt: day(-9),
+        lines: {
+          create: [
+            ...road.lines.map((l, i) => {
+              const quantity = l.id === gsb.id ? gsbQty : l.quantity;
+              return { workOrderLineId: l.id, boqItemId: l.boqItemId, description: l.description, unit: l.unit, qtyBefore: l.quantity, rateBefore: l.rate, quantity, rate: l.rate, amount: amount(quantity, l.rate), sortOrder: i };
+            }),
+            { ...kerb, qtyBefore: null, rateBefore: null, amount: amount(kerb.quantity, kerb.rate), sortOrder: road.lines.length },
+          ],
+        },
+      },
+      include: { lines: true },
+    });
+    await prisma.workOrderLine.update({ where: { id: gsb.id }, data: { quantity: gsbQty, amount: amount(gsbQty, gsb.rate) } });
+    const added = await prisma.workOrderLine.create({ data: { workOrderId: road.id, ...kerb, amount: amount(kerb.quantity, kerb.rate), sortOrder: road.lines.length } });
+    await prisma.workOrderAmendmentLine.updateMany({ where: { amendmentId: a.id, qtyBefore: null }, data: { workOrderLineId: added.id } });
+    await prisma.workOrder.update({ where: { id: road.id }, data: { value: valueAfter, amendmentNo: 1 } });
+    await prisma.auditLog.createMany({
+      data: [
+        { organizationId, entityType: 'WO_AMENDMENT', entityId: a.id, action: 'CREATED', actorId: pm, createdAt: day(-9) },
+        { organizationId, entityType: 'WO_AMENDMENT', entityId: a.id, action: 'SUBMITTED', actorId: pm, createdAt: day(-8) },
+        { organizationId, entityType: 'WO_AMENDMENT', entityId: a.id, action: 'APPROVED', actorId: md, note: 'Agreed at the same GSB rate.', createdAt: day(-7) },
+      ],
+    });
+  }
+
+  const helpers = await orderOf('Helpers for kerb and drain work (man-days)');
+  const line = helpers?.lines[0];
+  if (helpers && line) {
+    const quantity = line.quantity.add(100);
+    const rate = D(545);
+    const by = qs ?? pm;
+    const valueAfter = helpers.value.sub(line.amount).add(amount(quantity, rate));
+    const a = await prisma.workOrderAmendment.create({
+      data: {
+        organizationId, projectId: helpers.projectId, workOrderId: helpers.id, amendmentNo: 1,
+        reason: 'The state revised the minimum wage for unskilled workers from ₹520 to ₹545 a day; 100 more man-days for the drains on the service road.',
+        endDate: helpers.endDate ? new Date(helpers.endDate.getTime() + 30 * 86_400_000) : null,
+        endDateBefore: helpers.endDate, valueBefore: helpers.value, valueAfter, status: 'SUBMITTED', submittedById: by, submittedAt: day(-1), createdAt: day(-1),
+        lines: {
+          create: helpers.lines.map((l, i) => ({
+            workOrderLineId: l.id, boqItemId: l.boqItemId, description: l.description, unit: l.unit, qtyBefore: l.quantity, rateBefore: l.rate,
+            quantity: l.id === line.id ? quantity : l.quantity, rate: l.id === line.id ? rate : l.rate, amount: l.id === line.id ? amount(quantity, rate) : l.amount, sortOrder: i,
+          })),
+        },
+      },
+    });
+    await prisma.auditLog.createMany({
+      data: [
+        { organizationId, entityType: 'WO_AMENDMENT', entityId: a.id, action: 'CREATED', actorId: by, createdAt: day(-1) },
+        { organizationId, entityType: 'WO_AMENDMENT', entityId: a.id, action: 'SUBMITTED', actorId: by, createdAt: day(-1) },
+      ],
+    });
+  }
 }
 
 /**
@@ -2272,8 +2355,8 @@ const PURCHASE_RULES: typeof BILL_RULES = ['PURCHASE_ORDER', 'VENDOR_BILL'].flat
   { roleKey: 'PROJECT_MANAGER', type, maxAmount: D(500000) },
 ]);
 
-/** Work orders and subcontractor bills: management approves any, project managers up to ₹5 lakh. */
-const SUBCONTRACT_RULES: typeof BILL_RULES = ['WORK_ORDER', 'SUBCONTRACT_BILL'].flatMap((type) => [
+/** Work orders, their amendments and subcontractor bills: management approves any, project managers up to ₹5 lakh. */
+const SUBCONTRACT_RULES: typeof BILL_RULES = ['WORK_ORDER', 'WO_AMENDMENT', 'SUBCONTRACT_BILL'].flatMap((type) => [
   { roleKey: 'MANAGEMENT', type, maxAmount: null },
   { roleKey: 'PROJECT_MANAGER', type, maxAmount: D(500000) },
 ]);
@@ -2305,7 +2388,7 @@ async function seedApprovalRules(organizationId: string) {
       skipDuplicates: true,
     });
   if ((await prisma.approvalRule.count({ where: { organizationId } })) > 0) {
-    for (const type of ['BILL', 'PURCHASE_ORDER', 'VENDOR_BILL', 'WORK_ORDER', 'SUBCONTRACT_BILL', 'INSPECTION', 'PAYMENT_REQUEST', 'SUPPLIER_CHOICE'])
+    for (const type of ['BILL', 'PURCHASE_ORDER', 'VENDOR_BILL', 'WORK_ORDER', 'WO_AMENDMENT', 'SUBCONTRACT_BILL', 'INSPECTION', 'PAYMENT_REQUEST', 'SUPPLIER_CHOICE'])
       if ((await prisma.approvalRule.count({ where: { organizationId, submissionType: type } })) === 0)
         await write([...BILL_RULES, ...PURCHASE_RULES, ...SUBCONTRACT_RULES, ...QUALITY_RULES, ...PAYMENT_RULES, ...CHOICE_RULES].filter((r) => r.type === type));
     return;

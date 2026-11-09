@@ -41,6 +41,7 @@ import { SubBillDrawer } from '@/components/subcontracts/SubBillDrawer';
 import { InspectionDrawer } from '@/components/inspections/InspectionDrawer';
 import { PaymentRequestDrawer } from '@/components/payables/PaymentRequestRecord';
 import { SupplierChoiceDrawer } from '@/components/purchasing/SupplierChoiceRecord';
+import { WoAmendmentDrawer } from '@/components/subcontracts/WoAmendmentRecord';
 
 type Opened = { type: SubmissionType; id: string };
 
@@ -353,6 +354,7 @@ export default function ApprovalsPage() {
       <InspectionDrawer id={drawer?.type === 'INSPECTION' ? drawer.id : null} open={drawer?.type === 'INSPECTION'} onClose={() => setDrawer(null)} />
       <PaymentRequestDrawer id={drawer?.type === 'PAYMENT_REQUEST' ? drawer.id : null} open={drawer?.type === 'PAYMENT_REQUEST'} onClose={() => setDrawer(null)} />
       <SupplierChoiceDrawer id={drawer?.type === 'SUPPLIER_CHOICE' ? drawer.id : null} open={drawer?.type === 'SUPPLIER_CHOICE'} onClose={() => setDrawer(null)} />
+      <WoAmendmentDrawer id={drawer?.type === 'WO_AMENDMENT' ? drawer.id : null} open={drawer?.type === 'WO_AMENDMENT'} onClose={() => setDrawer(null)} />
     </div>
   );
 }

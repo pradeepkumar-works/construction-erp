@@ -63,6 +63,7 @@ export const OUTBOX_PATH: Record<OutboxType, string> = {
   SUBCONTRACT_BILL: '/subcontract-bills',
   PAYMENT_REQUEST: '/payment-requests',
   SUPPLIER_CHOICE: '/supplier-choices',
+  WO_AMENDMENT: '/work-order-amendments',
   INSPECTION: '/inspections',
   ATTENDANCE: '/attendance',
   RISK: '/risks',
@@ -93,6 +94,7 @@ export const OUTBOX_DETAIL: Record<SubmissionType, string> = {
   INSPECTION: '/inspection/',
   PAYMENT_REQUEST: '/payment-request/',
   SUPPLIER_CHOICE: '/supplier-choice/',
+  WO_AMENDMENT: '/wo-amendment/',
 };
 
 /**

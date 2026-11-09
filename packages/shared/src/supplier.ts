@@ -112,6 +112,20 @@ export interface SupplierOrderDto {
   supplierNote: string | null;
   closed: boolean;
   lines: SupplierOrderLineDto[];
+  /** WO: its amendments in force, oldest first (the lines and value above are the order as amended) */
+  amendments: SupplierAmendmentDto[];
+}
+
+/** An approved amendment to a work order, as the subcontractor sees it. */
+export interface SupplierAmendmentDto {
+  /** "WO-2026-0003 amendment 1" */
+  label: string;
+  reason: string;
+  valueBefore: string;
+  valueAfter: string;
+  /** The new end date it gave, if any */
+  endDate: string | null;
+  approvedAt: string | null;
 }
 
 export type SupplierDispatchStatus = 'ON_THE_WAY' | 'RECEIVED' | 'CANCELLED';

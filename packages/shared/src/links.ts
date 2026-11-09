@@ -16,6 +16,7 @@ const RECORD_PAGES: Partial<Record<SubmissionType, string>> = {
   INSPECTION: '/inspections',
   PAYMENT_REQUEST: '/payment-requests',
   SUPPLIER_CHOICE: '/supplier-choices',
+  WO_AMENDMENT: '/work-order-amendments',
 };
 
 const LIST_PAGES: Record<SubmissionType, string> = {
@@ -33,6 +34,7 @@ const LIST_PAGES: Record<SubmissionType, string> = {
   INSPECTION: '/inspections',
   PAYMENT_REQUEST: '/payables?tab=requests',
   SUPPLIER_CHOICE: '/requests-to-order',
+  WO_AMENDMENT: '/work-orders',
 };
 
 /** The record's own page, or null for types that only have a list so far. */

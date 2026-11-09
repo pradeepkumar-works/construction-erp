@@ -7,12 +7,12 @@ import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { FileAddOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { WorkOrderDto, WorkOrderLineDto } from '@erp/shared';
+import type { WorkOrderAmendmentDto, WorkOrderDto, WorkOrderLineDto } from '@erp/shared';
 import { MSME_CATEGORY_LABELS, canEditSubmission, canIssueWorkOrder, canPrepareSubcontractBill, canResubmit, canViewPaymentRequests, figure } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
-import { useWorkOrder } from '@/lib/queries';
+import { useWoAmendments, useWorkOrder } from '@/lib/queries';
 import { formatDate, formatDateTime, formatINR, formatPct, formatQty, toNumber, NO_VALUE } from '@/lib/format';
 import { StatusTag } from '@/components/common/StatusTag';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
@@ -29,6 +29,8 @@ import { useConfirmDelete } from '@/components/common/ConfirmDelete';
 import { TargetRequests, useTargetRequests } from '@/components/payables/TargetRequests';
 import { projectContext } from '@/components/record/RecordParts';
 import { Money } from '@/components/common/Money';
+import { WoAmendmentForm } from './WoAmendmentForm';
+import { WoAmendments } from './WoAmendments';
 
 
 /** Tag for where an approved order stands: open for work and bills, or closed. */
@@ -57,6 +59,7 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
   const [billing, setBilling] = useState(false);
   const [closing, setClosing] = useState(false);
   const [closeForm] = Form.useForm<{ note: string }>();
+  const [amending, setAmending] = useState<WorkOrderAmendmentDto | null>(null);
   const issuer = !!user && canIssueWorkOrder(user.roleKey);
   const billingRole = !!user && canPrepareSubcontractBill(user.roleKey);
 
@@ -72,6 +75,14 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
   const close = useMutation({
     mutationFn: async (note: string) => (await api.post<WorkOrderDto>(`/work-orders/${id}/close`, { note })).data,
     onSuccess: (o) => done(`${o.woNo} closed`),
+    meta: FAIL_NOTICE,
+  });
+  const amend = useMutation({
+    mutationFn: async () => (await api.post<WorkOrderAmendmentDto>(`/work-orders/${id}/amendments`, {})).data,
+    onSuccess: (a) => {
+      qc.invalidateQueries({ queryKey: ['work-orders'] });
+      setAmending(a);
+    },
     meta: FAIL_NOTICE,
   });
   const [askDelete, deleteDialog] = useConfirmDelete();
@@ -93,6 +104,11 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
   const advanceLeft = data ? (advancePaid > 0 ? advancePaid : toNumber(data.advanceAmount)) - toNumber(data.advanceRecovered) : 0;
   const requests = approved && !data?.closedAt && !!user && canViewPaymentRequests(user.roleKey);
   const asked = useTargetRequests({ workOrderId: data?.id }, requests);
+  const amendments = useWoAmendments(data?.id, !!data && data.amendments.length > 0);
+  const finalApproved = !!data?.bills?.some((b) => b.isFinal && b.status === 'APPROVED');
+  const mayAmend = !!data?.open && issuer && !data.openAmendment && !finalApproved;
+  const openAmendment = amendments.data?.find((a) => a.id === data?.openAmendment?.id) ?? null;
+  const mayContinue = !!openAmendment && !!user && issuer && canEditSubmission(user, openAmendment) && canResubmit(user, openAmendment);
 
   return (
     <RecordFrame
@@ -122,6 +138,18 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
           notices: (
             <>
               {data.status === 'DRAFT' && <Alert type="info" showIcon style={{ marginBottom: tk.space[3] }} title="Draft: check the scope, rates and terms, then submit it for approval. Print it for the contractor to sign once it is approved." />}
+              {data.openAmendment && (
+                <Alert
+                  type="info"
+                  showIcon
+                  style={{ marginBottom: tk.space[3] }}
+                  title={
+                    <span>
+                      <Link href={`/work-order-amendments/${data.openAmendment.id}`}>{data.openAmendment.label}</Link> (<StatusTag status={data.openAmendment.status} />) takes the order to <Money value={data.openAmendment.valueAfter} paise />. The order stands as it is until it is approved.
+                    </span>
+                  }
+                />
+              )}
               {data.closedAt && <Alert type="warning" showIcon style={{ marginBottom: tk.space[3] }} title={`Closed on ${formatDateTime(data.closedAt)}`} description={data.closeNote ?? undefined} />}
               {openBill && data.open && (
                 <Alert
@@ -157,6 +185,9 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
             },
             { key: 'date', label: 'WO date', children: formatDate(data.woDate) },
             { key: 'title', label: 'Work', span: 2, children: data.title },
+            ...(data.amendmentNo > 0
+              ? [{ key: 'amended', label: 'Amended', children: `Amendment ${data.amendmentNo} in force${data.amendments.find((a) => a.amendmentNo === data.amendmentNo)?.reviewedAt ? ` since ${formatDate(data.amendments.find((a) => a.amendmentNo === data.amendmentNo)!.reviewedAt!.slice(0, 10))}` : ''}` }]
+              : []),
             { key: 'period', label: 'Period', children: `${data.startDate ? formatDate(data.startDate) : NO_VALUE} to ${data.endDate ? formatDate(data.endDate) : NO_VALUE}` },
             {
               key: 'adv',
@@ -251,6 +282,16 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
                 </>
               ),
             },
+            ...(data.amendments.length
+              ? [
+                  {
+                    key: 'amendments',
+                    title: 'Amendments',
+                    count: data.amendments.length,
+                    children: amendments.data ? <WoAmendments order={data} amendments={amendments.data} /> : <Typography.Text type="secondary">Loading the amendments…</Typography.Text>,
+                  },
+                ]
+              : []),
             ...(data.terms ? [{ key: 'terms', title: 'Terms', children: <div style={{ whiteSpace: 'pre-wrap' }}>{data.terms}</div> }] : []),
             ...(approved
               ? [
@@ -304,6 +345,16 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
                   New subcontractor bill
                 </Button>
               ) : null}
+              {mayAmend ? (
+                <Button size={size} loading={amend.isPending} onClick={() => amend.mutate()}>
+                  Amend order
+                </Button>
+              ) : null}
+              {mayContinue ? (
+                <Button size={size} onClick={() => setAmending(openAmendment)}>
+                  {openAmendment.status === 'CHANGES_REQUESTED' ? 'Edit and resubmit amendment' : 'Continue amendment'}
+                </Button>
+              ) : null}
               {data.open && issuer ? (
                 <Button
                   size={size}
@@ -331,6 +382,7 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
         </Form>
       </FormShell>
       <SubBillFormModal open={billing} workOrderId={data?.id} onClose={() => setBilling(false)} />
+      <WoAmendmentForm open={!!amending} amendment={amending} onClose={() => setAmending(null)} />
       {deleteDialog}
     </RecordFrame>
   );
