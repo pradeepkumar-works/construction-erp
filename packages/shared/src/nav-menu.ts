@@ -337,7 +337,7 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
     subs: [
       sub('settings', 'Company settings', 'admin.settings'),
       sub('users', 'Users', 'admin.users'),
-      sub('group', 'Group companies', 'admin.group'),
+      sub('group', 'Group companies', 'admin.group', 'admin.consolidation', 'admin.sisters'),
       sub('rules', 'Approval rules', 'admin.rules'),
       sub('modules', 'Modules and menu', 'admin.modules', 'admin.menu', 'admin.home'),
       sub('masters', 'Masters', 'admin.masters', 'admin.positions'),

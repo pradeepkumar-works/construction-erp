@@ -79,6 +79,7 @@ import Inbox from 'lucide-react-native/icons/inbox';
 import IndianRupee from 'lucide-react-native/icons/indian-rupee';
 import Landmark from 'lucide-react-native/icons/landmark';
 import Layers from 'lucide-react-native/icons/layers';
+import Link from 'lucide-react-native/icons/link';
 import LayoutDashboard from 'lucide-react-native/icons/layout-dashboard';
 import LayoutGrid from 'lucide-react-native/icons/layout-grid';
 import PanelsTopLeft from 'lucide-react-native/icons/panels-top-left';
@@ -214,6 +215,7 @@ export const NAV_ICONS: Record<string, LucideIcon> = {
   'indian-rupee': IndianRupee,
   'landmark': Landmark,
   'layers': Layers,
+  'link': Link,
   'layout-dashboard': LayoutDashboard,
   'layout-grid': LayoutGrid,
   'panels-top-left': PanelsTopLeft,
