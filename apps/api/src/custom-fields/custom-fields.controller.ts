@@ -1,8 +1,8 @@
-import { Body, Controller, Get, Param, Patch, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { CustomFieldsService } from './custom-fields.service';
-import { CreateCustomFieldDto, ListCustomFieldsQuery, OrderCustomFieldsDto, UpdateCustomFieldDto } from './custom-fields.dto';
+import { CreateCustomFieldDto, ListCustomFieldsQuery, UpdateCustomFieldDto } from './custom-fields.dto';
 
 @ApiTags('custom-fields')
 @ApiBearerAuth()
@@ -20,12 +20,6 @@ export class CustomFieldsController {
   @Post()
   create(@CurrentUser() user: RequestUser, @Body() dto: CreateCustomFieldDto) {
     return this.fields.create(user, dto);
-  }
-
-  @ApiOperation({ summary: "Put an entity's fields in order", description: 'Admin.' })
-  @Put('order')
-  reorder(@CurrentUser() user: RequestUser, @Body() dto: OrderCustomFieldsDto) {
-    return this.fields.reorder(user, dto);
   }
 
   @ApiOperation({ summary: "Change a field's name, Hindi name, whether it is required, its unit and range, or its choices", description: 'Admin.' })

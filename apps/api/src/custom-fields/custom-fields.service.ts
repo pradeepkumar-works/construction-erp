@@ -17,7 +17,7 @@ import { RequestUser } from '../common/current-user';
 import { AuditService } from '../common/audit.service';
 import { isUniqueViolation } from '../common/idempotency';
 import { iso } from '../common/serialize';
-import { CreateCustomFieldDto, OrderCustomFieldsDto, UpdateCustomFieldDto } from './custom-fields.dto';
+import { CreateCustomFieldDto, UpdateCustomFieldDto } from './custom-fields.dto';
 
 /** What a record holds under `customValues`, as the API gives it back (it was read by `read` when saved). */
 export const storedValues = (v: Prisma.JsonValue | null | undefined): FieldValues => (v && typeof v === 'object' && !Array.isArray(v) ? (v as FieldValues) : {});
@@ -129,17 +129,6 @@ export class CustomFieldsService {
     const row = await this.prisma.customFieldDef.update({ where: { id }, data: { archivedAt: archived ? new Date() : null } });
     await this.audit.log(user, 'CUSTOM_FIELD', id, archived ? 'ARCHIVED' : 'RESTORED', `${CUSTOM_FIELD_ENTITY_INFO[current.entity as CustomFieldEntity].label}: ${row.label}`);
     return this.toDto(row);
-  }
-
-  async reorder(user: RequestUser, dto: OrderCustomFieldsDto): Promise<CustomFieldDto[]> {
-    this.assertCanManage(user);
-    const defs = await this.defs(user.organizationId, dto.entity);
-    const known = new Set(defs.map((d) => d.id));
-    const ids = [...new Set(dto.ids)].filter((id) => known.has(id));
-    const rest = defs.filter((d) => !ids.includes(d.id)).map((d) => d.id);
-    await this.prisma.$transaction([...ids, ...rest].map((id, i) => this.prisma.customFieldDef.update({ where: { id }, data: { sortOrder: i } })));
-    await this.audit.log(user, 'CUSTOM_FIELD', dto.entity, 'REORDERED', CUSTOM_FIELD_ENTITY_INFO[dto.entity].label);
-    return this.defs(user.organizationId, dto.entity);
   }
 
   /**

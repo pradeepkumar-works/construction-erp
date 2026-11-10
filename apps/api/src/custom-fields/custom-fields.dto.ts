@@ -23,10 +23,5 @@ export class CreateCustomFieldDto {
 /** The key and the kind never change. */
 export class UpdateCustomFieldDto extends PartialType(OmitType(CreateCustomFieldDto, ['entity', 'kind'] as const)) {}
 
-export class OrderCustomFieldsDto {
-  @ApiProperty({ enum: CUSTOM_FIELD_ENTITIES }) @IsIn(CUSTOM_FIELD_ENTITIES as unknown as string[]) entity: CustomFieldEntity;
-  @ApiProperty({ description: "The entity's field ids in the order forms, records and lists show them" }) @IsArray() @ArrayMaxSize(500) @IsString({ each: true }) ids: string[];
-}
-
 /** What a vendor, project or purchase order sends for its fields of the company's own. */
 export const CUSTOM_VALUES_DOC = { description: "Values of the company's own fields, by key (GET /custom-fields). Left out, they stay as they are; a blank clears one.", example: { msmeNumber: 'UDYAM-OD-19-0012345' } };
