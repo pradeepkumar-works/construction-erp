@@ -85,6 +85,7 @@ import { BooksModule } from './books/books.module';
 import { StatementsModule } from './statements/statements.module';
 import { RmcModule } from './rmc/rmc.module';
 import { MachineLoansModule } from './machine-loans/machine-loans.module';
+import { FixedAssetsModule } from './fixed-assets/fixed-assets.module';
 import { TendersModule } from './tenders/tenders.module';
 import { MeetingsModule } from './meetings/meetings.module';
 import { MaterialApprovalsModule } from './material-approvals/material-approvals.module';
@@ -163,6 +164,7 @@ import { VitalsController } from './vitals.controller';
     StatementsModule,
     RmcModule,
     MachineLoansModule,
+    FixedAssetsModule,
     TendersModule,
     MeetingsModule,
     MaterialApprovalsModule,

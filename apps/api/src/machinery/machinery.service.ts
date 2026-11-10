@@ -20,6 +20,7 @@ import { TelematicsService } from '../telematics/telematics.service';
 import { VendorsService } from '../vendors/vendors.service';
 import { AttachmentsService, ATTACHMENT_FIELDS } from '../common/attachments.service';
 import { dateOnly, dec, iso, money, parseDate } from '../common/serialize';
+import { todayIn } from '../notifications/time';
 import { isUniqueViolation } from '../common/idempotency';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { CreateEquipmentDto, CreateMachineryLogDto, ListEquipmentQuery, ListMachineryLogsQuery, UpdateEquipmentDto, UpdateMachineryLogDto } from './machinery.dto';
@@ -223,7 +224,16 @@ export class MachineryService {
     await this.getEquipment(user, id);
     const data = await this.equipmentData(user, dto);
     try {
-      await this.prisma.equipment.update({ where: { id }, data });
+      await this.prisma.$transaction(async (tx) => {
+        const was = await tx.equipment.findUniqueOrThrow({ where: { id }, select: { projectId: true, fixedAsset: { select: { id: true, status: true } } } });
+        await tx.equipment.update({ where: { id }, data });
+        // A machine in the fixed asset register moves there too, with a line in its history.
+        const asset = was.fixedAsset;
+        if (asset?.status === 'ACTIVE' && dto.projectId !== undefined && (dto.projectId ?? null) !== was.projectId) {
+          await tx.assetTransfer.create({ data: { organizationId: user.organizationId, assetId: asset.id, on: parseDate(todayIn()), fromProjectId: was.projectId, toProjectId: dto.projectId ?? null, note: 'Moved in Plant', byId: user.id } });
+          await tx.fixedAsset.update({ where: { id: asset.id }, data: { projectId: dto.projectId ?? null } });
+        }
+      });
     } catch (e) {
       if (isUniqueViolation(e)) throw new ConflictException(`Equipment code ${String(data.code)} is already used`);
       throw e;
