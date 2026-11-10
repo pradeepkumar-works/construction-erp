@@ -94,7 +94,6 @@ export async function seedFixedAssets(prisma: PrismaClient, organizationId: stri
     made.push({ id: asset.id, asset: s });
   }
 
-  // Posted runs month by month from the books' first month to the month before last.
   const thisMonth = `${seedToday().slice(0, 7)}-01`;
   const lastToPost = plusDays(`${plusDays(thisMonth, -1).slice(0, 7)}-01`, -1);
   for (let from = booksFrom; monthEnd(from) <= lastToPost; from = plusDays(monthEnd(from), 1)) {

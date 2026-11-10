@@ -8411,7 +8411,7 @@ model AssetTransfer {
 }
 
 /// A month's or a year's depreciation: prepared as a draft from the schedule, then posted, when it becomes one
-/// `DEPRECIATION` journal (Dr depreciation, Cr accumulated depreciation) on its last day. Runs never overlap.
+/// `DEPRECIATION` journal (Dr depreciation, Cr accumulated depreciation) on its last day. Runs never overlap and go in order.
 model DepreciationRun {
   id             String                @id @default(uuid())
   organizationId String
@@ -8435,7 +8435,7 @@ model DepreciationRun {
   @@index([tallyExportId])
 }
 
-/// One asset's charge in a run, for the days it was in use in the period.
+/// One asset's charge in a run: its days in the period, and any days the runs before it missed.
 model DepreciationLine {
   id             String          @id @default(uuid())
   organizationId String
