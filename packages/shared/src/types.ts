@@ -953,6 +953,8 @@ export interface EquipmentDto {
   fuelTankLitres?: string | null;
   /** Its running loan, for those who keep machine loans */
   loan?: { id: string; lenderName: string } | null;
+  /** Its entry in the fixed asset register, for those who keep it */
+  asset?: { id: string; assetNo: string } | null;
   createdAt: string;
 }
 

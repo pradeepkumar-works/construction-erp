@@ -19,6 +19,7 @@ import type {
 } from './enums';
 import type { BiometricCommandStatus, BiometricPunchResult } from './biometric';
 import type { BookVoucherStatus } from './books';
+import type { DepreciationRunStatus, FixedAssetStatus } from './fixed-assets';
 import type { CheckOutcome, SiteOrderState } from './consultant-checks';
 import type { ObligationState } from './contract-obligations';
 import type { LetterStatus } from './correspondence';
@@ -118,6 +119,8 @@ export const STATUS_TONES = {
   clearance: meanings<ClearanceState>({ PENDING: 'waiting', CLEARED: 'done', DUES: 'failed', NOT_APPLICABLE: 'closed' }),
   emi: meanings<EmiStage>({ PAID: 'done', OVERDUE: 'failed', DUE: 'waiting', LATER: 'closed' }),
   equipmentLoan: meanings<EquipmentLoanStatus>({ ACTIVE: 'done', CLOSED: 'closed' }),
+  fixedAsset: meanings<FixedAssetStatus>({ ACTIVE: 'done', DISPOSED: 'closed' }),
+  depreciationRun: meanings<DepreciationRunStatus>({ DRAFT: 'inHand', POSTED: 'done' }),
   billing: meanings<BillingStatus>({ TRIAL: 'inHand', ACTIVE: 'done', READ_ONLY: 'failed', EXEMPT: 'closed' }),
   accessRequest: meanings<AccessRequestStatus>({ OPEN: 'waiting', GRANTED: 'done', DECLINED: 'failed' }),
   risk: meanings<RiskStatus>({ OPEN: 'waiting', MONITORING: 'inHand', CLOSED: 'closed' }),

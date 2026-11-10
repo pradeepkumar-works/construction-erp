@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import {
   canManageEquipment,
   canManageMachineLoans,
+  canManageFixedAssets,
   machineryLogProblem,
   type EquipmentDto,
   type EquipmentSortField,
@@ -42,6 +43,7 @@ const equipmentInclude = {
   project: { select: { name: true } },
   logs: { where: { status: { not: 'REJECTED' } }, select: { date: true }, orderBy: { date: 'desc' }, take: 1 },
   loans: { where: { status: 'ACTIVE' }, select: { id: true, lenderName: true }, orderBy: { sanctionDate: 'desc' }, take: 1 },
+  fixedAsset: { select: { id: true, assetNo: true } },
 } satisfies Prisma.EquipmentInclude;
 type EquipmentRow = Prisma.EquipmentGetPayload<{ include: typeof equipmentInclude }>;
 
@@ -115,6 +117,7 @@ export class MachineryService {
       fuelTankLitres: dec(r.fuelTankLitres),
       // Machine finance: only those who keep the loans see that a machine is financed.
       loan: canManageMachineLoans(user.roleKey) && r.loans[0] ? { id: r.loans[0].id, lenderName: r.loans[0].lenderName } : null,
+      asset: canManageFixedAssets(user.roleKey) && r.fixedAsset ? r.fixedAsset : null,
       createdAt: iso(r.createdAt),
     };
   }

@@ -331,13 +331,19 @@ export interface FixedAssetDetailDto extends FixedAssetDto {
 export interface FixedAssetListDto {
   items: FixedAssetDto[];
   total: number;
-  summary: {
-    cost: string;
-    depreciation: string;
-    bookValue: string;
-    /** Property, plant and equipment in the balance sheet today (null for those who do not keep the books) */
-    ppeInBooks: string | null;
-  };
+  page: number;
+  pageSize: number;
+  /** The assets in use, whatever the filters show */
+  summary: { count: number; cost: string; depreciation: string; bookValue: string };
+}
+
+/** The register against the books: its book value beside the balance sheet's property, plant and equipment today. */
+export interface FixedAssetBooksCheckDto {
+  asOn: string;
+  register: string;
+  ppe: string;
+  /** The balance sheet less the register; zero when every fixed asset in the books is in the register */
+  difference: string;
 }
 
 export interface DepreciationLineDto {
