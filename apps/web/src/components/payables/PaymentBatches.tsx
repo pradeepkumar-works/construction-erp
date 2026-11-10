@@ -4,13 +4,14 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Form, Input, Select } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { BANK_FILE_FORMATS, BANK_FILE_FORMAT_KEYS, PAYMENT_BATCH_STATUS_LABELS, type BankFileFormatKey, type PaymentBatchDetailDto, type PaymentBatchDto, type PaymentBatchStatus } from '@erp/shared';
+import { BANK_FILE_FORMATS, BANK_FILE_FORMAT_KEYS, PAYMENT_BATCH_STATUS_LABELS, canRecordPayment, type BankFileFormatKey, type PaymentBatchDetailDto, type PaymentBatchDto, type PaymentBatchStatus } from '@erp/shared';
 import { PlusOutlined } from '@/components/common/icons';
 import { tk } from '@/ds';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { usePaymentBatches } from '@/lib/queries';
 import { useNewIntent } from '@/lib/new-intent';
+import { useAuth } from '@/lib/auth';
 import { formatDate, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
@@ -29,7 +30,8 @@ type SortField = 'createdAt';
 export function PaymentBatches() {
   const router = useRouter();
   const [adding, setAdding] = useState(false);
-  useNewIntent('payment-batch', true, () => setAdding(true));
+  const { user } = useAuth();
+  useNewIntent('payment-batch', !!user && canRecordPayment(user.roleKey), () => setAdding(true));
   const open = (id: string) => router.push(batchHref(id));
   const frame = useListFrame<SortField, PaymentBatchDto>({
     list: 'bank-payments',

@@ -105,7 +105,7 @@ test('ICICI: its header names in order, the product code and mode, date as DD-MM
 
 test('SBI: its header in order, mode sixth, value date seventh', () => {
   const out = bankFileRows('SBI', ctx, [payee({ amount: '200000' })]);
-  assert.deepEqual(out.rows[0], ['Debit account number', 'Beneficiary account number', 'IFSC code', 'Beneficiary name', 'Amount', 'Payment mode', 'Value date', 'Transaction reference', 'Remarks']);
+  assert.deepEqual(out.rows[0], ['Debit account number', 'Beneficiary account number', 'IFSC code', 'Beneficiary name', 'Amount', 'Payment mode', 'Value date', 'Customer reference', 'Remarks']);
   assert.deepEqual(out.rows[1], ['50200012345678', '1234567890', 'HDFC0001234', 'Shree Cement Traders', '200000.00', 'RTGS', '10/11/2026', 'PR-2026-0001', 'PR-2026-0001 INV-77']);
 });
 
@@ -137,6 +137,13 @@ test("the salary run's file: same columns, an employee without a bank account li
   assert.equal(out.rows[1][7], 'EMP-0007');
   assert.equal(out.rows[1][6], 'Salary 2026-10');
   assert.deepEqual(out.missing.map((m) => `${m.name} (${m.reference})`), ['Ravi Kumar (EMP-0009)']);
+});
+
+test('a name with no English letters is refused, and an employee code keeps its underscore', () => {
+  assert.equal(bankFileProblem(payee({ name: 'राम कुमार' })), 'No name in English letters, which the bank file needs');
+  const out = bankFileRows('GENERIC', ctx, [payee({ name: 'राम कुमार', reference: 'EMP_0003' }), payee({ reference: 'EMP_0007' })]);
+  assert.deepEqual(out.missing, [{ reference: 'EMP_0003', name: 'राम कुमार', problem: 'No name in English letters, which the bank file needs' }]);
+  assert.equal(out.rows[1][7], 'EMP_0007');
 });
 
 const refs = ['PR-2026-0001', 'PR-2026-0002', 'PR-2026-0003'];
@@ -188,6 +195,49 @@ test('a row of someone else, a request without a UTR, two UTRs for one request a
   ]);
   // The same UTR read twice for the same request is one.
   assert.deepEqual(readUtrResponse([['PR-2026-0001 HDFCN52026111012345'], ['PR-2026-0001 HDFCN52026111012345']], refs).found, [{ reference: 'PR-2026-0001', utr: 'HDFCN52026111012345' }]);
+});
+
+test('our own file read back finds no UTR in any layout: never an IFSC, never our accounts', () => {
+  const payees = [payee(), payee({ reference: 'PR-2026-0002', accountNo: '50100099887766', ifsc: 'ICIC0000104', amount: '250000' })];
+  const notUtr = [ctx.debitAccount, ...payees.flatMap((p) => [p.accountNo, p.ifsc])];
+  for (const k of BANK_FILE_FORMAT_KEYS) {
+    const read = readUtrResponse(bankFileRows(k, ctx, payees).rows, refs, notUtr);
+    assert.deepEqual(read.found, [], `${k} read back`);
+  }
+  // An IFSC is never a UTR, even with no list of our own words.
+  assert.deepEqual(readUtrResponse([['PR-2026-0001 HDFC0001234']], refs).problems, ['Row 1: no UTR for PR-2026-0001']);
+});
+
+test("a bank's reply with no heading: a real 16 or 22 character UTR is found beside the account and IFSC", () => {
+  const notUtr = [ctx.debitAccount, '1234567890', 'HDFC0001234', '50100099887766', 'ICIC0000104'];
+  const read = readUtrResponse(
+    [
+      ['PR-2026-0001', '1234567890', 'HDFC0001234', '100000.00', 'N314260123456789', 'Credited'],
+      ['PR-2026-0002', '50100099887766', 'ICIC0000104', '250000.00', 'HDFCR52026111000000123', 'Credited'],
+    ],
+    refs,
+    notUtr,
+  );
+  assert.deepEqual(read.found, [
+    { reference: 'PR-2026-0001', utr: 'N314260123456789' },
+    { reference: 'PR-2026-0002', utr: 'HDFCR52026111000000123' },
+  ]);
+  assert.deepEqual(read.problems, []);
+});
+
+test('a one-line batch: the account number on the row is never taken for its UTR', () => {
+  const read = readUtrResponse([['PR-2026-0001', '1234567890', '100000.00']], ['PR-2026-0001'], [ctx.debitAccount, '1234567890', 'HDFC0001234']);
+  assert.deepEqual(read.found, []);
+  assert.deepEqual(read.problems, ['Row 1: no UTR for PR-2026-0001']);
+});
+
+test("an SBI reply: our reference column beside the bank's UTR column, the UTR read from the UTR column", () => {
+  const head = [...BANK_FILE_FORMATS.SBI.columns.map((c) => c.header), 'Status', 'UTR Number'];
+  const row = [...bankFileRows('SBI', ctx, [payee()]).rows[1], 'Success', 'SBINR52026111000000042'];
+  assert.deepEqual(readUtrResponse([head, row], refs).found, [{ reference: 'PR-2026-0001', utr: 'SBINR52026111000000042' }]);
+  // A file made before the heading was renamed: the UTR heading still wins over "Transaction reference".
+  const old = head.map((h) => (h === 'Customer reference' ? 'Transaction reference' : h));
+  assert.deepEqual(readUtrResponse([old, row], refs).found, [{ reference: 'PR-2026-0001', utr: 'SBINR52026111000000042' }]);
 });
 
 let failed = 0;

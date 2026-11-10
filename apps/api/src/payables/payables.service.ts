@@ -500,33 +500,43 @@ export class PayablesService {
     await this.announceMany(user, [{ payment: p, id }]);
   }
 
-  /** `announce` for many payments at once (a bank file's): the audit entries in one insert, then the notices. */
+  /** `announce` for many payments at once: the audit entries in one insert, then the notices. */
   async announceMany(user: RequestUser, paid: { payment: PreparedPayment; id: string }[]) {
-    const said = paid.map(({ payment: { dto, bill, request, amounts: a }, id }) => ({
-      id,
-      bill,
-      request,
-      a,
-      dto,
-      paidOn: `₹${a.amount.toFixed(2)} paid on ${dto.paymentDate}${dto.reference ? ` (${dto.reference})` : ''}`,
-    }));
+    await this.auditPaid(user, paid);
+    await this.noticePayments(
+      user,
+      paid.map(({ payment: { dto, bill, amounts: a }, id }) => ({ id, vendorId: bill.vendorId, amount: a.amount, paymentDate: dto.paymentDate, against: bill.label, reference: dto.reference ?? null })),
+    );
+  }
+
+  /**
+   * The audit log of payments just made (each payment, its bill and its request), in one insert. A bank file's payments
+   * stop here at export: the vendor hears of them only once the bank's UTR is in (`noticePayments`).
+   */
+  async auditPaid(user: RequestUser, paid: { payment: PreparedPayment; id: string }[]) {
     await this.audit.logMany(
       user,
-      said.flatMap(({ id, bill, request, a, paidOn }) => [
-        { entityType: 'VENDOR_PAYMENT', entityId: id, action: 'CREATED', note: `${inr(a.amount)} paid against ${bill.label}${request ? ` (${request.requestNo})` : ''}` },
-        ...(isBill(bill) ? [{ entityType: bill.type, entityId: bill.id, action: 'PAYMENT_MADE', note: paidOn }] : []),
-        ...(request ? [{ entityType: 'PAYMENT_REQUEST', entityId: request.id, action: 'PAYMENT_MADE', note: paidOn }] : []),
-      ]),
+      paid.flatMap(({ payment: { dto, bill, request, amounts: a }, id }) => {
+        const paidOn = `₹${a.amount.toFixed(2)} paid on ${dto.paymentDate}${dto.reference ? ` (${dto.reference})` : ''}`;
+        return [
+          { entityType: 'VENDOR_PAYMENT', entityId: id, action: 'CREATED', note: `${inr(a.amount)} paid against ${bill.label}${request ? ` (${request.requestNo})` : ''}` },
+          ...(isBill(bill) ? [{ entityType: bill.type, entityId: bill.id, action: 'PAYMENT_MADE', note: paidOn }] : []),
+          ...(request ? [{ entityType: 'PAYMENT_REQUEST', entityId: request.id, action: 'PAYMENT_MADE', note: paidOn }] : []),
+        ];
+      }),
     );
-    // The supplier's portal logins see it on their statement.
+  }
+
+  /** The supplier's notice of payments: their portal logins see each on their statement. */
+  async noticePayments(user: RequestUser, payments: { id: string; vendorId: string; amount: Prisma.Decimal; paymentDate: string; against: string; reference: string | null }[]) {
     await this.notifications.notifyVendors(
       user.organizationId,
-      said.map(({ id, bill, a, dto }) => ({
-        vendorId: bill.vendorId,
-        title: `Payment of ₹${a.amount.toFixed(2)} made`,
-        body: `Against ${bill.label}, on ${dto.paymentDate}${dto.reference ? `, reference ${dto.reference}` : ''}.`,
+      payments.map((p) => ({
+        vendorId: p.vendorId,
+        title: `Payment of ₹${p.amount.toFixed(2)} made`,
+        body: `Against ${p.against}, on ${p.paymentDate}${p.reference ? `, reference ${p.reference}` : ''}.`,
         entityType: 'PORTAL_PAYMENT' as const,
-        entityId: id,
+        entityId: p.id,
       })),
     );
   }
@@ -535,7 +545,7 @@ export class PayablesService {
    * Set the bank's reference (the UTR) on payments, in the caller's transaction: the payer's role, and never on a
    * payment already sent to Tally. Returns the payments whose reference changed, for `referencesSet`.
    */
-  async setReferences(tx: Prisma.TransactionClient, user: RequestUser, refs: { id: string; reference: string }[]) {
+  async setReferences(tx: Prisma.TransactionClient, user: RequestUser, refs: { id: string; reference: string; label?: string }[]) {
     this.assertCanRecord(user);
     const rows = await tx.vendorPayment.findMany({ where: { id: { in: refs.map((r) => r.id) }, organizationId: user.organizationId }, select: { id: true, reference: true, tallyExportId: true } });
     const byId = new Map(rows.map((r) => [r.id, r]));
@@ -544,9 +554,9 @@ export class PayablesService {
       const row = byId.get(r.id);
       if (!row) throw new NotFoundException('Payment not found');
       if (row.reference === r.reference) continue;
-      assertNotExported(row, 'This payment');
+      assertNotExported(row, r.label ? `The payment for ${r.label}` : 'This payment');
       await tx.vendorPayment.update({ where: { id: r.id }, data: { reference: r.reference } });
-      changed.push({ ...r, before: row.reference });
+      changed.push({ id: r.id, reference: r.reference, before: row.reference });
     }
     return changed;
   }
@@ -612,13 +622,16 @@ export class PayablesService {
   }
 
   /**
-   * `removeIn` for many payments at once (a bank file's export undone): the bills' locks in one statement, an advance's
-   * payments checked and taken off one by one, the rest in one statement, then the bills and requests kept in step.
+   * `removeIn` for many payments at once (a bank file's export undone): the bills' locks in one statement, then the
+   * caller's `underLocks` check, an advance's payments checked and taken off one by one, the rest in one statement, then
+   * the bills and requests kept in step.
    */
-  async removeMany(tx: Prisma.TransactionClient, rs: Removal[]) {
+  async removeMany(tx: Prisma.TransactionClient, rs: Removal[], underLocks?: () => Promise<void>) {
     if (!rs.length) return;
     const keys = [...new Set(rs.map((r) => `PAY:${r.bill.id}`))].sort();
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(k)) FROM (SELECT k FROM unnest(${keys}::text[]) AS k ORDER BY k COLLATE "C") AS locks`;
+    // What the caller must check once no payment of these bills can change (a UTR set meanwhile), before anything goes.
+    await underLocks?.();
     for (const { row, bill } of rs.filter((r) => r.bill.order)) {
       await this.checkAdvanceCovers(tx, bill, row.id, null);
       await tx.vendorPayment.delete({ where: { id: row.id } });

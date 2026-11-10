@@ -16,7 +16,8 @@ export const WHATS_NEW: WhatsNew[] = [
       'Accounts › Bank payments puts approved payment requests in a batch and makes the bulk upload file in your bank’s layout: generic NEFT and RTGS, HDFC, ICICI or SBI. RTGS from two lakh, NEFT below.',
       'A vendor without a bank account or IFSC is listed and left out of the file, and a request already in another open batch cannot be added twice.',
       'Making the file records each payment against its request, as one recorded by hand, so payables and the books have it the same day.',
-      'Import the bank’s response file, or paste the UTRs, and each payment carries its UTR; the batch is settled when every payment has one.',
+      'Import the bank’s response file, or paste the UTRs, and each payment carries its UTR; the batch is settled when every payment has one. The vendor hears of the payment once its UTR is in.',
+      'The salary run’s bank file now pays RTGS from two lakh, NEFT below, its last heading reads Reference, and a person left out of it is listed with why.',
     ],
   },
   {

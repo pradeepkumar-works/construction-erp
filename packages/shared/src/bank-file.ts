@@ -65,6 +65,14 @@ const IFSC = /^[A-Z]{4}0[A-Z0-9]{6}$/;
 const ACCOUNT = /^[0-9A-Z]{6,20}$/;
 const compact = (v: string | null | undefined) => String(v ?? '').replace(/\s+/g, '').toUpperCase();
 
+/** Text a bank accepts in a name or narration: letters, digits and a few marks, capped. */
+const clean = (v: string | null | undefined, max: number) =>
+  String(v ?? '')
+    .replace(/[^A-Za-z0-9 .&/()-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, max);
+
 /** Why a payee cannot go in a bank file, in words for the page; null when they can. */
 export function bankFileProblem(p: BankPayee): string | null {
   const account = compact(p.accountNo);
@@ -74,15 +82,16 @@ export function bankFileProblem(p: BankPayee): string | null {
   if (!ifsc) return 'No IFSC';
   if (!ACCOUNT.test(account)) return `Account number ${account} is not 6 to 20 letters and digits`;
   if (!IFSC.test(ifsc)) return `IFSC ${ifsc} is not 11 characters like SBIN0001234`;
+  if (!clean(p.name, 50)) return 'No name in English letters, which the bank file needs';
   const paise = paiseOf(p.amount);
   if (paise === null || paise <= 0) return 'Nothing to pay';
   return null;
 }
 
-/** Text a bank accepts in a name or narration: letters, digits and a few marks, capped. */
-const clean = (v: string | null | undefined, max: number) =>
+/** Our reference as the file writes it: an employee code keeps its underscore. */
+const cleanRef = (v: string | null | undefined, max: number) =>
   String(v ?? '')
-    .replace(/[^A-Za-z0-9 .&/()-]+/g, ' ')
+    .replace(/[^A-Za-z0-9 ._/-]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, max);
@@ -106,7 +115,7 @@ export const BANK_FILE_FORMATS = {
       { header: 'IFSC', cell: (p) => compact(p.ifsc) },
       { header: 'Amount', cell: (p) => rupees(p.amount) },
       { header: 'Narration', cell: (p) => clean(p.narration, 30) },
-      { header: 'Reference', cell: (p) => clean(p.reference, 30) },
+      { header: 'Reference', cell: (p) => cleanRef(p.reference, 30) },
     ],
   },
   HDFC: {
@@ -126,7 +135,7 @@ export const BANK_FILE_FORMATS = {
       blank('Bene address 4'),
       blank('Bene address 5'),
       blank('Instruction reference number'),
-      { header: 'Customer reference number', cell: (p) => clean(p.reference, 20) },
+      { header: 'Customer reference number', cell: (p) => cleanRef(p.reference, 20) },
       { header: 'Payment details 1', cell: (p) => clean(p.narration, 30) },
       blank('Payment details 2'),
       blank('Payment details 3'),
@@ -154,13 +163,13 @@ export const BANK_FILE_FORMATS = {
       { header: 'BENE_ACC_NO', cell: (p) => compact(p.accountNo) },
       { header: 'BENE_IFSC', cell: (p) => compact(p.ifsc) },
       { header: 'AMOUNT', cell: (p) => rupees(p.amount) },
-      { header: 'DEBIT_NARR', cell: (p) => clean(p.reference, 30) },
+      { header: 'DEBIT_NARR', cell: (p) => cleanRef(p.reference, 30) },
       { header: 'CREDIT_NARR', cell: (p) => clean(p.narration, 30) },
       blank('MOBILE_NUM'),
       { header: 'EMAIL_ID', cell: (p) => String(p.email ?? '').trim() },
       blank('REMARK'),
       { header: 'PYMT_DATE', cell: (_, __, c) => ddmmyyyy(c.valueDate, '-') },
-      { header: 'REF_NO', cell: (p) => clean(p.reference, 20) },
+      { header: 'REF_NO', cell: (p) => cleanRef(p.reference, 20) },
     ],
   },
   SBI: {
@@ -174,7 +183,7 @@ export const BANK_FILE_FORMATS = {
       { header: 'Amount', cell: (p) => rupees(p.amount) },
       { header: 'Payment mode', cell: (_, m) => m },
       { header: 'Value date', cell: (_, __, c) => ddmmyyyy(c.valueDate, '/') },
-      { header: 'Transaction reference', cell: (p) => clean(p.reference, 20) },
+      { header: 'Customer reference', cell: (p) => cleanRef(p.reference, 20) },
       { header: 'Remarks', cell: (p) => clean(p.narration, 30) },
     ],
   },
@@ -219,7 +228,9 @@ export function bankFileText(rows: string[][]): string {
 
 const norm = (v: unknown) => String(v ?? '').toLowerCase().replace(/[^a-z]+/g, ' ').trim();
 const UTR = /^(?=.*\d)[A-Z0-9]{8,30}$/;
-const isUtrHeader = (h: string) => /\butr\b|utr ?no|bank ref|transaction ref|txn ref|unique transaction/.test(h);
+/** A heading that names the UTR itself, before one that may only be a bank's reference. */
+const isUtrHeading = (h: string) => /\butr\b|utr ?no|unique transaction/.test(h);
+const isUtrHeader = (h: string) => isUtrHeading(h) || /\bbank ref|^transaction ref|^txn ref/.test(h);
 const REJECTED = /reject|fail|return|cancel|invalid/;
 
 export interface UtrRead {
@@ -234,14 +245,18 @@ export interface UtrRead {
 /**
  * The UTRs in a bank's response file (CSV or Excel cells as the bank gives them) or a pasted list ("PR-2026-0001
  * N123456789012345" a line). A row is ours when one of its cells holds one of `references`; its UTR is the cell under a
- * UTR or bank reference heading, else the first UTR-shaped word on the row. A row the bank marks rejected or failed is
- * reported, never read as paid.
+ * UTR or bank reference heading, else the first UTR-shaped word on the row. An IFSC is never a UTR, nor any of
+ * `notUtr` (the debit account, each payee's account and IFSC), so our own file read back finds nothing. A row the bank
+ * marks rejected or failed is reported, never read as paid.
  */
-export function readUtrResponse(cells: unknown[][], references: string[]): UtrRead {
+export function readUtrResponse(cells: unknown[][], references: string[], notUtr: (string | null | undefined)[] = []): UtrRead {
+  const ours = new Set(notUtr.map(compact).filter(Boolean));
+  const isUtr = (w: string) => UTR.test(w) && !IFSC.test(w) && !ours.has(w);
   const refs = references.map((r) => ({ r, up: r.toUpperCase(), word: new RegExp(`(^|[^A-Z0-9])${r.toUpperCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}($|[^A-Z0-9])`) }));
   const at = cells.slice(0, 20).findIndex((row) => row.some((c) => isUtrHeader(norm(c))));
   const header = at >= 0 ? cells[at].map(norm) : null;
-  const utrCol = header ? header.findIndex(isUtrHeader) : -1;
+  const named = header ? header.findIndex(isUtrHeading) : -1;
+  const utrCol = header ? (named >= 0 ? named : header.findIndex(isUtrHeader)) : -1;
   const statusCol = header ? header.findIndex((h) => /\bstatus\b/.test(h)) : -1;
   const byRef = new Map<string, string>();
   const rejected: UtrRead['rejected'] = [];
@@ -252,7 +267,7 @@ export function readUtrResponse(cells: unknown[][], references: string[]): UtrRe
     const text = row.map((c) => String(c ?? '').trim());
     const hit = refs.find(({ word }) => text.some((c) => word.test(c.toUpperCase())));
     if (!hit) {
-      if (text.some((c) => c.split(/[\s,;|]+/).some((w) => UTR.test(w.toUpperCase())))) problems.push(`Row ${i + 1}: no request number of this batch`);
+      if (text.some((c) => c.split(/[\s,;|]+/).some((w) => isUtr(w.toUpperCase())))) problems.push(`Row ${i + 1}: no request number of this batch`);
       return;
     }
     const status = statusCol >= 0 ? text[statusCol] ?? '' : '';
@@ -261,7 +276,7 @@ export function readUtrResponse(cells: unknown[][], references: string[]): UtrRe
       return;
     }
     const words = header ? [text[utrCol] ?? ''] : text.flatMap((c) => c.split(/[\s,;|]+/));
-    const shaped = words.map((w) => w.toUpperCase()).filter((w) => UTR.test(w) && !w.includes(hit.up));
+    const shaped = words.map((w) => w.toUpperCase()).filter((w) => isUtr(w) && !w.includes(hit.up));
     // Without a heading an account number is UTR-shaped too; NEFT and RTGS UTRs start with the bank's letters.
     const utr = shaped.find((w) => /[A-Z]/.test(w)) ?? shaped[0];
     if (!utr) {
@@ -375,4 +390,6 @@ export interface PayableRequestDto {
   /** The batch that holds it, if any */
   inBatch: string | null;
   problem: string | null;
+  /** What adding it should know, though it may go in (a vendor bill is paid with no TDS deducted) */
+  warning: string | null;
 }

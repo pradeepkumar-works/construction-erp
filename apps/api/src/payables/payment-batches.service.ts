@@ -63,7 +63,7 @@ type RequestRow = Prisma.PaymentRequestGetPayload<{ include: typeof requestInclu
 
 const lineInclude = {
   paymentRequest: { include: requestInclude },
-  vendorPayment: { select: { id: true, reference: true } },
+  vendorPayment: { select: { id: true, reference: true, vendorId: true, amount: true, paymentDate: true } },
 } satisfies Prisma.PaymentBatchLineInclude;
 type LineRow = Prisma.PaymentBatchLineGetPayload<{ include: typeof lineInclude }>;
 
@@ -88,6 +88,20 @@ const payeeOf = (r: RequestRow, amount: Prisma.Decimal): BankPayee => ({
   reference: r.requestNo,
   email: r.vendor?.email,
 });
+
+/**
+ * A line that holds its request: in a draft, or with its payment in an exported batch. A line whose payment was deleted
+ * by hand after export holds nothing, so its request can go in another batch.
+ */
+const HOLDING = { open: true, OR: [{ batch: { status: 'DRAFT' } }, { vendorPaymentId: { not: null } }] } satisfies Prisma.PaymentBatchLineWhereInput;
+
+/** What the vendor's notice says the payment is against, as payables names it. */
+const noticeAgainst = (r: RequestRow) => (r.kind === 'FUND_REQUEST' ? `On account (${r.requestNo})` : r.kind === 'BILL' ? targetLabel(r) : `Advance on ${targetLabel(r)}`);
+
+/** What adding a request to a batch should know, though it may go in: a vendor bill is paid in full, with no TDS taken. */
+function requestWarning(r: RequestRow): string | null {
+  return r.kind === 'BILL' && r.vendorBillId ? 'A bank file pays the bill with no TDS deducted; where TDS is due, record this payment by hand under Payables' : null;
+}
 
 /** Why a request cannot go in a batch; null when it can. */
 function requestProblem(r: RequestRow): string | null {
@@ -203,7 +217,7 @@ export class PaymentBatchesService {
     this.assertCan(user);
     const rows = await this.prisma.paymentRequest.findMany({
       where: { ...this.access.submissionWhere(user), status: 'APPROVED', paidDate: null, vendorId: { not: null } },
-      include: { ...requestInclude, batchLines: { where: { open: true }, select: { batch: { select: { batchNo: true } } } } },
+      include: { ...requestInclude, batchLines: { where: HOLDING, select: { batch: { select: { batchNo: true } } } } },
       orderBy: [{ neededBy: { sort: 'asc', nulls: 'last' } }, { requestNo: 'asc' }],
       take: 1000,
     });
@@ -218,6 +232,7 @@ export class PaymentBatchesService {
         left: money(leftOn(r)),
         inBatch: r.batchLines[0]?.batch.batchNo ?? null,
         problem: requestProblem(r) ?? bankFileProblem(payeeOf(r, leftOn(r))),
+        warning: requestWarning(r),
       }));
   }
 
@@ -232,7 +247,7 @@ export class PaymentBatchesService {
       return row.id;
     });
     const b = await this.load(user, id);
-    await this.audit.log(user, 'PAYMENT_BATCH', id, 'CREATED', `${b.batchNo} from ${b.debitAccount}, ${BANK_FILE_FORMATS[dto.format].label}`);
+    await this.audit.log(user, 'PAYMENT_BATCH', id, 'CREATED', `${b.batchNo} from the account ending ${b.debitAccount.slice(-4)}, ${BANK_FILE_FORMATS[dto.format].label}`);
     return this.detail(b);
   }
 
@@ -276,6 +291,11 @@ export class PaymentBatchesService {
       await this.prisma.$transaction(async (tx) => {
         const held = await tx.paymentBatch.updateMany({ where: { id, status: 'DRAFT' }, data: { updatedAt: new Date() } });
         if (held.count !== 1) this.assertDraft({ status: 'EXPORTED', batchNo: b.batchNo });
+        // A line of an exported batch whose payment was deleted by hand holds nothing: it closes, and the request moves here.
+        await tx.paymentBatchLine.updateMany({
+          where: { organizationId: user.organizationId, paymentRequestId: { in: ids }, open: true, vendorPaymentId: null, leftOut: null, batch: { status: 'EXPORTED' } },
+          data: { open: false },
+        });
         await tx.paymentBatchLine.createMany({ data: requests.map((r) => ({ organizationId: user.organizationId, batchId: id, paymentRequestId: r.id, amount: leftOn(r) })) });
       });
     } catch (e) {
@@ -288,7 +308,7 @@ export class PaymentBatchesService {
 
   private async assertNotInOpenBatch(user: RequestUser, requestIds: string[], exceptBatchId: string | null) {
     const held = await this.prisma.paymentBatchLine.findFirst({
-      where: { organizationId: user.organizationId, paymentRequestId: { in: requestIds }, open: true },
+      where: { organizationId: user.organizationId, paymentRequestId: { in: requestIds }, ...HOLDING },
       select: { batchId: true, batch: { select: { batchNo: true } }, paymentRequest: { select: { requestNo: true } } },
     });
     if (!held) return;
@@ -351,7 +371,8 @@ export class PaymentBatchesService {
         await tx.paymentBatchLine.update({ where: { id: line.id }, data: { open: false, leftOut: leftOut.get(line.paymentRequest.requestNo) } });
       return prepared.map((p, i) => ({ id: ids[i], payment: p.payment }));
     }, EXPORT_TX);
-    await this.payables.announceMany(user, paid);
+    // The vendor hears of a payment once its UTR is in (importUtrs), never from a file the bank may refuse.
+    await this.payables.auditPaid(user, paid);
     await this.audit.log(user, 'PAYMENT_BATCH', id, 'EXPORTED', `${paid.length} payments, ${inr(prepared.reduce((s, p) => s.add(p.line.amount), ZERO))}${leftOut.size ? `; ${leftOut.size} left out` : ''}`);
     return this.get(user, id);
   }
@@ -375,9 +396,12 @@ export class PaymentBatchesService {
         data: { status: 'DRAFT', exportedById: null, exportedAt: null, paymentDate: null, fileName: null, fileContent: null },
       });
       if (back.count !== 1) throw new ConflictException(`${b.batchNo} changed meanwhile; open it again`);
-      const utr = await tx.vendorPayment.count({ where: { id: { in: removals.map((r) => r.row.id) }, reference: { not: null } } });
-      if (utr) throw new ConflictException(`A UTR came in for ${b.batchNo} meanwhile; the export stays`);
-      await this.payables.removeMany(tx, removals);
+      await this.payables.removeMany(tx, removals, async () => {
+        const utr = await tx.vendorPayment.count({ where: { id: { in: removals.map((r) => r.row.id) }, reference: { not: null } } });
+        if (utr) throw new ConflictException(`A UTR came in for ${b.batchNo} meanwhile; the export stays`);
+      });
+      // A line whose request went to another batch after its payment was deleted by hand stays with that batch.
+      await tx.paymentBatchLine.deleteMany({ where: { batchId: id, open: false, leftOut: null } });
       await tx.paymentBatchLine.updateMany({ where: { batchId: id }, data: { accountNo: null, ifsc: null, payMode: null } });
       // Lines left out come back unless their request went into another batch meanwhile.
       for (const l of b.lines.filter((x) => x.leftOut)) {
@@ -406,14 +430,16 @@ export class PaymentBatchesService {
     const b = await this.load(user, id);
     if (b.status === 'DRAFT') throw new BadRequestException(`${b.batchNo} is not exported yet; export it, upload the file to the bank, then import the UTRs`);
     if (b.status === 'SETTLED') throw new BadRequestException(`${b.batchNo} is settled; change a UTR on the payment itself`);
-    const read = readUtrResponse(cells, b.lines.map((l) => l.paymentRequest.requestNo));
+    // Our own words are never a UTR: the debit account, and each line's account and IFSC as the file wrote them.
+    const notUtr = [b.debitAccount, ...b.lines.flatMap((l) => [l.accountNo, l.ifsc, l.paymentRequest.vendor?.bankAccountNo, l.paymentRequest.vendor?.bankIfsc])];
+    const read = readUtrResponse(cells, b.lines.map((l) => l.paymentRequest.requestNo), notUtr);
     const byRequest = new Map(b.lines.map((l) => [l.paymentRequest.requestNo, l]));
     const problems = [...read.problems];
-    const refs: { id: string; reference: string }[] = [];
+    const refs: { id: string; reference: string; label: string }[] = [];
     for (const f of read.found) {
       const line = byRequest.get(f.reference)!;
       if (!line.vendorPayment) problems.push(`${f.reference} is not paid in this batch`);
-      else refs.push({ id: line.vendorPayment.id, reference: f.utr });
+      else refs.push({ id: line.vendorPayment.id, reference: f.utr, label: f.reference });
     }
     const outcome = await this.prisma.$transaction(async (tx) => {
       const held = await tx.paymentBatch.updateMany({ where: { id, status: 'EXPORTED' }, data: { updatedAt: new Date() } });
@@ -427,6 +453,17 @@ export class PaymentBatchesService {
       return { changed, waiting };
     });
     await this.payables.referencesSet(user, outcome.changed, b.batchNo);
+    // The vendor hears of each payment that just got its UTR, with the UTR to look for on their statement.
+    const lineOf = new Map(b.lines.flatMap((l) => (l.vendorPayment ? [[l.vendorPayment.id, l] as const] : [])));
+    await this.payables.noticePayments(
+      user,
+      outcome.changed.flatMap((c) => {
+        const l = lineOf.get(c.id);
+        if (c.before || !l?.vendorPayment) return [];
+        const p = l.vendorPayment;
+        return [{ id: p.id, vendorId: p.vendorId, amount: p.amount, paymentDate: dateOnly(p.paymentDate), against: noticeAgainst(l.paymentRequest), reference: c.reference }];
+      }),
+    );
     if (outcome.changed.length) await this.audit.log(user, 'PAYMENT_BATCH', id, 'UTRS_IMPORTED', `${outcome.changed.length} UTRs${outcome.waiting ? `, ${outcome.waiting} still waiting` : ', settled'}`);
     return { set: outcome.changed.length, waiting: outcome.waiting, rejected: read.rejected, problems, batch: await this.get(user, id) };
   }

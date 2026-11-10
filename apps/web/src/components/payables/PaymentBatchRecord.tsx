@@ -113,8 +113,10 @@ function AddRequestsModal({ batch, open, onClose }: { batch: PaymentBatchDetailD
     .map((r) => ({
       value: r.id,
       disabled: !!r.inBatch,
-      label: `${r.requestNo} · ${r.vendorName} · ${formatINR(r.left)}${r.inBatch ? ` · in ${r.inBatch}` : r.problem ? ` · ${r.problem}` : ''}`,
+      label: `${r.requestNo} · ${r.vendorName} · ${formatINR(r.left)}${r.inBatch ? ` · in ${r.inBatch}` : r.problem ? ` · ${r.problem}` : r.warning ? ' · no TDS deducted' : ''}`,
     }));
+  const chosen = Form.useWatch('paymentRequestIds', form);
+  const gross = (data ?? []).filter((r) => r.warning && chosen?.includes(r.id));
   const mutation = useMutation({
     mutationFn: async (v: { paymentRequestIds: string[] }) => (await api.post<PaymentBatchDetailDto>(`/payment-batches/${batch.id}/lines`, v)).data,
     onSuccess: (b, v) => {
@@ -126,7 +128,13 @@ function AddRequestsModal({ batch, open, onClose }: { batch: PaymentBatchDetailD
   return (
     <FormShell open={open} onClose={onClose} form={form} layout="modal" title={`Add payment requests · ${batch.batchNo}`} okText="Add to batch" projectDefault={false} onSubmit={(v) => mutation.mutateAsync(v)}>
       <Form form={form} layout="vertical">
-        <Form.Item name="paymentRequestIds" label="Approved payment requests" tooltip="Requests paid through the bank with something left to pay" rules={[{ required: true, message: 'Choose the requests to pay' }]}>
+        <Form.Item
+          name="paymentRequestIds"
+          label="Approved payment requests"
+          tooltip="Requests paid through the bank with something left to pay"
+          rules={[{ required: true, message: 'Choose the requests to pay' }]}
+          extra={gross.length ? `${gross.map((r) => r.requestNo).join(', ')}: ${gross[0].warning}.` : undefined}
+        >
           <Select mode="multiple" loading={isLoading} options={options} showSearch={{ optionFilterProp: 'label' }} placeholder="Search request no. or vendor" />
         </Form.Item>
       </Form>

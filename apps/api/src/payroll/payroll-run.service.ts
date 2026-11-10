@@ -374,7 +374,7 @@ export class PayrollRunService {
       .filter((p) => p.net.gt(0))
       .map((p) => ({ name: p.employeeName, accountNo: p.bankAccountNo, ifsc: p.bankIfsc, amount: p.net.toFixed(2), narration: `Salary ${r.month}`, reference: p.employeeCode }));
     const out = bankFileRows('GENERIC', { debitAccount: s?.debitAccountNo ?? '', valueDate: todayIn() }, payees);
-    return { fileName: `${r.runNo}-bank.csv`, mimeType: 'text/csv', content: bankFileText(out.rows), missing: out.missing.map((m) => `${m.name} (${m.reference})`) };
+    return { fileName: `${r.runNo}-bank.csv`, mimeType: 'text/csv', content: bankFileText(out.rows), missing: out.missing.map((m) => `${m.name} (${m.reference}): ${m.problem}`) };
   }
 
   /** EPFO's electronic challan cum return (ECR 2.0): one #~# separated line per member with a UAN. */
