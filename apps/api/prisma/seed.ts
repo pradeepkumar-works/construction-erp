@@ -39,6 +39,7 @@ import { seedDemoGroup, seedGroupCompanies } from './seed-group';
 import { seedGroupModules } from './seed-group-modules';
 import { seedProjectTypes } from './seed-project-types';
 import { seedFixedAssets } from './seed-fixed-assets';
+import { seedTds } from './seed-tds';
 import { seedPaymentBatches } from './seed-payment-batches';
 import { DEFAULT_SETTINGS, computePayslip, structureCost, type RulesStructure } from '../src/payroll/payroll-rules';
 import { COMPANY_KIND_INFO, DEFAULT_CLOSEOUT_ITEMS, PAYSLIP_CODES, PERMIT_PRECAUTIONS, ROLE_KEYS, ROLE_LABELS, STANDARD_CHECKLISTS, gstinCheckChar, isWeeklyOff, leaveDays, ppeReplaceBy, ranBeforeNirmaan, scaleFrom, takeoffValue, VERTICAL_OF_TYPE, type MarkupPoint, type ProjectType, type PpeKind, type TakeoffKind } from '@erp/shared';
@@ -2018,6 +2019,10 @@ async function modulesPass(organizationId: string, passwordHash: string) {
   await seedComponentDrawings(prisma, organizationId);
   await seedWoAmendments(organizationId);
   await seedWhatsappEntries(prisma, organizationId);
+  // Last: every payment, subcontractor bill and salary run with TDS is in by now, in this company and its sisters.
+  const group = await prisma.organization.findUnique({ where: { id: organizationId }, select: { groupId: true } });
+  const sisters = group?.groupId ? await prisma.organization.findMany({ where: { groupId: group.groupId }, select: { id: true } }) : [];
+  for (const id of new Set([organizationId, ...sisters.map((o) => o.id)])) await seedTds(prisma, id);
 }
 
 /**
