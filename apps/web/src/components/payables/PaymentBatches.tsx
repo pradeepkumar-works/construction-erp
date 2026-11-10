@@ -49,21 +49,39 @@ export function PaymentBatches() {
         key: 'batch',
         title: 'Batch',
         locked: true,
+        card: 'title',
+        cardText: (b) => b.batchNo,
         render: (_, b) => (
           <div>
-            <RecordLink href={batchHref(b.id)} onOpen={() => open(b.id)} strong>
+            <RecordLink href={batchHref(b.id)} onOpen={() => open(b.id)} strong className="mono">
               {b.batchNo}
-            </RecordLink>{' '}
-            <BatchStatusTag status={b.status} />
+            </RecordLink>
             <span style={caption}>{`${BANK_FILE_FORMATS[b.format].label}, made ${formatDate(b.createdAt.slice(0, 10))}`}</span>
           </div>
         ),
       },
-      { key: 'account', title: 'Debit account', width: 180, render: (_, b) => <span className="mono" translate="no">{b.debitAccount}</span>, defaultFrom: 1280 },
+      { key: 'status', title: 'Status', width: 170, card: 'status', render: (_, b) => <BatchStatusTag status={b.status} /> },
+      {
+        key: 'account',
+        title: 'Debit account',
+        width: 180,
+        card: 'meta',
+        cardText: (b) => `${BANK_FILE_FORMATS[b.format].label} · ${b.debitAccount}`,
+        render: (_, b) => <span className="mono" translate="no">{b.debitAccount}</span>,
+        defaultFrom: 1280,
+      },
       { key: 'payments', title: 'Payments', width: 110, kind: 'qty', value: (b) => b.inFile },
-      { key: 'total', title: 'Paid by the file', kind: 'money', value: (b) => b.total, width: 170 },
+      { key: 'total', title: 'Paid by the file', kind: 'money', value: (b) => b.total, width: 170, card: 'amount' },
       { key: 'utrs', title: 'UTRs in', width: 120, render: (_, b) => (b.status === 'DRAFT' ? NO_VALUE : `${b.paid} of ${b.inFile}`), defaultFrom: 1024 },
-      { key: 'paid', title: 'Payment date', width: 140, render: (_, b) => (b.paymentDate ? formatDate(b.paymentDate) : NO_VALUE), defaultFrom: 1024 },
+      {
+        key: 'paid',
+        title: 'Payment date',
+        width: 140,
+        card: 'date',
+        cardText: (b) => (b.paymentDate ? `Paid ${formatDate(b.paymentDate)}` : ''),
+        render: (_, b) => (b.paymentDate ? formatDate(b.paymentDate) : NO_VALUE),
+        defaultFrom: 1024,
+      },
     ],
   });
   const { page } = frame;

@@ -32,6 +32,8 @@ function Lines({ batch, onRemove }: { batch: PaymentBatchDetailDto; onRemove: (l
       key: 'request',
       title: 'Request',
       locked: true,
+      card: 'title',
+      cardText: (l) => l.requestNo,
       render: (_, l) => (
         <div>
           <RecordLink href={requestHref(l.paymentRequestId)} onOpen={() => router.push(requestHref(l.paymentRequestId))} strong>
@@ -41,7 +43,15 @@ function Lines({ batch, onRemove }: { batch: PaymentBatchDetailDto; onRemove: (l
         </div>
       ),
     },
-    { key: 'against', title: 'Against', width: 200, render: (_, l) => l.against, defaultFrom: 1280 },
+    {
+      key: 'against',
+      title: 'Against',
+      width: 200,
+      card: 'meta',
+      cardText: (l) => [l.vendorName, l.against, l.mode].filter(Boolean).join(' · '),
+      render: (_, l) => l.against,
+      defaultFrom: 1280,
+    },
     {
       key: 'account',
       title: 'Account',
@@ -50,9 +60,10 @@ function Lines({ batch, onRemove }: { batch: PaymentBatchDetailDto; onRemove: (l
       defaultFrom: 1024,
     },
     { key: 'mode', title: 'Mode', width: 90, render: (_, l) => l.mode ?? NO_VALUE },
-    { key: 'amount', title: 'Amount', kind: 'money', value: (l) => l.amount, width: 150 },
+    { key: 'amount', title: 'Amount', kind: 'money', value: (l) => l.amount, width: 150, card: 'amount' },
     {
       key: 'state',
+      card: 'status',
       title: batch.status === 'DRAFT' ? 'Bank details' : 'UTR',
       width: 240,
       render: (_, l) => (
