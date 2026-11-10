@@ -7,12 +7,15 @@
  * - Demo Buildcon: the staff quarters' quality plan, the group lab and its site lab with instruments, the drawings it
  *   waits on from the Port Township Board's architect, and its letters.
  * - Demo Infra Holdings: head office letters (the bank on the corporate guarantee, the board meeting, the ROC filing).
+ * - The group: the sisters each company names in its books, and a debit note Demo Infra Projects raised on the lab.
  * All names are invented and checked against the client-name blocklist. Each block runs once per company (when that
  * module has nothing yet), so the seed is safe to run again and on a live demo that no longer takes the full seed.
  */
 import { Prisma, PrismaClient, type DocumentDiscipline, type LetterAction, type LetterDirection, type LetterMode, type LetterStatus, type ProjectType, type RevisionStatus } from '@prisma/client';
 import { HEAD_OFFICE_PREFIX, LETTER_NUMBER_PATTERN, STANDARD_QA_PLANS, formatLetterNo, letterFy, letterPrefixOf, masterCode } from '@erp/shared';
 import { day } from './seed-clock';
+import { nextDocNo } from '../src/common/doc-number';
+import { syncPaid } from '../src/payables/payables.service';
 
 const plus = (d: Date, days: number) => new Date(d.getTime() + days * 86_400_000);
 const ymd = (d: Date) => d.toISOString().slice(0, 10);
@@ -56,40 +59,64 @@ export async function seedGroupModules(prisma: Db, demoOrgId: string) {
   }
   if (hold) await holdingLetters(prisma, hold);
   await sisterLinks(prisma, groupId);
-  if (bc) await debitNoteNotAccepted(prisma, bc);
+  await debitNoteNotAccepted(prisma, demoOrgId);
+}
+
+/**
+ * A difference between sisters for the consolidated accounts to show: Demo Infra Projects took the lab's late report on
+ * three cube sets off the lab's unpaid bill with a debit note, which the lab has not accepted, so the two books disagree on
+ * the sale and the balance by the note. Written as the debit note service writes one (the bill's lock, the DN number from
+ * its series, the bill's debit note amount and paid state, the audit rows). Added once.
+ */
+async function debitNoteNotAccepted(prisma: Db, organizationId: string) {
+  const remarks = 'Three cube sets retested at our cost: the lab report came after the pour was loaded';
+  if (await prisma.debitNote.count({ where: { organizationId, remarks } })) return;
+  const [bill, accounts] = await Promise.all([
+    prisma.vendorBill.findFirst({
+      where: { organizationId, vendor: { name: 'Demo Quality Labs Pvt Ltd' }, status: 'APPROVED', paidDate: null, paidAmount: 0, debitNoteAmount: 0 },
+      orderBy: { invoiceDate: 'asc' },
+      select: { id: true, projectId: true, vendorId: true, invoiceDate: true },
+    }),
+    prisma.user.findFirst({ where: { organizationId, email: 'accounts@demo.com' }, select: { id: true } }),
+  ]);
+  if (!bill || !accounts) return;
+  const amount = new Prisma.Decimal(5000);
+  const gst = new Prisma.Decimal(900);
+  const total = amount.add(gst);
+  const date = new Date(Math.max(day(-4).getTime(), bill.invoiceDate.getTime()));
+  const id = await prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`PAY:${bill.id}`}))`;
+    const noteNo = await nextDocNo(tx, organizationId, 'DN', async (prefix) =>
+      (await tx.debitNote.findFirst({ where: { organizationId, noteNo: { startsWith: prefix } }, orderBy: { noteNo: 'desc' }, select: { noteNo: true } }))?.noteNo ?? null,
+      ymd(date),
+    );
+    const row = await tx.debitNote.create({
+      data: {
+        organizationId, projectId: bill.projectId, vendorId: bill.vendorId, vendorBillId: bill.id, noteNo,
+        date, reason: 'OTHER', subtotal: amount, gstAmount: gst, total, remarks, createdById: accounts.id, createdAt: date,
+        lines: { create: [{ description: 'Retest of three cube sets, Block A raft', quantity: new Prisma.Decimal(1), unit: 'Lot', rate: amount, amount, gstRate: new Prisma.Decimal(18), gstAmount: gst, sortOrder: 0 }] },
+      },
+      select: { id: true },
+    });
+    const s = await tx.debitNote.aggregate({ where: { vendorBillId: bill.id, cancelledAt: null }, _sum: { total: true } });
+    await tx.vendorBill.update({ where: { id: bill.id }, data: { debitNoteAmount: s._sum.total ?? new Prisma.Decimal(0) } });
+    await syncPaid(tx, 'VENDOR_BILL', bill.id);
+    return row.id;
+  });
+  await prisma.auditLog.createMany({
+    data: [
+      { organizationId, entityType: 'DEBIT_NOTE', entityId: id, action: 'CREATED', actorId: accounts.id, createdAt: date },
+      { organizationId, entityType: 'VENDOR_BILL', entityId: bill.id, action: 'DEBIT_NOTE', actorId: accounts.id, note: `₹${total.toFixed(2)} taken off`, createdAt: date },
+    ],
+  });
 }
 
 /**
  * Consolidated accounts (item 192): each company names the vendors and clients in its books that are its sisters, the
  * rows seed-group.ts made under the sisters' own names (the lab as a vendor of Demo Infra Projects, Demo Infra Projects
- * as the lab's client, and so on). Only a link that is missing is added, by the company's admin.
+ * as the lab's client, and so on). A company that has named any sister already is left as it is, so a link its admin
+ * removed is not put back; the rest get theirs from the company's admin.
  */
-/**
- * A difference to settle between sisters: Demo Buildcon took the lab's late report on three cube sets off its bill with
- * a debit note, which the lab has not accepted. The group's consolidated accounts show Buildcon's figures for the sale
- * and the balance against the lab's. Added once.
- */
-async function debitNoteNotAccepted(prisma: Db, organizationId: string) {
-  const remarks = 'Three cube sets retested at our cost: the lab report came after the pour was loaded';
-  if (await prisma.debitNote.count({ where: { organizationId, remarks } })) return;
-  const [bill, accounts, last] = await Promise.all([
-    prisma.vendorBill.findFirst({ where: { organizationId, vendor: { name: 'Demo Quality Labs Pvt Ltd' }, status: 'APPROVED' }, orderBy: { invoiceDate: 'asc' }, select: { id: true, projectId: true, vendorId: true, invoiceDate: true } }),
-    prisma.user.findFirst({ where: { organizationId, email: 'bc.accounts@demo.com' }, select: { id: true } }),
-    prisma.debitNote.findFirst({ where: { organizationId, noteNo: { startsWith: `DN-${year}-` } }, orderBy: { noteNo: 'desc' }, select: { noteNo: true } }),
-  ]);
-  if (!bill || !accounts) return;
-  const amount = new Prisma.Decimal(5000);
-  const gst = new Prisma.Decimal(900);
-  const date = day(-4);
-  await prisma.debitNote.create({
-    data: {
-      organizationId, projectId: bill.projectId, vendorId: bill.vendorId, vendorBillId: bill.id, noteNo: `DN-${year}-${String((last ? parseInt(last.noteNo.slice(8), 10) : 0) + 1).padStart(4, '0')}`,
-      date, reason: 'OTHER', subtotal: amount, gstAmount: gst, total: amount.add(gst), remarks, createdById: accounts.id, createdAt: date,
-      lines: { create: [{ description: 'Retest of three cube sets, Block A raft', quantity: new Prisma.Decimal(1), unit: 'Lot', rate: amount, amount, gstRate: new Prisma.Decimal(18), gstAmount: gst, sortOrder: 0 }] },
-    },
-  });
-}
-
 async function sisterLinks(prisma: Db, groupId: string) {
   const companies = await prisma.organization.findMany({ where: { groupId }, select: { id: true, name: true } });
   const sisterOf = new Map(companies.map((c) => [c.name, c.id]));
@@ -97,15 +124,14 @@ async function sisterLinks(prisma: Db, groupId: string) {
     const admin = await prisma.user.findFirst({ where: { organizationId: c.id, email: 'admin@demo.com' }, select: { id: true } });
     if (!admin) continue;
     const names = companies.filter((o) => o.id !== c.id).map((o) => o.name);
-    const [vendors, clients, linked] = await Promise.all([
+    if (await prisma.sisterLink.count({ where: { organizationId: c.id } })) continue;
+    const [vendors, clients] = await Promise.all([
       prisma.vendor.findMany({ where: { organizationId: c.id, name: { in: names } }, select: { id: true, name: true } }),
       prisma.client.findMany({ where: { organizationId: c.id, name: { in: names } }, select: { id: true, name: true } }),
-      prisma.sisterLink.findMany({ where: { organizationId: c.id }, select: { vendorId: true, clientId: true } }),
     ]);
-    const has = new Set(linked.map((l) => l.vendorId ?? l.clientId));
     const data = [
-      ...vendors.filter((v) => !has.has(v.id)).map((v) => ({ organizationId: c.id, vendorId: v.id, sisterId: sisterOf.get(v.name)!, createdById: admin.id })),
-      ...clients.filter((k) => !has.has(k.id)).map((k) => ({ organizationId: c.id, clientId: k.id, sisterId: sisterOf.get(k.name)!, createdById: admin.id })),
+      ...vendors.map((v) => ({ organizationId: c.id, vendorId: v.id, sisterId: sisterOf.get(v.name)!, createdById: admin.id })),
+      ...clients.map((k) => ({ organizationId: c.id, clientId: k.id, sisterId: sisterOf.get(k.name)!, createdById: admin.id })),
     ];
     if (data.length) await prisma.sisterLink.createMany({ data });
   }
