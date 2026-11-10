@@ -50,6 +50,8 @@ export function sourceHref(source: BookSource, sourceId: string | null): string 
     case 'LOAN_EMI':
       // An EMI's page is its loan's (the API finds the loan by either id).
       return `/machine-loans/${sourceId}`;
+    case 'TDS_CHALLAN':
+      return `/tds/challans/${sourceId}`;
     case 'OPENING':
     case 'YEAR_CLOSE':
       return '/statements?tab=year';

@@ -16,6 +16,9 @@ import {
   ASSET_FUNDING_LABELS,
   disposalResult,
   runPeriodLabel,
+  challanLabel,
+  deductionLedgerKey,
+  TDS_RETURN_FORM_LABELS,
   tallyVendorKey,
   type AssetClassCode,
   type ExpenseCategory,
@@ -114,7 +117,7 @@ export class PostingService {
       db.vendorBill.findMany({ where: { ...open, status: 'APPROVED', ...range('invoiceDate') }, include: { project: { select: projectSelect }, vendor: { select: { name: true, stateCode: true, gstin: true } } } }),
       db.subcontractBill.findMany({
         where: { ...open, status: 'APPROVED', ...range('billDate') },
-        include: { project: { select: projectSelect }, workOrder: { select: { woNo: true, vendorId: true, vendor: { select: { name: true, stateCode: true, gstin: true } } } } },
+        include: { project: { select: projectSelect }, workOrder: { select: { woNo: true, vendorId: true, vendor: { select: { name: true, stateCode: true, gstin: true } } } }, tdsDeduction: { select: { section: true, backfilled: true } } },
       }),
       db.vendorPayment.findMany({
         where: { ...open, ...range('paymentDate') },
@@ -126,6 +129,7 @@ export class PostingService {
           purchaseOrder: { select: { poNo: true } },
           workOrder: { select: { woNo: true } },
           paymentRequest: { select: { requestNo: true } },
+          tdsDeduction: { select: { section: true, backfilled: true } },
         },
       }),
       db.expense.findMany({ where: { ...open, status: 'APPROVED', ...range('date') }, include: { project: { select: projectSelect } } }),
@@ -282,7 +286,7 @@ export class PostingService {
       l.cr(tallyVendorKey(b.workOrder.vendorId), b.netPayable, { fallback: v.name, party: true })
         .cr('RETENTION_PAYABLE', b.retentionAmount)
         .cr('SUB_ADVANCE', b.advanceRecoveryAmount)
-        .cr('TDS_PAYABLE', b.tdsAmount)
+        .cr(b.tdsDeduction ? deductionLedgerKey(b.tdsDeduction) : 'TDS_PAYABLE', b.tdsAmount)
         .cr('MATERIAL_RECOVERY', b.materialRecovery.add(b.excessRecovery), cc)
         .cr('VENDOR_DEDUCTIONS', b.otherDeduction, cc);
       add({
@@ -336,7 +340,7 @@ export class PostingService {
       const l = new Lines(name)
         .dr(tallyVendorKey(p.vendorId), p.amount.add(p.tdsAmount).add(p.otherDeduction), { fallback: p.vendor.name, party: true })
         .cr(moneyLedger(p.mode), p.amount)
-        .cr('TDS_PAYABLE', p.tdsAmount)
+        .cr(p.tdsDeduction ? deductionLedgerKey(p.tdsDeduction) : 'TDS_PAYABLE', p.tdsAmount)
         .cr('VENDOR_DEDUCTIONS', p.otherDeduction, cc);
       add({
         kind: 'PAYMENT',
@@ -385,6 +389,7 @@ export class PostingService {
     await this.rmc(db, org, name, opts, range, add);
     await this.machineLoans(db, org, name, opts, range, add);
     await this.fixedAssets(db, org, name, opts, range, add);
+    await this.tdsChallans(db, org, name, opts, range, add);
 
     // Oldest first, so Tally numbers and ages them in order.
     vouchers.sort((a, b) => a.date.getTime() - b.date.getTime() || a.kind.localeCompare(b.kind) || a.number.localeCompare(b.number));
@@ -685,6 +690,43 @@ export class PostingService {
         billRef: null,
         lines: disposalLines(name, { assetClass: a.assetClass, cost: a.cost, accumulated, proceeds, mode: a.disposalMode ?? 'BANK' }),
         ...(proceeds.gt(0) ? { voucherType: 'Receipt' } : {}),
+      });
+    }
+  }
+
+  /**
+   * TDS deposited: a challan is a payment on the day it was deposited, Dr the ledger each deduction it covers sits in
+   * (the section's TDS payable, salaries' own, or the old TDS Payable for one made before sections were kept), Dr
+   * interest on TDS and the late fee, Cr bank. No project: the deductions were charged to theirs when made.
+   */
+  private async tdsChallans(db: Tx, org: string, name: LedgerName, opts: PostingOptions, range: (field: string) => object, add: (v: Voucher) => void) {
+    const challans = await db.tdsChallan.findMany({
+      where: { organizationId: org, ...(opts.unexported ? { tallyExportId: null } : {}), ...range('depositedOn') },
+      include: { deductions: { select: { section: true, backfilled: true, tdsAmount: true } } },
+    });
+    for (const c of challans) {
+      const byLedger = new Map<string, Prisma.Decimal>();
+      for (const d of c.deductions) {
+        const key = deductionLedgerKey(d);
+        byLedger.set(key, (byLedger.get(key) ?? D(0)).add(d.tdsAmount));
+      }
+      const l = new Lines(name);
+      for (const [key, amount] of [...byLedger].sort(([a], [b]) => a.localeCompare(b))) l.dr(key, amount);
+      l.dr('TDS_INTEREST', c.interest).dr('TDS_LATE_FEE', c.fee.add(c.other)).cr('BANK', c.tax.add(c.interest).add(c.fee).add(c.other));
+      const label = challanLabel({ bsrCode: c.bsrCode, challanSerial: c.challanSerial, depositedOn: dateOnly(c.depositedOn) });
+      add({
+        kind: 'TDS_CHALLAN',
+        sourceId: c.id,
+        date: c.depositedOn,
+        number: `TDS/${shortId(c.id)}`,
+        reference: label,
+        party: '',
+        projectId: null,
+        projectCode: '',
+        projectName: '',
+        narration: `TDS deposited for ${TDS_RETURN_FORM_LABELS[c.form]}, challan ${label}: tax ₹${c.tax.toFixed(2)} for ${c.deductions.length} ${c.deductions.length === 1 ? 'deduction' : 'deductions'}${c.interest.gt(0) ? `, interest ₹${c.interest.toFixed(2)}` : ''}${c.fee.add(c.other).gt(0) ? `, late fee ₹${c.fee.add(c.other).toFixed(2)}` : ''}`,
+        billRef: null,
+        lines: l.lines,
       });
     }
   }

@@ -12,6 +12,10 @@ import {
   RETURN_DEDUCTEE_HEADER_26Q,
   TDS_SECTIONS,
   TDS_SECTION_KEYS,
+  TALLY_FIXED_LEDGERS,
+  TALLY_VOUCHER_KINDS,
+  BOOK_SOURCES,
+  deductionLedgerKey,
   challanInterest,
   challanLabel,
   challanProblem,
@@ -310,6 +314,20 @@ test('states and ledgers', () => {
   assert.equal(tdsLedgerKey('192'), 'SALARY_TDS_PAYABLE');
   assert.equal(tdsLedgerKey('194C'), 'TDS_PAYABLE_194C');
   assert.equal(tdsLedgerKey(null), 'TDS_PAYABLE', 'a deduction made before sections keeps the old ledger');
+});
+
+test('every ledger a deduction or a challan posts to is a fixed ledger, and a backfilled one keeps the old one', () => {
+  const fixed = new Set(TALLY_FIXED_LEDGERS.map((l) => l.key));
+  for (const k of TDS_SECTION_KEYS) {
+    assert.ok(fixed.has(tdsLedgerKey(k)), `${k} posts to ${tdsLedgerKey(k)}, which is no fixed ledger`);
+    assert.ok(fixed.has(deductionLedgerKey({ section: k, backfilled: true })), k);
+  }
+  for (const k of ['TDS_PAYABLE', 'TDS_INTEREST', 'TDS_LATE_FEE']) assert.ok(fixed.has(k), k);
+  assert.equal(deductionLedgerKey({ section: '194C', backfilled: false }), 'TDS_PAYABLE_194C');
+  assert.equal(deductionLedgerKey({ section: '194C', backfilled: true }), 'TDS_PAYABLE', 'an old bill’s voucher credited TDS Payable');
+  assert.equal(deductionLedgerKey({ section: null, backfilled: true }), 'TDS_PAYABLE');
+  assert.equal(deductionLedgerKey({ section: '192', backfilled: true }), 'SALARY_TDS_PAYABLE', 'salary TDS was always on its own ledger');
+  assert.ok((TALLY_VOUCHER_KINDS as readonly string[]).includes('TDS_CHALLAN') && (BOOK_SOURCES as readonly string[]).includes('TDS_CHALLAN'));
 });
 
 let failed = 0;

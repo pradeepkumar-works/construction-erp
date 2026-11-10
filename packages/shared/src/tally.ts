@@ -2,7 +2,7 @@
 import type { ExpenseCategory } from './enums';
 
 /** What a Nirmaan record becomes in Tally. */
-export const TALLY_VOUCHER_KINDS = ['SALES', 'RECEIPT', 'PURCHASE', 'SUBCONTRACT', 'PAYMENT', 'EXPENSE', 'DEBIT_NOTE', 'SALARY', 'SALARY_PAYMENT', 'STAFF_LOAN', 'RMC_SALE', 'RMC_RECEIPT', 'MACHINE_LOAN', 'LOAN_EMI', 'WITHHELD_LOST', 'ASSET_ADDITION', 'DEPRECIATION', 'ASSET_DISPOSAL'] as const;
+export const TALLY_VOUCHER_KINDS = ['SALES', 'RECEIPT', 'PURCHASE', 'SUBCONTRACT', 'PAYMENT', 'EXPENSE', 'DEBIT_NOTE', 'SALARY', 'SALARY_PAYMENT', 'STAFF_LOAN', 'RMC_SALE', 'RMC_RECEIPT', 'MACHINE_LOAN', 'LOAN_EMI', 'WITHHELD_LOST', 'ASSET_ADDITION', 'DEPRECIATION', 'ASSET_DISPOSAL', 'TDS_CHALLAN'] as const;
 export type TallyVoucherKind = (typeof TALLY_VOUCHER_KINDS)[number];
 export const TALLY_VOUCHER_KIND_LABELS: Record<TallyVoucherKind, string> = {
   SALES: 'RA bills',
@@ -23,6 +23,7 @@ export const TALLY_VOUCHER_KIND_LABELS: Record<TallyVoucherKind, string> = {
   ASSET_ADDITION: 'Fixed assets bought',
   DEPRECIATION: 'Depreciation runs',
   ASSET_DISPOSAL: 'Fixed assets sold or scrapped',
+  TDS_CHALLAN: 'TDS deposited',
 };
 /** The Tally voucher type each kind is imported as. */
 export const TALLY_VOUCHER_TYPES: Record<TallyVoucherKind, string> = {
@@ -44,6 +45,7 @@ export const TALLY_VOUCHER_TYPES: Record<TallyVoucherKind, string> = {
   ASSET_ADDITION: 'Journal',
   DEPRECIATION: 'Journal',
   ASSET_DISPOSAL: 'Journal',
+  TDS_CHALLAN: 'Payment',
 };
 
 /** A ledger Nirmaan posts to that is not a client, vendor or expense category. */
@@ -80,7 +82,17 @@ export const TALLY_FIXED_LEDGERS: TallyFixedLedger[] = [
   { key: 'INPUT_SGST', use: 'GST on bills and expenses (within the state)', name: 'Input SGST', group: 'Duties & Taxes' },
   { key: 'INPUT_IGST', use: 'GST on bills and expenses (other states)', name: 'Input IGST', group: 'Duties & Taxes' },
   { key: 'SUBCONTRACT', use: 'Work value of subcontractor bills', name: 'Subcontract Charges', group: 'Direct Expenses' },
-  { key: 'TDS_PAYABLE', use: 'TDS deducted from subcontractors and vendors', name: 'TDS Payable', group: 'Duties & Taxes' },
+  { key: 'TDS_PAYABLE', use: 'TDS deducted from subcontractors and vendors before sections were kept', name: 'TDS Payable', group: 'Duties & Taxes' },
+  { key: 'TDS_PAYABLE_194A', use: 'TDS deducted under section 194A', name: 'TDS Payable 194A', group: 'Duties & Taxes' },
+  { key: 'TDS_PAYABLE_194C', use: 'TDS deducted under section 194C', name: 'TDS Payable 194C', group: 'Duties & Taxes' },
+  { key: 'TDS_PAYABLE_194H', use: 'TDS deducted under section 194H', name: 'TDS Payable 194H', group: 'Duties & Taxes' },
+  { key: 'TDS_PAYABLE_194I_A', use: 'TDS deducted under section 194I(a)', name: 'TDS Payable 194I(a)', group: 'Duties & Taxes' },
+  { key: 'TDS_PAYABLE_194I_B', use: 'TDS deducted under section 194I(b)', name: 'TDS Payable 194I(b)', group: 'Duties & Taxes' },
+  { key: 'TDS_PAYABLE_194J_A', use: 'TDS deducted under section 194J(a)', name: 'TDS Payable 194J(a)', group: 'Duties & Taxes' },
+  { key: 'TDS_PAYABLE_194J_B', use: 'TDS deducted under section 194J(b)', name: 'TDS Payable 194J(b)', group: 'Duties & Taxes' },
+  { key: 'TDS_PAYABLE_194Q', use: 'TDS deducted under section 194Q', name: 'TDS Payable 194Q', group: 'Duties & Taxes' },
+  { key: 'TDS_INTEREST', use: 'Interest under 201(1A) paid on TDS deposited late', name: 'Interest on TDS', group: 'Indirect Expenses' },
+  { key: 'TDS_LATE_FEE', use: 'Late fee under 234E paid on a TDS return filed late', name: 'Late Fee on TDS Returns', group: 'Indirect Expenses' },
   { key: 'RETENTION_PAYABLE', use: 'Retention kept from subcontractors', name: 'Retention Money from Subcontractors', group: 'Current Liabilities' },
   { key: 'SUB_ADVANCE', use: 'Advance recovered from subcontractors', name: 'Advances to Subcontractors', group: 'Loans & Advances (Asset)' },
   { key: 'MATERIAL_RECOVERY', use: 'Material recovered from subcontractors', name: 'Material Recovered from Subcontractors', group: 'Direct Expenses' },

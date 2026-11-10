@@ -592,6 +592,13 @@ export const TDS_QUARTER_STATE_LABELS: Record<TdsQuarterState, string> = { OPEN:
 
 /** The TDS payable ledger a section's deductions credit: salaries keep their own; each other section has one. */
 export const tdsLedgerKey = (section: string | null | undefined): string => (section === '192' ? 'SALARY_TDS_PAYABLE' : isTdsSection(section) ? `TDS_PAYABLE_${section}` : 'TDS_PAYABLE');
+/**
+ * The ledger a deduction sits in until deposited, which its challan debits: a deduction made before sections were kept
+ * (`backfilled`) stays where its voucher put it (TDS Payable, or salaries' own), so no voucher already in the books or
+ * in Tally changes; any other its section's.
+ */
+export const deductionLedgerKey = (d: { section: string | null; backfilled: boolean }): string =>
+  d.section === '192' ? 'SALARY_TDS_PAYABLE' : d.backfilled ? 'TDS_PAYABLE' : tdsLedgerKey(d.section);
 
 /** The words a writer refuses with when a deduction's quarter is filed. */
 export function filedQuarterWords(form: TdsReturnForm, q: TdsQuarter, what: string): string {
