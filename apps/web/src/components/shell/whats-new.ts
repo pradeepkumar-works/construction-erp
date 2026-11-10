@@ -18,6 +18,8 @@ export const WHATS_NEW: WhatsNew[] = [
       'Accounts › TDS returns shows each quarter: TDS by section, what is not yet deposited with the interest it runs up, and what stops the return being filed. Record a challan with its BSR code, date and serial; its tax is the sum of the deductions it paid.',
       'Return file gives the challan and deductee sheets in the order the government’s Return Preparation Utility takes them, which makes the FVU file. Mark filed with the provisional receipt locks the quarter until it is reopened for a correction.',
       'Print each deductee’s statement on the letterhead. Earlier TDS came across as deductions too; a payment’s that had no section waits under To fix to be confirmed. Enter the company’s TAN under Admin › Company settings.',
+      'A challan you deposited and entered in your accounts by hand before now: tick Already in the books when you record it, so it goes on the return without a second voucher in the books or Tally.',
+      'In Tally, TDS by section goes to your TDS Payable ledger unless you name a ledger for the section under Accounts › Tally export › Ledgers. Interest on TDS and the late fee are new ledgers: import the masters again, or name your own there.',
     ],
   },
   {

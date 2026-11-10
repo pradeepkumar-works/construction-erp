@@ -61,6 +61,8 @@ interface FormValues {
   tdsAmount?: number | null;
   tdsSection?: string | null;
   tdsBase?: number | null;
+  /** The "TDS on" value the form filled in itself, so it follows the amount; never sent */
+  tdsBaseAuto?: number | null;
   otherDeduction?: number | null;
   otherDeductionNote?: string;
   remarks?: string;
@@ -101,8 +103,14 @@ export function PaymentFormModal({ open, onClose, bill, payment }: { open: boole
   const takesTds = billType !== 'SUBCONTRACT_BILL';
   const vendorId = payment?.vendorId ?? target?.vendorId ?? (chosenBill as { vendorId?: string } | undefined)?.vendorId;
   const vendorBillId = billType === 'VENDOR_BILL' ? (payment?.vendorBillId ?? target?.billId ?? null) : null;
+  // "TDS on" left empty is the default (what the payment settles less GST). A value the form put there itself (a catch-up
+  // taken, or an edited payment's saved default) is asked for as the default too, so it follows the amount; one typed stays.
+  // The value it put there is kept in the form beside the field (`tdsBaseAuto`, never sent).
+  const autoBase = Form.useWatch('tdsBaseAuto', { form, preserve: true }) as number | null | undefined;
+  const savedBase = useRef<number | null>(null);
+  const baseIsAuto = autoBase !== null && autoBase !== undefined && toNumber(values?.tdsBase ?? 0) === autoBase && !form.isFieldTouched('tdsBase');
   const suggestion = useTdsSuggest(
-    { vendorId, section: values?.tdsSection ?? null, amount: settles, base: values?.tdsBase ?? null, on: values?.paymentDate?.format?.('YYYY-MM-DD'), vendorBillId, paymentId: payment?.id ?? null },
+    { vendorId, section: values?.tdsSection ?? null, amount: settles, base: baseIsAuto ? null : (values?.tdsBase ?? null), on: values?.paymentDate?.format?.('YYYY-MM-DD'), vendorBillId, paymentId: payment?.id ?? null },
     open && takesTds,
   ).data;
   const filledSection = useRef(false);
@@ -118,6 +126,8 @@ export function PaymentFormModal({ open, onClose, bill, payment }: { open: boole
   useEffect(() => {
     if (!open) return;
     form.resetFields();
+    savedBase.current = payment?.tds ? toNumber(payment.tds.base) : null;
+    form.setFieldsValue({ tdsBaseAuto: savedBase.current });
     if (payment)
       form.setFieldsValue({
         paymentDate: dayjs(payment.paymentDate),
@@ -133,6 +143,23 @@ export function PaymentFormModal({ open, onClose, bill, payment }: { open: boole
       });
     else form.setFieldsValue({ billKey: bill ? keyOf(bill) : undefined, paymentDate: dayjs(), mode: 'BANK' });
   }, [open, bill, payment, form]);
+
+  useEffect(() => {
+    if (!open || !suggestion || form.isFieldTouched('tdsBase')) return;
+    const now = toNumber(form.getFieldValue('tdsBase') ?? 0);
+    if (savedBase.current !== null) {
+      // An edited payment's first suggestion says whether its saved base was the default: then it follows the amount.
+      const saved = savedBase.current;
+      savedBase.current = null;
+      if (saved === toNumber(suggestion.base)) form.setFieldsValue({ tdsBase: null, tdsBaseAuto: null });
+      else if (saved !== toNumber(suggestion.taxedOn)) form.setFieldsValue({ tdsBaseAuto: null });
+      return;
+    }
+    const auto = form.getFieldValue('tdsBaseAuto') as number | null | undefined;
+    if (auto === null || auto === undefined || now !== auto) return;
+    const fill = toNumber(suggestion.taxedOn) > toNumber(suggestion.base) ? toNumber(suggestion.taxedOn) : null;
+    if (fill !== now) form.setFieldsValue({ tdsBase: fill, tdsBaseAuto: fill });
+  }, [open, suggestion, form]);
 
   // A new payment starts at what is outstanding on the bill.
   useEffect(() => {
@@ -247,13 +274,20 @@ export function PaymentFormModal({ open, onClose, bill, payment }: { open: boole
             </FormGrid>
             {suggestion && isTdsSection(suggestion.section) && (
               <Typography.Paragraph type="secondary">
-                {TDS_SECTIONS[suggestion.section].name} at {suggestion.rate}% on {formatINR(suggestion.base, true)}: <strong translate="no">{formatINR(suggestion.tds, true)}</strong>. {suggestion.threshold.due ? (suggestion.reason ? suggestion.why : '') : suggestion.threshold.why}
+                {TDS_SECTIONS[suggestion.section].name} at {suggestion.rate}% on {formatINR(suggestion.taxedOn, true)}: <strong translate="no">{formatINR(suggestion.tds, true)}</strong>.{' '}
+                {toNumber(suggestion.taxedOn) > toNumber(suggestion.base)
+                  ? `${suggestion.threshold.why}.${suggestion.reason ? ` ${suggestion.why}.` : ''}`
+                  : suggestion.threshold.due
+                    ? (suggestion.reason ? `${suggestion.why}.` : '')
+                    : `${suggestion.threshold.why}.`}
                 {offer && (
                   <Button size="small" type="link" onClick={() => {
-                      // What the payment settles stays put: the TDS comes out of the amount paid.
+                      // What the payment settles stays put: the TDS comes out of the amount paid. A catch-up goes on this
+                      // payment's row, so the base takes it too.
                       const tds = toNumber(offer.tds);
                       const paid = toNumber(values?.amount ?? 0) - (tds - toNumber(values?.tdsAmount ?? 0));
-                      form.setFieldsValue({ tdsAmount: tds || null, ...(paid >= 0 ? { amount: Math.round(paid * 100) / 100 } : {}) });
+                      const catchUp = toNumber(offer.taxedOn) > toNumber(offer.base);
+                      form.setFieldsValue({ tdsAmount: tds || null, ...(catchUp ? { tdsBase: toNumber(offer.taxedOn), tdsBaseAuto: toNumber(offer.taxedOn) } : {}), ...(paid >= 0 ? { amount: Math.round(paid * 100) / 100 } : {}) });
                     }}>
                     {toNumber(offer.tds) ? `Deduct ${formatINR(offer.tds, true)}` : 'Deduct nothing'}
                   </Button>

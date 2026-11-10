@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Table } from 'antd';
+import { useRouter } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { TDS_RETURN_FORM_LABELS, figure, quarterOf, type TdsDeductionDto } from '@erp/shared';
 import { api } from '@/lib/api';
@@ -10,8 +10,40 @@ import { useTdsChallan } from '@/lib/queries';
 import { formatDate, formatDateTime, formatINR } from '@/lib/format';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
 import { Money } from '@/components/common/Money';
+import { LocalDataTable } from '@/components/list/LocalDataTable';
+import type { ListColumn } from '@/components/list/DataTable';
 import { RecordFrame } from '@/components/record/RecordFrame';
+import { tk } from '@/ds';
 import { challanHref, invalidateTds, quarterHref } from './tdsUi';
+
+const caption: React.CSSProperties = { display: 'block', fontSize: tk.type.caption.fontSize, color: tk.color.text.muted };
+
+const columns: ListColumn<TdsDeductionDto>[] = [
+  {
+    key: 'deductee',
+    title: 'Deductee',
+    locked: true,
+    card: 'title',
+    cardText: (d) => d.deducteeName,
+    render: (_, d) => (
+      <div>
+        <span translate="no">{d.deducteeName}</span>
+        <span style={caption}>
+          {d.sourceHref ? (
+            <Link href={d.sourceHref} className="text-link">
+              {d.sourceLabel}
+            </Link>
+          ) : (
+            d.sourceLabel
+          )}
+        </span>
+      </div>
+    ),
+  },
+  { key: 'section', title: 'Section', width: 110, render: (_, d) => <span translate="no">{d.sectionName}</span> },
+  { key: 'paidOn', title: 'Paid on', width: 120, render: (_, d) => formatDate(d.paidOn), card: 'date' },
+  { key: 'tds', title: 'TDS', kind: 'money', value: (d) => d.tdsAmount, width: 140, total: (rows) => formatINR(rows.reduce((n, d) => n + Number(d.tdsAmount), 0)), card: 'amount' },
+];
 
 /**
  * A TDS challan at `/tds/challans/<id>`: the bank's BSR code, date and serial, the tax it paid with the deductions that
@@ -20,6 +52,7 @@ import { challanHref, invalidateTds, quarterHref } from './tdsUi';
  */
 export function ChallanRecord({ id, onClose }: { id: string; onClose: () => void }) {
   const qc = useQueryClient();
+  const router = useRouter();
   const { data: c, isLoading, error, refetch } = useTdsChallan(id);
   const [askDelete, deleteDialog] = useConfirmDelete();
   const remove = useMutation({ mutationFn: async () => (await api.delete(`/tds/challans/${id}`)).data });
@@ -52,7 +85,7 @@ export function ChallanRecord({ id, onClose }: { id: string; onClose: () => void
             ],
             details: [
               { key: 'minor', label: 'Minor head', children: `${c.minorHead}, TDS payable by the taxpayer` },
-              { key: 'tally', label: 'Tally', children: c.exportedToTally ? 'In a Tally export' : 'Not exported yet' },
+              { key: 'tally', label: 'Tally', children: c.inBooks ? 'Already in the books: booked by hand, so it posts nothing' : c.exportedToTally ? 'In a Tally export' : 'Not exported yet' },
               { key: 'by', label: 'Recorded', children: `${c.createdByName}, ${formatDateTime(c.createdAt)}` },
             ],
             sections: [
@@ -62,29 +95,17 @@ export function ChallanRecord({ id, onClose }: { id: string; onClose: () => void
                 count: c.items.length,
                 empty: !c.items.length,
                 children: (
-                  <Table<TdsDeductionDto>
-                    rowKey="id"
-                    size="small"
-                    pagination={c.items.length > 50 ? { pageSize: 50, showSizeChanger: false } : false}
-                    dataSource={c.items}
-                    scroll={{ x: 640 }}
-                    columns={[
-                      { key: 'who', title: 'Deductee', render: (_, d) => <span translate="no">{d.deducteeName}</span> },
-                      { key: 'section', title: 'Section', width: 110, render: (_, d) => <span translate="no">{d.sectionName}</span> },
-                      { key: 'on', title: 'Paid on', width: 120, render: (_, d) => formatDate(d.paidOn) },
-                      { key: 'source', title: 'From', render: (_, d) => (d.sourceHref ? <Link href={d.sourceHref}>{d.sourceLabel}</Link> : d.sourceLabel) },
-                      { key: 'tds', title: 'TDS', width: 140, align: 'right', render: (_, d) => <Money value={d.tdsAmount} paise /> },
-                    ]}
-                    summary={() => (
-                      <Table.Summary.Row>
-                        <Table.Summary.Cell index={0} colSpan={4} align="right">
-                          Tax in the challan
-                        </Table.Summary.Cell>
-                        <Table.Summary.Cell index={1} align="right">
-                          <Money value={c.tax} paise strong />
-                        </Table.Summary.Cell>
-                      </Table.Summary.Row>
-                    )}
+                  <LocalDataTable<TdsDeductionDto>
+                    list="tds-challan-deductions"
+                    columns={columns}
+                    rows={c.items}
+                    loading={false}
+                    failed={false}
+                    onOpen={(rowId) => {
+                      const href = c.items.find((d) => d.id === rowId)?.sourceHref;
+                      if (href) router.push(href);
+                    }}
+                    emptyText="No deductions in this challan"
                   />
                 ),
               },

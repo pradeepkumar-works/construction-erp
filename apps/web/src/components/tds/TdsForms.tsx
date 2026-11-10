@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import { Form, Input, Select, Typography } from 'antd';
+import { Checkbox, Form, Input, Select, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   TDS_RETURN_FORM_LABELS,
   TDS_SECTIONS,
   challanInterest,
+  challanSectionProblem,
   isTdsSection,
   type TdsCertificateDto,
   type TdsChallanDetailDto,
@@ -33,6 +34,7 @@ interface ChallanValues {
   deductionIds: string[];
   interest?: number | null;
   fee?: number | null;
+  inBooks?: boolean;
 }
 
 /**
@@ -50,8 +52,11 @@ export function RecordChallanModal({ open, onClose, quarter, chosen }: { open: b
   const tax = sumOf(picked);
   const later = on ? picked.find((d) => d.paidOn > ymd(on)) : undefined;
   const interest = on && picked.length ? challanInterest(ymd(on), picked) : null;
+  const mixed = challanSectionProblem(quarter.form, picked.map((d) => d.section));
   useEffect(() => {
-    if (open) form.setFieldsValue({ depositedOn: dayjs(), bsrCode: undefined, challanSerial: undefined, deductionIds: chosen?.length ? chosen : waiting.map((d) => d.id), interest: null, fee: null });
+    // A 26Q challan is deposited under one section: unless rows were chosen, those of the first section waiting.
+    const first = waiting[0]?.section;
+    if (open) form.setFieldsValue({ depositedOn: dayjs(), bsrCode: undefined, challanSerial: undefined, deductionIds: chosen?.length ? chosen : waiting.filter((d) => d.section === first).map((d) => d.id), interest: null, fee: null, inBooks: false });
   }, [open, chosen, waiting, form]);
   const mutation = useMutation({
     mutationFn: async (v: ChallanValues) =>
@@ -64,6 +69,7 @@ export function RecordChallanModal({ open, onClose, quarter, chosen }: { open: b
           deductionIds: v.deductionIds,
           interest: v.interest === null || v.interest === undefined ? null : v.interest.toFixed(2),
           fee: v.fee ? v.fee.toFixed(2) : null,
+          inBooks: !!v.inBooks,
         })
       ).data,
     onSuccess: (c) => {
@@ -89,7 +95,7 @@ export function RecordChallanModal({ open, onClose, quarter, chosen }: { open: b
         <Form.Item
           name="deductionIds"
           label="Deductions it paid"
-          tooltip="Every deduction of the quarter not yet in a challan is chosen; take off the ones this challan did not pay"
+          tooltip={quarter.form === 'FORM_26Q' ? 'A 26Q challan pays one section: the deductions of the first section not yet in a challan are chosen; take off the ones this challan did not pay' : 'Every deduction of the quarter not yet in a challan is chosen; take off the ones this challan did not pay'}
           rules={[{ required: true, type: 'array', min: 1, message: 'Choose the deductions this challan paid' }]}
         >
           <Select
@@ -103,6 +109,7 @@ export function RecordChallanModal({ open, onClose, quarter, chosen }: { open: b
         <Typography.Paragraph>
           Tax in the challan: <strong translate="no">{formatINR(tax, true)}</strong> for {picked.length} {picked.length === 1 ? 'deduction' : 'deductions'}.
         </Typography.Paragraph>
+        {mixed && <Typography.Paragraph type="danger">{mixed}.</Typography.Paragraph>}
         {later && (
           <Typography.Paragraph type="danger">
             {later.deducteeName}&apos;s deduction of {formatDate(later.paidOn)} is after the deposit date: a challan pays only tax already deducted.
@@ -121,6 +128,14 @@ export function RecordChallanModal({ open, onClose, quarter, chosen }: { open: b
             <MoneyInput />
           </Form.Item>
         </FormGrid>
+        <Form.Item
+          name="inBooks"
+          label="Accounts"
+          valuePropName="checked"
+          tooltip="For a challan deposited and entered in your accounts or Tally by hand before Nirmaan kept TDS: it goes on the return but posts no voucher, so the payment is not booked twice"
+        >
+          <Checkbox>Already in the books, booked by hand</Checkbox>
+        </Form.Item>
       </Form>
     </FormShell>
   );

@@ -174,7 +174,7 @@ export function TdsQuarterView() {
               {c.label}
             </span>
           </RecordLink>
-          <span style={caption}>{`${c.deductions} ${c.deductions === 1 ? 'deduction' : 'deductions'}${c.late ? ', deposited late' : ''}${c.exportedToTally ? ', in Tally' : ''}`}</span>
+          <span style={caption}>{`${c.deductions} ${c.deductions === 1 ? 'deduction' : 'deductions'}${c.late ? ', deposited late' : ''}${c.inBooks ? ', already in the books' : c.exportedToTally ? ', in Tally' : ''}`}</span>
         </div>
       ),
     },

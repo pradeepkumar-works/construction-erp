@@ -83,6 +83,7 @@ export async function downloadReturnFile(q: TdsQuarterDto) {
       tdsAmount: d.tdsAmount,
       reason: d.reason,
       certificateNo: d.certificateNo,
+      certificateBase: d.certificateBase,
       challanId: d.challanId,
     })),
   );
