@@ -634,7 +634,8 @@ export class PurchaseOrdersService {
     const freight = parseFreight(dto.freight);
     const deliveryAddress = dto.deliveryAddress?.trim() || (await this.siteAddress(user.organizationId, dto.projectId));
     // Kinds and ranges on every save; required fields wait for submit (`submitOrder`).
-    const customValues = await this.fields.read(user, 'PURCHASE_ORDER', dto.customValues ?? {}, undefined);
+    // Save and submit asks for the required fields here, before anything is written, so a refusal leaves no draft behind.
+    const customValues = await this.fields.read(user, 'PURCHASE_ORDER', dto.customValues ?? {}, undefined, { required: !!dto.submit });
     let id: string | null;
     try {
       id = await this.prisma.$transaction(async (tx) => {
@@ -752,7 +753,10 @@ export class PurchaseOrdersService {
     data.paymentDays = this.paymentDays(dto.paymentDays !== undefined ? dto.paymentDays : current.paymentDays, vendor);
     if (dto.remarks !== undefined) data.remarks = dto.remarks || null;
     if (dto.selectionReason !== undefined) data.selectionReason = dto.selectionReason?.trim() || null;
-    if (dto.customValues !== undefined) data.customValues = await this.fields.read(user, 'PURCHASE_ORDER', dto.customValues, current.customValues);
+    if (dto.customValues !== undefined || dto.submit) {
+      const values = await this.fields.read(user, 'PURCHASE_ORDER', dto.customValues ?? {}, current.customValues, { required: !!dto.submit });
+      if (dto.customValues !== undefined) data.customValues = values;
+    }
     const freight = dto.freight !== undefined ? parseFreight(dto.freight) : current.freight;
     data.freight = freight;
     await this.prisma.$transaction(async (tx) => {

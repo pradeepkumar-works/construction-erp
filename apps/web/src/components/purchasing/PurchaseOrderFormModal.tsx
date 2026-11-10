@@ -18,7 +18,7 @@ import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { UnitInput } from '@/components/common/UnitInput';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { CustomFieldsFormSection } from '@/components/custom-fields/CustomFieldsFormSection';
-import { customValuesBody } from '@/components/custom-fields/values';
+import { customValuesBody, missingRequired } from '@/components/custom-fields/values';
 import { LineTable } from '@/components/form/LineTable';
 import { ItemPicker } from '@/components/form/ItemPicker';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
@@ -168,6 +168,13 @@ export function PurchaseOrderFormModal({
 
   const save = useMutation({
     mutationFn: async ({ v, submit }: { v: FormValues; submit: boolean }) => {
+      const customValues = customValuesBody(fields, v.customValues);
+      // Sending it for approval asks for the required fields first, as the API does, so nothing is saved half way.
+      const missing = submit ? missingRequired(fields, customValues ?? {}, order?.customValues) : [];
+      if (missing.length) {
+        form.setFields(missing);
+        throw new Error(`${missing.flatMap((m) => m.errors).join('. ')} before sending the order for approval, or save it as a draft`);
+      }
       const body = {
         vendorId: v.vendorId,
         poDate: v.poDate.format('YYYY-MM-DD'),
@@ -180,7 +187,7 @@ export function PurchaseOrderFormModal({
         selectionReason: needsReason ? v.selectionReason?.trim() || null : null,
         attachmentIds: (v.docs ?? []).map((d) => d.id),
         submit,
-        customValues: customValuesBody(fields, v.customValues),
+        customValues,
         lines: v.lines.map((l) =>
           l.materialRequestItemId
             ? { materialRequestItemId: l.materialRequestItemId, make: l.make?.trim() || null, quantity: String(l.quantity), rate: String(l.rate), gstRate: String(l.gstRate ?? 0) }
