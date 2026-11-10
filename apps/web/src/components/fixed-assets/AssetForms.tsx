@@ -168,7 +168,7 @@ export function AssetFormDrawer({ open, onClose, asset, machine, onSaved }: { op
             </Form.Item>
             {asset ? null : (
               <Form.Item name="projectId" label="Where it is">
-                <ProjectSelect headOffice allowClear={false} placeholder="Head office" />
+                <ProjectSelect headOffice allowClear={false} placeholder="Head office" aria-label="Where it is" />
               </Form.Item>
             )}
           </FormGrid>
@@ -257,7 +257,7 @@ export function TransferModal({ open, onClose, asset }: { open: boolean; onClose
       <Form form={form} layout="vertical">
         <Typography.Paragraph type="secondary">Now at {asset.projectName ?? 'head office'}.</Typography.Paragraph>
         <Form.Item name="toProjectId" label="Move to" rules={[{ required: true, message: 'Choose the site, or head office' }]}>
-          <ProjectSelect headOffice exclude={asset.projectId ?? undefined} placeholder="Choose the site" style={{ width: '100%' }} />
+          <ProjectSelect headOffice exclude={asset.projectId ?? undefined} placeholder="Choose the site" aria-label="Move to" style={{ width: '100%' }} />
         </Form.Item>
         <Form.Item name="on" label="Moved on" rules={[{ required: true, message: 'Choose the day it moved' }]}>
           <DatePicker style={{ width: '100%' }} />

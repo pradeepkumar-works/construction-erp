@@ -90,7 +90,7 @@ export function AssetRecord({ id, onClose }: { id: string; onClose: () => void }
             title: <span translate="no">{`${a.assetNo} · ${a.name}`}</span>,
             tags: <AssetStatusTag status={a.status} />,
             context: a.projectId && a.projectName ? projectContext({ projectId: a.projectId, projectName: a.projectName }) : { label: 'Head office' },
-            headline: [figure('assetBookValue', a.bookValue, { when: 'today' }), figure('assetDepreciation', a.depreciation, { when: 'toDate' })],
+            headline: [figure('assetBookValue', a.bookValue, { when: 'today' }), figure('assetDepreciation', a.depreciation)],
             facts: [
               { key: 'cost', label: 'Cost', children: <Money value={a.cost} paise strong /> },
               { key: 'class', label: 'Class', children: ASSET_CLASSES[a.assetClass].label },

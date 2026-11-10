@@ -102,7 +102,7 @@ export function AssetRegister() {
             label="Fixed asset figures"
             figures={[
               figure('assetCost', s.cost, { count: s.count }),
-              figure('assetDepreciation', s.depreciation, { when: 'toDate' }),
+              figure('assetDepreciation', s.depreciation),
               figure('assetBookValue', s.bookValue, { when: 'today', ...(c && off ? { caveat: `The balance sheet's property, plant and equipment is ${formatINR(c.ppe)}, ${formatINR(Math.abs(toNumber(c.difference)))} ${toNumber(c.difference) > 0 ? 'more' : 'less'}: fixed assets in the books outside the register` } : {}) }),
             ]}
           />
