@@ -415,3 +415,6 @@ export type NavPalette = (typeof NAV_PALETTES)[number];
 /** The discipline an Indian Standard belongs to (`is-standards.ts`): the library filters and compliance groups by it. */
 export const IS_DISCIPLINES = ['CIVIL', 'MECHANICAL', 'ELECTRICAL'] as const;
 export type IsDiscipline = (typeof IS_DISCIPLINES)[number];
+/** Who signs a company's people in with single sign-on (`sso.ts`; labels in `SSO_PROVIDER_INFO`). */
+export const SSO_PROVIDERS = ['ENTRA', 'GOOGLE'] as const;
+export type SsoProvider = (typeof SSO_PROVIDERS)[number];

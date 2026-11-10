@@ -16,6 +16,8 @@ export interface JwtPayload {
   /** A read-only support session: sub is the Nirmaan staff member, org the company they are looking at */
   sup?: boolean;
   exp?: number;
+  /** Signed in through this company's single sign-on (ARCHITECTURE "Single sign-on"); absent for a password */
+  sso?: string;
   /** Issued at (seconds), set by the signer */
   iat?: number;
 }
@@ -68,6 +70,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       ...(user.vendorId ? { vendorId: user.vendorId } : {}),
       ...(readOnly ? { billingReadOnly: true } : {}),
       ...(off.length ? { modulesOff: off } : {}),
+      ...(payload.sso ? { ssoOrg: payload.sso } : {}),
     };
   }
 

@@ -88,9 +88,13 @@ export class PasswordLinksService {
     return { purpose: r.purpose, email: r.user.email, fullName: r.user.fullName, organizationName: r.organization.name, expiresAt: r.expiresAt.toISOString() };
   }
 
-  /** Use the link: set the password, close every open link of the user, end the invite. Returns the user id. */
-  async use(token: string, password: string): Promise<string> {
+  /**
+   * Use the link: set the password, close every open link of the user, end the invite. Returns the user id.
+   * `beforeUse` may refuse the user before anything changes (a company that requires single sign-on).
+   */
+  async use(token: string, password: string, beforeUse?: (userId: string) => Promise<void>): Promise<string> {
     const r = await this.valid(token);
+    await beforeUse?.(r.userId);
     const passwordHash = await bcrypt.hash(password, 10);
     const done = await this.prisma.passwordToken.updateMany({ where: { id: r.id, usedAt: null }, data: { usedAt: new Date() } });
     if (done.count === 0) throw new BadRequestException('This link has already been used.');

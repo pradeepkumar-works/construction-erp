@@ -186,6 +186,8 @@ export const canManageUsers = (role: RoleKey) => USER_ADMIN_ROLES.includes(role)
 export const canViewAuditLog = (role: RoleKey) => role === 'ADMIN';
 /** Export all the company's data, or ask for the company to be deleted: admins only. */
 export const canManageCompanyData = (role: RoleKey) => role === 'ADMIN';
+/** Single sign-on settings (Company settings › Sign-in): admins only. */
+export const canManageSso = (role: RoleKey) => role === 'ADMIN';
 /** See and pay for the company's subscription: admins only. */
 export const canManageBilling = (role: RoleKey) => role === 'ADMIN';
 /** Changing or deleting a view someone else shared with the company (owners always can). */

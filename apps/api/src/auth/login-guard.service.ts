@@ -6,6 +6,8 @@ import { blockMessage, LOGIN_WINDOW_MINUTES, loginBlock, resetAllowed } from './
 
 const LOGIN_FAILED = 'LOGIN_FAILED';
 const RESET_REQUESTED = 'RESET_REQUESTED';
+/** A single sign-on that did not finish (`sso.service.ts`): counted against the address, never the email */
+const SSO_FAILED = 'SSO_FAILED';
 
 /** The caller's address: the first hop Vercel or a proxy recorded, else the socket's. */
 export function clientIp(req: IncomingMessage): string | null {
@@ -30,8 +32,8 @@ export class LoginGuardService {
     return new Date(Date.now() - minutes * 60_000);
   }
 
-  private async times(kind: string, where: { email?: string; ip?: string }, minutes: number): Promise<Date[]> {
-    const rows = await this.prisma.authAttempt.findMany({ where: { kind, ...where, createdAt: { gt: this.since(minutes) } }, select: { createdAt: true }, orderBy: { createdAt: 'desc' }, take: 100 });
+  private async times(kind: string | string[], where: { email?: string; ip?: string }, minutes: number): Promise<Date[]> {
+    const rows = await this.prisma.authAttempt.findMany({ where: { kind: { in: ([] as string[]).concat(kind) }, ...where, createdAt: { gt: this.since(minutes) } }, select: { createdAt: true }, orderBy: { createdAt: 'desc' }, take: 100 });
     return rows.map((r) => r.createdAt);
   }
 
@@ -39,7 +41,7 @@ export class LoginGuardService {
   async assertMayTry(email: string, ip: string | null) {
     const now = new Date();
     const [emailFailures, addressFailures] = await withoutTenant(() =>
-      Promise.all([this.times(LOGIN_FAILED, { email }, LOGIN_WINDOW_MINUTES), ip ? this.times(LOGIN_FAILED, { ip }, LOGIN_WINDOW_MINUTES) : Promise.resolve([])]),
+      Promise.all([this.times(LOGIN_FAILED, { email }, LOGIN_WINDOW_MINUTES), ip ? this.times([LOGIN_FAILED, SSO_FAILED], { ip }, LOGIN_WINDOW_MINUTES) : Promise.resolve([])]),
     );
     const block = loginBlock({ emailFailures, addressFailures, now });
     if (block) throw new HttpException(blockMessage(block, at), HttpStatus.TOO_MANY_REQUESTS);
@@ -50,6 +52,13 @@ export class LoginGuardService {
       await this.prisma.authAttempt.create({ data: { kind: LOGIN_FAILED, email, ip } });
       // Keeps the table small: nothing older than a day is ever read.
       await this.prisma.authAttempt.deleteMany({ where: { createdAt: { lt: this.since(24 * 60) } } });
+    });
+  }
+
+  /** A failed single sign-on: `who` is the provider's email when the token said one, else `sso:<company code>`. */
+  async ssoFailed(who: string, ip: string | null) {
+    await withoutTenant(async () => {
+      await this.prisma.authAttempt.create({ data: { kind: SSO_FAILED, email: who.toLowerCase(), ip } });
     });
   }
 

@@ -16,7 +16,7 @@ type Model = Prisma.DMMF.Model;
 type Field = Prisma.DMMF.Field;
 
 /** Tables left out of the export: sign-in secrets and device push tokens. */
-const NOT_EXPORTED = new Set(['PasswordToken', 'PushToken']);
+const NOT_EXPORTED = new Set(['PasswordToken', 'PushToken', 'SsoTicket']);
 /** Kept when a company is erased, with the company link emptied: its GST invoices, which the tax records need and whose numbers must never be reused. */
 const KEPT_ON_ERASE = new Set(['BillingPayment']);
 /** Columns left out of the export (file bytes go in the photos folder instead). */

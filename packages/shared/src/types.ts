@@ -175,6 +175,8 @@ export interface AuthOptionsDto {
   demoLogin: boolean;
   /** Password-reset emails can be sent (email provider and web address configured). */
   resetByEmail: boolean;
+  /** Single sign-on can be used on this server (SSO_CALLBACK_URL, WEB_URL and INTEGRATION_KEY set): the sign-in page offers it. */
+  sso: boolean;
   /** The public price for the product page, or null while billing is switched off. */
   pricing: { unit: BillingUnit; /** Rupees per unit per month, before GST */ price: string; trialDays: number; yearChargedMonths: number } | null;
 }
