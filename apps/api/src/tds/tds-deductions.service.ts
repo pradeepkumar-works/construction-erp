@@ -110,8 +110,12 @@ export class TdsDeductionsService {
     if (base.lte(0)) throw new BadRequestException('Enter the amount TDS is worked out on');
     if (base.decimalPlaces() > 2) throw new BadRequestException('Amounts are in rupees and paise');
     if (p.tdsAmount.gt(base)) throw new BadRequestException('The TDS cannot be more than the amount it is worked out on');
-    const vendor = await this.prisma.vendor.findFirstOrThrow({ where: { id: p.vendorId, organizationId }, select: { pan: true } });
-    const cert = validPan(vendor.pan) ? await this.certificateFor(this.prisma, organizationId, p.vendorId, p.section, p.paymentDate) : null;
+    // The vendor and any certificate at once (a payment's create time is held to trunk's): a certificate counts only
+    // with a PAN, which tdsRate checks first.
+    const [vendor, cert] = await Promise.all([
+      this.prisma.vendor.findFirstOrThrow({ where: { id: p.vendorId, organizationId }, select: { pan: true } }),
+      this.certificateFor(this.prisma, organizationId, p.vendorId, p.section, p.paymentDate),
+    ]);
     const r = tdsRate(p.section, { pan: vendor.pan, certificate: cert }, p.paymentDate, base.toString());
     return { section: p.section, base, rate: D(rateText(r.rate)), reason: r.reason, certificateNo: r.certificateNo };
   }

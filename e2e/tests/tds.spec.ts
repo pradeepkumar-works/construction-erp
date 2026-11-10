@@ -247,7 +247,7 @@ test("lane 5: the quarter's 26Q, its totals by section the deductions' and what 
   await expect(page.getByText('TDS deducted', { exact: true }).first()).toBeVisible();
   await expect(page.getByText(`${noPan.name} has no PAN: the row goes as PANNOTAVBL. Add their PAN`)).toBeVisible();
   const blocking = r.problems.filter((p) => p.blocks);
-  if (blocking.length) await expect(page.getByText(blocking[0].text)).toBeVisible();
+  if (blocking.length) await expect(page.getByText(blocking[0].text).first()).toBeVisible();
   await shot(page, 'tds-26q.png');
 
   await page.getByRole('tab', { name: 'By section' }).click();
