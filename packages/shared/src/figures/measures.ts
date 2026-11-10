@@ -186,6 +186,8 @@ export const MEASURES = {
   assetDepreciation: { label: 'Depreciation to date', kind: 'money', better: 'either', list: '/fixed-assets', define: 'Depreciation charged before Nirmaan plus the posted runs.' },
   assetBookValue: { label: 'Net book value', kind: 'money', better: 'either', list: '/fixed-assets', define: 'Cost less depreciation to date.' },
   depreciationRunTotal: { label: 'Depreciation for the period', kind: 'money', better: 'either', items: ['asset', 'assets'], list: '/fixed-assets?tab=runs', define: 'Each asset’s Companies Act charge for the days it was in use in the period.' },
+  // Bank payments
+  paymentBatchTotal: { label: 'Paid by the bank file', kind: 'money', better: 'either', items: ['payment', 'payments'], list: '/bank-payments', define: 'What the batch’s file pays: the approved requests whose vendors have a bank account and IFSC.' },
   // Leakage checks
   leakageAtRisk: { label: 'Leakage at risk', kind: 'money', better: 'down', flag: { level: 'act', clear: 'No leakage flagged' }, items: ['flag', 'flags'], list: '/leakage', define: 'Rupees at risk on what the leakage checks flagged in the month.' },
   leakageFlags: { label: 'Leakage flags', kind: 'count', better: 'down', flag: { level: 'act', clear: 'No leakage flagged' }, list: '/leakage', define: 'What the leakage checks flagged in the month.' },

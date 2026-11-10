@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-bank-payments',
+    date: '2026-11-12',
+    title: 'Bank payments: pay vendors with one bank file',
+    points: [
+      'Accounts › Bank payments puts approved payment requests in a batch and makes the bulk upload file in your bank’s layout: generic NEFT and RTGS, HDFC, ICICI or SBI. RTGS from two lakh, NEFT below.',
+      'A vendor without a bank account or IFSC is listed and left out of the file, and a request already in another open batch cannot be added twice.',
+      'Making the file records each payment against its request, as one recorded by hand, so payables and the books have it the same day.',
+      'Import the bank’s response file, or paste the UTRs, and each payment carries its UTR; the batch is settled when every payment has one.',
+    ],
+  },
+  {
     id: '2026-11-fixed-assets',
     date: '2026-11-11',
     title: 'Fixed assets: the register, depreciation and disposals',

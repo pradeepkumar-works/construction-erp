@@ -347,6 +347,39 @@ export class PaymentBatchesService {
     return this.get(user, id);
   }
 
+  /**
+   * Undo an export the bank has not acted on (the file was refused, or made with the wrong account): its payments come
+   * off through payables, and the batch is a draft again. Refused once a UTR is in or a payment is in Tally.
+   */
+  async undoExport(user: RequestUser, id: string): Promise<PaymentBatchDetailDto> {
+    const b = await this.load(user, id);
+    if (b.status !== 'EXPORTED') throw new BadRequestException(b.status === 'DRAFT' ? `${b.batchNo} is not exported` : `${b.batchNo} is settled; its payments have their UTRs`);
+    const withUtr = b.lines.find((l) => l.vendorPayment?.reference);
+    if (withUtr) throw new BadRequestException(`${withUtr.paymentRequest.requestNo} already has its UTR, so the bank has paid it; the export stays`);
+    const removals: Awaited<ReturnType<PayablesService['prepareRemove']>>[] = [];
+    for (const l of b.lines) if (l.vendorPayment) removals.push(await this.payables.prepareRemove(user, l.vendorPayment.id));
+    await this.prisma.$transaction(async (tx) => {
+      const back = await tx.paymentBatch.updateMany({
+        where: { id, organizationId: user.organizationId, status: 'EXPORTED' },
+        data: { status: 'DRAFT', exportedById: null, exportedAt: null, paymentDate: null, fileName: null, fileContent: null },
+      });
+      if (back.count !== 1) throw new ConflictException(`${b.batchNo} changed meanwhile; open it again`);
+      const utr = await tx.vendorPayment.count({ where: { id: { in: removals.map((r) => r.row.id) }, reference: { not: null } } });
+      if (utr) throw new ConflictException(`A UTR came in for ${b.batchNo} meanwhile; the export stays`);
+      for (const r of removals) await this.payables.removeIn(tx, r);
+      await tx.paymentBatchLine.updateMany({ where: { batchId: id }, data: { accountNo: null, ifsc: null, payMode: null } });
+      // Lines left out come back unless their request went into another batch meanwhile.
+      for (const l of b.lines.filter((x) => x.leftOut)) {
+        const elsewhere = await tx.paymentBatchLine.count({ where: { paymentRequestId: l.paymentRequestId, open: true } });
+        if (elsewhere) await tx.paymentBatchLine.delete({ where: { id: l.id } });
+        else await tx.paymentBatchLine.update({ where: { id: l.id }, data: { open: true, leftOut: null } });
+      }
+    }, EXPORT_TX);
+    for (const r of removals) await this.payables.announceRemove(user, r);
+    await this.audit.log(user, 'PAYMENT_BATCH', id, 'EXPORT_UNDONE', `${removals.length} payments taken off`);
+    return this.get(user, id);
+  }
+
   /** The file as export made it. */
   async file(user: RequestUser, id: string): Promise<BankFileDto> {
     const b = await this.load(user, id);

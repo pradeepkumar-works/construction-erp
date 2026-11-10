@@ -66,6 +66,12 @@ export class PaymentBatchesController {
     return this.batches.exportFile(user, id);
   }
 
+  @ApiOperation({ summary: 'Undo an export the bank has not acted on: its payments come off and the batch is a draft again' })
+  @Post(':id/undo-export')
+  undoExport(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string) {
+    return this.batches.undoExport(user, id);
+  }
+
   @ApiOperation({ summary: 'The bank file as export made it' })
   @Get(':id/file')
   file(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string) {

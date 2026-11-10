@@ -181,6 +181,8 @@ export const NAV: Record<string, string> = {
   "Each machine's day from its tracker beside its log: hours above the engine, days with no log.": 'हर मशीन का दिन उसके ट्रैकर से, लॉग के साथ: इंजन से ज़्यादा घंटे, बिना लॉग के दिन।',
   'Own and hired machines, tyres and batteries.': 'अपनी और किराए की मशीनें, टायर और बैटरी।',
   'Machine loans': 'मशीन लोन',
+  'Bank payments': 'बैंक भुगतान',
+  'Approved payment requests paid in one bank file, and the UTRs read back.': 'स्वीकृत भुगतान अनुरोध एक बैंक फ़ाइल में चुकाए गए, और UTR वापस पढ़े गए।',
   'Fixed assets': 'स्थायी संपत्तियाँ',
   'The asset register: cost, depreciation and book value, transfers and disposals.': 'संपत्ति रजिस्टर: लागत, मूल्यह्रास और बुक वैल्यू, स्थानांतरण और निपटान।',
   'Depreciation runs': 'मूल्यह्रास रन',

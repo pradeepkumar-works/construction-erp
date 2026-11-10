@@ -531,20 +531,33 @@ export class PayablesService {
 
   /** Take off a payment entered by mistake; its bill goes back to unpaid if it no longer settles. */
   async remove(user: RequestUser, id: string) {
-    const { row, bill, request } = await this.load(user, id);
-    assertNotExported(row, 'This payment');
-    await this.prisma.$transaction(async (tx) => {
-      await this.lock(tx, bill);
-      await this.checkAdvanceCovers(tx, bill, id, null);
-      await tx.vendorPayment.delete({ where: { id } });
-      if (isBill(bill)) await syncPaid(tx, bill.type, bill.id);
-      if (request) await syncRequestPaid(tx, request.id);
-    });
+    const r = await this.prepareRemove(user, id);
+    await this.prisma.$transaction((tx) => this.removeIn(tx, r));
+    await this.announceRemove(user, r);
+    return { ok: true };
+  }
+
+  /** The checks before a payment comes off: the payer's role, and not already sent to Tally. */
+  async prepareRemove(user: RequestUser, id: string) {
+    const r = await this.load(user, id);
+    assertNotExported(r.row, 'This payment');
+    return r;
+  }
+
+  /** Take the payment off in the caller's transaction, under its bill's lock, keeping enough paid for advances already used. */
+  async removeIn(tx: Prisma.TransactionClient, { row, bill, request }: Awaited<ReturnType<PayablesService['prepareRemove']>>) {
+    await this.lock(tx, bill);
+    await this.checkAdvanceCovers(tx, bill, row.id, null);
+    await tx.vendorPayment.delete({ where: { id: row.id } });
+    if (isBill(bill)) await syncPaid(tx, bill.type, bill.id);
+    if (request) await syncRequestPaid(tx, request.id);
+  }
+
+  async announceRemove(user: RequestUser, { row, bill, request }: Awaited<ReturnType<PayablesService['prepareRemove']>>) {
     const takenOff = `₹${row.amount.toFixed(2)} of ${dateOnly(row.paymentDate)} taken off`;
-    await this.audit.log(user, 'VENDOR_PAYMENT', id, 'DELETED', `${inr(row.amount)} of ${formatDay(dateOnly(row.paymentDate))}`);
+    await this.audit.log(user, 'VENDOR_PAYMENT', row.id, 'DELETED', `${inr(row.amount)} of ${formatDay(dateOnly(row.paymentDate))}`);
     if (isBill(bill)) await this.audit.log(user, bill.type, bill.id, 'PAYMENT_REMOVED', takenOff);
     if (request) await this.audit.log(user, 'PAYMENT_REQUEST', request.id, 'PAYMENT_REMOVED', takenOff);
-    return { ok: true };
   }
 
   /** Payables as of today, for the projects the user can see. */
