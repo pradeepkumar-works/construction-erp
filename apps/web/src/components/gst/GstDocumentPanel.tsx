@@ -174,7 +174,7 @@ export function GstDocumentPanel({ sourceKind, sourceId, state }: { sourceKind: 
               <AppTag kind="gstDocument" status={d.status}>
                 {GST_DOCUMENT_STATUS_LABELS[d.status]}
               </AppTag>
-              {d.number ? mono(d.number) : null}
+              {d.number ? <span style={{ wordBreak: 'break-all', minWidth: 0 }}>{mono(d.number)}</span> : null}
               <Typography.Text type="secondary">
                 {d.status === 'CANCELLED'
                   ? `${formatDateTime(d.cancelledAt)}${d.cancelRemark ? `: ${d.cancelRemark}` : ''}`

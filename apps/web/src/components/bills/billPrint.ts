@@ -184,8 +184,7 @@ ${PRINT_FONT_LINKS}
     <div><b>Measurement sheets</b>${esc(b.measurementCount)}</div>`}
     <div><b>Sent</b>${esc(b.sentDate ? formatDate(b.sentDate) : '-')}</div>
     <div><b>Certified</b>${esc(b.certifiedDate ? formatDate(b.certifiedDate) : '-')}${b.certificateNo ? ` (${esc(b.certificateNo)})` : ''}</div>
-  </div>
-  ${irnBlockHtml(irn)}
+  </div>${irn ? `\n  ${irnBlockHtml(irn)}` : ''}
 
 ${
   staged
