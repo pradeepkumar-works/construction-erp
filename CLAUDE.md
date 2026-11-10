@@ -468,8 +468,8 @@ and the pre-delivery checklist.
 - Custom fields (item 193, `apps/api/src/custom-fields`, ARCHITECTURE "Custom fields"): a company's own field on a vendor,
   project or purchase order is a `CustomFieldDef` (archived, never deleted; key and kind never change), checked only by
   `customFieldProblem`; its values in the record's `customValues` are read only by `readCustomValues` through
-  `CustomFieldsService.read` inside the entity's own `create` / `update` (an order's required ones by `assertComplete` at
-  submit), never a check of a form's own. A new kind of record is a `CUSTOM_FIELD_ENTITIES` key (`@erp/shared/custom-fields.ts`,
+  `CustomFieldsService.read` inside the entity's own `create` / `update` (an order's required ones there on Save and
+  submit, before any write, and by `assertComplete` in `submitOrder`), never a check of a form's own. A new kind of record is a `CUSTOM_FIELD_ENTITIES` key (`@erp/shared/custom-fields.ts`,
   where the DPR's field kinds and `readExtra` live too). Keep `src/scripts/custom-fields-test.ts` passing.
 - RMC (item 104, `apps/api/src/rmc`, ARCHITECTURE "RMC plant"): a plant is a project of type `PLANT`; a truck's materials
   leave the plant's store only through `StockService.issue`, and cubes are a quality test through `QualityService`. Its

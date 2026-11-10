@@ -3580,30 +3580,39 @@ them. They are the DPR's own field kinds, in one shared home.
   and `archivedAt`, unique by company, entity and key. The key is made once from the name and never changes, nor does the
   kind (another kind is another field); a field is archived, never deleted, so a key means the same thing in every record
   that holds it. `normaliseCustomField` tidies what is typed and `customFieldProblem` holds the name (1 to 60 letters,
-  not another active field's), the choices (at least two), the range and the limit of 20 active fields per kind of record.
+  not another field's of the same kind of record, archived ones included, since their records still show them), the
+  choices (at least two), the range and the limit of 20 active fields per kind of record. A key is never one of an
+  object's own names (`constructor`, `toString`), and values are read only from a record's own keys. A changed range or
+  a choice taken out leaves records as they are; their next save asks for a value that fits.
 - **Values.** `customValues Json` on `Vendor`, `Project` and `PurchaseOrder`, by key, each as its kind keeps it. They are
   read only by `readCustomValues` (the active fields over what the record holds with what was sent laid on top, so a
   client that sends one field leaves the rest and a blank clears one; an archived field keeps its value whatever is sent;
-  keys of no field are dropped) through `CustomFieldsService.read`, which each entity's own `create` and `update` calls
+  keys of no field are dropped; a date must be a real day) through `CustomFieldsService.read`, which each entity's own `create` and `update` calls
   and which refuses with every problem in words ("Turnover: enter a number of 0 Cr or more"). Vendors and projects ask
   for required fields whenever values are sent (the forms always send them; a record made elsewhere, as a project from a tender, sends none).
-  A purchase order is checked for kinds and ranges on every save and for required fields only in `submitOrder`, every
-  way it goes for approval, through `assertComplete` ("Choose Funding before sending the purchase order for approval").
-  Lists return `customValues` from the row they already read, so `GET /vendors` gains a column and no query. A client
-  guest sees a project's values blank (`canSeeCustomValues`).
+  A purchase order is checked for kinds and ranges on every save and for required fields when it goes for approval:
+  Save and submit asks in its own `create` or `update` before anything is written (so a refusal leaves no stray draft),
+  and the record's Submit asks in `submitOrder` through `assertComplete` ("Choose Funding before sending the purchase
+  order for approval"). The web form asks the same before it sends.
+  Lists return `customValues` from the row they already read, so `GET /vendors` gains a column and no query.
 - **Access.** `GET /custom-fields?entity=` for staff; `POST /custom-fields`, `PATCH /custom-fields/:id` and
   `POST /custom-fields/:id/archive | restore` for `canManageCustomFields` (admin), 403 otherwise, each change in the company
   log (`CUSTOM_FIELD`).
-- **Web** (`components/custom-fields/`). Company settings › Fields is a `Section` per kind of record with Add field, Edit
+- **Web** (`components/custom-fields/`). Company settings › Fields is a `Section` per kind of record with New field, Edit
   (a `FormShell` modal showing the key, kind fixed), Archive and Restore. `CustomFieldsFormSection` is a form's More
   details `FormSection`, a `Form.Item` per active field under `customValues.<key>` checked by `readCustomValues`, so the
-  form says what the API would; an archived field that holds a value shows read only. `CustomFieldsSection` and
+  form says what the API would, through the one `FieldInput` the DPR's own fields use too (a number is an `InputNumber`);
+  an archived field that holds a value shows read only. While the definitions load, a form sends no values, so a save
+  leaves them as they are. `CustomFieldsSection` and
   `useCustomFieldsRecordSection` show a record's filled values, archived ones marked. `customColumns` adds `cf:<key>`
   columns, off until chosen in Columns (a number is a `qty` column with its unit), and `customExportColumns` the same to
   Excel. A date shows through `formatDate` ("03 Nov 2026"), the app's one date format. Used on the vendor form and list,
   the project form, Overview and list, and the purchase order form, record and list.
-- **Not yet.** Fields on other records, on the phone's forms (an order sent from the phone is refused at submit naming
-  the missing field, as on the web), searching or filtering by a value, reordering, and Hindi names on screen.
+- **Phone.** The phone raises no vendors, projects or orders; its purchase order screen shows the order's filled fields
+  read only under More details (`filledCustomValues`, `extraText`, the Hindi name where there is one), so whoever decides
+  on the phone sees them.
+- **Not yet.** Fields on other records, on the phone's other screens, searching or filtering by a value, reordering, and
+  Hindi names on the web.
 - **Tested** in `src/scripts/custom-fields-test.ts` (CI runs it) and `e2e/tests/custom-fields.spec.ts`.
 
 ## Bills without a PO and debit notes

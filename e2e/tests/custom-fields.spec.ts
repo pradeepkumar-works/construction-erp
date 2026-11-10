@@ -74,7 +74,7 @@ test('lane 2: an admin adds an MSME number field to vendors', async ({ page }, i
   await signIn(page, admin.email);
   await settle(page, '/company-settings?tab=fields');
   const vendors = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Vendors', exact: true }) });
-  await vendors.getByRole('button', { name: 'Add field' }).click();
+  await vendors.getByRole('button', { name: 'New field' }).click();
   const dialog = formPanel(page, 'New field on vendors');
   await dialog.getByLabel('Name').fill('MSME number');
   await dialog.getByRole('button', { name: 'Save field' }).click();
@@ -141,7 +141,7 @@ test('lane 5: a required choice on orders holds the order at submit, naming the 
   await signIn(page, admin.email);
   await settle(page, '/company-settings?tab=fields');
   const orders = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Purchase orders', exact: true }) });
-  await orders.getByRole('button', { name: 'Add field' }).click();
+  await orders.getByRole('button', { name: 'New field' }).click();
   const dialog = formPanel(page, 'New field on purchase orders');
   await dialog.getByLabel('Name').fill('Funding');
   await dialog.getByLabel('Kind').click();
@@ -156,6 +156,19 @@ test('lane 5: a required choice on orders holds the order at submit, naming the 
   await expect(dialog).toBeHidden();
   const [funding] = await api<CustomFieldDto[]>(admin.token, '/custom-fields?entity=PURCHASE_ORDER');
   expect(funding).toMatchObject({ key: 'funding', kind: 'CHOICE', required: true, options: ['Own funds', 'Bank loan'] });
+
+  // Save and submit without it is refused before anything is written: no stray draft is left behind.
+  const ordersBefore = (await api<{ total: number }>(buyer.token, '/purchase-orders?pageSize=1')).total;
+  const saveAndSubmit = await raw(buyer.token, '/purchase-orders', 'POST', {
+    id: crypto.randomUUID(),
+    projectId: roadId,
+    vendorId,
+    submit: true,
+    lines: [{ itemName: 'Cement OPC 53', unit: 'Bag', quantity: '100', rate: '385', gstRate: '28' }],
+  });
+  expect(saveAndSubmit.status).toBe(400);
+  expect(await saveAndSubmit.text()).toContain('Choose Funding');
+  expect((await api<{ total: number }>(buyer.token, '/purchase-orders?pageSize=1')).total).toBe(ordersBefore);
 
   // A draft saves without it; sending it for approval is refused, naming the field.
   const po = await api<PurchaseOrderDto>(buyer.token, '/purchase-orders', {
@@ -201,24 +214,30 @@ test('lane 6: an archived field stays on old records, read only', async ({ page 
   await record.getByRole('button', { name: 'Cancel' }).click();
 });
 
-test('lane 7: a number field given text says how to fix it', async ({ page }, info) => {
+test('lane 7: a number field takes only a number in its range, and the API says how to fix one that is not', async ({ page }, info) => {
   await signIn(page, admin.email);
   await settle(page, '/vendors');
   await page.getByRole('button', { name: 'New vendor' }).first().click();
   const form = formPanel(page, 'New vendor');
   await form.getByLabel('Vendor name').fill('Utkal Hire Agency');
-  await form.getByLabel('Turnover').fill('twelve crore');
-  await form.getByRole('button', { name: 'Save vendor' }).click();
-  const fix = form.getByText('Turnover: enter a number of 0 Cr or more', { exact: true });
-  await expect(fix).toBeVisible();
-  await fix.scrollIntoViewIfNeeded();
+  // The DPR's number box: letters are not taken, and a number below the smallest becomes the smallest.
+  const turnover = form.getByLabel('Turnover');
+  await turnover.fill('twelve crore');
+  await turnover.press('Tab');
+  await expect(turnover).toHaveValue('');
+  await turnover.fill('-5');
+  await turnover.press('Tab');
+  await expect(turnover).toHaveValue('0');
+  await turnover.scrollIntoViewIfNeeded();
   await shot(page, info, 'cf-number.png');
   const refused = await raw(admin.token, '/vendors', 'POST', { name: 'Utkal Hire Agency', customValues: { turnover: 'twelve crore' } });
   expect(refused.status).toBe(400);
   expect(await refused.text()).toContain('Turnover: enter a number of 0 Cr or more');
-  await form.getByLabel('Turnover').fill('8');
+  await turnover.fill('8');
   await form.getByRole('button', { name: 'Save vendor' }).click();
   await expect(form).toBeHidden();
+  const saved = (await api<{ items: VendorDto[] }>(admin.token, '/vendors?q=Utkal')).items[0];
+  expect(saved.customValues).toEqual({ turnover: 8 });
 });
 
 test('lane 8: someone who is not an admin is not offered the fields and the API refuses them', async ({ page }, info) => {
