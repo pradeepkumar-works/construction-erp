@@ -1064,6 +1064,12 @@ GRN on the web and the phone), and a second quality dashboard.
      and is sold or scrapped with its profit or loss in the books. Depreciation (SLM or WDV, by days, down to the
      residual) is prepared for a month or a year and posted as one journal, refused inside the lock; Income Tax block
      depreciation with the 180-day half rate is rolled from the register for the return. ARCHITECTURE "Fixed assets".
+190. ~~**Pay vendors with a bank file and read the UTRs back** (M).~~ Done: Accounts › Bank payments puts approved payment
+     requests in a batch (one open batch per request), makes the bulk upload file in the bank's layout (generic NEFT and
+     RTGS, HDFC, ICICI, SBI; RTGS from two lakh), leaves out and lists vendors without an account or IFSC, and records each
+     payment through payables so it posts as one recorded by hand. The bank's response file or a pasted list sets each
+     payment's UTR, and the batch is settled when all have one. The salary run's bank file writes through the same rows.
+     ARCHITECTURE "Bank payments".
 
 ## Definition of done for every item
 Prisma migration, API endpoints with Swagger, shared types, web screen, mobile screen where site
