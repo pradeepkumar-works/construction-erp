@@ -104,6 +104,7 @@ export * from './cash-forecast';
 export * from './hindrance';
 export * from './attendance-check';
 export * from './dpr-lines';
+export * from './custom-fields';
 export * from './dpr-form';
 export * from './type-updates';
 export * from './type-bundle';
