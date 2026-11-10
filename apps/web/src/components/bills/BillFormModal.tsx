@@ -14,7 +14,8 @@ import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
-import { MoneyInput } from '@/components/form/inputs';
+import { CODE_INPUT, MoneyInput } from '@/components/form/inputs';
+import { HSN_PATTERN } from '@erp/shared';
 import { recordPage } from '@/components/approvals/queue';
 
 interface FormValues {
@@ -25,6 +26,7 @@ interface FormValues {
   otherDeduction?: number | null;
   otherDeductionNote?: string;
   remarks?: string;
+  sacCode?: string;
   files?: AttachmentDto[];
 }
 
@@ -52,6 +54,7 @@ export function BillFormModal({ open, onClose, projectId, defaultProjectId, bill
         otherDeduction: Number(bill.otherDeduction) || null,
         otherDeductionNote: bill.otherDeductionNote ?? undefined,
         remarks: bill.remarks ?? undefined,
+        sacCode: bill.sacCode ?? undefined,
         files: bill.attachments,
       });
     } else {
@@ -68,6 +71,7 @@ export function BillFormModal({ open, onClose, projectId, defaultProjectId, bill
         otherDeduction: String(v.otherDeduction ?? 0),
         otherDeductionNote: v.otherDeductionNote?.trim() || null,
         remarks: v.remarks?.trim() || null,
+        sacCode: v.sacCode?.trim() || null,
         attachmentIds: (v.files ?? []).map((f) => f.id),
         submit,
       };
@@ -129,6 +133,11 @@ export function BillFormModal({ open, onClose, projectId, defaultProjectId, bill
           </Form.Item>
           <Form.Item name="otherDeductionNote" label="What it is for">
             <Input maxLength={200} placeholder="e.g. Water charges" />
+          </Form.Item>
+        </FormGrid>
+        <FormGrid cols={2}>
+          <Form.Item name="sacCode" label="SAC" tooltip="The services code the bill's e-invoice reports; empty takes the company's (Administration › Company › E-invoicing)" rules={[{ pattern: HSN_PATTERN, message: 'A SAC is 4, 6 or 8 digits, e.g. 995421' }]}>
+            <Input {...CODE_INPUT} inputMode="numeric" maxLength={8} placeholder="e.g. 995421" />
           </Form.Item>
         </FormGrid>
         <Form.Item name="isFinal" valuePropName="checked" hidden={!!bill?.om}>

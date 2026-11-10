@@ -1,7 +1,8 @@
-import type { RaBillDto } from '@erp/shared';
+import type { GstDocumentDto, RaBillDto } from '@erp/shared';
 import { BILL_STAGE_LABELS, CURRENCIES, SUBMISSION_STATUS_LABELS, OM_BENCHMARK_INFO, GST_STATES, currencySymbol, fromRupees, isForeign, type ContractCurrency } from '@erp/shared';
 import { AUTO_PRINT_SCRIPT, brandFooter, PRINT_BRAND_CSS, PRINT_FONT_LINKS, PRINT, PRINT_FACE } from '@/components/print/printBrand';
 import { BRAND } from '@/lib/brand';
+import { irnBlockHtml } from '@/components/gst/gstPrint';
 import { formatDate, formatDateTime, formatINR, formatMoney, formatMonth, formatQty, toNumber } from '@/lib/format';
 
 const esc = (v: unknown) =>
@@ -59,7 +60,7 @@ export function amountInWords(value: number, currency: string): string {
 }
 
 /** The bill as the client receives it: header, abstract of cost, deductions, measurement annex and signatures. */
-export function buildBillPrintHtml(b: RaBillDto, orgName: string): string {
+export function buildBillPrintHtml(b: RaBillDto, orgName: string, irn: GstDocumentDto | null = null): string {
   const inr = amountIn(b);
   const sym = esc(currencySymbol(isForeign(b) ? b.currency : 'INR'));
   const certified = b.items.some((i) => i.certifiedQty !== null);
@@ -184,6 +185,7 @@ ${PRINT_FONT_LINKS}
     <div><b>Sent</b>${esc(b.sentDate ? formatDate(b.sentDate) : '-')}</div>
     <div><b>Certified</b>${esc(b.certifiedDate ? formatDate(b.certifiedDate) : '-')}${b.certificateNo ? ` (${esc(b.certificateNo)})` : ''}</div>
   </div>
+  ${irnBlockHtml(irn)}
 
 ${
   staged
@@ -292,11 +294,11 @@ ${
 </body></html>`;
 }
 
-export function openBillPrint(b: RaBillDto, orgName: string) {
+export function openBillPrint(b: RaBillDto, orgName: string, irn: GstDocumentDto | null = null) {
   const w = window.open('', '_blank', 'width=1100,height=900');
   if (!w) return false;
   w.document.open();
-  w.document.write(buildBillPrintHtml(b, orgName));
+  w.document.write(buildBillPrintHtml(b, orgName, irn));
   w.document.close();
   return true;
 }
