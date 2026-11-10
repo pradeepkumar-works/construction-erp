@@ -28,12 +28,9 @@ export default function SsoReturnPage() {
     window.history.replaceState(null, '', window.location.pathname);
     const code = hash.get('code');
     const error = hash.get('error') ?? '';
-    if (!code) {
-      setProblem(isSsoProblem(error) ? SSO_PROBLEMS[error] : SSO_PROBLEMS.EXPIRED);
-      return;
-    }
-    api
-      .post<LoginResponse>('/auth/sso/exchange', { code })
+    // A failure the API sent back is shown as the exchange's own would be: in the promise's answer, not while drawing.
+    const exchange = code ? api.post<LoginResponse>('/auth/sso/exchange', { code }) : Promise.reject(new Error(isSsoProblem(error) ? SSO_PROBLEMS[error] : SSO_PROBLEMS.EXPIRED));
+    exchange
       .then(({ data }) => {
         signIn(data);
         router.replace('/');
