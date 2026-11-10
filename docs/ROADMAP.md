@@ -1087,6 +1087,14 @@ GRN on the web and the phone), and a second quality dashboard.
      books are locked and which year is closed, and Each company's lock stops every company at its own lock. Investment
      against share capital, minority interest and currency are not taken out. ARCHITECTURE "Consolidated accounts".
 
+195. ~~**Sign in with Microsoft or Google** (M).~~ Done: a company signs its people in to the web with Microsoft Entra ID
+     or Google Workspace. Admins set it up under Company settings › Sign-in (provider, client, sealed secret, email
+     domains); people choose Use single sign-on and the company code. The API runs the code flow with PKCE, checks the ID
+     token (the company's own directory, a verified email in its domains) and links each account to the person once.
+     Require single sign-on refuses passwords for the company's people, platform admins and supplier logins aside, and Add
+     new people gives someone from the domains a place in a chosen role at their first sign-in. The phone keeps passwords.
+     ARCHITECTURE "Single sign-on".
+
 ## Definition of done for every item
 Prisma migration, API endpoints with Swagger, shared types, web screen, mobile screen where site
 staff use it, seed data updated, `pnpm typecheck` + `next build` + mobile `tsc` clean, smoke test

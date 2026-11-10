@@ -183,7 +183,7 @@ a {
   text-decoration: underline;
 }
 
-/* A link that does something on the page (Sign in with single sign-on and back): drawn as the links beside it. */
+/* A link that does something on the page (Use single sign-on and back): drawn as the links beside it. */
 button.auth-link {
   min-height: 1.5rem;
   padding: 0;
@@ -662,6 +662,9 @@ kbd {
   :root .ant-btn {
     min-height: 2.75rem;
     min-width: 2.75rem;
+  }
+  button.auth-link {
+    min-height: 2.75rem;
   }
   :root .ant-select {
     --ant-select-height: 2.75rem;

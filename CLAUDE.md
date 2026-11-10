@@ -564,6 +564,13 @@ and the pre-delivery checklist.
 - Security (ARCHITECTURE "Signing in and headers"): sign-in and reset requests go through `LoginGuardService` (rules in
   `auth/login-guard-rules.ts`, keep `src/scripts/login-guard-test.ts` passing); a password change sets `Login.tokensValidAfter`.
   The web's CSP is in `next.config.ts`: a page that loads from a new outside service adds it there.
+- Single sign-on (item 195, `apps/api/src/auth/sso.service.ts`, ARCHITECTURE "Single sign-on"): an ID token is accepted
+  only by `jose` and `claimsProblem`, a person found only by `matchLogin` (linked once by issuer and subject, by email only
+  the first time), and every session goes through `AuthService.issue` with its `SessionProof`, where `ssoEnforced` /
+  `proofAccepted` (`auth/sso-rules.ts`) refuse a password for a company that requires SSO (platform admins and supplier
+  logins aside); never a session signed anywhere else. State and codes are stored only hashed, the client secret only
+  sealed under `INTEGRATION_KEY`, and the session reaches the web only through `POST /auth/sso/exchange`. Tests point at
+  the stand-in `e2e/oidc/standin.mjs`, never a real provider. Keep `src/scripts/sso-test.ts` passing.
 - Input checks (ARCHITECTURE "Measurement book", Other input checks): a quantity field is `@IsQuantity()` (`src/common/quantity.ts`),
   a day's record calls `assertNotAfterToday`, and a web date field is `DatePicker` from `components/common/DatePicker` (it reads
   typed dates in the common formats; ESLint refuses antd's). Keep `src/scripts/validation-test.ts` passing.

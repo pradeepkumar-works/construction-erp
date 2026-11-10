@@ -94,6 +94,45 @@ shapes of every API response, so web, mobile and API agree on one contract.
   and Google Fonts for printouts, `frame-ancestors 'none'`, `X-Frame-Options: DENY`, `nosniff` and HSTS. A new outside
   service a page loads from is a line in that CSP.
 
+### Single sign-on (item 195)
+
+A company's people sign in to the web with Microsoft Entra ID or Google Workspace (OpenID Connect). The phone keeps
+passwords for now.
+
+- **Data.** `OrganizationSso` (one per company, no row = passwords): `provider` ENTRA or GOOGLE, Entra's `tenantId`,
+  `clientId`, the client secret sealed under `INTEGRATION_KEY` (`sealSecret`, never sent to the web, which sees
+  `secretLast4`), `allowedDomains`, `enforce`, `addNewPeople` and `newPersonRole` (`SSO_NEW_PERSON_ROLES`: staff, never
+  an admin, supplier or guest). `SsoIdentity` links a person's account at the provider to their `Login` once, by issuer
+  and subject, per company. `SsoTicket` holds the one-use steps (STATE, CODE) only as sha256. All three are tenant tables
+  read outside the tenant while nobody is signed in yet; tickets stay out of the company export.
+- **Flow** (`auth/sso.service.ts`, rules pure in `auth/sso-rules.ts`). Sign in › Use single sign-on › company code
+  (`GET /auth/sso/:orgCode` names the provider) › Sign in with Microsoft or Google goes to `GET /auth/sso/:orgCode/start`:
+  a random state, stored hashed, from which the PKCE verifier and the nonce are derived by HMAC under the server's key
+  (`flowSecrets`), so neither is stored; the state also goes in an HttpOnly SameSite=Lax cookie, so the sign-in finishes
+  only in the browser that started it. The provider answers at `SSO_CALLBACK_URL` (`GET /auth/sso/callback`): the state
+  is used once, the code redeemed with the verifier and the secret, and the ID token verified with `jose` (RS256 against
+  the provider's JWKS from discovery, `aud`, `exp`) and `claimsProblem` (issuer, nonce, Entra `tid` the company's,
+  Google `email_verified` and `hd` in the domains). The browser goes back to `/login/sso#code=…`, a one-time code (a
+  minute, once) that `POST /auth/sso/exchange` turns into the same `LoginResponse` as a password. The token never travels
+  in a URL; the CSP needs nothing new, as start is a navigation. Failures go to `/login/sso#error=<SSO_PROBLEMS key>` and
+  count in `AuthAttempt` as `SSO_FAILED`, against the address (`LoginGuardService.ssoFailed`).
+- **Who.** `matchLogin`: a linked identity is its Login (Entra `tid:oid`, Google `sub`), whatever the email says now;
+  a first sign-in links the Login with that email if it has an active place in the company and no identity of this
+  issuer there; someone with no Login anywhere is added only when the company adds new people (a random unusable
+  password hash, the chosen role, audited as `SSO_PERSON_ADDED`). A Login only another company has is never attached.
+- **Requiring it.** Every session names its proof (`SessionProof`: a password or a company's SSO) and
+  `AuthService.issue` is the one gate: a company whose `ssoEnforced` holds (it requires SSO and the person is no
+  platform admin or SUPPLIER login) takes only its own SSO or a sister's with the same sign-in (`sameSignIn`: the same
+  Entra directory, or Google domains it takes all of). The JWT carries `sso` (the proving company), and a switch carries
+  it on. A password sign-in skips the companies that require SSO before any password is compared (`pickPlace` over the
+  rest) and is refused with `ssoRequiredMessage` when none is left; an invite or reset link there is refused before it is
+  used. Turning it on needs the admin's own session to have come through it (platform admins aside), so nobody shuts
+  every admin out.
+- **Settings.** Company settings › Sign-in (`canManageSso`, admins): `GET/PUT/DELETE /sso-settings`, checked by
+  `ssoSettingsProblem`. Server settings in `auth/sso-config.ts`; `SSO_ENTRA_AUTHORITY` and `SSO_GOOGLE_ISSUER` point at
+  the tests' stand-in (`e2e/oidc/standin.mjs`) only. Rules tested in `src/scripts/sso-test.ts`; the flow in
+  `e2e/tests/sso.spec.ts`.
+
 ## One approval workflow
 
 `SubmissionLifecycleService` owns the state machine used by progress entries, DPRs, material
