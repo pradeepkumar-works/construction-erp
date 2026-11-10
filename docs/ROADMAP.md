@@ -1077,6 +1077,12 @@ GRN on the web and the phone), and a second quality dashboard.
      (ITNS 281, posted as payments from each section's TDS payable), what blocks filing, the interest under 201(1A) and
      the 234E fee, the challan and deductee sheets for the Return Preparation Utility and each deductee's statement on
      the letterhead. A filed quarter is locked until reopened for a correction. ARCHITECTURE "TDS returns".
+193. ~~**A company's own fields on vendors, projects and purchase orders** (M).~~ Done: an admin adds fields of the
+     company's own (text, long text, number with unit and range, yes or no, a choice, date, time) in Company settings ›
+     Fields, and the vendor, project and purchase order forms ask for them under More details, records show them, lists
+     offer them as columns and Excel carries them. A required field is asked for on save, an order's before it goes for
+     approval; a field is archived, never deleted, and records keep its values. The DPR's own fields share the same kinds
+     and readers, unchanged. ARCHITECTURE "Custom fields".
 
 ## Definition of done for every item
 Prisma migration, API endpoints with Swagger, shared types, web screen, mobile screen where site

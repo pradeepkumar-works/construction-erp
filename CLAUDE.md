@@ -465,6 +465,12 @@ and the pre-delivery checklist.
   deduction is in a challan; filing takes the lock exclusively. A challan posts only through `PostingService`
   (`TDS_CHALLAN`), debiting the ledger `deductionLedgerKey` names (a backfilled deduction keeps `TDS_PAYABLE`). Nothing
   is sent to a deductee. Keep `src/scripts/tds-test.ts` passing.
+- Custom fields (item 193, `apps/api/src/custom-fields`, ARCHITECTURE "Custom fields"): a company's own field on a vendor,
+  project or purchase order is a `CustomFieldDef` (archived, never deleted; key and kind never change), checked only by
+  `customFieldProblem`; its values in the record's `customValues` are read only by `readCustomValues` through
+  `CustomFieldsService.read` inside the entity's own `create` / `update` (an order's required ones by `assertComplete` at
+  submit), never a check of a form's own. A new kind of record is a `CUSTOM_FIELD_ENTITIES` key (`@erp/shared/custom-fields.ts`,
+  where the DPR's field kinds and `readExtra` live too). Keep `src/scripts/custom-fields-test.ts` passing.
 - RMC (item 104, `apps/api/src/rmc`, ARCHITECTURE "RMC plant"): a plant is a project of type `PLANT`; a truck's materials
   leave the plant's store only through `StockService.issue`, and cubes are a quality test through `QualityService`. Its
   figures are pure functions in `rmc-rules.ts` tested in `src/scripts/rmc-test.ts` (CI runs it); bills and receipts post
