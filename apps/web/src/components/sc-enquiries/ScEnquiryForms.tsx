@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef } from 'react';
+import { HelpLink } from '@/components/common/Help';
 import { Alert, Form, Input, InputNumber, Radio, Select, Table, Typography } from 'antd';
 import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
@@ -494,9 +495,7 @@ export function AwardDialog({ enquiry, open, quoteId, onClose }: { enquiry: ScEn
             <InputNumber min={0} max={100} precision={2} style={{ width: '100%' }} />
           </Form.Item>
         </FormGrid>
-        <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
-          The work order is made as a draft at the quote&apos;s rates and GST, with the enquiry&apos;s scope as its terms. Check its TDS, advance and payment days, then submit it for approval.
-        </Typography.Paragraph>
+        <HelpLink style={{ marginBottom: 0 }}>The work order is made as a draft at the quote&apos;s rates and GST, with the enquiry&apos;s scope as its terms. Check its TDS, advance and payment days, then submit it for approval.</HelpLink>
       </Form>
     </FormShell>
   );

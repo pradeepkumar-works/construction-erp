@@ -9,7 +9,7 @@ import { LetterRegister } from '@/components/correspondence/LetterRegister';
 export default function Page() {
   return (
     <div className="page-container">
-      <PageHeader title="Outward register" subtitle="Letters drafted from a template, approved by their signatory where they need it, numbered, printed on the letterhead and dispatched, with proof of delivery." />
+      <PageHeader title="Outward register" help="Letters drafted from a template, approved by their signatory where they need it, numbered, printed on the letterhead and dispatched, with proof of delivery." />
       <Card size="small">
         <Suspense fallback={null}>
           <LetterRegister direction="OUT" />

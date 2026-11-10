@@ -203,7 +203,7 @@ export default function UsersPage() {
     <div className="page-container">
       <PageHeader
         title="Users"
-        subtitle={`${data?.total ?? 0} users${roleKey || isActive !== undefined || page.params.q ? ' match' : ` in ${user?.organizationName ?? 'your company'}`}`}
+        help={`${data?.total ?? 0} users${roleKey || isActive !== undefined || page.params.q ? ' match' : ` in ${user?.organizationName ?? 'your company'}`}`}
         extra={newButton}
       />
       {welcome && (
@@ -213,7 +213,7 @@ export default function UsersPage() {
           closable
           style={{ marginBottom: tk.space[4] }}
           title={`${user?.organizationName ?? 'Your company'} is ready.`}
-          description="Add your team with New user: each person gets an invite link to choose a password. Then create your first project; it starts with the standard activities for its type."
+          description="Add your team with New user, then create your first project"
         />
       )}
       {error && <QueryError error={error} onRetry={() => refetch()} />}

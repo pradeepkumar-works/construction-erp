@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { HelpLink, TitleHelp } from '@/components/common/Help';
 import { Alert, Button, Card, Col, ConfigProvider, Descriptions, Empty, Flex, Input, InputNumber, Progress, Row, Segmented, Select, Statistic, Table, Typography } from 'antd';
 import { tk } from '@/ds';
 import { useResolved } from '@/ds/react';
@@ -130,7 +131,7 @@ function DesignReference() {
     <div className="page-container">
       <PageHeader
         title="Design reference"
-        subtitle={`The ${BRAND.name} design tokens: colour roles, type and components in the appearance you have chosen`}
+        help={`The ${BRAND.name} design tokens: colour roles, type and components in the appearance you have chosen`}
         extra={
           <>
             <Segmented<ThemeMode>
@@ -154,11 +155,8 @@ function DesignReference() {
         }
       />
       <Flex vertical gap={tk.space[6]}>
-        <Card title="Colour roles" size="small">
-          <Typography.Paragraph type="secondary">
-            Every colour is a role in <Typography.Text code>tk.color</Typography.Text>, which follows the theme with no hook. A canvas or an antd
-            number reads <Typography.Text code>useResolved()</Typography.Text>; print and email read <Typography.Text code>PRINT</Typography.Text>.
-          </Typography.Paragraph>
+        <Card title={<TitleHelp help={<>Every colour is a role in <Typography.Text code>tk.color</Typography.Text>, which follows the theme with no hook. A canvas or an antd
+            number reads <Typography.Text code>useResolved()</Typography.Text>; print and email read <Typography.Text code>PRINT</Typography.Text>.</>}>Colour roles</TitleHelp>} size="small">
           <Flex vertical gap={tk.space[4]}>
             {SWATCHES.map(({ group, roles }) => (
               <div key={group}>
@@ -183,12 +181,9 @@ function DesignReference() {
           </Flex>
         </Card>
 
-        <Card title="Type scale" size="small">
-          <Typography.Paragraph type="secondary">
-            Inter in ten styles, 12 px the floor. Compact keeps them; only heights and spacing shrink. In code spread the style (
+        <Card title={<TitleHelp help={<>Inter in ten styles, 12 px the floor. Compact keeps them; only heights and spacing shrink. In code spread the style (
             <Typography.Text code>{'...tk.type.label'}</Typography.Text>) or take its size (<Typography.Text code>tk.type.label.fontSize</Typography.Text>);
-            in CSS read its variable (<Typography.Text code>var(--t-label)</Typography.Text>). Never a number.
-          </Typography.Paragraph>
+            in CSS read its variable (<Typography.Text code>var(--t-label)</Typography.Text>). Never a number.</>}>Type scale</TitleHelp>} size="small">
           <Table
             size="small"
             pagination={false}
@@ -229,11 +224,8 @@ function DesignReference() {
           </Flex>
         </Card>
 
-        <Card title="Targets" size="small">
-          <Typography.Paragraph type="secondary">
-            Every control is at least 24 px high (WCAG 2.5.8) in both densities, and 44 px on a touch screen. Icon buttons side by side keep a gap
-            between them.
-          </Typography.Paragraph>
+        <Card title={<TitleHelp help={<>Every control is at least 24 px high (WCAG 2.5.8) in both densities, and 44 px on a touch screen. Icon buttons side by side keep a gap
+            between them.</>}>Targets</TitleHelp>} size="small">
           <Row gutter={[r.space[6], r.space[4]]}>
             <Col xs={24} md={12}>
               <ConfigProvider theme={makeTheme({ dark, compact: false })}>
@@ -248,12 +240,9 @@ function DesignReference() {
           </Row>
         </Card>
 
-        <Card title="Colour for exceptions" size="small">
-          <Typography.Paragraph type="secondary">
-            Numbers are neutral text. Colour marks only an exception: late, overdue, over budget, rejected, a fall that matters. A figure that is just a
+        <Card title={<TitleHelp help={<>Numbers are neutral text. Colour marks only an exception: late, overdue, over budget, rejected, a fall that matters. A figure that is just a
             total or a count stays neutral. Tags keep their status colours, since they carry a word too. Coloured text is a tone's text role (
-            <Typography.Text code>tk.color.tone.danger.fg</Typography.Text>), never its <Typography.Text code>solid</Typography.Text> fill.
-          </Typography.Paragraph>
+            <Typography.Text code>tk.color.tone.danger.fg</Typography.Text>), never its <Typography.Text code>solid</Typography.Text> fill.</>}>Colour for exceptions</TitleHelp>} size="small">
           <Row gutter={[r.space[6], r.space[4]]}>
             <Col xs={24} md={12}>
               <Flex align="center" gap={tk.space[2]} style={{ marginBottom: tk.space[3] }}>
@@ -298,13 +287,10 @@ function DesignReference() {
           </Row>
         </Card>
 
-        <Card title="No cards inside cards" size="small">
-          <Typography.Paragraph type="secondary">
-            A card is one surface. Its parts are sections: a hairline (<Typography.Text code>tk.line('hairline')</Typography.Text>) above, a title
+        <Card title={<TitleHelp help={<>A card is one surface. Its parts are sections: a hairline (<Typography.Text code>tk.line('hairline')</Typography.Text>) above, a title
             and the content (<Typography.Text code>Section</Typography.Text> and <Typography.Text code>FigureBlock</Typography.Text> in
             components/common/Section.tsx). A project tab and a record are already a surface, so the blocks in them are sections, never cards of their
-            own.
-          </Typography.Paragraph>
+            own.</>}>No cards inside cards</TitleHelp>} size="small">
           <Row gutter={[r.space[6], r.space[4]]}>
             <Col xs={24} md={12}>
               <Flex vertical gap={tk.space[4]}>
@@ -317,10 +303,8 @@ function DesignReference() {
               </Flex>
             </Col>
             <Col xs={24} md={12}>
-              <Typography.Paragraph>
-                Not a card with a border and a header inside another card: two frames around the same content, and a second header that competes with the
-                first.
-              </Typography.Paragraph>
+              <HelpLink>Not a card with a border and a header inside another card: two frames around the same content, and a second header that competes with the
+                first.</HelpLink>
             </Col>
           </Row>
         </Card>

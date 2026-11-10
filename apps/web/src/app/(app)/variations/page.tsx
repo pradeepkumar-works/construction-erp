@@ -11,7 +11,7 @@ function VariationsPage() {
   const search = useSearchParams();
   return (
     <div className="page-container">
-      <PageHeader title="Variations" subtitle={navNode('billing.variations')?.description} />
+      <PageHeader title="Variations" help={navNode('billing.variations')?.description} />
       <Card size="small">
         <VariationsPanel openId={search.get('id')} />
       </Card>

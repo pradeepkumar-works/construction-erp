@@ -1,6 +1,7 @@
 'use client';
 
 import { MoreActions } from '@/components/record/MoreActions';
+import { HelpLink } from '@/components/common/Help';
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Button, Card, Checkbox, Descriptions, Drawer, Empty, Flex, Form, Input, Select, Table, Typography } from 'antd';
@@ -348,10 +349,8 @@ function CubeAcceptancePanel() {
       <Flex gap={tk.space[3]} wrap align="center">
         <ProjectSelect value={projectId} onChange={(v) => setProjectId(v)} style={{ minWidth: 240, maxWidth: '100%' }} />
       </Flex>
-      <Typography.Paragraph type="secondary" style={{ margin: 0 }}>
-        IS 456 clause 16.1 and Table 11: in date order, each four results that do not overlap must average fck + 0.825 × the standard deviation (to the nearest 0.5) or fck + 3 N/mm², whichever is more, and each result
-        must reach fck − 3 N/mm². Until a grade has 30 results, the deviation is Table 8&apos;s.
-      </Typography.Paragraph>
+      <HelpLink style={{ margin: 0 }}>IS 456 clause 16.1 and Table 11: in date order, each four results that do not overlap must average fck + 0.825 × the standard deviation (to the nearest 0.5) or fck + 3 N/mm², whichever is more, and each result
+        must reach fck − 3 N/mm². Until a grade has 30 results, the deviation is Table 8&apos;s.</HelpLink>
       {isLoading ? (
         <PageSkeleton shape="list" header={false} />
       ) : error || !data ? (
@@ -406,7 +405,7 @@ export function PoursPage() {
   const [tab, setTab] = useUrlTab<Tab>(TABS, 'pours', { param: 'tab' });
   return (
     <div className="page-container">
-      <PageHeader title="Pour register" subtitle="Each pour with its pour card, the cube sets IS 456 needs for its volume, and each grade's acceptance under Table 11." />
+      <PageHeader title="Pour register" help="Each pour with its pour card, the cube sets IS 456 needs for its volume, and each grade's acceptance under Table 11." />
       <Card size="small">
         <AppTabs
           activeKey={tab}

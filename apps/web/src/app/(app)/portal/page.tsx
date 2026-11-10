@@ -18,7 +18,7 @@ export default function PortalPage() {
   const { data, isLoading, error, refetch } = usePortalProjects();
   return (
     <div className="page-container">
-      <PageHeader title="My projects" subtitle={`Approved progress, daily reports, RA bills and inspections from ${user?.organizationName ?? 'the contractor'}.`} />
+      <PageHeader title="My projects" help={`Approved progress, daily reports, RA bills and inspections from ${user?.organizationName ?? 'the contractor'}.`} />
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {isLoading ? <PageSkeleton header={false} /> : null}
       {data && !data.length ? <Empty description="You have not been added to a project yet. Ask the contractor's project manager to add you." /> : null}

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { HelpLink } from '@/components/common/Help';
 import { Alert, App, Button, Form, Input, Modal, Space, Table, Typography } from 'antd';
 import { tk } from '@/ds';
 import type { TableProps } from 'antd';
@@ -73,7 +74,7 @@ function PairCode({ shown, onClose }: { shown: ConnectorPairCodeDto | null; onCl
               Start it with Windows: run <Typography.Text code translate="no">install.ps1</Typography.Text> as administrator. It then runs in the background and only calls out to Nirmaan.
             </li>
           </ol>
-          <Alert type="info" showIcon title="The code works once" description="Once paired, the computer keeps its own key and the code is used up. To move the Connector to another computer, make a new code." />
+          <Alert type="info" showIcon title="The code works once" description="To move the Connector to another computer, make a new code" />
         </Space>
       )}
     </Modal>
@@ -141,9 +142,7 @@ export function Connectors() {
   return (
     <div style={{ padding: tk.space[4] }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: tk.space[3], flexWrap: 'wrap', marginBottom: tk.space[3] }}>
-        <Typography.Paragraph type="secondary" style={{ margin: 0, maxWidth: 680 }}>
-          The Nirmaan Connector runs on a computer at a site or office and reads devices on its network (weighbridges, batching plants, meters). It keeps readings while the internet is down and sends them when it is back. Nothing needs to be opened on the site’s router.
-        </Typography.Paragraph>
+        <HelpLink style={{ margin: 0, maxWidth: 680 }}>The Nirmaan Connector runs on a computer at a site or office and reads devices on its network (weighbridges, batching plants, meters). It keeps readings while the internet is down and sends them when it is back. Nothing needs to be opened on the site’s router.</HelpLink>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => setAdding(true)}>
           New Connector
         </Button>

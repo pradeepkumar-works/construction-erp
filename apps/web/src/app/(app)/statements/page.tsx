@@ -26,7 +26,7 @@ function StatementsPage() {
   const allowed = !!user && canKeepBooks(user.roleKey);
   return (
     <div className="page-container">
-      <PageHeader title="Financial statements" subtitle="The trial balance, profit and loss and balance sheet in Schedule III order from the books, the bank reconciliation, opening balances and the year's close." />
+      <PageHeader title="Financial statements" help="The trial balance, profit and loss and balance sheet in Schedule III order from the books, the bank reconciliation, opening balances and the year's close." />
       {!allowed ? (
         <NoAccess title="Only admin, management and accounts see the statements" />
       ) : (

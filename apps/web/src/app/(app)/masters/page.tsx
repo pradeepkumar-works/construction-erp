@@ -47,7 +47,7 @@ export default function MastersPage() {
   const countOf = new Map((counts.data?.lists ?? []).map((c) => [c.key, c]));
   return (
     <div className="page-container" style={{ maxWidth: 1080, marginLeft: 0 }}>
-      <PageHeader title="Masters" subtitle="The lists your company keeps, by department: items and units, vendors, trades, designations, categories and the rest." />
+      <PageHeader title="Masters" help="The lists your company keeps, by department: items and units, vendors, trades, designations, categories and the rest." />
       {departments.length === 0 ? (
         <Typography.Paragraph>Your role opens none of the masters. Ask an administrator if you need one.</Typography.Paragraph>
       ) : (

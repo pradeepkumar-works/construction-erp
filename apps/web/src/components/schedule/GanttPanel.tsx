@@ -199,7 +199,7 @@ export function GanttPanel({ projectId }: { projectId: string }) {
           showIcon
           style={{ marginBottom: tk.space[3] }}
           title={`The plan ends ${formatDate(s.plannedFinish)}, ${daysBetween(data.completionDate, s.plannedFinish)} days after the completion date of ${formatDate(data.completionDate)}.`}
-          description="Re-plan the critical activities to finish in time, or record the delays that excuse it and claim an extension of time on the Contract tab. The client portal shows only the frozen baseline."
+          description="Re-plan the critical activities, or record the delays and claim an extension of time on the Contract tab"
         />
       ) : null}
 
@@ -294,7 +294,7 @@ export function GanttPanel({ projectId }: { projectId: string }) {
         confirmLoading={schedule.isPending}
         destroyOnHidden
       >
-        <p>Each keeps its length and starts on the first day its links allow. Activities already started stay where they are. The record's history keeps the old dates.</p>
+        <p>Each keeps its length and starts when its links allow. Started activities stay put</p>
         <Table<GanttActivityDto>
           size="small"
           rowKey="id"

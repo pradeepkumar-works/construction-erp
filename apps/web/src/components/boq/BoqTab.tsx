@@ -210,7 +210,7 @@ export function BoqTab({ projectId }: { projectId: string }) {
           {gap ? (
             <p data-testid="boq-gap" style={{ margin: 0, maxWidth: 420, color: tk.color.tone.pending.fg, fontSize: tk.type.caption.fontSize }}>
               <ExclamationCircleOutlined aria-hidden style={{ marginInlineEnd: tk.space[2] }} />
-              The BOQ adds up to {formatINRCompact(gap.boqTotal)}, {Math.abs(gap.gapPct)}% {gap.gapPct < 0 ? 'below' : 'above'} the {formatINRCompact(gap.contractValue)} contract value. Work done, earned value and the budget are off until the two agree.
+              BOQ {formatINRCompact(gap.boqTotal)} is {Math.abs(gap.gapPct)}% {gap.gapPct < 0 ? 'below' : 'above'} the {formatINRCompact(gap.contractValue)} contract value, so work done and earned value are off
             </p>
           ) : null}
         </Space>

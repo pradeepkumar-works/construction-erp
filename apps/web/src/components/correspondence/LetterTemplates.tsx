@@ -91,7 +91,7 @@ export function LetterTemplates() {
     <div className="page-container">
       <PageHeader
         title="Letter templates"
-        subtitle="Standard letters a new outward letter starts from. The address, project, their reference and date are filled in for the writer."
+        help="Standard letters a new outward letter starts from. The address, project, their reference and date are filled in for the writer."
         extra={
           keeper ? (
             <Button type="primary" icon={<PlusOutlined />} onClick={() => setEditing('new')}>

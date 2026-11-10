@@ -34,13 +34,13 @@ function RmcPage() {
   const tab = TABS.find((t) => t === raw && (t !== 'bills' || sees)) ?? 'day';
   return (
     <div className="page-container">
-      <PageHeader title="RMC plant" subtitle="Ready-mix concrete: the plant's day, quotes and orders, trucks and their challans, mix designs approved by quality, and bills with GST." />
+      <PageHeader title="RMC plant" help="Ready-mix concrete: the plant's day, quotes and orders, trucks and their challans, mix designs approved by quality, and bills with GST." />
       {!allowed ? (
         <NoAccess title="Your role does not see RMC" />
       ) : error && !plants ? (
         <QueryError error={error} onRetry={() => void refetch()} />
       ) : !isLoading && !plants?.length ? (
-        <Result status="info" title="No RMC plant yet" subTitle="Add a project of type RMC plant (Projects, New project); its store, materials and staff work as at any site. You see the plants you are a member of." />
+        <Result status="info" title="No RMC plant yet" subTitle="Add a project of type RMC plant from Projects" />
       ) : (
         <Card size="small">
           <AppTabs

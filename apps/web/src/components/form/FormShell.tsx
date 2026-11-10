@@ -7,6 +7,7 @@ import { isAxiosError } from 'axios';
 import { usePathname, useRouter } from 'next/navigation';
 import type { AiDraftDto } from '@erp/shared';
 import { PRODUCT_NAME, navNode, navNodeAt } from '@erp/shared';
+import { Help } from '@/components/common/Help';
 import { tk } from '@/ds';
 import { useAuth } from '@/lib/auth';
 import { SparkleIcon } from '@/components/ai/SparkleIcon';
@@ -536,13 +537,16 @@ export function FormGrid({ cols = 2, children }: { cols?: 2 | 3 | 4; children: R
 }
 
 /** A titled group of fields in a long form. */
-export function FormSection({ title, extra, children }: { title: string; extra?: React.ReactNode; children: React.ReactNode }) {
+export function FormSection({ title, help, extra, children }: { title: string; help?: React.ReactNode; extra?: React.ReactNode; children: React.ReactNode }) {
   return (
     <section aria-label={title} style={{ marginBottom: tk.space[6] }}>
       <Flex justify="space-between" align="center" gap={tk.space[2]} style={{ minHeight: tk.control.md, marginBottom: tk.space[3], borderBottom: tk.line('hairline') }}>
-        <Typography.Title level={5} style={{ margin: 0, ...tk.type.title, color: tk.color.text.strong }}>
-          {title}
-        </Typography.Title>
+        <Flex align="center" gap={tk.space[1]}>
+          <Typography.Title level={5} style={{ margin: 0, ...tk.type.title, color: tk.color.text.strong }}>
+            {title}
+          </Typography.Title>
+          {help && <Help>{help}</Help>}
+        </Flex>
         {extra}
       </Flex>
       {children}

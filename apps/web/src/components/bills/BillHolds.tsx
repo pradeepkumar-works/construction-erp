@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { HelpLink } from '@/components/common/Help';
 import { App, Button, Form, Input, Select, Table, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -248,10 +249,8 @@ function HoldsDrawer({ open, bill, onClose }: { open: boolean; bill: RaBillDto; 
   return (
     <FormShell open={open} onClose={onClose} form={form} layout="drawer" width={900} projectDefault={false} title={`Amounts withheld on ${bill.billLabel}`} okText="Save" onSubmit={submit}>
       <Form form={form} layout="vertical" requiredMark="optional">
-        <Typography.Paragraph type="secondary">
-          What the engineer holds back on this bill for disputed items, and what this bill releases of amounts held on earlier bills as the disputes are
-          settled. Neither changes GST or the contract deductions.
-        </Typography.Paragraph>
+        <HelpLink>What the engineer holds back on this bill for disputed items, and what this bill releases of amounts held on earlier bills as the disputes are
+          settled. Neither changes GST or the contract deductions.</HelpLink>
         <Typography.Title level={5}>Withheld on this bill</Typography.Title>
         <HoldLines />
         <Typography.Title level={5} style={{ marginTop: tk.space[4] }}>
@@ -341,8 +340,7 @@ function CloseHoldModal({ hold, bill, onClose }: { hold: RaBillHoldDto | null; b
       <Form form={form} layout="vertical">
         {hold ? (
           <Typography.Paragraph>
-            {hold.description}: {formatMoney(hold.balance, bill, true)} is still withheld. Closing gives it up for good: the books write it off as a deduction by the
-            client, and no later bill can release it.
+            {hold.description}: {formatMoney(hold.balance, bill, true)} is still withheld. Closing writes it off for good; no later bill can release it.
           </Typography.Paragraph>
         ) : null}
         <Form.Item name="date" label="Given up on" rules={[{ required: true, message: 'Choose the date' }]}>

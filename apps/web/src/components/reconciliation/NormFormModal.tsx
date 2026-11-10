@@ -111,7 +111,7 @@ export function NormFormModal({
         ) : (
           <>
             {!presetBoq ? (
-              <Form.Item name="against" label="Norm on" extra="An activity's own norm is for work with no BOQ item, such as a lump-sum component or a house connection kit. It counts before the BOQ item's.">
+              <Form.Item name="against" label="Norm on" tooltip="An activity's own norm is for work with no BOQ item, such as a lump-sum component or a house connection kit. It counts before the BOQ item's.">
                 <Segmented
                   options={[
                     { value: 'boq', label: 'A BOQ item' },

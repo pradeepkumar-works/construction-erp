@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { HelpLink } from '@/components/common/Help';
 import Link from 'next/link';
 import { Alert, App, Button, Divider, Form, Input, Table, Typography } from 'antd';
 import { tk } from '@/ds';
@@ -525,7 +526,7 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
       }
     >
       <FormShell open={closing} onClose={() => setClosing(false)} form={closeForm} layout="modal" title={data ? `Close ${data.poNo} short?` : 'Close short'} okText="Close short" onSubmit={(v) => close.mutateAsync(v.note)}>
-        <Typography.Paragraph type="secondary">The rest will not be received: nothing more can be received against it, and what was not received can be ordered again. What was received can still be billed.</Typography.Paragraph>
+        <HelpLink>The rest will not be received: nothing more can be received against it, and what was not received can be ordered again. What was received can still be billed.</HelpLink>
         <Form form={closeForm} layout="vertical">
           <Form.Item name="note" label="Why" rules={[{ required: true, whitespace: true, message: 'Enter why the balance is not needed' }]}>
             <Input.TextArea rows={2} maxLength={500} placeholder="e.g. Balance not required; vendor informed" />

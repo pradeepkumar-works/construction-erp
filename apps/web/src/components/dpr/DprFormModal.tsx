@@ -1,6 +1,7 @@
 'use client';
 
 import { ProjectSelect } from '@/components/common/ProjectSelect';
+import { HelpLink } from '@/components/common/Help';
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, AutoComplete, Button, Form, Input, InputNumber, Select, Typography } from 'antd';
 import { tk } from '@/ds';
@@ -284,7 +285,7 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
         >
           {shows('lines') ? (
             <>
-              <Typography.Paragraph type="secondary">One line for each activity worked on: where and how much today, and what else the form asks for each. Activities planned for this week come first.</Typography.Paragraph>
+              <HelpLink>One line for each activity worked on: where and how much today, and what else the form asks for each. Activities planned for this week come first.</HelpLink>
               <DprLinesField options={options} headCount={headCount} def={def} />
             </>
           ) : null}

@@ -105,5 +105,6 @@ test('the store sees what is on order and receives it from Stock', async ({ page
   await signIn(page, 'store@demo.com');
   await page.goto('/stock?sub=deliveries');
   await expect(page.getByRole('tab', { name: /Deliveries expected/ })).toHaveAttribute('aria-selected', 'true');
+  await page.getByRole('button', { name: 'How it works' }).click();
   await expect(page.getByText('Approved orders with something still to come')).toBeVisible();
 });

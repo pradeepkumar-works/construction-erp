@@ -1,5 +1,6 @@
 'use client';
 
+import { Help } from '@/components/common/Help';
 import React, { useMemo, useState } from 'react';
 import { boqRowsFromRead, readNumber, type ReadBoqRow } from '@erp/shared';
 import { Alert, App, Button, Flex, Modal, Select, Space, Table, Typography, Upload } from 'antd';
@@ -252,7 +253,8 @@ export function BoqImportModal({ open, onClose, projectId, onImported }: { open:
           <ReadPreview state={readState} active={activeRead} onClear={() => setPagesHidden(true)} pagesHidden={pagesHidden}>
             <Typography.Paragraph style={{ margin: `${tk.space[1]} 0 0` }}>
               {readRows.length} item{readRows.length === 1 ? '' : 's'} read from {readState.pages.length} page{readState.pages.length === 1 ? '' : 's'}
-              {toCheck ? `, ${toCheck} to check (amber)` : ''}. Untick a row to leave it out; correct the rest in the BOQ after importing.
+              {toCheck ? `, ${toCheck} to check (amber)` : ''}.
+              <Help>Untick a row to leave it out; correct the rest in the BOQ after importing.</Help>
               {readTotal !== null ? (
                 <>
                   {' '}

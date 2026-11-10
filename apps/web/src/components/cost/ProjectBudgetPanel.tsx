@@ -60,7 +60,7 @@ export function ProjectBudgetPanel({ projectId }: { projectId: string }) {
               showIcon
               style={{ marginBottom: tk.space[3] }}
               title="This project has no budget yet"
-              description={`Set a budget by cost head, or a budget rate on the BOQ items, to see budget against actual and the forecast to complete. Admin or management approve it.${canEdit ? '' : ' Admin, management or the project manager can prepare it.'}`}
+              description={canEdit ? 'Set a budget by cost head, or a budget rate on the BOQ items' : 'Admin, management or the project manager prepares it'}
             />
           )}
           {differs ? (
@@ -130,7 +130,9 @@ export function ProjectBudgetPanel({ projectId }: { projectId: string }) {
 
           <OpeningSection projectId={projectId} />
 
-          <Section style={{ marginTop: tk.space[4] }} title="By cost head">
+          <Section help={<>Work done is approved progress at BOQ rates over the BOQ value. Earned is the budget for the work done (budget × work done); variance is
+              earned less actual, red when over budget. Forecast is the actual cost so far plus the budget for the work left. Actual cost is the cost view&apos;s,
+              from the start of the project, with its opening cost where it has one.</>} style={{ marginTop: tk.space[4] }} title="By cost head">
             {data.hasHeadBudget ? (
               <Table<BudgetHeadDto>
                 rowKey="head"
@@ -186,11 +188,6 @@ export function ProjectBudgetPanel({ projectId }: { projectId: string }) {
             ) : (
               <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No budget by cost head" />
             )}
-            <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[2], marginBottom: 0 }}>
-              Work done is approved progress at BOQ rates over the BOQ value. Earned is the budget for the work done (budget × work done); variance is
-              earned less actual, red when over budget. Forecast is the actual cost so far plus the budget for the work left. Actual cost is the cost view&apos;s,
-              from the start of the project, with its opening cost where it has one.
-            </Typography.Paragraph>
           </Section>
 
           <Section

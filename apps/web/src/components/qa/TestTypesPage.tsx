@@ -180,7 +180,7 @@ export function TestTypesPage() {
     <div className="page-container">
       <PageHeader
         title="Test types"
-        subtitle="The tests your quality plans and test register pick from: method, unit, limits, readings and specimens."
+        help="The tests your quality plans and test register pick from: method, unit, limits, readings and specimens."
         crumbs={[{ title: 'Masters', href: '/masters' }, { title: 'Test types' }]}
         extra={
           manage ? (

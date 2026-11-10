@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { HelpLink } from '@/components/common/Help';
 import Link from 'next/link';
 import { Alert, App, Badge, Button, Card, Descriptions, Drawer, Flex, Form, Input, Radio, Segmented, Tooltip, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
@@ -324,7 +325,7 @@ export default function Page() {
     <div className="page-container">
       <PageHeader
         title="Watch list"
-        subtitle={`Early warnings as of ${formatDate(data.asOf)}: what to do, what it costs, and the working behind it. Say what became of one when you dismiss it, so each check keeps its track record.`}
+        help={`Early warnings as of ${formatDate(data.asOf)}: what to do, what it costs, and the working behind it. Say what became of one when you dismiss it, so each check keeps its track record.`}
         extra={
           open.length ? (
             <ExportButton
@@ -384,10 +385,8 @@ export default function Page() {
             attention: true,
             children: (
               <>
-                <Typography.Paragraph type="secondary">
-                  How each check has done in your company: of its latest ten dismissals, how many were Fixed or Known rather than Wrong. A check marked Wrong more than half the time
-                  (four times or more in 30 days) pauses itself.
-                </Typography.Paragraph>
+                <HelpLink>How each check has done in your company: of its latest ten dismissals, how many were Fixed or Known rather than Wrong. A check marked Wrong more than half the time
+                  (four times or more in 30 days) pauses itself.</HelpLink>
                 <Flex vertical gap={tk.space[3]}>
                   {data.records.map(recordRow)}
                 </Flex>

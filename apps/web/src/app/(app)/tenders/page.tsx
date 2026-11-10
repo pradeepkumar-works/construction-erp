@@ -285,7 +285,7 @@ function TendersPage() {
     <div className="page-container">
       <PageHeader
         title="Tenders"
-        subtitle="Tenders being priced and bid, the bids read out at opening, and the result."
+        help="Tenders being priced and bid, the bids read out at opening, and the result."
         extra={newButton}
       />
       {error && <QueryError error={error} onRetry={() => refetch()} />}

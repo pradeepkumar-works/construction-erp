@@ -145,7 +145,7 @@ export function ComponentDrawingsPage() {
 
   return (
     <div className="page-container">
-      <PageHeader title="Drawings by component" subtitle="Each component with its drawings by discipline, and how far their approval has gone." />
+      <PageHeader title="Drawings by component" help="Each component with its drawings by discipline, and how far their approval has gone." />
       <Flex gap={tk.space[3]} wrap align="center" style={{ marginBottom: tk.space[4] }}>
         <ProjectSelect value={projectId} onChange={(v) => setProjectId(v)} aria-label="Project" placeholder="Choose a project" style={{ minWidth: 240, maxWidth: '100%' }} />
       </Flex>

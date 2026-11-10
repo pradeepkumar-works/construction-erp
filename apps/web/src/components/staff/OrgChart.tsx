@@ -53,7 +53,7 @@ export function OrgChart() {
     <div className="page-container">
       <PageHeader
         title="Org chart"
-        subtitle="Who reports to whom. Leave, overtime and attendance corrections wait on the person someone reports to, then HR. A functional line is shown beside the name and routes nothing."
+        help="Who reports to whom. Leave, overtime and attendance corrections wait on the person someone reports to, then HR. A functional line is shown beside the name and routes nothing."
         crumbs={[{ title: 'HR and payroll', href: '/modules/people' }, { title: 'Org chart' }]}
       />
       <Card size="small">

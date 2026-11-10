@@ -281,8 +281,7 @@ export function StructurePanel({ project }: { project: ProjectDetail }) {
           emptyText: (
             <div style={{ padding: tk.space[6] }}>
               <p>
-                No breakdown yet. Split the project into its components (an intake well, the treatment plant, each tank, each pipe zone) and progress rolls up
-                from the activities under each, by weight.
+                No components yet. Progress rolls up from each one's activities, by weight.
               </p>
               {editor ? (
                 <Button type="primary" icon={<PlusOutlined />} onClick={() => setForm({ element: null, parentId: null })}>

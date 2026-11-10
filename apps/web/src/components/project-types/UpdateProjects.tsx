@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { TitleHelp } from '@/components/common/Help';
 import { Alert, App, Button, Card, Checkbox, Flex, Form, Skeleton, Space, Typography } from 'antd';
 import { tk } from '@/ds';
 import {
@@ -224,12 +225,11 @@ export function UpdateProjects({ what, code, name, open, onClose }: { what: 'typ
           type="info"
           showIcon
           style={{ marginBottom: tk.space[4] }}
-          title="Only adds what a project lacks"
-          description={
+          title={<TitleHelp help={
             what === 'type'
               ? `Each project gets the starting components of ${name} it has no copy of, the steps its components' types have gained, and the type's activities it has no activity of that name for. Nothing it has is changed or removed. New work comes in with no weight, so progress does not move until the planner weighs it.`
               : `Each component laid out from ${name} gets the steps it has no activity of that name for. Nothing it has is changed or removed, and a step kept as one line is not split. New activities come in with no weight, so progress does not move until the planner weighs them.`
-          }
+          }>Only adds what a project lacks</TitleHelp>}
         />
         {updates.error ? (
           <QueryError error={updates.error} onRetry={() => updates.refetch()} />

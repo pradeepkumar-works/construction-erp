@@ -30,7 +30,7 @@ function BiometricPage() {
     );
   return (
     <div className="page-container">
-      <PageHeader title="Biometric devices" subtitle="Fingerprint and face devices, the people enrolled on them, and their punches turned into attendance." />
+      <PageHeader title="Biometric devices" help="Fingerprint and face devices, the people enrolled on them, and their punches turned into attendance." />
       <Card size="small">
         <AppTabs
           activeKey={tab}

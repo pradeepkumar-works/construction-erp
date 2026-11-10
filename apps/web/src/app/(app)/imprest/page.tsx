@@ -30,7 +30,7 @@ function ImprestPage() {
   const panel = <ImprestPanel key={id ?? ''} initialId={id} />;
   return (
     <div className="page-container">
-      <PageHeader title="Site imprest" subtitle="Petty cash floats held at the sites: the cash in hand after each holder's cash expenses, top-ups to bring it back to the float, and the sites' requests for funds." />
+      <PageHeader title="Site imprest" help="Petty cash floats held at the sites: the cash in hand after each holder's cash expenses, top-ups to bring it back to the float, and the sites' requests for funds." />
       <Card size="small">
         {funds ? (
           <AppTabs

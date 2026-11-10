@@ -389,17 +389,14 @@ export function ProjectFormModal({
               name="copyFromProjectId"
               label="Copy from project"
               style={{ marginTop: tk.space[4], marginBottom: 0 }}
-              extra={`Its team and contract terms: deductions, GST, liquidated damages and periods. Without one, the client's usual terms, else ${STANDARD_TERMS.securityDepositPct}% security deposit, ${STANDARD_TERMS.tdsPct}% TDS, ${STANDARD_TERMS.gstTdsPct}% GST TDS and ${STANDARD_TERMS.labourCessPct}% cess.`}
+              tooltip={`Its team and contract terms: deductions, GST, liquidated damages and periods. Without one, the client's usual terms, else ${STANDARD_TERMS.securityDepositPct}% security deposit, ${STANDARD_TERMS.tdsPct}% TDS, ${STANDARD_TERMS.gstTdsPct}% GST TDS and ${STANDARD_TERMS.labourCessPct}% cess.`}
             >
               <ProjectSelect placeholder="None" style={{ width: '100%' }} aria-label={undefined} />
             </Form.Item>
           ) : null}
         </FormSection>
         {!isEdit && typeDef && typeDef.breakdown.some((b) => !b.parentKey) ? (
-          <FormSection title="Starting components">
-            <Typography.Paragraph type="secondary">
-              Laid out on the Components tab with their activities and weights. Set how many of each this project has; 0 leaves one out. More can be added later.
-            </Typography.Paragraph>
+          <FormSection help={<>Laid out on the Components tab with their activities and weights. Set how many of each this project has; 0 leaves one out. More can be added later.</>} title="Starting components">
             <FormGrid cols={3}>
               {typeDef.breakdown
                 .filter((b) => !b.parentKey)

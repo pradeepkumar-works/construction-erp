@@ -3,6 +3,7 @@
 import React from 'react';
 import { Flex, Skeleton } from 'antd';
 import { tk } from '@/ds';
+import { Help } from '@/components/common/Help';
 
 /**
  * A titled part of something that already has a surface, such as a project tab or a record (no cards inside
@@ -10,6 +11,7 @@ import { tk } from '@/ds';
  */
 export function Section({
   title,
+  help,
   extra,
   loading,
   children,
@@ -21,6 +23,8 @@ export function Section({
   /** An anchor, for links to the section (`#team`) */
   id?: string;
   title?: React.ReactNode;
+  /** How the section's figures are counted, behind an ⓘ beside its title rather than a paragraph above its content. */
+  help?: React.ReactNode;
   extra?: React.ReactNode;
   loading?: boolean;
   children?: React.ReactNode;
@@ -31,8 +35,11 @@ export function Section({
       {title || extra ? (
         <Flex align="center" justify="space-between" gap={tk.space[3]} wrap style={{ minHeight: tk.control.md, marginBottom: tk.space[2] }}>
           {title ? (
-            <span role="heading" aria-level={2} style={{ ...tk.type.title, color: tk.color.text.strong }}>
-              {title}
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: tk.space[1] }}>
+              <span role="heading" aria-level={2} style={{ ...tk.type.title, color: tk.color.text.strong }}>
+                {title}
+              </span>
+              {help && <Help>{help}</Help>}
             </span>
           ) : (
             <span />

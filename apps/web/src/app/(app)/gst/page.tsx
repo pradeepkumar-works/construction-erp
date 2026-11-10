@@ -1,6 +1,7 @@
 'use client';
 
 import React, { Suspense, useMemo, useState } from 'react';
+import { HelpLink } from '@/components/common/Help';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Alert, Card, Col, Row, Statistic, Table, Typography } from 'antd';
@@ -150,7 +151,7 @@ function GstRegistersPage() {
     <div className="page-container">
       <PageHeader
         title="GST registers"
-        subtitle="Outward supplies from approved RA bills in the GSTR-1 layout, and input tax from vendor bills, subcontractor bills and site expenses to reconcile with GSTR-2B."
+        help="Outward supplies from approved RA bills in the GSTR-1 layout, and input tax from vendor bills, subcontractor bills and site expenses to reconcile with GSTR-2B."
         extra={
           <DatePicker.RangePicker presets={rangePresets()}
             picker="month"
@@ -290,11 +291,9 @@ function GstRegistersPage() {
           ]}
         />
       </Card>
-      <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[2] }}>
-        RA bills are taken by bill date once approved, invoice number as in the Tally export; works contracts are supplied where the site is, so their GST is CGST and SGST.
+      <HelpLink style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[2] }}>RA bills are taken by bill date once approved, invoice number as in the Tally export; works contracts are supplied where the site is, so their GST is CGST and SGST.
         Purchases are approved bills and expenses by invoice date, one row per GST rate; IGST when the supplier is registered in another state. E-invoicing is not
-        generated here.
-      </Typography.Paragraph>
+        generated here.</HelpLink>
     </div>
   );
 }

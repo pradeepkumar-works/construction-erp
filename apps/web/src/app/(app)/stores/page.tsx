@@ -34,7 +34,7 @@ export default function StoresPage() {
   ) : null;
   return (
     <div className="page-container">
-      <PageHeader title="Central stores" subtitle="Company stores and yards: what each holds and is worth, and what is on the road to and from the sites." extra={newButton} />
+      <PageHeader title="Central stores" help="Company stores and yards: what each holds and is worth, and what is on the road to and from the sites." extra={newButton} />
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {isLoading ? <PageSkeleton header={false} shape="home" /> : null}
       {data && !data.length ? (

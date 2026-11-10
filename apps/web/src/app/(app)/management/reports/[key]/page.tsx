@@ -137,7 +137,7 @@ function Report({ reportKey }: { reportKey: ManagementReportKey }) {
       <PageHeader
         title={info.title}
         crumbs={crumbs}
-        subtitle={info.description}
+        help={info.description}
         extra={
           <>
             <Button icon={<PrinterOutlined />} onClick={print} disabled={!data}>

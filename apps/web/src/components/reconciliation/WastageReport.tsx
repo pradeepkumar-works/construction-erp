@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, Col, Empty, Row, Skeleton, Space, Statistic, Table, Typography } from 'antd';
+import { HelpLink } from '@/components/common/Help';
+import { Button, Col, Empty, Row, Skeleton, Space, Statistic, Table } from 'antd';
 import { tk } from '@/ds';
 import type { TableProps } from 'antd';
 import { FileExcelOutlined } from '@/components/common/icons';
@@ -127,10 +128,8 @@ export function WastageReport({ projectId }: { projectId: string }) {
             />
           </Section>
 
-          <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[3], marginBottom: 0 }}>
-            Every stock adjustment in the period by the reason the storekeeper gave, valued at the item&apos;s rate. A stock count posts its differences as Count
-            difference; opening stock is left out. Adjustments made before reasons were asked show as Not given.
-          </Typography.Paragraph>
+          <HelpLink style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[3], marginBottom: 0 }}>Every stock adjustment in the period by the reason the storekeeper gave, valued at the item&apos;s rate. A stock count posts its differences as Count
+            difference; opening stock is left out. Adjustments made before reasons were asked show as Not given.</HelpLink>
         </>
       )}
     </SectionStack>

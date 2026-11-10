@@ -191,7 +191,7 @@ export function DesignSubmissionsPage() {
 
   return (
     <div className="page-container">
-      <PageHeader title="Submittals" subtitle="Drawings and designs sent for approval or vetting, the codes they came back with and the comments answered." />
+      <PageHeader title="Submittals" help="Drawings and designs sent for approval or vetting, the codes they came back with and the comments answered." />
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {figures && (
         <div style={{ marginBottom: tk.space[4] }}>

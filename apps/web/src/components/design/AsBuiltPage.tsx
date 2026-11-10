@@ -34,7 +34,7 @@ export function AsBuiltPage() {
   const open = (d: AsBuiltDueDto) => router.push(`/documents?id=${d.documentId}`);
   return (
     <div className="page-container">
-      <PageHeader title="As-built drawings" subtitle="Each drawing site built from needs an as-built revision before handover." />
+      <PageHeader title="As-built drawings" help="Each drawing site built from needs an as-built revision before handover." />
       <Card size="small">
         <Flex vertical gap={tk.space[4]}>
           <Flex gap={tk.space[3]} wrap align="center">

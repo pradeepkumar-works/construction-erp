@@ -31,7 +31,7 @@ function ConnectionsPage() {
     );
   return (
     <div className="page-container">
-      <PageHeader title="Connections" subtitle="Outside systems joined to the company: web addresses for their services, Connectors on site computers, the devices they report on and the log." />
+      <PageHeader title="Connections" help="Outside systems joined to the company: web addresses for their services, Connectors on site computers, the devices they report on and the log." />
       <Card size="small">
         <AppTabs
           activeKey={tab}

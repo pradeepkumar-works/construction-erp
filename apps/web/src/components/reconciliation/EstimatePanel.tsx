@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { HelpLink } from '@/components/common/Help';
 import { App, Button, Col, Empty, Form, InputNumber, Row, Segmented, Skeleton, Space, Statistic, Table, Tooltip, Typography } from 'antd';
 import { tk } from '@/ds';
 import type { TableProps } from 'antd';
@@ -229,13 +230,11 @@ export function EstimatePanel({ projectId }: { projectId: string }) {
             />
           </Section>
 
-          <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[3], marginBottom: 0 }}>
-            <CalculatorOutlined /> A BOQ item&apos;s rate analysis is the materials one unit uses (the norms the reconciliation checks), the labour days and the machine
+          <HelpLink style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[3], marginBottom: 0 }}><CalculatorOutlined /> A BOQ item&apos;s rate analysis is the materials one unit uses (the norms the reconciliation checks), the labour days and the machine
             hours it takes.
             {values
               ? ' Materials are priced at item rates with their wastage, labour at the labour rates in Settings, and machines at the average hire rate of the company’s machines of that category. Overheads and profit are added on the cost.'
-              : ''}
-          </Typography.Paragraph>
+              : ''}</HelpLink>
         </>
       )}
       <RateAnalysisDrawer projectId={projectId} boqItemId={open} open={!!open} onClose={() => setOpen(null)} />

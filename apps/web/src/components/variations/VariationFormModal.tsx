@@ -149,10 +149,7 @@ export function VariationFormModal({ open, onClose, projectId, variation, prefil
           </Form.Item>
         </FormSection>
 
-        <FormSection title="Items">
-          <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginBottom: tk.space[2] }}>
-            A BOQ item with a quantity change (negative to omit), or a new item with its proposed rate. Nothing changes in the BOQ until the client approves.
-          </Typography.Paragraph>
+        <FormSection help={<>A BOQ item with a quantity change (negative to omit), or a new item with its proposed rate. Nothing changes in the BOQ until the client approves.</>} title="Items">
           <Form.List name="lines" rules={[{ validator: async (_, v) => (v?.length ? undefined : Promise.reject(new Error('Add at least one item'))) }]}>
             {(fields, { add, remove }, { errors }) => (
               <>

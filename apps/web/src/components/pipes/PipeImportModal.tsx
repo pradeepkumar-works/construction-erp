@@ -192,9 +192,8 @@ export function PipeImportModal({ open, onClose, projectId, zones, zoneId }: { o
           </p>
           <p className="ant-upload-text">Choose or drop the network file</p>
           <p className="ant-upload-hint">
-            An EPANET .inp file from WaterGEMS, LOOP or EPANET; the main drawn as a path in Google Earth (KMZ or KML), cut into lengths by chainage at its named
-            valves and every 500 m; or an Excel book with a Nodes sheet (code, kind, ground level, X, Y) and a Pipes sheet (code, from, to, length, diameter, material,
-            class, scope).
+            EPANET .inp, Google Earth KMZ or KML, or Excel with Nodes (code, kind, ground level, X, Y) and Pipes (code, from, to, length,
+            diameter, material, class, scope)
           </p>
         </Upload.Dragger>
       ) : (

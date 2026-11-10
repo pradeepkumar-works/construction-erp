@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { HelpLink } from '@/components/common/Help';
 import { Alert, App, Button, Descriptions, Form, Input, Modal, Popconfirm, Space, Table, Typography } from 'antd';
 import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
@@ -54,9 +55,7 @@ function PrepareModal({ who, onClose }: { who: { employeeId: string; name: strin
         layout="vertical"
         initialValues={from ? { otherEarnings: Number(from.otherEarnings), otherDeductions: Number(from.otherDeductions), note: from.note ?? undefined } : undefined}
       >
-        <Typography.Paragraph type="secondary">
-          The last month&apos;s salary, earned leave not taken, gratuity after five years (four years and nine months is enough), notice not served, loans still owed and dues found at exit clearance are worked out from their records.
-        </Typography.Paragraph>
+        <HelpLink>The last month&apos;s salary, earned leave not taken, gratuity after five years (four years and nine months is enough), notice not served, loans still owed and dues found at exit clearance are worked out from their records.</HelpLink>
         <FormGrid cols={2}>
           <Form.Item name="otherEarnings" label="Anything else owed to them" extra="Bonus, reimbursements">
             <MoneyInput />

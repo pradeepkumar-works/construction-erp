@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { HelpLink } from '@/components/common/Help';
 import { App, Form, InputNumber, Typography } from 'antd';
 import type { EmployeeDto, LeaveOpeningDto } from '@erp/shared';
 import { LEAVE_TYPE_LABELS, OPENING_LEAVE_TYPES } from '@erp/shared';
@@ -40,10 +41,8 @@ export function LeaveOpeningModal({ open, onClose, employee, year, opening }: { 
         message.success(`Opening leave for ${employee.fullName} saved. The balances count it now.`);
       }}
     >
-      <Typography.Paragraph type="secondary">
-        For someone whose leave was kept elsewhere before Nirmaan: the days they took in {cal.label(year)} before then count as taken, and earned leave brought forward
-        stands in for what Nirmaan carries from {cal.label(year - 1)}.
-      </Typography.Paragraph>
+      <HelpLink>For someone whose leave was kept elsewhere before Nirmaan: the days they took in {cal.label(year)} before then count as taken, and earned leave brought forward
+        stands in for what Nirmaan carries from {cal.label(year - 1)}.</HelpLink>
       <Form form={form} layout="vertical" initialValues={initial}>
         <FormGrid cols={3}>
           {OPENING_LEAVE_TYPES.map((type) => (

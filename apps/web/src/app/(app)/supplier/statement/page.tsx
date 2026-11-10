@@ -35,7 +35,7 @@ export default function SupplierStatementPage() {
     <div className="page-container">
       <PageHeader
         title="Payments"
-        subtitle="Your account with us: every approved bill, every payment and deduction, and what is still owed to you."
+        help="Your account with us: every approved bill, every payment and deduction, and what is still owed to you."
         extra={
           <DatePicker
             value={from}

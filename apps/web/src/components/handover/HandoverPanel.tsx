@@ -1,5 +1,6 @@
 'use client';
 
+import { Help } from '@/components/common/Help';
 import { DeleteInMenu } from '@/components/record/MoreActions';
 import React, { useState } from 'react';
 import { Button, Checkbox, Descriptions, Drawer, Empty, Flex, Input, Progress, Segmented, Select, Space, Statistic, Table, Typography } from 'antd';
@@ -202,8 +203,8 @@ export function HandoverPanel({ projectId, members, initialDefectId }: { project
           </Flex>
         ) : (
           <Typography.Text type="secondary">
-            Not handed over yet. Log snags below as you walk the site; record the completion certificate when you have it, and the defect liability period
-            {s.defectLiabilityMonths ? ` (${s.defectLiabilityMonths} months in the contract)` : ''} starts from its date.
+            Not handed over yet{s.defectLiabilityMonths ? `; defect liability ${s.defectLiabilityMonths} months from completion` : ''}.
+            <Help>Log snags below as you walk the site, and record the completion certificate when you have it. The defect liability period starts from its date.</Help>
           </Typography.Text>
         )}
       </Section>

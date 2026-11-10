@@ -423,7 +423,7 @@ export default function PayablesPage() {
     <div className="page-container">
       <PageHeader
         title="Payables"
-        subtitle="What is owed to vendors and subcontractors on their approved bills, by due date, with micro and small enterprises flagged before their 45 days run out."
+        help="What is owed to vendors and subcontractors on their approved bills, by due date, with micro and small enterprises flagged before their 45 days run out."
         extra={
           <Space wrap>
             <VendorSelect allowClear placeholder="Any vendor" aria-label="Vendor" style={{ width: 220 }} value={vendorId} onChange={(v) => page.setFilter('vendorId', v)} />

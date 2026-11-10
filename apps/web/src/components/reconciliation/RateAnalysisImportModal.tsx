@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Alert, App, Button, Modal, Space, Table, Typography, Upload } from 'antd';
+import { TitleHelp } from '@/components/common/Help';
+import { Alert, App, Button, Modal, Space, Table, Upload } from 'antd';
 import { tk } from '@/ds';
 import type { UploadProps } from 'antd';
 import { DownloadOutlined, InboxOutlined } from '@/components/common/icons';
@@ -130,17 +131,14 @@ export function RateAnalysisImportModal({ open, onClose, projectId }: { open: bo
     <Modal
       open={open}
       onCancel={close}
-      title="Import rate analysis"
+      title={<TitleHelp help={<>One row per line: the BOQ item number, Material, Labour or Machine, the store item (by its name in the item master), trade or equipment category, and how much one unit
+        of the BOQ item takes. Lines a BOQ item already has are changed; the rest stay.</>}>Import rate analysis</TitleHelp>}
       width={900}
       okText={rows.length ? `Import ${rows.length} row${rows.length === 1 ? '' : 's'}` : 'Import'}
       okButtonProps={{ disabled: !rows.length || bad > 0, loading: save.isPending }}
       onOk={submit}
       destroyOnHidden
     >
-      <Typography.Paragraph>
-        One row per line: the BOQ item number, Material, Labour or Machine, the store item (by its name in the item master), trade or equipment category, and how much one unit
-        of the BOQ item takes. Lines a BOQ item already has are changed; the rest stay.
-      </Typography.Paragraph>
       <Space style={{ marginBottom: tk.space[3] }}>
         <Button icon={<DownloadOutlined />} onClick={() => void downloadRateAnalysisTemplate()}>
           Download the template

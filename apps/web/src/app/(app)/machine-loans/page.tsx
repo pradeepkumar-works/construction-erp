@@ -119,7 +119,7 @@ function MachineLoansPage() {
 
   return (
     <div className="page-container">
-      <PageHeader title="Machine loans" subtitle="Loans on financed machines: what is owed to each lender, the EMIs due and any overdue." extra={newButton} />
+      <PageHeader title="Machine loans" help="Loans on financed machines: what is owed to each lender, the EMIs due and any overdue." extra={newButton} />
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {isLoading ? <PageSkeleton header={false} shape="list" /> : null}
       {s ? (

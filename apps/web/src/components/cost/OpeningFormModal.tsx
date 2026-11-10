@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
+import { HelpLink } from '@/components/common/Help';
 import { App, Form, Input, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -64,10 +65,8 @@ export function OpeningFormModal({ open, onClose, data }: { open: boolean; onClo
   return (
     <FormShell open={open} onClose={onClose} form={form} layout="drawer" width={720} title={`Opening cost: ${projectCode}`} okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
       <Form form={form} layout="vertical">
-        <Typography.Paragraph type="secondary">
-          What the project had spent and done by the day it came on Nirmaan. Cost to date, margin, the budget forecast and the cash-flow forecast count it from that day, so
-          enter what your accounts show up to then, before GST.
-        </Typography.Paragraph>
+        <HelpLink>What the project had spent and done by the day it came on Nirmaan. Cost to date, margin, the budget forecast and the cash-flow forecast count it from that day, so
+          enter what your accounts show up to then, before GST.</HelpLink>
         <FormGrid cols={2}>
           <Form.Item name="asOf" label="Figures as of" rules={[{ required: true, message: 'Choose the date the figures stand at' }]} extra="Usually the day the project came on Nirmaan">
             <DatePicker

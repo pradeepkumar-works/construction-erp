@@ -1,5 +1,6 @@
 'use client';
 
+import { Help } from '@/components/common/Help';
 import React, { useEffect, useState } from 'react';
 import { Alert, App, Button, Input, InputNumber, Popconfirm, Space, Table, Typography } from 'antd';
 import { tk } from '@/ds';
@@ -123,7 +124,8 @@ export function TemplateEditor({ template, editable, standard = true }: { templa
         <Typography.Text type="secondary">
           {standard && template.isDefault ? <AppTag variant="kind">Standard list</AppTag> : null}
           {standard && !template.isDefault ? <AppTag variant="kind">Your list</AppTag> : null}
-          {rows.length} activities for a {inSentence(template.typeName)} project, besides those of its components. When a project has start and end dates the schedule is stretched or squeezed to fit them.
+          {rows.length} activities for a {inSentence(template.typeName)} project, besides those of its components.
+          <Help>When a project has start and end dates the schedule is stretched or squeezed to fit them.</Help>
         </Typography.Text>
         {editable ? (
           <Space>

@@ -21,7 +21,7 @@ function RisksPage() {
   const seesLd = !!user && canViewContract(user.roleKey);
   return (
     <div className="page-container">
-      <PageHeader title="Delays and risks" subtitle={navNode('site.risks')?.description} />
+      <PageHeader title="Delays and risks" help={navNode('site.risks')?.description} />
       <Card size="small">
         {seesLd ? (
           <AppTabs

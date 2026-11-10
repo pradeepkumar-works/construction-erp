@@ -1,5 +1,6 @@
 'use client';
 
+import { Help } from '@/components/common/Help';
 import React, { useState } from 'react';
 import { Alert, App, Button, Checkbox, Flex, Modal, Space, Typography, Upload } from 'antd';
 import { tk } from '@/ds';
@@ -154,8 +155,8 @@ export function ImportTypes({ open, onClose }: { open: boolean; onClose: () => v
         <>
           <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
             From <span translate="no">{plan.from || 'another company'}</span>
-            {plan.exportedAt ? `, exported ${formatDateTime(plan.exportedAt)}` : ''}. A type or kind you have is saved as a new version; your projects keep what they
-            have until you update them.
+            {plan.exportedAt ? `, exported ${formatDateTime(plan.exportedAt)}` : ''}.
+            <Help>A type or kind you have is saved as a new version; your projects keep what they have until you update them.</Help>
           </Typography.Paragraph>
           {group('Project types', types)}
           {group('Component types', kinds)}

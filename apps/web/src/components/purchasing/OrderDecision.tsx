@@ -91,8 +91,8 @@ export function OrderBudget({ order }: { order: PurchaseOrderDto }) {
   return (
     <>
       <Typography.Paragraph style={{ marginBottom: tk.space[2] }}>
-        Material budget <Money value={budget} />, of which <Money value={ordered} /> is on other approved orders. This order of{' '}
-        <Money value={b.thisOrder} paise /> before GST takes it to <Money value={after} />, {pct}% of the budget.
+        Material budget <Money value={budget} />, with <Money value={ordered} /> on other approved orders. This order,{' '}
+        <Money value={b.thisOrder} paise /> before GST, takes it to <Money value={after} />, {pct}% of the budget.
       </Typography.Paragraph>
       <Progress
         percent={Math.min(pct, 100)}

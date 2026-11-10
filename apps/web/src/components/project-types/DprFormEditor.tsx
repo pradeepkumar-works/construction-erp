@@ -138,10 +138,7 @@ export function DprFormEditor({
       }}
     >
       <Form form={form} layout="vertical">
-        <FormSection title="Built-in fields">
-          <Typography.Paragraph type="secondary">
-            Hide what your sites do not report, require what they must, and call a field what your sites call it. Issues always shows, as the hindrance register reads it.
-          </Typography.Paragraph>
+        <FormSection help={<>Hide what your sites do not report, require what they must, and call a field what your sites call it. Issues always shows, as the hindrance register reads it.</>} title="Built-in fields">
           <LineTable
             name="fields"
             label="Field"
@@ -241,11 +238,8 @@ export function DprFormEditor({
           </FormGrid>
         </FormSection>
 
-        <FormSection title="Fields of your own">
-          <Typography.Paragraph type="secondary">
-            Up to {MAX_OWN_FIELDS} figures or notes your sites report every day, for the day or for each work line. Once saved, a field keeps its kind and where it is asked, so the reports made on it still
-            read; add a new field instead. The Hindi name shows on phones set to Hindi.
-          </Typography.Paragraph>
+        <FormSection help={<>Up to {MAX_OWN_FIELDS} figures or notes your sites report every day, for the day or for each work line. Once saved, a field keeps its kind and where it is asked, so the reports made on it still
+            read; add a new field instead. The Hindi name shows on phones set to Hindi.</>} title="Fields of your own">
           <LineTable
             name="own"
             label="Field of your own"

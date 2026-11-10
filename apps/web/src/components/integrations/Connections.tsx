@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { HelpLink } from '@/components/common/Help';
 import { Alert, App, Button, Descriptions, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Table, Typography } from 'antd';
 import { tk } from '@/ds';
 import type { TableProps } from 'antd';
@@ -286,7 +287,7 @@ function AddressShown({ shown, onClose }: { shown: IntegrationSecretDto | null; 
   return (
     <Modal open={!!shown?.hookPath} onCancel={onClose} title={shown ? `Web address for ${shown.connection.name}` : ''} width={680} footer={<Button type="primary" onClick={onClose}>Done</Button>}>
       <Space orientation="vertical" size={12} style={{ width: '100%' }}>
-        <Alert type="warning" showIcon title="Copy it now: it is shown only this once" description="Anyone with the address can send to this connection. If it is lost or shared by mistake, make a new one and the old one stops working." />
+        <Alert type="warning" showIcon title="Copy it now: it is shown only this once" description="Anyone with it can send to this connection. If it leaks, make a new one" />
         <Descriptions size="small" column={1} bordered>
           <Descriptions.Item label="POST to">
             <Typography.Text copyable translate="no" style={{ wordBreak: 'break-all' }}>
@@ -473,9 +474,7 @@ export function Connections() {
   return (
     <div style={{ padding: tk.space[4] }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: tk.space[3], flexWrap: 'wrap', marginBottom: tk.space[3] }}>
-        <Typography.Paragraph type="secondary" style={{ margin: 0, maxWidth: 680 }}>
-          A service in the cloud (a GPS tracker’s, a sensor’s) posts to its connection’s own web address, and a machine maker’s feed is read by Nirmaan every hour. A device on a site’s network is read by a Connector on a computer there, which only calls out.
-        </Typography.Paragraph>
+        <HelpLink style={{ margin: 0, maxWidth: 680 }}>A service in the cloud (a GPS tracker’s, a sensor’s) posts to its connection’s own web address, and a machine maker’s feed is read by Nirmaan every hour. A device on a site’s network is read by a Connector on a computer there, which only calls out.</HelpLink>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => setEditing({ c: null })}>
           New connection
         </Button>

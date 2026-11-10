@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { HelpLink } from '@/components/common/Help';
 import { Alert, App, Grid, Modal, Table, Typography } from 'antd';
 import { tk } from '@/ds';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -89,9 +90,7 @@ export function AwardLowestModal({
     >
       {plan.orders.length ? (
         <>
-          <Typography.Paragraph type="secondary">
-            Each item goes to the vendor who quoted the lowest rate with GST for it. The orders are drafts: check and send them for approval as usual.
-          </Typography.Paragraph>
+          <HelpLink>Each item goes to the vendor who quoted the lowest rate with GST for it. The orders are drafts: check and send them for approval as usual.</HelpLink>
           <Table<Row>
             rowKey="materialRequestItemId"
             size="small"
@@ -152,7 +151,7 @@ export function AwardLowestModal({
               description={
                 plan.saving > 0
                   ? `The whole lot from ${plan.singleVendor.vendorName} comes to ${formatINR(plan.singleVendor.total, true)}.`
-                  : `The whole lot from ${plan.singleVendor.vendorName} comes to ${formatINR(plan.singleVendor.total, true)}: L1 per item pays freight to each vendor. Make that one order instead if it suits you.`
+                  : `The whole lot from ${plan.singleVendor.vendorName} comes to ${formatINR(plan.singleVendor.total, true)}, in one order with one freight.`
               }
             />
           ) : null}

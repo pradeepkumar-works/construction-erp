@@ -63,7 +63,7 @@ export function NoticeClock({ risk }: { risk: RiskDto }) {
       showIcon
       style={{ marginTop: tk.space[3] }}
       title={`Hindrance notice due ${formatDate(data.due)}: ${left(data.daysLeft)}`}
-      description={`The contract asks for notice within ${data.noticeDays} days of the hindrance. ${data.source}. The clock stops when a letter sent to the client is linked to this delay.`}
+      description={`${data.noticeDays} days from the hindrance. Link the letter to stop the clock`}
       action={
         canDraftNotice(user.roleKey) ? (
           <Button size="small" icon={<MailOutlined />} loading={draft.isPending} onClick={() => void open()}>

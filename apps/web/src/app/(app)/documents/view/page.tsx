@@ -32,7 +32,7 @@ function DocumentPageView() {
     <div className="page-container">
       <PageHeader
         title={data.title}
-        subtitle={data.pages ? `Page ${page} of ${data.pages}` : `Page ${page}`}
+        help={data.pages ? `Page ${page} of ${data.pages}` : `Page ${page}`}
         crumbs={[{ title: 'Drawing register', href: '/documents' }, { title: data.title, href: data.recordHref }, { title: `Page ${page}` }]}
         extra={
           <Flex gap={tk.space[2]} wrap>

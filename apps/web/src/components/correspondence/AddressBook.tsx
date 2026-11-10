@@ -125,7 +125,7 @@ export function AddressBook() {
     <div className="page-container">
       <PageHeader
         title="Address book"
-        subtitle="The offices and people letters come from and go to. A letter's From or To picks from here, and the letterhead prints the address."
+        help="The offices and people letters come from and go to. A letter's From or To picks from here, and the letterhead prints the address."
         extra={
           keeper ? (
             <Button type="primary" icon={<PlusOutlined />} onClick={() => setEditing('new')}>

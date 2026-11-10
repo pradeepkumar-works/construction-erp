@@ -118,7 +118,7 @@ function ScheduleOfRatesPage() {
     <div className="page-container">
       <PageHeader
         title="Schedule of rates"
-        subtitle="The SORs and own rates tenders are priced against, imported from Excel."
+        help="The SORs and own rates tenders are priced against, imported from Excel."
         extra={newButton}
       />
       {error && <QueryError error={error} onRetry={() => refetch()} />}

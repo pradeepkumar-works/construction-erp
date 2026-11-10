@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { HelpLink } from '@/components/common/Help';
 import { App, Button, Form, Input, Select, Table, Typography } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
 import { PlusOutlined } from '@/components/common/icons';
@@ -52,9 +53,7 @@ function WeeklyOffsModal({ open, onClose, cal }: { open: boolean; onClose: () =>
       }}
     >
       <Form form={form} layout="vertical" initialValues={initial}>
-        <Typography.Paragraph type="secondary">
-          Leave does not count the weekly off, and working on it earns a comp-off. A change counts for every date, so leave already approved keeps the days it was given; salary runs already paid keep their figures.
-        </Typography.Paragraph>
+        <HelpLink>Leave does not count the weekly off, and working on it earns a comp-off. A change counts for every date, so leave already approved keeps the days it was given; salary runs already paid keep their figures.</HelpLink>
         <Form.Item name="weeklyOff" label="Company's weekly off" rules={[{ required: true, message: 'Choose the day' }]}>
           <Select options={WEEKDAY_OPTIONS} />
         </Form.Item>

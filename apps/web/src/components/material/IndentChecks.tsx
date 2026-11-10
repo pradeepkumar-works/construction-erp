@@ -1,6 +1,7 @@
 'use client';
 
-import { Table, Typography } from 'antd';
+import { Table } from 'antd';
+import { HelpLink } from '@/components/common/Help';
 import { tk } from '@/ds';
 import type { IndentCheckDto, IndentCheckLineDto } from '@erp/shared';
 import { formatQty, toNumber, NO_VALUE } from '@/lib/format';
@@ -41,9 +42,7 @@ const muted = (v: string | null) => (v === null ? <span className="text-muted">{
 export function IndentChecks({ check, loading }: { check: IndentCheckDto | undefined; loading: boolean }) {
   return (
     <>
-      <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
-        The BOQ allows what the project&apos;s norms give over the whole BOQ. Left is that less what was issued, what the store holds and what other requests waiting ask for.
-      </Typography.Paragraph>
+      <HelpLink style={{ marginTop: 0 }}>The BOQ allows what the project&apos;s norms give over the whole BOQ. Left is that less what was issued, what the store holds and what other requests waiting ask for.</HelpLink>
       <Table<IndentCheckLineDto>
         size="small"
         rowKey="materialRequestItemId"

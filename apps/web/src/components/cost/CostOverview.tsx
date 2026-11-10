@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
+import { HelpLink } from '@/components/common/Help';
 import Link from 'next/link';
-import { Button, Space, Statistic, Typography } from 'antd';
+import { Button, Space, Statistic } from 'antd';
 import { tk } from '@/ds';
 import { TeamOutlined } from '@/components/common/icons';
 import type { ProjectCostSummaryDto } from '@erp/shared';
@@ -138,12 +139,10 @@ export function CostOverview() {
         </div>
       </CardToolbar>
       <LocalDataTable<CostRow> list="cost-overview" columns={columns} rows={rows} loading={isLoading || isFetching} failed={!!error} emptyText="No project has cost in this period" />
-      <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, padding: `${tk.space[2]} ${tk.space[4]} 0` }}>
-        {periodLabel(period)}. Cost is approved site expenses, material issued at the item master rate, approved machinery logs at the hire rate, attendance at the
+      <HelpLink style={{ fontSize: tk.type.caption.fontSize, padding: `${tk.space[2]} ${tk.space[4]} 0` }}>{periodLabel(period)}. Cost is approved site expenses, material issued at the item master rate, approved machinery logs at the hire rate, attendance at the
         trade&apos;s daily rate and the work value of approved subcontractor bills (their gangs and the material they were charged for are not counted
         again). Work done is approved progress at BOQ rates. Billed is the work done on approved RA bills dated in the period; money in is what
-        clients paid into the bank in it and cash out what was paid to vendors and subcontractors.
-      </Typography.Paragraph>
+        clients paid into the bank in it and cash out what was paid to vendors and subcontractors.</HelpLink>
       <LabourRatesModal open={ratesOpen} onClose={() => setRatesOpen(false)} />
     </>
   );

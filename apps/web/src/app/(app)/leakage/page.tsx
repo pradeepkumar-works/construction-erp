@@ -137,7 +137,7 @@ function Leakage() {
     <div className="page-container">
       <PageHeader
         title="Leakage checks"
-        subtitle={`Where material, money and fuel may be going missing, ${formatDate(data.from)} to ${formatDate(data.to)}${running ? ' (so far)' : ''}, with the working behind each flag. A flag is a reason to look, not proof.`}
+        help={`Where material, money and fuel may be going missing, ${formatDate(data.from)} to ${formatDate(data.to)}${running ? ' (so far)' : ''}, with the working behind each flag. A flag is a reason to look, not proof.`}
       />
       <Flex wrap gap={tk.space[3]} align="center" style={{ marginBottom: tk.space[4] }}>
         <DatePicker

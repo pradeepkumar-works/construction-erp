@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { Alert, App, Button, Descriptions, Divider, Drawer, Flex, Form, Input, Modal, Select, Space, Table, Tooltip, Typography } from 'antd';
+import { TitleHelp } from '@/components/common/Help';
+import { Alert, App, Button, Descriptions, Divider, Drawer, Flex, Form, Input, Modal, Select, Space, Table, Tooltip } from 'antd';
 import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
@@ -61,7 +62,7 @@ export default function PlatformPage() {
     <div className="page-container">
       <PageHeader
         title={`${PRODUCT_NAME} console`}
-        subtitle={data ? `${data.length} companies, ${active} active in the last 30 days` : 'Every company on the platform'}
+        help={data ? `${data.length} companies, ${active} active in the last 30 days` : 'Every company on the platform'}
         extra={<Input.Search allowClear placeholder="Search name or code" aria-label="Search companies" style={{ width: 240 }} onChange={(e) => setQ(e.target.value)} />}
       />
       {error && <QueryError error={error} onRetry={() => refetch()} />}
@@ -271,14 +272,13 @@ function CompanyDrawer({ id, ownOrgId, onClose }: { id: string | null; ownOrgId:
       )}
       <Modal
         open={asking}
-        title={c ? `Suspend ${c.name}` : 'Suspend'}
+        title={<TitleHelp help={<>Nobody in the company can sign in until the suspension is lifted. Their data is kept. The reason goes in the company's log, which their admins can read.</>}>{c ? `Suspend ${c.name}` : 'Suspend'}</TitleHelp>}
         okText="Suspend"
         okButtonProps={{ danger: true, disabled: reason.trim().length < 3, loading: suspend.isPending }}
         onOk={() => doSuspend(false)}
         onCancel={() => setAsking(false)}
         destroyOnHidden
       >
-        <Typography.Paragraph>Nobody in the company can sign in until the suspension is lifted. Their data is kept. The reason goes in the company's log, which their admins can read.</Typography.Paragraph>
         <Form layout="vertical" component={false}>
           <Form.Item label="Reason" htmlFor="suspend-reason" style={{ marginBottom: 0 }}>
             <Input.TextArea id="suspend-reason" rows={3} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. payment overdue" maxLength={300} />

@@ -1,5 +1,6 @@
 'use client';
 
+import { Help } from '@/components/common/Help';
 import React, { useEffect, useMemo, useState } from 'react';
 import { App, Button, Checkbox, Descriptions, Drawer, Dropdown, Empty, Form, Grid, Select, Space, Table, Tooltip, Typography } from 'antd';
 import { tk } from '@/ds';
@@ -289,8 +290,8 @@ export function RateAnalysisDrawer({ projectId, boqItemId, open, onClose }: { pr
               />
               {item.unpriced ? (
                 <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[2], marginBottom: 0 }}>
-                  {item.unpriced} line{item.unpriced === 1 ? ' has' : 's have'} no rate and count as nothing: set item rates in the item master, labour rates in Settings, or a rate on a
-                  machine of that category.
+                  {item.unpriced} line{item.unpriced === 1 ? ' has' : 's have'} no rate and count as nothing.
+                  <Help>Set item rates in the item master, labour rates in Settings, or a rate on a machine of that category.</Help>
                 </Typography.Paragraph>
               ) : null}
             </Section>

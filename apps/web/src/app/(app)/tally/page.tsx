@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { HelpLink } from '@/components/common/Help';
 import Link from 'next/link';
 import { Alert, App, Button, Card, Input, Popconfirm, Select, Space, Switch, Table, Typography } from 'antd';
 import { tk } from '@/ds';
@@ -384,9 +385,7 @@ function Ledgers() {
           options={[{ value: 'ALL', label: 'All ledgers' }, ...(Object.keys(LEDGER_KIND_LABELS) as TallyLedgerKind[]).map((k) => ({ value: k, label: LEDGER_KIND_LABELS[k] }))]}
         />
         <Input.Search allowClear placeholder="Search ledgers" aria-label="Search ledgers" style={{ maxWidth: 280 }} onSearch={setQ} onChange={(e) => !e.target.value && setQ('')} />
-        <Typography.Text type="secondary" style={{ alignSelf: 'center' }}>
-          Leave a ledger empty to use the default name. Within the state GST goes to CGST and SGST, to IGST for a vendor in another state.
-        </Typography.Text>
+        <HelpLink>Leave a ledger empty to use the default name. Within the state GST goes to CGST and SGST, to IGST for a vendor in another state.</HelpLink>
       </div>
       <Table<TallyLedgerRowDto> rowKey="key" size="small" loading={isLoading} columns={columns} dataSource={rows} pagination={{ pageSize: 50, hideOnSinglePage: true }} scroll={{ x: 760 }} />
     </>
@@ -410,13 +409,11 @@ export default function TallyPage() {
     <div className="page-container">
       <PageHeader
         title="Tally export"
-        subtitle="Certified RA bills, money received, vendor and subcontractor bills, payments and site expenses as TallyPrime vouchers, each sent once, for a company that keeps its books in Tally."
+        help="Certified RA bills, money received, vendor and subcontractor bills, payments and site expenses as TallyPrime vouchers, each sent once, for a company that keeps its books in Tally."
       />
-      <Typography.Paragraph type="secondary" style={{ maxWidth: 900 }}>
-        Once: set the ledger names under Ledgers, download the ledger masters and import them in TallyPrime (Import → Masters). Each month: export here and import
+      <HelpLink>Once: set the ledger names under Ledgers, download the ledger masters and import them in TallyPrime (Import → Masters). Each month: export here and import
         the file (Import → Transactions). Exported receipts and payments are locked in <Link href="/receivables" className="text-link">Receivables</Link> and{' '}
-        <Link href="/payables" className="text-link">Payables</Link> until their export is undone.
-      </Typography.Paragraph>
+        <Link href="/payables" className="text-link">Payables</Link> until their export is undone.</HelpLink>
       <Card size="small">
         <AppTabs
           activeKey={tab}

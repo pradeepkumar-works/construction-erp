@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { HelpLink } from '@/components/common/Help';
 import { App, Button, Card, Checkbox, Drawer, Flex, Radio, Space, Typography } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ItemDto, ItemDuplicateGroupDto, ItemMergeEntryDto } from '@erp/shared';
@@ -92,10 +93,8 @@ export function ItemDuplicates({ open, onClose, groups }: { open: boolean; onClo
   return (
     <Drawer open={open} onClose={onClose} size={560} destroyOnHidden title="Possible duplicates">
       <Flex vertical gap={12}>
-        <Typography.Paragraph type="secondary" style={{ margin: 0 }}>
-          The same unit, and the same name written another way or one name inside the other. Keep the one you want and merge the rest; leave a group alone when they
-          are different materials.
-        </Typography.Paragraph>
+        <HelpLink style={{ margin: 0 }}>The same unit, and the same name written another way or one name inside the other. Keep the one you want and merge the rest; leave a group alone when they
+          are different materials.</HelpLink>
         {groups.length ? groups.map((g) => <Group key={[g.keep.id, ...g.merge.map((m) => m.id)].join()} group={g} />) : <EmptyArt art="approved" title="No duplicates left." />}
       </Flex>
     </Drawer>

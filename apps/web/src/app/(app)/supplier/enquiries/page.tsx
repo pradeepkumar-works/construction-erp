@@ -25,7 +25,7 @@ export default function SupplierEnquiriesPage() {
   const shown = quoting ?? linked;
   return (
     <div className="page-container">
-      <PageHeader title="Enquiries" subtitle="Requests for your rates. Quote on an open one once; the buyer sees it beside the others." />
+      <PageHeader title="Enquiries" help="Requests for your rates. Quote on an open one once; the buyer sees it beside the others." />
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {isLoading ? (
         <PageSkeleton header={false} />

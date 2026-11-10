@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { Help, HelpLink } from '@/components/common/Help';
 import Link from 'next/link';
 import { App, Button, Empty, Form, Input, Skeleton, Table, Tooltip, Typography } from 'antd';
 import { tk } from '@/ds';
@@ -33,14 +34,12 @@ export function SubconReconciliation({ projectId }: { projectId: string }) {
   if (isLoading || !data) return <Skeleton active />;
   return (
     <SectionStack>
-      <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
-        Each work order&apos;s approved measurements × the norms (with their wastage) against the material issued to it, since the order began. Issued material is already charged
-        on their bills at the issue rate; what was used beyond the allowance can be recovered again as a penalty on their next bill.
-      </Typography.Paragraph>
+      <HelpLink style={{ marginBottom: 0 }}>Each work order&apos;s approved measurements × the norms (with their wastage) against the material issued to it, since the order began. Issued material is already charged
+        on their bills at the issue rate; what was used beyond the allowance can be recovered again as a penalty on their next bill.</HelpLink>
       {!data.workOrders.length ? (
         <Empty
           image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description="No subcontractor has measured work with norms, or material issued to their work order, yet. Issue material against the work order to see it here."
+          description="No material issued against a work order yet"
         />
       ) : null}
       {data.workOrders.map((wo) => (
@@ -266,8 +265,8 @@ function RecoverModal({ projectId, target, onClose }: { projectId: string; targe
         <Form form={form} layout="vertical">
           <Typography.Paragraph type="secondary">
             {target.wo.woNo}: {formatQty(target.item.issuedQty)} {target.item.unit} issued against {formatQty(target.item.allowedQty)} {target.item.unit} allowed for the
-            measured work. The issue rate is already on their bills; this is taken off their {target.wo.openBill ? `bill being prepared (${target.wo.openBill.label})` : 'next bill'} as
-            a penalty, as in CPWD clause 42. Change the rate if your contract says otherwise.
+            measured work, taken off their {target.wo.openBill ? `bill being prepared (${target.wo.openBill.label})` : 'next bill'} as a penalty.
+            <Help>The issue rate is already on their bills; the excess is a penalty, as in CPWD clause 42. Change the rate if your contract says otherwise.</Help>
           </Typography.Paragraph>
           <FormGrid>
             <Form.Item

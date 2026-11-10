@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { HelpLink, TitleHelp } from '@/components/common/Help';
 import { Alert, Button, Col, Empty, Row, Skeleton, Space, Statistic, Table, Tooltip, Typography } from 'antd';
 import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
@@ -382,8 +383,7 @@ function MaterialsView({ projectId }: { projectId: string }) {
               type="info"
               showIcon
               style={{ marginBottom: tk.space[3] }}
-              title="No material norms yet"
-              description={`A norm says how much of a store item one unit of a BOQ item uses, such as 8.2 bags of cement per cum of M25. With norms set, approved progress gives the theoretical consumption to check issues against.${data.canEditNorms ? ' Add standard norms starts from the usual figures for the work your BOQ names.' : ' The QS, the project manager, management or admin can set them.'}`}
+              title={<TitleHelp help={`A norm says how much of a store item one unit of a BOQ item uses, such as 8.2 bags of cement per cum of M25. With norms set, approved progress gives the theoretical consumption to check issues against.${data.canEditNorms ? ' Add standard norms starts from the usual figures for the work your BOQ names.' : ' The QS, the project manager, management or admin can set them.'}`}>No material norms yet</TitleHelp>}
               action={
                 data.canEditNorms ? (
                   <Button size="small" onClick={() => setLibraryOpen(true)}>
@@ -438,18 +438,16 @@ function MaterialsView({ projectId }: { projectId: string }) {
               }}
             />
             {reports ? (
-              <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[2], marginBottom: 0 }}>
-                Used per DPR is what the approved DPR lines in the period say they used, against what those lines needed by the norms. At the work front is
+              <HelpLink style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[2], marginBottom: 0 }}>Used per DPR is what the approved DPR lines in the period say they used, against what those lines needed by the norms. At the work front is
                 what should be on site now: issued less returned from a week before {formatDate(data.frontFrom)}, the first DPR that reported material, less all
                 the DPRs say was used since
                 {data.notReportedCount || data.usedNotIssuedCount
                   ? `: ${[data.notReportedCount ? `${data.notReportedCount} issued and never reported used` : '', data.usedNotIssuedCount ? `${data.usedNotIssuedCount} used beyond what was issued` : ''].filter(Boolean).join(', ')}`
                   : ''}
-                .
-              </Typography.Paragraph>
+                .</HelpLink>
             ) : (
               <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[2], marginBottom: 0 }}>
-                No approved DPR in the period says what material it used, so use and the work front cannot be checked yet. The site engineer adds the material on each work line of the DPR.
+                No DPR in the period records material used. The site engineer adds it on each DPR work line.
               </Typography.Paragraph>
             )}
             {data.boqItemsWithoutNorm ? (
@@ -460,7 +458,7 @@ function MaterialsView({ projectId }: { projectId: string }) {
           </Section>
 
           {data.unreconciled.length ? (
-            <Section style={{ marginTop: tk.space[4] }} title="Without a norm">
+            <Section help={<>These were used at site but no norm ties them to the work, so they cannot be checked. Consumables such as diesel and shuttering usually stay here.</>} style={{ marginTop: tk.space[4] }} title="Without a norm">
               <Table<UnreconciledItemDto>
                 rowKey="itemId"
                 size="small"
@@ -474,9 +472,6 @@ function MaterialsView({ projectId }: { projectId: string }) {
                   { title: 'At work front', dataIndex: 'atFrontQty', width: 170, align: 'right', render: (v: string | null, r) => <FrontCell qtyValue={v} unit={r.unit} flag={r.front} /> },
                 ]}
               />
-              <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[2], marginBottom: 0 }}>
-                These were used at site but no norm ties them to the work, so they cannot be checked. Consumables such as diesel and shuttering usually stay here.
-              </Typography.Paragraph>
             </Section>
           ) : null}
 
@@ -501,11 +496,9 @@ function MaterialsView({ projectId }: { projectId: string }) {
             </Section>
           ) : null}
 
-          <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[3], marginBottom: 0 }}>
-            Theoretical is approved progress on each BOQ item in the period × its norm; allowed adds the norm&apos;s wastage. Consumed is what the store issued to
+          <HelpLink style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[3], marginBottom: 0 }}>Theoretical is approved progress on each BOQ item in the period × its norm; allowed adds the norm&apos;s wastage. Consumed is what the store issued to
             this site less what came back from site in the same period; transfers to other projects and returns to the supplier do not count. A row is over its
-            allowance when more was consumed than allowed, and below theoretical when it is more than {RECONCILIATION_UNDER_PCT}% under.
-          </Typography.Paragraph>
+            allowance when more was consumed than allowed, and below theoretical when it is more than {RECONCILIATION_UNDER_PCT}% under.</HelpLink>
         </>
       )}
       <NormFormModal open={formOpen} onClose={() => setFormOpen(false)} projectId={projectId} norm={editing} activityNorm={editingActivity} />

@@ -199,7 +199,7 @@ export function DesignSubmissionForm({
           <Form.Item
             name="stages"
             label="Review stages"
-            extra={submission?.status === 'UNDER_REVIEW' ? 'The stages change only while it is a draft or back with us.' : 'The reviewers it passes through in turn, in order, such as proof checker, TPIA, PIU and head office. Leave it empty when one reviewer codes it.'}
+            tooltip={submission?.status === 'UNDER_REVIEW' ? 'The stages change only while it is a draft or back with us.' : 'The reviewers it passes through in turn, in order, such as proof checker, TPIA, PIU and head office. Leave it empty when one reviewer codes it.'}
           >
             <Select
               mode="multiple"

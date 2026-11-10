@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { HelpLink } from '@/components/common/Help';
 import { App, Button, Descriptions, Divider, Drawer, Form, Input, Table, Typography } from 'antd';
 import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
@@ -199,7 +200,7 @@ function HiddenWorkSection({ data }: { data: PortalInspectionDto }) {
       <Divider titlePlacement="start" plain>
         Hidden work
       </Divider>
-      <Typography.Paragraph type="secondary">This work is covered once done. Measure it and sign it off before it is covered; someone above you, or the client&apos;s engineer, countersigns. Its progress is approved only after both.</Typography.Paragraph>
+      <HelpLink>This work is covered once done. Measure it and sign it off before it is covered; someone above you, or the client&apos;s engineer, countersigns. Its progress is approved only after both.</HelpLink>
       {h?.signedAt ? (
         <Descriptions
           size="small"

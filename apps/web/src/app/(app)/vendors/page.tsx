@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { HelpLink } from '@/components/common/Help';
 import { useSearchParams } from 'next/navigation';
 import { Button, Card, Flex, Select, Space, Table, Tooltip, Typography } from 'antd';
 import { tk } from '@/ds';
@@ -231,9 +232,7 @@ function UnlistedTab({ editable, onAdd }: { editable: boolean; onAdd: (u: Unlist
   return (
     <>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      <Typography.Paragraph type="secondary" style={{ padding: `${tk.space[3]} ${tk.space[3]} 0` }}>
-        Names typed on expenses, machines and GRNs that match no vendor in the master. Adding one links those entries to it; entries typed later with the same name link on their own.
-      </Typography.Paragraph>
+      <HelpLink style={{ padding: `${tk.space[3]} ${tk.space[3]} 0` }}>Names typed on expenses, machines and GRNs that match no vendor in the master. Adding one links those entries to it; entries typed later with the same name link on their own.</HelpLink>
       <Table<UnlistedVendorDto>
         rowKey="name"
         size="middle"
@@ -285,7 +284,7 @@ export default function VendorsPage() {
     <div className="page-container">
       <PageHeader
         title={subcontractors ? 'Subcontractors' : 'Vendors'}
-        subtitle="Suppliers, hire agencies, subcontractors and service providers, with GSTIN, MSME registration and bank details. Expenses, machines and GRNs pick from this list."
+        help="Suppliers, hire agencies, subcontractors and service providers, with GSTIN, MSME registration and bank details. Expenses, machines and GRNs pick from this list."
         extra={newButton}
       />
       <Card size="small">

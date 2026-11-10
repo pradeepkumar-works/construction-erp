@@ -1,5 +1,6 @@
 'use client';
 
+import { Help } from '@/components/common/Help';
 import React, { useMemo, useState } from 'react';
 import { App, Button, Card, Col, Dropdown, Form, Input, Row, Space, Typography } from 'antd';
 import { tk } from '@/ds';
@@ -281,8 +282,8 @@ export function OfficialReportView({ projectId, kind, picker }: { projectId: str
           }}
         >
           <Typography.Paragraph>
-            The report is kept exactly as it is now, with today’s date and your name, so the copy you send can always be downloaded again.
-            {data.issue ? ` ${issueLine(data)}; this makes the next revision.` : ''}
+            {data.issue ? `${issueLine(data)}; this makes the next revision.` : 'This makes the first issued copy.'}
+            <Help>The report is kept exactly as it is now, with today’s date and your name, so the copy you send can always be downloaded again.</Help>
           </Typography.Paragraph>
           <Form form={form} layout="vertical">
             <Form.Item name="note" label="Note for the register">

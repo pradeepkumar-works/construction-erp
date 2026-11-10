@@ -819,7 +819,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
           title="Nothing to show yet"
           subTitle={
             otherFiles.length
-              ? 'This revision has only files the viewer cannot draw (DWG or other). Download them below, or add a PDF or DXF of the sheet to the revision.'
+              ? 'The viewer cannot draw this revision\'s files. Add a PDF or DXF of the sheet'
               : 'Add a revision with its PDF, DXF or image to view and mark it up here.'
           }
           extra={otherFiles.map((f) => (

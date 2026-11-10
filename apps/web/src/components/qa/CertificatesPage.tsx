@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { TitleHelp } from '@/components/common/Help';
 import { Button, Card, Flex, Select, Table, Typography } from 'antd';
 import { tk } from '@/ds';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -40,10 +41,7 @@ function CategoryChooser() {
   const names = new Map((list.data?.entries ?? []).map((e) => [e.code, e.name]));
   const changed = chosen.slice().sort().join('|') !== data.categories.slice().sort().join('|');
   return (
-    <Card title="Material that needs a certificate" style={{ marginBottom: tk.space[4] }}>
-      <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
-        A GRN with an item in one of these categories waits on this page until the manufacturer&apos;s test certificate (MTC) number is entered on its QA/QC check.
-      </Typography.Paragraph>
+    <Card title={<TitleHelp help={<>A GRN with an item in one of these categories waits on this page until the manufacturer&apos;s test certificate (MTC) number is entered on its QA/QC check.</>}>Material that needs a certificate</TitleHelp>} style={{ marginBottom: tk.space[4] }}>
       {data.canEdit ? (
         <Flex gap={tk.space[3]} wrap align="center">
           <Select
@@ -81,7 +79,7 @@ export function CertificatesPage() {
     <div className="page-container">
       <PageHeader
         title="Test certificates"
-        subtitle="GRNs of material that needs the manufacturer's test certificate (MTC) and came without one, newest first."
+        help="GRNs of material that needs the manufacturer's test certificate (MTC) and came without one, newest first."
         crumbs={[{ title: 'Quality', href: '/modules/quality' }, { title: 'Test certificates' }]}
       />
       <CategoryChooser />

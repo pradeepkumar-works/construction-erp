@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { HelpLink, TitleHelp } from '@/components/common/Help';
 import { tk } from '@/ds';
-import { Alert, App, Button, Card, Form, Select, Space, Table, Typography } from "antd";
+import { App, Button, Card, Form, Select, Space, Table, Typography } from "antd";
 import { DatePicker } from "@/components/common/DatePicker";
 import { AppTag } from "@/components/common/AppTag";
 import type { FormInstance } from "antd";
@@ -145,12 +146,10 @@ function OpeningForm({
             disabledDate={(d) => d.isAfter(dayjs(), "day")}
           />
         </Form.Item>
-        <Typography.Paragraph type="secondary">
-          Each asset and liability as your old books (or Tally) show it the day
+        <HelpLink>Each asset and liability as your old books (or Tally) show it the day
           before: bank and cash, fixed assets, loans, capital and reserves, and
           what each vendor and client owed. Income and expenses start at
-          nothing.
-        </Typography.Paragraph>
+          nothing.</HelpLink>
         <LineTable
           name="lines"
           label="Balance"
@@ -252,7 +251,7 @@ function LockForm({
         <Form.Item
           name="lockedUpTo"
           label="Locked up to"
-          extra="Nothing dated on or before this day can be posted, changed or cancelled, from the modules or by hand. Leave empty to take the lock off."
+          tooltip="Nothing dated on or before this day can be posted, changed or cancelled, from the modules or by hand. Leave empty to take the lock off."
         >
           <DatePicker
             style={{ width: 220 }}
@@ -298,7 +297,9 @@ export function YearClose() {
     <div style={{ padding: tk.space[4], display: "grid", gap: tk.space[4] }}>
       <Card
         size="small"
-        title="Opening balances"
+        title={<TitleHelp help={<>{data.booksFrom
+            ? `The books begin on ${formatDate(data.booksFrom)}, with the balances below brought in as on the day before. Records in the modules before that day stay out of the books.`
+            : "The books take in every record in the modules. To begin from a day (usually 1 April) with the balances from your old books, enter the opening balances."}</>}>Opening balances</TitleHelp>}
         extra={
           data.canChangeOpening ? (
             <Button size="small" onClick={() => setEditing(true)}>
@@ -307,11 +308,6 @@ export function YearClose() {
           ) : null
         }
       >
-        <Typography.Paragraph>
-          {data.booksFrom
-            ? `The books begin on ${formatDate(data.booksFrom)}, with the balances below brought in as on the day before. Records in the modules before that day stay out of the books.`
-            : "The books take in every record in the modules. To begin from a day (usually 1 April) with the balances from your old books, enter the opening balances."}
-        </Typography.Paragraph>
         {data.opening.length > 0 && (
           <Table<OpeningLineDto>
             rowKey="accountId"
@@ -379,7 +375,10 @@ export function YearClose() {
 
       <Card
         size="small"
-        title="Lock"
+        title={<TitleHelp help={<>{data.lockedUpTo
+            ? `The books are locked up to ${formatDate(data.lockedUpTo)}: nothing dated on or before it posts, changes or is cancelled. Records changed in the modules after that wait in the day book until the lock moves.`
+            : "The books are not locked. Lock them up to the last day you filed returns for, so nothing before it changes."}
+          {!data.canLock && " Management or an admin moves the lock."}</>}>Lock</TitleHelp>}
         extra={
           data.canLock ? (
             <Button
@@ -392,12 +391,6 @@ export function YearClose() {
           ) : null
         }
       >
-        <Typography.Paragraph style={{ marginBottom: 0 }}>
-          {data.lockedUpTo
-            ? `The books are locked up to ${formatDate(data.lockedUpTo)}: nothing dated on or before it posts, changes or is cancelled. Records changed in the modules after that wait in the day book until the lock moves.`
-            : "The books are not locked. Lock them up to the last day you filed returns for, so nothing before it changes."}
-          {!data.canLock && " Management or an admin moves the lock."}
-        </Typography.Paragraph>
       </Card>
 
       <Card size="small" title="Financial years">
@@ -468,13 +461,10 @@ export function YearClose() {
             },
           ]}
         />
-        <Alert
-          type="info"
-          showIcon
-          style={{ marginTop: tk.space[3] }}
-          title="Closing a year"
-          description="Closing empties the year's income and expenses into the Profit & Loss A/c under reserves and locks the books up to 31 March. The statements still show the year's own figures; balances carry forward on their own."
-        />
+        <HelpLink style={{ marginTop: tk.space[3] }}>
+          Closing empties the year's income and expenses into the Profit & Loss A/c under reserves and locks the books up to 31 March. The statements still show
+          the year's own figures; balances carry forward on their own.
+        </HelpLink>
       </Card>
       <OpeningForm
         open={editing}

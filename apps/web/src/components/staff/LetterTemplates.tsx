@@ -73,15 +73,12 @@ function LetterEditor({ t }: { t: HrLetterTemplateDto }) {
 
   return (
     <Flex vertical gap={tk.space[4]}>
-      <Section
+      <Section help={<>Paragraphs are split by a blank line. A field in curly brackets prints the person&apos;s fact; words in square brackets print only when every field inside
+          them has a value, and a paragraph whose field is empty is left out.
+          {t.updatedByName && ` Last changed by ${t.updatedByName}, ${formatDateTime(t.updatedAt)}.`}</>}
         title={t.title}
         extra={<AppTag variant="kind">{t.isStandard ? 'Standard words' : "Your company's words"}</AppTag>}
       >
-        <Typography.Paragraph type="secondary">
-          Paragraphs are split by a blank line. A field in curly brackets prints the person&apos;s fact; words in square brackets print only when every field inside
-          them has a value, and a paragraph whose field is empty is left out.
-          {t.updatedByName && ` Last changed by ${t.updatedByName}, ${formatDateTime(t.updatedAt)}.`}
-        </Typography.Paragraph>
         <Form form={form} layout="vertical" initialValues={{ body: t.body }} onFinish={(v) => submit(v.body, `${t.title} saved. Letters print with these words from now on.`)}>
           <Form.Item
             name="body"
@@ -148,7 +145,7 @@ export function LetterTemplates() {
     <div className="page-container">
       <PageHeader
         title="Letter templates"
-        subtitle={`The words each HR letter prints, from the offer to the experience certificate. ${own ? `${own} of ${data.length} use your company's words.` : 'All use the standard words.'}`}
+        help={`The words each HR letter prints, from the offer to the experience certificate. ${own ? `${own} of ${data.length} use your company's words.` : 'All use the standard words.'}`}
         crumbs={[{ title: 'HR and payroll', href: '/modules/people' }, { title: 'Letter templates' }]}
       />
       <Card>

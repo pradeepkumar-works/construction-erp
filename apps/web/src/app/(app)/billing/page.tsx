@@ -67,7 +67,7 @@ export default function BillingPage() {
 
   return (
     <div className="page-container" style={{ maxWidth: 948, marginLeft: 0 }}>
-      <PageHeader title="Subscription" subtitle={`Your ${PRODUCT_NAME} subscription and GST invoices`} />
+      <PageHeader title="Subscription" help={`Your ${PRODUCT_NAME} subscription and GST invoices`} />
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {isLoading || !data || !amount || !unit ? (
         error ? null : <PageSkeleton shape="record" header={false} />
@@ -104,7 +104,7 @@ export default function BillingPage() {
                 type="error"
                 showIcon
                 title="The company is read-only"
-                description={`Everyone can still see and export everything, but nothing new can be entered and Ask ${PRODUCT_NAME} is paused until the subscription is paid. Nothing has been deleted.`}
+                description="Everything can still be seen and exported. Nothing new can be entered until the subscription is paid"
               />
             )}
           </Card>

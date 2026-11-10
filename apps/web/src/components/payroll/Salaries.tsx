@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { HelpLink } from '@/components/common/Help';
 import { App, Button, Checkbox, Form, Input, Popconfirm, Select, Space, Table, Typography } from 'antd';
 import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
@@ -227,9 +228,7 @@ export function Salaries() {
   return (
     <div style={{ padding: tk.space[4] }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: tk.space[3], flexWrap: 'wrap', marginBottom: tk.space[3] }}>
-        <Typography.Paragraph type="secondary" style={{ margin: 0, maxWidth: 640 }}>
-          Salaries in force today. A raise is a new salary from a date, so earlier months keep what they paid. Expand a row for its history.
-        </Typography.Paragraph>
+        <HelpLink style={{ margin: 0, maxWidth: 640 }}>Salaries in force today. A raise is a new salary from a date, so earlier months keep what they paid. Expand a row for its history.</HelpLink>
         {admin && (
           <Button type="primary" icon={<PlusOutlined />} onClick={() => setEditing({ from: null })}>
             New salary

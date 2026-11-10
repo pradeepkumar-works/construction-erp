@@ -78,7 +78,7 @@ export function IsStandardsPage() {
     <div className="page-container">
       <PageHeader
         title="IS standards"
-        subtitle="The Indian Standards the company works to, each clause with the test, certificate or inspection that proves it."
+        help="The Indian Standards the company works to, each clause with the test, certificate or inspection that proves it."
         extra={
           manage ? (
             <Button type="primary" icon={<PlusOutlined />} onClick={() => setEditing('new')}>

@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { App, Form, Select, Typography } from 'antd';
+import { HelpLink } from '@/components/common/Help';
+import { App, Form, Select } from 'antd';
 import type { UserSummary } from '@erp/shared';
 import { useSetPositions } from '@/lib/queries';
 import { FormShell } from '@/components/form/FormShell';
@@ -39,9 +40,7 @@ export function PositionsModal({ user, onClose }: { user: UserSummary | null; on
   return (
     <FormShell open={!!user} onClose={onClose} form={form} layout="modal" title={user ? `Positions of ${user.fullName}` : 'Positions'} okText="Save positions" onSubmit={submit} width={720} projectDefault={false}>
       <Form form={form} layout="vertical">
-        <Typography.Paragraph type="secondary">
-          Approval rules can name a position: whoever holds it on the entry&apos;s project, or at head office, decides that level. What they see still comes from their role; a position on a project adds them to its team.
-        </Typography.Paragraph>
+        <HelpLink>Approval rules can name a position: whoever holds it on the entry&apos;s project, or at head office, decides that level. What they see still comes from their role; a position on a project adds them to its team.</HelpLink>
         <LineTable
           name="positions"
           label="Position"

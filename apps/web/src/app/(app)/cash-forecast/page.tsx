@@ -88,7 +88,7 @@ function Forecast({ data }: { data: CashForecastDto }) {
     <div className="page-container">
       <PageHeader
         title="Cash forecast"
-        subtitle={`Bank and cash for the next 13 weeks from the books and every bill, order, salary and EMI on record, as of ${formatDate(data.asOf)}. Low is clients paying late and bills going out early; high is the reverse.`}
+        help={`Bank and cash for the next 13 weeks from the books and every bill, order, salary and EMI on record, as of ${formatDate(data.asOf)}. Low is clients paying late and bills going out early; high is the reverse.`}
       />
 
       <Flex wrap gap={tk.space[3]} style={{ marginBottom: tk.space[4] }}>

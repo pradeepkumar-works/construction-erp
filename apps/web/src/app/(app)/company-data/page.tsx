@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { HelpLink } from '@/components/common/Help';
 import Link from 'next/link';
 import { Alert, App, Button, Card, Input, Modal, Progress, Skeleton, Space, Table, Typography } from 'antd';
 import { tk } from '@/ds';
@@ -50,13 +51,10 @@ function ExportCard() {
         <Skeleton active paragraph={{ rows: 2 }} />
       ) : data ? (
         <>
-          <Typography.Paragraph>
-            One zip with an Excel file for each kind of record (projects, BOQ, progress, DPRs, bills, orders, staff and the rest) and every
-            photo and document. It is yours to keep, or to move to another system.
-          </Typography.Paragraph>
+          <HelpLink>One zip with an Excel file for each kind of record (projects, BOQ, progress, DPRs, bills, orders, staff and the rest) and every
+            photo and document. It is yours to keep, or to move to another system.</HelpLink>
           <Typography.Paragraph type="secondary">
-            {data.tables.length} tables, {formatCount(rows)} rows, {data.files} files ({formatBytes(data.fileBytes)}). The download is built in this
-            browser; keep the tab open until it finishes. It is recorded in the audit log.
+            {data.tables.length} tables, {formatCount(rows)} rows, {data.files} files ({formatBytes(data.fileBytes)}). Keep the tab open until the download finishes.
           </Typography.Paragraph>
           {progress ? (
             <div style={{ maxWidth: 480 }}>
@@ -132,10 +130,8 @@ function DeletionCard() {
         <Typography.Paragraph type="secondary">The demo company cannot be deleted.</Typography.Paragraph>
       ) : (
         <>
-          <Typography.Paragraph>
-            Erases the company and everything in it: projects, reports, bills, photos and every user account. Nothing is erased for {DELETION_GRACE_DAYS} days,
-            and any admin can cancel until then. All admins get an email. The GST invoices for your subscription are kept, as the tax law asks.
-          </Typography.Paragraph>
+          <HelpLink>Erases the company and everything in it: projects, reports, bills, photos and every user account. Nothing is erased for {DELETION_GRACE_DAYS} days,
+            and any admin can cancel until then. All admins get an email. The GST invoices for your subscription are kept, as the tax law asks.</HelpLink>
           <Button danger icon={<DeleteOutlined />} onClick={() => setOpen(true)}>
             Delete this company
           </Button>
@@ -185,10 +181,8 @@ function SupportAccessCard() {
         <Skeleton active paragraph={{ rows: 1 }} />
       ) : (
         <>
-          <Typography.Paragraph>
-            {PRODUCT_NAME} staff cannot see your company unless you allow it here. When you do, support can open it read-only for {SUPPORT_ACCESS_DAYS} days to
-            help with a problem; they cannot change anything, and every visit is recorded in the log below.
-          </Typography.Paragraph>
+          <HelpLink>{PRODUCT_NAME} staff cannot see your company unless you allow it here. When you do, support can open it read-only for {SUPPORT_ACCESS_DAYS} days to
+            help with a problem; they cannot change anything, and every visit is recorded in the log below.</HelpLink>
           {active ? (
             <Space wrap>
               <AppTag meaning="inHand" icon={<CustomerServiceOutlined />}>
@@ -248,7 +242,7 @@ export default function CompanyDataPage() {
     <div className="page-container" style={{ maxWidth: 948, marginLeft: 0 }}>
       <PageHeader
         title="Data and privacy"
-        subtitle={
+        help={
           <span>
             Your data is yours: take all of it, or have it erased. See the <Link href="/privacy" className="text-link">privacy policy</Link>.
           </span>

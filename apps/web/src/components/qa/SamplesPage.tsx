@@ -45,7 +45,7 @@ export function SamplesPage() {
     <div className="page-container">
       <PageHeader
         title="Samples sent out"
-        subtitle={`Samples sent to the labs, the oldest wait first. A report is late after ${LAB_REPORT_DAYS} days, counted from the last test day.`}
+        help={`Samples sent to the labs, the oldest wait first. A report is late after ${LAB_REPORT_DAYS} days, counted from the last test day.`}
       />
       {error ? <QueryError error={error} onRetry={() => refetch()} /> : null}
       <Flex gap={tk.space[6]} wrap style={{ marginBottom: tk.space[4] }}>

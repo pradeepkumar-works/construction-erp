@@ -121,7 +121,7 @@ export function DepartmentHome({ moduleKey }: { moduleKey: string }) {
 
   return (
     <div className="page-container">
-      <PageHeader title={`${mod.label} overview`} subtitle={mod.description} extra={actions} />
+      <PageHeader title={`${mod.label} overview`} help={mod.description} extra={actions} />
       <Flex vertical gap={24}>
         {moduleKey === PROJECTS_DEPARTMENT && <ProjectFiguresPanel />}
         <DepartmentFigures department={moduleKey} />

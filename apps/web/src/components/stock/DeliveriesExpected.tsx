@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { HelpLink } from '@/components/common/Help';
 import Link from 'next/link';
 import { Button, Typography } from 'antd';
 import { tk } from '@/ds';
@@ -112,9 +113,7 @@ export function DeliveriesExpected({ projectId }: { projectId?: string }) {
   ];
   return (
     <>
-      <Typography.Paragraph type="secondary" style={{ marginBottom: tk.space[2] }}>
-        Approved orders with something still to come, late first. Receive books the goods received note against the order, so the bill and QA/QC follow it.
-      </Typography.Paragraph>
+      <HelpLink style={{ marginBottom: tk.space[2] }}>Approved orders with something still to come, late first. Receive books the goods received note against the order, so the bill and QA/QC follow it.</HelpLink>
       <LocalDataTable<Row>
         list="stock-deliveries"
         columns={columns}

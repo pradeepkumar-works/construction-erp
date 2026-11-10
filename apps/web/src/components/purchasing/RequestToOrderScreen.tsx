@@ -153,8 +153,7 @@ function EnquiryStep({ request, row, buyer, onNext }: { request: MaterialRequest
         </>
       ) : (
         <Typography.Paragraph type="secondary">
-          No enquiry sent yet. Each vendor you choose gets a link to type their rates, GST, freight and delivery days, with no sign-in. A quotation that came by
-          email or phone is recorded under Quotations.
+          No enquiry sent yet. Vendors get a link to quote without signing in.
         </Typography.Paragraph>
       )}
       <EnquiryFormModal open={enquiring} request={request} onClose={() => setEnquiring(false)} onSent={setSent} />
