@@ -78,6 +78,9 @@ async function moveOrganization(tx: Tx, organizationId: string, datedOn: string,
     organizationId,
   );
   await tx.$executeRawUnsafe(`UPDATE "DepreciationRun" AS r SET "periodFrom" = ${newFrom}, "periodTo" = ${newTo} WHERE r."organizationId" = $1 AND ${wholeMonth}`, organizationId);
+  // A TDS return is keyed by its quarter's first day: moved by the days with everything else, it goes to the nearest
+  // quarter's first day, so it stays one quarter's return and two never land on the same one.
+  await tx.$executeRawUnsafe(`UPDATE "TdsReturn" SET "periodFrom" = date_trunc('quarter', "periodFrom" + 45)::date WHERE "organizationId" = $1`, organizationId);
   if (months) {
     const next = (col: string) => `to_char(to_date(${col} || '-01', 'YYYY-MM-DD') + interval '${months} months', 'YYYY-MM')`;
     // A salary run is keyed by its month (and named by it), so it takes the same two steps through a marked value.

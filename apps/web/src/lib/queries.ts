@@ -2,6 +2,12 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
 import type {
+  TdsCertificateDto,
+  TdsChallanDetailDto,
+  TdsQuarterDto,
+  TdsReturnForm,
+  TdsStatementDto,
+  TdsSuggestDto,
   PayableRequestDto,
   PaymentBatchDetailDto,
   PaymentBatchDto,
@@ -1007,6 +1013,28 @@ export const usePaymentBatch = (id?: string) =>
   useQuery({ queryKey: ['payment-batches', 'one', id], queryFn: async () => (await api.get<PaymentBatchDetailDto>(`/payment-batches/${id}`)).data, enabled: !!id });
 export const usePayableRequests = (enabled = true) =>
   useQuery({ queryKey: ['payment-batches', 'requests'], queryFn: async () => (await api.get<PayableRequestDto[]>('/payment-batches/requests')).data, enabled });
+
+/** TDS returns: a quarter of 26Q or 24Q, a challan, the certificates, a deductee's statement and a payment's suggestion. */
+export const useTdsQuarter = (form: TdsReturnForm, periodFrom: string, enabled = true) =>
+  useQuery({
+    queryKey: ['tds', 'quarter', form, periodFrom],
+    queryFn: async () => (await api.get<TdsQuarterDto>('/tds/quarter', { params: { form, periodFrom } })).data,
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+export const useTdsChallan = (id?: string) => useQuery({ queryKey: ['tds', 'challan', id], queryFn: async () => (await api.get<TdsChallanDetailDto>(`/tds/challans/${id}`)).data, enabled: !!id });
+export const useTdsCertificates = (enabled = true) => useQuery({ queryKey: ['tds', 'certificates'], queryFn: async () => (await api.get<TdsCertificateDto[]>('/tds/certificates')).data, enabled });
+export const fetchTdsStatement = async (p: { form: TdsReturnForm; periodFrom: string; vendorId?: string | null; employeeId?: string | null }) =>
+  (await api.get<TdsStatementDto>('/tds/statement', { params: clean(p) })).data;
+/** The section, rate and TDS a payment form offers; null when no section is chosen and none was used for the vendor. */
+export const useTdsSuggest = (p: { vendorId?: string; section?: string | null; amount?: number; base?: number | null; on?: string; vendorBillId?: string | null; paymentId?: string | null }, enabled = true) =>
+  useQuery({
+    queryKey: ['tds', 'suggest', clean(p)],
+    queryFn: async () => (await api.get<TdsSuggestDto | null>('/tds/suggest', { params: clean({ ...p, amount: p.amount?.toFixed(2), base: p.base ? p.base.toFixed(2) : undefined }) })).data || null,
+    placeholderData: keepPreviousData,
+    enabled: enabled && !!p.vendorId && !!p.on && !!p.amount && p.amount > 0,
+    staleTime: 30_000,
+  });
 
 /** Machine loans: the loans with what each owes, and the running ones by lender. */
 export const useMachineLoans = (filters?: { status?: EquipmentLoanStatus; q?: string; equipmentId?: string }, enabled = true) =>

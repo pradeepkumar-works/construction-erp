@@ -136,6 +136,31 @@ function PaymentsTab({ projectId, vendorId, onBill }: { projectId?: string; vend
       total: (all) => formatINR(all.reduce((n, r) => n + toNumber(r.tdsAmount) + toNumber(r.otherDeduction), 0)),
     },
     {
+      title: 'TDS',
+      label: 'TDS section and challan',
+      key: 'tds',
+      width: 200,
+      defaultFrom: 1440,
+      render: (_, r) =>
+        r.tds ? (
+          <span>
+            <span translate="no">{r.tds.sectionName}</span>
+            {r.tds.rate ? <span className="text-muted"> at {Number(r.tds.rate)}%</span> : null}
+            <span className="text-muted" style={{ display: 'block', fontSize: tk.type.caption.fontSize }}>
+              {r.tds.challanId ? (
+                <Link href={`/tds/challans/${r.tds.challanId}`} className="mono" translate="no">
+                  {r.tds.challanLabel}
+                </Link>
+              ) : (
+                'Not deposited'
+              )}
+            </span>
+          </span>
+        ) : (
+          NO_VALUE
+        ),
+    },
+    {
       title: 'Mode / reference',
       label: 'Mode and reference',
       key: 'ref',

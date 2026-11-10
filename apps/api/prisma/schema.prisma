@@ -875,6 +875,8 @@ model Organization {
   /// Legal details, kept for the group's list of companies and, later, consolidation
   legalName                String?
   pan                      String?
+  /// Tax deduction account number for the TDS returns and Form 16A (tanProblem in @erp/shared)
+  tan                      String?
   cin                      String?
   gstin                    String?
 
@@ -1045,6 +1047,10 @@ model Organization {
   depreciationRuns      DepreciationRun[]
   paymentBatches        PaymentBatch[]
   paymentBatchLines     PaymentBatchLine[]
+  tdsDeductions         TdsDeduction[]
+  tdsChallans           TdsChallan[]
+  tdsReturns            TdsReturn[]
+  tdsCertificates       TdsCertificate[]
   depreciationLines     DepreciationLine[]
   loanEmis              LoanEmi[]
   sorBooks              SorBook[]
@@ -1462,6 +1468,10 @@ model User {
   depreciationRunsPosted  DepreciationRun[]          @relation("DepreciationRunPoster")
   paymentBatchesMade      PaymentBatch[]             @relation("PaymentBatchMaker")
   paymentBatchesExported  PaymentBatch[]             @relation("PaymentBatchExporter")
+  tdsChallansRecorded     TdsChallan[]               @relation("TdsChallanMaker")
+  tdsReturnsFiled         TdsReturn[]                @relation("TdsReturnFiler")
+  tdsReturnsReopened      TdsReturn[]                @relation("TdsReturnReopener")
+  tdsCertificatesAdded    TdsCertificate[]           @relation("TdsCertificateMaker")
   loanEmisPaid            LoanEmi[]                  @relation("LoanEmiPayer")
   sorBooksCreated         SorBook[]                  @relation("SorBookCreator")
   scEnquiriesCreated      SubcontractEnquiry[]       @relation("ScEnquiryCreator")
@@ -1673,6 +1683,7 @@ model Project {
   raBillHolds        RaBillHold[]
   receipts           Receipt[]
   vendorPayments     VendorPayment[]
+  tdsDeductions      TdsDeduction[]
   paymentRequests    PaymentRequest[]
   supplierChoices    SupplierChoice[]
   woAmendments       WorkOrderAmendment[]
@@ -1845,6 +1856,8 @@ model Vendor {
   fixedAssets       FixedAsset[]
   materialApprovals MaterialApproval[]
   packages          ProcurementPackage[]
+  tdsDeductions     TdsDeduction[]
+  tdsCertificates   TdsCertificate[]
 
   @@unique([organizationId, name])
 }
@@ -2439,6 +2452,7 @@ model SubcontractBill {
   paymentRequests  PaymentRequest[]
   debitNotes       DebitNote[]
   excessRecoveries ExcessMaterialRecovery[]
+  tdsDeduction     TdsDeduction?
 
   @@unique([workOrderId, billNo])
   @@index([organizationId, status])
@@ -4542,45 +4556,47 @@ model Receipt {
 /// Money paid to a vendor or subcontractor against an approved bill (payables). A bill is paid once its
 /// payments (amount paid plus what was deducted at payment) settle what it says is payable.
 model VendorPayment {
-  id                 String           @id @default(uuid())
+  id                 String            @id @default(uuid())
   organizationId     String
-  organization       Organization     @relation(fields: [organizationId], references: [id])
+  organization       Organization      @relation(fields: [organizationId], references: [id])
   projectId          String
-  project            Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project            Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
   vendorId           String
-  vendor             Vendor           @relation(fields: [vendorId], references: [id])
+  vendor             Vendor            @relation(fields: [vendorId], references: [id])
   /// One of the two bills, or (an advance) the purchase order or work order it is paid against
   vendorBillId       String?
-  vendorBill         VendorBill?      @relation(fields: [vendorBillId], references: [id], onDelete: Restrict)
+  vendorBill         VendorBill?       @relation(fields: [vendorBillId], references: [id], onDelete: Restrict)
   subcontractBillId  String?
-  subcontractBill    SubcontractBill? @relation(fields: [subcontractBillId], references: [id], onDelete: Restrict)
+  subcontractBill    SubcontractBill?  @relation(fields: [subcontractBillId], references: [id], onDelete: Restrict)
   purchaseOrderId    String?
-  purchaseOrder      PurchaseOrder?   @relation(fields: [purchaseOrderId], references: [id], onDelete: Restrict)
+  purchaseOrder      PurchaseOrder?    @relation(fields: [purchaseOrderId], references: [id], onDelete: Restrict)
   workOrderId        String?
-  workOrder          WorkOrder?       @relation(fields: [workOrderId], references: [id], onDelete: Restrict)
+  workOrder          WorkOrder?        @relation(fields: [workOrderId], references: [id], onDelete: Restrict)
   /// The approved payment request it draws on
   paymentRequestId   String?
-  paymentRequest     PaymentRequest?  @relation(fields: [paymentRequestId], references: [id], onDelete: Restrict)
-  paymentDate        DateTime         @db.Date
+  paymentRequest     PaymentRequest?   @relation(fields: [paymentRequestId], references: [id], onDelete: Restrict)
+  paymentDate        DateTime          @db.Date
   /// Paid out of the bank (or cash)
-  amount             Decimal          @db.Decimal(18, 2)
-  mode               PaymentMode      @default(BANK)
+  amount             Decimal           @db.Decimal(18, 2)
+  mode               PaymentMode       @default(BANK)
   /// UTR, cheque or voucher number
   reference          String?
   /// TDS deducted at payment (vendor bills: section 194Q or 194C); a subcontractor bill's TDS is already in its net payable
-  tdsAmount          Decimal          @default(0) @db.Decimal(18, 2)
-  otherDeduction     Decimal          @default(0) @db.Decimal(18, 2)
+  tdsAmount          Decimal           @default(0) @db.Decimal(18, 2)
+  otherDeduction     Decimal           @default(0) @db.Decimal(18, 2)
   otherDeductionNote String?
   remarks            String?
   createdById        String
-  createdBy          User             @relation("VendorPaymentCreator", fields: [createdById], references: [id])
+  createdBy          User              @relation("VendorPaymentCreator", fields: [createdById], references: [id])
   /// Set once the voucher is in a Tally export; undoing the export clears it
   tallyExportId      String?
-  tallyExport        TallyExport?     @relation(fields: [tallyExportId], references: [id], onDelete: SetNull)
+  tallyExport        TallyExport?      @relation(fields: [tallyExportId], references: [id], onDelete: SetNull)
   /// The bank payment batch line that recorded it, if any
   batchLine          PaymentBatchLine?
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
+  /// The TDS it deducted, by section (TdsService)
+  tdsDeduction       TdsDeduction?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
 
   @@index([organizationId, paymentDate])
   @@index([projectId])
@@ -5059,6 +5075,7 @@ model TallyExport {
   assetDisposals   FixedAsset[]      @relation("FixedAssetDisposalTally")
   depreciationRuns DepreciationRun[]
   loanEmis         LoanEmi[]
+  tdsChallans      TdsChallan[]
 
   @@index([organizationId, createdAt])
 }
@@ -5902,6 +5919,7 @@ model Employee {
   salaryStructures SalaryStructure[]
   loans            StaffLoan[]
   payslips         Payslip[]
+  tdsDeductions    TdsDeduction[]
   settlement       FinalSettlement?
   biometricUsers   BiometricUser[]
   joiningDocuments EmployeeDocument[]
@@ -7572,7 +7590,8 @@ model Payslip {
   esiWages       Decimal          @default(0) @db.Decimal(18, 2)
   createdAt      DateTime         @default(now())
 
-  lines PayslipLine[]
+  lines        PayslipLine[]
+  tdsDeduction TdsDeduction?
 
   @@unique([runId, employeeId])
   @@index([projectId])
@@ -10310,4 +10329,150 @@ model EotApplication {
 
   @@unique([projectId, appNo])
   @@index([organizationId, status])
+}
+
+/// The quarterly TDS returns: 26Q for vendors and contractors, 24Q for salaries.
+enum TdsReturnForm {
+  FORM_26Q
+  FORM_24Q
+}
+
+/// A quarter's return once filed, or opened again for a correction.
+enum TdsReturnStatus {
+  FILED
+  REOPENED
+}
+
+/// TDS deducted from one deductee (ARCHITECTURE "TDS returns"), written in the same transaction as the payment, bill or
+/// salary run that deducted it. Exactly one source (a CHECK); the deductee as they were then.
+model TdsDeduction {
+  id                String           @id @default(uuid())
+  organizationId    String
+  organization      Organization     @relation(fields: [organizationId], references: [id])
+  form              TdsReturnForm
+  /// A key of TDS_SECTIONS (@erp/shared/tds.ts); null is a section to confirm
+  section           String?
+  vendorId          String?
+  vendor            Vendor?          @relation(fields: [vendorId], references: [id])
+  employeeId        String?
+  employee          Employee?        @relation(fields: [employeeId], references: [id])
+  deducteeName      String
+  deducteePan       String?
+  /// The employee's code on 24Q
+  deducteeRef       String?
+  projectId         String?
+  project           Project?         @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  /// Date of payment or credit, which is the date of deduction
+  paidOn            DateTime         @db.Date
+  /// The amount TDS was worked out on
+  amountPaid        Decimal          @db.Decimal(18, 2)
+  /// Percent; null for a backfilled payment whose section is to confirm
+  rate              Decimal?         @db.Decimal(6, 3)
+  tdsAmount         Decimal          @db.Decimal(18, 2)
+  /// The return's code: A a lower deduction certificate, C the higher rate without a PAN
+  reason            String?
+  certificateNo     String?
+  /// Rupees of amountPaid at the certificate's rate when its limit ran out inside the payment; the rest took the normal rate
+  certificateBase   Decimal?         @db.Decimal(18, 2)
+  vendorPaymentId   String?          @unique
+  vendorPayment     VendorPayment?   @relation(fields: [vendorPaymentId], references: [id], onDelete: Restrict)
+  subcontractBillId String?          @unique
+  subcontractBill   SubcontractBill? @relation(fields: [subcontractBillId], references: [id], onDelete: Restrict)
+  payslipId         String?          @unique
+  payslip           Payslip?         @relation(fields: [payslipId], references: [id], onDelete: Restrict)
+  challanId         String?
+  challan           TdsChallan?      @relation(fields: [challanId], references: [id], onDelete: SetNull)
+  /// Made by the migration from a tdsAmount recorded before sections; posts to the old TDS Payable ledger
+  backfilled        Boolean          @default(false)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([organizationId, form, paidOn])
+  @@index([challanId])
+  @@index([vendorId])
+  @@index([employeeId])
+}
+
+/// A TDS challan (ITNS 281) as deposited: its tax is the sum of the deductions it covers.
+model TdsChallan {
+  id             String        @id @default(uuid())
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+  form           TdsReturnForm
+  /// The bank branch's 7 digits
+  bsrCode        String
+  /// Up to 5 digits
+  challanSerial  String
+  depositedOn    DateTime      @db.Date
+  tax            Decimal       @db.Decimal(18, 2)
+  /// Interest under 201(1A), late fee under 234E and anything else on the challan
+  interest       Decimal       @default(0) @db.Decimal(18, 2)
+  fee            Decimal       @default(0) @db.Decimal(18, 2)
+  other          Decimal       @default(0) @db.Decimal(18, 2)
+  /// 200: TDS payable by the taxpayer
+  minorHead      String        @default("200")
+  /// Deposited and booked by hand before Nirmaan kept TDS: its voucher is already in the books and Tally, so it posts nothing
+  inBooks        Boolean       @default(false)
+  createdById    String
+  createdBy      User          @relation("TdsChallanMaker", fields: [createdById], references: [id])
+  /// Set once the voucher is in a Tally export; undoing the export clears it
+  tallyExportId  String?
+  tallyExport    TallyExport?  @relation(fields: [tallyExportId], references: [id], onDelete: SetNull)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  deductions TdsDeduction[]
+
+  @@unique([organizationId, bsrCode, depositedOn, challanSerial])
+  @@index([organizationId, form, depositedOn])
+  @@index([tallyExportId])
+}
+
+/// A quarter's return filed (or reopened for a correction). While FILED, nothing in the quarter changes.
+model TdsReturn {
+  id             String          @id @default(uuid())
+  organizationId String
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  form           TdsReturnForm
+  /// The quarter's first day
+  periodFrom     DateTime        @db.Date
+  status         TdsReturnStatus @default(FILED)
+  filedOn        DateTime        @db.Date
+  /// The 15 digit provisional receipt (token) number
+  receiptNo      String
+  /// Times it was filed again after a reopening
+  corrections    Int             @default(0)
+  filedById      String
+  filedBy        User            @relation("TdsReturnFiler", fields: [filedById], references: [id])
+  reopenedById   String?
+  reopenedBy     User?           @relation("TdsReturnReopener", fields: [reopenedById], references: [id])
+  reopenedAt     DateTime?
+  reopenNote     String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@unique([organizationId, form, periodFrom])
+}
+
+/// A lower deduction certificate under section 197 for one vendor and one section.
+model TdsCertificate {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  vendorId       String
+  vendor         Vendor       @relation(fields: [vendorId], references: [id])
+  /// A key of TDS_SECTIONS
+  section        String
+  certificateNo  String
+  rate           Decimal      @db.Decimal(6, 3)
+  validFrom      DateTime     @db.Date
+  validTo        DateTime     @db.Date
+  /// Rupees the certificate covers
+  limitAmount    Decimal      @db.Decimal(18, 2)
+  createdById    String
+  createdBy      User         @relation("TdsCertificateMaker", fields: [createdById], references: [id])
+  createdAt      DateTime     @default(now())
+
+  @@unique([organizationId, certificateNo])
+  @@index([vendorId, section])
 }

@@ -4,8 +4,7 @@
  */
 import { ROLE_KEYS, type AccessRequestStatus, type NavPinKind, type NavVisitKind, type RoleKey, type SubmissionType } from './enums';
 import { ROLE_LABELS } from './labels';
-import { NAV_TREE, canSeeNav, type NavNode, type NavUser } from './navigation';
-import { pathIsOff } from './module-switches';
+import { NAV_TREE, canSeeNav, navNodeOff, type NavNode, type NavUser } from './navigation';
 import { isGuest, isSupplier } from './permissions';
 
 /** Pinned holds at most this many. */
@@ -164,7 +163,7 @@ export const LAUNCHER_FLAG_NODES: NavNode[] = NAV_TREE.filter((n) => n.parent ==
 /** A module some of whose pages the company has not turned off, whoever may open them. */
 export function navModuleOn(node: NavNode, modulesOff: readonly string[] | undefined): boolean {
   const under = (id: string): boolean =>
-    NAV_TREE.some((c) => c.parent === id && c.status === 'live' && !c.shortcutOf && ((c.route ? !pathIsOff(c.route, modulesOff) : !!c.projectTab) || under(c.id)));
+    NAV_TREE.some((c) => c.parent === id && c.status === 'live' && !c.shortcutOf && ((c.route || c.projectTab ? !navNodeOff(c, modulesOff) : false) || under(c.id)));
   return under(node.id);
 }
 

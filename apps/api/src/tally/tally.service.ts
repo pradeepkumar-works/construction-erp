@@ -6,6 +6,7 @@ import {
   TALLY_CLIENT_GROUP,
   TALLY_EXPENSE_GROUP,
   TALLY_FIXED_LEDGERS,
+  tallyLedgerFallsTo,
   TALLY_VENDOR_GROUP,
   TALLY_LOAN_GROUP,
   loanLedgerName,
@@ -38,6 +39,8 @@ import {
 } from './vouchers';
 
 type Tx = Prisma.TransactionClient | PrismaService;
+const FIXED_BY_KEY = new Map(TALLY_FIXED_LEDGERS.map((l) => [l.key, l]));
+
 const GST_HEADS: Record<string, LedgerMaster['gstHead']> = {
   OUTPUT_CGST: 'Central Tax',
   INPUT_CGST: 'Central Tax',
@@ -94,7 +97,12 @@ export class TallyService {
       stateCode: cfg.stateCode,
       costCentres: cfg.costCentres,
       ledgers: [
-        ...TALLY_FIXED_LEDGERS.map((l) => row(l.key, 'FIXED', l.use, l.name, l.group)),
+        ...TALLY_FIXED_LEDGERS.map((l) => {
+          // A section's TDS payable goes to TDS Payable in Tally until named (`tallyLedgerFallsTo`), and says so.
+          const to = tallyLedgerFallsTo(l.key);
+          const into = to ? FIXED_BY_KEY.get(to) : undefined;
+          return into ? row(l.key, 'FIXED', `${l.use}; in ${into.name} unless you name its own`, cfg.ledgers[into.key] ?? into.name, l.group) : row(l.key, 'FIXED', l.use, l.name, l.group);
+        }),
         ...EXPENSE_CATEGORIES.map((c) => row(tallyExpenseKey(c), 'EXPENSE', `Site expenses: ${EXPENSE_CATEGORY_LABELS[c]}`, tallyExpenseDefault(c), TALLY_EXPENSE_GROUP)),
         ...clients.map((c) => row(tallyClientKey(c.id), 'CLIENT', c.department ? `Client · ${c.department}` : 'Client', c.name, TALLY_CLIENT_GROUP)),
         ...vendors.map((v) => row(tallyVendorKey(v.id), 'VENDOR', 'Vendor', v.name, TALLY_VENDOR_GROUP)),
@@ -248,6 +256,7 @@ export class TallyService {
       await tx.raBillHold.updateMany({ where: { id: { in: ids('WITHHELD_LOST') }, tallyExportId: null }, data: mark });
       await tx.fixedAsset.updateMany({ where: { id: { in: ids('ASSET_ADDITION') }, tallyExportId: null }, data: mark });
       await tx.depreciationRun.updateMany({ where: { id: { in: ids('DEPRECIATION') }, tallyExportId: null }, data: mark });
+      await tx.tdsChallan.updateMany({ where: { id: { in: ids('TDS_CHALLAN') }, tallyExportId: null }, data: mark });
       await tx.fixedAsset.updateMany({ where: { id: { in: ids('ASSET_DISPOSAL') }, tallyDisposalExportId: null }, data: { tallyDisposalExportId: created.id } });
       await tx.payrollRun.updateMany({ where: { id: { in: ids('SALARY_PAYMENT') }, tallyPaymentExportId: null }, data: { tallyPaymentExportId: created.id } });
       return created.id;

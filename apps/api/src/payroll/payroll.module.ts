@@ -6,6 +6,7 @@ import { SalaryService } from './salary.service';
 import { SettlementService } from './settlement.service';
 
 import { HrReportsService } from './hr-reports.service';
+import { TdsModule } from '../tds/tds.module';
 
-@Module({ imports: [StaffModule], controllers: [PayrollRunController], providers: [PayrollRunService, SalaryService, SettlementService, HrReportsService], exports: [PayrollRunService, SalaryService, SettlementService, HrReportsService] })
+@Module({ imports: [StaffModule, TdsModule], controllers: [PayrollRunController], providers: [PayrollRunService, SalaryService, SettlementService, HrReportsService], exports: [PayrollRunService, SalaryService, SettlementService, HrReportsService] })
 export class PayrollModule {}

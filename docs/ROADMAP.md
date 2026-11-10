@@ -903,7 +903,7 @@ drones, sensors and the rest when a customer asks. The machine and site devices 
 153. **Vendor, subcontractor and salary payouts** (L).
 154. **Aadhaar eSign** (M).
 155. **Email inbox for bills and letters** (M).
-156. **TDS returns and Form 16** (M).
+156. ~~**TDS returns and Form 16** (M).~~ Done as item 191.
 157. **Site and gate cameras** (L).
 158. **Drone survey import** (M).
 159. **Concrete maturity import** (S).
@@ -1070,6 +1070,13 @@ GRN on the web and the phone), and a second quality dashboard.
      payment through payables so it posts as one recorded by hand. The bank's response file or a pasted list sets each
      payment's UTR, and the batch is settled when all have one. The salary run's bank file writes through the same rows.
      ARCHITECTURE "Bank payments".
+191. ~~**Track TDS by section and prepare the quarterly returns** (M).~~ Done: a payment to a vendor takes its TDS section
+     (the vendor's last one filled in) and the rate their PAN and any lower deduction certificate take on the value
+     before GST; subcontractor bills are 194C and salary runs 192, each a `TdsDeduction` written in the transaction that
+     deducts it. Accounts › TDS returns shows each quarter of 26Q or 24Q by section, with challans over chosen deductions
+     (ITNS 281, posted as payments from each section's TDS payable), what blocks filing, the interest under 201(1A) and
+     the 234E fee, the challan and deductee sheets for the Return Preparation Utility and each deductee's statement on
+     the letterhead. A filed quarter is locked until reopened for a correction. ARCHITECTURE "TDS returns".
 
 ## Definition of done for every item
 Prisma migration, API endpoints with Swagger, shared types, web screen, mobile screen where site

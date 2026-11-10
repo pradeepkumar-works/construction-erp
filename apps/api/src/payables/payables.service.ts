@@ -4,7 +4,10 @@ import { Prisma } from '@prisma/client';
 import {
   canRecordPayment,
   canViewPayables,
+  challanLabel,
+  gstShareOf,
   subBillLabel,
+  tdsSectionName,
   type MsmeCategory,
   type Paginated,
   type PayableBillDto,
@@ -32,6 +35,7 @@ import { advanceAdjusted, advancePaid, advanceRecovered } from './advances';
 import { SUB_BILL_PAYABLE, VENDOR_BILL_PAYABLE, subBillPayable, vendorBillPayable } from './payable';
 import { syncRequestPaid, syncRequestsPaid, targetLabel } from './payment-requests.service';
 import { todayIn } from '../notifications/time';
+import { TdsDeductionsService, type PaymentTds } from '../tds/tds-deductions.service';
 
 const D = (v: Prisma.Decimal.Value) => new Prisma.Decimal(v);
 const ZERO = D(0);
@@ -56,6 +60,7 @@ const include = {
   workOrder: { select: { woNo: true } },
   paymentRequest: { select: { requestNo: true } },
   createdBy: { select: { fullName: true } },
+  tdsDeduction: { select: { id: true, section: true, rate: true, amountPaid: true, challan: { select: { id: true, bsrCode: true, challanSerial: true, depositedOn: true } } } },
 } satisfies Prisma.VendorPaymentInclude;
 type Row = Prisma.VendorPaymentGetPayload<{ include: typeof include }>;
 
@@ -83,7 +88,12 @@ interface Bill {
   payable: Prisma.Decimal | null;
   /** An advance's order */
   order?: { purchaseOrderId: string } | { workOrderId: string };
+  /** A vendor bill's GST and total, so TDS is worked out on the value before GST */
+  gst?: { gst: Prisma.Decimal; total: Prisma.Decimal };
 }
+
+/** The GST inside what a payment settles, by the bill's share of GST in its total. */
+const gstShare = (bill: Bill, settles: Prisma.Decimal) => (bill.gst ? D(gstShareOf(settles.toString(), bill.gst.gst.toString(), bill.gst.total.toString())) : ZERO);
 
 type Request = { id: string; requestNo: string; amount: Prisma.Decimal };
 
@@ -96,6 +106,8 @@ export interface PreparedPayment {
   bill: Bill;
   request: Request | null;
   amounts: Sums;
+  /** The TDS deduction it writes, by section */
+  tds: PaymentTds | null;
 }
 
 /** A bill proper, whose paid amount follows its payments. */
@@ -174,6 +186,7 @@ export class PayablesService {
     private access: ProjectAccessService,
     private audit: AuditService,
     private notifications: NotificationsService,
+    private tds: TdsDeductionsService,
   ) {}
 
   toDto(r: Row): VendorPaymentDto {
@@ -197,6 +210,17 @@ export class PayablesService {
       mode: r.mode,
       reference: r.reference,
       tdsAmount: money(r.tdsAmount),
+      tds: r.tdsDeduction
+        ? {
+            deductionId: r.tdsDeduction.id,
+            section: r.tdsDeduction.section,
+            sectionName: tdsSectionName(r.tdsDeduction.section),
+            rate: r.tdsDeduction.rate ? r.tdsDeduction.rate.toString() : null,
+            base: money(r.tdsDeduction.amountPaid),
+            challanId: r.tdsDeduction.challan?.id ?? null,
+            challanLabel: r.tdsDeduction.challan ? challanLabel({ ...r.tdsDeduction.challan, depositedOn: dateOnly(r.tdsDeduction.challan.depositedOn) }) : null,
+          }
+        : null,
       otherDeduction: money(r.otherDeduction),
       otherDeductionNote: r.otherDeductionNote,
       settledAmount: money(settles(r)),
@@ -265,7 +289,7 @@ export class PayablesService {
     let bill: Bill | null = null;
     if (dto.vendorBillId) {
       const b = await this.prisma.vendorBill.findFirst({ where: { id: dto.vendorBillId, organizationId: org } });
-      if (b) bill = { type: 'VENDOR_BILL', id: b.id, label: b.billNo, projectId: b.projectId, vendorId: b.vendorId, status: b.status, billDate: b.invoiceDate, payable: vendorBillPayable(b) };
+      if (b) bill = { type: 'VENDOR_BILL', id: b.id, label: b.billNo, projectId: b.projectId, vendorId: b.vendorId, status: b.status, billDate: b.invoiceDate, payable: vendorBillPayable(b), gst: { gst: b.gstAmount, total: b.total } };
     } else {
       const b = await this.prisma.subcontractBill.findFirst({ where: { id: dto.subcontractBillId, organizationId: org }, include: { workOrder: { select: { woNo: true, vendorId: true } } } });
       if (b) bill = { type: 'SUBCONTRACT_BILL', id: b.id, label: subBillLabel(b.workOrder.woNo, b.billNo, b.isFinal), projectId: b.projectId, vendorId: b.workOrder.vendorId, status: b.status, billDate: b.billDate, payable: subBillPayable(b) };
@@ -419,7 +443,9 @@ export class PayablesService {
     }
     if (isBill(bill) && bill.status !== 'APPROVED') throw new BadRequestException(`${bill.label} is not approved yet; only approved bills are paid`);
     this.checkDate(dto.paymentDate, bill);
-    return { dto, bill, request, amounts: this.amounts(bill, dto) };
+    const amounts = this.amounts(bill, dto);
+    const tds = await this.tds.preparePayment(user.organizationId, { vendorId: bill.vendorId, section: dto.tdsSection, base: dto.tdsBase, tdsAmount: amounts.tdsAmount, settles: settles(amounts), gstShare: gstShare(bill, settles(amounts)), paymentDate: dto.paymentDate });
+    return { dto, bill, request, amounts, tds };
   }
 
   /**
@@ -489,6 +515,11 @@ export class PayablesService {
       });
     }
     await tx.vendorPayment.createMany({ data });
+    await this.tds.forPayments(
+      tx,
+      user.organizationId,
+      ps.map((p, i) => ({ id: ids[i], vendorId: p.bill.vendorId, projectId: p.bill.projectId, paymentDate: p.dto.paymentDate, tdsAmount: p.amounts.tdsAmount, tds: p.tds })),
+    );
     const bills = new Map(ps.filter((p) => isBill(p.bill)).map((p) => [p.bill.id, p.bill]));
     for (const bill of bills.values()) if (isBill(bill)) await syncPaid(tx, bill.type, bill.id);
     await syncRequestsPaid(tx, requestIds);
@@ -578,6 +609,22 @@ export class PayablesService {
     assertNotExported(row, 'This payment');
     if (dto.paymentDate !== undefined) this.checkDate(dto.paymentDate, bill);
     const a = this.amounts(bill, dto, row);
+    const was = await this.prisma.tdsDeduction.findUnique({ where: { vendorPaymentId: id }, select: { section: true, amountPaid: true, backfilled: true } });
+    const amountsKept = dto.amount === undefined && dto.tdsAmount === undefined && dto.otherDeduction === undefined;
+    const paymentDate = dto.paymentDate ?? dateOnly(row.paymentDate);
+    const tds = await this.tds.preparePayment(
+      user.organizationId,
+      {
+        vendorId: row.vendorId,
+        section: dto.tdsSection !== undefined ? dto.tdsSection : (was?.section ?? null),
+        base: dto.tdsBase ?? (amountsKept && was ? was.amountPaid.toString() : null),
+        tdsAmount: a.tdsAmount,
+        settles: settles(a),
+        gstShare: gstShare(bill, settles(a)),
+        paymentDate,
+      },
+      !!was?.backfilled && dto.tdsSection === undefined && !was.section,
+    );
     await this.prisma.$transaction(async (tx) => {
       await this.lock(tx, bill);
       await this.checkBalance(tx, bill, id, settles(a));
@@ -594,6 +641,7 @@ export class PayablesService {
           ...(dto.remarks !== undefined ? { remarks: dto.remarks } : {}),
         },
       });
+      await this.tds.changePayment(tx, user.organizationId, { id, vendorId: row.vendorId, projectId: row.projectId, paymentDate, tdsAmount: a.tdsAmount, tds });
       if (isBill(bill)) await syncPaid(tx, bill.type, bill.id);
       if (request) await syncRequestPaid(tx, request.id);
     });
@@ -632,6 +680,7 @@ export class PayablesService {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(k)) FROM (SELECT k FROM unnest(${keys}::text[]) AS k ORDER BY k COLLATE "C") AS locks`;
     // What the caller must check once no payment of these bills can change (a UTR set meanwhile), before anything goes.
     await underLocks?.();
+    await this.tds.dropPayments(tx, rs[0].row.organizationId, rs.map((r) => r.row.id));
     for (const { row, bill } of rs.filter((r) => r.bill.order)) {
       await this.checkAdvanceCovers(tx, bill, row.id, null);
       await tx.vendorPayment.delete({ where: { id: row.id } });

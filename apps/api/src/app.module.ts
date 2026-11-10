@@ -86,6 +86,7 @@ import { StatementsModule } from './statements/statements.module';
 import { RmcModule } from './rmc/rmc.module';
 import { MachineLoansModule } from './machine-loans/machine-loans.module';
 import { FixedAssetsModule } from './fixed-assets/fixed-assets.module';
+import { TdsModule } from './tds/tds.module';
 import { TendersModule } from './tenders/tenders.module';
 import { MeetingsModule } from './meetings/meetings.module';
 import { MaterialApprovalsModule } from './material-approvals/material-approvals.module';
@@ -165,6 +166,7 @@ import { VitalsController } from './vitals.controller';
     RmcModule,
     MachineLoansModule,
     FixedAssetsModule,
+    TdsModule,
     TendersModule,
     MeetingsModule,
     MaterialApprovalsModule,

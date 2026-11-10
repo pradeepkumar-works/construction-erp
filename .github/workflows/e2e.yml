@@ -382,6 +382,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/bank-file-test.js
+      - name: TDS rates by section, without a PAN and on a certificate, thresholds, quarters, 234E, 201(1A) and the return's rows hold
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/tds-test.js
       - name: Tender pricing, quotes on the SOR, bid ranks and status moves add up
         if: matrix.suite == 'flows'
         working-directory: apps/api

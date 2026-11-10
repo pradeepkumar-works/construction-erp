@@ -5,8 +5,10 @@ import { SubcontractBillsService } from './subcontract-bills.service';
 import { WorkOrderAmendmentsService } from './work-order-amendments.service';
 import { ScEnquiriesController } from './sc-enquiries.controller';
 import { ScEnquiriesService } from './sc-enquiries.service';
+import { TdsModule } from '../tds/tds.module';
 
 @Module({
+  imports: [TdsModule],
   controllers: [SubcontractsController, ScEnquiriesController],
   providers: [WorkOrdersService, SubcontractBillsService, ScEnquiriesService, WorkOrderAmendmentsService],
   exports: [WorkOrdersService, SubcontractBillsService, ScEnquiriesService, WorkOrderAmendmentsService],

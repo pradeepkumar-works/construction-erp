@@ -456,6 +456,15 @@ and the pre-delivery checklist.
   `noticePayments` once the UTR is in, and taken off only through `removeMany`, never a `vendorPayment` write of its own.
   A UTR is read only by `readUtrResponse` with the batch's own accounts and IFSCs as `notUtr`. Keep
   `src/scripts/bank-file-test.ts` passing.
+- TDS returns (item 191, `apps/api/src/tds`, ARCHITECTURE "TDS returns"): a section is a key of `TDS_SECTIONS`, a rate only
+  `tdsRate` (no PAN at 20% under 206AA, a certificate's rate within its limit), a threshold only `thresholdReached`, the
+  tax only `tdsOn` (to the rupee from paise) and what blocks filing and the file's rows only `returnProblems` /
+  `returnRows` (`@erp/shared/tds.ts`). A `TdsDeduction` is written only by `TdsDeductionsService` inside its source's own
+  transaction (payables' `insertMany` / `update` / `removeMany`, the subcontract bill's `onApproved`, the salary run's
+  `move` on approve and send back), each taking the quarter's `TDSQ:` advisory lock and refused while it is filed or the
+  deduction is in a challan; filing takes the lock exclusively. A challan posts only through `PostingService`
+  (`TDS_CHALLAN`), debiting the ledger `deductionLedgerKey` names (a backfilled deduction keeps `TDS_PAYABLE`). Nothing
+  is sent to a deductee. Keep `src/scripts/tds-test.ts` passing.
 - RMC (item 104, `apps/api/src/rmc`, ARCHITECTURE "RMC plant"): a plant is a project of type `PLANT`; a truck's materials
   leave the plant's store only through `StockService.issue`, and cubes are a quality test through `QualityService`. Its
   figures are pure functions in `rmc-rules.ts` tested in `src/scripts/rmc-test.ts` (CI runs it); bills and receipts post

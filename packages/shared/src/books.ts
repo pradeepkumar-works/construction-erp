@@ -134,7 +134,7 @@ export const BOOK_VOUCHER_STATUS_LABELS: Record<BookVoucherStatus, string> = {
 };
 
 /** Where a voucher came from: made by hand, or posted from a module's record. */
-export const BOOK_SOURCES = ['MANUAL', 'SALES', 'RECEIPT', 'PURCHASE', 'SUBCONTRACT', 'PAYMENT', 'EXPENSE', 'DEBIT_NOTE', 'SALARY', 'SALARY_PAYMENT', 'STAFF_LOAN', 'RMC_SALE', 'RMC_RECEIPT', 'MACHINE_LOAN', 'LOAN_EMI', 'WITHHELD_LOST', 'ASSET_ADDITION', 'DEPRECIATION', 'ASSET_DISPOSAL', 'OPENING', 'YEAR_CLOSE'] as const;
+export const BOOK_SOURCES = ['MANUAL', 'SALES', 'RECEIPT', 'PURCHASE', 'SUBCONTRACT', 'PAYMENT', 'EXPENSE', 'DEBIT_NOTE', 'SALARY', 'SALARY_PAYMENT', 'STAFF_LOAN', 'RMC_SALE', 'RMC_RECEIPT', 'MACHINE_LOAN', 'LOAN_EMI', 'WITHHELD_LOST', 'ASSET_ADDITION', 'DEPRECIATION', 'ASSET_DISPOSAL', 'TDS_CHALLAN', 'OPENING', 'YEAR_CLOSE'] as const;
 export type BookSource = (typeof BOOK_SOURCES)[number];
 export const BOOK_SOURCE_LABELS: Record<BookSource, string> = {
   MANUAL: 'Made by hand',
@@ -156,6 +156,7 @@ export const BOOK_SOURCE_LABELS: Record<BookSource, string> = {
   ASSET_ADDITION: 'Fixed asset bought',
   DEPRECIATION: 'Depreciation run',
   ASSET_DISPOSAL: 'Fixed asset sold or scrapped',
+  TDS_CHALLAN: 'TDS challan',
   OPENING: 'Opening balances',
   YEAR_CLOSE: 'Year close',
 };

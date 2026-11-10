@@ -1,0 +1,137 @@
+'use client';
+
+import React from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { TDS_RETURN_FORM_LABELS, figure, quarterOf, type TdsDeductionDto } from '@erp/shared';
+import { api } from '@/lib/api';
+import { useTdsChallan } from '@/lib/queries';
+import { formatDate, formatDateTime, formatINR } from '@/lib/format';
+import { useConfirmDelete } from '@/components/common/ConfirmDelete';
+import { Money } from '@/components/common/Money';
+import { LocalDataTable } from '@/components/list/LocalDataTable';
+import type { ListColumn } from '@/components/list/DataTable';
+import { RecordFrame } from '@/components/record/RecordFrame';
+import { tk } from '@/ds';
+import { challanHref, invalidateTds, quarterHref } from './tdsUi';
+
+const caption: React.CSSProperties = { display: 'block', fontSize: tk.type.caption.fontSize, color: tk.color.text.muted };
+
+const columns: ListColumn<TdsDeductionDto>[] = [
+  {
+    key: 'deductee',
+    title: 'Deductee',
+    locked: true,
+    card: 'title',
+    cardText: (d) => d.deducteeName,
+    render: (_, d) => (
+      <div>
+        <span translate="no">{d.deducteeName}</span>
+        <span style={caption}>
+          {d.sourceHref ? (
+            <Link href={d.sourceHref} className="text-link">
+              {d.sourceLabel}
+            </Link>
+          ) : (
+            d.sourceLabel
+          )}
+        </span>
+      </div>
+    ),
+  },
+  { key: 'section', title: 'Section', width: 110, render: (_, d) => <span translate="no">{d.sectionName}</span> },
+  { key: 'paidOn', title: 'Paid on', width: 120, render: (_, d) => formatDate(d.paidOn), card: 'date' },
+  { key: 'tds', title: 'TDS', kind: 'money', value: (d) => d.tdsAmount, width: 140, total: (rows) => formatINR(rows.reduce((n, d) => n + Number(d.tdsAmount), 0)), card: 'amount' },
+];
+
+/**
+ * A TDS challan at `/tds/challans/<id>`: the bank's BSR code, date and serial, the tax it paid with the deductions that
+ * make it up, and the interest and fee on top. It is deleted only when entered by mistake, while its quarter is open and
+ * it is not in Tally.
+ */
+export function ChallanRecord({ id, onClose }: { id: string; onClose: () => void }) {
+  const qc = useQueryClient();
+  const router = useRouter();
+  const { data: c, isLoading, error, refetch } = useTdsChallan(id);
+  const [askDelete, deleteDialog] = useConfirmDelete();
+  const remove = useMutation({ mutationFn: async () => (await api.delete(`/tds/challans/${id}`)).data });
+  const q = c ? quarterOf(c.depositedOn) : null;
+  const quarterOfItems = c?.items[0] ? quarterOf(c.items[0].paidOn) : q;
+  return (
+    <>
+      <RecordFrame
+        mode="page"
+        kind="TDS challan"
+        list={{ href: c && quarterOfItems ? quarterHref(c.form, quarterOfItems.from, 'challans') : '/tds?tab=challans', label: 'TDS returns' }}
+        loading={isLoading}
+        error={error}
+        onRetry={() => refetch()}
+        record={
+          c && {
+            href: challanHref(c.id),
+            title: `Challan · ${c.label}`,
+            headline: [figure('tdsDeposited', c.tax, { count: c.deductions }), Number(c.interest) > 0 && figure('tdsInterest', c.interest)],
+            facts: [
+              { key: 'return', label: 'Return', children: quarterOfItems ? <Link href={quarterHref(c.form, quarterOfItems.from)}>{`${TDS_RETURN_FORM_LABELS[c.form]} ${quarterOfItems.label}`}</Link> : TDS_RETURN_FORM_LABELS[c.form] },
+              { key: 'bsr', label: 'BSR code', children: <span className="mono" translate="no">{c.bsrCode}</span> },
+              { key: 'serial', label: 'Challan serial', children: <span className="mono" translate="no">{c.challanSerial}</span> },
+              { key: 'on', label: 'Deposited on', children: formatDate(c.depositedOn) },
+              { key: 'paid', label: 'Paid', children: <Money value={c.total} paise /> },
+              ...(c.late
+                ? [{ key: 'late', label: 'Interest 201(1A)', children: `Deposited late: ${c.interestMonths} ${c.interestMonths === 1 ? 'month' : 'months'} at 1.5%, ${formatINR(c.interestDue, true)} by the dates` }]
+                : []),
+              ...(Number(c.fee) > 0 ? [{ key: 'fee', label: 'Late fee 234E', children: <Money value={c.fee} paise /> }] : []),
+            ],
+            details: [
+              { key: 'minor', label: 'Minor head', children: `${c.minorHead}, TDS payable by the taxpayer` },
+              { key: 'tally', label: 'Tally', children: c.inBooks ? 'Already in the books: booked by hand, so it posts nothing' : c.exportedToTally ? 'In a Tally export' : 'Not exported yet' },
+              { key: 'by', label: 'Recorded', children: `${c.createdByName}, ${formatDateTime(c.createdAt)}` },
+            ],
+            sections: [
+              {
+                key: 'deductions',
+                title: 'Deductions it paid',
+                count: c.items.length,
+                empty: !c.items.length,
+                children: (
+                  <LocalDataTable<TdsDeductionDto>
+                    list="tds-challan-deductions"
+                    columns={columns}
+                    rows={c.items}
+                    loading={false}
+                    failed={false}
+                    onOpen={(rowId) => {
+                      const href = c.items.find((d) => d.id === rowId)?.sourceHref;
+                      if (href) router.push(href);
+                    }}
+                    emptyText="No deductions in this challan"
+                  />
+                ),
+              },
+            ],
+            more: c.canDelete
+              ? [
+                  {
+                    key: 'delete',
+                    label: 'Delete',
+                    danger: true,
+                    onSelect: () =>
+                      askDelete({
+                        what: `challan ${c.label}`,
+                        onConfirm: () => remove.mutateAsync(),
+                        onDone: () => {
+                          invalidateTds(qc);
+                          onClose();
+                        },
+                      }),
+                  },
+                ]
+              : [],
+          }
+        }
+      />
+      {deleteDialog}
+    </>
+  );
+}

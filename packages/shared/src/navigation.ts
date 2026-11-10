@@ -12,7 +12,7 @@ import { canSeeCashForecast } from './cash-forecast';
 import { canSeeAttendanceCheck } from './attendance-check';
 import { canReadReport, canSeeManagement } from './management';
 import { canSeeGroupCompanies, type AuthGroupDto } from './group';
-import { canManageModules, pathIsOff } from './module-switches';
+import { canManageModules, isSwitchableModule, pathIsOff } from './module-switches';
 import { MASTER_LISTS, canManageMaster } from './masters';
 import { canManageIntegrations } from './integrations';
 
@@ -166,6 +166,7 @@ export const NAV_ACCESS = {
   machineFinance: (u: NavUser) => P.canManageMachineLoans(u.roleKey),
   fixedAssets: (u: NavUser) => P.canManageFixedAssets(u.roleKey),
   bankPayments: (u: NavUser) => P.canRecordPayment(u.roleKey),
+  tds: (u: NavUser) => P.canFileTds(u.roleKey),
   supplierPortal: (u: NavUser) => P.canCheckSupplierInvoices(u.roleKey) || P.canManageSupplierLogins(u.roleKey),
   tenders: (u: NavUser) => P.canViewTenders(u.roleKey),
   meetings: (u: NavUser) => onSite(u) || P.canRecordMeetings(u.roleKey),
@@ -350,6 +351,7 @@ export const NAV_TREE: NavNode[] = [
   { id: 'accounts.bankReco', parent: 'accounts', group: 'Statements', label: 'Bank reconciliation', icon: 'check-check', route: '/statements?tab=bank', access: 'books', status: 'live', description: 'Bank statement matched to the bank book.', keywords: 'brs' },
   { id: 'accounts.yearClose', parent: 'accounts', group: 'Statements', label: 'Opening and year close', icon: 'lock', route: '/statements?tab=year', access: 'books', status: 'live', description: 'Opening balances, locking a period and closing a financial year.', keywords: 'opening balance lock year end' },
   { id: 'accounts.gst', parent: 'accounts', group: 'Tax and Tally', label: 'GST registers', icon: 'percent', route: '/gst', access: 'gst', status: 'live', description: 'GSTR-1 and 2B.', keywords: 'tax gstr' },
+  { id: 'accounts.tds', parent: 'accounts', group: 'Tax and Tally', label: 'TDS returns', icon: 'receipt-indian-rupee', route: '/tds', access: 'tds', status: 'live', newUntil: '2027-06-30', description: '26Q and 24Q by quarter: TDS by section, challans, the return file and Form 16A.', keywords: 'tds tax deducted at source 26q 24q challan itns 281 bsr form 16a 194c 194j 194q 192 tan traces rpu fvu quarterly return' },
   { id: 'accounts.tally', parent: 'accounts', group: 'Tax and Tally', label: 'Tally export', icon: 'file-spreadsheet', route: '/tally', access: 'tally', status: 'live', description: 'Vouchers for Tally with projects as cost centres.', keywords: 'accounts vouchers', concord: ['p7-legacy'] },
   { id: 'accounts.fixedAssets', parent: 'accounts', group: 'Fixed assets', label: 'Fixed assets', icon: 'package', route: '/fixed-assets', access: 'fixedAssets', status: 'live', newUntil: '2027-06-30', description: 'The asset register: cost, depreciation and book value, transfers and disposals.', keywords: 'asset register far depreciation schedule ii slm wdv block income tax disposal sale scrap capitalise ppe' },
   { id: 'accounts.depreciation', parent: 'accounts', group: 'Fixed assets', label: 'Depreciation runs', icon: 'calculator', route: '/fixed-assets?tab=runs', access: 'fixedAssets', status: 'live', newUntil: '2027-06-30', description: 'Monthly or yearly depreciation, prepared then posted to the books.', keywords: 'depreciation run month year end companies act' },
@@ -380,7 +382,7 @@ export const NAV_TREE: NavNode[] = [
   { id: 'payroll.inputs', parent: 'payroll', label: 'Staff inputs', icon: 'clipboard-list', route: '/payroll?tab=staff', access: 'payroll', status: 'live', description: 'Days, leave and overtime per person each month.', keywords: 'attendance inputs' },
   { id: 'payroll.contractors', parent: 'payroll', label: 'Labour contractors', icon: 'hard-hat', route: '/payroll?tab=contractors', nav: 'Payroll', access: 'labourSummary', status: 'live', description: "Labour contractors' man-days each month.", keywords: 'labour man-days wages' },
   { id: 'payroll.settings', parent: 'payroll', label: 'Payroll settings', icon: 'settings', route: '/payroll?tab=settings', access: 'payroll', status: 'live', description: 'PF and ESI rates, professional tax state, paid days and overtime.', keywords: 'pf esi pt rates' },
-  { id: 'payroll.statutory', parent: 'payroll', label: 'TDS returns', icon: 'landmark', access: 'payroll', status: 'planned', description: 'TDS returns (24Q) and Form 16; the PF and ESI files come with each salary run.' },
+  { id: 'payroll.statutory', parent: 'payroll', label: 'Salary TDS returns', icon: 'landmark', route: '/tds?form=24Q', access: 'tds', status: 'live', newUntil: '2027-06-30', description: '24Q by quarter: the salary runs’ TDS, its challans and the return file; the PF and ESI files come with each run.', keywords: 'tds 24q salary 192 challan form 16 quarterly return' },
 
   // Tenders
   { id: 'tenders.register', parent: 'tenders', label: 'Tenders', icon: 'gavel', route: '/tenders', access: 'tenders', status: 'live', description: 'Tenders being priced and bid: the bid BOQ from rate analysis, the quote on the SOR, bids at opening and the result.', keywords: 'bid bidding nit emd l1 quote estimate rate analysis results', concord: ['p4-tendering', 'p3-tender', 'p5-bd'] },
@@ -446,10 +448,17 @@ export const navNode = (id: string): NavNode | undefined => BY_ID.get(id);
 /** The node a tile opens: itself, or the one it is a shortcut of. */
 export const navTarget = (node: NavNode): NavNode => (node.shortcutOf ? (BY_ID.get(node.shortcutOf) ?? node) : node);
 
+/**
+ * Whether the company's module switches leave the node out: its page belongs to a module that is off, or it sits in a
+ * module that is itself a switch that is off (Payroll's Salary TDS returns opens `/tds`, Accounts' page, yet goes with Payroll).
+ */
+export const navNodeOff = (node: NavNode, off: readonly string[] | undefined): boolean =>
+  (!!node.route && pathIsOff(node.route, off)) || (!!node.parent && isSwitchableModule(node.parent) && !!off?.includes(node.parent));
+
 /** Whether this user sees the node: live, allowed, and (a module) with a page they see. */
 export function canSeeNav(user: NavUser, node: NavNode): boolean {
   if (node.status !== 'live' || !NAV_ACCESS[node.access](user)) return false;
-  if (node.route && pathIsOff(node.route, user.modulesOff)) return false;
+  if (navNodeOff(node, user.modulesOff)) return false;
   if (node.shortcutOf) {
     const target = BY_ID.get(node.shortcutOf);
     return !!target && target !== node && canSeeNav(user, target);

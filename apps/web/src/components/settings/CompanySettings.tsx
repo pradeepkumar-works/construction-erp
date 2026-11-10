@@ -8,6 +8,7 @@ import { tk } from '@/ds';
 import type { CompanyProfileDto, CompanySettingsDto, DocSeriesLineDto } from '@erp/shared';
 import {
   CIN_PATTERN,
+  TAN_PATTERN,
   DOC_SERIES_TOKENS,
   LOGO_MAX_BYTES,
   canManageCompanyData,
@@ -93,6 +94,7 @@ interface ProfileForm {
   gstin: string | null;
   pan: string | null;
   cin: string | null;
+  tan: string | null;
 }
 
 function ProfileDialog({ open, profile, onClose }: { open: boolean; profile: CompanyProfileDto; onClose: () => void }) {
@@ -100,7 +102,7 @@ function ProfileDialog({ open, profile, onClose }: { open: boolean; profile: Com
   const notify = useNotify();
   const save = useSaveCompanySettings<ProfileForm>('profile');
   useEffect(() => {
-    if (open) form.setFieldsValue({ legalName: profile.legalName, address: profile.address, gstin: profile.gstin, pan: profile.pan, cin: profile.cin });
+    if (open) form.setFieldsValue({ legalName: profile.legalName, address: profile.address, gstin: profile.gstin, pan: profile.pan, cin: profile.cin, tan: profile.tan });
   }, [open, profile, form]);
   return (
     <FormShell
@@ -114,7 +116,7 @@ function ProfileDialog({ open, profile, onClose }: { open: boolean; profile: Com
       okText="Save"
       onSubmit={async (v) => {
         const blank = (s: string | null | undefined) => (s?.trim() ? s.trim() : null);
-        await save.mutateAsync({ legalName: blank(v.legalName), address: blank(v.address), gstin: blank(v.gstin), pan: blank(v.pan), cin: blank(v.cin) });
+        await save.mutateAsync({ legalName: blank(v.legalName), address: blank(v.address), gstin: blank(v.gstin), pan: blank(v.pan), cin: blank(v.cin), tan: blank(v.tan) });
         notify.success('Letterhead details saved');
       }}
     >
@@ -125,7 +127,7 @@ function ProfileDialog({ open, profile, onClose }: { open: boolean; profile: Com
         <Form.Item name="address" label="Registered address" tooltip="The letterhead and the subscription invoices print it">
           <Input.TextArea rows={3} maxLength={400} />
         </Form.Item>
-        <FormGrid cols={3}>
+        <FormGrid cols={2}>
           <Form.Item name="gstin" label="GSTIN" normalize={upper} rules={[gstinRule]}>
             <Input {...CODE_INPUT} maxLength={15} />
           </Form.Item>
@@ -134,6 +136,9 @@ function ProfileDialog({ open, profile, onClose }: { open: boolean; profile: Com
           </Form.Item>
           <Form.Item name="cin" label="CIN" normalize={upper} rules={[{ pattern: CIN_PATTERN, message: 'A CIN is 21 characters, e.g. U45200OR2015PTC012345' }]}>
             <Input {...CODE_INPUT} maxLength={21} />
+          </Form.Item>
+          <Form.Item name="tan" label="TAN" normalize={upper} tooltip="Tax deduction account number, quoted on the TDS returns and challans" rules={[{ pattern: TAN_PATTERN, message: 'A TAN is four letters, five digits and a letter, e.g. BBNA01234F' }]}>
+            <Input {...CODE_INPUT} maxLength={10} />
           </Form.Item>
         </FormGrid>
       </Form>
@@ -184,6 +189,7 @@ function CompanyTab({ data }: { data: CompanySettingsDto }) {
             { key: 'gstin', label: 'GSTIN', children: <span className="mono" translate="no">{p.gstin ?? NO_VALUE}</span> },
             { key: 'pan', label: 'PAN', children: <span className="mono" translate="no">{p.pan ?? NO_VALUE}</span> },
             { key: 'cin', label: 'CIN', children: <span className="mono" translate="no">{p.cin ?? NO_VALUE}</span> },
+            { key: 'tan', label: 'TAN', children: <span className="mono" translate="no">{p.tan ?? NO_VALUE}</span> },
           ]}
         />
       </Section>

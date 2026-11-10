@@ -75,6 +75,7 @@ function typeOf(v: Voucher): BookVoucherType {
     ASSET_ADDITION: 'JOURNAL',
     DEPRECIATION: 'JOURNAL',
     ASSET_DISPOSAL: 'JOURNAL',
+    TDS_CHALLAN: 'PAYMENT',
   };
   const movesMoney = v.lines.some((l) => l.ledgerKey === 'CASH' || l.ledgerKey === 'BANK');
   // An asset paid for from cash or bank is a payment, and one sold for money a receipt.

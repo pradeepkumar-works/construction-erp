@@ -75,6 +75,8 @@ async function main(): Promise<number> {
         .finally(async () => {
           await prisma.auditLog.deleteMany({ where: { entityId: { in: runIds } } });
           await prisma.notification.deleteMany({ where: { entityId: { in: runIds } } });
+          // The approved run's salary TDS (192) is kept as deductions, which hold their payslips.
+          await prisma.tdsDeduction.deleteMany({ where: { payslip: { runId: { in: runIds } } } });
           await prisma.payrollRun.deleteMany({ where: { id: { in: runIds } } });
         })
         .then(resolve, reject);

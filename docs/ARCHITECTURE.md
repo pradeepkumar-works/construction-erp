@@ -3491,6 +3491,76 @@ roles alone, never a project: they rely on payment roles being company-wide, as 
 - **Tested** in `src/scripts/bank-file-test.ts` (each layout's columns and order, the RTGS cut-over, missing bank details,
   rupees with two decimals, the UTR reader; CI runs it) and `e2e/tests/payment-batches.spec.ts`.
 
+## TDS returns (item 191)
+
+Accounts deduct TDS in three places: a payment to a vendor, a subcontractor bill and a salary run. Each deduction is now
+kept with its section, its deductee as they were and the challan that deposited it, so the quarterly returns (26Q for
+vendors and contractors, 24Q for salaries) are prepared here (`apps/api/src/tds`, Accounts › Tax and Tally › TDS returns
+at `/tds`; HR and payroll's Salary TDS returns opens it at `/tds?form=24Q`; `canFileTds`: admin, management and
+accounts, every route refuses anyone else with 403 before it reads). It is not behind the books switch: TDS is filed
+whether or not the company keeps its books here. The FVU file is made by the government's Return Preparation Utility,
+never by us.
+
+- **Tables** (all tenant tables with RLS). `TdsDeduction`: the `form` (`TdsReturnForm`), `section` (a key of
+  `TDS_SECTIONS`, checked at the boundary; null is a section to confirm), the deductee (`vendorId` or `employeeId`,
+  `deducteeName`, `deducteePan`, `deducteeRef`), `paidOn`, `amountPaid` (the base), `rate` (percent, Decimal(6,3)),
+  `tdsAmount`, `reason` (A for a certificate, C for the higher rate without a PAN, `noPanReason`), `certificateNo`,
+  `certificateBase` (the part at the certificate's rate when its limit ran out inside the payment), exactly one source
+  (`vendorPaymentId`, `subcontractBillId`, `payslipId`, each unique, a CHECK keeps one, Restrict on delete), `challanId`
+  (SET NULL when a challan is deleted) and `backfilled`. `TdsChallan`: ITNS 281 as deposited, unique on the organisation,
+  BSR code, date and serial; its `tax` is always the sum of its deductions; `inBooks` marks one deposited and booked by
+  hand before Nirmaan kept TDS. `TdsReturn`: a quarter filed (`status` FILED or
+  REOPENED, the 15 digit receipt, `corrections`), unique on organisation, form and the quarter's first day.
+  `TdsCertificate`: a section 197 certificate for a vendor and section with its rate, dates and limit. `Organization.tan`
+  is set on Company settings.
+- **Rules** (`@erp/shared/tds.ts`, pure, golden tests in `src/scripts/tds-test.ts`). `TDS_SECTIONS` (192, 194A, 194C at
+  1% for an individual or HUF by the PAN's fourth letter and 2% for others, 194H, 194I(a) and (b), 194J(a) and (b), 194Q
+  on the excess over 50 lakh), each with its form, rate, rate without a PAN, threshold and the utility's code.
+  `tdsRate` (206AA's 20%, 5% for 194Q; a certificate valid on the day, at its rate up to the limit left and the normal
+  rate on the rest, which `tdsDue` adds up and the file writes as two rows), `thresholdReached` (one bill, the year, or
+  the month for rent; the payment that takes the year past its limit catches up the earlier ones that took no TDS, which
+  `GET /tds/suggest` counts under the section and the payment form offers on its base), `tdsOn` (rupees under 288B from integer paise), `quarterOf`, `depositDue` (the 7th,
+  30 April for March), `returnDue`, `lateFee234E`, `interest201`, `gstShareOf` (the base before GST) and
+  `returnProblems` / `returnRows` (SHORT is held to `deductionDue`, the section's rate for the PAN, never the rate
+  stored). Money in shared is BigInt paise, never a float.
+- **Writers.** Each source writes through its own service and transaction, and `TdsDeductionsService` writes only
+  deductions: payables' `prepare` works out a payment's deduction (section required when TDS is deducted, the base what
+  it settles less the vendor bill's GST share unless typed) and `insertMany`, `update` and `removeMany` write, change or
+  drop it with the payment; the subcontract bill's `onApproved` hook writes its 194C deduction (base the gross, the work
+  order's percent); the salary run's approve and send back move the run and write or drop each payslip's 192 deduction in
+  one transaction (`move` is transactional, still `updateMany` on the state it checked). Every writer takes the shared
+  advisory lock `TDSQ:<org>:<form>:<quarter>` for each quarter it touches and refuses while that quarter is FILED with
+  `filedQuarterWords`, which say to reopen it or date the change after the quarter; a deduction in a challan is refused
+  change or removal, naming the challan, and every change or delete is written `where challanId: null` with its count
+  checked, so a challan claiming it meanwhile wins. TDS typed below the rate is a warning on the quarter, never a refusal.
+- **Challans** (`POST /tds/challans`). Deductions of one form and one quarter (on 26Q of one section,
+  `challanSectionProblem`), confirmed and not later than the deposit; the challan is created and claims them with one
+  `updateMany` where `challanId` is null, the count checked in the transaction, so two challans never take one
+  deduction, and its tax and interest are then worked out from the rows as claimed; the same challan twice is the unique
+  index's 409. The interest under 201(1A) is worked out from the dates unless typed. A challan dated inside the books'
+  lock is refused at entry unless it is already in the books.
+  Deleting frees its deductions, refused once its quarter is filed or it is in Tally.
+- **Filing.** `POST /tds/returns` takes the quarter's lock exclusively, works out what blocks filing inside the
+  transaction (no TAN, a section to confirm, a deduction in no challan, a challan whose tax differs from its deductions,
+  no PAN below 20%) and writes FILED; filing a REOPENED quarter counts a correction. `POST /tds/returns/reopen` moves FILED
+  to REOPENED with the note.
+- **Books.** A deduction made from now on credits its section's ledger (`TDS_PAYABLE_194C` and the rest, fixed ledgers;
+  192 stays on `SALARY_TDS_PAYABLE`); one made by the migration from an old `tdsAmount` (`backfilled`) keeps `TDS_PAYABLE`,
+  so no voucher already in the books or in Tally changes (`deductionLedgerKey`). A challan is a `TDS_CHALLAN` payment
+  through `PostingService` on its deposit day: Dr each ledger its deductions sit in, Dr interest on TDS and the late fee,
+  Cr bank; the Tally export marks it like the rest, and the books' lock and `booksFrom` apply. One `inBooks` posts
+  nothing. In Tally a section's ledger the company has not named goes to its TDS Payable (`tallyLedgerFallsTo`), so a
+  Tally that predates sections needs no new ledger; the books keep each section apart.
+- **The file and the statement.** Return file (web) writes `returnRows` into one workbook: the challan sheet and the
+  deductee sheet in the RPU's columns and order (dates dd/mm/yyyy, section codes as the utility lists them, PANNOTAVBL).
+  The utility validates it and makes the FVU; a company checks its first file there, and 24Q's annual salary annexure for
+  Q4 is entered in the utility. Each deductee's statement prints through `printDocHtml` on the letterhead as the
+  company's statement of TDS, saying that the certificate that counts comes from TRACES; printing tells no one.
+- **Backfill.** The migration turned each old `tdsAmount` into a deduction: approved subcontractor bills as 194C, approved
+  or paid salary runs as 192 per payslip on the month's last day (reason C at 20% without a PAN), payments with TDS as a
+  section to confirm on the value before GST, which blocks filing until confirmed on the quarter's To fix tab. The demo seed's `seedTds` does the same for what it writes.
+- **Tested** in `src/scripts/tds-test.ts` (CI runs it) and `e2e/tests/tds.spec.ts`.
+
 ## Bills without a PO and debit notes
 
 Hire, workshop and other service bills, and what a vendor owes back (v5 item 91).
