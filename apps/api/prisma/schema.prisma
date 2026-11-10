@@ -1043,6 +1043,8 @@ model Organization {
   fixedAssets           FixedAsset[]
   assetTransfers        AssetTransfer[]
   depreciationRuns      DepreciationRun[]
+  paymentBatches        PaymentBatch[]
+  paymentBatchLines     PaymentBatchLine[]
   depreciationLines     DepreciationLine[]
   loanEmis              LoanEmi[]
   sorBooks              SorBook[]
@@ -1458,6 +1460,8 @@ model User {
   assetTransfers          AssetTransfer[]            @relation("AssetTransferBy")
   depreciationRunsMade    DepreciationRun[]          @relation("DepreciationRunPreparer")
   depreciationRunsPosted  DepreciationRun[]          @relation("DepreciationRunPoster")
+  paymentBatchesMade      PaymentBatch[]             @relation("PaymentBatchMaker")
+  paymentBatchesExported  PaymentBatch[]             @relation("PaymentBatchExporter")
   loanEmisPaid            LoanEmi[]                  @relation("LoanEmiPayer")
   sorBooksCreated         SorBook[]                  @relation("SorBookCreator")
   scEnquiriesCreated      SubcontractEnquiry[]       @relation("ScEnquiryCreator")
@@ -4573,6 +4577,8 @@ model VendorPayment {
   /// Set once the voucher is in a Tally export; undoing the export clears it
   tallyExportId      String?
   tallyExport        TallyExport?     @relation(fields: [tallyExportId], references: [id], onDelete: SetNull)
+  /// The bank payment batch line that recorded it, if any
+  batchLine          PaymentBatchLine?
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
 
@@ -4660,6 +4666,8 @@ model PaymentRequest {
   payments    VendorPayment[]
   /// Fund requests released into an imprest
   releases    ImprestEntry[]
+  /// Bank payment batches it is (or was) in
+  batchLines  PaymentBatchLine[]
   attachments Attachment[]
 
   @@unique([organizationId, requestNo])
@@ -8465,6 +8473,74 @@ enum FixedAssetStatus {
 enum DepreciationRunStatus {
   DRAFT
   POSTED
+}
+
+/// Approved payment requests paid in one bank upload (ARCHITECTURE "Bank payments"). A draft takes lines; export
+/// writes the file and records one vendor payment per line through payables; the bank's UTRs settle it.
+model PaymentBatch {
+  id             String             @id @default(uuid())
+  organizationId String
+  organization   Organization       @relation(fields: [organizationId], references: [id])
+  /// PB-2026-0001, through nextDocNo
+  batchNo        String
+  /// The company's account the bank debits, as the file writes it
+  debitAccount   String
+  /// A key of BANK_FILE_FORMATS (@erp/shared/bank-file.ts)
+  format         String
+  status         PaymentBatchStatus @default(DRAFT)
+  createdById    String
+  createdBy      User               @relation("PaymentBatchMaker", fields: [createdById], references: [id])
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  exportedById   String?
+  exportedBy     User?              @relation("PaymentBatchExporter", fields: [exportedById], references: [id])
+  exportedAt     DateTime?
+  /// The payments' date and the file's value date: the day it was exported
+  paymentDate    DateTime?          @db.Date
+  /// The file as made at export, served again unchanged
+  fileName       String?
+  fileContent    String?
+  settledAt      DateTime?
+
+  lines PaymentBatchLine[]
+
+  @@unique([organizationId, batchNo])
+  @@index([organizationId, status])
+}
+
+/// One approved payment request in a batch. A request is in at most one open batch: a partial unique index on
+/// paymentRequestId where open (the migration), so a file made twice never pays twice.
+model PaymentBatchLine {
+  id               String         @id @default(uuid())
+  organizationId   String
+  organization     Organization   @relation(fields: [organizationId], references: [id])
+  batchId          String
+  batch            PaymentBatch   @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  paymentRequestId String
+  paymentRequest   PaymentRequest @relation(fields: [paymentRequestId], references: [id], onDelete: Restrict)
+  /// What the request had left to settle when it was added
+  amount           Decimal        @db.Decimal(18, 2)
+  /// Holds its request: false once left out of the file or the batch is settled
+  open             Boolean        @default(true)
+  /// Why export left it out of the file (no account, no IFSC)
+  leftOut          String?
+  /// The bank details and mode as the file wrote them
+  accountNo        String?
+  ifsc             String?
+  payMode          String?
+  /// The payment export recorded; cleared if that payment is deleted by hand
+  vendorPaymentId  String?        @unique
+  vendorPayment    VendorPayment? @relation(fields: [vendorPaymentId], references: [id], onDelete: SetNull)
+  createdAt        DateTime       @default(now())
+
+  @@unique([batchId, paymentRequestId])
+  @@index([organizationId, paymentRequestId])
+}
+
+enum PaymentBatchStatus {
+  DRAFT
+  EXPORTED
+  SETTLED
 }
 
 enum AssetFunding {
