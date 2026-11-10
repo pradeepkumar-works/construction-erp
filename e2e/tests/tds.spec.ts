@@ -80,7 +80,7 @@ async function serviceBill(vendor: Vendor, rate: string, invoiceDate: string): P
  * Pay a bill from its drawer, picking the TDS section and taking the TDS the form offers: the amount paid comes down by
  * it, so what the payment settles stays the bill's total. Returns the form for the picture before it is saved.
  */
-async function payWithTds(page: Page, bill: Bill, section: string, paidOn: string, picture: string) {
+async function payWithTds(page: Page, bill: Bill, section: string, paidOn: string, picture: string, check?: (form: ReturnType<typeof formPanel>) => Promise<void>) {
   await page.goto(`/vendor-bills?id=${bill.id}`);
   const drawer = page.locator('.ant-drawer').filter({ hasText: 'Invoice total' });
   await drawer.getByRole('button', { name: 'Record payment' }).click();
@@ -90,6 +90,7 @@ async function payWithTds(page: Page, bill: Bill, section: string, paidOn: strin
   await chooseOption(modal.getByLabel('TDS section'), section);
   const deduct = modal.getByRole('button', { name: /^Deduct ₹/ });
   await expect(deduct).toBeVisible();
+  if (check) await check(modal);
   await deduct.click();
   await modal.getByLabel('UTR / cheque / voucher no.').fill(`E2E-TDS-${stamp}`);
   // The form as it is about to be saved: the window, not the list under it.
@@ -198,34 +199,65 @@ test('lanes 2 and 3: a professional paid under 194J(b) at 10%, a vendor with no 
   await expect(row.getByText('Not deposited')).toBeVisible();
 });
 
-test("lane 4: one challan for last month's deductions, each showing it", async ({ page }) => {
+test('lane 3b: the payment that takes 194C past 1,00,000 in the year takes TDS on the earlier ones too', async ({ page }) => {
+  const crew = await api<Vendor>(md, '/vendors', { method: 'POST', body: { name: `Jagannath Haulage ${stamp}`, kinds: ['SERVICE'], pan: newPan('C') } });
+  // Two bills of 30,000 or less paid without TDS: under the single limit, and the year still under 1,00,000.
+  for (const [rate, total] of [['25000', '29500'], ['30000', '35400']] as const) {
+    const bill = await serviceBill(crew, rate, monthsBack(today, 1, 10));
+    await api(accounts, '/vendor-payments', { method: 'POST', body: { vendorBillId: bill.id, paymentDate: lastMonth, amount: total, tdsAmount: '0', mode: 'BANK', reference: `E2E-TDS-UNDER-${stamp}` } });
+  }
+  const third = await serviceBill(crew, '50000', monthsBack(today, 1, 10));
+  const s = await api<TdsSuggestDto>(accounts, `/tds/suggest?vendorId=${crew.id}&section=194C&amount=59000&vendorBillId=${third.id}&on=${lastMonth}`);
+  // 50,000 now and 55,000 before: 2% for a company on 1,05,000.
+  expect([s.base, s.threshold.catchUp, s.taxedOn, s.tds]).toEqual(['50000.00', '55000.00', '105000.00', '2100.00']);
+
+  await signIn(page, 'accounts@demo.com');
+  const paid = await payWithTds(page, third, '194C', lastMonth, 'tds-catch-up.png', async (modal) => {
+    await expect(modal.getByText(/the ₹55,000 paid earlier without TDS takes it now/)).toBeVisible();
+  });
+  expect([paid.amount, paid.tdsAmount, paid.tds?.base]).toEqual(['56900.00', '2100.00', '105000.00']);
+});
+
+test("lane 4: a challan for each section of last month's deductions, each showing it", async ({ page }) => {
   await signIn(page, 'accounts@demo.com');
   await page.goto(quarterUrl('26Q', q.from, 'deductions'));
-  await recordChallanFor(page, [professional.name, noPan.name], onTime);
+  // A 26Q challan is deposited under one section: the two together are refused, with what to do.
+  for (const name of [professional.name, noPan.name]) await page.locator('tr').filter({ hasText: name }).getByRole('checkbox').check();
+  await page.getByRole('button', { name: 'Record their challan' }).click();
+  const mixed = formPanel(page, /Record challan · /);
+  await expect(mixed.getByText(/A 26Q challan is deposited under one section, and these are under 194J\(b\), 194C|A 26Q challan is deposited under one section, and these are under 194C, 194J\(b\)/)).toBeVisible();
+  await mixed.getByRole('button', { name: 'Cancel' }).click();
+  await expect(mixed).toBeHidden();
+  await page.reload();
+  await recordChallanFor(page, [professional.name], onTime);
+  await recordChallanFor(page, [noPan.name], onTime);
 
   const after = await quarter('FORM_26Q', q.from);
   const mine = after.deductions.filter((d) => d.vendorId === professional.id || d.vendorId === noPan.id);
   expect(mine).toHaveLength(2);
-  const challanId = mine[0].challanId!;
-  expect(challanId).toBeTruthy();
-  expect(mine.every((d) => d.challanId === challanId && d.state === 'DEPOSITED' && n(d.interest) === 0)).toBe(true);
+  expect(mine.every((d) => d.challanId && d.state === 'DEPOSITED' && n(d.interest) === 0)).toBe(true);
+  const fees = mine.find((d) => d.vendorId === professional.id)!;
+  const hire = mine.find((d) => d.vendorId === noPan.id)!;
+  expect(fees.challanId).not.toBe(hire.challanId);
+  const challanId = fees.challanId!;
   const challan = after.challans.find((c) => c.id === challanId)!;
-  expect([n(challan.tax), challan.late, challan.depositedOn]).toEqual([16000, false, onTime]);
+  expect([n(challan.tax), challan.late, challan.depositedOn]).toEqual([6000, false, onTime]);
+  expect(n(after.challans.find((c) => c.id === hire.challanId)!.tax)).toBe(10000);
 
   // Each row shows the challan it went in by.
-  for (const name of [professional.name, noPan.name]) await expect(page.locator('tr').filter({ hasText: name }).getByRole('link', { name: challan.label })).toBeVisible();
+  await expect(page.locator('tr').filter({ hasText: professional.name }).getByRole('link', { name: challan.label })).toBeVisible();
   await page.locator('tr').filter({ hasText: professional.name }).getByRole('link', { name: challan.label }).click();
   await expect(page.getByRole('heading', { name: new RegExp(`^Challan · ${challan.label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`) })).toBeVisible();
   await expect(page.locator('main').getByText(professional.name)).toBeVisible();
-  await expect(page.locator('main').getByText(noPan.name)).toBeVisible();
   await shot(page, 'tds-challan.png');
 
-  // The challan's payment is in the books: TDS by section out of the bank.
+  // Each challan's payment is in the books: its section's TDS out of the bank.
   await api(accounts, '/books/post', { method: 'POST' });
   const book = await api<Page_<BookVoucherDto>>(accounts, `/books/day-book?source=TDS_CHALLAN&from=${onTime}&to=${onTime}&pageSize=200`);
   const v = book.items.find((x) => x.sourceId === challanId)!;
   expect(n(v.lines.find((l) => l.accountName === 'TDS Payable 194J(b)')?.debit)).toBe(6000);
-  expect(n(v.lines.find((l) => l.accountName === 'TDS Payable 194C')?.debit)).toBe(10000);
+  const w = book.items.find((x) => x.sourceId === hire.challanId)!;
+  expect(n(w.lines.find((l) => l.accountName === 'TDS Payable 194C')?.debit)).toBe(10000);
 });
 
 test("lane 5: the quarter's 26Q, its totals by section the deductions' and what blocks filing listed", async ({ page }) => {
@@ -285,22 +317,37 @@ test("lane 9: a deposit after the 7th owes interest under 201(1A), by the month"
 });
 
 test("lane 6: the 26Q file in the utility's columns, a row for each deduction under its challan", async ({ page }) => {
-  // Clear what blocks the quarter: confirm a section left to confirm and deposit what is left today.
-  let r = await quarter('FORM_26Q', q.from);
-  for (const d of r.deductions.filter((x) => x.state === 'TO_CONFIRM' && x.canConfirm)) await api(accounts, `/tds/deductions/${d.id}`, { method: 'PATCH', body: { section: '194C' } });
-  r = await quarter('FORM_26Q', q.from);
-  const waiting = r.deductions.filter((d) => d.state === 'NOT_DEPOSITED');
-  if (waiting.length) await api(accounts, '/tds/challans', { method: 'POST', body: { form: 'FORM_26Q', bsrCode: '0510308', challanSerial: serial(), depositedOn: today, deductionIds: waiting.map((d) => d.id) } });
-  r = await quarter('FORM_26Q', q.from);
-  expect(r.problems.filter((p) => p.blocks)).toEqual([]);
+  // A quarter before the demo's data starts, which only this spec writes to: the professional's fee under 194J(b) and the
+  // vendor with no PAN under 194C, each paid and deposited under its own section. Nothing of anyone else's is touched.
+  const paidOn = monthsBack(today, 7, 15);
+  const qFile = quarterOf(paidOn);
+  const mineRe = /^(Kalinga Design Consultants|Biju Earthmovers) \d{7}$/;
+  const pay = async (vendor: Vendor, rate: string, section: string, tds: string, amount: string) => {
+    const bill = await serviceBill(vendor, rate, paidOn);
+    await api(accounts, '/vendor-payments', { method: 'POST', body: { vendorBillId: bill.id, paymentDate: paidOn, amount, tdsAmount: tds, tdsSection: section, mode: 'BANK', reference: `E2E-TDS-FILE-${stamp}` } });
+  };
+  await pay(professional, '60000', '194J_B', '6000', '64800');
+  await pay(noPan, '50000', '194C', '10000', '49000');
+  let r = await quarter('FORM_26Q', qFile.from);
+  // An earlier run's rows of this spec left waiting are deposited too, one challan a section; anyone else's would fail below.
+  const waiting = r.deductions.filter((d) => d.state === 'NOT_DEPOSITED' && mineRe.test(d.deducteeName));
+  // The 194C one was deposited and booked by hand before: already in the books, it goes on the return with no voucher.
+  const recorded: TdsChallanDetailDto[] = [];
+  for (const section of new Set(waiting.map((d) => d.section)))
+    recorded.push(await api<TdsChallanDetailDto>(accounts, '/tds/challans', { method: 'POST', body: { form: 'FORM_26Q', bsrCode: '0510308', challanSerial: serial(), depositedOn: today, deductionIds: waiting.filter((d) => d.section === section).map((d) => d.id), inBooks: section === '194C' } }));
+  await api(accounts, '/books/post', { method: 'POST' });
+  const vouchers = await api<Page_<BookVoucherDto>>(accounts, `/books/day-book?source=TDS_CHALLAN&from=${today}&to=${today}&pageSize=500`);
+  for (const c of recorded) expect(vouchers.items.some((v) => v.sourceId === c.id), `challan ${c.label} ${c.inBooks ? 'already in the books posts nothing' : 'posts'}`).toBe(!c.inBooks);
+  r = await quarter('FORM_26Q', qFile.from);
+  expect(r.problems.filter((p) => p.blocks), `${qFile.label} holds only this spec's deductions`).toEqual([]);
   expect(r.can.exportFile).toBe(true);
 
   await signIn(page, 'accounts@demo.com');
-  await page.goto(quarterUrl('26Q', q.from, 'deductions'));
+  await page.goto(quarterUrl('26Q', qFile.from, 'deductions'));
   const download = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Return file' }).click();
   const file = await download;
-  expect(file.suggestedFilename()).toBe(`${tan}_26Q_Q${q.quarter}_${q.fy}.xlsx`);
+  expect(file.suggestedFilename()).toBe(`${tan}_26Q_Q${qFile.quarter}_${qFile.fy}.xlsx`);
   const book = XLSX.read(await readFile(await file.path()), { type: 'buffer' });
   const rows = (name: string) => XLSX.utils.sheet_to_json<string[]>(book.Sheets[name], { header: 1, raw: false, defval: '' });
   expect(book.SheetNames).toHaveLength(2);
@@ -312,13 +359,15 @@ test("lane 6: the 26Q file in the utility's columns, a row for each deduction un
 
   // The professional's row: under its challan's number, company code 01, 194J(b) as the utility codes it, 10%.
   const col = (h: (typeof RETURN_DEDUCTEE_HEADER_26Q)[number]) => RETURN_DEDUCTEE_HEADER_26Q.indexOf(h);
-  const row = deductees.find((x) => x[col('PAN of the deductee')] === professional.pan)!;
+  const row = deductees.find((x) => x[col('PAN of the deductee')] === professional.pan && x[col('Date of payment or credit (dd/mm/yyyy)')] === typed(paidOn))!;
   expect(row).toBeTruthy();
   expect([row[col('Deductee code (01 Company, 02 Other than company)')], row[col('Section code')], row[col('Amount paid or credited')], row[col('TDS')], row[col('Total tax deposited')], row[col('Rate at which deducted')]]).toEqual(['01', '4JB', '60000.00', '6000.00', '6000.00', '10']);
   const challanRow = challans[Number(row[col('Challan Sr. No.')])];
   expect(challanRow[RETURN_CHALLAN_HEADER.indexOf('BSR code')]).toBe('0510308');
   // The vendor with no PAN goes as PANNOTAVBL with reason C (higher rate, no PAN).
   const unpanned = deductees.find((x) => x[col('Name of the deductee')] === noPan.name)!;
+  // Each challan is under one section, the section the utility codes it as.
+  expect(challans.slice(1).every((c) => c[RETURN_CHALLAN_HEADER.indexOf('Section code')] !== '')).toBe(true);
   expect([unpanned[col('PAN of the deductee')], unpanned[col('Reason for non-deduction, lower or higher deduction')]]).toEqual(['PANNOTAVBL', 'C']);
 
   // A picture of the file as the utility will read it.
