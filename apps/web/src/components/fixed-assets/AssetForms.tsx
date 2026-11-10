@@ -342,7 +342,8 @@ interface RunValues {
 const lastMonth = () => dayjs().subtract(1, 'month');
 const YEARS = (() => {
   const now = Number(financialYearOf(dayjs().format('YYYY-MM-DD')).from.slice(0, 4));
-  return [now, now - 1, now - 2].map((y) => ({ value: `${y}-04-01`, label: runPeriodLabel(`${y}-04-01`, `${y + 1}-03-31`) }));
+  // A run may not end after today, so the year still running is not offered.
+  return [now - 1, now - 2, now - 3].map((y) => ({ value: `${y}-04-01`, label: runPeriodLabel(`${y}-04-01`, `${y + 1}-03-31`) }));
 })();
 
 /** Prepare a month's or a year's run: a draft with each asset's charge, posted from its own page. */
@@ -351,7 +352,7 @@ export function PrepareRunModal({ open, onClose, onSaved }: { open: boolean; onC
   const qc = useQueryClient();
   const span = Form.useWatch('span', form) ?? 'month';
   useEffect(() => {
-    if (open) form.setFieldsValue({ span: 'month', month: lastMonth(), year: YEARS[1].value });
+    if (open) form.setFieldsValue({ span: 'month', month: lastMonth(), year: YEARS[0].value });
   }, [open, form]);
   const saved = useRef<string | null>(null);
   const mutation = useMutation({
@@ -388,7 +389,7 @@ export function PrepareRunModal({ open, onClose, onSaved }: { open: boolean; onC
         </Form.Item>
         {span === 'month' ? (
           <Form.Item name="month" label="Month" rules={[{ required: true, message: 'Choose the month' }]}>
-            <DatePicker picker="month" style={{ width: '100%' }} />
+            <DatePicker picker="month" style={{ width: '100%' }} disabledDate={(d) => d.endOf('month').isAfter(dayjs(), 'day')} />
           </Form.Item>
         ) : (
           <Form.Item name="year" label="Financial year" rules={[{ required: true, message: 'Choose the year' }]}>
