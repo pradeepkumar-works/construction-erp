@@ -132,6 +132,21 @@ export function bookDepreciation(a: DepreciableAsset, from: string, to: string):
   return rupees(accumulatedPaise(a, to) - accumulatedPaise(a, addDays(from, -1)));
 }
 
+/**
+ * One asset's line in a run: what the schedule has charged by `to`, less the opening amount and what earlier runs charged
+ * (`chargedBefore`, their last day `chargedUpTo`). Days no earlier run charged, as for an asset entered after those runs,
+ * are caught up here, and the line starts on the first of them.
+ */
+export function runCharge(a: DepreciableAsset, from: string, to: string, chargedBefore: number, chargedUpTo: string | null): { amount: number; from: string; to: string } | null {
+  const opening = a.opening ? Math.min(paise(a.opening.amount), Math.max(paise(a.cost) - paise(a.residual), 0)) : 0;
+  const owed = accumulatedPaise(a, to) - opening - paise(chargedBefore);
+  if (owed <= 0) return null;
+  const start = a.opening ? addDays(a.opening.asOf, 1) : a.putToUseOn;
+  const inPeriod = accumulatedPaise(a, to) - accumulatedPaise(a, addDays(from, -1));
+  const first = owed > inPeriod ? (chargedUpTo && addDays(chargedUpTo, 1) > start ? addDays(chargedUpTo, 1) : start) : from > start ? from : start;
+  return { amount: rupees(owed), from: first, to: a.disposedOn && a.disposedOn < to ? a.disposedOn : to };
+}
+
 /** A sale or scrapping: the book value given up against what it fetched. */
 export function disposalResult(x: { cost: number; accumulated: number; proceeds: number }): { bookValue: number; gain: number; loss: number } {
   const bookValue = rupees(paise(x.cost) - paise(x.accumulated));
@@ -235,12 +250,35 @@ export function runPeriodLabel(from: string, to: string): string {
   return `${day(from)} to ${day(to)}`;
 }
 
-/** Why a run's period cannot be prepared, else null: one financial year at most, and no overlap with another run. */
-export function runPeriodProblem(from: string, to: string, others: { from: string; to: string }[]): string | null {
+interface RunPeriod {
+  from: string;
+  to: string;
+}
+
+/**
+ * Why a run's period cannot be prepared, else null: one financial year at most, and after every other run, since each run
+ * charges what the runs before it left.
+ */
+export function runPeriodProblem(from: string, to: string, others: RunPeriod[]): string | null {
   if (to < from) return 'Choose an end date on or after the start';
   if (financialYearOf(from).from !== financialYearOf(to).from) return 'Keep a run within one financial year (April to March)';
   const clash = others.find((o) => o.from <= to && from <= o.to);
-  return clash ? `Depreciation for ${runPeriodLabel(clash.from, clash.to)} already covers part of this period` : null;
+  if (clash) return `Depreciation for ${runPeriodLabel(clash.from, clash.to)} already covers part of this period`;
+  const later = others.find((o) => o.from > to);
+  return later ? `Depreciation for ${runPeriodLabel(later.from, later.to)} is already prepared, and runs go in order. Prepare a period after it.` : null;
+}
+
+/**
+ * Why a run cannot be prepared again, deleted or taken out of the books, else null: only the latest can, since the runs
+ * after it charged what it left. Posting waits for the runs before it.
+ */
+export function runStepProblem(step: 'refresh' | 'delete' | 'undo' | 'post', run: RunPeriod, others: (RunPeriod & { status: DepreciationRunStatus })[]): string | null {
+  if (step === 'post') {
+    const before = others.find((o) => o.to < run.from && o.status === 'DRAFT');
+    return before ? `Post depreciation for ${runPeriodLabel(before.from, before.to)} first: runs go into the books in order` : null;
+  }
+  const after = others.find((o) => o.from > run.to);
+  return after ? `Depreciation for ${runPeriodLabel(after.from, after.to)} comes after this run. Take that one out first: runs come out latest first.` : null;
 }
 
 /** Why an asset cannot be saved as it is, else null. */

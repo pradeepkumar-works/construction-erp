@@ -1126,8 +1126,12 @@ Depreciation is a pure function of the asset's own facts: `accumulatedTo(asset, 
 days used (SLM the depreciable amount over the life, WDV the year's opening book value at the rate that reaches the
 residual over the life) and never past the residual, and a period's charge is `bookDepreciation(asset, from, to)`, the
 difference of two of them. So a month's runs add up to the year's, and preparing a run again gives the same lines. A
-`DepreciationRun` is one month or one financial year at most, never overlapping another (`runPeriodProblem`); it is
-prepared as a draft with a `DepreciationLine` per asset, prepared again when the register changes, then posted.
+`DepreciationRun` is one month or one financial year at most, after every other run (`runPeriodProblem`); it is
+prepared as a draft with a `DepreciationLine` per asset, prepared again when the register changes, then posted. A line is
+`runCharge`: what the schedule has charged by the period's end less the opening and the runs before it, so an asset
+entered after its first months were posted is caught up in the next run, from the day it was put to use. Because each
+run leans on the ones before it, only the latest is prepared again, deleted or taken out of the books, and a run posts
+only after the runs before it (`runStepProblem`).
 
 Posting goes through `PostingService` like every other module: the asset's cost (`ASSET_ADDITION`, Dr its class's ledger,
 Cr the bank, cash, the vendor, or Plant and Machinery for a machine a loan booked; none for an asset already in the
@@ -1137,7 +1141,9 @@ charged and any loss against the cost, any profit on top). None of them names a 
 only, and a project's machine cost stays the internal rate, so no machine is counted twice. A run, an asset or a
 disposal dated on or before `BooksState.lockedUpTo`, or before `booksFrom`, is refused with the lock named
 (`assertOpen`), not held. A run is posted once (the status moves only from DRAFT); Undo posting takes it out while the
-books are open and it is not in Tally. A disposal is refused while a posted run charges the asset past its day.
+books are open and it is not in Tally. A disposal is refused while a posted run charges the asset past its day; the
+sale's voucher counts the depreciation posted, so once the month's run charges the days up to the sale the voucher
+follows and the profit or loss settles.
 
 The register's net book value is cost less the opening depreciation and the posted runs. Its total stands beside the
 balance sheet's property, plant and equipment (`booksCheck`), and a difference says what is in the books outside the

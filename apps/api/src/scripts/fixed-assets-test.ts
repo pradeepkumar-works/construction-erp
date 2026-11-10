@@ -15,7 +15,9 @@ import {
   itBlockDepreciation,
   itBlockSchedule,
   runPeriodLabel,
+  runCharge,
   runPeriodProblem,
+  runStepProblem,
   type DepreciableAsset,
 } from '@erp/shared';
 import { additionLines, depreciationLines, disposalLines } from '../fixed-assets/asset-vouchers';
@@ -117,6 +119,33 @@ test('a run covers one financial year at most and never overlaps another', () =>
   assert.match(runPeriodProblem('2026-10-01', '2026-10-31', [{ from: '2026-04-01', to: '2027-03-31' }])!, /2026-27 already covers/);
   assert.match(runPeriodProblem('2027-03-01', '2027-04-30', [])!, /one financial year/);
   assert.match(runPeriodProblem('2026-10-31', '2026-10-01', [])!, /on or after the start/);
+  assert.match(runPeriodProblem('2026-08-01', '2026-08-31', [{ from: '2026-09-01', to: '2026-09-30' }])!, /September 2026 is already prepared, and runs go in order/);
+});
+
+test('runs come out latest first and go into the books in order', () => {
+  const sep = { from: '2026-09-01', to: '2026-09-30' };
+  const oct = { from: '2026-10-01', to: '2026-10-31' };
+  assert.match(runStepProblem('undo', sep, [{ ...oct, status: 'DRAFT' }])!, /October 2026 comes after this run/);
+  assert.match(runStepProblem('delete', sep, [{ ...oct, status: 'POSTED' }])!, /latest first/);
+  assert.equal(runStepProblem('refresh', oct, [{ ...sep, status: 'POSTED' }]), null);
+  assert.match(runStepProblem('post', oct, [{ ...sep, status: 'DRAFT' }])!, /Post depreciation for September 2026 first/);
+  assert.equal(runStepProblem('post', oct, [{ ...sep, status: 'POSTED' }]), null);
+});
+
+test('a run catches up the days the runs before it missed: an asset entered after April to September was posted', () => {
+  // Nothing charged before October: April to October in one line, from the day it was put to use.
+  const late = runCharge(laptop, '2026-10-01', '2026-10-31', 0, null)!;
+  assert.deepEqual(late, { amount: bookDepreciation(laptop, '2026-04-01', '2026-10-31'), from: '2026-04-01', to: '2026-10-31' });
+  assert.equal(late.amount, 11139.73);
+  // Charged up to September: October alone, the same as the schedule's month.
+  const upToSep = bookDepreciation(laptop, '2026-04-01', '2026-09-30');
+  assert.deepEqual(runCharge(laptop, '2026-10-01', '2026-10-31', upToSep, '2026-09-30'), { amount: 1613.7, from: '2026-10-01', to: '2026-10-31' });
+  // Charged up to August only: September and October, from 1 September.
+  assert.equal(runCharge(laptop, '2026-10-01', '2026-10-31', bookDepreciation(laptop, '2026-04-01', '2026-08-31'), '2026-08-31')!.from, '2026-09-01');
+  // Fully charged: no line.
+  assert.equal(runCharge(laptop, '2029-04-01', '2029-04-30', 57000, '2029-03-31'), null);
+  // Sold on 15 October: the line stops there.
+  assert.equal(runCharge({ ...laptop, disposedOn: '2026-10-15' }, '2026-10-01', '2026-10-31', upToSep, '2026-09-30')!.to, '2026-10-15');
 });
 
 test('an asset needs a name, a class, a cost above its residual and a sane life', () => {

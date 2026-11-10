@@ -35,7 +35,7 @@ function Lines({ run }: { run: DepreciationRunDetailDto }) {
           ),
         },
         { key: 'class', title: 'Class', width: 220, render: (_, l) => `${ASSET_CLASSES[l.assetClass].label}, ${DEPRECIATION_METHOD_LABELS[l.method]}` },
-        { key: 'days', title: 'Days', width: 200, render: (_, l) => (l.from === run.from && l.to === run.to ? 'The whole period' : `${formatDate(l.from)} to ${formatDate(l.to)}`) },
+        { key: 'days', title: 'Days', width: 200, render: (_, l) => (l.from === run.from && l.to === run.to ? 'The whole period' : `${formatDate(l.from)} to ${formatDate(l.to)}${l.from < run.from ? ', caught up' : ''}`) },
         { key: 'amount', title: 'Depreciation', width: 150, align: 'right', render: (_, l) => <Money value={l.amount} paise /> },
       ]}
       summary={() =>

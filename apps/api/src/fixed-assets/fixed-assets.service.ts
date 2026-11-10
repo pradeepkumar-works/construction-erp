@@ -6,13 +6,14 @@ import {
   STANDARD_RESIDUAL_PCT,
   accumulatedTo,
   assetProblem,
-  bookDepreciation,
   canManageFixedAssets,
   disposalResult,
   fyCodeOf,
   itBlockSchedule,
   runPeriodLabel,
+  runCharge,
   runPeriodProblem,
+  runStepProblem,
   wdvRate,
   type AssetClassCode,
   type DepreciableAsset,
@@ -58,8 +59,6 @@ const depreciable = (a: { cost: Prisma.Decimal; residual: Prisma.Decimal; lifeYe
   opening: a.openingAsOf ? { asOf: dateOnly(a.openingAsOf), amount: Number(a.openingDepreciation) } : null,
   disposedOn: dateOnly(a.disposedOn),
 });
-const later = (a: string, b: string) => (a > b ? a : b);
-const earlier = (a: string, b: string) => (a < b ? a : b);
 
 /**
  * Fixed assets (ARCHITECTURE "Fixed assets"): the register, transfers between sites, depreciation runs and disposals.
@@ -423,6 +422,7 @@ export class FixedAssetsService {
       try {
         await this.assertOpen(user.organizationId, dateOnly(r.periodTo), 'depreciation for that period');
         await this.assertOpen(user.organizationId, dateOnly(r.periodFrom), 'depreciation for that period');
+        await this.assertInOrder(this.prisma, r, 'post');
       } catch (e) {
         postProblem = (e as Error).message;
       }
@@ -434,18 +434,23 @@ export class FixedAssetsService {
     };
   }
 
-  /** Each asset's charge for the period from the schedule: the days it was in use, nothing for those fully charged. */
+  /**
+   * Each asset's line for the period: what the schedule has charged by its end less the opening and the runs before it,
+   * so the days those runs missed are caught up; nothing for an asset fully charged or gone before the period.
+   */
   private async charges(tx: Tx, organizationId: string, from: string, to: string) {
-    const assets = await tx.fixedAsset.findMany({
-      where: { organizationId, putToUseOn: { lte: parseDate(to) }, OR: [{ disposedOn: null }, { disposedOn: { gte: parseDate(from) } }] },
-      select: { id: true, cost: true, residual: true, lifeYears: true, method: true, putToUseOn: true, openingAsOf: true, openingDepreciation: true, disposedOn: true },
-    });
+    const [assets, before] = await Promise.all([
+      tx.fixedAsset.findMany({
+        where: { organizationId, putToUseOn: { lte: parseDate(to) }, OR: [{ disposedOn: null }, { disposedOn: { gte: parseDate(from) } }] },
+        select: { id: true, cost: true, residual: true, lifeYears: true, method: true, putToUseOn: true, openingAsOf: true, openingDepreciation: true, disposedOn: true },
+      }),
+      tx.depreciationLine.groupBy({ by: ['assetId'], where: { organizationId, run: { periodTo: { lt: parseDate(from) } } }, _sum: { amount: true }, _max: { to: true } }),
+    ]);
+    const charged = new Map(before.map((b) => [b.assetId, b]));
     return assets.flatMap((a) => {
-      const s = depreciable(a);
-      const amount = bookDepreciation(s, from, to);
-      if (!(amount > 0)) return [];
-      const start = later(from, s.opening ? later(s.putToUseOn, s.opening.asOf) : s.putToUseOn);
-      return [{ assetId: a.id, from: start, to: s.disposedOn ? earlier(to, s.disposedOn) : to, amount }];
+      const c = charged.get(a.id);
+      const line = runCharge(depreciable(a), from, to, Number(c?._sum.amount ?? 0), c?._max.to ? dateOnly(c._max.to) : null);
+      return line ? [{ assetId: a.id, ...line }] : [];
     });
   }
 
@@ -486,6 +491,13 @@ export class FixedAssetsService {
     return r;
   }
 
+  /** Refuse a step the runs' order does not allow (`runStepProblem`). */
+  private async assertInOrder(tx: Tx | PrismaService, r: { id: string; organizationId: string; periodFrom: Date; periodTo: Date }, step: Parameters<typeof runStepProblem>[0]) {
+    const others = await tx.depreciationRun.findMany({ where: { organizationId: r.organizationId, id: { not: r.id } }, select: { periodFrom: true, periodTo: true, status: true } });
+    const problem = runStepProblem(step, { from: dateOnly(r.periodFrom), to: dateOnly(r.periodTo) }, others.map((o) => ({ from: dateOnly(o.periodFrom), to: dateOnly(o.periodTo), status: o.status })));
+    if (problem) throw new BadRequestException(problem);
+  }
+
   /** Prepare a draft again, after assets were added or changed. */
   async refreshRun(user: RequestUser, id: string): Promise<DepreciationRunDetailDto> {
     this.assertCan(user);
@@ -493,6 +505,7 @@ export class FixedAssetsService {
       await this.lockRuns(tx, user.organizationId);
       const r = await this.draft(tx, user, id);
       if (r.status !== 'DRAFT') throw new BadRequestException('This run is in the books. Undo the posting to prepare it again.');
+      await this.assertInOrder(tx, r, 'refresh');
       await tx.depreciationRun.update({ where: { id }, data: { preparedById: user.id, preparedAt: new Date() } });
       await this.fill(tx, user.organizationId, id, dateOnly(r.periodFrom), dateOnly(r.periodTo));
     });
@@ -513,6 +526,7 @@ export class FixedAssetsService {
       const label = runPeriodLabel(dateOnly(r.periodFrom), dateOnly(r.periodTo));
       await this.assertOpen(org, dateOnly(r.periodTo), `depreciation for ${label}`);
       await this.assertOpen(org, dateOnly(r.periodFrom), `depreciation for ${label}`);
+      await this.assertInOrder(tx, r, 'post');
       const total = await this.fill(tx, org, id, dateOnly(r.periodFrom), dateOnly(r.periodTo));
       if (total.isZero()) throw new BadRequestException(`Nothing to charge for ${label}: no asset in use then has depreciation left`);
       const moved = await tx.depreciationRun.updateMany({ where: { id, status: 'DRAFT' }, data: { status: 'POSTED', postedById: user.id, postedAt: new Date() } });
@@ -533,6 +547,7 @@ export class FixedAssetsService {
       const r = await this.draft(tx, user, id);
       if (r.status !== 'POSTED') throw new BadRequestException('This run is not in the books');
       if (r.tallyExportId) throw new BadRequestException('This run is already exported to Tally. Undo that export under Accounts › Tally export first.');
+      await this.assertInOrder(tx, r, 'undo');
       await this.assertOpen(org, dateOnly(r.periodTo), `taking back depreciation for ${runPeriodLabel(dateOnly(r.periodFrom), dateOnly(r.periodTo))}`);
       await tx.depreciationRun.update({ where: { id }, data: { status: 'DRAFT', postedById: null, postedAt: null } });
     });
@@ -545,6 +560,7 @@ export class FixedAssetsService {
     this.assertCan(user);
     const r = await this.draft(this.prisma, user, id);
     if (r.status !== 'DRAFT') throw new BadRequestException('Undo the posting before deleting the run');
+    await this.assertInOrder(this.prisma, r, 'delete');
     await this.prisma.depreciationRun.delete({ where: { id } });
     await this.audit.log(user, 'DEPRECIATION_RUN', id, 'DELETED', runPeriodLabel(dateOnly(r.periodFrom), dateOnly(r.periodTo)));
     return { ok: true };
