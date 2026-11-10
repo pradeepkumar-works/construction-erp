@@ -188,8 +188,6 @@ export const canViewAuditLog = (role: RoleKey) => role === 'ADMIN';
 export const canManageCompanyData = (role: RoleKey) => role === 'ADMIN';
 /** Add, change and archive the company's own fields on vendors, projects and orders (Company settings › Fields). */
 export const canManageCustomFields = (role: RoleKey) => role === 'ADMIN';
-/** The values of those fields are the company's own notes: not for the client's or the consultant's guests. */
-export const canSeeCustomValues = (role: RoleKey) => !isGuest(role);
 /** See and pay for the company's subscription: admins only. */
 export const canManageBilling = (role: RoleKey) => role === 'ADMIN';
 /** Changing or deleting a view someone else shared with the company (owners always can). */

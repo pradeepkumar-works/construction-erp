@@ -21,7 +21,6 @@ import {
   verticalProblem,
   CHECK_LEVEL_LABELS,
   isClientGuest,
-  canSeeCustomValues,
   type CheckLevel,
 } from '@erp/shared';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
@@ -176,12 +175,7 @@ export class ProjectsService {
   /** Every visible project, unpaged (dashboards). */
   async listAll(user: RequestUser): Promise<ProjectSummary[]> {
     const rows = await this.prisma.project.findMany({ where: this.access.projectWhere(user), include: summaryInclude, orderBy: [{ status: 'asc' }, { code: 'asc' }] });
-    return this.forViewer(user, await this.summaries(rows));
-  }
-
-  /** A guest sees none of the company's own field values. */
-  private forViewer<T extends ProjectSummary>(user: RequestUser, rows: T[]): T[] {
-    return canSeeCustomValues(user.roleKey) ? rows : rows.map((r) => ({ ...r, customValues: {} }));
+    return this.summaries(rows);
   }
 
   async list(user: RequestUser, q: ListProjectsQuery): Promise<Paginated<ProjectSummary>> {
@@ -199,13 +193,13 @@ export class ProjectsService {
       this.prisma.project.findMany({ where, include: summaryInclude, orderBy: [...ORDER[sortBy](order), { id: 'asc' }], skip: args.skip, take: args.take }),
       this.prisma.project.count({ where }),
     ]);
-    return paginated(this.forViewer(user, await this.summaries(rows)), total, args);
+    return paginated(await this.summaries(rows), total, args);
   }
 
   async get(user: RequestUser, id: string): Promise<ProjectDetail> {
     const row = await this.prisma.project.findFirst({ where: { id, ...this.access.projectWhere(user) }, include: projectInclude });
     if (!row) throw new NotFoundException('Project not found');
-    return this.forViewer(user, [await this.toDetail(row)])[0];
+    return this.toDetail(row);
   }
 
   private toData(dto: CreateProjectDto | UpdateProjectDto): Prisma.ProjectUpdateInput {

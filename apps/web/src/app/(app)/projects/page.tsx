@@ -7,7 +7,7 @@ import { Badge, Button, Card, Select } from 'antd';
 import { tk } from '@/ds';
 import { PlusOutlined } from '@/components/common/icons';
 import type { ProjectSortField, ProjectStatus, ProjectSummary, ProjectType } from '@erp/shared';
-import { LIST_SORT_FIELDS, NO_VERTICAL, PROJECT_STATUSES, PROJECT_STATUS_LABELS, PROJECT_TYPES, PROJECT_TYPE_LABELS, canManageProjects, canSeeCustomValues, isGuest } from '@erp/shared';
+import { LIST_SORT_FIELDS, NO_VERTICAL, PROJECT_STATUSES, PROJECT_STATUS_LABELS, PROJECT_TYPES, PROJECT_TYPE_LABELS, canManageProjects, isGuest } from '@erp/shared';
 import { useCustomFields, useMasterList, useProjectsPage, LIST_START } from '@/lib/queries';
 import { customColumns } from '@/components/custom-fields/columns';
 import { customExportColumns } from '@/components/custom-fields/values';
@@ -92,7 +92,7 @@ export default function ProjectsPage() {
   const [vertical, setVertical] = useVerticalScope();
   const { data: verticals } = useMasterList('vertical', false, !!user && !isGuest(user.roleKey));
   const verticalName = (code: string | null) => (code ? (verticals?.entries.find((e) => e.code === code)?.name ?? code) : null);
-  const { data: fields } = useCustomFields('PROJECT', !!user && canSeeCustomValues(user.roleKey));
+  const { data: fields } = useCustomFields('PROJECT');
   const exportCols = [...PROJECT_EXPORT, ...customExportColumns<ProjectSummary>(fields)];
   const frame = useListFrame<ProjectSortField, ProjectSummary>({
     list: 'projects',
