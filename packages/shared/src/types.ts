@@ -3295,6 +3295,8 @@ export interface CompanyProfileDto {
   gstin: string | null;
   pan: string | null;
   cin: string | null;
+  /** Tax deduction account number, quoted on every TDS return and challan */
+  tan: string | null;
   logo: string | null;
 }
 
