@@ -128,7 +128,7 @@ export function IsCompliancePage() {
 
   return (
     <div className="page-container">
-      <PageHeader title="IS compliance" subtitle="Tests passed and failed by Indian Standard and by discipline: civil, mechanical and electrical." />
+      <PageHeader title="IS compliance" help="Tests passed and failed by Indian Standard and by discipline: civil, mechanical and electrical." />
       {filters}
       {body}
     </div>

@@ -144,7 +144,7 @@ export function ModuleHome({ moduleKey }: { moduleKey: string }) {
 
   return (
     <div className="page-container">
-      <PageHeader title={`${label} overview`} subtitle={MODULE_INTROS[key]} extra={actions} />
+      <PageHeader title={`${label} overview`} help={MODULE_INTROS[key]} extra={actions} />
       <Flex vertical gap={24}>
         {isLoading && <PageSkeleton shape="home" header={false} />}
         {error && <QueryError error={error} onRetry={() => refetch()} />}

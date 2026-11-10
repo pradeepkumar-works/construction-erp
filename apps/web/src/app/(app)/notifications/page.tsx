@@ -118,7 +118,7 @@ function NotificationsPageInner() {
     <div className="page-container">
       <PageHeader
         title="Notifications"
-        subtitle="What happened to your entries, what waits for your decision, and what falls due."
+        help="What happened to your entries, what waits for your decision, and what falls due."
         extra={
           <Space wrap>
             <Button icon={<MessageOutlined />} onClick={() => setSettings(true)}>

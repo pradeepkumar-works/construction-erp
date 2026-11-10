@@ -41,7 +41,7 @@ export default function SupplierInvoicesPage() {
   );
   return (
     <div className="page-container">
-      <PageHeader title="Invoices" subtitle="Invoices you sent to accounts, and the bill and payment each became." extra={send} />
+      <PageHeader title="Invoices" help="Invoices you sent to accounts, and the bill and payment each became." extra={send} />
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {isLoading ? (
         <PageSkeleton header={false} />

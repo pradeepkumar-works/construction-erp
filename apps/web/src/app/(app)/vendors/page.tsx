@@ -285,7 +285,7 @@ export default function VendorsPage() {
     <div className="page-container">
       <PageHeader
         title={subcontractors ? 'Subcontractors' : 'Vendors'}
-        subtitle="Suppliers, hire agencies, subcontractors and service providers, with GSTIN, MSME registration and bank details. Expenses, machines and GRNs pick from this list."
+        help="Suppliers, hire agencies, subcontractors and service providers, with GSTIN, MSME registration and bank details. Expenses, machines and GRNs pick from this list."
         extra={newButton}
       />
       <Card size="small">

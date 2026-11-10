@@ -120,7 +120,7 @@ export default function ClientsPage() {
     <div className="page-container">
       <PageHeader
         title="Clients"
-        subtitle="The departments and owners you build for. A project's Contract tab links it to a client; bills carry the client's GSTIN and address."
+        help="The departments and owners you build for. A project's Contract tab links it to a client; bills carry the client's GSTIN and address."
         extra={newButton}
       />
       {error && <QueryError error={error} onRetry={() => refetch()} />}

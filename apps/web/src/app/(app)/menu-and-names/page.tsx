@@ -354,7 +354,7 @@ export default function MenuAndNamesPage() {
   if (!user) return null;
   return (
     <div className="page-container" style={{ maxWidth: 1080, marginLeft: 0 }}>
-      <PageHeader title="Menu and names" subtitle="Where the menu sits, how it looks, its colours and what each module is called, for everyone in your company." />
+      <PageHeader title="Menu and names" help="Where the menu sits, how it looks, its colours and what each module is called, for everyone in your company." />
       {!allowed ? (
         <NoAccess title="Only an admin can change the menu" />
       ) : isLoading ? (

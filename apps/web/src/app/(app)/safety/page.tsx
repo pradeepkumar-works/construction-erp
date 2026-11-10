@@ -14,7 +14,7 @@ function SafetyPage() {
   const id = search.get('id') ?? undefined;
   return (
     <div className="page-container">
-      <PageHeader title="Safety" subtitle={navNode('safety')?.description} />
+      <PageHeader title="Safety" help={navNode('safety')?.description} />
       <Card size="small">
         <SafetyPanel key={`${tab ?? ''}|${id ?? ''}`} initialTab={tab} initialId={id} />
       </Card>

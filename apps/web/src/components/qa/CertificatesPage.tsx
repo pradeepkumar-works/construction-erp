@@ -81,7 +81,7 @@ export function CertificatesPage() {
     <div className="page-container">
       <PageHeader
         title="Test certificates"
-        subtitle="GRNs of material that needs the manufacturer's test certificate (MTC) and came without one, newest first."
+        help="GRNs of material that needs the manufacturer's test certificate (MTC) and came without one, newest first."
         crumbs={[{ title: 'Quality', href: '/modules/quality' }, { title: 'Test certificates' }]}
       />
       <CategoryChooser />

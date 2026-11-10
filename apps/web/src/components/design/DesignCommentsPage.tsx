@@ -136,7 +136,7 @@ export function DesignCommentsPage() {
 
   return (
     <div className="page-container">
-      <PageHeader title="Review comments" subtitle="Reviewers’ comments on every submittal, with our replies. The ones to answer come first." />
+      <PageHeader title="Review comments" help="Reviewers’ comments on every submittal, with our replies. The ones to answer come first." />
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {s && (
         <div style={{ marginBottom: tk.space[4] }}>

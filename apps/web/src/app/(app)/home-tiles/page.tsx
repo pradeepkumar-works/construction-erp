@@ -303,7 +303,7 @@ export default function HomeTilesPage() {
   if (!user) return null;
   return (
     <div className="page-container" style={{ maxWidth: 948, marginLeft: 0 }}>
-      <PageHeader title="Discover and access requests" subtitle="Answer requests for access, and choose what Discover on everyone’s Home leads with." />
+      <PageHeader title="Discover and access requests" help="Answer requests for access, and choose what Discover on everyone’s Home leads with." />
       {!allowed ? (
         <NoAccess title="Only an admin can manage Home tiles" />
       ) : isLoading ? (

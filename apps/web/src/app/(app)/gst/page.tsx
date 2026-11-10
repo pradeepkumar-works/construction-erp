@@ -150,7 +150,7 @@ function GstRegistersPage() {
     <div className="page-container">
       <PageHeader
         title="GST registers"
-        subtitle="Outward supplies from approved RA bills in the GSTR-1 layout, and input tax from vendor bills, subcontractor bills and site expenses to reconcile with GSTR-2B."
+        help="Outward supplies from approved RA bills in the GSTR-1 layout, and input tax from vendor bills, subcontractor bills and site expenses to reconcile with GSTR-2B."
         extra={
           <DatePicker.RangePicker presets={rangePresets()}
             picker="month"

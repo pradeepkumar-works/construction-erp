@@ -225,7 +225,7 @@ export function QualityPlanPage() {
     <div className="page-container">
       <PageHeader
         title="Quality plan"
-        subtitle="Each project's inspection and test plan: which tests, against what work or material, how often and who witnesses. Tests due are counted from it."
+        help="Each project's inspection and test plan: which tests, against what work or material, how often and who witnesses. Tests due are counted from it."
         extra={
           <>
             <LinkButton href="/tests-due">Tests due</LinkButton>

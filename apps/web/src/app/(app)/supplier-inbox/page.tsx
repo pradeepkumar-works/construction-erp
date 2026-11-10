@@ -61,7 +61,7 @@ export default function SupplierInboxPage() {
   };
   return (
     <div className="page-container">
-      <PageHeader title="Supplier inbox" subtitle="Invoices suppliers sent through their portal, and changes they asked for to their details." />
+      <PageHeader title="Supplier inbox" help="Invoices suppliers sent through their portal, and changes they asked for to their details." />
       <AppTabs
         activeKey={tab}
         onChange={(k) => setParams({ tab: k === 'invoices' ? null : k, id: null })}

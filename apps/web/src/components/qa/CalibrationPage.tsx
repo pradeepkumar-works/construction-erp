@@ -277,7 +277,7 @@ export function CalibrationPage() {
 
   return (
     <div className="page-container">
-      <PageHeader title="Calibration register" subtitle="Lab and survey instruments with their certificates and when each falls due. A test on an instrument out of calibration is flagged." extra={newButton} />
+      <PageHeader title="Calibration register" help="Lab and survey instruments with their certificates and when each falls due. A test on an instrument out of calibration is flagged." extra={newButton} />
       <Card>
         <Flex gap={tk.space[3]} wrap align="center" style={{ marginBottom: tk.space[4] }}>
           <ProjectSelect value={projectId} onChange={(v) => setProjectId(v)} style={{ minWidth: 240, maxWidth: '100%' }} />

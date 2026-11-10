@@ -129,7 +129,8 @@ and the pre-delivery checklist.
   the header's breadcrumb, so a page never draws a second one. A titled part of a surface (a tab, a card, a record) is a `Section` (`components/common/Section.tsx`: a hairline and its title), never a `Card` inside a `Card` (the route walk checks). A link styled as a button is `LinkButton`
   (`components/common/LinkButton.tsx`), never a `Button` inside a `Link`. Single-key shortcuts check `singleKeysOn()`
   (`src/lib/shortcuts.ts`, off from Help > Keyboard shortcuts); Ask is Alt J (⌘J on a Mac), never Ctrl J.
-- Words: follow `docs/WRITING.md` (sentence case, one name per module in nav, page title and Search, New / Record / Report /
+- Words: follow `docs/WRITING.md` (screen text: a page title with no sentence under it, explanations behind an ⓘ
+  through `help` / `tooltip` / `<Help>`, an empty list in one line beside its button; sentence case, one name per module in nav, page title and Search, New / Record / Report /
   Request for create, errors that say what to do, `…`, money through `format.ts`, `translate="no"` on numbers and names).
 - Accessibility (WCAG 2.2 AA, `e2e/tests/accessibility.spec.ts` runs axe on the main pages in both themes; `pnpm --filter @erp/web lint`
   (jsx-a11y, antd components mapped to their elements in `apps/web/eslint.config.mjs`) must pass): text colours come

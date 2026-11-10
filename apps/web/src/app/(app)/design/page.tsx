@@ -130,7 +130,7 @@ function DesignReference() {
     <div className="page-container">
       <PageHeader
         title="Design reference"
-        subtitle={`The ${BRAND.name} design tokens: colour roles, type and components in the appearance you have chosen`}
+        help={`The ${BRAND.name} design tokens: colour roles, type and components in the appearance you have chosen`}
         extra={
           <>
             <Segmented<ThemeMode>

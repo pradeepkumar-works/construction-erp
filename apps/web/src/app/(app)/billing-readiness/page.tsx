@@ -159,7 +159,7 @@ export default function Page() {
 
   return (
     <div className="page-container">
-      <PageHeader title="Billing readiness" subtitle={`What the next bills will be worth, money earned and not yet asked for, and money asked for and not yet paid, as of ${formatDate(data.asOf)}.`} />
+      <PageHeader title="Billing readiness" help={`What the next bills will be worth, money earned and not yet asked for, and money asked for and not yet paid, as of ${formatDate(data.asOf)}.`} />
       <Flex wrap gap={tk.space[3]} style={{ marginBottom: tk.space[4] }}>
         <Card size="small" style={{ flex: '1 1 180px' }}>
           <Statistic title={`Next bills by ${formatDate(data.billBy)}`} value={0} formatter={() => <span translate="no">{formatINRCompact(data.totals.nextAtBillBy)}</span>} styles={big} />

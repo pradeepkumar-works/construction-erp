@@ -368,7 +368,7 @@ export default function ReceivablesPage() {
     <div className="page-container">
       <PageHeader
         title="Receivables"
-        subtitle="What clients owe on the bills sent to them, by age, with the money received, what they deducted, and the retention and security deposit they hold."
+        help="What clients owe on the bills sent to them, by age, with the money received, what they deducted, and the retention and security deposit they hold."
         extra={<ProjectSelect value={projectId} onChange={(v) => setProjectId(v)} />}
       />
       {error && <QueryError error={error} onRetry={() => refetch()} />}

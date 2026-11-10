@@ -248,7 +248,7 @@ export default function CompanyDataPage() {
     <div className="page-container" style={{ maxWidth: 948, marginLeft: 0 }}>
       <PageHeader
         title="Data and privacy"
-        subtitle={
+        help={
           <span>
             Your data is yours: take all of it, or have it erased. See the <Link href="/privacy" className="text-link">privacy policy</Link>.
           </span>

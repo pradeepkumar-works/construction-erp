@@ -19,7 +19,7 @@ function QualityPage() {
     <div className="page-container">
       <PageHeader
         title="Quality"
-        subtitle={navNode('quality')?.description}
+        help={navNode('quality')?.description}
       />
       <Card size="small">
         <QualityTabs key={id ?? ''} tab={tab} onTab={(t) => router.replace(`${pathname}?tab=${t}`, { scroll: false })} openId={id} withChecklists />

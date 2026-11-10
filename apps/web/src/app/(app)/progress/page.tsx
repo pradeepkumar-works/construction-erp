@@ -12,7 +12,7 @@ export default function Page() {
   const fromDpr = useProgressFromDpr(projectId ?? undefined);
   return (
     <div className="page-container">
-      <PageHeader title="Progress entries" subtitle={fromDpr ? 'Quantities done against each activity, from the approved daily reports' : navNode('site.progress')?.description} />
+      <PageHeader title="Progress entries" help={fromDpr ? 'Quantities done against each activity, from the approved daily reports' : navNode('site.progress')?.description} />
       <Card size="small">
         <ProgressList newLabel="New progress entry" />
       </Card>

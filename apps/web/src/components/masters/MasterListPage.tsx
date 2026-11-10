@@ -118,7 +118,7 @@ export function MasterListPage({ slug }: { slug: string }) {
     <div className="page-container">
       <PageHeader
         title={list.label}
-        subtitle={list.description}
+        help={list.description}
         crumbs={[{ title: 'Masters', href: '/masters' }, { title: list.label }]}
         extra={
           <>

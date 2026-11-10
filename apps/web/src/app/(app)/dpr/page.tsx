@@ -9,7 +9,7 @@ import { DprList } from '@/components/dpr/DprList';
 export default function Page() {
   return (
     <div className="page-container">
-      <PageHeader title="Daily reports" subtitle={navNode('site.dpr')?.description} />
+      <PageHeader title="Daily reports" help={navNode('site.dpr')?.description} />
       <Card size="small">
         <DprList newLabel="New daily report" />
       </Card>

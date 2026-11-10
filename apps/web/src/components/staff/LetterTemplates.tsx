@@ -148,7 +148,7 @@ export function LetterTemplates() {
     <div className="page-container">
       <PageHeader
         title="Letter templates"
-        subtitle={`The words each HR letter prints, from the offer to the experience certificate. ${own ? `${own} of ${data.length} use your company's words.` : 'All use the standard words.'}`}
+        help={`The words each HR letter prints, from the offer to the experience certificate. ${own ? `${own} of ${data.length} use your company's words.` : 'All use the standard words.'}`}
         crumbs={[{ title: 'HR and payroll', href: '/modules/people' }, { title: 'Letter templates' }]}
       />
       <Card>

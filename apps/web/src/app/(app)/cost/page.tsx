@@ -26,7 +26,7 @@ export default function Page() {
     );
   return (
     <div className="page-container">
-      <PageHeader title="Project cost" subtitle="Cost against the work done, and the money expected in and out over the coming months." />
+      <PageHeader title="Project cost" help="Cost against the work done, and the money expected in and out over the coming months." />
       <Card size="small">
         <AppTabs
           variant="page"

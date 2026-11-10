@@ -36,7 +36,7 @@ export function TestsDuePage() {
     <div className="page-container">
       <PageHeader
         title="Tests due"
-        subtitle="Tests owed under each quality plan: concrete cubes by IS 456 for each grade and day, field tests by quantity, material by the lot, against the tests taken."
+        help="Tests owed under each quality plan: concrete cubes by IS 456 for each grade and day, field tests by quantity, material by the lot, against the tests taken."
         extra={<LinkButton href="/quality-plan">Quality plan</LinkButton>}
       />
       <Card>

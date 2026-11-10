@@ -162,7 +162,7 @@ function AttendanceCheck() {
     <div className="page-container">
       <PageHeader
         title="Attendance cross-check"
-        subtitle={`What labour contractors bill in man-days against the head count, the roll call and the biometric punches, ${formatDate(data.from)} to ${formatDate(data.to)}${running ? ' (so far)' : ''}. A flag is a reason to check the muster; nobody's wage is held or cut by it.`}
+        help={`What labour contractors bill in man-days against the head count, the roll call and the biometric punches, ${formatDate(data.from)} to ${formatDate(data.to)}${running ? ' (so far)' : ''}. A flag is a reason to check the muster; nobody's wage is held or cut by it.`}
       />
       <Flex wrap gap={tk.space[3]} align="center" style={{ marginBottom: tk.space[4] }}>
         <DatePicker

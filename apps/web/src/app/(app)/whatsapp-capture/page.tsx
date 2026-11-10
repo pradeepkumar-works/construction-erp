@@ -92,7 +92,7 @@ function Capture() {
 
   return (
     <div className="page-container">
-      <PageHeader title="WhatsApp entries" subtitle={`Send what happened on site as a text, a photo or a voice note. ${PRODUCT_NAME} drafts the entry and you save it with one tap.`} />
+      <PageHeader title="WhatsApp entries" help={`Send what happened on site as a text, a photo or a voice note. ${PRODUCT_NAME} drafts the entry and you save it with one tap.`} />
       <Flex vertical gap={tk.space[5]}>
         <SetupCard setup={setup.data} />
         <Card size="small" title="Try it">

@@ -6,12 +6,18 @@
  *   capitals: GST, DPRs) or a name WRITING.md lists under Capitals;
  * - none of them, nor a tile's or module's description, has "&" or "...";
  * - no menu name, Search kind or label uses a name the "Words we use" table retires, nor one `RETIRED_FOR` retires
- *   (in the maps it names, where the word is right elsewhere).
+ *   (in the maps it names, where the word is right elsewhere);
+ * - screen text ("Screen text"): no page title has a sentence under it (a text `subtitle` goes in `help`), and the
+ *   explanations left on screen (`LONG_WORDS` or more, outside an ⓘ) are no more than `LONG_ON_SCREEN`, which only falls.
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import * as shared from '@erp/shared';
 import { DEPARTMENT_MODULES, NAV_TREE } from '@erp/shared';
+import { LONG_WORDS, screenStrings } from './copy/screen-text';
+
+/** Lower it when a change takes explanations off the screen; never raise it. */
+const LONG_ON_SCREEN = 159;
 
 const WRITING_PATH = path.resolve(__dirname, '../../../docs/WRITING.md');
 const writing = fs.readFileSync(WRITING_PATH, 'utf8');
@@ -112,8 +118,17 @@ for (const m of DEPARTMENT_MODULES) {
   for (const s of m.subs) check(`DEPARTMENT_MODULES ${m.key}.${s.key} label`, s.label, [sentenceCase, punctuation, retiredIn()]);
 }
 
+const screen = screenStrings();
+for (const at of screen.subtitleSentences) problems.push(`${at}: a sentence under the page title; pass it as PageHeader's help`);
+const long = screen.strings.filter((s) => s.words >= LONG_WORDS);
+if (long.length > LONG_ON_SCREEN) {
+  problems.push(
+    `${long.length} explanations of ${LONG_WORDS} words or more on screen, over the ${LONG_ON_SCREEN} allowed; put the new one behind an ⓘ (help, tooltip) or cut it (scripts/copy/screen-text.ts lists them)`,
+  );
+}
+
 if (problems.length) {
   console.error(`copy-check: ${problems.length} problem(s) against docs/WRITING.md\n${problems.map((p) => `  ${p}`).join('\n')}`);
   process.exit(1);
 }
-console.log(`copy-check: ${labelMaps.length} label maps, ${NAV_TREE.length} tree nodes and ${DEPARTMENT_MODULES.length} department modules read as WRITING.md asks`);
+console.log(`copy-check: ${labelMaps.length} label maps, ${NAV_TREE.length} tree nodes and ${DEPARTMENT_MODULES.length} department modules read as WRITING.md asks; ${long.length} long explanations on screen (${LONG_ON_SCREEN} allowed)`);

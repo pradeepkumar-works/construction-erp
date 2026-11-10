@@ -497,7 +497,7 @@ export function AuditsPage() {
     ) : null;
   return (
     <div className="page-container">
-      <PageHeader title="Audits and visits" subtitle="Internal audits and visits by the client, its consultant, a third-party inspector or the department, each finding followed until it is put right." />
+      <PageHeader title="Audits and visits" help="Internal audits and visits by the client, its consultant, a third-party inspector or the department, each finding followed until it is put right." />
       <Card size="small">
         {error && <QueryError error={error} onRetry={() => refetch()} />}
         <ListToolbar

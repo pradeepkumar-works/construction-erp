@@ -157,7 +157,7 @@ function ScEnquiriesPage() {
 
   return (
     <div className="page-container">
-      <PageHeader title="Subcontract enquiries" subtitle="Work sent to subcontractors to quote, their rates compared item by item, and the chosen quote made a work order." extra={newButton} />
+      <PageHeader title="Subcontract enquiries" help="Work sent to subcontractors to quote, their rates compared item by item, and the chosen quote made a work order." extra={newButton} />
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {isLoading ? <PageSkeleton header={false} shape="list" /> : null}
       {s ? (

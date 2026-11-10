@@ -61,7 +61,7 @@ export default function PlatformPage() {
     <div className="page-container">
       <PageHeader
         title={`${PRODUCT_NAME} console`}
-        subtitle={data ? `${data.length} companies, ${active} active in the last 30 days` : 'Every company on the platform'}
+        help={data ? `${data.length} companies, ${active} active in the last 30 days` : 'Every company on the platform'}
         extra={<Input.Search allowClear placeholder="Search name or code" aria-label="Search companies" style={{ width: 240 }} onChange={(e) => setQ(e.target.value)} />}
       />
       {error && <QueryError error={error} onRetry={() => refetch()} />}

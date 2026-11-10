@@ -48,7 +48,7 @@ export default function SupplierOrdersPage() {
   );
   return (
     <div className="page-container">
-      <PageHeader title="Orders" subtitle="Purchase and work orders raised on you. Accept each one, and send a dispatch note with every truck so the site can receive it." />
+      <PageHeader title="Orders" help="Purchase and work orders raised on you. Accept each one, and send a dispatch note with every truck so the site can receive it." />
       {orders.error && <QueryError error={orders.error} onRetry={() => orders.refetch()} />}
       {orders.isLoading ? (
         <PageSkeleton header={false} />

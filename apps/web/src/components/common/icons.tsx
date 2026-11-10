@@ -32,6 +32,7 @@ import {
   CircleCheckIcon,
   CircleCheckBigIcon,
   CircleHelpIcon,
+  InfoIcon,
   CirclePlayIcon,
   ClipboardCheckIcon,
   ClockIcon,
@@ -314,6 +315,7 @@ export const PlusOutlined = lucide(PlusIcon, 'plus');
 export const PrinterOutlined = lucide(PrinterIcon, 'printer');
 export const ProjectOutlined = lucide(FolderKanbanIcon, 'project');
 export const QuestionCircleOutlined = lucide(CircleHelpIcon, 'question-circle');
+export const InfoCircleOutlined = lucide(InfoIcon, 'info-circle');
 export const ReconciliationOutlined = lucide(ScaleIcon, 'reconciliation');
 export const RedoOutlined = lucide(Redo2Icon, 'redo');
 export const ReloadOutlined = lucide(RotateCwIcon, 'reload');

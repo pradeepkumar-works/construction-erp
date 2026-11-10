@@ -203,7 +203,7 @@ export default function UsersPage() {
     <div className="page-container">
       <PageHeader
         title="Users"
-        subtitle={`${data?.total ?? 0} users${roleKey || isActive !== undefined || page.params.q ? ' match' : ` in ${user?.organizationName ?? 'your company'}`}`}
+        help={`${data?.total ?? 0} users${roleKey || isActive !== undefined || page.params.q ? ' match' : ` in ${user?.organizationName ?? 'your company'}`}`}
         extra={newButton}
       />
       {welcome && (

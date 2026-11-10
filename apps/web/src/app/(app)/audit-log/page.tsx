@@ -93,7 +93,7 @@ export default function AuditLogPage() {
   const filtered = !!(kind || page.filters.from || page.filters.to || page.params.q);
   return (
     <div className="page-container">
-      <PageHeader title="Audit log" subtitle={`${data?.total ?? 0} ${data?.total === 1 ? 'line' : 'lines'}${filtered ? ' match' : ' across every module, newest first'}`} />
+      <PageHeader title="Audit log" help={`${data?.total ?? 0} ${data?.total === 1 ? 'line' : 'lines'}${filtered ? ' match' : ' across every module, newest first'}`} />
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <Card size="small">
         {frame.views}

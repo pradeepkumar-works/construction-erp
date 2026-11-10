@@ -170,7 +170,7 @@ export function DesignDashboardPage() {
   const { data, isLoading, error, refetch } = useDesignDashboard(projectId);
   return (
     <div className="page-container">
-      <PageHeader title="Dashboard" subtitle="What is late or open on each project, and what new revisions change." />
+      <PageHeader title="Dashboard" help="What is late or open on each project, and what new revisions change." />
       <Flex gap={tk.space[3]} wrap align="center" style={{ marginBottom: tk.space[4] }}>
         <ProjectSelect value={projectId} onChange={(v) => setProjectId(v)} aria-label="Project" placeholder="All projects" style={{ minWidth: 240, maxWidth: '100%' }} />
       </Flex>

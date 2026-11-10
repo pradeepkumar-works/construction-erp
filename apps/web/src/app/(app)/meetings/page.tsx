@@ -184,7 +184,7 @@ function MeetingsPage() {
 
   return (
     <div className="page-container">
-      <PageHeader title="Meetings" subtitle="The minutes of each project's meetings, and the actions they gave out until each is done." extra={newButton} />
+      <PageHeader title="Meetings" help="The minutes of each project's meetings, and the actions they gave out until each is done." extra={newButton} />
       {q.error && <QueryError error={q.error} onRetry={() => q.refetch()} />}
       {q.isLoading ? <PageSkeleton header={false} shape="list" /> : null}
       {view === 'meetings' && ms ? (

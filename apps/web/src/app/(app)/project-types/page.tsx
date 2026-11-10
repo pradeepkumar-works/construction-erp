@@ -173,7 +173,7 @@ function ProjectTypes() {
     <div className="page-container">
       <PageHeader
         title="Project types"
-        subtitle={`What a new project of each type starts with: its components, their activities, and the activities outside them.${editable ? '' : ' Admin and management can change them.'}`}
+        help={`What a new project of each type starts with: its components, their activities, and the activities outside them.${editable ? '' : ' Admin and management can change them.'}`}
         extra={newButton}
       />
       {failed ? (

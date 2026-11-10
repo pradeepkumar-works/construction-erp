@@ -406,7 +406,7 @@ export function PoursPage() {
   const [tab, setTab] = useUrlTab<Tab>(TABS, 'pours', { param: 'tab' });
   return (
     <div className="page-container">
-      <PageHeader title="Pour register" subtitle="Each pour with its pour card, the cube sets IS 456 needs for its volume, and each grade's acceptance under Table 11." />
+      <PageHeader title="Pour register" help="Each pour with its pour card, the cube sets IS 456 needs for its volume, and each grade's acceptance under Table 11." />
       <Card size="small">
         <AppTabs
           activeKey={tab}

@@ -46,7 +46,7 @@ export default function MyWorkPage() {
     <div className="page-container">
       <PageHeader
         title="My work"
-        subtitle={
+        help={
           companyWide
             ? 'Company-wide overview of projects, site progress and approvals'
             : `Site progress and approvals on your ${data ? `${data.totalProjects} ` : ''}project${data?.totalProjects === 1 ? '' : 's'}`

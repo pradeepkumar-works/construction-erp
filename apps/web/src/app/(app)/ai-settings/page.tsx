@@ -401,7 +401,7 @@ export default function AiSettingsPage() {
     );
   return (
     <div className="page-container" style={{ maxWidth: 948, marginLeft: 0 }}>
-      <PageHeader title={`Ask ${PRODUCT_NAME} settings`} subtitle="An assistant that answers questions about your company's records, with links to each record it used." />
+      <PageHeader title={`Ask ${PRODUCT_NAME} settings`} help="An assistant that answers questions about your company's records, with links to each record it used." />
       {error ? (
         <QueryError error={error} onRetry={() => refetch()} />
       ) : isLoading || !data ? (

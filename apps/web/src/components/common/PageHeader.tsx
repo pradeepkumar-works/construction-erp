@@ -5,6 +5,7 @@ import { Breadcrumb, Space, Typography } from 'antd';
 import Link from 'next/link';
 import { textOf, usePageTitle } from '@/lib/page-title';
 import { tk } from '@/ds';
+import { Help } from '@/components/common/Help';
 import { usePageTrailTail } from '@/components/shell/page-trail';
 
 export interface Crumb {
@@ -20,13 +21,17 @@ export function PageHeader({
   title,
   docTitle,
   subtitle,
+  help,
   extra,
   crumbs,
 }: {
   title: React.ReactNode;
   /** The tab title when `title` is not plain text (a name with tags beside it). */
   docTitle?: string;
+  /** A fact the title needs to be read right (a record's project, a standard's name), never a sentence about the page. */
   subtitle?: React.ReactNode;
+  /** What the page is for and how its figures are counted: behind an ⓘ beside the title, off the screen until asked. */
+  help?: React.ReactNode;
   extra?: React.ReactNode;
   crumbs?: Crumb[];
 }) {
@@ -43,9 +48,12 @@ export function PageHeader({
       )}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: tk.space[4], flexWrap: 'wrap' }}>
         <div style={{ minWidth: 0 }}>
-          <Typography.Title level={1} id="page-title" className="page-title" tabIndex={-1} style={{ margin: 0 }}>
-            {title}
-          </Typography.Title>
+          <div style={{ display: 'flex', alignItems: 'center', gap: tk.space[1] }}>
+            <Typography.Title level={1} id="page-title" className="page-title" tabIndex={-1} style={{ margin: 0 }}>
+              {title}
+            </Typography.Title>
+            {help && <Help label="About this page">{help}</Help>}
+          </div>
           {subtitle && (
             <Typography.Text type="secondary" style={{ display: 'block', marginTop: tk.space[1], maxWidth: '72ch' }}>
               {subtitle}

@@ -143,7 +143,7 @@ export function LetterNumbering() {
     <div className="page-container">
       <PageHeader
         title="Numbering and approval"
-        subtitle="Each project and head office numbers its letters in and out in its own series, starting again each financial year. Choose which outward letters wait for their signatory, and then for head office, before they get a number."
+        help="Each project and head office numbers its letters in and out in its own series, starting again each financial year. Choose which outward letters wait for their signatory, and then for head office, before they get a number."
         extra={
           manage ? (
             <Button type="primary" icon={<PlusOutlined />} onClick={() => setEditing('new')}>

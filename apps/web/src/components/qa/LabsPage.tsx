@@ -165,7 +165,7 @@ export function LabsPage() {
     <div className="page-container">
       <PageHeader
         title="Labs"
-        subtitle="Where samples are tested: the site's own lab, NABL labs with their accreditation, and the group company lab."
+        help="Where samples are tested: the site's own lab, NABL labs with their accreditation, and the group company lab."
         crumbs={[{ title: 'Masters', href: '/masters' }, { title: 'Labs' }]}
         extra={newButton}
       />

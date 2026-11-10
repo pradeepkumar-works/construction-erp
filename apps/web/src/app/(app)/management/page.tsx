@@ -85,7 +85,7 @@ function Dashboard({ data }: { data: PortfolioDto }) {
     <div className="page-container">
       <PageHeader
         title="Management dashboard"
-        subtitle={`Every contract project${data.vertical && data.verticals[0] ? ` in ${data.verticals[0].name}` : ''} as of ${formatDate(data.asOf)}: progress against plan, money from work done to paid, cost, approvals and what needs action.`}
+        help={`Every contract project${data.vertical && data.verticals[0] ? ` in ${data.verticals[0].name}` : ''} as of ${formatDate(data.asOf)}: progress against plan, money from work done to paid, cost, approvals and what needs action.`}
         extra={
           <LinkButton href="/management/reports/mis" icon={<FileExcelOutlined />}>
             Monthly MIS

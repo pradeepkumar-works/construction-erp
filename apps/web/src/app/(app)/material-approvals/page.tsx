@@ -247,7 +247,7 @@ function MaterialApprovalsPage() {
 
   return (
     <div className="page-container">
-      <PageHeader title="Material approvals" subtitle="Makes and samples sent to the client or consultant for approval, and the makes each project may buy." extra={newButton} />
+      <PageHeader title="Material approvals" help="Makes and samples sent to the client or consultant for approval, and the makes each project may buy." extra={newButton} />
       {q.error && <QueryError error={q.error} onRetry={() => q.refetch()} />}
       {q.isLoading ? <PageSkeleton header={false} shape="list" /> : null}
       {view === 'requests' && s ? (

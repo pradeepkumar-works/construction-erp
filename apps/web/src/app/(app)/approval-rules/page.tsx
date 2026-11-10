@@ -217,7 +217,7 @@ export default function ApprovalRulesPage() {
     <div className="page-container">
       <PageHeader
         title="Approval rules"
-        subtitle="Which roles and positions approve which submissions, in up to six levels, and up to what amount. Anything above a limit goes to an approver with a higher (or no) limit. Admin can always approve everything."
+        help="Which roles and positions approve which submissions, in up to six levels, and up to what amount. Anything above a limit goes to an approver with a higher (or no) limit. Admin can always approve everything."
         extra={
           <Space wrap>
             {data?.custom ? (

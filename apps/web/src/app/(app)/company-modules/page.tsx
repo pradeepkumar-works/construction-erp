@@ -87,7 +87,7 @@ export default function CompanyModulesPage() {
   if (!user) return null;
   return (
     <div className="page-container" style={{ maxWidth: 948, marginLeft: 0 }}>
-      <PageHeader title="Modules" subtitle="Turn off what your company does not use. It leaves the menu, Home, Search, New and Ask for everyone; its records are kept." />
+      <PageHeader title="Modules" help="Turn off what your company does not use. It leaves the menu, Home, Search, New and Ask for everyone; its records are kept." />
       {!allowed ? (
         <NoAccess title="Only an admin can turn modules on and off" />
       ) : isLoading ? (

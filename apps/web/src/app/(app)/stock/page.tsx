@@ -15,7 +15,7 @@ function StockPage() {
   const q = search.get('q') ?? undefined;
   return (
     <div className="page-container">
-      <PageHeader title="Stock" subtitle="Material received against approved requests, issued at site, and the balance per project." extra={<StockActions />} />
+      <PageHeader title="Stock" help="Material received against approved requests, issued at site, and the balance per project." extra={<StockActions />} />
       <Card size="small">
         <StockPanel key={`${projectId ?? ''}|${low}|${q ?? ''}`} initialLow={low} initialProject={projectId} initialSearch={q} />
       </Card>

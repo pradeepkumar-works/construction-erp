@@ -569,7 +569,7 @@ export function DrawingSchedulePage() {
   }, [asBuilt, params, router]);
   return (
     <div className="page-container">
-      <PageHeader title="Drawing schedule" subtitle="The drawings each project needs, from whom and by when. A late one is chased by letter and recorded as a delay, so the time lost counts toward an extension." />
+      <PageHeader title="Drawing schedule" help="The drawings each project needs, from whom and by when. A late one is chased by letter and recorded as a delay, so the time lost counts toward an extension." />
       <Card size="small">{asBuilt ? null : <ScheduleList />}</Card>
     </div>
   );

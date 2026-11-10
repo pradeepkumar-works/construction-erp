@@ -179,7 +179,7 @@ export function ReportPage() {
     <div className="page-container">
       <PageHeader
         title="Quality report"
-        subtitle="The month's tests and pass rate, NCRs by age and cause, rework, audits and the registers, by project."
+        help="The month's tests and pass rate, NCRs by age and cause, rework, audits and the registers, by project."
         extra={
           <Button icon={<PrinterOutlined />} onClick={() => window.print()}>
             Print

@@ -173,7 +173,7 @@ export function ControlledCopiesPage() {
     <div className="page-container">
       <PageHeader
         title="Controlled copies"
-        subtitle={docNo ? `Every copy of ${docNo} issued, in force and withdrawn.` : 'Numbered prints on site, and the superseded ones to withdraw.'}
+        help={docNo ? `Every copy of ${docNo} issued, in force and withdrawn.` : 'Numbered prints on site, and the superseded ones to withdraw.'}
         crumbs={documentId ? [{ title: 'Controlled copies', href: '/controlled-copies' }, { title: docNo ?? 'Drawing' }] : undefined}
         extra={newButton}
       />

@@ -74,12 +74,31 @@ last column's words stay out of every label; an old name may stay as a Search ke
 - A page has one primary button, its own New. The header's New is secondary.
 - A form's title repeats its button ("New worker"); its submit button says Save, or the step it takes (Submit, Approve).
 
+## Screen text
+
+A screen is read in passing, between site calls, so it shows names, figures and actions, and explains itself only when
+asked. The rules come from the ERPs people already know (SAP Fiori, Oracle, Zoho) and from the unslop rules.
+`scripts/copy-check.ts` (CI) holds the app to the first two and caps the long sentences left on screen.
+
+- **A page title stands alone.** `PageHeader`'s `subtitle` is only a fact the title needs (a record's project, a
+  standard's name, a count); a sentence about the page goes in `help`, the ⓘ beside the title.
+- **Explanations sit behind an ⓘ.** How a figure is counted, what a register is for, what happens on save: `help` on
+  `PageHeader` or `Section`, `tooltip` on a `Form.Item`, `<Help>` anywhere else (`components/common/Help.tsx`). Never a
+  paragraph above a table or under a field.
+- **Labels over sentences.** A column head, a tag or a figure's name says it; a sentence that repeats what the screen
+  already shows is cut.
+- **No full stop** after a label, a title, a button, a tag, a tooltip of one phrase or an empty list's line. Sentences
+  in a popover keep theirs.
+- **No exclamation marks, no greetings in titles, no hype** ("seamless", "powerful", "smart"), no emoji.
+- **A warning says the one thing to do**, in a line: "Cost is not booked for 3 vendor bills. Record them". The reasons go
+  behind its ⓘ.
+
 ## Messages
 
 - **Errors say what to do**: "Choose the project", "Enter the quantity passed", "A GSTIN is 15 characters, e.g.
   27ABCDE1234F1Z5". Never only "Required" or "Invalid".
-- Empty lists say what will appear and how to add the first one, naming the button: "No work orders yet. Give work to a
-  subcontractor with New work order."
+- Empty lists say what is missing, in one line, beside the button that adds the first one: "No work orders yet", with
+  New work order. A second short line only when the way in is not that button ("Add a pipe zone in Structure").
 - **No internal IDs** in front of people: show the record's number (PO-2026-0012) or name, never a database id, an enum
   key (`CHANGES_REQUESTED`) or a field name.
 - Use the ellipsis character `…`, never three dots `...`.

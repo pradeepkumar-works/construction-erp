@@ -52,7 +52,7 @@ function PayrollPage() {
 
   return (
     <div className="page-container">
-      <PageHeader title="Payroll" subtitle="Monthly salary runs with payslips, PF, ESI and TDS; salaries, loans and full and final settlements; and the month's inputs for staff and labour contractors." />
+      <PageHeader title="Payroll" help="Monthly salary runs with payslips, PF, ESI and TDS; salaries, loans and full and final settlements; and the month's inputs for staff and labour contractors." />
       <Card size="small">
         <AppTabs
           activeKey={tab}

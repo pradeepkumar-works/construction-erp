@@ -26,7 +26,7 @@ export function PipelineLayoutPage() {
 
   return (
     <div className="page-container">
-      <PageHeader title="Pipeline layout" subtitle="Upload a pipeline drawn in Google Earth (KMZ or KML), an EPANET file or an Excel sheet, and see its pipes, valves and chainages." />
+      <PageHeader title="Pipeline layout" help="Upload a pipeline drawn in Google Earth (KMZ or KML), an EPANET file or an Excel sheet, and see its pipes, valves and chainages." />
       <Flex gap={tk.space[3]} wrap align="center" style={{ marginBottom: tk.space[4] }}>
         <Select<string>
           showSearch={{ optionFilterProp: 'label' }}

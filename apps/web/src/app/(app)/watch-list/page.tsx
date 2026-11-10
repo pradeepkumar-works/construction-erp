@@ -324,7 +324,7 @@ export default function Page() {
     <div className="page-container">
       <PageHeader
         title="Watch list"
-        subtitle={`Early warnings as of ${formatDate(data.asOf)}: what to do, what it costs, and the working behind it. Say what became of one when you dismiss it, so each check keeps its track record.`}
+        help={`Early warnings as of ${formatDate(data.asOf)}: what to do, what it costs, and the working behind it. Say what became of one when you dismiss it, so each check keeps its track record.`}
         extra={
           open.length ? (
             <ExportButton

@@ -168,7 +168,7 @@ export default function Page() {
           </span>
         }
         docTitle={type.name}
-        subtitle={type.description || undefined}
+        help={type.description || undefined}
         crumbs={crumbs}
         extra={actions}
       />

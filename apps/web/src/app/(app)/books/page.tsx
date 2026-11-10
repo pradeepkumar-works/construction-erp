@@ -25,7 +25,7 @@ function BooksPage() {
   const allowed = !!user && canKeepBooks(user.roleKey);
   return (
     <div className="page-container">
-      <PageHeader title="Books" subtitle="The day book, cash and bank books and ledgers, kept from the modules' bills, receipts, payments, expenses and salaries, with vouchers accounts make by hand." />
+      <PageHeader title="Books" help="The day book, cash and bank books and ledgers, kept from the modules' bills, receipts, payments, expenses and salaries, with vouchers accounts make by hand." />
       {!allowed ? (
         <NoAccess title="Only admin, management and accounts see the books" />
       ) : (

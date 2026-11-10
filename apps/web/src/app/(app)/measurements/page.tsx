@@ -9,7 +9,7 @@ import { MeasurementList } from '@/components/measurements/MeasurementList';
 export default function Page() {
   return (
     <div className="page-container">
-      <PageHeader title="Measurement book" subtitle={navNode('site.mb')?.description} />
+      <PageHeader title="Measurement book" help={navNode('site.mb')?.description} />
       <Card size="small">
         <MeasurementList />
       </Card>

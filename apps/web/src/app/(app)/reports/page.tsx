@@ -65,7 +65,7 @@ function Reports() {
     <div className="page-container">
       <PageHeader
         title="Progress reports"
-        subtitle="Daily, weekly and monthly reports for the client in your company’s name, as PDF, Word or Excel, numbered and kept as issued."
+        help="Daily, weekly and monthly reports for the client in your company’s name, as PDF, Word or Excel, numbered and kept as issued."
         extra={<Segmented aria-label="Report" value={choice} onChange={(v) => choose(v as Choice)} options={CHOICES} />}
       />
       {choice === 'CUSTOM' ? (
