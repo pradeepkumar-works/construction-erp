@@ -154,3 +154,4 @@ export * from './role-menu';
 export * from './doc-series';
 export * from './company-profile';
 export * from './fixed-assets';
+export * from './bank-file';

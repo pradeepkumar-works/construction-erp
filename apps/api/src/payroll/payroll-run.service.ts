@@ -1,6 +1,8 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import {
+  bankFileRows,
+  bankFileText,
   MANUAL_PAYSLIP_CODES,
   PAYSLIP_CODES,
   canApprovePayroll,
@@ -21,6 +23,7 @@ import { AuditService } from '../common/audit.service';
 import { dec, iso, money, dateOnly, formatDay, parseDate } from '../common/serialize';
 import { NotificationsService } from '../notifications/notifications.service';
 import { tellPayroll } from './payroll-notices';
+import { todayIn } from '../notifications/time';
 import { inr } from '../common/submission-titles';
 import { PayrollService } from '../staff/payroll.service';
 import { computePayslip } from './payroll-rules';
@@ -362,23 +365,16 @@ export class PayrollRunService {
     return { r, slips };
   }
 
-  /** The bank's bulk transfer file: one NEFT line per employee with an account (CSV). */
+  /** The bank's bulk transfer file: one line per employee with an account (generic CSV, NEFT or RTGS by amount). */
   async bankFile(user: RequestUser, id: string) {
     const { r, slips } = await this.filesFor(user, id);
     if (r.status !== 'APPROVED' && r.status !== 'PAID') throw new BadRequestException('The bank file is made once the run is approved');
     const s = await this.salary.settingsRow(user.organizationId);
-    const csv = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-    const lines = [['Payment type', 'Debit account', 'Beneficiary name', 'Beneficiary account', 'IFSC', 'Amount', 'Narration', 'Employee code'].join(',')];
-    const missing: string[] = [];
-    for (const p of slips) {
-      if (Number(p.net) <= 0) continue;
-      if (!p.bankAccountNo || !p.bankIfsc) {
-        missing.push(`${p.employeeName} (${p.employeeCode})`);
-        continue;
-      }
-      lines.push(['NEFT', s?.debitAccountNo ?? '', p.employeeName, p.bankAccountNo, p.bankIfsc, Number(p.net).toFixed(2), `Salary ${r.month}`, p.employeeCode].map(csv).join(','));
-    }
-    return { fileName: `${r.runNo}-bank.csv`, mimeType: 'text/csv', content: lines.join('\r\n') + '\r\n', missing };
+    const payees = slips
+      .filter((p) => p.net.gt(0))
+      .map((p) => ({ name: p.employeeName, accountNo: p.bankAccountNo, ifsc: p.bankIfsc, amount: p.net.toFixed(2), narration: `Salary ${r.month}`, reference: p.employeeCode }));
+    const out = bankFileRows('GENERIC', { debitAccount: s?.debitAccountNo ?? '', valueDate: todayIn() }, payees);
+    return { fileName: `${r.runNo}-bank.csv`, mimeType: 'text/csv', content: bankFileText(out.rows), missing: out.missing.map((m) => `${m.name} (${m.reference})`) };
   }
 
   /** EPFO's electronic challan cum return (ECR 2.0): one #~# separated line per member with a UAN. */
