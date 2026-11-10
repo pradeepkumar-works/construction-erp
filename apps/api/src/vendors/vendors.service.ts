@@ -195,6 +195,9 @@ export class VendorsService {
     if (!row) throw new NotFoundException('Vendor not found');
     const used = row._count.expenses + row._count.equipment + row._count.stockEntries;
     if (used > 0) throw new ConflictException(`${row.name} is on ${used} expense(s), machine(s) or GRN(s); mark the vendor inactive instead`);
+    // A party named as a sister company stays until the link is taken off (consolidated accounts read it).
+    const sister = await this.prisma.sisterLink.findFirst({ where: { organizationId: user.organizationId, vendorId: id }, select: { sister: { select: { name: true } } } });
+    if (sister) throw new ConflictException(`${row.name} is named as the sister company ${sister.sister.name}. Remove it under Sister companies first, then delete the vendor`);
     // TDS deducted from them goes on the quarter's return under their name and PAN, and a certificate is theirs.
     const [deductions, certificates] = await Promise.all([
       this.prisma.tdsDeduction.count({ where: { organizationId: user.organizationId, vendorId: id } }),

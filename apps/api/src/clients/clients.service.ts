@@ -152,6 +152,9 @@ export class ClientsService {
     const row = await this.prisma.client.findFirst({ where: { id, organizationId: user.organizationId }, include });
     if (!row) throw new NotFoundException('Client not found');
     if (row._count.projects > 0) throw new ConflictException(`${row.name} has ${row._count.projects} project(s); mark the client inactive instead`);
+    // A party named as a sister company stays until the link is taken off (consolidated accounts read it).
+    const sister = await this.prisma.sisterLink.findFirst({ where: { organizationId: user.organizationId, clientId: id }, select: { sister: { select: { name: true } } } });
+    if (sister) throw new ConflictException(`${row.name} is named as the sister company ${sister.sister.name}. Remove it under Sister companies first, then delete the client`);
     await this.prisma.client.delete({ where: { id } });
     await this.audit.log(user, 'CLIENT', id, 'DELETED');
     return { ok: true, undo: this.undo.offer(user, 'CLIENT', { rows: [{ model: 'client', data: row }] }) };
