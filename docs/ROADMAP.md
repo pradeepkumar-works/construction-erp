@@ -873,8 +873,10 @@ drones, sensors and the rest when a customer asks. The machine and site devices 
      calling out only, an outbox that keeps readings while the internet is down, a Windows start-up task. ARCHITECTURE
      "Integration layer".
 140. **Tally live two-way sync** (L).
-141. **E-invoice (IRN), GSTIN check and e-way bills on dispatch** (M).
-142. **E-way bill for transfers, returns and machine moves** (S).
+141. **E-invoice (IRN), GSTIN check and e-way bills on dispatch** (M). The IRN and the e-way bill on an RMC challan are
+     done as item 194; the GSTIN check is left.
+142. **E-way bill for transfers, returns and machine moves** (S). Transfers are done as item 194; returns and machine
+     moves are left.
 143. **GSTR-2B download and match** (M).
 144. **Weather by site** (S).
 145. **WhatsApp documents to outsiders** (M).
@@ -1086,6 +1088,14 @@ GRN on the web and the phone), and a second quality dashboard.
      sisters tab shows each pair with both companies' figures and the difference to settle. Each column says how far its
      books are locked and which year is closed, and Each company's lock stops every company at its own lock. Investment
      against share capital, minority interest and currency are not taken out. ARCHITECTURE "Consolidated accounts".
+194. ~~**E-invoices (IRN and QR) and e-way bills** (M).~~ Done: a certified RA bill and an RMC bill to a registered
+     client, from a company under e-invoicing (Company settings › E-invoicing), get an IRN, its acknowledgement and the
+     signed QR from the IRP, printed on the bill; an RMC challan and a stock transfer get an e-way bill with the vehicle,
+     distance and value, extended near its end or cancelled. The JSON is NIC's INV-01 and GENEWAYBILL, built and checked
+     in one pure place, made once per payload (the IRP's duplicate answer is taken as made), cancelled within 24 hours
+     (after that a credit note), and a live IRN or e-way bill locks its bill, challan or transfer. NIC is reached through
+     the company's GSP (`GST_PROVIDER=gsp`, credentials sealed on a GST provider connection, untested against the live
+     IRP); `GST_PROVIDER=fake` stands in for CI. ARCHITECTURE "E-invoices and e-way bills".
 
 ## Definition of done for every item
 Prisma migration, API endpoints with Swagger, shared types, web screen, mobile screen where site

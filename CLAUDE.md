@@ -465,6 +465,14 @@ and the pre-delivery checklist.
   deduction is in a challan; filing takes the lock exclusively. A challan posts only through `PostingService`
   (`TDS_CHALLAN`), debiting the ledger `deductionLedgerKey` names (a backfilled deduction keeps `TDS_PAYABLE`). Nothing
   is sent to a deductee. Keep `src/scripts/tds-test.ts` passing.
+- E-invoices and e-way bills (item 194, `apps/api/src/gst`, ARCHITECTURE "E-invoices and e-way bills"): a payload is only
+  `einvoicePayload` / `ewayPayload`, what blocks one only `einvoiceProblems` / `ewayProblems` / `ewayTransportProblems`,
+  whether one is due only `einvoiceNeeded` / `ewayNeeded`, validity only `ewayValidUntil` and the windows only
+  `cancelWindowProblem` / `ewayExtendProblem` (`@erp/shared/einvoice.ts`); an IRN or e-way bill is a `GstDocument` made
+  only through `EinvoiceService.generate` (one live per source, the same payload hash returns it) over a `GstProvider`
+  (`GST_PROVIDER=fake` in CI and local work, never a real GSP or the IRP from tests), and a source with a live one is
+  locked only by `assertNoLiveGstDocument`. Records show it through `GstDocumentPanel`, papers through `irnBlockHtml`.
+  Keep `src/scripts/einvoice-test.ts` passing.
 - RMC (item 104, `apps/api/src/rmc`, ARCHITECTURE "RMC plant"): a plant is a project of type `PLANT`; a truck's materials
   leave the plant's store only through `StockService.issue`, and cubes are a quality test through `QualityService`. Its
   figures are pure functions in `rmc-rules.ts` tested in `src/scripts/rmc-test.ts` (CI runs it); bills and receipts post
