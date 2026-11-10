@@ -451,8 +451,9 @@ and the pre-delivery checklist.
   layout is only a `BANK_FILE_FORMATS` entry and its rows only `bankFileRows` (NEFT or RTGS by `paymentMode`, rupees by
   `rupees`, who is left out by `bankFileProblem`; the salary run's file too), and the bank's UTRs are read only by
   `readUtrResponse` (`@erp/shared/bank-file.ts`). A request is in one open batch at a time (the partial unique index);
-  a batch's payments are made only through `PayablesService.prepare` / `insert` / `announce`, their UTRs set only through
-  `setReferences` and taken off only through `removeIn`, never a `vendorPayment` write of its own. Keep
+  a batch's payments are made only through `PayablesService.prepare` / `insertMany` / `announceMany` (the one-payment
+  `insert` and `announce` call them), their UTRs set only through `setReferences` and taken off only through
+  `removeMany`, never a `vendorPayment` write of its own. Keep
   `src/scripts/bank-file-test.ts` passing.
 - RMC (item 104, `apps/api/src/rmc`, ARCHITECTURE "RMC plant"): a plant is a project of type `PLANT`; a truck's materials
   leave the plant's store only through `StockService.issue`, and cubes are a quality test through `QualityService`. Its

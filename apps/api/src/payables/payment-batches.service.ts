@@ -29,14 +29,27 @@ import { inr } from '../common/submission-titles';
 import { isUniqueViolation } from '../common/idempotency';
 import { nextDocNo } from '../common/doc-number';
 import { todayIn } from '../notifications/time';
-import { PayablesService, type PreparedPayment } from './payables.service';
+import { PayablesService } from './payables.service';
 import { targetLabel } from './payment-requests.service';
 import type { AddBatchLinesDto, CreatePaymentBatchDto, UpdatePaymentBatchDto } from './payment-batches.dto';
 
 const D = (v: Prisma.Decimal.Value) => new Prisma.Decimal(v);
 const ZERO = D(0);
-/** Export writes every payment of a batch in one transaction; a few hundred lines take a few seconds. */
+/** Export writes every payment of a batch in one transaction (300 lines in about a second); the limits leave room for a slow database. */
 const EXPORT_TX = { timeout: 120_000, maxWait: 10_000 };
+
+/** Run `fn` over the items a few at a time (each query takes a pooled connection), results in the items' order. */
+async function eachLimit<T, R>(items: T[], fn: (item: T) => Promise<R>, limit = 4): Promise<R[]> {
+  const out: R[] = new Array(items.length);
+  let next = 0;
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (next < items.length) {
+      const i = next++;
+      out[i] = await fn(items[i]);
+    }
+  }));
+  return out;
+}
 
 const requestInclude = {
   vendor: { select: { id: true, name: true, bankAccountNo: true, bankIfsc: true, email: true } },
@@ -311,18 +324,12 @@ export class PaymentBatchesService {
     const file = bankFileRows(b.format as BankFileFormatKey, { debitAccount: b.debitAccount, valueDate }, b.lines.map((l) => payeeOf(l.paymentRequest, l.amount)));
     const modeOf = new Map(file.paid.map((p) => [p.reference, p.mode]));
     const leftOut = new Map(file.missing.map((m) => [m.reference, m.problem]));
-    const prepared: { line: LineRow; payment: PreparedPayment }[] = [];
-    for (const line of b.lines.filter((l) => modeOf.has(l.paymentRequest.requestNo)))
-      prepared.push({
-        line,
-        payment: await this.payables.prepare(user, {
-          paymentRequestId: line.paymentRequestId,
-          paymentDate: valueDate,
-          amount: line.amount.toFixed(2),
-          mode: 'BANK',
-          remarks: `Paid in ${b.batchNo}`,
-        }),
-      });
+    const inFile = b.lines.filter((l) => modeOf.has(l.paymentRequest.requestNo));
+    // Each payment is read and checked by payables first, outside the transaction, a few at a time.
+    const prepared = await eachLimit(inFile, async (line) => ({
+      line,
+      payment: await this.payables.prepare(user, { paymentRequestId: line.paymentRequestId, paymentDate: valueDate, amount: line.amount.toFixed(2), mode: 'BANK', remarks: `Paid in ${b.batchNo}` }),
+    }));
     const paid = await this.prisma.$transaction(async (tx) => {
       const claimed = await tx.paymentBatch.updateMany({
         where: { id, organizationId: user.organizationId, status: 'DRAFT' },
@@ -331,18 +338,20 @@ export class PaymentBatchesService {
       if (claimed.count !== 1) throw new ConflictException(`${b.batchNo} is already exported`);
       const now = await tx.paymentBatchLine.findMany({ where: { batchId: id }, select: { id: true } });
       if (now.length !== b.lines.length || now.some((l) => !b.lines.some((x) => x.id === l.id))) throw new ConflictException(`The lines of ${b.batchNo} changed while it was being exported; export it again`);
-      const out: { id: string; payment: PreparedPayment }[] = [];
-      for (const { line, payment } of prepared) {
-        const r = line.paymentRequest;
-        const paymentId = await this.payables.insert(tx, user, payment);
-        await tx.paymentBatchLine.update({ where: { id: line.id }, data: { vendorPaymentId: paymentId, accountNo: r.vendor?.bankAccountNo?.replace(/\s+/g, '').toUpperCase(), ifsc: r.vendor?.bankIfsc?.replace(/\s+/g, '').toUpperCase(), payMode: modeOf.get(r.requestNo) } });
-        out.push({ id: paymentId, payment });
-      }
+      const ids = await this.payables.insertMany(tx, user, prepared.map((p) => p.payment));
+      const clean = (v: string | null | undefined) => v?.replace(/\s+/g, '').toUpperCase() ?? null;
+      const rows = prepared.map(({ line }, i) => {
+        const v = line.paymentRequest.vendor;
+        return Prisma.sql`(${line.id}, ${ids[i]}, ${clean(v?.bankAccountNo)}, ${clean(v?.bankIfsc)}, ${modeOf.get(line.paymentRequest.requestNo) ?? null})`;
+      });
+      if (rows.length)
+        await tx.$executeRaw`UPDATE "PaymentBatchLine" AS l SET "vendorPaymentId" = v.payment, "accountNo" = v.account, "ifsc" = v.ifsc, "payMode" = v.mode
+          FROM (VALUES ${Prisma.join(rows)}) AS v(id, payment, account, ifsc, mode) WHERE l.id = v.id AND l."batchId" = ${id}`;
       for (const line of b.lines.filter((l) => leftOut.has(l.paymentRequest.requestNo)))
         await tx.paymentBatchLine.update({ where: { id: line.id }, data: { open: false, leftOut: leftOut.get(line.paymentRequest.requestNo) } });
-      return out;
+      return prepared.map((p, i) => ({ id: ids[i], payment: p.payment }));
     }, EXPORT_TX);
-    for (const p of paid) await this.payables.announce(user, p.payment, p.id);
+    await this.payables.announceMany(user, paid);
     await this.audit.log(user, 'PAYMENT_BATCH', id, 'EXPORTED', `${paid.length} payments, ${inr(prepared.reduce((s, p) => s.add(p.line.amount), ZERO))}${leftOut.size ? `; ${leftOut.size} left out` : ''}`);
     return this.get(user, id);
   }
@@ -356,8 +365,10 @@ export class PaymentBatchesService {
     if (b.status !== 'EXPORTED') throw new BadRequestException(b.status === 'DRAFT' ? `${b.batchNo} is not exported` : `${b.batchNo} is settled; its payments have their UTRs`);
     const withUtr = b.lines.find((l) => l.vendorPayment?.reference);
     if (withUtr) throw new BadRequestException(`${withUtr.paymentRequest.requestNo} already has its UTR, so the bank has paid it; the export stays`);
-    const removals: Awaited<ReturnType<PayablesService['prepareRemove']>>[] = [];
-    for (const l of b.lines) if (l.vendorPayment) removals.push(await this.payables.prepareRemove(user, l.vendorPayment.id));
+    const removals = await eachLimit(
+      b.lines.flatMap((l) => (l.vendorPayment ? [l.vendorPayment.id] : [])),
+      (paymentId) => this.payables.prepareRemove(user, paymentId),
+    );
     await this.prisma.$transaction(async (tx) => {
       const back = await tx.paymentBatch.updateMany({
         where: { id, organizationId: user.organizationId, status: 'EXPORTED' },
@@ -366,7 +377,7 @@ export class PaymentBatchesService {
       if (back.count !== 1) throw new ConflictException(`${b.batchNo} changed meanwhile; open it again`);
       const utr = await tx.vendorPayment.count({ where: { id: { in: removals.map((r) => r.row.id) }, reference: { not: null } } });
       if (utr) throw new ConflictException(`A UTR came in for ${b.batchNo} meanwhile; the export stays`);
-      for (const r of removals) await this.payables.removeIn(tx, r);
+      await this.payables.removeMany(tx, removals);
       await tx.paymentBatchLine.updateMany({ where: { batchId: id }, data: { accountNo: null, ifsc: null, payMode: null } });
       // Lines left out come back unless their request went into another batch meanwhile.
       for (const l of b.lines.filter((x) => x.leftOut)) {
@@ -375,7 +386,7 @@ export class PaymentBatchesService {
         else await tx.paymentBatchLine.update({ where: { id: l.id }, data: { open: true, leftOut: null } });
       }
     }, EXPORT_TX);
-    for (const r of removals) await this.payables.announceRemove(user, r);
+    await this.payables.announceRemoveMany(user, removals);
     await this.audit.log(user, 'PAYMENT_BATCH', id, 'EXPORT_UNDONE', `${removals.length} payments taken off`);
     return this.get(user, id);
   }

@@ -3461,12 +3461,15 @@ switchable module, so the page is not behind the books switch.
   `bankFileRows` (generic layout, the employee code as reference), so one rule leaves people out.
 - **Export** (`POST /payment-batches/:id/export`), in one transaction: the batch moves from DRAFT once (`updateMany` on the
   status, with the count checked), the lines must be those read, and each line's `VendorPayment` (mode BANK, no reference,
-  dated today) goes through payables' own `prepare` (role, approved request and bill, date, amounts) and `insert` (the
-  `PAY:` and `PAYREQ:` advisory locks, outstanding and request balance, `syncPaid`, `syncRequestPaid`); the audit log and
-  the vendor's notice follow through `announce` after commit. So it posts through `PostingService` exactly as a payment
-  recorded by hand, under the books' `booksFrom` and lock. Lines left out are closed and free their request. **Undo
-  export** (in the ⋯ menu) takes the payments off through payables' `removeIn` while no UTR is in and none is in Tally,
-  and the batch is a draft again.
+  dated today) goes through payables' own `prepare` (role, approved request and bill, date, amounts; a few at a time,
+  before the transaction) and `insertMany` (every `PAY:` and `PAYREQ:` advisory lock in one statement, in the order a
+  single payment takes them, each payment's outstanding and request balance counting the ones before it, one insert,
+  `syncPaid`, `syncRequestsPaid`); the audit log and the vendor's notices follow through `announceMany` after commit. A
+  payment recorded by hand takes the same path with one payment (`insert`, `syncRequestPaid`, `announce` call the many
+  versions), so it posts through `PostingService` exactly as before, under the books' `booksFrom` and lock. 300 lines
+  export in about a second. Lines left out are closed and free their request. **Undo export** (in the ⋯ menu) takes the
+  payments off through payables' `removeMany` (what `removeIn` calls) while no UTR is in and none is in Tally, and the
+  batch is a draft again.
 - **UTRs** (`POST /payment-batches/:id/utrs` with cells). The web reads the bank's response file (CSV or Excel, the
   statements import's `readCells`) or a pasted list into cells; `readUtrResponse` finds each row's request number in any
   cell and its UTR under a UTR or bank reference heading (else the first UTR-shaped word, a bank's letters first), reports

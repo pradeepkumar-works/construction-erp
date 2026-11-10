@@ -1,4 +1,5 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import { Prisma } from '@prisma/client';
 import {
   canRecordPayment,
@@ -29,7 +30,7 @@ import { CreatePaymentDto, ListPaymentsQuery, PayablesQuery, UpdatePaymentDto } 
 import { assertNotExported } from '../tally/exported';
 import { advanceAdjusted, advancePaid, advanceRecovered } from './advances';
 import { SUB_BILL_PAYABLE, VENDOR_BILL_PAYABLE, subBillPayable, vendorBillPayable } from './payable';
-import { syncRequestPaid, targetLabel } from './payment-requests.service';
+import { syncRequestPaid, syncRequestsPaid, targetLabel } from './payment-requests.service';
 import { todayIn } from '../notifications/time';
 
 const D = (v: Prisma.Decimal.Value) => new Prisma.Decimal(v);
@@ -87,6 +88,9 @@ interface Bill {
 type Request = { id: string; requestNo: string; amount: Prisma.Decimal };
 
 /** A new payment that passed `prepare`, for `insert` and `announce`. */
+/** A payment read and checked for taking off (`prepareRemove`). */
+export type Removal = Awaited<ReturnType<PayablesService['prepareRemove']>>;
+
 export interface PreparedPayment {
   dto: CreatePaymentDto;
   bill: Bill;
@@ -423,13 +427,50 @@ export class PayablesService {
    * settles no more than is outstanding, and keep the bill and the request paid in step.
    */
   async insert(tx: Prisma.TransactionClient, user: RequestUser, p: PreparedPayment): Promise<string> {
-    const { dto, bill, request, amounts: a } = p;
-    await this.lock(tx, bill);
-    await this.checkBalance(tx, bill, null, settles(a));
-    if (request) await this.checkRequest(tx, request, null, settles(a));
-    const row = await tx.vendorPayment.create({
-      data: {
-        id: dto.id,
+    return (await this.insertMany(tx, user, [p]))[0];
+  }
+
+  /**
+   * Write prepared payments in the caller's transaction (a bank file's at once): every bill's and request's lock in one
+   * statement, in the order a single payment takes them (PAY before PAYREQ, so the two never deadlock), each payment
+   * checked against what its bill and request have outstanding counting the ones before it, then the bills and requests
+   * kept paid in step. Returns the payments' ids in order.
+   */
+  async insertMany(tx: Prisma.TransactionClient, user: RequestUser, ps: PreparedPayment[]): Promise<string[]> {
+    if (!ps.length) return [];
+    const keys = [...new Set(ps.flatMap((p) => [`PAY:${p.bill.id}`, ...(p.request ? [`PAYREQ:${p.request.id}`] : [])]))].sort();
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(k)) FROM (SELECT k FROM unnest(${keys}::text[]) AS k ORDER BY k COLLATE "C") AS locks`;
+    const sums = (rows: { _sum: { amount: Prisma.Decimal | null; tdsAmount: Prisma.Decimal | null; otherDeduction: Prisma.Decimal | null } }[], idOf: (i: number) => string | null) =>
+      new Map(rows.map((r, i) => [idOf(i), (r._sum.amount ?? ZERO).add(r._sum.tdsAmount ?? ZERO).add(r._sum.otherDeduction ?? ZERO)]));
+    const sum = { amount: true, tdsAmount: true, otherDeduction: true } as const;
+    const ofType = (type: Bill['type']) => [...new Set(ps.filter((p) => p.bill.type === type && p.bill.payable !== null).map((p) => p.bill.id))];
+    const requestIds = [...new Set(ps.flatMap((p) => (p.request ? [p.request.id] : [])))];
+    const [vb, sb, rq] = await Promise.all([
+      ofType('VENDOR_BILL').length ? tx.vendorPayment.groupBy({ by: ['vendorBillId'], where: { vendorBillId: { in: ofType('VENDOR_BILL') } }, _sum: sum }) : [],
+      ofType('SUBCONTRACT_BILL').length ? tx.vendorPayment.groupBy({ by: ['subcontractBillId'], where: { subcontractBillId: { in: ofType('SUBCONTRACT_BILL') } }, _sum: sum }) : [],
+      requestIds.length ? tx.vendorPayment.groupBy({ by: ['paymentRequestId'], where: { paymentRequestId: { in: requestIds } }, _sum: sum }) : [],
+    ]);
+    // Bills and requests apart: an on-account payment's bill carries its request's id.
+    const billSettled = new Map([...sums(vb, (i) => vb[i].vendorBillId), ...sums(sb, (i) => sb[i].subcontractBillId)]);
+    const requestSettled = sums(rq, (i) => rq[i].paymentRequestId);
+    const ids: string[] = [];
+    const data: Prisma.VendorPaymentCreateManyInput[] = [];
+    for (const { dto, bill, request, amounts: a } of ps) {
+      const adds = settles(a);
+      if (bill.payable !== null) {
+        const outstanding = bill.payable.sub(billSettled.get(bill.id) ?? ZERO);
+        if (adds.gt(outstanding.add(TOLERANCE))) throw new BadRequestException(`This settles ₹${adds.toFixed(2)} (paid plus deducted) but only ₹${Prisma.Decimal.max(outstanding, ZERO).toFixed(2)} is outstanding on ${bill.label}`);
+        billSettled.set(bill.id, (billSettled.get(bill.id) ?? ZERO).add(adds));
+      }
+      if (request) {
+        const left = request.amount.sub(requestSettled.get(request.id) ?? ZERO);
+        if (adds.gt(left.add(TOLERANCE))) throw new BadRequestException(`This settles ₹${adds.toFixed(2)} but only ₹${Prisma.Decimal.max(left, ZERO).toFixed(2)} of ${request.requestNo} is left to pay`);
+        requestSettled.set(request.id, (requestSettled.get(request.id) ?? ZERO).add(adds));
+      }
+      const id = dto.id ?? randomUUID();
+      ids.push(id);
+      data.push({
+        id,
         organizationId: user.organizationId,
         projectId: bill.projectId,
         vendorId: bill.vendorId,
@@ -445,28 +486,49 @@ export class PayablesService {
         remarks: dto.remarks ?? null,
         createdById: user.id,
         ...a,
-      },
-      select: { id: true },
-    });
-    if (isBill(bill)) await syncPaid(tx, bill.type, bill.id);
-    if (request) await syncRequestPaid(tx, request.id);
-    return row.id;
+      });
+    }
+    await tx.vendorPayment.createMany({ data });
+    const bills = new Map(ps.filter((p) => isBill(p.bill)).map((p) => [p.bill.id, p.bill]));
+    for (const bill of bills.values()) if (isBill(bill)) await syncPaid(tx, bill.type, bill.id);
+    await syncRequestsPaid(tx, requestIds);
+    return ids;
   }
 
   /** Once a payment is in: the audit log of the payment, its bill and its request, and the supplier's notice. */
   async announce(user: RequestUser, p: PreparedPayment, id: string) {
-    const { dto, bill, request, amounts: a } = p;
-    const paidOn = `₹${a.amount.toFixed(2)} paid on ${dto.paymentDate}${dto.reference ? ` (${dto.reference})` : ''}`;
-    await this.audit.log(user, 'VENDOR_PAYMENT', id, 'CREATED', `${inr(a.amount)} paid against ${bill.label}${request ? ` (${request.requestNo})` : ''}`);
-    if (isBill(bill)) await this.audit.log(user, bill.type, bill.id, 'PAYMENT_MADE', paidOn);
-    if (request) await this.audit.log(user, 'PAYMENT_REQUEST', request.id, 'PAYMENT_MADE', paidOn);
+    await this.announceMany(user, [{ payment: p, id }]);
+  }
+
+  /** `announce` for many payments at once (a bank file's): the audit entries in one insert, then the notices. */
+  async announceMany(user: RequestUser, paid: { payment: PreparedPayment; id: string }[]) {
+    const said = paid.map(({ payment: { dto, bill, request, amounts: a }, id }) => ({
+      id,
+      bill,
+      request,
+      a,
+      dto,
+      paidOn: `₹${a.amount.toFixed(2)} paid on ${dto.paymentDate}${dto.reference ? ` (${dto.reference})` : ''}`,
+    }));
+    await this.audit.logMany(
+      user,
+      said.flatMap(({ id, bill, request, a, paidOn }) => [
+        { entityType: 'VENDOR_PAYMENT', entityId: id, action: 'CREATED', note: `${inr(a.amount)} paid against ${bill.label}${request ? ` (${request.requestNo})` : ''}` },
+        ...(isBill(bill) ? [{ entityType: bill.type, entityId: bill.id, action: 'PAYMENT_MADE', note: paidOn }] : []),
+        ...(request ? [{ entityType: 'PAYMENT_REQUEST', entityId: request.id, action: 'PAYMENT_MADE', note: paidOn }] : []),
+      ]),
+    );
     // The supplier's portal logins see it on their statement.
-    await this.notifications.notifyVendor(user.organizationId, bill.vendorId, {
-      title: `Payment of ₹${a.amount.toFixed(2)} made`,
-      body: `Against ${bill.label}, on ${dto.paymentDate}${dto.reference ? `, reference ${dto.reference}` : ''}.`,
-      entityType: 'PORTAL_PAYMENT',
-      entityId: id,
-    });
+    await this.notifications.notifyVendors(
+      user.organizationId,
+      said.map(({ id, bill, a, dto }) => ({
+        vendorId: bill.vendorId,
+        title: `Payment of ₹${a.amount.toFixed(2)} made`,
+        body: `Against ${bill.label}, on ${dto.paymentDate}${dto.reference ? `, reference ${dto.reference}` : ''}.`,
+        entityType: 'PORTAL_PAYMENT' as const,
+        entityId: id,
+      })),
+    );
   }
 
   /**
@@ -545,19 +607,46 @@ export class PayablesService {
   }
 
   /** Take the payment off in the caller's transaction, under its bill's lock, keeping enough paid for advances already used. */
-  async removeIn(tx: Prisma.TransactionClient, { row, bill, request }: Awaited<ReturnType<PayablesService['prepareRemove']>>) {
-    await this.lock(tx, bill);
-    await this.checkAdvanceCovers(tx, bill, row.id, null);
-    await tx.vendorPayment.delete({ where: { id: row.id } });
-    if (isBill(bill)) await syncPaid(tx, bill.type, bill.id);
-    if (request) await syncRequestPaid(tx, request.id);
+  async removeIn(tx: Prisma.TransactionClient, r: Removal) {
+    await this.removeMany(tx, [r]);
   }
 
-  async announceRemove(user: RequestUser, { row, bill, request }: Awaited<ReturnType<PayablesService['prepareRemove']>>) {
-    const takenOff = `₹${row.amount.toFixed(2)} of ${dateOnly(row.paymentDate)} taken off`;
-    await this.audit.log(user, 'VENDOR_PAYMENT', row.id, 'DELETED', `${inr(row.amount)} of ${formatDay(dateOnly(row.paymentDate))}`);
-    if (isBill(bill)) await this.audit.log(user, bill.type, bill.id, 'PAYMENT_REMOVED', takenOff);
-    if (request) await this.audit.log(user, 'PAYMENT_REQUEST', request.id, 'PAYMENT_REMOVED', takenOff);
+  /**
+   * `removeIn` for many payments at once (a bank file's export undone): the bills' locks in one statement, an advance's
+   * payments checked and taken off one by one, the rest in one statement, then the bills and requests kept in step.
+   */
+  async removeMany(tx: Prisma.TransactionClient, rs: Removal[]) {
+    if (!rs.length) return;
+    const keys = [...new Set(rs.map((r) => `PAY:${r.bill.id}`))].sort();
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(k)) FROM (SELECT k FROM unnest(${keys}::text[]) AS k ORDER BY k COLLATE "C") AS locks`;
+    for (const { row, bill } of rs.filter((r) => r.bill.order)) {
+      await this.checkAdvanceCovers(tx, bill, row.id, null);
+      await tx.vendorPayment.delete({ where: { id: row.id } });
+    }
+    const rest = rs.filter((r) => !r.bill.order).map((r) => r.row.id);
+    if (rest.length) await tx.vendorPayment.deleteMany({ where: { id: { in: rest } } });
+    const bills = new Map(rs.filter((r) => isBill(r.bill)).map((r) => [r.bill.id, r.bill]));
+    for (const bill of bills.values()) if (isBill(bill)) await syncPaid(tx, bill.type, bill.id);
+    await syncRequestsPaid(tx, rs.flatMap((r) => (r.request ? [r.request.id] : [])));
+  }
+
+  async announceRemove(user: RequestUser, r: Removal) {
+    await this.announceRemoveMany(user, [r]);
+  }
+
+  /** `announceRemove` for many payments at once: the audit entries in one insert. */
+  async announceRemoveMany(user: RequestUser, rs: Removal[]) {
+    await this.audit.logMany(
+      user,
+      rs.flatMap(({ row, bill, request }) => {
+        const takenOff = `₹${row.amount.toFixed(2)} of ${dateOnly(row.paymentDate)} taken off`;
+        return [
+          { entityType: 'VENDOR_PAYMENT', entityId: row.id, action: 'DELETED', note: `${inr(row.amount)} of ${formatDay(dateOnly(row.paymentDate))}` },
+          ...(isBill(bill) ? [{ entityType: bill.type, entityId: bill.id, action: 'PAYMENT_REMOVED', note: takenOff }] : []),
+          ...(request ? [{ entityType: 'PAYMENT_REQUEST', entityId: request.id, action: 'PAYMENT_REMOVED', note: takenOff }] : []),
+        ];
+      }),
+    );
   }
 
   /** Payables as of today, for the projects the user can see. */
