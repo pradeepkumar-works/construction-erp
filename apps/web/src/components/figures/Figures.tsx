@@ -1,7 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useSyncExternalStore } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Card, Skeleton } from 'antd';
 import { presentFigures, type ContractCurrency, type FigureInput, type FigureScope, type FigureState, type FigureView, type Words } from '@erp/shared';
 import { tk } from '@/ds';
@@ -44,6 +45,26 @@ function Say({ w }: { w: Words }) {
   );
 }
 
+const onHistory = (change: () => void) => {
+  window.addEventListener('popstate', change);
+  return () => window.removeEventListener('popstate', change);
+};
+
+/**
+ * Whether a figure's list is the page it is shown on (its path, its tab and every filter it carries), so its label is no
+ * link to where the reader already is. Read once the page is in the browser; until then every list links.
+ */
+function useIsHere(): (href: string) => boolean {
+  const path = usePathname();
+  const search = useSyncExternalStore(onHistory, () => window.location.search, () => null);
+  return (href) => {
+    if (search === null) return false;
+    const to = new URL(href, 'http://here');
+    const now = new URLSearchParams(search);
+    return to.pathname === path && now.get('tab') === to.searchParams.get('tab') && [...to.searchParams].every(([k, v]) => now.get(k) === v);
+  };
+}
+
 /** Which inner hairlines a cell draws at one width: `l` when a cell sits to its left, `t` when a row sits above it. */
 function hairlines(spans: readonly number[], columns: number): string[] {
   let col = 0;
@@ -66,6 +87,7 @@ function hairlines(spans: readonly number[], columns: number): string[] {
  * wrong carries its caveat under it, marked in the pending tone with the reason in words.
  */
 export function Figures({ label, figures, scope, currency, bare }: FiguresProps) {
+  const isHere = useIsHere();
   const frame = (body: React.ReactNode) => (bare ? body : <Card size="small" styles={{ body: { padding: 0 } }}>{body}</Card>);
   if (!figures) return frame(<Skeleton active title={false} paragraph={{ rows: 2 }} style={{ padding: tk.space[4] }} />);
 
@@ -92,7 +114,7 @@ export function Figures({ label, figures, scope, currency, bare }: FiguresProps)
               style={{ '--fig-span-p': String(c.span.phone), '--fig-span-m': String(c.span.medium), '--fig-span-w': String(c.span.wide) } as React.CSSProperties}
             >
               <dt className={styles.label} style={{ ...tk.type.caption, color: tk.color.text.muted }}>
-                {c.href ? (
+                {c.href && !isHere(c.href) ? (
                   <Link href={c.href} className={styles.link} title={c.define}>
                     <Say w={c.label} />
                   </Link>
