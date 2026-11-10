@@ -461,7 +461,7 @@ export function BankReconciliation() {
               showIcon
               style={{ marginBottom: tk.space[3], maxWidth: 720 }}
               title="No statement imported for this account yet"
-              description="Download the statement from the bank's net banking as CSV or Excel and import it. Lines that agree by amount and day are matched at once."
+              description="Import the CSV or Excel from net banking. Lines that agree by amount and day match at once"
             />
           )}
           <Space wrap style={{ marginBottom: tk.space[3] }}>

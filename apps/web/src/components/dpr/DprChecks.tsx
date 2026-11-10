@@ -46,4 +46,4 @@ export const dprChecksSection = (checks: DprCheckDto[] | undefined): RecordSecti
     ? []
     : checks.length
       ? [{ key: 'checks', title: 'Checks', count: checks.length, children: <DprChecks checks={checks} /> }]
-      : [{ key: 'checks', title: 'Checks', count: 0, children: <p style={{ margin: 0 }}>Every check passes: each work line has a crew and its material issued, neither the figures nor the crew repeat the reports before, and no photo was used before.</p> }];
+      : [{ key: 'checks', title: 'Checks', count: 0, children: <p style={{ margin: 0 }}>Every check passes</p> }];

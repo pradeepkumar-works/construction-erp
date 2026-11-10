@@ -213,7 +213,7 @@ export default function UsersPage() {
           closable
           style={{ marginBottom: tk.space[4] }}
           title={`${user?.organizationName ?? 'Your company'} is ready.`}
-          description="Add your team with New user: each person gets an invite link to choose a password. Then create your first project; it starts with the standard activities for its type."
+          description="Add your team with New user, then create your first project"
         />
       )}
       {error && <QueryError error={error} onRetry={() => refetch()} />}

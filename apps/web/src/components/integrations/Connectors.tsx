@@ -74,7 +74,7 @@ function PairCode({ shown, onClose }: { shown: ConnectorPairCodeDto | null; onCl
               Start it with Windows: run <Typography.Text code translate="no">install.ps1</Typography.Text> as administrator. It then runs in the background and only calls out to Nirmaan.
             </li>
           </ol>
-          <Alert type="info" showIcon title="The code works once" description="Once paired, the computer keeps its own key and the code is used up. To move the Connector to another computer, make a new code." />
+          <Alert type="info" showIcon title="The code works once" description="To move the Connector to another computer, make a new code" />
         </Space>
       )}
     </Modal>

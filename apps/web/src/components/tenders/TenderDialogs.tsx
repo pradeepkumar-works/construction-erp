@@ -323,7 +323,7 @@ export function BidBoqImport({ tender, open, onClose }: { tender: TenderDetailDt
       open={open}
       onClose={onClose}
       title={`Import the bid BOQ · ${tender.tenderNo}`}
-      hint="The first sheet is read: item number, description, unit and quantity, with the SOR code (matched to the tender's schedule) or the SOR rate where the client's BOQ gives them."
+      hint="First sheet: item number, description, unit, quantity, and the SOR code or rate"
       fields={BOQ_FIELDS}
       noun="item"
       template={{
@@ -366,7 +366,7 @@ export function SorImport({ book, open, onClose }: { book: { id: string; name: s
       open={open && !!book}
       onClose={onClose}
       title={`Import rates · ${book?.name ?? ''}`}
-      hint="The first sheet is read: item code, description, unit and rate, and the chapter if the sheet has one. A code already in the schedule takes the new figures."
+      hint="First sheet: item code, description, unit, rate and chapter. A known code takes the new figures"
       fields={SOR_FIELDS}
       noun="item"
       check={(r) => (Number(r.rate) < 0 ? 'The rate is below zero' : null)}

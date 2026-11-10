@@ -138,7 +138,7 @@ export function StandardNormsModal({ open, onClose, projectId }: { open: boolean
           type="info"
           showIcon
           title="Nothing in this BOQ matches the library"
-          description="The library knows concrete by grade, reinforcement, brickwork, plaster, sub-base, wet mix and bituminous work, each in its usual unit. Set the norms for this project's own items with New norm."
+          description="Set norms for this project's own items with New norm"
         />
       )}
     </Modal>

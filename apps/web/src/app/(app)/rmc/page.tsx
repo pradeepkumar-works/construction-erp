@@ -40,7 +40,7 @@ function RmcPage() {
       ) : error && !plants ? (
         <QueryError error={error} onRetry={() => void refetch()} />
       ) : !isLoading && !plants?.length ? (
-        <Result status="info" title="No RMC plant yet" subTitle="Add a project of type RMC plant (Projects, New project); its store, materials and staff work as at any site. You see the plants you are a member of." />
+        <Result status="info" title="No RMC plant yet" subTitle="Add a project of type RMC plant from Projects" />
       ) : (
         <Card size="small">
           <AppTabs

@@ -60,7 +60,7 @@ export function ProjectBudgetPanel({ projectId }: { projectId: string }) {
               showIcon
               style={{ marginBottom: tk.space[3] }}
               title="This project has no budget yet"
-              description={`Set a budget by cost head, or a budget rate on the BOQ items, to see budget against actual and the forecast to complete. Admin or management approve it.${canEdit ? '' : ' Admin, management or the project manager can prepare it.'}`}
+              description={canEdit ? 'Set a budget by cost head, or a budget rate on the BOQ items' : 'Admin, management or the project manager prepares it'}
             />
           )}
           {differs ? (

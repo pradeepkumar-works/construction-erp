@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { HelpLink } from '@/components/common/Help';
+import { HelpLink, TitleHelp } from '@/components/common/Help';
 import { Alert, Button, Col, Empty, Row, Skeleton, Space, Statistic, Table, Tooltip, Typography } from 'antd';
 import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
@@ -383,8 +383,7 @@ function MaterialsView({ projectId }: { projectId: string }) {
               type="info"
               showIcon
               style={{ marginBottom: tk.space[3] }}
-              title="No material norms yet"
-              description={`A norm says how much of a store item one unit of a BOQ item uses, such as 8.2 bags of cement per cum of M25. With norms set, approved progress gives the theoretical consumption to check issues against.${data.canEditNorms ? ' Add standard norms starts from the usual figures for the work your BOQ names.' : ' The QS, the project manager, management or admin can set them.'}`}
+              title={<TitleHelp help={`A norm says how much of a store item one unit of a BOQ item uses, such as 8.2 bags of cement per cum of M25. With norms set, approved progress gives the theoretical consumption to check issues against.${data.canEditNorms ? ' Add standard norms starts from the usual figures for the work your BOQ names.' : ' The QS, the project manager, management or admin can set them.'}`}>No material norms yet</TitleHelp>}
               action={
                 data.canEditNorms ? (
                   <Button size="small" onClick={() => setLibraryOpen(true)}>
@@ -448,7 +447,7 @@ function MaterialsView({ projectId }: { projectId: string }) {
                 .</HelpLink>
             ) : (
               <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[2], marginBottom: 0 }}>
-                No approved DPR in the period says what material it used, so use and the work front cannot be checked yet. The site engineer adds the material on each work line of the DPR.
+                No DPR in the period records material used. The site engineer adds it on each DPR work line.
               </Typography.Paragraph>
             )}
             {data.boqItemsWithoutNorm ? (

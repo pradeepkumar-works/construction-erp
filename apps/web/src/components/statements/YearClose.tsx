@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { HelpLink, TitleHelp } from '@/components/common/Help';
 import { tk } from '@/ds';
-import { Alert, App, Button, Card, Form, Select, Space, Table, Typography } from "antd";
+import { App, Button, Card, Form, Select, Space, Table, Typography } from "antd";
 import { DatePicker } from "@/components/common/DatePicker";
 import { AppTag } from "@/components/common/AppTag";
 import type { FormInstance } from "antd";
@@ -251,7 +251,7 @@ function LockForm({
         <Form.Item
           name="lockedUpTo"
           label="Locked up to"
-          extra="Nothing dated on or before this day can be posted, changed or cancelled, from the modules or by hand. Leave empty to take the lock off."
+          tooltip="Nothing dated on or before this day can be posted, changed or cancelled, from the modules or by hand. Leave empty to take the lock off."
         >
           <DatePicker
             style={{ width: 220 }}
@@ -461,13 +461,10 @@ export function YearClose() {
             },
           ]}
         />
-        <Alert
-          type="info"
-          showIcon
-          style={{ marginTop: tk.space[3] }}
-          title="Closing a year"
-          description="Closing empties the year's income and expenses into the Profit & Loss A/c under reserves and locks the books up to 31 March. The statements still show the year's own figures; balances carry forward on their own."
-        />
+        <HelpLink style={{ marginTop: tk.space[3] }}>
+          Closing empties the year's income and expenses into the Profit & Loss A/c under reserves and locks the books up to 31 March. The statements still show
+          the year's own figures; balances carry forward on their own.
+        </HelpLink>
       </Card>
       <OpeningForm
         open={editing}

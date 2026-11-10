@@ -133,7 +133,7 @@ export function LoanFormModal({ open, onClose, loan, equipmentId, onSaved }: { o
       draftKey={editing ? undefined : 'machine-loan'}
     >
       <Form form={form} layout="vertical">
-        {fixedTerms ? <Alert type="info" showIcon style={{ marginBottom: tk.space[4] }} title="EMIs are paid on this loan, so its terms stay as they are. Who it was paid out to, the account number and the note can change." /> : null}
+        {fixedTerms ? <Alert type="info" showIcon style={{ marginBottom: tk.space[4] }} title="EMIs are paid, so only the payee, account number and note can change" /> : null}
         <FormSection title="Loan">
           <Form.Item name="equipmentId" label="Machine" rules={[{ required: true, message: 'Choose the machine the loan is on' }]} extra="Owned machines only.">
             <EquipmentSelect aria-label="Machine" params={{ ownership: 'OWNED' }} disabled={fixedTerms} />

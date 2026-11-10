@@ -287,7 +287,7 @@ function AddressShown({ shown, onClose }: { shown: IntegrationSecretDto | null; 
   return (
     <Modal open={!!shown?.hookPath} onCancel={onClose} title={shown ? `Web address for ${shown.connection.name}` : ''} width={680} footer={<Button type="primary" onClick={onClose}>Done</Button>}>
       <Space orientation="vertical" size={12} style={{ width: '100%' }}>
-        <Alert type="warning" showIcon title="Copy it now: it is shown only this once" description="Anyone with the address can send to this connection. If it is lost or shared by mistake, make a new one and the old one stops working." />
+        <Alert type="warning" showIcon title="Copy it now: it is shown only this once" description="Anyone with it can send to this connection. If it leaks, make a new one" />
         <Descriptions size="small" column={1} bordered>
           <Descriptions.Item label="POST to">
             <Typography.Text copyable translate="no" style={{ wordBreak: 'break-all' }}>

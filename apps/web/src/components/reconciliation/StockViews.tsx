@@ -1,5 +1,6 @@
 'use client';
 
+import { HelpLink } from '@/components/common/Help';
 import React, { useState } from 'react';
 import { Alert, Button, Col, Empty, Row, Skeleton, Space, Statistic, Table, Tooltip, Typography } from 'antd';
 import { tk } from '@/ds';
@@ -48,11 +49,6 @@ function Toolbar({ period, onPeriod, onExport, canExport }: { period?: PeriodSta
   );
 }
 
-const Note = ({ children }: { children: React.ReactNode }) => (
-  <Typography.Paragraph type="secondary" style={{ ...small, marginTop: tk.space[3], marginBottom: 0 }}>
-    {children}
-  </Typography.Paragraph>
-);
 
 // R2: structure
 
@@ -215,12 +211,12 @@ export function StructureView({ projectId }: { projectId: string }) {
               />
             </Section>
           ))}
-          <Note>
+          <HelpLink style={{ marginTop: tk.space[3], marginBottom: 0 }}>
             Design need is the activities&apos; planned quantity × the norms. Needed is the quantity the DPR lines approved in the period placed × the norms; used is
             what those lines say they used. Issued is what the store issued to the component or its activities in the period, less returns. Still there is what
             should be at the structure now: issued from a week before the first DPR that reported material, less all its lines used since. Open a row for each
             activity&apos;s use per unit against its norm.
-          </Note>
+          </HelpLink>
         </>
       )}
     </SectionStack>
@@ -384,12 +380,12 @@ export function PipeView({ projectId }: { projectId: string }) {
               <Table<PipeReconRowDto> rowKey="key" size="small" pagination={false} dataSource={z.rows} scroll={{ x: 1150 }} columns={zoneColumns} />
             </Section>
           ))}
-          <Note>
+          <HelpLink style={{ marginTop: tk.space[3], marginBottom: 0 }}>
             Sizes that some network has; service pipe to the houses is in Materials and Kits. Pipe bought by weight is turned into metres by the item&apos;s kg
             per metre. Laid and tested come from the pipe network. Cut wastage is what the DPR
             lines that laid pipe say they used beyond the metres laid; at site, not laid is issued less laid less that wastage. To buy is the scope with the
             allowed wastage less what is already ordered or received.
-          </Note>
+          </HelpLink>
         </>
       )}
     </SectionStack>
@@ -468,7 +464,7 @@ export function KitsView({ projectId }: { projectId: string }) {
           {!data.kits.length ? (
             <Empty
               image={Empty.PRESENTED_IMAGE_SIMPLE}
-              description="No kit yet. In Materials, add norms on the house connection activity: one saddle, one ferrule, the service pipe in metres and so on per connection."
+              description="No kit yet. Add norms on the house connection activity in Materials"
             />
           ) : null}
           {data.kits.map((k) => (
@@ -491,10 +487,10 @@ export function KitsView({ projectId }: { projectId: string }) {
               <Table<KitComponentDto> rowKey="itemId" size="small" pagination={false} dataSource={k.components} scroll={{ x: 990 }} columns={columns} />
             </Section>
           ))}
-          <Note>
+          <HelpLink style={{ marginTop: tk.space[3], marginBottom: 0 }}>
             Needed is the connections approved so far × each component per kit. Issued counts issues to the activity, and issues to its component that name no
             activity. Short in whole kits: part of a kit missing is a kit that cannot be fixed.
-          </Note>
+          </HelpLink>
         </>
       )}
     </SectionStack>
@@ -593,11 +589,11 @@ export function ExceptionsView({ projectId }: { projectId: string }) {
               locale={{ emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Nothing to look at: every use was issued, and every issue was worked on" /> }}
             />
           </Section>
-          <Note>
+          <HelpLink style={{ marginTop: tk.space[3], marginBottom: 0 }}>
             Used with nothing issued: a DPR line reports a material at a component with nothing of it issued there in the {USE_ISSUE_DAYS} days before. Issued
             with no work: an issue to a component with no approved work there in the {ISSUE_WORK_DAYS} days after (judged once those days have passed). Pipe
             laid above issued: a zone has more pipe of a size in the ground than was issued to it.
-          </Note>
+          </HelpLink>
         </>
       )}
       <StockEntryDrawer id={entryId} onClose={() => setEntryId(null)} />

@@ -151,7 +151,7 @@ export function AwardLowestModal({
               description={
                 plan.saving > 0
                   ? `The whole lot from ${plan.singleVendor.vendorName} comes to ${formatINR(plan.singleVendor.total, true)}.`
-                  : `The whole lot from ${plan.singleVendor.vendorName} comes to ${formatINR(plan.singleVendor.total, true)}: L1 per item pays freight to each vendor. Make that one order instead if it suits you.`
+                  : `The whole lot from ${plan.singleVendor.vendorName} comes to ${formatINR(plan.singleVendor.total, true)}, in one order with one freight.`
               }
             />
           ) : null}

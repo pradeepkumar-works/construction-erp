@@ -374,7 +374,7 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
       }
     >
       <FormShell open={closing} onClose={() => setClosing(false)} form={closeForm} layout="modal" title={data ? `Close ${data.woNo}` : 'Close order'} okText="Close order" onSubmit={(v) => close.mutateAsync(v.note)}>
-        <Typography.Paragraph type="secondary">No more measurements, material issues or bills can be made against it. Close it once the final bill is settled or the work is withdrawn.</Typography.Paragraph>
+        <Typography.Paragraph type="secondary">No more measurements, issues or bills can be made against it</Typography.Paragraph>
         <Form form={closeForm} layout="vertical">
           <Form.Item name="note" label="Why" rules={[{ required: true, whitespace: true, message: 'Say why the order is closed' }]}>
             <Input.TextArea rows={2} maxLength={500} placeholder="Work complete; final bill paid" />

@@ -39,7 +39,7 @@ export function SubconReconciliation({ projectId }: { projectId: string }) {
       {!data.workOrders.length ? (
         <Empty
           image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description="No subcontractor has measured work with norms, or material issued to their work order, yet. Issue material against the work order to see it here."
+          description="No material issued against a work order yet"
         />
       ) : null}
       {data.workOrders.map((wo) => (

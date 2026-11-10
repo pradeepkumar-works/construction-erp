@@ -68,7 +68,7 @@ export function CostBookedNote({ actual, earned }: { actual: number; earned: num
       showIcon
       style={{ marginBottom: tk.space[3] }}
       title={`The cost booked so far is only ${formatPct(share * 100)} of the budget for the work done`}
-      description="Some costs are probably not booked yet: subcontractor bills, labour, hire or materials issued to the site. Until they are, the cost index, the estimate at completion and the margin read better than they are."
+      description="Book subcontractor bills, labour, hire and issues, or the margin reads better than it is"
     />
   );
 }

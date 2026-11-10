@@ -270,7 +270,7 @@ export function Devices() {
                 description={
                   <Space orientation="vertical" size={8}>
                     <span>
-                      {shown.name} is held to <span translate="no">{shown.pinnedAddress}</span> and has now called from <span translate="no">{shown.pendingAddress}</span>, so its punches wait on the device. Approve the new address if the site changed its internet connection. If it did not, someone may be copying its serial number: keep the old address and check the device.
+                      {shown.name} is held to <span translate="no">{shown.pinnedAddress}</span> and has now called from <span translate="no">{shown.pendingAddress}</span>, so its punches wait. Approve it only if the site changed its internet connection.
                     </span>
                     <Space wrap>
                       <Popconfirm
@@ -300,7 +300,7 @@ export function Devices() {
                 type={shown.lastSeenAt ? 'success' : 'info'}
                 showIcon
                 title={shown.lastSeenAt ? `Last heard from ${formatDateTime(shown.lastSeenAt)}` : 'Not heard from yet'}
-                description={shown.protocol === 'ADMS' ? 'Put people on the device from the People on devices tab (or enrol them on the device under a user number and match it there), then enrol their finger or face on the device. Punches that arrive before a number is matched are kept and marked once it is.' : 'Enrol each person on the device under a user number, then match the numbers on the People on devices tab. Punches that arrive before a number is matched are kept and marked once it is.'}
+                description={shown.protocol === 'ADMS' ? 'Next, put people on it from People on devices, then enrol their finger or face' : 'Next, enrol each person under a user number and match it on People on devices'}
               />
             )}
           </Space>

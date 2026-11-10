@@ -54,8 +54,7 @@ function ExportCard() {
           <HelpLink>One zip with an Excel file for each kind of record (projects, BOQ, progress, DPRs, bills, orders, staff and the rest) and every
             photo and document. It is yours to keep, or to move to another system.</HelpLink>
           <Typography.Paragraph type="secondary">
-            {data.tables.length} tables, {formatCount(rows)} rows, {data.files} files ({formatBytes(data.fileBytes)}). The download is built in this
-            browser; keep the tab open until it finishes. It is recorded in the audit log.
+            {data.tables.length} tables, {formatCount(rows)} rows, {data.files} files ({formatBytes(data.fileBytes)}). Keep the tab open until the download finishes.
           </Typography.Paragraph>
           {progress ? (
             <div style={{ maxWidth: 480 }}>

@@ -127,7 +127,7 @@ function SettingsCard({ data }: { data: AiSettingsDto }) {
               showIcon
               style={{ marginTop: tk.space[3] }}
               title={`Paused: ${BILLING_STATUS_LABELS.READ_ONLY}`}
-              description={`The trial or subscription has ended, so Ask ${PRODUCT_NAME} is paused with the rest of the company's changes. Renew it in Admin › Subscription to use it again.`}
+              description="Renew it in Admin › Subscription"
             />
           )}
         </div>

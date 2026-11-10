@@ -104,7 +104,7 @@ export default function BillingPage() {
                 type="error"
                 showIcon
                 title="The company is read-only"
-                description={`Everyone can still see and export everything, but nothing new can be entered and Ask ${PRODUCT_NAME} is paused until the subscription is paid. Nothing has been deleted.`}
+                description="Everything can still be seen and exported. Nothing new can be entered until the subscription is paid"
               />
             )}
           </Card>

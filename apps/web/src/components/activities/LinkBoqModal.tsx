@@ -76,7 +76,7 @@ export function LinkBoqModal({ open, onClose, projectId }: { open: boolean; onCl
           type="info"
           showIcon
           title="Nothing left to offer"
-          description="Every activity is linked, or no BOQ section or item is named after one. Pick the item on the activity itself, or name the BOQ's sections after the activities and import again."
+          description="Pick the BOQ item on the activity itself"
         />
       ) : (
         <>

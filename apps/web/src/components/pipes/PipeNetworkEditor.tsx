@@ -346,7 +346,7 @@ function NetworkField({ value, onChange, saved, problems }: { value?: EditableNe
           type="info"
           showIcon
           title="This network has no places on the map"
-          description="It was loaded from an EPANET file or a sheet without latitudes. Sizes and kinds can still be corrected from the list; import its Google Earth KMZ to edit it on the map."
+          description="Import its Google Earth KMZ to edit it on the map. Sizes and kinds can be corrected from the list"
         />
       ) : null}
       {notice ? <Alert type="warning" showIcon title={notice} /> : null}

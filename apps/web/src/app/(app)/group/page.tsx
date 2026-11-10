@@ -202,7 +202,7 @@ function MakeGroup({ companyName }: { companyName: string }) {
       <Result
         icon={<ResultMark />}
         title="New group, to run more than one company"
-        subTitle={`A group holds your companies, such as a construction company, a consultancy and a quality lab. Each keeps its own projects, people, books and menu; you sign in once and switch between them. ${companyName} becomes its first company.`}
+        subTitle={`One sign-in for each company you run, each with its own projects, people and books. ${companyName} becomes the first`}
         extra={
           <Button type="primary" icon={<PlusOutlined />} onClick={() => setOpen(true)}>
             New group

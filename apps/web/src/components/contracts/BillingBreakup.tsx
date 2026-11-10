@@ -190,7 +190,7 @@ export function BillingBreakup({ projectId }: { projectId: string }) {
         {data.components.length === 0 ? (
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description="No break-up yet. Bills on this project are priced from measurements until it has one. The standard break-up takes each component of the structure with its weight as its share, and the usual stages for its kind."
+            description="No break-up yet. Bills are priced from measurements until there is one"
           >
             {standardButton}
           </Empty>

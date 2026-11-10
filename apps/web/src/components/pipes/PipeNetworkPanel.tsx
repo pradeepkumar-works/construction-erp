@@ -73,8 +73,7 @@ export function PipeNetworkPanel({ project }: { project: ProjectDetail }) {
     return (
       <div style={{ padding: tk.space[6] }}>
         <p>
-          No pipe zones yet. Add a component of kind Pipe network zone, Rising main or Feeder main in Structure, then load its network here from a Google Earth
-          KMZ, or the design office&apos;s EPANET or Excel file.
+          No pipe zones yet. Add a pipe network zone, rising main or feeder main in Structure.
         </p>
         <LinkButton href={`/projects/${project.id}?tab=structure`}>Open Components</LinkButton>
       </div>
@@ -188,8 +187,7 @@ export function PipeNetworkPanel({ project }: { project: ProjectDetail }) {
       {!segments.length ? (
         <div style={{ padding: `${tk.space[2]} 0 ${tk.space[6]}` }}>
           <p>
-            No network loaded for this zone. Import the EPANET (.inp) file from WaterGEMS, LOOP or EPANET, the main drawn in Google Earth (KMZ or KML), or an
-            Excel sheet of nodes and pipes. Each pipe then takes its own trenching, laying, testing and restoration from the DPR, junction to junction.
+            No network loaded for this zone. Import it from EPANET, Google Earth or Excel.
           </p>
           {data.canEdit ? (
             <Button type="primary" icon={<UploadOutlined />} onClick={() => setImportOpen(true)}>
