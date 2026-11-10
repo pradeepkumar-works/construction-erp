@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { HelpLink } from '@/components/common/Help';
+import { useCustomFieldsRecordSection } from '@/components/custom-fields/CustomFieldsSection';
 import Link from 'next/link';
 import { Alert, App, Button, Divider, Form, Input, Table, Typography } from 'antd';
 import { tk } from '@/ds';
@@ -75,6 +76,7 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
   const { message } = App.useApp();
   const qc = useQueryClient();
   const { data, isLoading, error, refetch } = usePurchaseOrder(id ?? undefined);
+  const customSection = useCustomFieldsRecordSection('PURCHASE_ORDER', data?.customValues);
   const makeCheck = useMakeCheck(
     user && canViewMaterialApprovals(user.roleKey) ? data?.projectId : undefined,
     (data?.lines ?? []).map((l) => ({ itemName: l.itemName, make: l.make })),
@@ -399,6 +401,7 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
                   : []),
                 ...(data.materialRequestId ? [{ key: 'quotes', title: 'Quotations on the indent', children: <OrderQuotes order={data} /> }] : []),
                 ...(user && canViewCost(user.roleKey) ? [{ key: 'budget', title: 'Against the budget', children: <OrderBudget order={data} /> }] : []),
+                ...customSection,
                 { key: 'documents', title: 'Documents', count: data.attachments.length, empty: data.attachments.length === 0, children: <AttachmentGallery attachments={data.attachments} emptyText="No documents" /> },
               ]
             : [
@@ -470,6 +473,7 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
                 },
                 ...(data.materialRequestId ? [{ key: 'quotes', title: 'Quotations on the indent', children: <OrderQuotes order={data} /> }] : []),
                 ...(user && canViewCost(user.roleKey) ? [{ key: 'budget', title: 'Against the budget', children: <OrderBudget order={data} /> }] : []),
+                ...customSection,
                 { key: 'documents', title: 'Documents', count: data.attachments.length, empty: data.attachments.length === 0, children: <AttachmentGallery attachments={data.attachments} emptyText="No documents" /> },
               ],
           activity: { type: 'purchase_order', id: data.id, submission: data },

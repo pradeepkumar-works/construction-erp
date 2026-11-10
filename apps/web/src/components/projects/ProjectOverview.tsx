@@ -15,6 +15,7 @@ import { formatDate, formatINRCompact, formatPct, formatQty, toNumber, plural } 
 import { ProjectStatusTag, ProjectTypeTag } from '@/components/common/StatusTag';
 import { QueryError } from '@/components/common/QueryState';
 import { Section } from '@/components/common/Section';
+import { CustomFieldsSection } from '@/components/custom-fields/CustomFieldsSection';
 import { Figures } from '@/components/figures';
 import { CheckRows } from '@/components/checks/ChecksSection';
 import { MembersCard } from './MembersCard';
@@ -251,6 +252,7 @@ export function ProjectOverview({ project }: { project: ProjectDetail }) {
             ]}
           />
         </Section>
+        <CustomFieldsSection entity="PROJECT" values={project.customValues} oneColumn style={{ marginBottom: tk.space[4] }} />
         <MembersCard project={project} />
       </Col>
     </Row>

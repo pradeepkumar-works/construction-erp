@@ -14,7 +14,9 @@ import { GST_STATES, LIST_SORT_FIELDS, MSME_CATEGORIES, MSME_CATEGORY_LABELS, VE
 import { useAuth } from '@/lib/auth';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
-import { useUnlistedVendors, useVendorsPage } from '@/lib/queries';
+import { useCustomFields, useUnlistedVendors, useVendorsPage } from '@/lib/queries';
+import { customColumns } from '@/components/custom-fields/columns';
+import { customExportColumns } from '@/components/custom-fields/values';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { VENDOR_EXPORT } from '@/lib/exportColumns';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -49,6 +51,7 @@ function VendorsTab({ editable, onEdit, onPortal, emptyAction }: { editable: boo
   const { user } = useAuth();
   const qc = useQueryClient();
   const bank = !!user && canSeeVendorBank(user.roleKey);
+  const { data: fields } = useCustomFields('VENDOR');
 
   const remove = useMutation({
     mutationFn: async (id: string) => (await api.delete(`/vendors/${id}`)).data,
@@ -155,6 +158,7 @@ function VendorsTab({ editable, onEdit, onPortal, emptyAction }: { editable: boo
         : []),
       { title: 'Used on', key: 'used', width: 190, defaultFrom: 1400, render: (_, v) => usedOn(v) },
       { title: 'Added', label: 'Added on', key: 'createdAt', dataIndex: 'createdAt', width: 120, defaultHidden: true, sorter: true, sortOrder: sortOrderFor('createdAt'), render: (v: string) => formatDate(v) },
+      ...customColumns<VendorDto>(fields),
       ...(editable || onPortal
         ? [
             {
@@ -191,7 +195,7 @@ function VendorsTab({ editable, onEdit, onPortal, emptyAction }: { editable: boo
   const filters = { page: page.params.page, pageSize: page.params.pageSize, q: page.params.q, sortBy: page.params.sortBy, sortOrder: page.params.sortOrder, kind, msme, includeInactive: includeInactive || undefined };
   const { data, isLoading, isFetching, error, refetch } = useVendorsPage(filters);
   const rows = data?.items ?? [];
-  const exportCols = VENDOR_EXPORT.filter((c) => bank || !['Account name', 'Account no.', 'IFSC', 'Bank'].includes(c.header));
+  const exportCols = [...VENDOR_EXPORT.filter((c) => bank || !['Account name', 'Account no.', 'IFSC', 'Bank'].includes(c.header)), ...customExportColumns<VendorDto>(fields)];
 
   const exportRows = async () => {
     const all = await fetchAllPages<VendorDto>('/vendors', { ...filters });

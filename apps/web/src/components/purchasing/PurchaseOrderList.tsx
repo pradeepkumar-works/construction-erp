@@ -9,7 +9,9 @@ import type { PurchaseOrderDto, PurchaseOrderSortField } from '@erp/shared';
 import { LIST_SORT_FIELDS, canPurchase } from '@erp/shared';
 import { useNewIntent } from '@/lib/new-intent';
 import { useAuth } from '@/lib/auth';
-import { usePurchaseOrders } from '@/lib/queries';
+import { useCustomFields, usePurchaseOrders } from '@/lib/queries';
+import { customColumns } from '@/components/custom-fields/columns';
+import { customExportColumns } from '@/components/custom-fields/values';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { PURCHASE_ORDER_EXPORT } from '@/lib/exportColumns';
 import { formatDate, formatINR, NO_VALUE } from '@/lib/format';
@@ -94,6 +96,8 @@ export function PurchaseOrderList({ projectId: fixedProject, openId: initialOpen
   useEffect(() => {
     if (initialOpen) setOpenId(initialOpen);
   }, [initialOpen]);
+  const { data: fields } = useCustomFields('PURCHASE_ORDER');
+  const exportCols = [...PURCHASE_ORDER_EXPORT, ...customExportColumns<PurchaseOrderDto>(fields)];
   const frame = useListFrame({
     list: 'purchase-orders',
     type: 'PURCHASE_ORDER',
@@ -102,7 +106,11 @@ export function PurchaseOrderList({ projectId: fixedProject, openId: initialOpen
     sortOrder: 'desc',
     sortFields: LIST_SORT_FIELDS.purchaseOrders,
     fixedProject,
-    columns: (sortOrderFor) => poColumns({ showProject: !fixedProject, onOpen: setOpenId, sortOrderFor }),
+    columns: (sortOrderFor) => {
+      const cols = poColumns({ showProject: !fixedProject, onOpen: setOpenId, sortOrderFor });
+      // The company's fields go before the row menu, which stays fixed at the right.
+      return [...cols.slice(0, -1), ...customColumns<PurchaseOrderDto>(fields), ...cols.slice(-1)];
+    },
     moreViews: [{ key: 'open', label: 'Open orders', filters: { open: '1' } }],
     chipLabels: {
       vendorId: () => `Vendor: ${vendorName ?? 'one vendor'}`,
@@ -119,7 +127,7 @@ export function PurchaseOrderList({ projectId: fixedProject, openId: initialOpen
 
   const exportRows = async () => {
     const rows = await fetchAllPages<PurchaseOrderDto>('/purchase-orders', { ...filters });
-    await downloadXlsx(exportFileName('purchase-orders'), 'Purchase orders', PURCHASE_ORDER_EXPORT, rows);
+    await downloadXlsx(exportFileName('purchase-orders'), 'Purchase orders', exportCols, rows);
     return rows.length;
   };
 
@@ -164,7 +172,7 @@ export function PurchaseOrderList({ projectId: fixedProject, openId: initialOpen
         loading={isLoading || isFetching}
         table={page.tableProps<PurchaseOrderDto>(data?.total)}
         onOpen={setOpenId}
-        bulk={[...(approve ? [approve] : []), exportSelected<PurchaseOrderDto>('purchase-orders', 'Purchase orders', PURCHASE_ORDER_EXPORT)]}
+        bulk={[...(approve ? [approve] : []), exportSelected<PurchaseOrderDto>('purchase-orders', 'Purchase orders', exportCols)]}
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}

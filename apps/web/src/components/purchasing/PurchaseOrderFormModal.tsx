@@ -10,13 +10,15 @@ import type { AttachmentDto, MakeWarningDto, PurchaseOrderDto } from '@erp/share
 import { GST_RATES, MSME_CATEGORY_LABELS, lastRateKey, siteDeliveryAddress } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
-import { useComparative, useLastRates, useMakeCheck, useProject, useProjects, useRateCheck } from '@/lib/queries';
+import { useComparative, useCustomFields, useLastRates, useMakeCheck, useProject, useProjects, useRateCheck } from '@/lib/queries';
 import { useDebounced } from '@/lib/debounce';
 import { VendorSelect, useVendor } from '@/components/common/SearchSelect';
 import { formatINR, toNumber } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { UnitInput } from '@/components/common/UnitInput';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
+import { CustomFieldsFormSection } from '@/components/custom-fields/CustomFieldsFormSection';
+import { customValuesBody } from '@/components/custom-fields/values';
 import { LineTable } from '@/components/form/LineTable';
 import { ItemPicker } from '@/components/form/ItemPicker';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
@@ -63,6 +65,7 @@ interface FormValues {
   selectionReason?: string;
   lines: PoLineValue[];
   docs?: AttachmentDto[];
+  customValues?: Record<string, unknown>;
 }
 
 /** As the API asks (`SELECTION_REASON_MIN` in po-supplier-rules): a sentence, not a word. */
@@ -110,6 +113,7 @@ export function PurchaseOrderFormModal({
   const fromRequest = order ? order.requestNo : start?.requestNo;
   // An order not from the lowest quotation that prices every line says why before it goes for approval.
   const requestId = order ? (order.materialRequestId ?? undefined) : start?.materialRequestId;
+  const { data: fields } = useCustomFields('PURCHASE_ORDER', open);
   const comparative = useComparative(requestId, open && !!requestId);
   const lowest = comparative.data?.quotations.find((q) => q.id === comparative.data?.lowestQuotationId);
   const chosenQuotationId = order ? (vendorId === order.vendorId ? order.quotationId : null) : vendorId === start?.vendorId ? (start?.quotationId ?? null) : null;
@@ -131,6 +135,7 @@ export function PurchaseOrderFormModal({
         remarks: order.remarks ?? undefined,
         selectionReason: order.selectionReason ?? undefined,
         docs: order.attachments,
+        customValues: order.customValues,
         lines: order.lines.map((l) => ({
           materialRequestItemId: l.materialRequestItemId,
           itemName: l.itemName,
@@ -175,6 +180,7 @@ export function PurchaseOrderFormModal({
         selectionReason: needsReason ? v.selectionReason?.trim() || null : null,
         attachmentIds: (v.docs ?? []).map((d) => d.id),
         submit,
+        customValues: customValuesBody(fields, v.customValues),
         lines: v.lines.map((l) =>
           l.materialRequestItemId
             ? { materialRequestItemId: l.materialRequestItemId, make: l.make?.trim() || null, quantity: String(l.quantity), rate: String(l.rate), gstRate: String(l.gstRate ?? 0) }
@@ -449,6 +455,7 @@ export function PurchaseOrderFormModal({
             </div>
           </FormGrid>
         </FormSection>
+        <CustomFieldsFormSection entity="PURCHASE_ORDER" stored={order?.customValues} />
       </Form>
     </FormShell>
   );

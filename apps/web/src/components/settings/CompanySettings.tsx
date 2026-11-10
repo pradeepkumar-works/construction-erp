@@ -36,9 +36,10 @@ import { Help } from '@/components/common/Help';
 import { DeleteOutlined, EditOutlined, RightOutlined, UploadOutlined } from '@/components/common/icons';
 import { navIcon } from '@/components/shell/nav-icons';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
+import { CustomFieldsSettings } from '@/components/custom-fields/CustomFieldsSettings';
 import { CODE_INPUT, gstinRule, panRule, upper } from '@/components/form/inputs';
 
-const TABS = ['company', 'numbering', 'more'] as const;
+const TABS = ['company', 'numbering', 'fields', 'more'] as const;
 type Tab = (typeof TABS)[number];
 
 /** A logo scaled to fit 800 × 300 and written as a PNG, or a WebP when the PNG is over the limit. */
@@ -395,7 +396,7 @@ export function CompanySettings() {
   if (error || !data) return <QueryError error={error} onRetry={() => refetch()} />;
   return (
     <div className="page-container">
-      <PageHeader title="Company settings" help="The details and logo every printed paper carries, how each kind of document is numbered, and the way to every other setting." />
+      <PageHeader title="Company settings" help="The details and logo every printed paper carries, how each kind of document is numbered, the fields of your own on vendors, projects and orders, and the way to every other setting." />
       <Card size="small">
         <AppTabs
           variant="page"
@@ -404,6 +405,7 @@ export function CompanySettings() {
           items={[
             { key: 'company', label: 'Company', children: <CompanyTab data={data} /> },
             { key: 'numbering', label: 'Numbering', children: <NumberingTab data={data} /> },
+            { key: 'fields', label: 'Fields', children: <CustomFieldsSettings /> },
             { key: 'more', label: 'Other settings', children: <MoreTab /> },
           ]}
         />

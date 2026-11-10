@@ -7,8 +7,10 @@ import { Badge, Button, Card, Select } from 'antd';
 import { tk } from '@/ds';
 import { PlusOutlined } from '@/components/common/icons';
 import type { ProjectSortField, ProjectStatus, ProjectSummary, ProjectType } from '@erp/shared';
-import { LIST_SORT_FIELDS, NO_VERTICAL, PROJECT_STATUSES, PROJECT_STATUS_LABELS, PROJECT_TYPES, PROJECT_TYPE_LABELS, canManageProjects, isGuest } from '@erp/shared';
-import { useMasterList, useProjectsPage, LIST_START } from '@/lib/queries';
+import { LIST_SORT_FIELDS, NO_VERTICAL, PROJECT_STATUSES, PROJECT_STATUS_LABELS, PROJECT_TYPES, PROJECT_TYPE_LABELS, canManageProjects, canSeeCustomValues, isGuest } from '@erp/shared';
+import { useCustomFields, useMasterList, useProjectsPage, LIST_START } from '@/lib/queries';
+import { customColumns } from '@/components/custom-fields/columns';
+import { customExportColumns } from '@/components/custom-fields/values';
 import { useVerticalScope } from '@/lib/project-scope';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { PROJECT_EXPORT } from '@/lib/exportColumns';
@@ -90,6 +92,8 @@ export default function ProjectsPage() {
   const [vertical, setVertical] = useVerticalScope();
   const { data: verticals } = useMasterList('vertical', false, !!user && !isGuest(user.roleKey));
   const verticalName = (code: string | null) => (code ? (verticals?.entries.find((e) => e.code === code)?.name ?? code) : null);
+  const { data: fields } = useCustomFields('PROJECT', !!user && canSeeCustomValues(user.roleKey));
+  const exportCols = [...PROJECT_EXPORT, ...customExportColumns<ProjectSummary>(fields)];
   const frame = useListFrame<ProjectSortField, ProjectSummary>({
     list: 'projects',
     keys: KEYS,
@@ -98,7 +102,11 @@ export default function ProjectsPage() {
     sortOrder: LIST_START['/projects'].sortOrder,
     sortFields: LIST_SORT_FIELDS.projects,
     projectScoped: false,
-    columns: (sortOrderFor) => projectColumns(sortOrderFor, verticalName),
+    columns: (sortOrderFor) => {
+      const cols = projectColumns(sortOrderFor, verticalName);
+      // The company's fields go before the waiting count, which stays fixed at the right.
+      return [...cols.slice(0, -1), ...customColumns<ProjectSummary>(fields), ...cols.slice(-1)];
+    },
     moreViews: [
       { key: 'active', label: 'Active', filters: { status: 'ACTIVE' } },
       { key: 'planned', label: 'Planned', filters: { status: 'PLANNED' } },
@@ -119,7 +127,7 @@ export default function ProjectsPage() {
   const filtered = !!(type || status || vertical || page.params.q);
   const exportRows = async () => {
     const rows = await fetchAllPages<ProjectSummary>('/projects', filters);
-    await downloadXlsx(exportFileName('projects'), 'Projects', PROJECT_EXPORT, rows);
+    await downloadXlsx(exportFileName('projects'), 'Projects', exportCols, rows);
     return rows.length;
   };
 
@@ -190,7 +198,7 @@ export default function ProjectsPage() {
           loading={isLoading || isFetching}
           table={page.tableProps<ProjectSummary>(data?.total)}
           onOpen={(id) => router.push(`/projects/${id}`)}
-          bulk={[exportSelected<ProjectSummary>('projects', 'Projects', PROJECT_EXPORT)]}
+          bulk={[exportSelected<ProjectSummary>('projects', 'Projects', exportCols)]}
           chips={frame.chips}
           empty={frame.empty}
           failed={!!error}
