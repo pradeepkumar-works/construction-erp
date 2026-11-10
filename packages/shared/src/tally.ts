@@ -125,6 +125,13 @@ export const TALLY_FIXED_LEDGERS: TallyFixedLedger[] = [
   { key: 'EXCHANGE_DIFFERENCE', use: 'A client in another currency paying at a rate other than the contract rate', name: 'Exchange Difference', group: 'Indirect Incomes' },
 ];
 
+/**
+ * The ledger a fixed one goes to in Tally while the company has not named its own: a section's TDS payable goes to TDS
+ * Payable (their name for it, if set), so a company whose Tally predates sections needs no new ledger; the books keep
+ * each section apart either way. Null for any other.
+ */
+export const tallyLedgerFallsTo = (key: string): string | null => (key.startsWith('TDS_PAYABLE_') ? 'TDS_PAYABLE' : null);
+
 /** Ledger keys for the parties and categories: `CLIENT:<id>`, `VENDOR:<id>`, `EXPENSE:<category>`. */
 export const tallyClientKey = (id: string) => `CLIENT:${id}`;
 export const tallyVendorKey = (id: string) => `VENDOR:${id}`;

@@ -18,12 +18,15 @@ import {
   deductionLedgerKey,
   gstShareOf,
   challanInterest,
+  deductionDue,
   challanLabel,
   challanProblem,
+  challanSectionProblem,
   depositDue,
   dueDates,
   interest201,
   lateFee234E,
+  noPanReason,
   quarterIn,
   quarterOf,
   quarterStep,
@@ -35,6 +38,7 @@ import {
   returnRows,
   tanProblem,
   tdsDeductionState,
+  tdsDue,
   tdsLedgerKey,
   tdsOn,
   tdsPaise,
@@ -112,7 +116,15 @@ test('a lower deduction certificate applies while valid and within its limit', (
   const cert: LowerTdsCertificate = { certificateNo: 'LDC2627000123', section: '194C', rate: '0.5', validFrom: '2026-04-01', validTo: '2027-03-31', limit: '1000000', used: '900000' };
   const r = rate('194C', COMPANY, cert, '2026-10-15', '100000');
   assert.deepEqual([r.rate, r.reason, r.certificateNo], [500, 'A', 'LDC2627000123']);
-  assert.equal(rate('194C', COMPANY, cert, '2026-10-15', '100000.01').rate, 2000, 'past the limit the normal rate');
+  assert.equal(r.certificateBase, null, 'within the limit the whole amount takes the certificate');
+  // Past what is left of the limit: the certificate's rate on what is left, the normal rate on the rest.
+  const over = rate('194C', COMPANY, cert, '2026-10-15', '150000');
+  assert.deepEqual([over.rate, over.reason, over.certificateBase, over.normalRate], [500, 'A', '100000.00', 2000]);
+  assert.equal(tdsDue('150000', over), '1500.00', '0.5% of 1,00,000 and 2% of 50,000');
+  assert.match(over.why, /0\.5% on the ₹1,00,000 left of its limit, 2% on the rest/);
+  assert.equal(tdsDue('100000.01', rate('194C', COMPANY, cert, '2026-10-15', '100000.01')), '500.00', 'a paisa over is a paisa at the normal rate');
+  const spent = rate('194C', COMPANY, { ...cert, used: '1000000' }, '2026-10-15', '1000');
+  assert.deepEqual([spent.rate, spent.reason, spent.certificateBase], [2000, null, null], 'a limit used up: the normal rate');
   assert.equal(rate('194C', COMPANY, cert, '2027-04-01', '1000').rate, 2000, 'after it expires the normal rate');
   assert.equal(rate('194J_B', COMPANY, cert, '2026-10-15', '1000').rate, 10000, 'only for its own section');
   assert.equal(rate('194C', null, cert, '2026-10-15', '1000').rate, 20000, 'no PAN wins over a certificate');
@@ -137,6 +149,14 @@ test('194C: more than 30,000 on one bill or 1,00,000 in the year', () => {
   assert.deepEqual(thresholdReached('194C', { amount: '25000', yearBefore: '110000' }).catchUp, '0.00', 'already past the year: nothing to catch up');
   assert.equal(thresholdReached('194C', { amount: '20000', yearBefore: '80000' }).due, false, 'exactly 1,00,000 in the year is not more than');
   assert.equal(thresholdReached('194C', { amount: '40000', yearBefore: '0' }).catchUp, '0.00', 'a single bill over 30,000 catches nothing up');
+  // The crossing payment catches up only what took no TDS, even when it is itself over 30,000.
+  const big = thresholdReached('194C', { amount: '40000', yearBefore: '80000', untaxedBefore: '80000' });
+  assert.deepEqual([big.due, big.catchUp], [true, '80000.00'], 'a crossing bill over 30,000 still brings the earlier ones in');
+  assert.match(big.why, /the ₹80,000 paid earlier without TDS takes it now/);
+  assert.equal(thresholdReached('194C', { amount: '25000', yearBefore: '80000', untaxedBefore: '20000' }).catchUp, '20000.00', 'a payment already taxed is not taxed again');
+  assert.equal(thresholdReached('194C', { amount: '25000', yearBefore: '80000', untaxedBefore: '0' }).catchUp, '0.00');
+  assert.equal(thresholdReached('194C', { amount: '25000', yearBefore: '110000', untaxedBefore: '20000' }).catchUp, '0.00', 'only the payment that crosses catches up');
+  assert.equal(thresholdReached('194J_B', { amount: '30000', yearBefore: '40000', untaxedBefore: '40000' }).catchUp, '40000.00', '194J(b) over 50,000 in the year');
 });
 
 test('194J, 194H, 194A and 194I thresholds', () => {
@@ -216,6 +236,9 @@ test('TAN and challan details are checked with words that say what to do', () =>
   assert.match(challanProblem({ bsrCode: '0510308', challanSerial: '123456', depositedOn: '2026-11-05' }, '2026-11-10') ?? '', /5 digits/);
   assert.match(challanProblem({ bsrCode: '0510308', challanSerial: '1', depositedOn: '2026-11-11' }, '2026-11-10') ?? '', /future/);
   assert.equal(challanLabel({ bsrCode: '0510308', challanSerial: '12', depositedOn: '2026-11-05' }), '0510308 · 05/11/2026 · 00012');
+  assert.equal(challanSectionProblem('FORM_26Q', ['194C', '194C']), null);
+  assert.equal(challanSectionProblem('FORM_26Q', ['194C', '194J_B']), 'A 26Q challan is deposited under one section, and these are under 194C, 194J(b). Choose the deductions of one section, and record a challan for each');
+  assert.equal(challanSectionProblem('FORM_24Q', ['192']), null);
 });
 
 const ded = (over: Partial<TdsReturnDeduction>): TdsReturnDeduction => ({
@@ -230,6 +253,7 @@ const ded = (over: Partial<TdsReturnDeduction>): TdsReturnDeduction => ({
   tdsAmount: '5000',
   reason: null,
   certificateNo: null,
+  certificateBase: null,
   challanId: 'c1',
   ...over,
 });
@@ -252,6 +276,30 @@ test('what blocks a return, and what only warns', () => {
   assert.deepEqual(kinds, ['NO_TAN::blocks', 'TO_CONFIRM:a:blocks', 'NOT_DEPOSITED:a:blocks', 'PAN_MISSING:b:warns', 'PAN_MISSING_LOW:c:blocks', 'SHORT:d:warns', 'CHALLAN_MISMATCH:c1:blocks']);
   assert.match(p[6].text, /tax ₹60000 but its deductions this quarter come to ₹59000.00/);
   assert.equal(returnProblems({ tan: 'BBNA01234F', deductions: [ded({ section: '192', rate: '8.123', deducteePan: null })], challans: [challan({})] })[0].kind, 'PAN_MISSING', 'salary without a PAN warns');
+});
+
+test('short is held to what the section asks of the PAN, not the rate stored', () => {
+  const kinds = (d: Partial<TdsReturnDeduction>) => returnProblems({ tan: 'BBNA01234F', deductions: [ded(d)], challans: [challan({ tax: d.tdsAmount ?? '5000' })] }).map((x) => x.kind);
+  // A work order at 1% to a company: 194C asks 2%.
+  assert.deepEqual(kinds({ deducteePan: COMPANY, rate: '1', tdsAmount: '2500' }), ['SHORT']);
+  const short = returnProblems({ tan: 'BBNA01234F', deductions: [ded({ deducteePan: COMPANY, rate: '1', tdsAmount: '2500' })], challans: [challan({ tax: '2500' })] })[0];
+  assert.match(short.text, /₹2500 is less than the ₹5000\.00 194C asks on ₹250000\. Deduct the difference/);
+  assert.deepEqual(kinds({ deducteePan: INDIVIDUAL, rate: '1', tdsAmount: '2500' }), [], '1% to an individual is right');
+  assert.equal(deductionDue('194C', ded({ deducteePan: COMPANY, rate: '1' })), '5000.00');
+  // A lower deduction certificate sets the rate, on its part only.
+  assert.deepEqual(kinds({ deducteePan: COMPANY, rate: '0.5', reason: 'A', certificateNo: 'LDC1', tdsAmount: '1250' }), []);
+  assert.deepEqual(kinds({ deducteePan: COMPANY, rate: '0.5', reason: 'A', certificateNo: 'LDC1', amountPaid: '150000', certificateBase: '100000', tdsAmount: '1500' }), []);
+  assert.deepEqual(kinds({ deducteePan: COMPANY, rate: '0.5', reason: 'A', certificateNo: 'LDC1', amountPaid: '150000', certificateBase: '100000', tdsAmount: '750' }), ['SHORT']);
+});
+
+test('reason C goes with the higher rate for want of a PAN', () => {
+  assert.equal(noPanReason('194C', null, 20000), 'C');
+  assert.equal(noPanReason('194C', 'NOTAPAN', 20000), 'C', 'a malformed PAN is no PAN');
+  assert.equal(noPanReason('194C', null, 1000), null, 'not at the higher rate: no reason, the return warns instead');
+  assert.equal(noPanReason('194C', FIRM, 20000), null);
+  assert.equal(noPanReason('192', null, 20000), 'C');
+  assert.equal(noPanReason('192', null, 9647), null);
+  assert.equal(noPanReason('192', null, null), null);
 });
 
 test('totals by section, a section to confirm last', () => {
@@ -301,6 +349,17 @@ test('24Q file: employees with their codes, section 92B', () => {
   assert.deepEqual(f.deductees.header, [...RETURN_DEDUCTEE_HEADER_24Q]);
   assert.deepEqual(f.deductees.rows, [['1', '1', 'EMP-014', INDIVIDUAL, 'Ravi Sahu', '92B', '31/10/2026', '85000.00', '8200.00', '0.00', '0.00', '8200.00', '8200.00', '31/10/2026', '', '']]);
   assert.equal(f.challans.rows[0][1], '92B');
+  const noPan = returnRows('FORM_24Q', [challan({ tax: '20000' })], [ded({ section: '192', deducteeName: 'Mohan Das', deducteePan: null, deducteeRef: 'EMP-020', paidOn: '2026-10-31', amountPaid: '100000', rate: '20', tdsAmount: '20000', reason: 'C' })]);
+  assert.deepEqual(noPan.deductees.rows[0].slice(3, 4).concat(noPan.deductees.rows[0].slice(-2)), ['PANNOTAVBL', 'C', ''], 'reason C on a 24Q row');
+});
+
+test('a certificate whose limit ran out inside a payment: two rows, reason A on its part', () => {
+  const f = returnRows('FORM_26Q', [challan({ tax: '1500' })], [ded({ deducteePan: COMPANY, amountPaid: '150000', rate: '0.5', tdsAmount: '1500', reason: 'A', certificateNo: 'LDC2627000123', certificateBase: '100000' })]);
+  assert.deepEqual(f.deductees.rows.map((r) => [r[1], r[8], r[9], r[15], r[16], r[17]]), [
+    ['1', '100000.00', '500.00', '0.5', 'A', 'LDC2627000123'],
+    ['2', '50000.00', '1000.00', '2', '', ''],
+  ]);
+  assert.equal(f.challans.rows[0][2], '1500.00', 'the challan is the whole TDS');
 });
 
 test('states and ledgers', () => {

@@ -161,6 +161,13 @@ export interface TdsRateResult {
   rate: RateMilli;
   reason: TdsReason | null;
   certificateNo: string | null;
+  /**
+   * Rupees the certificate's rate covers when its limit runs out inside this amount: the rest takes `normalRate`. Null
+   * when the whole amount takes `rate`.
+   */
+  certificateBase: string | null;
+  /** The section's rate for the deductee without a certificate */
+  normalRate: RateMilli;
   /** Why the rate is what it is, in a line */
   why: string;
 }
@@ -168,22 +175,52 @@ export interface TdsRateResult {
 /**
  * The rate a deduction takes: the section's rate for who the deductee is; with no valid PAN the higher of that and the
  * section's no-PAN rate (206AA: 20%, 5% under 194Q); with a lower deduction certificate for the section that is valid on
- * the day and whose limit still covers this amount, the certificate's rate. 192's rate is the payslip's own.
+ * the day, the certificate's rate up to what is left of its limit (`certificateBase` when the limit runs out inside this
+ * amount, the rest at the normal rate). 192's rate is the payslip's own.
  */
 export function tdsRate(section: TdsSection, deductee: { pan: string | null | undefined; certificate?: LowerTdsCertificate | null }, on: string, amount: string): TdsRateResult {
   const info = TDS_SECTIONS[section];
   const pan = validPan(deductee.pan);
   if (!pan) {
     const rate = Math.max(info.rate('OTHER'), info.noPanRate);
-    return { rate, reason: 'C', certificateNo: null, why: `No PAN: ${rateText(rate)}% under section 206AA` };
+    return { rate, reason: 'C', certificateNo: null, certificateBase: null, normalRate: rate, why: `No PAN: ${rateText(rate)}% under section 206AA` };
   }
+  const normalRate = info.rate(deducteeKind(pan));
   const c = deductee.certificate;
   if (c && c.section === section && c.validFrom <= on && on <= c.validTo) {
     const certRate = rateMilliOf(c.rate);
-    if (certRate !== null && P(c.used) + P(amount) <= P(c.limit)) return { rate: certRate, reason: 'A', certificateNo: c.certificateNo, why: `Lower deduction certificate ${c.certificateNo}: ${rateText(certRate)}%` };
+    const left = P(c.limit) - P(c.used);
+    if (certRate !== null && left > 0n) {
+      const whole = P(amount) <= left;
+      return {
+        rate: certRate,
+        reason: 'A',
+        certificateNo: c.certificateNo,
+        certificateBase: whole ? null : rupeesOfPaise(left),
+        normalRate,
+        why: whole
+          ? `Lower deduction certificate ${c.certificateNo}: ${rateText(certRate)}%`
+          : `Lower deduction certificate ${c.certificateNo}: ${rateText(certRate)}% on the ${inPaise(left)} left of its limit, ${rateText(normalRate)}% on the rest`,
+      };
+    }
   }
-  const rate = info.rate(deducteeKind(pan));
-  return { rate, reason: null, certificateNo: null, why: `${info.name} at ${rateText(rate)}%` };
+  return { rate: normalRate, reason: null, certificateNo: null, certificateBase: null, normalRate, why: `${info.name} at ${rateText(normalRate)}%` };
+}
+
+/** The TDS a rate asks for on an amount: the certificate's part at its rate and the rest at the normal rate. */
+export function tdsDue(amount: string, r: Pick<TdsRateResult, 'rate' | 'certificateBase' | 'normalRate'>): string {
+  if (r.certificateBase === null) return tdsOn(amount, r.rate);
+  const within = P(r.certificateBase) < P(amount) ? P(r.certificateBase) : P(amount);
+  return rupeesOfPaise(P(tdsOn(rupeesOfPaise(within), r.rate)) + P(tdsOn(rupeesOfPaise(P(amount) - within), r.normalRate)));
+}
+
+/**
+ * The return's reason for a deduction made at the higher rate for want of a PAN (C), from what was deducted: for a
+ * subcontractor bill at its work order's percent, or a payslip at its own.
+ */
+export function noPanReason(section: TdsSection, pan: string | null | undefined, rate: RateMilli | null): TdsReason | null {
+  if (validPan(pan) || rate === null) return null;
+  return rate >= Math.max(TDS_SECTIONS[section].rate('OTHER'), TDS_SECTIONS[section].noPanRate) ? 'C' : null;
 }
 
 export interface ThresholdResult {
@@ -199,12 +236,15 @@ export interface ThresholdResult {
 /**
  * Whether a payment crosses its section's threshold, given what the same deductee was paid under the section earlier
  * in the financial year (and in the month, for rent). Limits are "more than": 30,000 on the dot takes no TDS under
- * 194C. Crossing the year's limit makes TDS due on the earlier payments too (`catchUp`), which the form says.
+ * 194C. The payment that takes the year past its limit makes TDS due on the earlier payments that took none
+ * (`untaxedBefore`, all of `yearBefore` when not given) as well: that is `catchUp`, whether or not the payment is also
+ * over the single limit; a later payment catches nothing up.
  */
-export function thresholdReached(section: TdsSection, p: { amount: string; yearBefore: string; monthBefore?: string }): ThresholdResult {
+export function thresholdReached(section: TdsSection, p: { amount: string; yearBefore: string; untaxedBefore?: string; monthBefore?: string }): ThresholdResult {
   const t: TdsThreshold = TDS_SECTIONS[section].threshold;
   const amount = P(p.amount);
   const before = P(p.yearBefore);
+  const untaxed = p.untaxedBefore === undefined ? before : P(p.untaxedBefore) < before ? P(p.untaxedBefore) : before;
   const R = (n: number) => BigInt(n) * 100n;
   if (t.excessOver !== undefined) {
     const limit = R(t.excessOver);
@@ -219,18 +259,21 @@ export function thresholdReached(section: TdsSection, p: { amount: string; yearB
   const month = t.month !== undefined && P(p.monthBefore ?? '0') + amount > R(t.month);
   const due = single || year || month;
   // The year's limit crossed by this payment: what was paid before without TDS now takes it too.
-  const catchUp = year && !yearWas && !single ? before : 0n;
+  const catchUp = year && !yearWas && untaxed > 0n ? untaxed : 0n;
   const why = !due
     ? `Below ${[t.single !== undefined ? `${inRupees(t.single)} a payment` : null, t.year !== undefined ? `${inRupees(t.year)} a year` : null, t.month !== undefined ? `${inRupees(t.month)} a month` : null].filter(Boolean).join(' and ')}: no TDS`
-    : single
-      ? `More than ${inRupees(t.single!)} in one payment`
-      : year
-        ? `More than ${inRupees(t.year!)} in the year`
-        : `More than ${inRupees(t.month!)} in the month`;
+    : catchUp > 0n
+      ? `More than ${inRupees(t.year!)} in the year: the ${inPaise(catchUp)} paid earlier without TDS takes it now`
+      : single
+        ? `More than ${inRupees(t.single!)} in one payment`
+        : year
+          ? `More than ${inRupees(t.year!)} in the year`
+          : `More than ${inRupees(t.month!)} in the month`;
   return { due, base: rupeesOfPaise(due ? amount : 0n), catchUp: rupeesOfPaise(catchUp), why };
 }
 
 const inRupees = (n: number) => `₹${n.toLocaleString('en-IN')}`;
+const inPaise = (p: bigint) => `₹${Number(p / 100n).toLocaleString('en-IN')}${p % 100n ? `.${String(p % 100n).padStart(2, '0')}` : ''}`;
 const inLakh = (n: number) => `₹${n / 100000} lakh`;
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -349,6 +392,16 @@ export function tanProblem(tan: string | null | undefined): string | null {
   return TAN_PATTERN.test(tan.trim().toUpperCase()) ? null : 'A TAN is 10 characters: four letters, five digits and a letter, e.g. BBNA01234F';
 }
 
+/**
+ * Why a 26Q challan cannot cover these sections: it is deposited under one section, so its deductions are of one (24Q's
+ * are all 192). Null when they are.
+ */
+export function challanSectionProblem(form: TdsReturnForm, sections: readonly (string | null)[]): string | null {
+  const distinct = [...new Set(sections)];
+  if (form !== 'FORM_26Q' || distinct.length <= 1) return null;
+  return `A 26Q challan is deposited under one section, and these are under ${distinct.map(tdsSectionName).join(', ')}. Choose the deductions of one section, and record a challan for each`;
+}
+
 /** Why a challan's bank details cannot be saved; null when they can. */
 export function challanProblem(c: { bsrCode: string; challanSerial: string; depositedOn: string }, today: string): string | null {
   if (!/^\d{7}$/.test(c.bsrCode.trim())) return 'The BSR code is the bank branch’s 7 digits, printed on the challan';
@@ -381,6 +434,8 @@ export interface TdsReturnDeduction {
   tdsAmount: string;
   reason: TdsReason | null;
   certificateNo: string | null;
+  /** Rupees of `amountPaid` at the certificate's rate when its limit ran out inside the payment; the rest took the normal rate */
+  certificateBase: string | null;
   challanId: string | null;
 }
 
@@ -407,6 +462,16 @@ export interface TdsProblem {
   text: string;
 }
 
+/**
+ * The TDS a deduction owes: the section's rate for the deductee's PAN (206AA without one), or a lower deduction
+ * certificate's rate on the part it covered with the normal rate on the rest.
+ */
+export function deductionDue(section: TdsSection, d: Pick<TdsReturnDeduction, 'deducteePan' | 'paidOn' | 'amountPaid' | 'rate' | 'reason' | 'certificateBase'>): string {
+  const normal = tdsRate(section, { pan: d.deducteePan }, d.paidOn, d.amountPaid);
+  const certRate = d.reason === 'A' && d.rate !== null ? rateMilliOf(d.rate) : null;
+  return tdsDue(d.amountPaid, certRate !== null && normal.reason !== 'C' ? { rate: certRate, certificateBase: d.certificateBase, normalRate: normal.normalRate } : normal);
+}
+
 /** What blocks a quarter's return and what only warns, in the order a person fixes them. */
 export function returnProblems(p: { tan: string | null; deductions: TdsReturnDeduction[]; challans: TdsReturnChallan[] }): TdsProblem[] {
   const out: TdsProblem[] = [];
@@ -422,9 +487,12 @@ export function returnProblems(p: { tan: string | null; deductions: TdsReturnDed
           : { kind: 'PAN_MISSING_LOW', blocks: true, deductionId: d.id, challanId: null, text: `${d.deducteeName} has no PAN, so TDS is due at the higher rate. Add their PAN or deduct the difference` },
       );
     }
-    if (d.rate !== null && d.section !== '192') {
-      const due = P(tdsOn(d.amountPaid, rateMilliOf(d.rate) ?? 0));
-      if (P(d.tdsAmount) + 100n < due) out.push({ kind: 'SHORT', blocks: false, deductionId: d.id, challanId: null, text: `${d.deducteeName}: ₹${d.tdsAmount} is less than ${d.rate}% of ₹${d.amountPaid}` });
+    // Without a PAN the PAN problems above already say what is short.
+    if (isTdsSection(d.section) && d.section !== '192' && validPan(d.deducteePan)) {
+      // Held to what the section asks of this deductee's PAN, never the rate stored (a work order's 1% to a company is
+      // short), except where a lower deduction certificate set it.
+      const due = P(deductionDue(d.section, d));
+      if (P(d.tdsAmount) + 100n < due) out.push({ kind: 'SHORT', blocks: false, deductionId: d.id, challanId: null, text: `${d.deducteeName}: ₹${d.tdsAmount} is less than the ₹${rupeesOfPaise(due)} ${TDS_SECTIONS[d.section].name} asks on ₹${d.amountPaid}. Deduct the difference from their next payment` });
     }
   }
   const covered = new Map<string, bigint>();
@@ -530,6 +598,22 @@ export const RETURN_DEDUCTEE_HEADER_24Q = [
   'Certificate no. under section 197',
 ] as const;
 
+/**
+ * A deduction's rows in the file: one, or two where a lower deduction certificate's limit ran out inside the payment
+ * (the part it covered under reason A, the rest at the section's normal rate).
+ */
+function rowParts(d: TdsReturnDeduction): Pick<TdsReturnDeduction, 'amountPaid' | 'tdsAmount' | 'rate' | 'reason' | 'certificateNo'>[] {
+  const within = d.certificateBase === null ? null : P(d.certificateBase);
+  if (within === null || within >= P(d.amountPaid) || d.rate === null || !isTdsSection(d.section)) return [d];
+  const owed = P(tdsOn(rupeesOfPaise(within), rateMilliOf(d.rate) ?? 0));
+  const first = rupeesOfPaise(owed < P(d.tdsAmount) ? owed : P(d.tdsAmount));
+  const normal = tdsRate(d.section, { pan: d.deducteePan }, d.paidOn, d.amountPaid).normalRate;
+  return [
+    { amountPaid: rupeesOfPaise(within), tdsAmount: first, rate: d.rate, reason: 'A', certificateNo: d.certificateNo },
+    { amountPaid: rupeesOfPaise(P(d.amountPaid) - within), tdsAmount: rupeesOfPaise(P(d.tdsAmount) - P(first)), rate: rateText(normal), reason: null, certificateNo: null },
+  ];
+}
+
 /** A PAN the utility takes, or PANNOTAVBL for one missing. */
 const panCell = (pan: string | null) => validPan(pan) ?? 'PANNOTAVBL';
 const money2 = (s: string) => rupeesOfPaise(P(s));
@@ -552,15 +636,17 @@ export function returnRows(form: TdsReturnForm, challans: TdsReturnChallan[], de
   });
   const rows: string[][] = [];
   for (const c of ordered) {
-    under(c.id).forEach((d) => {
-      const sr = String(rows.length + 1);
-      const common = [panCell(d.deducteePan), d.deducteeName, codeOf(d.section), ddmmyyyy(d.paidOn), money2(d.amountPaid), money2(d.tdsAmount), '0.00', '0.00', money2(d.tdsAmount), money2(d.tdsAmount), ddmmyyyy(d.paidOn)];
-      rows.push(
-        form === 'FORM_26Q'
-          ? [String(srOf.get(c.id)), sr, d.deducteeRef ?? '', deducteeKind(d.deducteePan) === 'COMPANY' ? '01' : '02', ...common, d.rate ?? '', d.reason ?? '', d.certificateNo ?? '']
-          : [String(srOf.get(c.id)), sr, d.deducteeRef ?? '', ...common, d.reason === 'A' ? 'A' : '', d.certificateNo ?? ''],
-      );
-    });
+    for (const d of under(c.id)) {
+      for (const part of rowParts(d)) {
+        const sr = String(rows.length + 1);
+        const common = [panCell(d.deducteePan), d.deducteeName, codeOf(d.section), ddmmyyyy(d.paidOn), money2(part.amountPaid), money2(part.tdsAmount), '0.00', '0.00', money2(part.tdsAmount), money2(part.tdsAmount), ddmmyyyy(d.paidOn)];
+        rows.push(
+          form === 'FORM_26Q'
+            ? [String(srOf.get(c.id)), sr, d.deducteeRef ?? '', deducteeKind(d.deducteePan) === 'COMPANY' ? '01' : '02', ...common, part.rate ?? '', part.reason ?? '', part.certificateNo ?? '']
+            : [String(srOf.get(c.id)), sr, d.deducteeRef ?? '', ...common, part.reason ?? '', part.certificateNo ?? ''],
+        );
+      }
+    }
   }
   return {
     challans: { name: 'Challans', header: [...RETURN_CHALLAN_HEADER], rows: challanRows },
@@ -643,6 +729,8 @@ export interface TdsDeductionDto {
   tdsAmount: string;
   reason: TdsReason | null;
   certificateNo: string | null;
+  /** Rupees of the amount at the certificate's rate when its limit ran out inside the payment */
+  certificateBase: string | null;
   challanId: string | null;
   challanLabel: string | null;
   depositDue: string;
@@ -675,6 +763,8 @@ export interface TdsChallanDto {
   createdByName: string;
   createdAt: string;
   exportedToTally: boolean;
+  /** Deposited and booked by hand before Nirmaan kept TDS: it posts nothing to the books or Tally */
+  inBooks: boolean;
   /** Whether it can still be deleted (its quarters not filed, not in Tally) */
   canDelete: boolean;
 }
@@ -720,6 +810,8 @@ export interface TdsSuggestDto {
   lastUsed: boolean;
   /** Rupees TDS is worked out on: what was typed, else what the payment settles less the bill's GST share */
   base: string;
+  /** The base with the earlier payments that took no TDS, when this payment takes the year past its limit (`threshold.catchUp`) */
+  taxedOn: string;
   rate: string;
   reason: TdsReason | null;
   certificateNo: string | null;
@@ -727,7 +819,7 @@ export interface TdsSuggestDto {
   threshold: ThresholdResult;
   /** Rupees of TDS suggested on the base */
   tds: string;
-  /** Rupees paid to the vendor earlier in the financial year, counted against the threshold */
+  /** Rupees paid to the vendor earlier in the financial year under the section (or with no TDS), counted against the threshold */
   yearBefore: string;
 }
 
