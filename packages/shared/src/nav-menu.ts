@@ -271,6 +271,7 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
       sub('cash', 'Cash', 'accounts.cashForecast', 'site.imprest', 'site.funds', 'site.expenses'),
       sub('books', 'Books', 'accounts.vouchers', 'accounts.daybooks', 'accounts.cashbooks', 'accounts.ledgers'),
       sub('statements', 'Statements', 'accounts.trialBalance', 'accounts.pl', 'accounts.balanceSheet', 'accounts.bankReco', 'accounts.yearClose'),
+      sub('assets', 'Fixed assets', 'accounts.fixedAssets', 'accounts.depreciation'),
       sub('tax', 'Tax and compliance', 'accounts.gst', 'accounts.tally', 'billing.guarantees'),
       sub('reports', 'Reports', 'reports.receivablesAgeing', 'reports.payablesAgeing', 'reports.wip'),
       sub('masters', 'Masters', 'accounts.chart'),

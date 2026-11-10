@@ -22,7 +22,9 @@ import {
   HIRE_FUEL_BY_LABELS,
   LIST_SORT_FIELDS,
   canManageEquipment,
+  canManageFixedAssets,
   fuelNormText,
+  pathIsOff,
 } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
@@ -47,6 +49,8 @@ import { useConfirmDelete } from '@/components/common/ConfirmDelete';
 import { MoreActions } from '@/components/record/MoreActions';
 import { EquipmentPartsDrawer } from './EquipmentPartsDrawer';
 import { MasterInput } from '@/components/masters/MasterInput';
+import { AssetFormDrawer, type MachineSeed } from '@/components/fixed-assets/AssetForms';
+import { assetHref } from '@/components/fixed-assets/assetUi';
 
 const KEYS = ['ownership', 'inactive'] as const;
 
@@ -84,6 +88,8 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
   const router = useRouter();
   const qc = useQueryClient();
   const mayManage = !!user && canManageEquipment(user.roleKey);
+  const mayAsset = !!user && canManageFixedAssets(user.roleKey) && !pathIsOff('/fixed-assets', user.modulesOff);
+  const [makingAsset, setMakingAsset] = useState<MachineSeed | null>(null);
   const { data: projects } = useProjects();
   const [editing, setEditing] = useState<EquipmentDto | 'new' | null>(null);
   const [partsOf, setPartsOf] = useState<EquipmentDto | null>(null);
@@ -202,6 +208,13 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
                   </RecordLink>
                 </AppTag>
               ) : null}
+              {r.asset ? (
+                <AppTag variant="kind" style={{ marginLeft: tk.space[1] }}>
+                  <RecordLink href={assetHref(r.asset.id)} onOpen={() => router.push(assetHref(r.asset!.id))}>
+                    {`Asset · ${r.asset.assetNo}`}
+                  </RecordLink>
+                </AppTag>
+              ) : null}
               <Sub>{[r.registrationNo, r.supplier, r.fuelNorm && r.fuelNormUnit ? `Norm ${fuelNormText(r.fuelNorm, r.fuelNormUnit)}` : null].filter(Boolean).join(' · ') || ' '}</Sub>
             </div>
           ),
@@ -219,16 +232,17 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
           label: 'Actions',
           locked: true,
           fixed: 'right' as const,
-          width: mayManage ? 96 : 56,
+          width: mayManage || mayAsset ? 96 : 56,
           render: (_: unknown, r: EquipmentDto) => (
             <Space size="small">
               <Button type="text" size="small" icon={<ToolOutlined />} onClick={() => setPartsOf(r)} aria-label={`Tyres and batteries of ${r.code}`} title="Tyres and batteries" />
-              {mayManage ? (
+              {mayManage || mayAsset ? (
                 <MoreActions inRow
                   label={`Actions for ${r.code}`}
                   items={[
-                    { key: 'edit', label: 'Edit', onSelect: () => open(r) },
-                    { key: 'delete', label: r.lastLogDate ? 'Delete (it has logs; mark it inactive instead)' : 'Delete', danger: true, disabled: !!r.lastLogDate, onSelect: () => askDelete({ what: `machine ${r.code}`, onConfirm: () => remove.mutateAsync(r) }) },
+                    ...(mayManage ? [{ key: 'edit', label: 'Edit', onSelect: () => open(r) }] : []),
+                    ...(mayAsset && r.ownership === 'OWNED' && !r.asset ? [{ key: 'asset', label: 'Make fixed asset', onSelect: () => setMakingAsset({ id: r.id, code: r.code, name: r.name, projectId: r.projectId }) }] : []),
+                    ...(mayManage ? [{ key: 'delete', label: r.lastLogDate ? 'Delete (it has logs; mark it inactive instead)' : 'Delete', danger: true, disabled: !!r.lastLogDate, onSelect: () => askDelete({ what: `machine ${r.code}`, onConfirm: () => remove.mutateAsync(r) }) }] : []),
                   ]}
                 />
               ) : null}
@@ -424,6 +438,7 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
         </Form>
       </FormShell>
       <EquipmentPartsDrawer machine={partsOf} onClose={() => setPartsOf(null)} />
+      <AssetFormDrawer open={!!makingAsset} machine={makingAsset} onClose={() => setMakingAsset(null)} onSaved={(id) => router.push(assetHref(id))} />
     </>
   );
 }

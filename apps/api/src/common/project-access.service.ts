@@ -384,8 +384,8 @@ export class ProjectAccessService {
   }
 
   /** Equipment master (codes, rates, deployment): approvers only. */
-  assertCanManageEquipment(user: RequestUser) {
-    if (!canManageEquipment(user.roleKey)) throw new ForbiddenException('Only an approver can change the equipment master');
+  assertCanManageEquipment(user: RequestUser, message = 'Only an approver can change the equipment master') {
+    if (!canManageEquipment(user.roleKey)) throw new ForbiddenException(message);
   }
 
   /** Report a breakdown: a machinery logger with access to the machine's project; for a machine in the yard, a maintenance manager. */

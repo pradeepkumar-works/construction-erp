@@ -164,6 +164,7 @@ export const NAV_ACCESS = {
   platform: (u: NavUser) => !!u.platformAdmin,
   books: (u: NavUser) => P.canKeepBooks(u.roleKey),
   machineFinance: (u: NavUser) => P.canManageMachineLoans(u.roleKey),
+  fixedAssets: (u: NavUser) => P.canManageFixedAssets(u.roleKey),
   supplierPortal: (u: NavUser) => P.canCheckSupplierInvoices(u.roleKey) || P.canManageSupplierLogins(u.roleKey),
   tenders: (u: NavUser) => P.canViewTenders(u.roleKey),
   meetings: (u: NavUser) => onSite(u) || P.canRecordMeetings(u.roleKey),
@@ -348,6 +349,8 @@ export const NAV_TREE: NavNode[] = [
   { id: 'accounts.yearClose', parent: 'accounts', group: 'Statements', label: 'Opening and year close', icon: 'lock', route: '/statements?tab=year', access: 'books', status: 'live', description: 'Opening balances, locking a period and closing a financial year.', keywords: 'opening balance lock year end' },
   { id: 'accounts.gst', parent: 'accounts', group: 'Tax and Tally', label: 'GST registers', icon: 'percent', route: '/gst', access: 'gst', status: 'live', description: 'GSTR-1 and 2B.', keywords: 'tax gstr' },
   { id: 'accounts.tally', parent: 'accounts', group: 'Tax and Tally', label: 'Tally export', icon: 'file-spreadsheet', route: '/tally', access: 'tally', status: 'live', description: 'Vouchers for Tally with projects as cost centres.', keywords: 'accounts vouchers', concord: ['p7-legacy'] },
+  { id: 'accounts.fixedAssets', parent: 'accounts', group: 'Fixed assets', label: 'Fixed assets', icon: 'package', route: '/fixed-assets', access: 'fixedAssets', status: 'live', newUntil: '2027-06-30', description: 'The asset register: cost, depreciation and book value, transfers and disposals.', keywords: 'asset register far depreciation schedule ii slm wdv block income tax disposal sale scrap capitalise ppe' },
+  { id: 'accounts.depreciation', parent: 'accounts', group: 'Fixed assets', label: 'Depreciation runs', icon: 'calculator', route: '/fixed-assets?tab=runs', access: 'fixedAssets', status: 'live', newUntil: '2027-06-30', description: 'Monthly or yearly depreciation, prepared then posted to the books.', keywords: 'depreciation run month year end companies act' },
   { id: 'accounts.machineLoans', parent: 'accounts', label: 'Machine loans', icon: 'badge-indian-rupee', route: '/machine-loans', access: 'machineFinance', status: 'live', description: 'Loans on financed machines: EMI schedules, EMIs paid and due, and what is owed to each lender.', keywords: 'equipment finance emi hypothecation lender bank nbfc loan schedule interest' },
 
   // People

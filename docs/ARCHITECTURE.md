@@ -1112,6 +1112,52 @@ book entries before the statement's first day are taken as cleared. A posted vou
 its match where the same account still has the same amount; cancelling a voucher unmatches it. All of it is tested in
 `src/scripts/statements-test.ts` (CI runs it). The Accounts home adds the year's profit and the bank lines to match.
 
+### Fixed assets (item 189)
+
+What the company owns for use over years is a `FixedAsset` in the register (`apps/api/src/fixed-assets`, Accounts ›
+Fixed assets at `/fixed-assets`, kept by `canManageFixedAssets`: admin, management and accounts). An asset has a number
+from the `FA` series (`nextDocNo`), a class from `ASSET_CLASSES` (`@erp/shared/fixed-assets.ts`: its Companies Act
+Schedule II life, its ledger and its Income Tax block), a cost, a residual (5% by default), a method (SLM or WDV), the
+day it was put to use, where it is (a site or head office) and, for a machine, its `equipmentId`. An owned machine in
+Plant becomes one through `makeFromEquipment` (Make fixed asset in the equipment list); a hired one is refused, and a
+machine that is an asset in use cannot be marked hired. An asset in the books before Nirmaan comes in with `openingAsOf`
+and the depreciation charged up to then; only an asset already in the books has one, and one put to use before
+`booksFrom` must have it up to the day before (`openingAsOfNeeded`, held by `assetProblem` in the form and the API), so
+no run charges again what the opening balances hold. WDV needs a residual above zero. The register sits under the Books
+module switch.
+
+Depreciation is a pure function of the asset's own facts: `accumulatedTo(asset, day)` charges each financial year by the
+days used (SLM the depreciable amount over the life, WDV the year's opening book value at the rate that reaches the
+residual over the life) and never past the residual, and a period's charge is `bookDepreciation(asset, from, to)`, the
+difference of two of them. So a month's runs add up to the year's, and preparing a run again gives the same lines. A
+`DepreciationRun` is one month or one financial year at most, ended by today, after every other run (`runPeriodProblem`); it is
+prepared as a draft with a `DepreciationLine` per asset, prepared again when the register changes, then posted. A line is
+`runCharge`: what the schedule has charged by the period's end less the opening and the runs before it, so an asset
+entered after its first months were posted is caught up in the next run, from the day it was put to use. Because each
+run leans on the ones before it, only the latest is prepared again, deleted or taken out of the books, and a run posts
+only after the runs before it (`runStepProblem`).
+
+Posting goes through `PostingService` like every other module: the asset's cost (`ASSET_ADDITION`, Dr its class's ledger,
+Cr the bank, cash, the vendor, or Plant and Machinery for a machine a loan booked; none for an asset already in the
+books), a posted run (`DEPRECIATION`, one journal on its last day, Dr Depreciation, Cr Accumulated Depreciation, narrated
+"Depreciation for <period>"), and a sale or scrapping (`ASSET_DISPOSAL`, `disposalLines`: the money in, the depreciation
+charged and any loss against the cost, any profit on top). None of them names a project: depreciation is in the books
+only, and a project's machine cost stays the internal rate, so no machine is counted twice. A run, an asset or a
+disposal dated on or before `BooksState.lockedUpTo`, or before `booksFrom`, is refused with the lock named
+(`assertOpen`), not held. A run is posted once (the status moves only from DRAFT); Undo posting takes it out while the
+books are open and it is not in Tally. Neither posting nor Undo posting touches a run that charges an asset whose sale
+Tally already has. Steps that read what the runs charged (prepare, post, undo, delete, a change to an asset, a sale)
+take the company's run lock. A disposal is refused while a posted run charges the asset past its day; the
+sale's voucher counts the depreciation posted, so once the month's run charges the days up to the sale the voucher
+follows and the profit or loss settles.
+
+The register's net book value is cost less the opening depreciation and the posted runs. Its total stands beside the
+balance sheet's property, plant and equipment (`booksCheck`), and a difference says what is in the books outside the
+register. A move is an `AssetTransfer` (from, to, day) written with the asset's place in one transaction; moving a linked
+machine in Plant moves its asset too, and moving a machine's asset moves the machine, so it needs `canManageEquipment`. Income Tax depreciation is not posted: `itBlockSchedule` rolls each block from the
+register for a financial year (opening WDV, additions at full rate or half under 180 days, sale proceeds off the block,
+a short-term capital gain past it, and the value left a loss when the block's last asset goes), for the return.
+
 ### Biometric attendance (v6 item 101)
 
 `BiometricDevice` is a terminal in the device register (name, make and model, serial number, the site it stands at, its

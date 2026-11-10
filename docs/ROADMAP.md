@@ -1058,6 +1058,12 @@ GRN on the web and the phone), and a second quality dashboard.
      number series (purchase orders, bills, indents, permits and 26 more) set by the company, by calendar or financial year,
      with a first number and when it starts again shown before saving. Other settings links the rest. ARCHITECTURE
      "Company settings".
+189. ~~**Fixed asset register and depreciation** (M).~~ Done: Accounts › Fixed assets keeps what the company owns, by
+     Schedule II class, with cost, depreciation to date and net book value beside the balance sheet's property, plant
+     and equipment. An owned machine in Plant becomes an asset in one step; an asset moves between sites with its history
+     and is sold or scrapped with its profit or loss in the books. Depreciation (SLM or WDV, by days, down to the
+     residual) is prepared for a month or a year and posted as one journal, refused inside the lock; Income Tax block
+     depreciation with the 180-day half rate is rolled from the register for the return. ARCHITECTURE "Fixed assets".
 
 ## Definition of done for every item
 Prisma migration, API endpoints with Swagger, shared types, web screen, mobile screen where site

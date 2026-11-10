@@ -2,6 +2,13 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
 import type {
+  DepreciationRunDetailDto,
+  DepreciationRunDto,
+  FixedAssetBooksCheckDto,
+  FixedAssetDetailDto,
+  FixedAssetListDto,
+  FixedAssetStatus,
+  ItBlockRowDto,
   IsComplianceDto,
   IsStandardDto,
   AuditLogEntryDto,
@@ -959,6 +966,36 @@ export const useWorkerOutput = (projectId: string | undefined, from: string | un
     queryFn: async () => (await api.get<OutputDto>('/workers/output', { params: { projectId, from, to } })).data,
     enabled: !!projectId && !!from && !!to,
   });
+
+/** Fixed assets: the register page with the totals of the assets in use. */
+export interface FixedAssetFilters extends PageParams {
+  status?: FixedAssetStatus;
+  assetClass?: string;
+  projectId?: string;
+}
+export const useFixedAssets = (filters: FixedAssetFilters, enabled = true) =>
+  useQuery({
+    queryKey: ['fixed-assets', 'list', clean(filters)],
+    queryFn: async () => (await api.get<FixedAssetListDto>('/fixed-assets', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+export const useFixedAsset = (id?: string) =>
+  useQuery({ queryKey: ['fixed-assets', 'one', id], queryFn: async () => (await api.get<FixedAssetDetailDto>(`/fixed-assets/${id}`)).data, enabled: !!id });
+/** The register's book value beside the balance sheet's PPE line. */
+export const useAssetBooksCheck = (enabled = true) =>
+  useQuery({ queryKey: ['fixed-assets', 'books-check'], queryFn: async () => (await api.get<FixedAssetBooksCheckDto>('/fixed-assets/books-check')).data, enabled });
+export const useAssetIncomeTax = (fy: string | undefined, enabled = true) =>
+  useQuery({
+    queryKey: ['fixed-assets', 'income-tax', fy],
+    queryFn: async () => (await api.get<{ fy: string; blocks: ItBlockRowDto[] }>('/fixed-assets/income-tax', { params: clean({ fy }) })).data,
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+export const useDepreciationRuns = (enabled = true) =>
+  useQuery({ queryKey: ['fixed-assets', 'runs'], queryFn: async () => (await api.get<DepreciationRunDto[]>('/fixed-assets/runs')).data, enabled });
+export const useDepreciationRun = (id?: string) =>
+  useQuery({ queryKey: ['fixed-assets', 'run', id], queryFn: async () => (await api.get<DepreciationRunDetailDto>(`/fixed-assets/runs/${id}`)).data, enabled: !!id });
 
 /** Machine loans: the loans with what each owes, and the running ones by lender. */
 export const useMachineLoans = (filters?: { status?: EquipmentLoanStatus; q?: string; equipmentId?: string }, enabled = true) =>

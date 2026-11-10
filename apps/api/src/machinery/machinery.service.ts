@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import {
   canManageEquipment,
   canManageMachineLoans,
+  canManageFixedAssets,
   machineryLogProblem,
   type EquipmentDto,
   type EquipmentSortField,
@@ -20,6 +21,7 @@ import { TelematicsService } from '../telematics/telematics.service';
 import { VendorsService } from '../vendors/vendors.service';
 import { AttachmentsService, ATTACHMENT_FIELDS } from '../common/attachments.service';
 import { dateOnly, dec, iso, money, parseDate } from '../common/serialize';
+import { todayIn } from '../notifications/time';
 import { isUniqueViolation } from '../common/idempotency';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { CreateEquipmentDto, CreateMachineryLogDto, ListEquipmentQuery, ListMachineryLogsQuery, UpdateEquipmentDto, UpdateMachineryLogDto } from './machinery.dto';
@@ -41,6 +43,7 @@ const equipmentInclude = {
   project: { select: { name: true } },
   logs: { where: { status: { not: 'REJECTED' } }, select: { date: true }, orderBy: { date: 'desc' }, take: 1 },
   loans: { where: { status: 'ACTIVE' }, select: { id: true, lenderName: true }, orderBy: { sanctionDate: 'desc' }, take: 1 },
+  fixedAsset: { select: { id: true, assetNo: true } },
 } satisfies Prisma.EquipmentInclude;
 type EquipmentRow = Prisma.EquipmentGetPayload<{ include: typeof equipmentInclude }>;
 
@@ -114,6 +117,7 @@ export class MachineryService {
       fuelTankLitres: dec(r.fuelTankLitres),
       // Machine finance: only those who keep the loans see that a machine is financed.
       loan: canManageMachineLoans(user.roleKey) && r.loans[0] ? { id: r.loans[0].id, lenderName: r.loans[0].lenderName } : null,
+      asset: canManageFixedAssets(user.roleKey) && r.fixedAsset ? r.fixedAsset : null,
       createdAt: iso(r.createdAt),
     };
   }
@@ -223,7 +227,18 @@ export class MachineryService {
     await this.getEquipment(user, id);
     const data = await this.equipmentData(user, dto);
     try {
-      await this.prisma.equipment.update({ where: { id }, data });
+      await this.prisma.$transaction(async (tx) => {
+        const was = await tx.equipment.findUniqueOrThrow({ where: { id }, select: { code: true, projectId: true, fixedAsset: { select: { id: true, status: true, assetNo: true } } } });
+        if (dto.ownership === 'HIRED' && was.fixedAsset?.status === 'ACTIVE')
+          throw new BadRequestException(`${was.code} is asset ${was.fixedAsset.assetNo} in the fixed asset register. Sell or scrap it there before marking the machine hired.`);
+        await tx.equipment.update({ where: { id }, data });
+        // A machine in the fixed asset register moves there too, with a line in its history.
+        const asset = was.fixedAsset;
+        if (asset?.status === 'ACTIVE' && dto.projectId !== undefined && (dto.projectId ?? null) !== was.projectId) {
+          await tx.assetTransfer.create({ data: { organizationId: user.organizationId, assetId: asset.id, on: parseDate(todayIn()), fromProjectId: was.projectId, toProjectId: dto.projectId ?? null, note: 'Moved in Plant', byId: user.id } });
+          await tx.fixedAsset.update({ where: { id: asset.id }, data: { projectId: dto.projectId ?? null } });
+        }
+      });
     } catch (e) {
       if (isUniqueViolation(e)) throw new ConflictException(`Equipment code ${String(data.code)} is already used`);
       throw e;

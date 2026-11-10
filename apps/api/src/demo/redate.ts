@@ -67,6 +67,17 @@ async function moveOrganization(tx: Tx, organizationId: string, datedOn: string,
         );
     }
   }
+  // A depreciation run for a calendar month stays one: back on the month it was for, then on by the months crossed.
+  const monthOf = (col: string) => `date_trunc('month', ${col} - ${days})`;
+  const wholeMonth = `extract(day from r."periodFrom" - ${days}) = 1 AND r."periodTo" - ${days} = (${monthOf('r."periodFrom"')} + interval '1 month' - interval '1 day')::date`;
+  const newFrom = `(${monthOf('r."periodFrom"')} + interval '${months} months')::date`;
+  const newTo = `(${monthOf('r."periodFrom"')} + interval '${months + 1} months' - interval '1 day')::date`;
+  await tx.$executeRawUnsafe(
+    `UPDATE "DepreciationLine" AS l SET "from" = ${newFrom}, "to" = ${newTo} FROM "DepreciationRun" AS r
+      WHERE l."runId" = r."id" AND r."organizationId" = $1 AND l."from" = r."periodFrom" AND l."to" = r."periodTo" AND ${wholeMonth}`,
+    organizationId,
+  );
+  await tx.$executeRawUnsafe(`UPDATE "DepreciationRun" AS r SET "periodFrom" = ${newFrom}, "periodTo" = ${newTo} WHERE r."organizationId" = $1 AND ${wholeMonth}`, organizationId);
   if (months) {
     const next = (col: string) => `to_char(to_date(${col} || '-01', 'YYYY-MM-DD') + interval '${months} months', 'YYYY-MM')`;
     // A salary run is keyed by its month (and named by it), so it takes the same two steps through a marked value.

@@ -374,6 +374,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/loans-test.js
+      - name: Fixed assets depreciate by days to the residual, Income Tax blocks take half rate under 180 days, disposals gain or lose
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/fixed-assets-test.js
       - name: Tender pricing, quotes on the SOR, bid ranks and status moves add up
         if: matrix.suite == 'flows'
         working-directory: apps/api

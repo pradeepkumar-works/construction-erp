@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-fixed-assets',
+    date: '2026-11-11',
+    title: 'Fixed assets: the register, depreciation and disposals',
+    points: [
+      'Accounts › Fixed assets lists what the company owns with its cost, depreciation to date and net book value, beside the balance sheet’s property, plant and equipment.',
+      'Make fixed asset on an owned machine in Plant puts it in the register with its site; moving the machine moves the asset, and every move is kept with its day.',
+      'Prepare depreciation for a month or a year: each asset’s Schedule II charge for the days it was used, straight line or written down value, down to its residual. Post puts it in the books as one journal, never inside the books’ lock.',
+      'Sell or scrap an asset and its profit or loss goes to the books. Income Tax shows each block’s depreciation for the return, at half the rate on what was used under 180 days.',
+    ],
+  },
+  {
     id: '2026-11-company-settings',
     date: '2026-11-10',
     title: 'Company settings: your letterhead, logo and number series',

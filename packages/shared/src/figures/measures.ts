@@ -181,6 +181,11 @@ export const MEASURES = {
   vouchersToApprove: { label: 'Vouchers to approve', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'No voucher to approve' }, items: ['voucher', 'vouchers'], list: '/books?tab=vouchers', define: 'Vouchers made by accounts, waiting for someone else to approve.' },
   recordsNotPosted: { label: 'Records not posted', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'Every record is in the books' }, items: ['record', 'records'], list: '/books?tab=day', define: 'Records that do not balance, so are held out of the books; the day book says why.' },
   bankLinesToMatch: { label: 'Bank lines to match', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'Every imported bank line is matched' }, items: ['bank line to match', 'bank lines to match'], list: '/statements?tab=bank', define: 'Lines of an imported bank statement not yet matched in the books.' },
+  // Fixed assets
+  assetCost: { label: 'Cost of assets in use', kind: 'money', better: 'either', items: ['asset', 'assets'], list: '/fixed-assets', define: 'What the assets in use cost when bought.' },
+  assetDepreciation: { label: 'Depreciation to date', kind: 'money', better: 'either', list: '/fixed-assets', define: 'Depreciation charged before Nirmaan plus the posted runs.' },
+  assetBookValue: { label: 'Net book value', kind: 'money', better: 'either', list: '/fixed-assets', define: 'Cost less depreciation to date.' },
+  depreciationRunTotal: { label: 'Depreciation for the period', kind: 'money', better: 'either', items: ['asset', 'assets'], list: '/fixed-assets?tab=runs', define: 'Each asset’s Companies Act charge for the days it was in use in the period.' },
   // Leakage checks
   leakageAtRisk: { label: 'Leakage at risk', kind: 'money', better: 'down', flag: { level: 'act', clear: 'No leakage flagged' }, items: ['flag', 'flags'], list: '/leakage', define: 'Rupees at risk on what the leakage checks flagged in the month.' },
   leakageFlags: { label: 'Leakage flags', kind: 'count', better: 'down', flag: { level: 'act', clear: 'No leakage flagged' }, list: '/leakage', define: 'What the leakage checks flagged in the month.' },
