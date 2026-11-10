@@ -314,6 +314,8 @@ export const PAYMENT_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'ACCOUNTS_MANAGE
 export const canRecordPayment = (role: RoleKey) => PAYMENT_ROLES.includes(role);
 /** See payables (what is owed to vendors and subcontractors, and when): those who pay and project managers. */
 export const canViewPayables = (role: RoleKey) => PAYMENT_ROLES.includes(role) || role === 'PROJECT_MANAGER';
+/** TDS returns (ARCHITECTURE "TDS returns"): deductions, challans, the quarterly 26Q and 24Q and Form 16A. Admin, management and accounts. */
+export const canFileTds = (role: RoleKey) => PAYMENT_ROLES.includes(role);
 /**
  * Ask for a bill to be paid or an advance released: those who record bills and orders, and project
  * managers. The same roles see the requests.

@@ -28,6 +28,8 @@ export class PaymentFieldsDto {
   @ApiPropertyOptional({ enum: RECEIPT_MODES, default: 'BANK' }) @IsOptional() @IsIn(RECEIPT_MODES as unknown as string[]) mode?: PaymentMode;
   @ApiPropertyOptional({ example: 'HDFCN26287512345', description: 'UTR, cheque or voucher number' }) @IsOptional() @trim() @IsString() @MaxLength(100) reference?: string | null;
   @ApiPropertyOptional({ example: '0', description: 'TDS deducted at payment (vendor bills only; a subcontractor bill already deducts its TDS)' }) @IsOptional() @num() @IsNumberString() tdsAmount?: string;
+  @ApiPropertyOptional({ example: '194C', description: 'The TDS section (a key of TDS_SECTIONS), required when TDS is deducted' }) @IsOptional() @trim() @IsString() @MaxLength(10) tdsSection?: string | null;
+  @ApiPropertyOptional({ example: '100000', description: 'What the TDS is worked out on; by default what the payment settles less the bill\'s GST share' }) @IsOptional() @num() @IsNumberString() tdsBase?: string | null;
   @ApiPropertyOptional({ example: '0' }) @IsOptional() @num() @IsNumberString() otherDeduction?: string;
   @ApiPropertyOptional() @IsOptional() @trim() @IsString() @MaxLength(200) otherDeductionNote?: string | null;
   @ApiPropertyOptional() @IsOptional() @trim() @IsString() @MaxLength(1000) remarks?: string | null;

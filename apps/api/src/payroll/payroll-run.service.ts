@@ -28,6 +28,7 @@ import { inr } from '../common/submission-titles';
 import { PayrollService } from '../staff/payroll.service';
 import { computePayslip } from './payroll-rules';
 import { SalaryService, monthEnd, toRulesStructure } from './salary.service';
+import { TdsDeductionsService } from '../tds/tds-deductions.service';
 import type { CreateRunDto, PayRunDto, PayslipAdjustmentsDto, RunQuery } from './payroll.dto';
 
 const runInclude = {
@@ -60,6 +61,7 @@ export class PayrollRunService {
     private salary: SalaryService,
     private inputs: PayrollService,
     private notifications: NotificationsService,
+    private tds: TdsDeductionsService,
   ) {}
 
   private toRunDto(r: RunRow, user: RequestUser): PayrollRunDto {
@@ -288,7 +290,8 @@ export class PayrollRunService {
     if (r.status !== 'SUBMITTED') throw new BadRequestException('Only a submitted run can be approved');
     const own = ownEntryProblem(r.preparedById, user.id);
     if (own) throw new ForbiddenException(own);
-    await this.move(id, { status: 'SUBMITTED' }, { status: 'APPROVED', approvedById: user.id, approvedAt: new Date(), reviewNote: note ?? null });
+    // Each payslip's TDS becomes a 192 deduction for the quarter's 24Q, with the approval or not at all.
+    await this.move(id, { status: 'SUBMITTED' }, { status: 'APPROVED', approvedById: user.id, approvedAt: new Date(), reviewNote: note ?? null }, (tx) => this.tds.forPayrollRun(tx, user.organizationId, id));
     await this.audit.log(user, 'PAYROLL_RUN', id, 'APPROVED', note ?? r.runNo);
     const done = await this.detail(user, id);
     await this.tell(user, r, { roles: ['ACCOUNTS_MANAGER'], users: [r.preparedById] }, `Salary run ${this.runWords(r)} approved: pay ${inr(done.net)}`, `${user.fullName} approved it${note ? `: ${note}` : ''}. Download the bank file from the run, pay it, then mark it paid.`, 'Pay the run');
@@ -300,7 +303,7 @@ export class PayrollRunService {
     const may = (r.status === 'SUBMITTED' && canApprovePayroll(user.roleKey)) || (r.status === 'APPROVED' && (canApprovePayroll(user.roleKey) || canPayPayroll(user.roleKey)));
     if (!may) throw new BadRequestException(r.status === 'PAID' ? 'A paid run is locked' : 'Only management (or accounts before paying) can send the run back');
     if (r.tallyExportId) throw new BadRequestException('Its salary journal has gone to Tally. Undo that Tally export first, then send the run back.');
-    await this.move(id, { status: r.status, tallyExportId: null }, { status: 'DRAFT', reviewNote: note, approvedById: null, approvedAt: null, submittedAt: null });
+    await this.move(id, { status: r.status, tallyExportId: null }, { status: 'DRAFT', reviewNote: note, approvedById: null, approvedAt: null, submittedAt: null }, (tx) => this.tds.dropPayrollRun(tx, user.organizationId, id));
     await this.audit.log(user, 'PAYROLL_RUN', id, 'CHANGES_REQUESTED', note);
     await this.tell(user, r, { users: [r.preparedById] }, `Salary run ${this.runWords(r)} sent back`, `${user.fullName}: ${note}`, 'Change the run');
     return this.detail(user, id);
@@ -317,9 +320,12 @@ export class PayrollRunService {
   }
 
   /** One step of the run, taken only from the state it was checked in, so two steps at once cannot both land. */
-  private async move(id: string, from: Prisma.PayrollRunWhereInput, data: Prisma.PayrollRunUncheckedUpdateManyInput) {
-    const { count } = await this.prisma.payrollRun.updateMany({ where: { id, ...from }, data });
-    if (!count) throw new ConflictException(MOVED_MEANWHILE);
+  private async move(id: string, from: Prisma.PayrollRunWhereInput, data: Prisma.PayrollRunUncheckedUpdateManyInput, with_?: (tx: Prisma.TransactionClient) => Promise<void>) {
+    await this.prisma.$transaction(async (tx) => {
+      const { count } = await tx.payrollRun.updateMany({ where: { id, ...from }, data });
+      if (!count) throw new ConflictException(MOVED_MEANWHILE);
+      await with_?.(tx);
+    });
   }
 
   async remove(user: RequestUser, id: string) {

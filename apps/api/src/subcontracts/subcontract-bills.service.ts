@@ -26,6 +26,7 @@ import { pctStr } from './work-orders.service';
 import { workOrderAdvanceBase } from '../payables/advances';
 import { subBillPayable } from '../payables/payable';
 import { subBillLines } from './sub-bill-lines';
+import { TdsDeductionsService } from '../tds/tds-deductions.service';
 
 type Tx = Prisma.TransactionClient;
 const round2 = (v: Prisma.Decimal) => v.toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
@@ -79,7 +80,11 @@ export class SubcontractBillsService {
     private audit: AuditService,
     private lifecycle: SubmissionLifecycleService,
     private attachments: AttachmentsService,
-  ) {}
+    tds: TdsDeductionsService,
+  ) {
+    // The bill's TDS under 194C becomes a deduction for the quarter's return in the approval's own transaction.
+    lifecycle.onApproved('SUBCONTRACT_BILL', (tx, user, id) => tds.forSubcontractBill(tx, user.organizationId, id));
+  }
 
   toDto(r: Row): SubcontractBillDto {
     const deductions: SubcontractBillDeductionDto[] = [];

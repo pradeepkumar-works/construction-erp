@@ -166,6 +166,7 @@ export const NAV_ACCESS = {
   machineFinance: (u: NavUser) => P.canManageMachineLoans(u.roleKey),
   fixedAssets: (u: NavUser) => P.canManageFixedAssets(u.roleKey),
   bankPayments: (u: NavUser) => P.canRecordPayment(u.roleKey),
+  tds: (u: NavUser) => P.canFileTds(u.roleKey),
   supplierPortal: (u: NavUser) => P.canCheckSupplierInvoices(u.roleKey) || P.canManageSupplierLogins(u.roleKey),
   tenders: (u: NavUser) => P.canViewTenders(u.roleKey),
   meetings: (u: NavUser) => onSite(u) || P.canRecordMeetings(u.roleKey),

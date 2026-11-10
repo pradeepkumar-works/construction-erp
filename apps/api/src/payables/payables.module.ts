@@ -7,8 +7,10 @@ import { DebitNotesController } from './debit-notes.controller';
 import { DebitNotesService } from './debit-notes.service';
 import { PaymentBatchesController } from './payment-batches.controller';
 import { PaymentBatchesService } from './payment-batches.service';
+import { TdsModule } from '../tds/tds.module';
 
 @Module({
+  imports: [TdsModule],
   controllers: [PayablesController, PaymentRequestsController, DebitNotesController, PaymentBatchesController],
   providers: [PayablesService, PaymentRequestsService, DebitNotesService, PaymentBatchesService],
   exports: [PayablesService, PaymentRequestsService, DebitNotesService],

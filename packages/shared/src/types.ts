@@ -2686,6 +2686,8 @@ export interface VendorPaymentDto {
   mode: PaymentMode;
   reference: string | null;
   tdsAmount: string;
+  /** The TDS deducted, by section, and the challan that deposited it (ARCHITECTURE "TDS returns") */
+  tds: VendorPaymentTdsDto | null;
   otherDeduction: string;
   otherDeductionNote: string | null;
   /** amount + tdsAmount + otherDeduction */
@@ -3652,4 +3654,15 @@ export interface ContractorMonthDto {
   from: string;
   to: string;
   rows: ContractorMonthRowDto[];
+}
+
+/** A payment's TDS: its section (null while to confirm), what it was worked out on, and its challan once deposited. */
+export interface VendorPaymentTdsDto {
+  deductionId: string;
+  section: string | null;
+  sectionName: string;
+  rate: string | null;
+  base: string;
+  challanId: string | null;
+  challanLabel: string | null;
 }
