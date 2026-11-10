@@ -1,4 +1,4 @@
-import type { CompanyKind, RoleKey, SubmissionStatus } from './enums';
+import type { RoleKey, SubmissionStatus } from './enums';
 
 /**
  * Roles that see every project in the organisation without being a project member. The document controller keeps the
@@ -193,13 +193,6 @@ export const canManageSharedViews = (role: RoleKey) => role === 'ADMIN';
 // Authors can always remove their own.
 export const canRemoveAnyComment = (role: RoleKey) => role === 'ADMIN';
 export const canMakeGroup = (role: RoleKey) => role === 'ADMIN';
-/**
- * Consolidated accounts (item 192): a group admin, from the holding company of the group. Reads every company's
- * statements, so never a company's own staff and never from a child company.
- */
-export const canSeeConsolidation = (u: { roleKey: RoleKey; group?: { admin: boolean }; companyKind?: CompanyKind }) => !!u.group?.admin && u.companyKind === 'HOLDING';
-/** Name the company's vendors and clients that are sister companies of its group: the company's own admin. */
-export const canNameSisterCompanies = (u: { roleKey: RoleKey; group?: unknown }) => !!u.group && canMakeGroup(u.roleKey);
 export const seesGettingStarted = (role: RoleKey) => GETTING_STARTED_ROLES.includes(role);
 export const seesCompanyToday = (role: RoleKey) => COMPANY_TODAY_ROLES.includes(role);
 export const submitsDpr = (role: RoleKey) => DPR_SUBMITTER_ROLES.includes(role);

@@ -12,7 +12,7 @@ import {
   type StatementLine,
 } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
-import { withoutTenant } from '../prisma/tenant-context';
+import { asTenant, withoutTenant } from '../prisma/tenant-context';
 import { AuditService } from '../common/audit.service';
 import { RequestUser } from '../common/current-user';
 import { StatementsService } from '../statements/statements.service';
@@ -24,8 +24,9 @@ const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompar
 
 /**
  * Consolidated accounts (item 192, ARCHITECTURE "Consolidated accounts") and the sister companies each company names.
- * Every figure is a company's own statement, read through `StatementsService` outside the request's tenant
- * (`withoutTenant`, each read awaited inside its callback); the arithmetic is `consolidation-rules.ts`.
+ * Every figure is a company's own statement, read through `StatementsService` as that company (`asTenant`, so its
+ * books post under its own row-level security); only the reads that span companies (the group's companies, the links,
+ * the group's admins) are `withoutTenant`, each query awaited inside its callback. The arithmetic is `consolidation-rules.ts`.
  */
 @Injectable()
 export class ConsolidationService {
@@ -48,37 +49,40 @@ export class ConsolidationService {
     if (q.from > q.to) throw new BadRequestException('From is after to. Choose an earlier from date.');
     const basis = q.basis ?? 'BOOKS';
     const groupId = me.groupId;
-    const { companies, links } = await withoutTenant(async () => {
-      const companies = await this.prisma.organization.findMany({ where: { groupId }, select: { id: true, name: true, kind: true } });
-      const ids = companies.map((c) => c.id);
+    // Across companies: which companies, and the links between them. Each company's own books are read as that company.
+    const { all, links } = await withoutTenant(async () => {
+      const all = await this.prisma.organization.findMany({ where: { groupId }, select: { id: true, name: true, kind: true, modulesOff: true, suspendedAt: true } });
+      const ids = all.map((c) => c.id);
       const links = await this.prisma.sisterLink.findMany({ where: { organizationId: { in: ids }, sisterId: { in: ids } }, select: { organizationId: true, sisterId: true, vendorId: true, clientId: true } });
-      return { companies, links };
+      return { all, links };
     });
-    // The holding first, then the others by name.
-    companies.sort((a, b) => Number(b.kind === 'HOLDING') - Number(a.kind === 'HOLDING') || byName(a, b));
+    // The holding first, then the others by name. A company with its books switched off has no statements to add.
+    all.sort((a, b) => Number(b.kind === 'HOLDING') - Number(a.kind === 'HOLDING') || byName(a, b));
+    const companies = all.filter((c) => !c.modulesOff.includes('books'));
+    const leftOut = all.filter((c) => c.modulesOff.includes('books')).map((c) => ({ id: c.id, name: c.name, reason: 'Its books are switched off' }));
 
     const read = await Promise.all(
       companies.map(async (c) => {
-        const { lockedUpTo, closedYear } = await withoutTenant(async () => await this.statements.lockAndClose(c.id));
+        const { booksFrom, lockedUpTo, closedYear } = await asTenant(c.id, async () => await this.statements.lockAndClose(c.id));
         const period = companyPeriod(basis, q, lockedUpTo);
         const parties = new Map(links.filter((l) => l.organizationId === c.id).map((l) => [l.vendorId ? tallyVendorKey(l.vendorId) : tallyClientKey(l.clientId!), l.sisterId]));
-        const figures = await withoutTenant(async () => await this.statements.companyFigures(c.id, period, parties));
-        return { c, lockedUpTo, closedYear, period, figures };
+        const figures = await asTenant(c.id, async () => await this.statements.companyFigures(c.id, period, parties));
+        return { c, booksFrom, lockedUpTo, closedYear, period, figures };
       }),
     );
 
-    const input: CompanyFigures[] = read.map(({ c, figures }) => {
+    const input: CompanyFigures[] = read.map(({ c, booksFrom, period, figures }) => {
       const lines: Partial<Record<StatementLine, Prisma.Decimal>> = {};
       const pl = figures.profitLoss;
       for (const l of pl ? [...pl.income, ...pl.expenses, pl.tax] : []) lines[l.line] = D(l.amount);
       for (const s of figures.balanceSheet.sections) for (const l of s.lines) lines[l.line] = D(l.amount);
-      return { id: c.id, name: c.name, lines, sisters: figures.sisters };
+      return { id: c.id, name: c.name, lines, sisters: figures.sisters, noBooks: !!booksFrom && booksFrom > period.to };
     });
     return {
       from: q.from,
       to: q.to,
       basis,
-      companies: read.map(({ c, lockedUpTo, closedYear, period, figures }) => ({
+      companies: read.map(({ c, booksFrom, lockedUpTo, closedYear, period, figures }) => ({
         id: c.id,
         name: c.name,
         kind: c.kind as CompanyKind,
@@ -86,12 +90,15 @@ export class ConsolidationService {
         to: period.to,
         lockedUpTo,
         closedYear,
+        booksFrom,
+        suspended: !!c.suspendedAt,
         difference: figures.balanceSheet.difference,
       })),
       ...consolidate(
         input,
         links.map((l) => ({ companyId: l.organizationId, sisterId: l.sisterId })),
       ),
+      leftOut,
     };
   }
 

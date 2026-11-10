@@ -11,7 +11,7 @@ import { canSeeLeakage } from './leakage';
 import { canSeeCashForecast } from './cash-forecast';
 import { canSeeAttendanceCheck } from './attendance-check';
 import { canReadReport, canSeeManagement } from './management';
-import { canSeeGroupCompanies, type AuthGroupDto } from './group';
+import { canNameSisterCompanies, canSeeConsolidation, canSeeGroupCompanies, type AuthGroupDto } from './group';
 import { canManageModules, isSwitchableModule, pathIsOff } from './module-switches';
 import { MASTER_LISTS, canManageMaster } from './masters';
 import { canManageIntegrations } from './integrations';
@@ -181,8 +181,8 @@ export const NAV_ACCESS = {
   rmc: (u: NavUser) => P.canViewRmc(u.roleKey),
   rmcBills: (u: NavUser) => P.canSellRmc(u.roleKey) || P.canBillRmc(u.roleKey),
   groupCompanies: (u: NavUser) => canSeeGroupCompanies(u),
-  consolidation: (u: NavUser) => P.canSeeConsolidation(u),
-  sisterCompanies: (u: NavUser) => P.canNameSisterCompanies(u),
+  consolidation: (u: NavUser) => canSeeConsolidation(u),
+  sisterCompanies: (u: NavUser) => canNameSisterCompanies(u),
   masters: (u: NavUser) => P.canManageUsers(u.roleKey) || MASTER_LISTS.some((l) => canManageMaster(u.roleKey, l)),
 } satisfies Record<string, (u: NavUser) => boolean>;
 export type NavAccessKey = keyof typeof NAV_ACCESS;

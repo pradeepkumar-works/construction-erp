@@ -24,7 +24,7 @@ const text = (v: Prisma.Decimal) => v.toFixed(2);
 /** What a company's books hold with one sister, in the line's own sense (`StatementsService.companyFigures`). */
 export interface SisterFigure {
   sisterId: string;
-  /** BALANCE: a sister ledger's balance on its line. TURNOVER: the period's income or expense through a sister ledger. */
+  /** BALANCE: a sister ledger's balance on its line. TURNOVER: the period's income or expense on a party document with the sister (`sisterTurnover`). */
   kind: 'BALANCE' | 'TURNOVER';
   line: StatementLine;
   amount: Prisma.Decimal;
@@ -36,6 +36,8 @@ export interface CompanyFigures {
   /** Its profit and loss and balance sheet lines, in each line's own sense (the two sets of lines do not overlap) */
   lines: Partial<Record<StatementLine, Prisma.Decimal>>;
   sisters: SisterFigure[];
+  /** Its books begin after the period: it has nothing to agree with a sister yet, so no pair with it is drawn */
+  noBooks?: boolean;
 }
 
 /** A company named a party in its books as this sister. */
@@ -51,8 +53,64 @@ export interface Removal {
   amount: Prisma.Decimal;
 }
 
+// What counts as turnover with a sister
+
+/**
+ * Vouchers that are a sale or purchase with a party: an RA bill, a vendor or subcontractor bill, a debit note, an RMC
+ * sale, a site expense on credit. Any other voucher counts only when its one party line is the sister (a hand-made
+ * journal against the sister alone); receipts and payments never do, nor the deductions they carry.
+ */
+export const TURNOVER_SOURCES: readonly string[] = ['SALES', 'PURCHASE', 'SUBCONTRACT', 'DEBIT_NOTE', 'RMC_SALE', 'EXPENSE'];
+/** Lines a bill or receipt carries that are no sale or purchase: what the other side kept back or recovered, and exchange. */
+export const NOT_TURNOVER_LEDGERS: readonly string[] = ['LABOUR_CESS', 'CLIENT_DEDUCTIONS', 'EXCHANGE_DIFFERENCE', 'VENDOR_DEDUCTIONS', 'MATERIAL_RECOVERY', 'FUEL_RECOVERY'];
+
+export interface PostedVoucher {
+  source: string;
+  lines: { accountId: string; debit: Prisma.Decimal; credit: Prisma.Decimal }[];
+}
+export interface LedgerFact {
+  key: string;
+  /** A vendor's or client's ledger */
+  party: boolean;
+  /** An income or expense account */
+  profitLoss: boolean;
+  /** The sister this party ledger is named as */
+  sisterId?: string;
+}
+
+/**
+ * The period's turnover with each sister, by income or expense account (debit less credit): the income and expense lines
+ * of the party documents whose party is that sister, leaving out `NOT_TURNOVER_LEDGERS`.
+ */
+export function sisterTurnover(vouchers: PostedVoucher[], ledgers: Map<string, LedgerFact>): { sisterId: string; accountId: string; net: Prisma.Decimal }[] {
+  const out = new Map<string, { sisterId: string; accountId: string; net: Prisma.Decimal }>();
+  for (const v of vouchers) {
+    const parties = [...new Set(v.lines.filter((l) => ledgers.get(l.accountId)?.party).map((l) => l.accountId))];
+    const sisters = [...new Set(parties.map((id) => ledgers.get(id)?.sisterId))];
+    if (sisters.length !== 1 || !sisters[0]) continue;
+    if (!TURNOVER_SOURCES.includes(v.source) && parties.length !== 1) continue;
+    const sisterId = sisters[0];
+    for (const l of v.lines) {
+      const a = ledgers.get(l.accountId);
+      if (!a?.profitLoss || NOT_TURNOVER_LEDGERS.includes(a.key)) continue;
+      const k = `${sisterId}|${l.accountId}`;
+      const was = out.get(k) ?? { sisterId, accountId: l.accountId, net: ZERO };
+      out.set(k, { ...was, net: was.net.add(l.debit).sub(l.credit) });
+    }
+  }
+  return [...out.values()].filter((r) => !r.net.isZero());
+}
+
+/**
+ * Turnover is matched line against line: a sister's revenue against the other's purchases, subcontract and other
+ * costs; its other income against the other's finance costs. Turnover on any other line is neither matched nor taken out.
+ */
+export const TURNOVER_BUCKETS: { kind: 'SALES' | 'INTEREST'; income: StatementLine[]; cost: StatementLine[] }[] = [
+  { kind: 'SALES', income: ['REVENUE'], cost: ['MATERIALS', 'CONSTRUCTION', 'OTHER_EXPENSES'] },
+  { kind: 'INTEREST', income: ['OTHER_INCOME'], cost: ['FINANCE'] },
+];
+
 const nature = (line: StatementLine) => STATEMENT_LINE_NATURE[line];
-const sumOf = (figs: SisterFigure[]) => figs.reduce((s, f) => s.add(f.amount), ZERO);
 const positive = (figs: SisterFigure[]) => figs.reduce((s, f) => (f.amount.gt(0) ? s.add(f.amount) : s), ZERO);
 
 /** Take `amount` off the figures, largest first, never past a figure: the removals, by the figures' lines. */
@@ -70,11 +128,13 @@ function take(companyId: string, figs: SisterFigure[], amount: Prisma.Decimal): 
 
 /**
  * What comes out between each pair of sisters in the consolidation, and the pairs with both companies' figures.
- * Balances: what A's books say B owes it against what B's books say it owes A; the part both hold comes off A's assets
- * and B's liabilities alike (and the other way round), so assets still equal liabilities. Sales, each way: what A's
- * income through B's ledger is against B's expense through A's; the part both hold comes off A's income and B's expense
- * alike, so profit is unchanged. The rest stays in, shown as the difference. A company outside the consolidation
- * counts for nothing; a pair is considered once either side named the other.
+ * Balances: each company first sets off what it is owed by the sister against what it owes it (both are inside the
+ * group), then what A's books say B owes it, net, is matched against what B's books say it owes A, net, whichever way
+ * the debt runs. The matched part comes off the owed side's assets and the owing side's liabilities alike, so assets
+ * still equal liabilities. Turnover, each way and each `TURNOVER_BUCKETS` line set: the seller's income against the
+ * buyer's cost; the part both hold comes off both alike, on those lines, so profit is unchanged. The rest stays in, shown
+ * as the difference. A company outside the consolidation counts for nothing, nor one whose books begin after the
+ * period; a pair is considered once either side named the other.
  */
 export function eliminations(companies: CompanyFigures[], links: SisterLinkFact[]): { removals: Removal[]; pairs: SisterPairDto[] } {
   const inside = new Map(companies.map((c, i) => [c.id, i]));
@@ -86,6 +146,7 @@ export function eliminations(companies: CompanyFigures[], links: SisterLinkFact[
     const j = inside.get(l.sisterId);
     if (i === undefined || j === undefined || i === j) continue;
     const [a, b] = i < j ? [companies[i], companies[j]] : [companies[j], companies[i]];
+    if (a.noBooks || b.noBooks) continue;
     const key = `${a.id}|${b.id}`;
     if (pairKeys.has(key)) continue;
     pairKeys.add(key);
@@ -99,31 +160,42 @@ export function eliminations(companies: CompanyFigures[], links: SisterLinkFact[
   for (const [a, b] of pairs) {
     const ab = a.sisters.filter((f) => f.sisterId === b.id);
     const ba = b.sisters.filter((f) => f.sisterId === a.id);
-    const of = (figs: SisterFigure[], kind: SisterFigure['kind'], n: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE') => figs.filter((f) => f.kind === kind && nature(f.line) === n);
+    const balances = (figs: SisterFigure[], n: 'ASSET' | 'LIABILITY') => figs.filter((f) => f.kind === 'BALANCE' && nature(f.line) === n);
+    const turnover = (figs: SisterFigure[], lines: StatementLine[]) => figs.filter((f) => f.kind === 'TURNOVER' && lines.includes(f.line));
 
-    const [aAssets, aLiabilities, bAssets, bLiabilities] = [of(ab, 'BALANCE', 'ASSET'), of(ab, 'BALANCE', 'LIABILITY'), of(ba, 'BALANCE', 'ASSET'), of(ba, 'BALANCE', 'LIABILITY')];
+    const [aAssets, aLiabilities, bAssets, bLiabilities] = [balances(ab, 'ASSET'), balances(ab, 'LIABILITY'), balances(ba, 'ASSET'), balances(ba, 'LIABILITY')];
     if (aAssets.length + aLiabilities.length + bAssets.length + bLiabilities.length) {
-      const owedToA = Prisma.Decimal.min(positive(aAssets), positive(bLiabilities));
-      const owedToB = Prisma.Decimal.min(positive(bAssets), positive(aLiabilities));
-      removals.push(...take(a.id, aAssets, owedToA), ...take(b.id, bLiabilities, owedToA), ...take(b.id, bAssets, owedToB), ...take(a.id, aLiabilities, owedToB));
-      // What A's books say B owes A, and what B's books say it owes A; shown from the side that is owed.
-      const aSays = sumOf(aAssets).sub(sumOf(aLiabilities));
-      const bSays = sumOf(bLiabilities).sub(sumOf(bAssets));
+      const [aA, aL, bA, bL] = [positive(aAssets), positive(aLiabilities), positive(bAssets), positive(bLiabilities)];
+      const aOwn = Prisma.Decimal.min(aA, aL);
+      const bOwn = Prisma.Decimal.min(bA, bL);
+      // What each company's books say B owes A, net (negative: A owes B).
+      const aSays = aA.sub(aL);
+      const bSays = bL.sub(bA);
+      const toA = aSays.gt(0) && bSays.gt(0) ? Prisma.Decimal.min(aSays, bSays) : ZERO;
+      const toB = aSays.lt(0) && bSays.lt(0) ? Prisma.Decimal.min(aSays.neg(), bSays.neg()) : ZERO;
+      removals.push(
+        ...take(a.id, aAssets, aOwn.add(toA)),
+        ...take(a.id, aLiabilities, aOwn.add(toB)),
+        ...take(b.id, bLiabilities, bOwn.add(toA)),
+        ...take(b.id, bAssets, bOwn.add(toB)),
+      );
+      // Shown from the side that is owed.
       const [owed, owes, owedSays, owesSays] = aSays.add(bSays).lt(0) ? [b, a, bSays.neg(), aSays.neg()] : [a, b, aSays, bSays];
-      out.push({ key: `${a.id}|${b.id}|BALANCE`, kind: 'BALANCE', a: side(owed, owes, owedSays), b: side(owes, owed, owesSays), eliminated: text(owedToA.add(owedToB)), difference: text(owedSays.sub(owesSays)) });
+      out.push({ key: `${a.id}|${b.id}|BALANCE`, kind: 'BALANCE', a: side(owed, owes, owedSays), b: side(owes, owed, owesSays), eliminated: text(aOwn.add(bOwn).add(toA).add(toB)), difference: text(owedSays.sub(owesSays)) });
     }
 
-    for (const [seller, buyer, sold, bought] of [
-      [a, b, of(ab, 'TURNOVER', 'INCOME'), of(ba, 'TURNOVER', 'EXPENSE')],
-      [b, a, of(ba, 'TURNOVER', 'INCOME'), of(ab, 'TURNOVER', 'EXPENSE')],
-    ] as const) {
-      if (!sold.length && !bought.length) continue;
-      const both = Prisma.Decimal.min(positive(sold), positive(bought));
-      removals.push(...take(seller.id, sold, both), ...take(buyer.id, bought, both));
-      const s = sumOf(sold);
-      const p = sumOf(bought);
-      out.push({ key: `${seller.id}|${buyer.id}|SALES`, kind: 'SALES', a: side(seller, buyer, s), b: side(buyer, seller, p), eliminated: text(both), difference: text(s.sub(p)) });
-    }
+    for (const bucket of TURNOVER_BUCKETS)
+      for (const [seller, buyer, sold, bought] of [
+        [a, b, turnover(ab, bucket.income), turnover(ba, bucket.cost)],
+        [b, a, turnover(ba, bucket.income), turnover(ab, bucket.cost)],
+      ] as const) {
+        if (!sold.length && !bought.length) continue;
+        const s = positive(sold);
+        const p = positive(bought);
+        const both = Prisma.Decimal.min(s, p);
+        removals.push(...take(seller.id, sold, both), ...take(buyer.id, bought, both));
+        out.push({ key: `${seller.id}|${buyer.id}|${bucket.kind}`, kind: bucket.kind, a: side(seller, buyer, s), b: side(buyer, seller, p), eliminated: text(both), difference: text(s.sub(p)) });
+      }
   }
   return { removals, pairs: out };
 }

@@ -27,6 +27,10 @@ export interface ConsolidationCompanyDto {
   lockedUpTo: string | null;
   /** The latest financial year it closed (`2025-26`) */
   closedYear: string | null;
+  /** The day its books begin (the opening balances stand for what came before), when set */
+  booksFrom: string | null;
+  /** The company is suspended: its books stand as they were */
+  suspended: boolean;
   /** Its own balance sheet's assets less liabilities; zero when its books balance */
   difference: string;
 }
@@ -62,12 +66,14 @@ export interface SisterSideDto {
 
 /**
  * Two sisters' figures for one thing that should agree. BALANCE: A is the sister that is owed; what A's books say B owes
- * it, and what B's books say it owes A. SALES: what A sold to B (its income through B's ledger) and what B bought from A
- * (its expense through A's).
+ * it, and what B's books say it owes A, each net of what it owes the other. SALES: what A sold to B (its revenue on bills
+ * to B) and what B bought from A (its purchases, subcontract and other costs on A's bills). INTEREST: A's other income
+ * from B against B's finance costs to A. A difference can be timing as well as disagreement: retention, TDS and amounts
+ * held on a bill sit in their own ledgers, not the party's, until they are paid or released.
  */
 export interface SisterPairDto {
   key: string;
-  kind: 'BALANCE' | 'SALES';
+  kind: 'BALANCE' | 'SALES' | 'INTEREST';
   a: SisterSideDto;
   b: SisterSideDto;
   /** Taken out of both companies' lines */
@@ -85,11 +91,21 @@ export interface ConsolidationDto {
   profitLoss: ConsolidatedRowDto[];
   balanceSheet: { sections: ConsolidatedSectionDto[]; totalLiabilities: ConsolidatedRowDto; totalAssets: ConsolidatedRowDto };
   pairs: SisterPairDto[];
+  /** Companies of the group not consolidated, and why */
+  leftOut: { id: string; name: string; reason: string }[];
 }
 
 /** What a company's column says about how final its figures are, with days written by `day`. */
-export function consolidationNote(c: Pick<ConsolidationCompanyDto, 'to' | 'lockedUpTo' | 'closedYear'>, basis: ConsolidationBasis, periodTo: string, day: (d: string) => string): string {
+export function consolidationNote(
+  c: Pick<ConsolidationCompanyDto, 'from' | 'to' | 'lockedUpTo' | 'closedYear' | 'booksFrom' | 'suspended'>,
+  basis: ConsolidationBasis,
+  periodTo: string,
+  day: (d: string) => string,
+): string {
   const parts: string[] = [];
+  if (c.suspended) parts.push('Suspended');
+  if (c.booksFrom && c.booksFrom > c.to) return [...parts, `No books yet: they begin on ${day(c.booksFrom)}`].join('. ');
+  if (c.booksFrom && c.booksFrom > c.from) parts.push(`Books begin on ${day(c.booksFrom)}`);
   if (!c.lockedUpTo) parts.push('Books not locked');
   else if (c.lockedUpTo >= periodTo) parts.push(`Locked up to ${day(c.lockedUpTo)}`);
   else if (basis === 'LOCK') parts.push(`Stops at its lock, ${day(c.lockedUpTo)}`);
