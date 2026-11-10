@@ -136,7 +136,25 @@ export class HomeService {
     private corrections: AttendanceCorrectionsService,
   ) {}
 
-  async myWork(user: RequestUser): Promise<MyWorkDto> {
+  /** My work being worked out, by the request user it is for (`running`). */
+  private readonly running = new Map<string, Promise<MyWorkDto>>();
+
+  /**
+   * My work for the caller. Home asks for it twice at once (Waiting for you, and the tiles' badges through
+   * `LauncherService.badges`), about 300 queries each; a second ask while the first is still running shares its answer, so
+   * the database pool is not held twice over. Only the same request user shares: another person, company, role or set of
+   * modules never does, and nothing is kept once the answer is out.
+   */
+  myWork(user: RequestUser): Promise<MyWorkDto> {
+    const key = JSON.stringify(user);
+    const running = this.running.get(key);
+    if (running) return running;
+    const work = this.workOutMyWork(user).finally(() => this.running.delete(key));
+    this.running.set(key, work);
+    return work;
+  }
+
+  private async workOutMyWork(user: RequestUser): Promise<MyWorkDto> {
     const role = user.roleKey;
     const today = todayIn();
     const rights = await this.rights.rightsFor(user);
