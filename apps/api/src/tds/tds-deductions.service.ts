@@ -1,10 +1,11 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import {
   TDS_SECTIONS,
   challanLabel,
   filedQuarterWords,
   isTdsSection,
+  noPanReason,
   quarterOf,
   rateMilliOf,
   rateText,
@@ -37,6 +38,7 @@ export interface DeductionDraft {
   tdsAmount: Prisma.Decimal;
   reason: string | null;
   certificateNo: string | null;
+  certificateBase: Prisma.Decimal | null;
 }
 
 type Source = { vendorPaymentId: string } | { subcontractBillId: string } | { payslipId: string };
@@ -49,6 +51,8 @@ export interface PaymentTds {
   rate: Prisma.Decimal | null;
   reason: string | null;
   certificateNo: string | null;
+  /** The part of the base at the certificate's rate, when its limit runs out inside the payment */
+  certificateBase: Prisma.Decimal | null;
 }
 
 /**
@@ -86,8 +90,22 @@ export class TdsDeductionsService {
   async certificateFor(db: Tx | PrismaService, organizationId: string, vendorId: string, section: string, on: string): Promise<LowerTdsCertificate | null> {
     const c = await db.tdsCertificate.findFirst({ where: { organizationId, vendorId, section, validFrom: { lte: parseDate(on) }, validTo: { gte: parseDate(on) } }, orderBy: { validFrom: 'desc' } });
     if (!c) return null;
-    const used = await db.tdsDeduction.aggregate({ where: { organizationId, certificateNo: c.certificateNo }, _sum: { amountPaid: true } });
-    return { certificateNo: c.certificateNo, section: c.section, rate: c.rate.toString(), validFrom: dateOnly(c.validFrom), validTo: dateOnly(c.validTo), limit: c.limitAmount.toString(), used: (used._sum.amountPaid ?? D(0)).toString() };
+    const used = (await this.certificateUsed(db, organizationId, [c.certificateNo])).get(c.certificateNo) ?? D(0);
+    return { certificateNo: c.certificateNo, section: c.section, rate: c.rate.toString(), validFrom: dateOnly(c.validFrom), validTo: dateOnly(c.validTo), limit: c.limitAmount.toString(), used: used.toString() };
+  }
+
+  /** Rupees each certificate has covered: a deduction's whole amount, or only its `certificateBase` where the limit ran out inside it. */
+  async certificateUsed(db: Tx | PrismaService, organizationId: string, certificateNos: string[]): Promise<Map<string, Prisma.Decimal>> {
+    const out = new Map<string, Prisma.Decimal>();
+    if (!certificateNos.length) return out;
+    const where = { organizationId, certificateNo: { in: certificateNos } };
+    const [whole, part] = await Promise.all([
+      db.tdsDeduction.groupBy({ by: ['certificateNo'], where: { ...where, certificateBase: null }, _sum: { amountPaid: true } }),
+      db.tdsDeduction.groupBy({ by: ['certificateNo'], where: { ...where, certificateBase: { not: null } }, _sum: { certificateBase: true } }),
+    ]);
+    for (const u of whole) if (u.certificateNo) out.set(u.certificateNo, (out.get(u.certificateNo) ?? D(0)).add(u._sum.amountPaid ?? 0));
+    for (const u of part) if (u.certificateNo) out.set(u.certificateNo, (out.get(u.certificateNo) ?? D(0)).add(u._sum.certificateBase ?? 0));
+    return out;
   }
 
   /**
@@ -102,7 +120,8 @@ export class TdsDeductionsService {
   ): Promise<PaymentTds | null> {
     if (p.tdsAmount.lte(0)) return null;
     if (!p.section) {
-      if (keepUnconfirmed) return { section: null, base: p.settles, rate: null, reason: null, certificateNo: null };
+      // A payment from before sections, edited: its base is the value before GST, as a new one's is.
+      if (keepUnconfirmed) return { section: null, base: p.settles.sub(p.gstShare).gte(p.tdsAmount) ? p.settles.sub(p.gstShare) : p.settles, rate: null, reason: null, certificateNo: null, certificateBase: null };
       throw new BadRequestException('Choose the TDS section for the TDS deducted');
     }
     if (!isTdsSection(p.section) || TDS_SECTIONS[p.section].form !== 'FORM_26Q') throw new BadRequestException('Choose a TDS section for vendors and contractors (194C, 194J and the rest)');
@@ -117,7 +136,7 @@ export class TdsDeductionsService {
       this.certificateFor(this.prisma, organizationId, p.vendorId, p.section, p.paymentDate),
     ]);
     const r = tdsRate(p.section, { pan: vendor.pan, certificate: cert }, p.paymentDate, base.toString());
-    return { section: p.section, base, rate: D(rateText(r.rate)), reason: r.reason, certificateNo: r.certificateNo };
+    return { section: p.section, base, rate: D(rateText(r.rate)), reason: r.reason, certificateNo: r.certificateNo, certificateBase: r.certificateBase ? D(r.certificateBase) : null };
   }
 
   private async write(tx: Tx, organizationId: string, rows: (DeductionDraft & Source)[], what: string) {
@@ -145,7 +164,7 @@ export class TdsDeductionsService {
   }
 
   private vendorDraft(v: { id: string; name: string; pan: string | null }, projectId: string, paidOn: string, tdsAmount: Prisma.Decimal, t: PaymentTds): DeductionDraft {
-    return { form: 'FORM_26Q', section: t.section, vendorId: v.id, employeeId: null, deducteeName: v.name, deducteePan: validPan(v.pan), deducteeRef: null, projectId, paidOn, amountPaid: t.base, rate: t.rate, tdsAmount, reason: t.reason, certificateNo: t.certificateNo };
+    return { form: 'FORM_26Q', section: t.section, vendorId: v.id, employeeId: null, deducteeName: v.name, deducteePan: validPan(v.pan), deducteeRef: null, projectId, paidOn, amountPaid: t.base, rate: t.rate, tdsAmount, reason: t.reason, certificateNo: t.certificateNo, certificateBase: t.certificateBase };
   }
 
   private refuseInChallan(d: { challan: { bsrCode: string; challanSerial: string; depositedOn: Date } | null }, what: string) {
@@ -171,14 +190,22 @@ export class TdsDeductionsService {
       this.refuseInChallan(now, 'this payment');
     }
     await this.holdQuarters(tx, organizationId, [...(now ? [{ form: now.form, paidOn: dateOnly(now.paidOn) }] : []), { form: 'FORM_26Q' as const, paidOn: p.paymentDate }], 'this payment');
+    // Written only while still in no challan: a challan claiming it since the read above wins, and this refuses.
     if (!want) {
-      await tx.tdsDeduction.delete({ where: { id: now!.id } });
+      const { count } = await tx.tdsDeduction.deleteMany({ where: { id: now!.id, challanId: null } });
+      if (!count) this.claimedMeanwhile('this payment');
       return;
     }
     const v = await tx.vendor.findUniqueOrThrow({ where: { id: p.vendorId }, select: { id: true, name: true, pan: true } });
     const draft = this.vendorDraft(v, p.projectId, p.paymentDate, p.tdsAmount, want);
-    if (now) await tx.tdsDeduction.update({ where: { id: now.id }, data: { ...draft, paidOn: parseDate(p.paymentDate) } });
-    else await tx.tdsDeduction.create({ data: { ...draft, organizationId, paidOn: parseDate(p.paymentDate), vendorPaymentId: p.id } });
+    if (now) {
+      const { count } = await tx.tdsDeduction.updateMany({ where: { id: now.id, challanId: null }, data: { ...draft, paidOn: parseDate(p.paymentDate) } });
+      if (!count) this.claimedMeanwhile('this payment');
+    } else await tx.tdsDeduction.create({ data: { ...draft, organizationId, paidOn: parseDate(p.paymentDate), vendorPaymentId: p.id } });
+  }
+
+  private claimedMeanwhile(what: string): never {
+    throw new ConflictException(`The TDS on ${what} went into a challan a moment ago. Delete that challan under Accounts › TDS returns first, then change it`);
   }
 
   /** Payments about to be taken off by payables, in its transaction: their deductions go first, never one in a challan or a filed quarter. */
@@ -188,7 +215,8 @@ export class TdsDeductionsService {
     if (!rows.length) return;
     for (const r of rows) this.refuseInChallan(r, 'this payment');
     await this.holdQuarters(tx, organizationId, rows.map((r) => ({ form: r.form, paidOn: dateOnly(r.paidOn) })), 'this payment');
-    await tx.tdsDeduction.deleteMany({ where: { id: { in: rows.map((r) => r.id) } } });
+    const { count } = await tx.tdsDeduction.deleteMany({ where: { id: { in: rows.map((r) => r.id) }, challanId: null } });
+    if (count !== rows.length) this.claimedMeanwhile(rows.length === 1 ? 'this payment' : 'these payments');
   }
 
   /** A subcontractor bill as it is approved, in the approval's transaction: its TDS under 194C on the work value. */
@@ -200,7 +228,7 @@ export class TdsDeductionsService {
     if (b.tdsAmount.lte(0)) return;
     const v = b.workOrder.vendor;
     const pan = validPan(v.pan);
-    const noPanRate = !pan && (rateMilliOf(b.tdsPct.toString()) ?? 0) >= TDS_SECTIONS['194C'].noPanRate;
+    const reason = noPanReason('194C', pan, rateMilliOf(b.tdsPct.toString()));
     await this.write(
       tx,
       organizationId,
@@ -218,8 +246,9 @@ export class TdsDeductionsService {
           amountPaid: b.grossAmount,
           rate: b.tdsPct,
           tdsAmount: b.tdsAmount,
-          reason: noPanRate ? 'C' : null,
+          reason,
           certificateNo: null,
+          certificateBase: null,
           subcontractBillId: b.id,
         },
       ],
@@ -241,6 +270,7 @@ export class TdsDeductionsService {
       organizationId,
       slips.map((s) => {
         const tds = s.lines.reduce((n, l) => n.add(l.amount), D(0));
+        const rate = s.gross.gt(0) ? tds.mul(100).div(s.gross).toDecimalPlaces(3) : null;
         return {
           form: 'FORM_24Q' as const,
           section: '192' as const,
@@ -252,10 +282,12 @@ export class TdsDeductionsService {
           projectId: s.projectId,
           paidOn,
           amountPaid: s.gross,
-          rate: s.gross.gt(0) ? tds.mul(100).div(s.gross).toDecimalPlaces(3) : null,
+          rate,
           tdsAmount: tds,
-          reason: null,
+          // No PAN and taxed at 20% or more (206AA): reason C on the 24Q row.
+          reason: noPanReason('192', s.pan, rate ? rateMilliOf(rate.toString()) : null),
           certificateNo: null,
+          certificateBase: null,
           payslipId: s.id,
         };
       }),
@@ -269,6 +301,7 @@ export class TdsDeductionsService {
     if (!rows.length) return;
     for (const r of rows) this.refuseInChallan(r, 'this salary run');
     await this.holdQuarters(tx, organizationId, rows.map((r) => ({ form: r.form, paidOn: dateOnly(r.paidOn) })), 'this salary run');
-    await tx.tdsDeduction.deleteMany({ where: { id: { in: rows.map((r) => r.id) } } });
+    const { count } = await tx.tdsDeduction.deleteMany({ where: { id: { in: rows.map((r) => r.id) }, challanId: null } });
+    if (count !== rows.length) this.claimedMeanwhile('this salary run');
   }
 }

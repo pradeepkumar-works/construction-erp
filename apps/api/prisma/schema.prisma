@@ -10372,6 +10372,8 @@ model TdsDeduction {
   /// The return's code: A a lower deduction certificate, C the higher rate without a PAN
   reason            String?
   certificateNo     String?
+  /// Rupees of amountPaid at the certificate's rate when its limit ran out inside the payment; the rest took the normal rate
+  certificateBase   Decimal?         @db.Decimal(18, 2)
   vendorPaymentId   String?          @unique
   vendorPayment     VendorPayment?   @relation(fields: [vendorPaymentId], references: [id], onDelete: Restrict)
   subcontractBillId String?          @unique
@@ -10409,6 +10411,8 @@ model TdsChallan {
   other          Decimal       @default(0) @db.Decimal(18, 2)
   /// 200: TDS payable by the taxpayer
   minorHead      String        @default("200")
+  /// Deposited and booked by hand before Nirmaan kept TDS: its voucher is already in the books and Tally, so it posts nothing
+  inBooks        Boolean       @default(false)
   createdById    String
   createdBy      User          @relation("TdsChallanMaker", fields: [createdById], references: [id])
   /// Set once the voucher is in a Tally export; undoing the export clears it

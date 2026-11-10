@@ -195,6 +195,13 @@ export class VendorsService {
     if (!row) throw new NotFoundException('Vendor not found');
     const used = row._count.expenses + row._count.equipment + row._count.stockEntries;
     if (used > 0) throw new ConflictException(`${row.name} is on ${used} expense(s), machine(s) or GRN(s); mark the vendor inactive instead`);
+    // TDS deducted from them goes on the quarter's return under their name and PAN, and a certificate is theirs.
+    const [deductions, certificates] = await Promise.all([
+      this.prisma.tdsDeduction.count({ where: { organizationId: user.organizationId, vendorId: id } }),
+      this.prisma.tdsCertificate.count({ where: { organizationId: user.organizationId, vendorId: id } }),
+    ]);
+    if (deductions + certificates > 0)
+      throw new ConflictException(`${row.name} has ${[deductions ? `${deductions} TDS ${deductions === 1 ? 'deduction' : 'deductions'}` : null, certificates ? `${certificates} lower deduction ${certificates === 1 ? 'certificate' : 'certificates'}` : null].filter(Boolean).join(' and ')}; mark the vendor inactive instead`);
     // Workers and attendance lines that name the vendor lose the link on delete (SetNull); Undo puts it back.
     const [workers, lines] = await Promise.all([
       this.prisma.worker.findMany({ where: { vendorId: id }, select: { id: true } }),

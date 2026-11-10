@@ -4,6 +4,7 @@ import {
   DEBIT_NOTE_REASON_LABELS,
   EXPENSE_CATEGORY_LABELS,
   TALLY_FIXED_LEDGERS,
+  tallyLedgerFallsTo,
   gstStateCode,
   subBillLabel,
   tallyClientKey,
@@ -96,8 +97,13 @@ export class PostingService {
     return { companyName: c?.companyName ?? null, stateCode: c?.stateCode ?? null, costCentres: c?.costCentres ?? true, ledgers: (c?.ledgers as Record<string, string> | undefined) ?? {} };
   }
 
-  namer(cfg: PostingConfig): LedgerName {
-    return (key, fallback) => cfg.ledgers[key] ?? FIXED.get(key)?.name ?? (key.startsWith('EXPENSE:') ? tallyExpenseDefault(key.slice(8) as never) : (fallback ?? key));
+  /** Ledger names: the company's, else the default; for Tally, a section's TDS payable it has not named goes to TDS Payable (`tallyLedgerFallsTo`). */
+  namer(cfg: PostingConfig, tally = false): LedgerName {
+    const own = (key: string): string | undefined => {
+      const to = tally && !cfg.ledgers[key] ? tallyLedgerFallsTo(key) : null;
+      return to ? (cfg.ledgers[to] ?? FIXED.get(to)?.name) : cfg.ledgers[key];
+    };
+    return (key, fallback) => own(key) ?? FIXED.get(key)?.name ?? (key.startsWith('EXPENSE:') ? tallyExpenseDefault(key.slice(8) as never) : (fallback ?? key));
   }
 
   /**
@@ -106,8 +112,8 @@ export class PostingService {
    */
   async build(db: Tx, organizationId: string, cfg: PostingConfig, opts: PostingOptions): Promise<Built> {
     const org = organizationId;
-    const name = this.namer(cfg);
     const tally = opts.unexported;
+    const name = this.namer(cfg, tally);
     const open = { organizationId: org, ...(tally ? { tallyExportId: null } : {}) };
     const range = (field: string) => (opts.range ? { [field]: { lte: opts.range.upTo, ...(opts.range.from ? { gte: opts.range.from } : {}) } } : {});
     const [raBills, awaitingCertification, receipts, vendorBills, subBills, payments, expenses, debitNotes, lostHolds] = await Promise.all([
@@ -701,7 +707,8 @@ export class PostingService {
    */
   private async tdsChallans(db: Tx, org: string, name: LedgerName, opts: PostingOptions, range: (field: string) => object, add: (v: Voucher) => void) {
     const challans = await db.tdsChallan.findMany({
-      where: { organizationId: org, ...(opts.unexported ? { tallyExportId: null } : {}), ...range('depositedOn') },
+      // A challan deposited and booked by hand before Nirmaan kept TDS is already in the books and Tally: it posts nothing.
+      where: { organizationId: org, inBooks: false, ...(opts.unexported ? { tallyExportId: null } : {}), ...range('depositedOn') },
       include: { deductions: { select: { section: true, backfilled: true, tdsAmount: true } } },
     });
     for (const c of challans) {

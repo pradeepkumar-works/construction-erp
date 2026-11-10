@@ -6,6 +6,7 @@ import {
   challanInterest,
   challanLabel,
   challanProblem,
+  challanSectionProblem,
   depositDue,
   formatINR,
   gstShareOf,
@@ -22,8 +23,8 @@ import {
   tdsQuarterState,
   tdsRate,
   tdsSectionName,
+  tdsDue,
   thresholdReached,
-  tdsOn,
   totalsBySection,
   validPan,
   type TdsCertificateDto,
@@ -123,6 +124,7 @@ export class TdsService {
       tdsAmount: money(r.tdsAmount),
       reason: (r.reason as TdsDeductionDto['reason']) ?? null,
       certificateNo: r.certificateNo,
+      certificateBase: r.certificateBase ? money(r.certificateBase) : null,
       challanId: r.challanId,
       challanLabel: r.challan ? challanLabel({ ...r.challan, depositedOn: dateOnly(r.challan.depositedOn) }) : null,
       depositDue: due,
@@ -160,6 +162,7 @@ export class TdsService {
       createdByName: c.createdBy.fullName,
       createdAt: iso(c.createdAt),
       exportedToTally: !!c.tallyExportId,
+      inBooks: c.inBooks,
       canDelete: !c.tallyExportId && ![...quarters].some((q) => filedQuarters.has(`${c.form}:${q}`)),
     };
   }
@@ -250,9 +253,12 @@ export class TdsService {
   }
 
   /**
-   * Record a challan for chosen deductions of one form and one quarter: its tax is their sum, its interest the 201(1A)
-   * interest unless given. The deductions are claimed with one update that must take every one of them, so two challans
-   * at once cannot both cover a deduction; the quarter's shared lock keeps it from being filed meanwhile.
+   * Record a challan for chosen deductions of one form and one quarter (and, on 26Q, one section, as the challan is
+   * deposited under one): its tax is their sum, its interest the 201(1A) interest unless given. The deductions are
+   * claimed with one update that must take every one of them, so two challans at once cannot both cover a deduction, and
+   * the tax and interest are then worked out from the rows as claimed, so an edit just before the claim cannot leave the
+   * challan out of step; the quarter's shared lock keeps it from being filed meanwhile. `inBooks` marks one deposited and
+   * booked by hand before Nirmaan kept TDS: it posts nothing.
    */
   async recordChallan(user: RequestUser, dto: RecordChallanDto): Promise<TdsChallanDetailDto> {
     this.assertCan(user);
@@ -260,36 +266,50 @@ export class TdsService {
     const problem = challanProblem(dto, todayIn());
     if (problem) throw new BadRequestException(problem);
     const { lockedUpTo } = await this.books.period(org);
-    if (lockedUpTo && dto.depositedOn <= lockedUpTo) throw new BadRequestException(`The books are locked up to ${formatDay(lockedUpTo)}, so a challan deposited then cannot go in. Ask management to move the lock under Accounts › Opening and year close.`);
+    if (lockedUpTo && dto.depositedOn <= lockedUpTo && !dto.inBooks) throw new BadRequestException(`The books are locked up to ${formatDay(lockedUpTo)}, so a challan deposited then cannot go in. Ask management to move the lock under Accounts › Opening and year close, or mark it already in the books.`);
     const ids = [...new Set(dto.deductionIds)];
-    const rows = await this.prisma.tdsDeduction.findMany({ where: { id: { in: ids }, organizationId: org }, select: { id: true, form: true, section: true, paidOn: true, tdsAmount: true, challanId: true, deducteeName: true } });
+    const select = { id: true, form: true, section: true, paidOn: true, tdsAmount: true, challanId: true, deducteeName: true } as const;
+    const check = (rows: Prisma.TdsDeductionGetPayload<{ select: typeof select }>[]) => {
+      if (rows.some((r) => r.form !== dto.form)) throw new BadRequestException(`A challan covers deductions of one return: choose only ${formWord(dto.form)} deductions`);
+      const unconfirmed = rows.find((r) => !isTdsSection(r.section));
+      if (unconfirmed) throw new BadRequestException(`Confirm the section of ${unconfirmed.deducteeName}'s deduction first`);
+      const mixed = challanSectionProblem(dto.form, rows.map((r) => r.section));
+      if (mixed) throw new BadRequestException(mixed);
+      const quarters = new Set(rows.map((r) => quarterOf(dateOnly(r.paidOn)).from));
+      if (quarters.size > 1) throw new BadRequestException('A challan covers deductions of one quarter: record one challan per quarter');
+      const later = rows.find((r) => dateOnly(r.paidOn) > dto.depositedOn);
+      if (later) throw new BadRequestException(`${later.deducteeName}'s TDS of ${formatDay(dateOnly(later.paidOn))} was deducted after this deposit`);
+    };
+    const figures = (rows: Prisma.TdsDeductionGetPayload<{ select: typeof select }>[]) => ({
+      tax: rows.reduce((n, r) => n.add(r.tdsAmount), ZERO),
+      interest: dto.interest !== undefined && dto.interest !== null ? D(dto.interest) : D(challanInterest(dto.depositedOn, rows.map((r) => ({ paidOn: dateOnly(r.paidOn), tdsAmount: r.tdsAmount.toString() }))).interest),
+    });
+    const rows = await this.prisma.tdsDeduction.findMany({ where: { id: { in: ids }, organizationId: org }, select });
     if (rows.length !== ids.length) throw new NotFoundException('A deduction was not found; reload the quarter');
-    if (rows.some((r) => r.form !== dto.form)) throw new BadRequestException(`A challan covers deductions of one return: choose only ${formWord(dto.form)} deductions`);
-    const unconfirmed = rows.find((r) => !isTdsSection(r.section));
-    if (unconfirmed) throw new BadRequestException(`Confirm the section of ${unconfirmed.deducteeName}'s deduction first`);
-    const quarters = new Set(rows.map((r) => quarterOf(dateOnly(r.paidOn)).from));
-    if (quarters.size > 1) throw new BadRequestException('A challan covers deductions of one quarter: record one challan per quarter');
-    const later = rows.find((r) => dateOnly(r.paidOn) > dto.depositedOn);
-    if (later) throw new BadRequestException(`${later.deducteeName}'s TDS of ${formatDay(dateOnly(later.paidOn))} was deducted after this deposit`);
-    const tax = rows.reduce((n, r) => n.add(r.tdsAmount), ZERO);
-    const interest = dto.interest !== undefined && dto.interest !== null ? D(dto.interest) : D(challanInterest(dto.depositedOn, rows.map((r) => ({ paidOn: dateOnly(r.paidOn), tdsAmount: r.tdsAmount.toString() }))).interest);
+    check(rows);
     const fee = D(dto.fee ?? 0);
-    let id: string;
+    let done: { id: string; tax: Prisma.Decimal; interest: Prisma.Decimal; count: number };
     try {
-      id = await this.prisma.$transaction(async (tx) => {
+      done = await this.prisma.$transaction(async (tx) => {
         await this.deductions.holdQuarters(tx, org, rows.map((r) => ({ form: r.form, paidOn: dateOnly(r.paidOn) })), 'a challan');
         const c = await tx.tdsChallan.create({
-          data: { organizationId: org, form: dto.form, bsrCode: dto.bsrCode, challanSerial: dto.challanSerial.padStart(5, '0'), depositedOn: parseDate(dto.depositedOn), tax, interest, fee, createdById: user.id },
+          data: { organizationId: org, form: dto.form, bsrCode: dto.bsrCode, challanSerial: dto.challanSerial.padStart(5, '0'), depositedOn: parseDate(dto.depositedOn), tax: ZERO, interest: ZERO, fee, inBooks: !!dto.inBooks, createdById: user.id },
         });
-        const { count } = await tx.tdsDeduction.updateMany({ where: { id: { in: ids }, challanId: null }, data: { challanId: c.id } });
+        const { count } = await tx.tdsDeduction.updateMany({ where: { id: { in: ids }, organizationId: org, challanId: null }, data: { challanId: c.id } });
         if (count !== ids.length) throw new ConflictException('Some of these deductions went into another challan a moment ago. Reload the quarter and choose again.');
-        return c.id;
+        // The rows as claimed: once in the challan, no payment, bill or run can change them.
+        const claimed = await tx.tdsDeduction.findMany({ where: { challanId: c.id }, select });
+        check(claimed);
+        const f = figures(claimed);
+        await tx.tdsChallan.update({ where: { id: c.id }, data: { tax: f.tax, interest: f.interest } });
+        return { id: c.id, ...f, count: claimed.length };
       });
     } catch (e) {
       if (isUniqueViolation(e)) throw new ConflictException(`Challan ${challanLabel(dto)} is already recorded`);
       throw e;
     }
-    await this.audit.log(user, 'TDS_CHALLAN', id, 'CREATED', `${challanLabel(dto)}: TDS ${formatINR(tax.toString(), true)} for ${rows.length} ${rows.length === 1 ? 'deduction' : 'deductions'}${interest.gt(0) ? `, interest ${formatINR(interest.toString(), true)}` : ''}${fee.gt(0) ? `, fee ${formatINR(fee.toString(), true)}` : ''}`);
+    const { id, tax, interest } = done;
+    await this.audit.log(user, 'TDS_CHALLAN', id, 'CREATED', `${challanLabel(dto)}: TDS ${formatINR(tax.toString(), true)} for ${done.count} ${done.count === 1 ? 'deduction' : 'deductions'}${interest.gt(0) ? `, interest ${formatINR(interest.toString(), true)}` : ''}${fee.gt(0) ? `, fee ${formatINR(fee.toString(), true)}` : ''}${dto.inBooks ? ', already in the books' : ''}`);
     return this.challan(user, id);
   }
 
@@ -346,13 +366,13 @@ export class TdsService {
   private async quarterIn(tx: Prisma.TransactionClient, org: string, form: TdsReturnForm, q: TdsQuarter) {
     const [o, rows] = await Promise.all([
       tx.organization.findUniqueOrThrow({ where: { id: org }, select: { tan: true } }),
-      tx.tdsDeduction.findMany({ where: { organizationId: org, form, paidOn: { gte: parseDate(q.from), lte: parseDate(q.to) } }, select: { id: true, section: true, deducteeName: true, deducteePan: true, deducteeRef: true, paidOn: true, amountPaid: true, rate: true, tdsAmount: true, reason: true, certificateNo: true, challanId: true } }),
+      tx.tdsDeduction.findMany({ where: { organizationId: org, form, paidOn: { gte: parseDate(q.from), lte: parseDate(q.to) } }, select: { id: true, section: true, deducteeName: true, deducteePan: true, deducteeRef: true, paidOn: true, amountPaid: true, rate: true, tdsAmount: true, reason: true, certificateNo: true, certificateBase: true, challanId: true } }),
     ]);
     const ids = [...new Set(rows.flatMap((r) => (r.challanId ? [r.challanId] : [])))];
     const challans = ids.length ? await tx.tdsChallan.findMany({ where: { id: { in: ids } } }) : [];
     const problems = returnProblems({
       tan: o.tan,
-      deductions: rows.map((r) => ({ ...r, paidOn: dateOnly(r.paidOn), amountPaid: r.amountPaid.toString(), rate: r.rate?.toString() ?? null, tdsAmount: r.tdsAmount.toString(), reason: (r.reason as 'A' | 'C' | null) ?? null })),
+      deductions: rows.map((r) => ({ ...r, paidOn: dateOnly(r.paidOn), amountPaid: r.amountPaid.toString(), rate: r.rate?.toString() ?? null, tdsAmount: r.tdsAmount.toString(), reason: (r.reason as 'A' | 'C' | null) ?? null, certificateBase: r.certificateBase?.toString() ?? null })),
       challans: challans.map((c) => ({ id: c.id, bsrCode: c.bsrCode, challanSerial: c.challanSerial, depositedOn: dateOnly(c.depositedOn), tax: c.tax.toString(), interest: c.interest.toString(), fee: c.fee.toString(), other: c.other.toString(), minorHead: c.minorHead })),
     });
     return { problems, count: rows.length };
@@ -387,7 +407,7 @@ export class TdsService {
     if (!r.vendorPaymentId) throw new BadRequestException(r.subcontractBillId ? 'A subcontractor bill’s TDS is always 194C' : 'Salary TDS is always 192');
     if (!isTdsSection(dto.section) || TDS_SECTIONS[dto.section].form !== 'FORM_26Q') throw new BadRequestException('Choose a TDS section for vendors and contractors');
     if (r.vendorPayment?.tallyExportId && !r.backfilled) throw new BadRequestException('This payment’s voucher is in Tally. Undo that Tally export first, then change its section');
-    const base = dto.amountPaid ? D(dto.amountPaid) : r.amountPaid;
+    const base = dto.amountPaid ? D(dto.amountPaid) : r.section === null ? await this.beforeGst(r.vendorPaymentId, r.amountPaid, r.tdsAmount) : r.amountPaid;
     if (base.lte(0) || base.lt(r.tdsAmount)) throw new BadRequestException('The amount TDS is worked out on must be more than the TDS');
     const paidOn = dateOnly(r.paidOn);
     const vendor = r.vendorId ? await this.prisma.vendor.findUniqueOrThrow({ where: { id: r.vendorId }, select: { pan: true } }) : { pan: r.deducteePan };
@@ -395,12 +415,25 @@ export class TdsService {
     const rate = tdsRate(dto.section, { pan: vendor.pan, certificate: cert }, paidOn, base.toString());
     await this.prisma.$transaction(async (tx) => {
       await this.deductions.holdQuarters(tx, org, [{ form: r.form, paidOn }], 'this deduction');
-      const { count } = await tx.tdsDeduction.updateMany({ where: { id, challanId: null }, data: { section: dto.section, amountPaid: base, rate: D(rateText(rate.rate)), reason: rate.reason, certificateNo: rate.certificateNo } });
+      const { count } = await tx.tdsDeduction.updateMany({ where: { id, challanId: null }, data: { section: dto.section, amountPaid: base, rate: D(rateText(rate.rate)), reason: rate.reason, certificateNo: rate.certificateNo, certificateBase: rate.certificateBase ? D(rate.certificateBase) : null } });
       if (!count) throw new ConflictException('This deduction went into a challan a moment ago. Delete that challan first to change its section.');
     });
     await this.audit.log(user, 'VENDOR_PAYMENT', r.vendorPaymentId, 'UPDATED', `TDS section ${tdsSectionName(dto.section)} at ${rateText(rate.rate)}% on ${formatINR(base.toString(), true)}`);
     const row = await this.prisma.tdsDeduction.findUniqueOrThrow({ where: { id }, include: DEDUCTION_INCLUDE });
     return this.deductionDto(row, false, todayIn());
+  }
+
+  /**
+   * A payment's value before GST, as a new payment's base is (`gstShareOf` over its vendor bill): what a deduction from
+   * before sections is confirmed on unless typed. The base kept when there is no bill, or when taking GST off would
+   * leave less than the TDS.
+   */
+  private async beforeGst(paymentId: string, kept: Prisma.Decimal, tds: Prisma.Decimal): Promise<Prisma.Decimal> {
+    const p = await this.prisma.vendorPayment.findUnique({ where: { id: paymentId }, select: { amount: true, tdsAmount: true, otherDeduction: true, vendorBill: { select: { gstAmount: true, total: true } } } });
+    if (!p?.vendorBill) return kept;
+    const settles = p.amount.add(p.tdsAmount).add(p.otherDeduction);
+    const base = settles.sub(D(gstShareOf(settles.toString(), p.vendorBill.gstAmount.toString(), p.vendorBill.total.toString())));
+    return base.gte(tds) ? base : kept;
   }
 
   /**
@@ -423,26 +456,47 @@ export class TdsService {
     const bill = q.vendorBillId ? await this.prisma.vendorBill.findFirst({ where: { id: q.vendorBillId, organizationId: org, vendorId: q.vendorId }, select: { gstAmount: true, total: true } }) : null;
     const base = q.base ? D(q.base) : D(q.amount).sub(bill ? D(gstShareOf(q.amount, bill.gstAmount.toString(), bill.total.toString())) : ZERO);
     const fyStart = quarterOf(q.on).fy.slice(0, 4) + '-04-01';
-    const before = { organizationId: org, vendorId: q.vendorId, ...(q.paymentId ? { id: { not: q.paymentId } } : {}) };
-    const [year, month] = await Promise.all([
-      this.prisma.vendorPayment.aggregate({ where: { ...before, paymentDate: { gte: parseDate(fyStart), lte: parseDate(q.on) } }, _sum: { amount: true, tdsAmount: true, otherDeduction: true } }),
-      this.prisma.vendorPayment.aggregate({ where: { ...before, paymentDate: { gte: parseDate(`${q.on.slice(0, 7)}-01`), lte: parseDate(q.on) } }, _sum: { amount: true, tdsAmount: true, otherDeduction: true } }),
+    const monthStart = `${q.on.slice(0, 7)}-01`;
+    const notThis = q.paymentId ? [{ OR: [{ vendorPaymentId: null }, { vendorPaymentId: { not: q.paymentId } }] }] : [];
+    const [taxed, untaxed] = await Promise.all([
+      // What took TDS under the section this year (or is still to confirm, from before sections), on its base: payments,
+      // and subcontractor bills under 194C.
+      this.prisma.tdsDeduction.findMany({
+        where: { organizationId: org, vendorId: q.vendorId, form: 'FORM_26Q', paidOn: { gte: parseDate(fyStart), lte: parseDate(q.on) }, AND: [{ OR: [{ section }, { section: null, vendorPaymentId: { not: null } }] }, ...notThis] },
+        select: { paidOn: true, amountPaid: true },
+      }),
+      // Payments that took none, on their value before GST: what crossing the year's limit brings in.
+      this.prisma.vendorPayment.findMany({
+        where: { organizationId: org, vendorId: q.vendorId, tdsAmount: 0, paymentDate: { gte: parseDate(fyStart), lte: parseDate(q.on) }, ...(q.paymentId ? { id: { not: q.paymentId } } : {}) },
+        select: { paymentDate: true, amount: true, otherDeduction: true, vendorBill: { select: { gstAmount: true, total: true } } },
+      }),
     ]);
-    const settled = (a: typeof year) => (a._sum.amount ?? ZERO).add(a._sum.tdsAmount ?? ZERO).add(a._sum.otherDeduction ?? ZERO);
-    const threshold = thresholdReached(section, { amount: money(base), yearBefore: settled(year).toString(), monthBefore: settled(month).toString() });
+    const untaxedBase = untaxed.map((p) => {
+      const settles = p.amount.add(p.otherDeduction);
+      return { on: dateOnly(p.paymentDate), base: p.vendorBill ? settles.sub(D(gstShareOf(settles.toString(), p.vendorBill.gstAmount.toString(), p.vendorBill.total.toString()))) : settles };
+    });
+    const sum = (xs: Prisma.Decimal[]) => xs.reduce((n, x) => n.add(x), ZERO);
+    const taxedYear = sum(taxed.map((t) => t.amountPaid));
+    const untaxedYear = sum(untaxedBase.map((u) => u.base));
+    const monthBefore = sum([...taxed.filter((t) => dateOnly(t.paidOn) >= monthStart).map((t) => t.amountPaid), ...untaxedBase.filter((u) => u.on >= monthStart).map((u) => u.base)]);
+    const threshold = thresholdReached(section, { amount: money(base), yearBefore: money(taxedYear.add(untaxedYear)), untaxedBefore: money(untaxedYear), monthBefore: money(monthBefore) });
+    // The earlier payments caught up go on this payment's row: TDS is worked out on both, unless the base was typed
+    // (it is then what TDS is worked out on, catch-up and all).
+    const taxedOn = q.base ? base : base.add(D(threshold.catchUp));
     const cert = validPan(vendor.pan) ? await this.deductions.certificateFor(this.prisma, org, q.vendorId, section, q.on) : null;
-    const r = tdsRate(section, { pan: vendor.pan, certificate: cert }, q.on, money(base));
+    const r = tdsRate(section, { pan: vendor.pan, certificate: cert }, q.on, money(taxedOn));
     return {
       section,
       lastUsed: !q.section,
       base: money(base),
+      taxedOn: money(taxedOn),
       rate: rateText(r.rate),
       reason: r.reason,
       certificateNo: r.certificateNo,
       why: r.why,
       threshold,
-      tds: threshold.due ? tdsOn(threshold.base, r.rate) : '0.00',
-      yearBefore: money(settled(year)),
+      tds: threshold.due ? tdsDue(money(taxedOn), r) : '0.00',
+      yearBefore: money(taxedYear.add(untaxedYear)),
     };
   }
 
@@ -471,10 +525,7 @@ export class TdsService {
   async certificates(user: RequestUser): Promise<TdsCertificateDto[]> {
     this.assertCan(user);
     const rows = await this.prisma.tdsCertificate.findMany({ where: { organizationId: user.organizationId }, include: { vendor: { select: { name: true } } }, orderBy: [{ validTo: 'desc' }, { certificateNo: 'asc' }] });
-    const used = rows.length
-      ? await this.prisma.tdsDeduction.groupBy({ by: ['certificateNo'], where: { organizationId: user.organizationId, certificateNo: { in: rows.map((r) => r.certificateNo) } }, _sum: { amountPaid: true } })
-      : [];
-    const usedOf = new Map(used.map((u) => [u.certificateNo, u._sum.amountPaid ?? ZERO]));
+    const usedOf = await this.deductions.certificateUsed(this.prisma, user.organizationId, rows.map((r) => r.certificateNo));
     return rows.map((r) => ({
       id: r.id,
       vendorId: r.vendorId,

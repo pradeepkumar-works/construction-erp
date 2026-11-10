@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { ArrayMaxSize, ArrayMinSize, IsArray, IsDateString, IsIn, IsNotEmpty, IsOptional, IsString, IsUUID, Matches, MaxLength, ValidateIf } from 'class-validator';
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsDateString, IsIn, IsNotEmpty, IsOptional, IsString, IsUUID, Matches, MaxLength, ValidateIf } from 'class-validator';
 import { TDS_RETURN_FORMS, TDS_SECTION_KEYS, type TdsReturnForm } from '@erp/shared';
 
 const trim = () => Transform(({ value }) => (typeof value === 'string' ? value.trim() || null : value));
@@ -26,6 +26,7 @@ export class RecordChallanDto {
   @ApiProperty({ type: [String], description: 'The deductions it covers; its tax is their sum' }) @IsArray() @ArrayMinSize(1, { message: 'Choose the deductions this challan covers' }) @ArrayMaxSize(5000) @IsUUID('4', { each: true }) deductionIds: string[];
   @ApiPropertyOptional({ example: '0', description: 'Interest under 201(1A); left out, worked out from the dates' }) @IsOptional() @num() @opt() @Matches(MONEY, { message: 'Enter the interest in rupees' }) interest?: string | null;
   @ApiPropertyOptional({ example: '0', description: 'Late fee under 234E paid on the challan' }) @IsOptional() @num() @opt() @Matches(MONEY, { message: 'Enter the late fee in rupees' }) fee?: string | null;
+  @ApiPropertyOptional({ description: 'Deposited and booked by hand before Nirmaan kept TDS: it posts nothing to the books or Tally' }) @IsOptional() @IsBoolean() inBooks?: boolean;
 }
 
 export class FileReturnDto extends QuarterQuery {
