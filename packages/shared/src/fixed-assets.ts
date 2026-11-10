@@ -241,13 +241,14 @@ export function itBlockSchedule(assets: ItAsset[], fy: string): ({ block: ItBloc
 }
 
 /** A run's period in words: "October 2026", "2026-27", else the two days. */
+const dayWords = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+
 export function runPeriodLabel(from: string, to: string): string {
   const monthEnd = dayOf(dayNo(`${from.slice(0, 7)}-01`) + new Date(Date.UTC(Number(from.slice(0, 4)), Number(from.slice(5, 7)), 0)).getUTCDate() - 1);
   if (from.slice(8) === '01' && to === monthEnd) return new Date(`${from}T00:00:00Z`).toLocaleString('en-IN', { month: 'long', year: 'numeric', timeZone: 'UTC' });
   const fy = financialYearOf(from);
   if (from === fy.from && to === fy.to) return fyCodeOf(from);
-  const day = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
-  return `${day(from)} to ${day(to)}`;
+  return `${dayWords(from)} to ${dayWords(to)}`;
 }
 
 interface RunPeriod {
@@ -256,12 +257,13 @@ interface RunPeriod {
 }
 
 /**
- * Why a run's period cannot be prepared, else null: one financial year at most, and after every other run, since each run
- * charges what the runs before it left.
+ * Why a run's period cannot be prepared or posted, else null: one financial year at most, ended by `today`, and after
+ * every other run, since each run charges what the runs before it left.
  */
-export function runPeriodProblem(from: string, to: string, others: RunPeriod[]): string | null {
+export function runPeriodProblem(from: string, to: string, others: RunPeriod[], today: string): string | null {
   if (to < from) return 'Choose an end date on or after the start';
   if (financialYearOf(from).from !== financialYearOf(to).from) return 'Keep a run within one financial year (April to March)';
+  if (to > today) return `Depreciation for ${runPeriodLabel(from, to)} runs past today. Prepare it once the period has ended.`;
   const clash = others.find((o) => o.from <= to && from <= o.to);
   if (clash) return `Depreciation for ${runPeriodLabel(clash.from, clash.to)} already covers part of this period`;
   const later = others.find((o) => o.from > to);
@@ -281,10 +283,19 @@ export function runStepProblem(step: 'refresh' | 'delete' | 'undo' | 'post', run
   return after ? `Depreciation for ${runPeriodLabel(after.from, after.to)} comes after this run. Take that one out first: runs come out latest first.` : null;
 }
 
-/** Why an asset cannot be saved as it is, else null. */
+/**
+ * The day an asset's depreciation before Nirmaan must run up to, else null: the day before the books begin, for an asset
+ * already in the books and put to use before then, whose depreciation till then is in the opening balances.
+ */
+export function openingAsOfNeeded(a: { putToUseOn: string; fundedBy: AssetFunding }, booksFrom: string | null): string | null {
+  return booksFrom && a.fundedBy === 'IN_BOOKS' && a.putToUseOn < booksFrom ? addDays(booksFrom, -1) : null;
+}
+
+/** Why an asset cannot be saved as it is, else null. `booksFrom` is the day the company's books begin, if set. */
 export function assetProblem(a: {
   name: string;
   assetClass: string;
+  method: DepreciationMethod;
   cost: number;
   residual: number;
   lifeYears: number;
@@ -292,13 +303,18 @@ export function assetProblem(a: {
   fundedBy: AssetFunding;
   vendorId: string | null;
   opening: { asOf: string; amount: number } | null;
+  booksFrom: string | null;
 }): string | null {
   if (!a.name.trim()) return 'Name the asset';
   if (!isAssetClass(a.assetClass)) return 'Choose the asset class';
   if (!(a.cost > 0)) return 'Enter the cost, above zero';
   if (a.residual < 0 || a.residual >= a.cost) return 'Keep the residual value below the cost';
+  if (a.method === 'WDV' && !(a.residual > 0)) return 'Enter a residual value above zero for written down value, usually 5% of the cost';
   if (!Number.isInteger(a.lifeYears) || a.lifeYears < 1 || a.lifeYears > 100) return 'Enter a useful life of 1 to 100 years';
   if (a.fundedBy === 'VENDOR' && !a.vendorId) return 'Choose the vendor it was bought from';
+  if (a.opening && a.fundedBy !== 'IN_BOOKS') return 'Depreciation before Nirmaan goes only on an asset already in the books. Choose Already in the books, or leave it at None.';
+  const needed = openingAsOfNeeded(a, a.booksFrom);
+  if (needed && a.opening?.asOf !== needed) return `Enter the depreciation charged up to ${dayWords(needed)}, the day before the books begin`;
   if (a.opening) {
     if (a.opening.asOf < a.putToUseOn) return 'Date the depreciation before Nirmaan on or after the day it was put to use';
     if (a.opening.amount < 0 || a.opening.amount > a.cost - a.residual) return 'Keep the depreciation before Nirmaan between zero and the cost less the residual';

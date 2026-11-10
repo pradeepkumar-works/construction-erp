@@ -1,12 +1,14 @@
 import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, RequestUser } from '../common/current-user';
+import { ModuleSwitch } from '../common/decorators';
 import { FixedAssetsService } from './fixed-assets.service';
 import { CreateFixedAssetDto, DisposeAssetDto, FixedAssetQuery, ItScheduleQuery, PrepareRunDto, TransferAssetDto, UpdateFixedAssetDto } from './fixed-assets.dto';
 
 /** Fixed assets: the register, transfers, depreciation runs and disposals. Admin, management and accounts. */
 @ApiTags('fixed-assets')
 @ApiBearerAuth()
+@ModuleSwitch('books')
 @Controller('fixed-assets')
 export class FixedAssetsController {
   constructor(private assets: FixedAssetsService) {}

@@ -24,6 +24,7 @@ import {
   canManageEquipment,
   canManageFixedAssets,
   fuelNormText,
+  pathIsOff,
 } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
@@ -87,7 +88,7 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
   const router = useRouter();
   const qc = useQueryClient();
   const mayManage = !!user && canManageEquipment(user.roleKey);
-  const mayAsset = !!user && canManageFixedAssets(user.roleKey);
+  const mayAsset = !!user && canManageFixedAssets(user.roleKey) && !pathIsOff('/fixed-assets', user.modulesOff);
   const [makingAsset, setMakingAsset] = useState<MachineSeed | null>(null);
   const { data: projects } = useProjects();
   const [editing, setEditing] = useState<EquipmentDto | 'new' | null>(null);

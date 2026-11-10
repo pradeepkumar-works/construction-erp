@@ -2,14 +2,17 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Button, Table } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ASSET_CLASSES, ASSET_FUNDING_LABELS, DEPRECIATION_METHOD_LABELS, figure, type AssetChargeDto, type AssetTransferDto, type FixedAssetDetailDto } from '@erp/shared';
+import { ASSET_CLASSES, ASSET_FUNDING_LABELS, DEPRECIATION_METHOD_LABELS, canManageEquipment, figure, type AssetChargeDto, type AssetTransferDto, type FixedAssetDetailDto } from '@erp/shared';
 import { api } from '@/lib/api';
+import { useAuth } from '@/lib/auth';
 import { useFixedAsset } from '@/lib/queries';
 import { formatDate, formatINR, toNumber } from '@/lib/format';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
 import { Money } from '@/components/common/Money';
+import { openableRow } from '@/components/list/openableRow';
 import { RecordFrame } from '@/components/record/RecordFrame';
 import { projectContext } from '@/components/record/RecordParts';
 import { AssetFormDrawer, DisposeModal, TransferModal } from './AssetForms';
@@ -17,11 +20,15 @@ import { AssetStatusTag, RunStatusTag, assetHref, invalidateAssets, runHref } fr
 
 const LIST = { href: '/fixed-assets', label: 'Fixed assets' };
 
+/** The runs that charged it, a row a tap opens (so 44 px high on a phone, its link exempt as the row's own). */
 function Charges({ charges }: { charges: AssetChargeDto[] }) {
+  const router = useRouter();
   return (
     <Table<AssetChargeDto>
       rowKey="runId"
-      size="small"
+      size="middle"
+      rowClassName="row-click"
+      onRow={(c) => openableRow(() => router.push(runHref(c.runId)))}
       pagination={charges.length > 24 ? { pageSize: 24, showSizeChanger: false } : false}
       dataSource={charges}
       scroll={{ x: 520 }}
@@ -74,6 +81,9 @@ export function AssetRecord({ id, onClose }: { id: string; onClose: () => void }
   const [askDelete, deleteDialog] = useConfirmDelete();
   const remove = useMutation({ mutationFn: async () => (await api.delete(`/fixed-assets/${id}`)).data });
   const active = a?.status === 'ACTIVE';
+  const { user } = useAuth();
+  // A machine's asset moves with the machine, in Plant, which only approvers change.
+  const mayMove = !a?.equipmentId || (!!user && canManageEquipment(user.roleKey));
 
   return (
     <>
@@ -104,7 +114,22 @@ export function AssetRecord({ id, onClose }: { id: string; onClose: () => void }
               { key: 'funded', label: 'Paid for', children: a.vendorName ? `${ASSET_FUNDING_LABELS[a.fundedBy]} · ${a.vendorName}` : ASSET_FUNDING_LABELS[a.fundedBy] },
               ...(a.invoiceNo ? [{ key: 'invoice', label: 'Invoice', children: <span translate="no">{a.invoiceNo}</span> }] : []),
               ...(a.serialNo ? [{ key: 'serial', label: 'Serial no.', children: <span translate="no">{a.serialNo}</span> }] : []),
-              ...(a.equipmentId ? [{ key: 'machine', label: 'Machine', children: <Link href="/machinery?tab=equipment" translate="no">{a.equipmentCode}</Link> }] : []),
+              ...(a.equipmentId
+                ? [
+                    {
+                      key: 'machine',
+                      label: 'Machine',
+                      children: (
+                        <span>
+                          <Link href="/machinery?tab=equipment" translate="no">
+                            {a.equipmentCode}
+                          </Link>
+                          {mayMove ? null : ', moved in Plant'}
+                        </span>
+                      ),
+                    },
+                  ]
+                : []),
               ...(a.openingAsOf ? [{ key: 'opening', label: 'Before Nirmaan', children: `${formatINR(a.openingDepreciation)} depreciation up to ${formatDate(a.openingAsOf)}` }] : []),
               ...(a.note ? [{ key: 'note', label: 'Note', span: 2, children: <span style={{ whiteSpace: 'pre-wrap' }}>{a.note}</span> }] : []),
             ],
@@ -115,9 +140,11 @@ export function AssetRecord({ id, onClose }: { id: string; onClose: () => void }
             actions: (size) =>
               active ? (
                 <>
-                  <Button size={size} onClick={() => setDialog('move')}>
-                    Move
-                  </Button>
+                  {mayMove ? (
+                    <Button size={size} onClick={() => setDialog('move')}>
+                      Move
+                    </Button>
+                  ) : null}
                   <Button size={size} onClick={() => setDialog('dispose')}>
                     Sell or scrap
                   </Button>

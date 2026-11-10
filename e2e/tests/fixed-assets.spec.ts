@@ -13,6 +13,7 @@ const lastFrom = (() => {
 const lastTo = new Date(Date.UTC(Number(lastFrom.slice(0, 4)), Number(lastFrom.slice(5, 7)), 0)).toISOString().slice(0, 10);
 const fyFrom = `${Number(today.slice(0, 4)) - (Number(today.slice(5, 7)) < 4 ? 1 : 0)}-04-01`;
 const lastLabel = new Date(`${lastFrom}T00:00:00Z`).toLocaleString('en-IN', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+const fyTo = `${Number(fyFrom.slice(0, 4)) + 1}-03-31`;
 
 type Page_<T> = { items: T[] };
 const send = (token: string, method: string, path: string, body?: unknown) =>
@@ -117,6 +118,11 @@ test('lane 3: an owned machine becomes an asset from Plant, and a hired one offe
   expect(made).toMatchObject({ equipmentId: owned.id, equipmentCode: owned.code, fundedBy: 'IN_BOOKS', projectId: owned.projectId });
   await page.getByRole('button', { name: /^Details \(\d+\)/ }).click();
   await expect(page.getByRole('link', { name: owned.code })).toBeVisible();
+  // Accounts manage no machine, so a machine's asset moves in Plant, not here.
+  await expect(page.getByRole('button', { name: 'Move', exact: true })).toHaveCount(0);
+  const move = await send(accounts, 'POST', `/fixed-assets/${made.id}/transfer`, { toProjectId: null, on: today });
+  expect(move.status).toBe(403);
+  expect((await move.json()).message).toBe(`Move ${owned.code} in Plant; its asset moves with it`);
   await shot(page, 'fa-from-machine.png');
 
   const again = await send(accounts, 'POST', '/fixed-assets', { name: 'Twice', assetClass: 'PLANT_GENERAL', cost: 1000, putToUseOn: fyFrom, fundedBy: 'IN_BOOKS', equipmentId: owned.id });
@@ -127,6 +133,9 @@ test('lane 3: an owned machine becomes an asset from Plant, and a hired one offe
 });
 
 test('lane 4: last month’s run is prepared as a draft, each line the schedule’s charge and the total shown', async ({ page }) => {
+  const future = await send(accounts, 'POST', '/fixed-assets/runs', { from: fyFrom, to: fyTo });
+  expect(future.status).toBe(400);
+  expect((await future.json()).message).toMatch(/runs past today/);
   await signIn(page, 'accounts@demo.com');
   await page.goto('/fixed-assets?tab=runs');
   await page.getByRole('button', { name: 'Prepare depreciation' }).first().click();

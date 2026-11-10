@@ -228,7 +228,9 @@ export class MachineryService {
     const data = await this.equipmentData(user, dto);
     try {
       await this.prisma.$transaction(async (tx) => {
-        const was = await tx.equipment.findUniqueOrThrow({ where: { id }, select: { projectId: true, fixedAsset: { select: { id: true, status: true } } } });
+        const was = await tx.equipment.findUniqueOrThrow({ where: { id }, select: { code: true, projectId: true, fixedAsset: { select: { id: true, status: true, assetNo: true } } } });
+        if (dto.ownership === 'HIRED' && was.fixedAsset?.status === 'ACTIVE')
+          throw new BadRequestException(`${was.code} is asset ${was.fixedAsset.assetNo} in the fixed asset register. Sell or scrap it there before marking the machine hired.`);
         await tx.equipment.update({ where: { id }, data });
         // A machine in the fixed asset register moves there too, with a line in its history.
         const asset = was.fixedAsset;

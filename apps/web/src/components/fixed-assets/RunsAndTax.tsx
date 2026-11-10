@@ -12,7 +12,6 @@ import { QueryError } from '@/components/common/QueryState';
 import { EmptyArt } from '@/components/common/EmptyArt';
 import { DataTable, useColumnChoice, type ListColumn } from '@/components/list/DataTable';
 import { RecordLink } from '@/components/record/RecordLink';
-import { Money } from '@/components/common/Money';
 import { PrepareRunModal } from './AssetForms';
 import { RunStatusTag, runHref } from './assetUi';
 
@@ -39,7 +38,7 @@ export function RunsList() {
         </div>
       ),
     },
-    { key: 'assets', title: 'Assets', width: 100, align: 'right', render: (_, r) => r.assets },
+    { key: 'assets', title: 'Assets', width: 100, kind: 'qty', value: (r) => r.assets },
     { key: 'total', title: 'Depreciation', kind: 'money', value: (r) => r.total, width: 160 },
     { key: 'voucher', title: 'Voucher', width: 150, render: (_, r) => (r.voucherNo ? <span className="mono" translate="no">{r.voucherNo}</span> : NO_VALUE), defaultFrom: 1024 },
     { key: 'by', title: 'Posted by', width: 200, render: (_, r) => (r.postedByName ? <span>{r.postedByName}<span style={caption}>{formatDate(r.postedAt?.slice(0, 10))}</span></span> : NO_VALUE), defaultFrom: 1280 },
@@ -83,31 +82,18 @@ export function IncomeTaxBlocks() {
   const columns: ListColumn<BlockRow>[] = [
     { key: 'block', title: 'Block', locked: true, render: (_, b) => <span>{b.label}<span style={caption}>{`${b.ratePct}% a year`}</span></span> },
     { key: 'opening', title: 'Opening WDV', kind: 'money', value: (b) => b.openingWdv, width: 150 },
-    {
-      key: 'additions',
-      title: 'Additions',
-      width: 170,
-      align: 'right',
-      render: (_, b) => (
-        <span>
-          <Money value={b.additions} />
-          {toNumber(b.halfRateAdditions) ? (
-            <span style={caption}>
-              <Money value={b.halfRateAdditions} /> at half rate
-            </span>
-          ) : null}
-        </span>
-      ),
-    },
+    { key: 'additions', title: 'Additions', kind: 'money', value: (b) => b.additions, width: 150 },
+    { key: 'halfRate', title: 'At half rate', kind: 'money', value: (b) => (toNumber(b.halfRateAdditions) ? b.halfRateAdditions : null), width: 150, defaultFrom: 1280 },
     { key: 'disposals', title: 'Sold', kind: 'money', value: (b) => b.disposals, width: 140 },
     { key: 'depreciation', title: 'Depreciation', kind: 'money', value: (b) => b.depreciation, width: 150, total: (rows) => formatINR(rows.reduce((n, b) => n + toNumber(b.depreciation), 0)) },
     { key: 'closing', title: 'Closing WDV', kind: 'money', value: (b) => b.closingWdv, width: 150 },
     {
       key: 'gain',
       title: 'Capital gain',
+      kind: 'money',
+      value: (b) => (toNumber(b.shortTermGain) ? b.shortTermGain : null),
+      tone: (b) => (toNumber(b.shortTermGain) < 0 ? 'danger' : undefined),
       width: 150,
-      align: 'right',
-      render: (_, b) => (toNumber(b.shortTermGain) ? <Money value={b.shortTermGain} tone={toNumber(b.shortTermGain) < 0 ? 'danger' : undefined} /> : NO_VALUE),
       defaultFrom: 1280,
     },
   ];

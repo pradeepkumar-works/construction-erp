@@ -16,6 +16,7 @@ import {
   STANDARD_RESIDUAL_PCT,
   disposalResult,
   financialYearOf,
+  openingAsOfNeeded,
   runPeriodLabel,
   type AssetClassCode,
   type AssetFunding,
@@ -27,7 +28,8 @@ import {
 import { tk } from '@/ds';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
-import { formatINR, toNumber } from '@/lib/format';
+import { formatDate, formatINR, toNumber } from '@/lib/format';
+import { useBooksYear } from '@/lib/queries';
 import { afterFormLeaves, FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
 import { DatePicker } from '@/components/common/DatePicker';
@@ -76,6 +78,10 @@ export function AssetFormDrawer({ open, onClose, asset, machine, onSaved }: { op
   const fixed = !!asset && (asset.charged || asset.status === 'DISPOSED');
   const watch = Form.useWatch([], form) as AssetValues | undefined;
   const cls = watch?.assetClass ? ASSET_CLASSES[watch.assetClass] : null;
+  const booksFrom = useBooksYear().data?.booksFrom ?? null;
+  const putToUseOn = ymd(watch?.putToUseOn);
+  // Put to use before the books begin, its depreciation till then is in the opening balances: the form asks for it.
+  const openingDay = !fixed && putToUseOn && watch?.fundedBy ? openingAsOfNeeded({ putToUseOn, fundedBy: watch.fundedBy }, booksFrom) : null;
 
   useEffect(() => {
     if (!open) return;
@@ -100,6 +106,10 @@ export function AssetFormDrawer({ open, onClose, asset, machine, onSaved }: { op
       });
     else form.setFieldsValue({ method: 'SLM', fundedBy: machine ? 'IN_BOOKS' : 'BANK', before: false, name: machine ? `${machine.code} ${machine.name}` : undefined, projectId: machine?.projectId ?? HEAD_OFFICE });
   }, [open, asset, machine, form]);
+
+  useEffect(() => {
+    if (open && openingDay) form.setFieldsValue({ before: true, openingAsOf: dayjs(openingDay) });
+  }, [open, openingDay, form]);
 
   const saved = useRef<string | null>(null);
   const mutation = useMutation({
@@ -194,12 +204,12 @@ export function AssetFormDrawer({ open, onClose, asset, machine, onSaved }: { op
             </Form.Item>
           </FormGrid>
           <Form.Item name="before" label="Depreciation before Nirmaan">
-            <Radio.Group disabled={fixed} options={[{ value: false, label: 'None' }, { value: true, label: 'Charged up to a day' }]} />
+            <Radio.Group disabled={fixed} options={[{ value: false, label: 'None', disabled: !!openingDay }, { value: true, label: 'Charged up to a day' }]} />
           </Form.Item>
           {watch?.before ? (
             <FormGrid cols={2}>
-              <Form.Item name="openingAsOf" label="Charged up to" rules={[{ required: true, message: 'Choose the last day it covers' }]}>
-                <DatePicker style={{ width: '100%' }} disabled={fixed} />
+              <Form.Item name="openingAsOf" label="Charged up to" rules={[{ required: true, message: 'Choose the last day it covers' }]} extra={openingDay && booksFrom ? `The books begin on ${formatDate(booksFrom)}` : undefined}>
+                <DatePicker style={{ width: '100%' }} disabled={fixed || !!openingDay} />
               </Form.Item>
               <Form.Item name="openingDepreciation" label="Amount" rules={[{ required: true, message: 'Enter the depreciation charged by then' }]}>
                 <MoneyInput disabled={fixed} />

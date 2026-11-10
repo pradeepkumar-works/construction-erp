@@ -14,6 +14,7 @@ import {
   disposalResult,
   itBlockDepreciation,
   itBlockSchedule,
+  openingAsOfNeeded,
   runPeriodLabel,
   runCharge,
   runPeriodProblem,
@@ -112,14 +113,18 @@ test('Income Tax: the block rolls forward from the first year of the register', 
   assert.deepEqual(rows[0], { block: 'PLANT', rate: 0.15, openingWdv: 850000, additions: 400000, halfRateAdditions: 400000, disposals: 0, depreciation: 157500, closingWdv: 1_092_500, shortTermGain: 0 });
 });
 
-test('a run covers one financial year at most and never overlaps another', () => {
+test('a run covers one financial year at most, never overlaps another and never runs past today', () => {
+  const today = '2026-11-10';
   assert.equal(runPeriodLabel('2026-10-01', '2026-10-31'), 'October 2026');
   assert.equal(runPeriodLabel('2026-04-01', '2027-03-31'), '2026-27');
-  assert.equal(runPeriodProblem('2026-10-01', '2026-10-31', [{ from: '2026-09-01', to: '2026-09-30' }]), null);
-  assert.match(runPeriodProblem('2026-10-01', '2026-10-31', [{ from: '2026-04-01', to: '2027-03-31' }])!, /2026-27 already covers/);
-  assert.match(runPeriodProblem('2027-03-01', '2027-04-30', [])!, /one financial year/);
-  assert.match(runPeriodProblem('2026-10-31', '2026-10-01', [])!, /on or after the start/);
-  assert.match(runPeriodProblem('2026-08-01', '2026-08-31', [{ from: '2026-09-01', to: '2026-09-30' }])!, /September 2026 is already prepared, and runs go in order/);
+  assert.equal(runPeriodProblem('2026-10-01', '2026-10-31', [{ from: '2026-09-01', to: '2026-09-30' }], today), null);
+  assert.match(runPeriodProblem('2026-10-01', '2026-10-31', [{ from: '2026-04-01', to: '2027-03-31' }], today)!, /2026-27 already covers/);
+  assert.match(runPeriodProblem('2027-03-01', '2027-04-30', [], today)!, /one financial year/);
+  assert.match(runPeriodProblem('2026-10-31', '2026-10-01', [], today)!, /on or after the start/);
+  assert.match(runPeriodProblem('2026-08-01', '2026-08-31', [{ from: '2026-09-01', to: '2026-09-30' }], today)!, /September 2026 is already prepared, and runs go in order/);
+  assert.match(runPeriodProblem('2026-11-01', '2026-11-30', [], today)!, /November 2026 runs past today/, 'this month, before it ends');
+  assert.match(runPeriodProblem('2026-04-01', '2027-03-31', [], today)!, /2026-27 runs past today/, 'the year, before it ends');
+  assert.equal(runPeriodProblem('2026-11-01', '2026-11-10', [], today), null, 'a period ending today');
 });
 
 test('runs come out latest first and go into the books in order', () => {
@@ -149,14 +154,48 @@ test('a run catches up the days the runs before it missed: an asset entered afte
 });
 
 test('an asset needs a name, a class, a cost above its residual and a sane life', () => {
-  const ok = { name: 'Laptop', assetClass: 'COMPUTERS', cost: 60000, residual: 3000, lifeYears: 3, putToUseOn: '2026-04-01', fundedBy: 'BANK' as const, vendorId: null, opening: null };
+  const ok = { name: 'Laptop', assetClass: 'COMPUTERS', method: 'SLM' as const, cost: 60000, residual: 3000, lifeYears: 3, putToUseOn: '2026-04-01', fundedBy: 'BANK' as const, vendorId: null, opening: null, booksFrom: null };
+  const inBooks = { ...ok, fundedBy: 'IN_BOOKS' as const };
   assert.equal(assetProblem(ok), null);
   assert.match(assetProblem({ ...ok, assetClass: 'BOATS' })!, /class/);
   assert.match(assetProblem({ ...ok, residual: 60000 })!, /residual/);
   assert.match(assetProblem({ ...ok, lifeYears: 0 })!, /useful life/);
   assert.match(assetProblem({ ...ok, fundedBy: 'VENDOR' })!, /vendor/);
-  assert.match(assetProblem({ ...ok, opening: { asOf: '2026-03-31', amount: 0 } })!, /on or after the day it was put to use/);
-  assert.match(assetProblem({ ...ok, opening: { asOf: '2026-09-30', amount: 58000 } })!, /cost less the residual/);
+  assert.match(assetProblem({ ...inBooks, opening: { asOf: '2026-03-31', amount: 0 } })!, /on or after the day it was put to use/);
+  assert.match(assetProblem({ ...inBooks, opening: { asOf: '2026-09-30', amount: 58000 } })!, /cost less the residual/);
+});
+
+test('written down value needs a residual above zero, which its rate brings the cost down to', () => {
+  const wdv = { name: 'Tipper', assetClass: 'VEHICLES', method: 'WDV' as const, cost: 1_800_000, residual: 0, lifeYears: 8, putToUseOn: '2026-04-01', fundedBy: 'BANK' as const, vendorId: null, opening: null, booksFrom: null };
+  assert.match(assetProblem(wdv)!, /residual value above zero for written down value/);
+  assert.equal(assetProblem({ ...wdv, residual: 90000 }), null);
+  assert.equal(assetProblem({ ...wdv, method: 'SLM' }), null, 'straight line may run down to nothing');
+});
+
+test('depreciation before Nirmaan goes only on an asset already in the books', () => {
+  const crusher = { name: 'Crusher', assetClass: 'CONCRETING', method: 'SLM' as const, cost: 500000, residual: 25000, lifeYears: 12, putToUseOn: '2026-05-01', vendorId: null, opening: { asOf: '2026-09-30', amount: 15000 }, booksFrom: null };
+  assert.match(assetProblem({ ...crusher, fundedBy: 'BANK' })!, /only on an asset already in the books/);
+  assert.match(assetProblem({ ...crusher, fundedBy: 'CASH' })!, /Choose Already in the books/);
+  assert.equal(assetProblem({ ...crusher, fundedBy: 'IN_BOOKS' }), null);
+});
+
+test('an asset put to use before the books begin needs its depreciation up to the day before', () => {
+  // Books from 1 April 2026, an excavator in use since April 2020: entered with no opening, October's run would charge
+  // six and a half years of catch-up that the opening balances already hold.
+  const excavatorIn2020 = { name: 'Excavator', assetClass: 'EARTH_MOVING', method: 'SLM' as const, cost: 4_200_000, residual: 210_000, lifeYears: 9, putToUseOn: '2020-04-01', fundedBy: 'IN_BOOKS' as const, vendorId: null, booksFrom: '2026-04-01' };
+  assert.equal(openingAsOfNeeded(excavatorIn2020, '2026-04-01'), '2026-03-31');
+  assert.equal(openingAsOfNeeded({ ...excavatorIn2020, putToUseOn: '2026-04-01' }, '2026-04-01'), null, 'put to use the day the books begin');
+  assert.equal(openingAsOfNeeded(excavatorIn2020, null), null, 'no books start set');
+  assert.equal(openingAsOfNeeded({ ...excavatorIn2020, fundedBy: 'BANK' }, '2026-04-01'), null, 'a purchase before the books is refused as such');
+  assert.match(assetProblem({ ...excavatorIn2020, opening: null })!, /Enter the depreciation charged up to 31 Mar 2026, the day before the books begin/);
+  assert.match(assetProblem({ ...excavatorIn2020, opening: { asOf: '2025-03-31', amount: 2_000_000 } })!, /up to 31 Mar 2026/, 'an opening to another day');
+  const opening = { asOf: '2026-03-31', amount: accumulatedTo({ ...excavatorIn2020, opening: null, disposedOn: null }, '2026-03-31') };
+  assert.equal(assetProblem({ ...excavatorIn2020, opening }), null);
+  const asset: DepreciableAsset = { ...excavatorIn2020, opening, disposedOn: null };
+  assert.deepEqual(runCharge(asset, '2026-10-01', '2026-10-31', bookDepreciation(asset, '2026-04-01', '2026-09-30'), '2026-09-30'), { amount: bookDepreciation(asset, '2026-10-01', '2026-10-31'), from: '2026-10-01', to: '2026-10-31' }, 'with it, October charges October alone');
+  const none: DepreciableAsset = { ...excavatorIn2020, opening: null, disposedOn: null };
+  assert.deepEqual(runCharge(none, '2026-10-01', '2026-10-31', 0, null), { amount: 2_919_926.92, from: '2020-04-01', to: '2026-10-31' }, 'without it, October charges the years before the books');
+  assert.equal(opening.amount, 2_659_999.98);
 });
 
 const name = (key: string, fallback?: string) => fallback ?? key;
