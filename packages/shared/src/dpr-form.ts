@@ -12,6 +12,7 @@
 import { MANPOWER_CATEGORIES } from './labels';
 import { STANDARD_TYPE_FOR } from './project-types';
 import type { ProjectType } from './enums';
+import { FIELD_KINDS, FIELD_KIND_LABELS, extraText, fieldKey, readExtra, type FieldKind, type FieldValue, type FieldValues, type OwnField } from './custom-fields';
 
 /** The built-in fields a form can show, hide, require, rename and reorder. Project and date are always there. */
 export const DPR_BUILT_IN_KEYS = ['weather', 'siteCondition', 'lines', 'manpower', 'machinery', 'materialReceived', 'testsConducted', 'safetyObservations', 'issues', 'nextDayPlan', 'photos'] as const;
@@ -55,38 +56,17 @@ export interface DprFieldSetting {
   label: string | null;
 }
 
-/** The kinds of field a company can add. */
-export const DPR_FIELD_KINDS = ['TEXT', 'LONG_TEXT', 'NUMBER', 'YES_NO', 'CHOICE', 'DATE', 'TIME'] as const;
-export type DprFieldKind = (typeof DPR_FIELD_KINDS)[number];
-export const DPR_FIELD_KIND_LABELS: Record<DprFieldKind, string> = {
-  TEXT: 'Short text',
-  LONG_TEXT: 'Long text',
-  NUMBER: 'Number',
-  YES_NO: 'Yes or no',
-  CHOICE: 'Choice',
-  DATE: 'Date',
-  TIME: 'Time',
-};
+/** The kinds of field a company can add (`custom-fields.ts`). */
+export const DPR_FIELD_KINDS = FIELD_KINDS;
+export type DprFieldKind = FieldKind;
+export const DPR_FIELD_KIND_LABELS = FIELD_KIND_LABELS;
 export const DPR_FIELD_SCOPES = ['DAY', 'LINE'] as const;
 export type DprFieldScope = (typeof DPR_FIELD_SCOPES)[number];
 export const DPR_FIELD_SCOPE_LABELS: Record<DprFieldScope, string> = { DAY: 'The day', LINE: 'Each work line' };
 
-/** A field of the company's own. */
-export interface DprOwnField {
-  /** camelCase, fixed once saved: the values are kept under it */
-  key: string;
-  label: string;
-  /** Shown on the phone in Hindi; the English label when empty */
-  labelHi: string | null;
-  kind: DprFieldKind;
+/** A field of the company's own, asked for the day or for each work line. */
+export interface DprOwnField extends OwnField {
   scope: DprFieldScope;
-  required: boolean;
-  /** NUMBER only */
-  unit: string | null;
-  min: number | null;
-  max: number | null;
-  /** CHOICE only */
-  options: string[];
 }
 
 /** The parts a work line can show besides its activity, where and how much. */
@@ -151,8 +131,6 @@ export const MAX_CREW_CATEGORIES = 30;
 export const MAX_MACHINE_NAMES = 30;
 const LABEL_MAX = 60;
 const OWN_KEY = /^[a-z][A-Za-z0-9]{0,29}$/;
-/** Longest text a company's own text field keeps */
-export const MAX_OWN_TEXT = 1000;
 
 /** The form a DPR was made on before DPR forms per type, and the one a type has when nothing else applies. */
 export const STANDARD_DPR_FORM: DprFormDef = {
@@ -314,22 +292,8 @@ export function dprFormChangeProblems(before: DprFormDef, after: DprFormDef): st
   return out;
 }
 
-/** A key for a new field from its name, not one of `taken`: "Rain hours" → rainHours, then rainHours2. */
-export function ownFieldKey(label: string, taken: Iterable<string>): string {
-  const words = label
-    .normalize('NFKD')
-    .replace(/[^A-Za-z0-9 ]+/g, ' ')
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
-  let base = words.map((w, i) => (i === 0 ? w.toLowerCase() : w[0].toUpperCase() + w.slice(1).toLowerCase())).join('');
-  if (!/^[a-z]/.test(base)) base = `field${base.charAt(0).toUpperCase()}${base.slice(1)}`;
-  base = base.slice(0, 26) || 'field';
-  const used = new Set(taken);
-  for (const k of DPR_BUILT_IN_KEYS) used.add(k);
-  if (!used.has(base)) return base;
-  for (let i = 2; ; i++) if (!used.has(`${base}${i}`)) return `${base}${i}`;
-}
+/** A key for a new field from its name, not one of `taken` nor a built-in field's: "Rain hours" → rainHours, then rainHours2. */
+export const ownFieldKey = (label: string, taken: Iterable<string>): string => fieldKey(label, [...taken, ...DPR_BUILT_IN_KEYS]);
 
 // Reading a form
 
@@ -349,81 +313,10 @@ export const ownFieldLabel = (f: Pick<DprOwnField, 'label' | 'labelHi'>, languag
 
 // Values of the company's own fields
 
-export type DprExtraValue = string | number | boolean;
-export type DprExtra = Record<string, DprExtraValue>;
+export type DprExtraValue = FieldValue;
+export type DprExtra = FieldValues;
 
-const DATE = /^\d{4}-\d{2}-\d{2}$/;
-const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 const isBlank = (v: unknown) => v === null || v === undefined || (typeof v === 'string' && !v.trim());
-
-/** What a field's range says, for a message: "from 0 to 24 h", "of 0 or more". */
-const rangeText = (f: DprOwnField) => {
-  const u = f.unit ? ` ${f.unit}` : '';
-  if (f.min !== null && f.max !== null) return ` from ${f.min} to ${f.max}${u}`;
-  if (f.min !== null) return ` of ${f.min}${u} or more`;
-  if (f.max !== null) return ` up to ${f.max}${u}`;
-  return '';
-};
-
-/**
- * One scope's values read against its fields: what is kept (each value as its kind keeps it; blank ones and keys the
- * form does not have dropped) and what is wrong with the rest. `required` checks the fields that must be filled, which
- * the API does only when the report is sent for approval. `prefix` starts each message ("Line 2: ").
- */
-export function readExtra(fields: DprOwnField[], raw: unknown, opts: { required?: boolean; prefix?: string } = {}): { values: DprExtra; problems: string[] } {
-  const values: DprExtra = {};
-  const problems: string[] = [];
-  const src = isObject(raw) ? raw : {};
-  const p = opts.prefix ?? '';
-  for (const f of fields) {
-    const v = src[f.key];
-    if (isBlank(v)) {
-      if (opts.required && f.required) problems.push(`${p}${f.kind === 'YES_NO' || f.kind === 'CHOICE' ? 'Choose' : 'Fill in'} ${f.label}`);
-      continue;
-    }
-    switch (f.kind) {
-      case 'NUMBER': {
-        const n = numOrNull(v);
-        if (n === null) problems.push(`${p}${f.label}: enter a number${rangeText(f)}`);
-        else if ((f.min !== null && n < f.min) || (f.max !== null && n > f.max)) problems.push(`${p}${f.label}: enter a number${rangeText(f)}`);
-        else values[f.key] = Math.round(n * 1000) / 1000;
-        break;
-      }
-      case 'YES_NO':
-        if (typeof v === 'boolean') values[f.key] = v;
-        else if (v === 'true' || v === 'yes' || v === 'Yes') values[f.key] = true;
-        else if (v === 'false' || v === 'no' || v === 'No') values[f.key] = false;
-        else problems.push(`${p}${f.label}: choose yes or no`);
-        break;
-      case 'CHOICE': {
-        const s = String(v).trim();
-        const match = f.options.find((o) => o.toLowerCase() === s.toLowerCase());
-        if (match) values[f.key] = match;
-        else problems.push(`${p}${f.label}: choose one of ${f.options.join(', ')}`);
-        break;
-      }
-      case 'DATE':
-        if (typeof v === 'string' && DATE.test(v) && !Number.isNaN(Date.parse(`${v}T00:00:00Z`))) values[f.key] = v;
-        else problems.push(`${p}${f.label}: give the date as YYYY-MM-DD`);
-        break;
-      case 'TIME':
-        if (typeof v === 'string' && TIME.test(v)) values[f.key] = v;
-        else problems.push(`${p}${f.label}: give the time as HH:MM, 24-hour`);
-        break;
-      default: {
-        if (typeof v !== 'string' && typeof v !== 'number') {
-          problems.push(`${p}${f.label}: write it as text`);
-          break;
-        }
-        const s = String(v).trim();
-        const max = f.kind === 'LONG_TEXT' ? MAX_OWN_TEXT : 200;
-        if (s.length > max) problems.push(`${p}${f.label}: keep it to ${max} letters`);
-        else values[f.key] = s;
-      }
-    }
-  }
-  return { values, problems };
-}
 
 /**
  * The report's own-field values against its form: the day's and each line's, cleaned, with every problem. Shared by
@@ -466,19 +359,6 @@ export function dprRequiredProblems(def: DprFormDef, r: DprFilled, opts: { progr
   }
   if (dprShows(def, 'photos', opts) && def.minPhotos > 0 && r.photos < def.minPhotos) out.push(def.minPhotos === 1 ? 'Add a site photo' : `Add at least ${def.minPhotos} site photos`);
   return out;
-}
-
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-/** A value as the record, print and export show it: "4.5 h", "Yes", "3 Nov 2026". */
-export function extraText(f: Pick<DprOwnField, 'kind' | 'unit'>, v: DprExtraValue | null | undefined): string {
-  if (v === null || v === undefined || v === '') return '';
-  if (f.kind === 'YES_NO') return v === true ? 'Yes' : v === false ? 'No' : String(v);
-  if (f.kind === 'NUMBER') return `${Number(Number(v).toFixed(3))}${f.unit ? ` ${f.unit}` : ''}`;
-  if (f.kind === 'DATE' && typeof v === 'string' && DATE.test(v)) {
-    const [y, m, d] = v.split('-').map(Number);
-    return `${d} ${MONTHS[m - 1]} ${y}`;
-  }
-  return String(v);
 }
 
 /** The fields of a report's form that hold a value, in the form's order, with the value in words. */

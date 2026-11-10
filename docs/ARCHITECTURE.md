@@ -426,9 +426,10 @@ own frames for now; a new one uses `printDocHtml`.
 
 ### Company settings
 
-Company settings (`/company-settings`, Admin, for `canManageCompanyData`) is one page with three tabs: Company (the
-letterhead's details and the logo, with a preview of the head every paper prints), Numbering (each kind's number series)
-and Other settings (links to the rest of the company's settings the admin can open). The API is `CompanySettingsService`
+Company settings (`/company-settings`, Admin, for `canManageCompanyData`) is one page with four tabs: Company (the
+letterhead's details and the logo, with a preview of the head every paper prints), Numbering (each kind's number series),
+Fields (the company's own fields on vendors, projects and purchase orders, "Custom fields") and Other settings (links to
+the rest of the company's settings the admin can open). The API is `CompanySettingsService`
 (`GET /company-settings`, `PUT /company-settings/profile | logo | numbering`), each change in the company log.
 
 The letterhead's legal name, registered address (`Organization.billingAddress`), GSTIN, PAN and CIN are what
@@ -3618,6 +3619,59 @@ never by us.
   or paid salary runs as 192 per payslip on the month's last day (reason C at 20% without a PAN), payments with TDS as a
   section to confirm on the value before GST, which blocks filing until confirmed on the quarter's To fix tab. The demo seed's `seedTds` does the same for what it writes.
 - **Tested** in `src/scripts/tds-test.ts` (CI runs it) and `e2e/tests/tds.spec.ts`.
+
+## Custom fields (item 193)
+
+A company adds fields of its own to vendors, projects and purchase orders (an MSME number, a funding scheme, a cost
+centre) once, in Admin › Company settings › Fields, and every form, record, list and Excel export of that kind carries
+them. They are the DPR's own field kinds, in one shared home.
+
+- **One home for field kinds.** `@erp/shared/custom-fields.ts` holds what the DPR's own fields and the company's share:
+  `FIELD_KINDS` (short and long text, number with unit and range, yes or no, a choice of up to 20, date, time) and their
+  labels, `OwnField`, `readExtra`, `fieldKey` (a key from a name, never one taken) and `extraText`. `dpr-form.ts` imports
+  them unchanged: `DPR_FIELD_KINDS` is `FIELD_KINDS` and the DPR's `ownFieldKey` is `fieldKey` with its built-in keys
+  taken, so `dpr-form-test` runs as before.
+- **The registry.** `CUSTOM_FIELD_ENTITIES` is `VENDOR`, `PROJECT` and `PURCHASE_ORDER`, each with its label, its word for
+  a record and whether required fields wait for submit (`CUSTOM_FIELD_ENTITY_INFO`; only the order, which goes for
+  approval). A new kind of record is a key there, a `customValues` column and the two calls below in its service.
+- **Definitions.** `CustomFieldDef` (`tenant_isolation`): entity, key, label, kind, required, unit, range, choices, order
+  and `archivedAt`, unique by company, entity and key. The key is made once from the name and never changes, nor does the
+  kind (another kind is another field); a field is archived, never deleted, so a key means the same thing in every record
+  that holds it. `normaliseCustomField` tidies what is typed and `customFieldProblem` holds the name (1 to 60 letters,
+  not another field's of the same kind of record, archived ones included, since their records still show them), the
+  choices (at least two), the range and the limit of 20 active fields per kind of record. A key is never one of an
+  object's own names (`constructor`, `toString`), and values are read only from a record's own keys. A changed range or
+  a choice taken out leaves records as they are; their next save asks for a value that fits.
+- **Values.** `customValues Json` on `Vendor`, `Project` and `PurchaseOrder`, by key, each as its kind keeps it. They are
+  read only by `readCustomValues` (the active fields over what the record holds with what was sent laid on top, so a
+  client that sends one field leaves the rest and a blank clears one; an archived field keeps its value whatever is sent;
+  keys of no field are dropped; a date must be a real day) through `CustomFieldsService.read`, which each entity's own `create` and `update` calls
+  and which refuses with every problem in words ("Turnover: enter a number of 0 Cr or more"). Vendors and projects ask
+  for required fields whenever values are sent (the forms always send them; a record made elsewhere, as a project from a tender, sends none).
+  A purchase order is checked for kinds and ranges on every save and for required fields when it goes for approval:
+  Save and submit asks in its own `create` or `update` before anything is written (so a refusal leaves no stray draft),
+  and the record's Submit asks in `submitOrder` through `assertComplete` ("Choose Funding before sending the purchase
+  order for approval"). The web form asks the same before it sends.
+  Lists return `customValues` from the row they already read, so `GET /vendors` gains a column and no query.
+- **Access.** `GET /custom-fields?entity=` for staff; `POST /custom-fields`, `PATCH /custom-fields/:id` and
+  `POST /custom-fields/:id/archive | restore` for `canManageCustomFields` (admin), 403 otherwise, each change in the company
+  log (`CUSTOM_FIELD`).
+- **Web** (`components/custom-fields/`). Company settings › Fields is a `Section` per kind of record with New field, Edit
+  (a `FormShell` modal showing the key, kind fixed), Archive and Restore. `CustomFieldsFormSection` is a form's More
+  details `FormSection`, a `Form.Item` per active field under `customValues.<key>` checked by `readCustomValues`, so the
+  form says what the API would, through the one `FieldInput` the DPR's own fields use too (a number is an `InputNumber`);
+  an archived field that holds a value shows read only. While the definitions load, a form sends no values, so a save
+  leaves them as they are. `CustomFieldsSection` and
+  `useCustomFieldsRecordSection` show a record's filled values, archived ones marked. `customColumns` adds `cf:<key>`
+  columns, off until chosen in Columns (a number is a `qty` column with its unit), and `customExportColumns` the same to
+  Excel. A date shows through `formatDate` ("03 Nov 2026"), the app's one date format. Used on the vendor form and list,
+  the project form, Overview and list, and the purchase order form, record and list.
+- **Phone.** The phone raises no vendors, projects or orders; its purchase order screen shows the order's filled fields
+  read only under More details (`filledCustomValues`, `extraText`, the Hindi name where there is one), so whoever decides
+  on the phone sees them.
+- **Not yet.** Fields on other records, on the phone's other screens, searching or filtering by a value, reordering, and
+  Hindi names on the web.
+- **Tested** in `src/scripts/custom-fields-test.ts` (CI runs it) and `e2e/tests/custom-fields.spec.ts`.
 
 ## Bills without a PO and debit notes
 

@@ -32,6 +32,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
+import { CustomFieldsService, storedValues } from '../custom-fields/custom-fields.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
 import { AttachmentsService, ATTACHMENT_FIELDS } from '../common/attachments.service';
 import { dateOnly, dec, iso, money, parseDate } from '../common/serialize';
@@ -118,6 +119,7 @@ export class PurchaseOrdersService {
     private attachments: AttachmentsService,
     private quotations: QuotationsService,
     private email: EmailService,
+    private fields: CustomFieldsService,
   ) {
     lifecycle.onApproved('PURCHASE_ORDER', (tx, user, id) => this.updateItemRates(tx, user, id));
     // The order is approved by now; a failed email is kept on the order and sent again from there.
@@ -148,6 +150,7 @@ export class PurchaseOrdersService {
     const pending = r.lines.some((l) => sum(l.stockTxns, (t) => t.quantity).lt(l.quantity));
     return {
       id: r.id,
+      customValues: storedValues(r.customValues),
       projectId: r.projectId,
       projectName: r.project.name,
       poNo: r.poNo,
@@ -630,6 +633,9 @@ export class PurchaseOrdersService {
     const paymentDays = this.paymentDays(dto.paymentDays, vendor);
     const freight = parseFreight(dto.freight);
     const deliveryAddress = dto.deliveryAddress?.trim() || (await this.siteAddress(user.organizationId, dto.projectId));
+    // Kinds and ranges on every save; required fields wait for submit (`submitOrder`).
+    // Save and submit asks for the required fields here, before anything is written, so a refusal leaves no draft behind.
+    const customValues = await this.fields.read(user, 'PURCHASE_ORDER', dto.customValues ?? {}, undefined, { required: !!dto.submit });
     let id: string | null;
     try {
       id = await this.prisma.$transaction(async (tx) => {
@@ -657,6 +663,7 @@ export class PurchaseOrdersService {
             ...totals(lines, freight),
             remarks: dto.remarks || null,
             selectionReason: dto.selectionReason?.trim() || null,
+            customValues,
             submittedById: user.id,
             status: 'DRAFT',
             lines: { create: lines },
@@ -746,6 +753,10 @@ export class PurchaseOrdersService {
     data.paymentDays = this.paymentDays(dto.paymentDays !== undefined ? dto.paymentDays : current.paymentDays, vendor);
     if (dto.remarks !== undefined) data.remarks = dto.remarks || null;
     if (dto.selectionReason !== undefined) data.selectionReason = dto.selectionReason?.trim() || null;
+    if (dto.customValues !== undefined || dto.submit) {
+      const values = await this.fields.read(user, 'PURCHASE_ORDER', dto.customValues ?? {}, current.customValues, { required: !!dto.submit });
+      if (dto.customValues !== undefined) data.customValues = values;
+    }
     const freight = dto.freight !== undefined ? parseFreight(dto.freight) : current.freight;
     data.freight = freight;
     await this.prisma.$transaction(async (tx) => {
@@ -770,7 +781,8 @@ export class PurchaseOrdersService {
 
   /** Every way an order goes for approval: one not from the lowest complete quotation on its request says why first. */
   private async submitOrder(user: RequestUser, id: string) {
-    const po = await this.prisma.purchaseOrder.findUniqueOrThrow({ where: { id }, select: { materialRequestId: true, quotationId: true, selectionReason: true, vendor: { select: { id: true, name: true } } } });
+    const po = await this.prisma.purchaseOrder.findUniqueOrThrow({ where: { id }, select: { materialRequestId: true, quotationId: true, selectionReason: true, customValues: true, vendor: { select: { id: true, name: true } } } });
+    await this.fields.assertComplete(user, 'PURCHASE_ORDER', po.customValues);
     if (po.materialRequestId) {
       await this.assertChoiceAllows(user, po.materialRequestId, po.vendor);
       const lowest = await this.quotations.lowestFor(user.organizationId, po.materialRequestId);
