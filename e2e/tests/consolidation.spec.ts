@@ -5,7 +5,7 @@ import { API_URL, PASSWORD, api, apiToken, axeViolations, chooseOption, companyT
 /**
  * Consolidated accounts (item 192, ARCHITECTURE "Consolidated accounts") on the demo group: Demo Infra Holdings above
  * Demo Infra Projects, Buildcon, Design Consultants and Quality Labs. `admin@demo.com` runs the group; the seed names the
- * sisters in each company's books and has Buildcon raise a debit note on the lab that the lab has not booked.
+ * sisters in each company's books and has Demo Infra Projects raise a debit note on the lab that the lab has not booked.
  * Every company's sign-in is undone after use (`companyToken`), and what a test adds is its own (a vendor, a company).
  */
 
@@ -18,8 +18,8 @@ const ADMIN = 'admin@demo.com';
 
 interface Row { key: string; line: string | null; label: string; companies: Record<string, string>; eliminated: string; group: string; total: boolean }
 interface Side { companyId: string; name: string; amount: string; named: boolean }
-interface Pair { key: string; kind: 'BALANCE' | 'SALES'; a: Side; b: Side; eliminated: string; difference: string }
-interface Company { id: string; name: string; from: string; to: string; lockedUpTo: string | null; closedYear: string | null; difference: string }
+interface Pair { key: string; kind: 'BALANCE' | 'SALES' | 'INTEREST'; a: Side; b: Side; eliminated: string; difference: string }
+interface Company { id: string; name: string; from: string; to: string; lockedUpTo: string | null; closedYear: string | null; booksFrom: string | null; suspended: boolean; difference: string }
 interface Consolidation {
   companies: Company[];
   profitLoss: Row[];
@@ -127,7 +127,7 @@ test('lane 4: a vendor named as a sister in the holding shows on both companiesâ
     await signedIn(context, token, baseURL!);
     await settle(page, '/group/sisters');
     await expect(page.getByRole('heading', { level: 1, name: 'Sister companies' })).toBeVisible();
-    await page.getByRole('button', { name: 'Name a sister' }).click();
+    await page.getByRole('button', { name: 'Name a sister company' }).click();
     const form = page.getByRole('dialog', { name: 'Name a sister company' });
     await chooseOption(form.getByLabel('Vendor or client'), vendor);
     await chooseOption(form.getByLabel('Sister company'), 'Quality Labs');
@@ -136,6 +136,11 @@ test('lane 4: a vendor named as a sister in the holding shows on both companiesâ
     const row = page.getByRole('row').filter({ hasText: vendor });
     await expect(row).toContainText(LAB);
     await shot(page, 'grp-link.png');
+
+    // While it is named, the vendor cannot be deleted: the link would point at nothing.
+    const refused = await fetch(`${API_URL}/vendors/${created.id}`, { method: 'DELETE', headers: { authorization: `Bearer ${token}` } });
+    expect(refused.status).toBe(409);
+    expect(await refused.text()).toContain('Remove it under Sister companies first');
 
     // The lab's own page lists it under the links its sisters keep.
     const lab = await browser.newContext({ baseURL, viewport: { width: 1440, height: 900 } });
@@ -175,22 +180,22 @@ test('lane 5: a sale between sisters that both books hold comes out in full', as
 
 test('lane 6: a balance the sisters do not agree on shows both figures and the difference', async ({ page, context, baseURL }) => {
   const d = await consolidation();
-  // Buildcon's debit note on the lab: Buildcon's books say the lab owes it 5,900 (5,000 and GST); the lab's do not.
-  const owed = pairOf(d, 'BALANCE', BUILDCON, LAB)!;
-  expect(owed, 'the lab owes Buildcon').toBeTruthy();
-  expect(owed.a.amount).toBe('5900.00');
-  expect(owed.b.amount).toBe('0.00');
-  expect(owed.eliminated).toBe('0.00');
+  // Demo Infra Projects' debit note on the lab's unpaid bill: its books owe the lab 5,900 (5,000 and GST) less than the
+  // lab's say. What both hold comes out; the 5,900 stays in as the difference.
+  const owed = pairOf(d, 'BALANCE', LAB, PROJECTS)!;
+  expect(owed, 'Demo Infra Projects owes the lab').toBeTruthy();
+  expect(rupees(owed.a.amount) - rupees(owed.b.amount)).toBe(590000);
+  expect(owed.eliminated).toBe(owed.b.amount);
   expect(owed.difference).toBe('5900.00');
-  // The same note is a sale the lab made that Buildcon's books hold 5,000 less of.
-  const sale = pairOf(d, 'SALES', LAB, BUILDCON)!;
+  // The same note is a sale the lab made that Demo Infra Projects' books hold 5,000 less of.
+  const sale = pairOf(d, 'SALES', LAB, PROJECTS)!;
   expect(rupees(sale.difference)).toBe(500000);
   expect(sale.eliminated).toBe(sale.b.amount);
 
   await signedIn(context, await holdingToken(), baseURL!);
   await settle(page, '/group/consolidated?tab=sisters');
-  await expect(page.getByRole('tab', { name: /Between sisters/ })).toContainText(/differences? to settle/);
-  const row = page.getByRole('row').filter({ hasText: `${LAB} owes ${BUILDCON}` });
+  await expect(page.getByRole('tab', { name: /Between sisters/ })).toContainText(/differences? to look into/);
+  const row = page.getByRole('row').filter({ hasText: `${PROJECTS} owes ${LAB}` });
   await expect(row).toBeVisible();
   await expect(row.getByRole('cell').last()).not.toHaveText(/^\s*0(\.00)?\s*$/);
   await shot(page, 'grp-mismatch.png');

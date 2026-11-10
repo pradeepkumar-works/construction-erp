@@ -64,8 +64,18 @@ export async function companyToken(email: string, company: string, password = PA
   if (!to) throw new Error(`${email} has no place in ${company}`);
   if (to.id === me.organizationId) return token;
   const there = await api<{ accessToken: string }>(token, '/auth/switch', { method: 'POST', body: { organizationId: to.id } });
-  await api(there.accessToken, '/auth/switch', { method: 'POST', body: { organizationId: me.organizationId } });
-  return there.accessToken;
+  // Undo the switch, so the next sign-in lands where it did. Tried three times; a failure names where the person was left.
+  let last: unknown;
+  for (let i = 0; i < 3; i++) {
+    try {
+      await api(there.accessToken, '/auth/switch', { method: 'POST', body: { organizationId: me.organizationId } });
+      return there.accessToken;
+    } catch (e) {
+      last = e;
+      await new Promise((r) => setTimeout(r, 500 * (i + 1)));
+    }
+  }
+  throw new Error(`${email} was left signed in to ${company}: switching back failed (${String(last)}). Switch them back from the company switcher before the next run`);
 }
 
 /** Puts a signed-in browser in another company of the group (`companyToken`) and opens Home there. */
