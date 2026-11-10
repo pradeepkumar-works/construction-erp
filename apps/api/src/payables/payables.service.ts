@@ -86,6 +86,14 @@ interface Bill {
 
 type Request = { id: string; requestNo: string; amount: Prisma.Decimal };
 
+/** A new payment that passed `prepare`, for `insert` and `announce`. */
+export interface PreparedPayment {
+  dto: CreatePaymentDto;
+  bill: Bill;
+  request: Request | null;
+  amounts: Sums;
+}
+
 /** A bill proper, whose paid amount follows its payments. */
 const isBill = (b: Bill): b is Bill & { type: PayableBillType } => b.type === 'VENDOR_BILL' || b.type === 'SUBCONTRACT_BILL';
 
@@ -375,6 +383,27 @@ export class PayablesService {
   async create(user: RequestUser, dto: CreatePaymentDto): Promise<VendorPaymentDto> {
     const existing = await this.findExisting(user, dto.id);
     if (existing) return existing;
+    const p = await this.prepare(user, dto);
+    let id: string;
+    try {
+      id = await this.prisma.$transaction((tx) => this.insert(tx, user, p));
+    } catch (e) {
+      if (isUniqueViolation(e) && dto.id) {
+        const winner = await this.findExisting(user, dto.id);
+        if (winner) return winner;
+      }
+      throw e;
+    }
+    await this.announce(user, p, id);
+    return this.get(user, id);
+  }
+
+  /**
+   * Every check a new payment passes before it is written: the payer's role, the request it draws on (approved) or the
+   * bill (approved, and a request when the company asks for one), the date and the amounts. A bank batch's export
+   * prepares each of its payments here, so they are held to the same rules as one recorded by hand.
+   */
+  async prepare(user: RequestUser, dto: CreatePaymentDto): Promise<PreparedPayment> {
     this.assertCanRecord(user);
     let request: Request | null = null;
     let bill: Bill;
@@ -386,45 +415,47 @@ export class PayablesService {
     }
     if (isBill(bill) && bill.status !== 'APPROVED') throw new BadRequestException(`${bill.label} is not approved yet; only approved bills are paid`);
     this.checkDate(dto.paymentDate, bill);
-    const a = this.amounts(bill, dto);
-    let id: string;
-    try {
-      id = await this.prisma.$transaction(async (tx) => {
-        await this.lock(tx, bill);
-        await this.checkBalance(tx, bill, null, settles(a));
-        if (request) await this.checkRequest(tx, request, null, settles(a));
-        const row = await tx.vendorPayment.create({
-          data: {
-            id: dto.id,
-            organizationId: user.organizationId,
-            projectId: bill.projectId,
-            vendorId: bill.vendorId,
-            vendorBillId: bill.type === 'VENDOR_BILL' ? bill.id : null,
-            subcontractBillId: bill.type === 'SUBCONTRACT_BILL' ? bill.id : null,
-            purchaseOrderId: bill.order && 'purchaseOrderId' in bill.order ? bill.order.purchaseOrderId : null,
-            workOrderId: bill.order && 'workOrderId' in bill.order ? bill.order.workOrderId : null,
-            paymentRequestId: request?.id ?? null,
-            paymentDate: parseDate(dto.paymentDate),
-            mode: dto.mode ?? 'BANK',
-            reference: dto.reference ?? null,
-            otherDeductionNote: dto.otherDeductionNote ?? null,
-            remarks: dto.remarks ?? null,
-            createdById: user.id,
-            ...a,
-          },
-          select: { id: true },
-        });
-        if (isBill(bill)) await syncPaid(tx, bill.type, bill.id);
-        if (request) await syncRequestPaid(tx, request.id);
-        return row.id;
-      });
-    } catch (e) {
-      if (isUniqueViolation(e) && dto.id) {
-        const winner = await this.findExisting(user, dto.id);
-        if (winner) return winner;
-      }
-      throw e;
-    }
+    return { dto, bill, request, amounts: this.amounts(bill, dto) };
+  }
+
+  /**
+   * Write a prepared payment in the caller's transaction, under its bill's and request's locks, checking then that it
+   * settles no more than is outstanding, and keep the bill and the request paid in step.
+   */
+  async insert(tx: Prisma.TransactionClient, user: RequestUser, p: PreparedPayment): Promise<string> {
+    const { dto, bill, request, amounts: a } = p;
+    await this.lock(tx, bill);
+    await this.checkBalance(tx, bill, null, settles(a));
+    if (request) await this.checkRequest(tx, request, null, settles(a));
+    const row = await tx.vendorPayment.create({
+      data: {
+        id: dto.id,
+        organizationId: user.organizationId,
+        projectId: bill.projectId,
+        vendorId: bill.vendorId,
+        vendorBillId: bill.type === 'VENDOR_BILL' ? bill.id : null,
+        subcontractBillId: bill.type === 'SUBCONTRACT_BILL' ? bill.id : null,
+        purchaseOrderId: bill.order && 'purchaseOrderId' in bill.order ? bill.order.purchaseOrderId : null,
+        workOrderId: bill.order && 'workOrderId' in bill.order ? bill.order.workOrderId : null,
+        paymentRequestId: request?.id ?? null,
+        paymentDate: parseDate(dto.paymentDate),
+        mode: dto.mode ?? 'BANK',
+        reference: dto.reference ?? null,
+        otherDeductionNote: dto.otherDeductionNote ?? null,
+        remarks: dto.remarks ?? null,
+        createdById: user.id,
+        ...a,
+      },
+      select: { id: true },
+    });
+    if (isBill(bill)) await syncPaid(tx, bill.type, bill.id);
+    if (request) await syncRequestPaid(tx, request.id);
+    return row.id;
+  }
+
+  /** Once a payment is in: the audit log of the payment, its bill and its request, and the supplier's notice. */
+  async announce(user: RequestUser, p: PreparedPayment, id: string) {
+    const { dto, bill, request, amounts: a } = p;
     const paidOn = `₹${a.amount.toFixed(2)} paid on ${dto.paymentDate}${dto.reference ? ` (${dto.reference})` : ''}`;
     await this.audit.log(user, 'VENDOR_PAYMENT', id, 'CREATED', `${inr(a.amount)} paid against ${bill.label}${request ? ` (${request.requestNo})` : ''}`);
     if (isBill(bill)) await this.audit.log(user, bill.type, bill.id, 'PAYMENT_MADE', paidOn);
@@ -436,7 +467,31 @@ export class PayablesService {
       entityType: 'PORTAL_PAYMENT',
       entityId: id,
     });
-    return this.get(user, id);
+  }
+
+  /**
+   * Set the bank's reference (the UTR) on payments, in the caller's transaction: the payer's role, and never on a
+   * payment already sent to Tally. Returns the payments whose reference changed, for `referencesSet`.
+   */
+  async setReferences(tx: Prisma.TransactionClient, user: RequestUser, refs: { id: string; reference: string }[]) {
+    this.assertCanRecord(user);
+    const rows = await tx.vendorPayment.findMany({ where: { id: { in: refs.map((r) => r.id) }, organizationId: user.organizationId }, select: { id: true, reference: true, tallyExportId: true } });
+    const byId = new Map(rows.map((r) => [r.id, r]));
+    const changed: { id: string; reference: string; before: string | null }[] = [];
+    for (const r of refs) {
+      const row = byId.get(r.id);
+      if (!row) throw new NotFoundException('Payment not found');
+      if (row.reference === r.reference) continue;
+      assertNotExported(row, 'This payment');
+      await tx.vendorPayment.update({ where: { id: r.id }, data: { reference: r.reference } });
+      changed.push({ ...r, before: row.reference });
+    }
+    return changed;
+  }
+
+  /** Once references are in: each payment's audit log says what it was. */
+  async referencesSet(user: RequestUser, changed: { id: string; reference: string; before: string | null }[], from: string) {
+    for (const c of changed) await this.audit.log(user, 'VENDOR_PAYMENT', c.id, 'UPDATED', `Reference ${c.reference}${c.before ? ` (was ${c.before})` : ''} from ${from}`);
   }
 
   private async load(user: RequestUser, id: string) {
