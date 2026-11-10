@@ -72,7 +72,14 @@ function typeOf(v: Voucher): BookVoucherType {
     MACHINE_LOAN: 'JOURNAL',
     LOAN_EMI: 'PAYMENT',
     WITHHELD_LOST: 'JOURNAL',
+    ASSET_ADDITION: 'JOURNAL',
+    DEPRECIATION: 'JOURNAL',
+    ASSET_DISPOSAL: 'JOURNAL',
   };
+  const movesMoney = v.lines.some((l) => l.ledgerKey === 'CASH' || l.ledgerKey === 'BANK');
+  // An asset paid for from cash or bank is a payment, and one sold for money a receipt.
+  if (v.kind === 'ASSET_ADDITION' && movesMoney) return 'PAYMENT';
+  if (v.kind === 'ASSET_DISPOSAL' && movesMoney) return 'RECEIPT';
   // An expense bought on credit moves no money: it is a journal to the vendor.
   if (v.kind === 'EXPENSE' && !v.lines.some((l) => l.ledgerKey === 'CASH' || l.ledgerKey === 'BANK')) return 'JOURNAL';
   // A machine loan the lender paid into the company's bank is money received.

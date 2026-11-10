@@ -2,7 +2,7 @@
 import type { ExpenseCategory } from './enums';
 
 /** What a Nirmaan record becomes in Tally. */
-export const TALLY_VOUCHER_KINDS = ['SALES', 'RECEIPT', 'PURCHASE', 'SUBCONTRACT', 'PAYMENT', 'EXPENSE', 'DEBIT_NOTE', 'SALARY', 'SALARY_PAYMENT', 'STAFF_LOAN', 'RMC_SALE', 'RMC_RECEIPT', 'MACHINE_LOAN', 'LOAN_EMI', 'WITHHELD_LOST'] as const;
+export const TALLY_VOUCHER_KINDS = ['SALES', 'RECEIPT', 'PURCHASE', 'SUBCONTRACT', 'PAYMENT', 'EXPENSE', 'DEBIT_NOTE', 'SALARY', 'SALARY_PAYMENT', 'STAFF_LOAN', 'RMC_SALE', 'RMC_RECEIPT', 'MACHINE_LOAN', 'LOAN_EMI', 'WITHHELD_LOST', 'ASSET_ADDITION', 'DEPRECIATION', 'ASSET_DISPOSAL'] as const;
 export type TallyVoucherKind = (typeof TALLY_VOUCHER_KINDS)[number];
 export const TALLY_VOUCHER_KIND_LABELS: Record<TallyVoucherKind, string> = {
   SALES: 'RA bills',
@@ -20,6 +20,9 @@ export const TALLY_VOUCHER_KIND_LABELS: Record<TallyVoucherKind, string> = {
   MACHINE_LOAN: 'Machine loans taken',
   LOAN_EMI: 'Machine loan EMIs paid',
   WITHHELD_LOST: 'Withheld amounts lost',
+  ASSET_ADDITION: 'Fixed assets bought',
+  DEPRECIATION: 'Depreciation runs',
+  ASSET_DISPOSAL: 'Fixed assets sold or scrapped',
 };
 /** The Tally voucher type each kind is imported as. */
 export const TALLY_VOUCHER_TYPES: Record<TallyVoucherKind, string> = {
@@ -38,6 +41,9 @@ export const TALLY_VOUCHER_TYPES: Record<TallyVoucherKind, string> = {
   MACHINE_LOAN: 'Journal',
   LOAN_EMI: 'Payment',
   WITHHELD_LOST: 'Journal',
+  ASSET_ADDITION: 'Journal',
+  DEPRECIATION: 'Journal',
+  ASSET_DISPOSAL: 'Journal',
 };
 
 /** A ledger Nirmaan posts to that is not a client, vendor or expense category. */
@@ -93,7 +99,16 @@ export const TALLY_FIXED_LEDGERS: TallyFixedLedger[] = [
   { key: 'STAFF_RECOVERIES', use: 'Other deductions from salaries', name: 'Recoveries from Staff', group: 'Indirect Incomes' },
   { key: 'SALARY_PAYABLE', use: 'Net salaries approved, not yet paid', name: 'Salaries Payable', group: 'Current Liabilities' },
   { key: 'RMC_SALES', use: 'Concrete and pumping on RMC bills', name: 'Sales of Ready-Mix Concrete', group: 'Sales Accounts' },
-  { key: 'MACHINERY', use: 'Machines bought on a loan the lender paid to the dealer', name: 'Plant and Machinery', group: 'Fixed Assets' },
+  { key: 'MACHINERY', use: 'Machines bought on a loan the lender paid to the dealer, and plant in the fixed asset register', name: 'Plant and Machinery', group: 'Fixed Assets' },
+  { key: 'BUILDINGS', use: 'Buildings and temporary structures in the fixed asset register', name: 'Buildings', group: 'Fixed Assets' },
+  { key: 'VEHICLES', use: 'Motor vehicles in the fixed asset register', name: 'Vehicles', group: 'Fixed Assets' },
+  { key: 'FURNITURE', use: 'Furniture and fittings in the fixed asset register', name: 'Furniture and Fittings', group: 'Fixed Assets' },
+  { key: 'OFFICE_EQUIPMENT', use: 'Office equipment in the fixed asset register', name: 'Office Equipment', group: 'Fixed Assets' },
+  { key: 'COMPUTERS', use: 'Computers and servers in the fixed asset register', name: 'Computers', group: 'Fixed Assets' },
+  { key: 'ACCUMULATED_DEPRECIATION', use: 'Depreciation charged on fixed assets, until they are sold or scrapped', name: 'Accumulated Depreciation', group: 'Fixed Assets' },
+  { key: 'DEPRECIATION', use: 'Companies Act depreciation of the fixed asset register', name: 'Depreciation', group: 'Indirect Expenses' },
+  { key: 'ASSET_SALE_PROFIT', use: 'A fixed asset sold above its book value', name: 'Profit on Sale of Fixed Assets', group: 'Indirect Incomes' },
+  { key: 'ASSET_SALE_LOSS', use: 'A fixed asset sold or scrapped below its book value', name: 'Loss on Sale of Fixed Assets', group: 'Indirect Expenses' },
   { key: 'LOAN_INTEREST', use: 'Interest in the EMIs of machine loans', name: 'Interest on Machinery Loans', group: 'Indirect Expenses' },
   { key: 'EXCHANGE_DIFFERENCE', use: 'A client in another currency paying at a rate other than the contract rate', name: 'Exchange Difference', group: 'Indirect Incomes' },
 ];

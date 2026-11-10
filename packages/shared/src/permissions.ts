@@ -345,6 +345,8 @@ export const canKeepBooks = (role: RoleKey) => TALLY_ROLES.includes(role);
 export const canApproveVouchers = (role: RoleKey) => role === 'ADMIN' || role === 'MANAGEMENT';
 /** Machine finance: loans on machines, their EMIs and what is owed, kept and seen by those who keep the books. */
 export const canManageMachineLoans = (role: RoleKey) => TALLY_ROLES.includes(role);
+/** Fixed assets: the register, depreciation runs and disposals, kept and seen by those who keep the books. */
+export const canManageFixedAssets = (role: RoleKey) => TALLY_ROLES.includes(role);
 /** Tender bidding: head office prices and submits bids (admin, management and the QS); the project managers
  *  who help price them and accounts, who pay the EMD, see the register. */
 export const TENDER_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'QUANTITY_SURVEYOR'];

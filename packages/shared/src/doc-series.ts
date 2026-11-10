@@ -38,6 +38,7 @@ export const DOC_SERIES_KINDS = {
   RMC: 'RMC orders',
   DC: 'RMC delivery challans',
   RINV: 'RMC invoices',
+  FA: 'Fixed assets',
 } as const;
 export type DocSeriesKind = keyof typeof DOC_SERIES_KINDS;
 export const DOC_SERIES_KIND_KEYS = Object.keys(DOC_SERIES_KINDS) as DocSeriesKind[];
