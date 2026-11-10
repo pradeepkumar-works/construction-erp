@@ -34,6 +34,7 @@ import {
   MATCH_DAYS_BEFORE,
   autoMatch,
   closingLines,
+  inLineSense,
   dayBefore,
   fyBetween,
   fyOf,
@@ -189,7 +190,11 @@ export class StatementsService {
     this.assertKeep(user);
     this.checkPeriod(q.from, q.to);
     await this.books.fresh(user);
-    const org = user.organizationId;
+    return this.profitLossOf(user.organizationId, q);
+  }
+
+  /** A company's profit and loss from its approved vouchers, as its own page shows it (the consolidation reads it too). */
+  private async profitLossOf(org: string, q: ProfitLossQuery): Promise<ProfitLossDto> {
     const previousFrom = yearBefore(q.from);
     const previousTo = yearBefore(q.to);
     const [accounts, now, before] = await Promise.all([this.accounts(org), this.sums(org, this.period(q.from, q.to), q.projectId), this.sums(org, this.period(previousFrom, previousTo), q.projectId)]);
@@ -253,7 +258,11 @@ export class StatementsService {
   async balanceSheet(user: RequestUser, asOn: string): Promise<BalanceSheetDto> {
     this.assertKeep(user);
     await this.books.fresh(user);
-    const org = user.organizationId;
+    return (await this.balanceSheetOf(user.organizationId, asOn)).sheet;
+  }
+
+  /** A company's balance sheet as on a day, as its own page shows it, with each account's balance (debit positive) behind it. */
+  private async balanceSheetOf(org: string, asOn: string): Promise<{ sheet: BalanceSheetDto; balances: Map<string, Prisma.Decimal> }> {
     const previousAsOn = yearBefore(asOn);
     const [accounts, now, before] = await Promise.all([this.accounts(org), this.sums(org, this.upTo(asOn)), this.sums(org, this.upTo(previousAsOn))]);
     const n = this.byAccount(now);
@@ -276,7 +285,7 @@ export class StatementsService {
       return { key: s.key, label: s.label, side: s.side, lines, total: { amount: money(sumLines(lines, 'amount')), previous: money(sumLines(lines, 'previous')) } };
     });
     const side = (which: 'ASSET' | 'LIABILITY', w: 'amount' | 'previous') => sections.filter((s) => s.side === which).reduce((t, s) => t.add(s.total[w]), D(0));
-    return {
+    const sheet: BalanceSheetDto = {
       asOn,
       previousAsOn,
       sections,
@@ -285,6 +294,65 @@ export class StatementsService {
       profitNotClosed: { amount: money(notClosed.neg()), previous: money(notClosedBefore.neg()) },
       difference: money(side('ASSET', 'amount').sub(side('LIABILITY', 'amount'))),
     };
+    return { sheet, balances: n };
+  }
+
+  // A company of a group, for the group's consolidated accounts
+
+  /** How far a company's books are final: the day they are locked up to, and the latest financial year it closed. */
+  async lockAndClose(organizationId: string): Promise<{ lockedUpTo: string | null; closedYear: string | null }> {
+    const [{ lockedUpTo }, close] = await Promise.all([
+      this.books.period(organizationId),
+      this.prisma.bookVoucher.findFirst({ where: { organizationId, source: 'YEAR_CLOSE', status: 'APPROVED' }, orderBy: { date: 'desc' }, select: { sourceId: true } }),
+    ]);
+    return { lockedUpTo, closedYear: close?.sourceId ?? null };
+  }
+
+  /**
+   * One company's statements for its group's consolidated accounts (`ConsolidationService`, outside the request's
+   * tenant): its books brought up to date as its own pages do, its profit and loss for the period (none when `to` is
+   * before `from`) and its balance sheet as on `to`, from the same reads as its own statements; and what it holds with
+   * each sister through the ledgers named as that sister (`parties`: ledger key to sister). BALANCE is such a ledger's
+   * balance on the line it sits on; TURNOVER the income and expense lines of the period's vouchers that touch one.
+   * Figures are in the line's own sense.
+   */
+  async companyFigures(organizationId: string, q: { from: string; to: string }, parties: Map<string, string>) {
+    await this.books.fresh({ organizationId });
+    const hasPeriod = q.from <= q.to;
+    const [profitLoss, { sheet, balances }, accounts] = await Promise.all([
+      hasPeriod ? this.profitLossOf(organizationId, { from: q.from, to: q.to }) : Promise.resolve(null),
+      this.balanceSheetOf(organizationId, q.to),
+      this.accounts(organizationId),
+    ]);
+    const byId = new Map(accounts.map((a) => [a.id, a]));
+    const sisters: { sisterId: string; kind: 'BALANCE' | 'TURNOVER'; line: StatementLine; amount: Prisma.Decimal }[] = [];
+    const ledgersOf = new Map<string, string[]>();
+    for (const a of accounts) {
+      const sisterId = parties.get(a.key);
+      if (!sisterId) continue;
+      ledgersOf.set(sisterId, [...(ledgersOf.get(sisterId) ?? []), a.id]);
+      const b = balances.get(a.id) ?? D(0);
+      if (b.isZero()) continue;
+      const line = statementLineOf(a, b.toNumber());
+      sisters.push({ sisterId, kind: 'BALANCE', line, amount: inLineSense(line, b) });
+    }
+    if (hasPeriod) {
+      const turnover = await Promise.all(
+        [...ledgersOf].map(async ([sisterId, ids]) => ({
+          sisterId,
+          rows: await this.sums(organizationId, { ...this.period(q.from, q.to), lines: { some: { accountId: { in: ids } } } }),
+        })),
+      );
+      for (const { sisterId, rows } of turnover)
+        for (const r of rows) {
+          const a = byId.get(r.accountId);
+          const net = r.debit.sub(r.credit);
+          if (!a || !isProfitLoss(a.group) || net.isZero()) continue;
+          const line = statementLineOf(a, net.toNumber());
+          sisters.push({ sisterId, kind: 'TURNOVER', line, amount: inLineSense(line, net) });
+        }
+    }
+    return { profitLoss, balanceSheet: sheet, sisters };
   }
 
   // Bank reconciliation
