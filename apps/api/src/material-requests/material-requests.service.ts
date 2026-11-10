@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { nextDocNo } from '../common/doc-number';
 import { asMasterNames } from '../stock/item-master';
 import type { MaterialRequestDto, MaterialRequestSortField, Paginated, SortOrder } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
@@ -88,15 +89,6 @@ export class MaterialRequestsService {
     };
   }
 
-  /** MR-YYYY-0001 style numbering, per organisation. */
-  private async nextRequestNo(organizationId: string): Promise<string> {
-    const year = new Date().getUTCFullYear();
-    const prefix = `MR-${year}-`;
-    const last = await this.prisma.materialRequest.findFirst({ where: { organizationId, requestNo: { startsWith: prefix } }, orderBy: { requestNo: 'desc' }, select: { requestNo: true } });
-    const n = last ? parseInt(last.requestNo.slice(prefix.length), 10) + 1 : 1;
-    return `${prefix}${String(n).padStart(4, '0')}`;
-  }
-
   async list(user: RequestUser, q: ListMaterialRequestQuery): Promise<Paginated<MaterialRequestDto>> {
     const where: Prisma.MaterialRequestWhereInput = { ...this.access.submissionWhere(user) };
     if (q.projectId) where.projectId = q.projectId;
@@ -139,23 +131,26 @@ export class MaterialRequestsService {
     await this.access.assertCanAccessProject(user, dto.projectId);
     let row: { id: string; requestNo: string };
     try {
-      row = await this.prisma.materialRequest.create({
+      const items = await asMasterNames(this.prisma, user.organizationId, dto.items);
+      row = await this.prisma.$transaction(async (tx) => tx.materialRequest.create({
         data: {
           id: dto.id,
           organizationId: user.organizationId,
           projectId: dto.projectId,
-          requestNo: await this.nextRequestNo(user.organizationId),
+          requestNo: await nextDocNo(tx, user.organizationId, 'MR', async (prefix) =>
+            (await tx.materialRequest.findFirst({ where: { organizationId: user.organizationId, requestNo: { startsWith: prefix } }, orderBy: { requestNo: 'desc' }, select: { requestNo: true } }))?.requestNo ?? null,
+          ),
           requiredDate: parseDate(dto.requiredDate),
           priority: dto.priority ?? 'NORMAL',
           remarks: dto.remarks ?? null,
           submittedById: user.id,
           status: 'DRAFT',
           items: {
-            create: (await asMasterNames(this.prisma, user.organizationId, dto.items)).map((i, idx) => ({ itemName: i.itemName, specification: i.specification ?? null, unit: i.unit, quantity: new Prisma.Decimal(i.quantity), sortOrder: idx })),
+            create: items.map((i, idx) => ({ itemName: i.itemName, specification: i.specification ?? null, unit: i.unit, quantity: new Prisma.Decimal(i.quantity), sortOrder: idx })),
           },
         },
         select: { id: true, requestNo: true },
-      });
+      }));
     } catch (e) {
       if (isUniqueViolation(e) && dto.id) {
         const winner = await this.findExisting(user, dto.id);

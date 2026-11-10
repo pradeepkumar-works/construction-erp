@@ -14,6 +14,8 @@ import { WarningsModule } from '../warnings/warnings.module';
 import { DocumentsModule } from '../documents/documents.module';
 import { BriefsModule } from '../briefs/briefs.module';
 import { CompanyDataService } from '../company-data/company-data.service';
+import { CompanySettingsController } from '../company-data/company-settings.controller';
+import { CompanySettingsService } from '../company-data/company-settings.service';
 import { CompanyDataController } from '../company-data/company-data.controller';
 import { BillingService } from '../billing/billing.service';
 import { BillingController } from '../billing/billing.controller';
@@ -25,8 +27,8 @@ import { BillingController } from '../billing/billing.controller';
 @Global()
 @Module({
   imports: [PayablesModule, WarningsModule, BriefsModule, DocumentsModule, IntegrationsModule],
-  controllers: [NotificationsController, MessagingController, CompanyDataController, BillingController],
-  providers: [DemoClockService, NotificationsService, NotificationJobsService, NotificationSchedulerService, ExpoPushService, EmailService, MessagingService, CompanyDataService, BillingService],
+  controllers: [NotificationsController, MessagingController, CompanyDataController, CompanySettingsController, BillingController],
+  providers: [DemoClockService, NotificationsService, NotificationJobsService, NotificationSchedulerService, ExpoPushService, EmailService, MessagingService, CompanyDataService, CompanySettingsService, BillingService],
   exports: [NotificationsService, NotificationJobsService, EmailService, MessagingService],
 })
 export class NotificationsModule {}

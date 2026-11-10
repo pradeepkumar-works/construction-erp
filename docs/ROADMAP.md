@@ -1053,6 +1053,11 @@ GRN on the web and the phone), and a second quality dashboard.
      one. Only the approved version is read by the forecast, the cash flow, the PO budget check and the BOQ budget rates;
      the Budget tab shows the version in force, the open one and the history, and budgets waiting show under Also
      waiting for you. ARCHITECTURE "Budget and cash flow".
+188. ~~**Company settings: letterhead, logo and number series** (M).~~ Done: one Company settings page (Admin) with the
+     letterhead's details and a preview, a logo that every printed paper and letter carries, and each kind of document's
+     number series (purchase orders, bills, indents, permits and 26 more) set by the company, by calendar or financial year,
+     with a first number and when it starts again shown before saving. Other settings links the rest. ARCHITECTURE
+     "Company settings".
 
 ## Definition of done for every item
 Prisma migration, API endpoints with Swagger, shared types, web screen, mobile screen where site

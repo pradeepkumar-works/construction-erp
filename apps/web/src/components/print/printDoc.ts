@@ -30,6 +30,7 @@ export const letterheadOr = (l: LetterheadDto | undefined, orgName: string): Let
     pan: null,
     cin: null,
     stateCode: null,
+    logo: null,
   };
 
 const STYLE = `
@@ -38,6 +39,8 @@ const STYLE = `
   body { font-family: ${PRINT_FACE}; color: ${PRINT.text}; font-size: 11px; margin: 0; padding: 24px; }
   .head { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; padding-bottom: 10px; margin-bottom: 12px; }
   .brand { font-size: 18px; color: ${PRINT.ink}; }
+  .company { display: flex; gap: 12px; align-items: flex-start; }
+  .logo { max-height: 56px; max-width: 160px; object-fit: contain; }
   .org { color: ${PRINT.muted}; font-size: 10px; line-height: 1.5; }
   .doc { text-align: right; }
   h1 { font-size: 16px; margin: 0 0 2px; }
@@ -79,7 +82,8 @@ function companyBlock(l: LetterheadDto, under?: string) {
       .join(' · '),
     under ? esc(under) : '',
   ].filter(Boolean);
-  return `<div><div class="brand">${esc(l.name)}</div>${lines.length ? `<div class="org">${lines.join('<br/>')}</div>` : ''}</div>`;
+  const logo = l.logo ? `<img class="logo" src="${esc(l.logo)}" alt=""/>` : '';
+  return `<div class="company">${logo}<div><div class="brand">${esc(l.name)}</div>${lines.length ? `<div class="org">${lines.join('<br/>')}</div>` : ''}</div></div>`;
 }
 
 export interface PrintDoc {

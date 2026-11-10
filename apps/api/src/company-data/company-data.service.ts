@@ -115,11 +115,11 @@ export class CompanyDataService {
   async letterhead(user: RequestUser): Promise<LetterheadDto> {
     const o = await this.prisma.organization.findUniqueOrThrow({
       where: { id: user.organizationId },
-      select: { name: true, legalName: true, billingName: true, billingAddress: true, billingStateCode: true, gstin: true, billingGstin: true, pan: true, cin: true },
+      select: { name: true, legalName: true, billingName: true, billingAddress: true, billingStateCode: true, gstin: true, billingGstin: true, pan: true, cin: true, logo: true },
     });
     const gstin = o.gstin ?? o.billingGstin;
     const legalName = o.legalName ?? (o.billingName && o.billingName !== o.name ? o.billingName : null);
-    return { name: o.name, legalName, address: o.billingAddress, gstin, pan: o.pan, cin: o.cin, stateCode: o.billingStateCode ?? gstStateCode(gstin) };
+    return { name: o.name, legalName, address: o.billingAddress, gstin, pan: o.pan, cin: o.cin, stateCode: o.billingStateCode ?? gstStateCode(gstin), logo: o.logo };
   }
 
   async manifest(user: RequestUser): Promise<CompanyExportManifestDto> {

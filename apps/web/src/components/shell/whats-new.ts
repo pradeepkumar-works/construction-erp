@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-company-settings',
+    date: '2026-11-10',
+    title: 'Company settings: your letterhead, logo and number series',
+    points: [
+      'Admin › Company settings keeps the letterhead’s legal name, registered address, GSTIN, PAN and CIN, with a preview of the head every paper prints.',
+      'Upload the company’s logo once and it prints on letters, permits, debit notes, GRNs, invoices and the other papers.',
+      'Numbering sets how each kind of document is numbered, such as PO/BBSR/26-27/0001, by calendar or financial year. Number by financial year changes them all at once; each line shows its first number and when it starts again.',
+      'Other settings gathers the rest of the company’s settings in one place.',
+    ],
+  },
+  {
     id: '2026-11-bill-secured-advance-holds',
     date: '2026-11-08',
     title: 'Secured advance on material at site, and amounts withheld on RA bills',

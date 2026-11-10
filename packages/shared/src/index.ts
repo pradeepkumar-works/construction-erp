@@ -151,3 +151,5 @@ export * from './waiting-rank';
 export * from './list-views';
 export * from './project-areas';
 export * from './role-menu';
+export * from './doc-series';
+export * from './company-profile';
