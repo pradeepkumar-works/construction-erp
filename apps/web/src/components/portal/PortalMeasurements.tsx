@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { HelpLink } from '@/components/common/Help';
 import { Alert, App, Button, Card, Descriptions, Divider, Drawer, Form, Input, Segmented, Space, Table, Typography } from 'antd';
 import { tk } from '@/ds';
 import type { UseQueryResult } from '@tanstack/react-query';
@@ -40,9 +39,11 @@ export function PortalMeasurements({ measurements, openId, onOpen }: { measureme
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {data ? (
         <Card size="small" style={{ margin: tk.space[3] }}>
-          <HelpLink style={{ marginTop: 0 }}>{data.level
+          <Typography.Paragraph style={{ marginTop: 0 }}>
+            {data.level
               ? `You check as ${CHECK_LEVEL_LABELS[data.level].toLowerCase()}: at least ${CHECK_LEVEL_SHARE[data.level]}% of the measurements by value before you certify a bill.`
-              : "You have no check level on this project. The contractor's project manager sets it on the project's team; until then you can read the sheets but not record a check."}</HelpLink>
+              : "You have no check level on this project. The contractor's project manager sets it on the project's team; until then you can read the sheets but not record a check."}
+          </Typography.Paragraph>
           <CheckCoverage coverage={data.coverage} level={data.level} />
         </Card>
       ) : null}

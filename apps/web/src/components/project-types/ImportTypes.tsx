@@ -1,7 +1,7 @@
 'use client';
 
+import { Help } from '@/components/common/Help';
 import React, { useState } from 'react';
-import { HelpLink } from '@/components/common/Help';
 import { Alert, App, Button, Checkbox, Flex, Modal, Space, Typography, Upload } from 'antd';
 import { tk } from '@/ds';
 import type { UploadProps } from 'antd';
@@ -153,9 +153,11 @@ export function ImportTypes({ open, onClose }: { open: boolean; onClose: () => v
         </Upload.Dragger>
       ) : (
         <>
-          <HelpLink style={{ marginBottom: 0 }}>From <span translate="no">{plan.from || 'another company'}</span>
-            {plan.exportedAt ? `, exported ${formatDateTime(plan.exportedAt)}` : ''}. A type or kind you have is saved as a new version; your projects keep what they
-            have until you update them.</HelpLink>
+          <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
+            From <span translate="no">{plan.from || 'another company'}</span>
+            {plan.exportedAt ? `, exported ${formatDateTime(plan.exportedAt)}` : ''}.
+            <Help>A type or kind you have is saved as a new version; your projects keep what they have until you update them.</Help>
+          </Typography.Paragraph>
           {group('Project types', types)}
           {group('Component types', kinds)}
         </>

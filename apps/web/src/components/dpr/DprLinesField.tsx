@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { HelpLink } from '@/components/common/Help';
 import { AutoComplete, Button, Flex, Form, Input, InputNumber, Modal, Select, Typography } from 'antd';
 import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
@@ -280,13 +279,15 @@ export function DprLinesField({ options, headCount, def }: { options: DprWorkOpt
         lines.length && dprLineShows(def, 'crew') ? (
           <tr>
             <td colSpan={6}>
-              <HelpLink>{check.headCount === null
+              <Typography.Text type="secondary">
+                {check.headCount === null
                   ? `${check.onLines} people on the work lines`
                   : check.difference === 0
                     ? `All ${check.headCount} on site are on a work line`
                     : check.difference! > 0
                       ? `${check.onLines} of the ${check.headCount} on site are on a work line; ${check.difference} on none`
-                      : `The work lines name ${check.onLines} people, ${-check.difference!} more than the ${check.headCount} on site`}</HelpLink>
+                      : `The work lines name ${check.onLines} people, ${-check.difference!} more than the ${check.headCount} on site`}
+              </Typography.Text>
             </td>
           </tr>
         ) : null

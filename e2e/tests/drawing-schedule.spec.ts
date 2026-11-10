@@ -60,8 +60,10 @@ test('a late drawing is chased by letter and recorded as a delay', async ({ page
   await expect(page.getByRole('heading', { name: 'Drawing schedule', level: 1 })).toBeVisible();
   await expect(page.getByRole('dialog').getByText(delayed.riskNo!)).toBeVisible();
   await page.goto('/as-built');
-  await expect(page.getByText('needs an as-built revision before handover')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'As-built drawings', level: 1 })).toBeVisible();
+  await page.getByRole('button', { name: 'About this page' }).click();
+  await expect(page.getByText('needs an as-built revision before handover')).toBeVisible();
+  await page.keyboard.press('Escape');
   await page.getByRole('radiogroup', { name: 'Which drawings' }).getByText('Received').click();
   await expect(page).toHaveURL(/state=RECEIVED/);
 });

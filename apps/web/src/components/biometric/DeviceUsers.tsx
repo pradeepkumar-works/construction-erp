@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { HelpLink } from '@/components/common/Help';
-import { App, Button, Dropdown, Form, Input, Segmented, Select, Space, Table } from 'antd';
+import { App, Button, Dropdown, Form, Input, Segmented, Select, Space, Table, Typography } from 'antd';
 import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
@@ -140,8 +139,10 @@ export function DeviceUsers() {
   return (
     <div style={{ padding: tk.space[4] }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: tk.space[3], flexWrap: 'wrap', marginBottom: tk.space[3], alignItems: 'center' }}>
-        <HelpLink style={{ margin: 0, maxWidth: 640 }}>{open ? `${open} user ${open === 1 ? 'number is' : 'numbers are'} not matched yet; their punches are kept and marked once matched.` : 'Every user number seen on the devices is matched.'} Enrolling people under their code number (14 for EMP-014) lets Match by code do it in one go.
-          {leftOn ? ` ${leftOn} ${leftOn === 1 ? 'person who has' : 'people who have'} left may still be on the devices: take them off from their row’s menu.` : ''}</HelpLink>
+        <Typography.Paragraph type="secondary" style={{ margin: 0, maxWidth: 640 }}>
+          {open ? `${open} user ${open === 1 ? 'number is' : 'numbers are'} not matched yet; their punches are kept and marked once matched.` : 'Every user number seen on the devices is matched.'} Enrolling people under their code number (14 for EMP-014) lets Match by code do it in one go.
+          {leftOn ? ` ${leftOn} ${leftOn === 1 ? 'person who has' : 'people who have'} left may still be on the devices: take them off from their row’s menu.` : ''}
+        </Typography.Paragraph>
         <Space wrap>
           <Button
             loading={act.isPending}

@@ -1,7 +1,7 @@
 'use client';
 
+import { Help } from '@/components/common/Help';
 import React, { useMemo, useState } from 'react';
-import { HelpLink } from '@/components/common/Help';
 import { App, Button, Card, Col, Dropdown, Form, Input, Row, Space, Typography } from 'antd';
 import { tk } from '@/ds';
 import dayjs, { type Dayjs } from 'dayjs';
@@ -281,8 +281,10 @@ export function OfficialReportView({ projectId, kind, picker }: { projectId: str
             message.success(`${r.docNo} is issued: ${issueLine(r)}. Download it to send.`);
           }}
         >
-          <HelpLink>The report is kept exactly as it is now, with today’s date and your name, so the copy you send can always be downloaded again.
-            {data.issue ? ` ${issueLine(data)}; this makes the next revision.` : ''}</HelpLink>
+          <Typography.Paragraph>
+            {data.issue ? `${issueLine(data)}; this makes the next revision.` : 'This makes the first issued copy.'}
+            <Help>The report is kept exactly as it is now, with today’s date and your name, so the copy you send can always be downloaded again.</Help>
+          </Typography.Paragraph>
           <Form form={form} layout="vertical">
             <Form.Item name="note" label="Note for the register">
               <Input.TextArea rows={2} maxLength={500} placeholder={data.issue ? 'What changed since the last revision' : 'Sent to the PIU by email'} />

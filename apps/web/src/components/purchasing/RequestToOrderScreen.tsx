@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { HelpLink } from '@/components/common/Help';
 import { App, Button, Card, Col, Empty, Flex, Form, Grid, Input, Row, Space, Statistic, Table, Typography } from 'antd';
 import { tk } from '@/ds';
 import { useResolved } from '@/ds/react';
@@ -579,7 +578,8 @@ function OrdersStep({ request, row, cs, buyer, onFinalise }: { request: Material
   return (
     <>
       <Flex justify="space-between" align="center" wrap gap={tk.space[2]} style={{ marginBottom: tk.space[3] }}>
-        <HelpLink>{!left
+        <Typography.Text type="secondary">
+          {!left
             ? 'Everything on this request is ordered or received.'
             : row.stage === 'READY'
               ? row.final!.split
@@ -589,7 +589,8 @@ function OrdersStep({ request, row, cs, buyer, onFinalise }: { request: Material
                 ? 'The supplier choice is waiting for approval. The purchase order is made once it is approved.'
                 : row.needsApproval
                   ? 'Finalise L1 and have it approved first: purchase orders here are made only on an approved supplier choice.'
-                  : 'Finalise L1 first, so the order is made on the vendor you chose.'}</HelpLink>
+                  : 'Finalise L1 first, so the order is made on the vendor you chose.'}
+        </Typography.Text>
         {buyer && left ? (
           <Space wrap>
             {row.stage === 'READY' && row.final?.split && cs ? (

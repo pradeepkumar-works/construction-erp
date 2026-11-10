@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef } from 'react';
-import { HelpLink } from '@/components/common/Help';
 import { Alert, Form, Input, InputNumber, Select, Typography } from 'antd';
 import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
@@ -194,12 +193,14 @@ export function MachineryFormModal({ open, onClose, projectId, log, prefill }: {
             </Form.Item>
           </FormGrid>
           {day ? (
-            <HelpLink style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.neg(2) }}><Typography.Text type="secondary">
+            <Typography.Paragraph style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.neg(2) }}>
+              <Typography.Text type="secondary">
                 {`From the tracker: the engine ran ${formatQty(day.engineHours)} h${day.idleHours !== null ? `, ${formatQty(day.idleHours)} idle` : ''}${day.meterStart !== null ? `, meter ${formatQty(day.meterStart)} to ${formatQty(day.meterEnd ?? day.meterStart)}` : ''}. Check it and change what is not right.`}
               </Typography.Text>
               {above !== null ? (
                 <span style={{ display: 'block', color: tk.color.tone.pending.fg }}>{`That is ${formatQty(above)} h more than the engine ran; the approver sees it.`}</span>
-              ) : null}</HelpLink>
+              ) : null}
+            </Typography.Paragraph>
           ) : null}
           {Number(breakdown) > 0 ? (
             <Form.Item name="breakdownNote" label="What broke down" rules={[{ required: true, whitespace: true, message: 'Say what broke down' }]}>

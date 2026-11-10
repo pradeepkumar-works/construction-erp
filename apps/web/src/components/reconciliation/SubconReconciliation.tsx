@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { HelpLink } from '@/components/common/Help';
+import { Help, HelpLink } from '@/components/common/Help';
 import Link from 'next/link';
 import { App, Button, Empty, Form, Input, Skeleton, Table, Tooltip, Typography } from 'antd';
 import { tk } from '@/ds';
@@ -263,9 +263,11 @@ function RecoverModal({ projectId, target, onClose }: { projectId: string; targe
     >
       {target ? (
         <Form form={form} layout="vertical">
-          <HelpLink>{target.wo.woNo}: {formatQty(target.item.issuedQty)} {target.item.unit} issued against {formatQty(target.item.allowedQty)} {target.item.unit} allowed for the
-            measured work. The issue rate is already on their bills; this is taken off their {target.wo.openBill ? `bill being prepared (${target.wo.openBill.label})` : 'next bill'} as
-            a penalty, as in CPWD clause 42. Change the rate if your contract says otherwise.</HelpLink>
+          <Typography.Paragraph type="secondary">
+            {target.wo.woNo}: {formatQty(target.item.issuedQty)} {target.item.unit} issued against {formatQty(target.item.allowedQty)} {target.item.unit} allowed for the
+            measured work, taken off their {target.wo.openBill ? `bill being prepared (${target.wo.openBill.label})` : 'next bill'} as a penalty.
+            <Help>The issue rate is already on their bills; the excess is a penalty, as in CPWD clause 42. Change the rate if your contract says otherwise.</Help>
+          </Typography.Paragraph>
           <FormGrid>
             <Form.Item
               name="quantity"

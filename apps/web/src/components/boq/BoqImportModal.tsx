@@ -1,7 +1,7 @@
 'use client';
 
+import { Help } from '@/components/common/Help';
 import React, { useMemo, useState } from 'react';
-import { HelpLink } from '@/components/common/Help';
 import { boqRowsFromRead, readNumber, type ReadBoqRow } from '@erp/shared';
 import { Alert, App, Button, Flex, Modal, Select, Space, Table, Typography, Upload } from 'antd';
 import { tk } from '@/ds';
@@ -251,15 +251,18 @@ export function BoqImportModal({ open, onClose, projectId, onImported }: { open:
       ) : readState ? (
         <>
           <ReadPreview state={readState} active={activeRead} onClear={() => setPagesHidden(true)} pagesHidden={pagesHidden}>
-            <HelpLink style={{ margin: `${tk.space[1]} 0 0` }}>{readRows.length} item{readRows.length === 1 ? '' : 's'} read from {readState.pages.length} page{readState.pages.length === 1 ? '' : 's'}
-              {toCheck ? `, ${toCheck} to check (amber)` : ''}. Untick a row to leave it out; correct the rest in the BOQ after importing.
+            <Typography.Paragraph style={{ margin: `${tk.space[1]} 0 0` }}>
+              {readRows.length} item{readRows.length === 1 ? '' : 's'} read from {readState.pages.length} page{readState.pages.length === 1 ? '' : 's'}
+              {toCheck ? `, ${toCheck} to check (amber)` : ''}.
+              <Help>Untick a row to leave it out; correct the rest in the BOQ after importing.</Help>
               {readTotal !== null ? (
                 <>
                   {' '}
                   The BOQ&apos;s total is <Money value={readTotal} />; the rows read add up to <Money value={rowsTotal} />
                   {Math.abs(readTotal - rowsTotal) > readTotal * 0.01 ? ', so some rows may be missing or misread.' : '.'}
                 </>
-              ) : null}</HelpLink>
+              ) : null}
+            </Typography.Paragraph>
           </ReadPreview>
           <Table<ParsedRow>
             size="small"

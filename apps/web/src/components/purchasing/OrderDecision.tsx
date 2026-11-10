@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { HelpLink } from '@/components/common/Help';
 import { Progress, Table, Typography } from 'antd';
 import { tk } from '@/ds';
 import type { ComparativeStatementDto, PurchaseOrderDto, QuotationDto } from '@erp/shared';
@@ -91,8 +90,10 @@ export function OrderBudget({ order }: { order: PurchaseOrderDto }) {
 
   return (
     <>
-      <HelpLink style={{ marginBottom: tk.space[2] }}>Material budget <Money value={budget} />, of which <Money value={ordered} /> is on other approved orders. This order of{' '}
-        <Money value={b.thisOrder} paise /> before GST takes it to <Money value={after} />, {pct}% of the budget.</HelpLink>
+      <Typography.Paragraph style={{ marginBottom: tk.space[2] }}>
+        Material budget <Money value={budget} />, with <Money value={ordered} /> on other approved orders. This order,{' '}
+        <Money value={b.thisOrder} paise /> before GST, takes it to <Money value={after} />, {pct}% of the budget.
+      </Typography.Paragraph>
       <Progress
         percent={Math.min(pct, 100)}
         status={over ? 'exception' : 'normal'}

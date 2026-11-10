@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { HelpLink } from '@/components/common/Help';
 import Link from 'next/link';
 import { Table, Typography } from 'antd';
 import { workOrderAsOf, type WorkOrderAmendmentDto, type WorkOrderDto } from '@erp/shared';
@@ -51,10 +50,12 @@ export function WoAmendments({ order, amendments }: { order: WorkOrderDto; amend
     <>
       {open ? (
         <div style={{ marginBottom: tk.space[4] }}>
-          <HelpLink><Link href={`/work-order-amendments/${open.id}`} translate="no">
+          <Typography.Paragraph>
+            <Link href={`/work-order-amendments/${open.id}`} translate="no">
               {open.label}
             </Link>{' '}
-            <StatusTag status={open.status} /> takes the order from <Money value={open.valueBefore} paise /> to <Money value={open.valueAfter} paise />. Measurements, issues and bills go on against the order as it stands meanwhile.</HelpLink>
+            <StatusTag status={open.status} /> takes the order from <Money value={open.valueBefore} paise /> to <Money value={open.valueAfter} paise />. Measurements, issues and bills go on against the order as it stands meanwhile.
+          </Typography.Paragraph>
           <AmendmentLines amendment={open} onlyChanged />
         </div>
       ) : null}

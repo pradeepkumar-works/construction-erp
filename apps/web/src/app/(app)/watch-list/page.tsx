@@ -306,9 +306,11 @@ export default function Page() {
             <Typography.Text strong>{WARNING_KIND_LABELS[r.kind]}</Typography.Text>
             {r.paused ? <AppTag meaning="failed">Paused</AppTag> : null}
           </Flex>
-          <HelpLink>{r.paused
+          <Typography.Text type="secondary">
+            {r.paused
               ? `Marked wrong ${r.paused.wrong} of ${r.paused.of} times in the last 30 days, so this check stopped on ${formatDate(r.paused.since)}.${data.canResume ? ' Resume it once the check or the records are put right.' : ' An admin or management can resume it.'}`
-              : (trackRecordText(r) ?? 'Not marked yet: dismiss a warning as Fixed, Known or Wrong and it counts here.')}</HelpLink>
+              : (trackRecordText(r) ?? 'Not marked yet: dismiss a warning as Fixed, Known or Wrong and it counts here.')}
+          </Typography.Text>
         </div>
         {r.paused && data.canResume ? (
           <Button icon={<PlayCircleOutlined />} onClick={() => doResume(r.kind)} loading={resume.isPending && resume.variables === r.kind}>

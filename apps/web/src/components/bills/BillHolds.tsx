@@ -339,8 +339,9 @@ function CloseHoldModal({ hold, bill, onClose }: { hold: RaBillHoldDto | null; b
     >
       <Form form={form} layout="vertical">
         {hold ? (
-          <HelpLink>{hold.description}: {formatMoney(hold.balance, bill, true)} is still withheld. Closing gives it up for good: the books write it off as a deduction by the
-            client, and no later bill can release it.</HelpLink>
+          <Typography.Paragraph>
+            {hold.description}: {formatMoney(hold.balance, bill, true)} is still withheld. Closing writes it off for good; no later bill can release it.
+          </Typography.Paragraph>
         ) : null}
         <Form.Item name="date" label="Given up on" rules={[{ required: true, message: 'Choose the date' }]}>
           <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
