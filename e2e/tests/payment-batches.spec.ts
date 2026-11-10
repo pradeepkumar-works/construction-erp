@@ -126,6 +126,11 @@ test('lanes 2, 3, 4, 6 and 7: a batch of approved requests, its file, a vendor l
   const other = await newBatch();
   await api(accounts, `/payment-batches/${other.id}/lines`, { method: 'POST', body: { paymentRequestIds: [noIfsc.id] } });
   await api(accounts, `/payment-batches/${other.id}`, { method: 'DELETE' });
+  // Our own file imported back as the bank's reply finds no UTR (never an IFSC or an account) and settles nothing.
+  const own = await api<UtrImportResultDto>(accounts, `/payment-batches/${id}/utrs`, { method: 'POST', body: { cells: rows } });
+  expect(own.set).toBe(0);
+  expect(own.batch.status).toBe('EXPORTED');
+  expect(own.batch.items.every((l) => !l.utr)).toBe(true);
   const filePage = await page.context().newPage();
   await filePage.setContent(`<pre style="font: 14px/1.6 monospace; padding: 24px">${csv.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</pre>`);
   await filePage.screenshot({ path: process.env.PAY_SHOTS ? join(process.env.PAY_SHOTS, 'pay-file.png') : test.info().outputPath('pay-file.png') });
@@ -203,6 +208,25 @@ test('a file made twice at once pays once, and Undo export takes the payments of
   expect((await api<Page_<VendorPaymentDto>>(accounts, `/vendor-payments?paymentRequestId=${r.id}`)).items).toHaveLength(0);
   expect((await api<{ paidAmount: string }>(md, `/payment-requests/${r.id}`)).paidAmount).toBe('0.00');
   await api(accounts, `/payment-batches/${b.id}`, { method: 'DELETE' });
+});
+
+test('a payment deleted by hand after export frees its request for another batch', async () => {
+  const r = await request(banked[0], '1800');
+  const first = await newBatch();
+  await api(accounts, `/payment-batches/${first.id}/lines`, { method: 'POST', body: { paymentRequestIds: [r.id] } });
+  const out = await api<PaymentBatchDetailDto>(accounts, `/payment-batches/${first.id}/export`, { method: 'POST' });
+  await api(accounts, `/vendor-payments/${out.items[0].vendorPaymentId}`, { method: 'DELETE' });
+  expect((await api<PaymentBatchDetailDto>(accounts, `/payment-batches/${first.id}`)).items[0].state).toBe('REMOVED');
+  const offered = (await api<{ id: string; inBatch: string | null }[]>(accounts, '/payment-batches/requests')).find((x) => x.id === r.id);
+  expect(offered?.inBatch).toBeNull();
+  const second = await newBatch();
+  const moved = await api<PaymentBatchDetailDto>(accounts, `/payment-batches/${second.id}/lines`, { method: 'POST', body: { paymentRequestIds: [r.id] } });
+  expect(moved.items.map((l) => l.requestNo)).toEqual([r.requestNo]);
+  // Undoing the first export leaves the request with the second batch.
+  const undone = await api<PaymentBatchDetailDto>(accounts, `/payment-batches/${first.id}/undo-export`, { method: 'POST' });
+  expect(undone.status).toBe('DRAFT');
+  expect(undone.items).toHaveLength(0);
+  for (const b of [first, second]) await api(accounts, `/payment-batches/${b.id}`, { method: 'DELETE' });
 });
 
 test('lane 8: with payments needing a request, an unapproved request cannot join a batch', async ({ page }) => {
