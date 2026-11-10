@@ -8,6 +8,7 @@ import { UndoService } from '../common/undo.service';
 import { isUniqueViolation } from '../common/idempotency';
 import { iso } from '../common/serialize';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
+import { CustomFieldsService, storedValues } from '../custom-fields/custom-fields.service';
 import { CreateVendorDto, ListVendorsQuery, UpdateVendorDto } from './vendors.dto';
 
 const include = { _count: { select: { expenses: true, equipment: true, stockEntries: true } } } satisfies Prisma.VendorInclude;
@@ -34,6 +35,7 @@ export class VendorsService {
     private prisma: PrismaService,
     private audit: AuditService,
     private undo: UndoService,
+    private fields: CustomFieldsService,
   ) {
     undo.register('VENDOR', { entityType: 'VENDOR', check: (user) => this.assertCanEdit(user, {}) });
   }
@@ -59,6 +61,7 @@ export class VendorsService {
       udyamNo: r.udyamNo,
       remarks: r.remarks,
       isActive: r.isActive,
+      customValues: storedValues(r.customValues),
       expenseCount: r._count.expenses,
       equipmentCount: r._count.equipment,
       grnCount: r._count.stockEntries,
@@ -114,6 +117,8 @@ export class VendorsService {
     this.assertCanEdit(user, dto);
     const dup = await this.prisma.vendor.findFirst({ where: { organizationId: user.organizationId, name: { equals: dto.name, mode: 'insensitive' } }, select: { name: true } });
     if (dup) throw new ConflictException(`${dup.name} is already in the vendor master`);
+    // Required fields are asked for whenever the values are sent, as the form always sends them.
+    const customValues = dto.customValues !== undefined ? await this.fields.read(user, 'VENDOR', dto.customValues, undefined, { required: true }) : {};
     let id: string;
     try {
       id = await this.prisma.$transaction(async (tx) => {
@@ -136,6 +141,7 @@ export class VendorsService {
             msmeCategory: dto.msmeCategory ?? null,
             udyamNo: dto.udyamNo ?? null,
             remarks: dto.remarks ?? null,
+            customValues,
           },
           select: { id: true },
         });
@@ -161,6 +167,7 @@ export class VendorsService {
     }
     const data: Prisma.VendorUpdateInput = {};
     for (const k of PLAIN_FIELDS) if (dto[k] !== undefined) (data as Record<string, unknown>)[k] = dto[k];
+    if (dto.customValues !== undefined) data.customValues = await this.fields.read(user, 'VENDOR', dto.customValues, current.customValues, { required: true });
     const gstin = dto.gstin !== undefined ? dto.gstin : current.gstin;
     if (dto.gstin !== undefined || dto.stateCode !== undefined) data.stateCode = this.stateCode(gstin, dto.stateCode !== undefined ? dto.stateCode : current.stateCode) ?? null;
     try {
