@@ -29,7 +29,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const { data: options } = useAuthOptions();
-  // Sign in with single sign-on: the company code, then its provider (?sso=1 opens on it, as the SSO page's way back does).
+  // Use single sign-on: the company code, then its provider (?sso=1 opens on it, as the SSO page's way back does).
   const [sso, setSso] = useState(params.get('sso') === '1');
   // The product page's "See it as …" opens this page with ?demo=pm: fill in that demo account, ready to sign in.
   const demo = params.get('demo');
@@ -54,7 +54,7 @@ export default function LoginPage() {
 
   if (sso && options?.sso)
     return (
-      <AuthCard title="Sign in with single sign-on" subtitle="Use your work account at Microsoft or Google.">
+      <AuthCard title="Single sign-on" subtitle="Sign in with your work account at Microsoft or Google.">
         <SsoSignIn onPassword={() => setSso(false)} />
       </AuthCard>
     );
@@ -98,7 +98,7 @@ export default function LoginPage() {
               setSso(true);
             }}
           >
-            Sign in with single sign-on
+            Use single sign-on
           </Button>
         )}
       </Form>

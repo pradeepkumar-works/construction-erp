@@ -722,7 +722,7 @@ export const useLetterhead = () =>
 export const useCompanySettings = (enabled = true) =>
   useQuery({ queryKey: ['company-settings'], queryFn: async () => (await api.get<CompanySettingsDto>('/company-settings')).data, enabled });
 
-/** Sign in with single sign-on: which provider a company code signs in with (404 in words when none). */
+/** Use single sign-on: which provider a company code signs in with (404 in words when none). */
 export const useSsoCompany = (code: string | null) =>
   useQuery({ queryKey: ['sso-company', code], queryFn: async () => (await api.get<SsoCompanyDto>(`/auth/sso/${encodeURIComponent(code!)}`)).data, enabled: !!code, retry: false, staleTime: 5 * 60_000 });
 

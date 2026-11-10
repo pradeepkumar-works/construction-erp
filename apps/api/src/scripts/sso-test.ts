@@ -142,7 +142,7 @@ test('Google sisters: the proving company’s domains must all be the other’s'
 });
 
 test('the refusal says how to sign in instead', () => {
-  assert.equal(ssoRequiredMessage({ name: 'Acme Infra', code: 'ACME' }, 'ENTRA'), 'Acme Infra signs in with Microsoft. Choose "Sign in with single sign-on" and enter the company code ACME.');
+  assert.equal(ssoRequiredMessage({ name: 'Acme Infra', code: 'ACME' }, 'ENTRA'), 'Acme Infra signs in with Microsoft. Choose "Use single sign-on" and enter the company code ACME.');
 });
 
 test('PKCE: verifier and nonce come from the state and the key, the challenge is S256', () => {

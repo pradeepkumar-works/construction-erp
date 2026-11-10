@@ -159,7 +159,7 @@ export function proofAccepted(
 
 /** The refusal of a password (or a switch) where the company requires SSO: how to sign in instead. */
 export const ssoRequiredMessage = (company: { name: string; code: string }, provider: SsoProvider) =>
-  `${company.name} signs in with ${SSO_PROVIDER_INFO[provider].button}. Choose "Sign in with single sign-on" and enter the company code ${company.code}.`;
+  `${company.name} signs in with ${SSO_PROVIDER_INFO[provider].button}. Choose "Use single sign-on" and enter the company code ${company.code}.`;
 
 export const STATE_MINUTES = 10;
 export const CODE_SECONDS = 60;

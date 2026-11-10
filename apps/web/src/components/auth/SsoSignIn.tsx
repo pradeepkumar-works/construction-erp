@@ -32,7 +32,7 @@ function remember(code: string | null) {
 export const ssoStartUrl = (code: string) => `${API_URL}/auth/sso/${encodeURIComponent(code)}/start`;
 
 /**
- * Sign in › Sign in with single sign-on: the company code, then the provider's button. Drawn only in the browser (the
+ * Sign in › Use single sign-on: the company code, then the provider's button. Drawn only in the browser (the
  * sign-in page shows it once the server's options say SSO is on), so the remembered code is read as it first draws.
  */
 export function SsoSignIn({ onPassword }: { onPassword: () => void }) {

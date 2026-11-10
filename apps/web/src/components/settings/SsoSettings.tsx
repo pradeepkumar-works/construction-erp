@@ -105,7 +105,7 @@ function SsoDialog({ open, data, onClose }: { open: boolean; data: SsoSettingsDt
           label="Require single sign-on"
           valuePropName="checked"
           tooltip={`Passwords stop working for the company's people; platform admins and supplier logins keep theirs. ${PHONE_NOTE}`}
-          extra={data.signedInWithSso || s?.enforce ? undefined : 'Sign in with single sign-on once before you require it.'}
+          extra={data.signedInWithSso || s?.enforce ? undefined : 'Use single sign-on once before you require it.'}
         >
           <Switch disabled={!data.signedInWithSso && !s?.enforce} />
         </Form.Item>
@@ -127,7 +127,7 @@ export function SsoSettingsTab() {
     <SectionStack>
       <Section
         title="Single sign-on"
-        help="People sign in with their Microsoft or Google work account instead of a password. Choose Sign in with single sign-on on the sign-in page and enter the company code."
+        help="People sign in with their Microsoft or Google work account instead of a password. Choose Use single sign-on on the sign-in page and enter the company code."
         extra={
           s ? (
             <Button icon={<EditOutlined />} onClick={() => setEditing(true)} disabled={!!data.serverProblem}>

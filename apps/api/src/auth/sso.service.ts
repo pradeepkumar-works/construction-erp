@@ -347,7 +347,7 @@ export class SsoService {
     if (problem) throw new BadRequestException(problem);
     // Requiring single sign-on before it has worked once could shut every admin out.
     if (dto.enforce && user.ssoOrg !== user.organizationId && !isPlatformAdmin(user.email))
-      throw new BadRequestException('Sign in with single sign-on once, then require it. Sign out, choose "Sign in with single sign-on" and come back here.');
+      throw new BadRequestException('Use single sign-on once, then require it. Sign out, choose "Use single sign-on" and come back here.');
     const allowedDomains = [...new Set(dto.allowedDomains.map((d) => normaliseDomain(d)!))];
     const secret = dto.clientSecret?.trim();
     const data = {
