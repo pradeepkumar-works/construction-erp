@@ -88,7 +88,7 @@ export function RunDrawer({ id, onClose }: { id: string | null; onClose: () => v
     try {
       const f = (await api.get<PayrollFileDto>(`/payroll/runs/${id}/${kind}`)).data;
       saveText(f.fileName, f.mimeType, f.content);
-      if (f.missing.length) message.warning(`Left out for missing details: ${f.missing.join(', ')}. Add them on the staff record.`);
+      if (f.missing.length) message.warning(`Left out for missing details: ${f.missing.join('; ')}. Add them on the staff record.`);
     } catch (err) {
       message.error(errorMessage(err, 'Could not make the file. Try again.'));
     }

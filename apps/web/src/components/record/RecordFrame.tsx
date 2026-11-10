@@ -387,7 +387,8 @@ function RecordPage({ kind, list, loading, error, onRetry, record, children }: R
           </Card>
           {record.notices}
           <Row gutter={[16, 16]}>
-            <Col xs={24} xl={17}>
+            {/* Without History beside them, the sections take the width. */}
+            <Col xs={24} xl={record.activity ? 17 : 24}>
               {sections.length > 1 && (
                 <div data-record-chrome style={{ position: 'sticky', top, zIndex: 4, background: tk.color.surface.canvas, marginBottom: tk.space[3] }}>
                   <Anchor

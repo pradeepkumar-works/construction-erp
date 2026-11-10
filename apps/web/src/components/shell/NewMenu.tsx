@@ -6,7 +6,7 @@ import { Button, Dropdown } from 'antd';
 import type { MenuProps } from 'antd';
 import { AccountBookOutlined, AlertOutlined, AuditOutlined, BankOutlined, CarOutlined, CheckSquareOutlined, ColumnWidthOutlined, CommentOutlined, ContainerOutlined, CopyOutlined, ExperimentOutlined, FileAddOutlined, FileDoneOutlined, FileProtectOutlined, FileSearchOutlined, FileTextOutlined, IssuesCloseOutlined, LineChartOutlined, MailOutlined, PlusOutlined, ProjectOutlined, QuestionCircleOutlined, SafetyCertificateOutlined, SafetyOutlined, ShoppingCartOutlined, TeamOutlined, TrophyOutlined, WalletOutlined, WarningOutlined } from '@/components/common/icons';
 import type { AuthUser } from '@erp/shared';
-import { canKeepBooks, canManageFixedAssets, canManageMachineLoans, canManageProjects, canManageVariations, canMeasure, canRaiseNcr, canRaiseRfi, canRecordAttendance, canRecordTest, canReportSafety, canRequestInspection, canSellRmc, canPrepareBill, canPurchase, canRaiseRisk, canRequestFunds, canRequestPayment, canSubmitExpense, canManageTenders, canRunSubcontractEnquiries, canRecordMeetings, canRaiseMaterialApprovals, canManageDocuments, canViewLetters, canViewPayables, isGuest, pathIsOff } from '@erp/shared';
+import { canKeepBooks, canManageFixedAssets, canManageMachineLoans, canManageProjects, canManageVariations, canMeasure, canRecordPayment, canRaiseNcr, canRaiseRfi, canRecordAttendance, canRecordTest, canReportSafety, canRequestInspection, canSellRmc, canPrepareBill, canPurchase, canRaiseRisk, canRequestFunds, canRequestPayment, canSubmitExpense, canManageTenders, canRunSubcontractEnquiries, canRecordMeetings, canRaiseMaterialApprovals, canManageDocuments, canViewLetters, canViewPayables, isGuest, pathIsOff } from '@erp/shared';
 import { requestNew, type NewKind } from '@/lib/new-intent';
 
 export interface NewEntry {
@@ -63,6 +63,7 @@ export function newEntriesFor(user: AuthUser): NewEntry[][] {
     ...(canSellRmc(role) ? [{ kind: 'rmc-order' as const, label: 'RMC quote', action: 'New RMC quote', href: '/rmc?tab=orders', icon: <FileDoneOutlined /> }] : []),
     ...(canKeepBooks(role) ? [{ kind: 'voucher' as const, label: 'Voucher', action: 'New voucher', href: '/books?tab=vouchers', icon: <AccountBookOutlined /> }] : []),
     ...(canManageMachineLoans(role) ? [{ kind: 'machine-loan' as const, label: 'Machine loan', action: 'Record machine loan', href: '/machine-loans', icon: <CarOutlined /> }] : []),
+    ...(canRecordPayment(role) ? [{ kind: 'payment-batch' as const, label: 'Bank payment', action: 'New bank payment', keywords: 'bank file neft rtgs bulk upload utr batch', href: '/bank-payments', icon: <BankOutlined /> }] : []),
     ...(canManageFixedAssets(role) ? [{ kind: 'fixed-asset' as const, label: 'Fixed asset', action: 'New fixed asset', keywords: 'asset register capitalise', href: '/fixed-assets', icon: <ContainerOutlined /> }] : []),
     ...(canViewLetters(role)
       ? [

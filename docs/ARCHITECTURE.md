@@ -1227,7 +1227,7 @@ A run is not a site submission: it has its own approval, not `SubmissionLifecycl
 again while in draft (lines HR adds by hand, `MANUAL_PAYSLIP_CODES`, are kept) and submits it (`canRunPayroll`);
 management approves or sends it back (`canApprovePayroll`); accounts marks it paid (`canPayPayroll`) and may send an
 approved run back before paying. A paid run is locked. Each step writes `AuditLog` (entity `PAYROLL_RUN`). An approved run
-gives the NEFT bank file (CSV), the EPFO ECR 2.0 text (fields joined by `#~#`) and the ESIC monthly contribution CSV;
+gives the bank file (CSV, through `bankFileRows`: NEFT, RTGS from two lakh), the EPFO ECR 2.0 text (fields joined by `#~#`) and the ESIC monthly contribution CSV;
 the web adds the salary register (xlsx) and the payslips to print. A person sees their own payslips once their run is
 approved (`GET /payroll/my-payslips`, the Staff page's My payslips tab, the phone's My payslips).
 
@@ -3434,6 +3434,62 @@ Releasing money is approved before accounts pays it (v5 item 90).
   sees "On account" on their statement. `syncRequestPaid` adds releases to payments. Web: Site imprest → Fund requests
   (`PaymentRequestList fund`, "Request funds", `FundRequestFormModal`, Release on approved ones); the request's page and
   the approvals pane are the payment request's. Phone: approve, and see where the money goes.
+
+## Bank payments (item 190)
+
+Accounts pay approved payment requests in one upload to the bank instead of typing each transfer, and read the bank's
+UTRs back (`apps/api/src/payables/payment-batches.service.ts`, Accounts › Payments › Bank payments at `/bank-payments`,
+`canRecordPayment`: admin, management and accounts; anyone else gets 403 and no menu entry). Payables are not a
+switchable module, so the page is not behind the books switch. `setReferences` and the batch view check the payment
+roles alone, never a project: they rely on payment roles being company-wide, as `canRecordPayment`'s roles are.
+
+- **Tables.** `PaymentBatch` (tenant table): `batchNo` from the `PB` series (`nextDocNo`), the `debitAccount` the file
+  names, its `format` (a key of `BANK_FILE_FORMATS`), `status` DRAFT, EXPORTED (waiting for UTRs) or SETTLED, who made
+  the file and when, the `paymentDate` (the day the file was made) and the file itself (`fileName`, `fileContent`), so a
+  second download is the first. `PaymentBatchLine` (tenant table): one approved `PaymentRequest`, the `amount` it had left
+  to settle when added, `open`, why export left it out (`leftOut`), the account, IFSC and NEFT or RTGS as the file wrote
+  them, and the `vendorPaymentId` export recorded (set null if that payment is deleted by hand). A request is in at most
+  one open batch: the partial unique index `PaymentBatchLine_open_request_key` on `paymentRequestId` where `open`, so a
+  file made twice never pays twice; adding one already held is refused naming the other batch. A line of an exported
+  batch whose payment was deleted by hand holds nothing (`HOLDING`): adding its request elsewhere closes it in the same
+  transaction, and its batch settles once its remaining payments have their UTRs.
+- **Joining.** Only an approved request, asked to be paid through the bank (`mode` BANK), to a party (not an imprest),
+  with something left to pay. With `paymentsNeedRequest` on or off the rule is the same: a batch pays only requests.
+  A bank file deducts no TDS: a request against a vendor bill is paid in full, so the add screen warns on it
+  (`requestWarning`), and where TDS is due on the bill the payment is recorded by hand under Payables.
+- **The file** (`@erp/shared/bank-file.ts`, pure). `BANK_FILE_FORMATS` is the registry of layouts: generic NEFT and RTGS
+  CSV, HDFC Enet bulk upload (no header, 28 columns), ICICI CIB bulk payments and SBI CINB bulk transfer; a bank's own
+  sample is the check for a first file, and another layout is one more entry. `paymentMode` is RTGS from two lakh rupees,
+  NEFT below; `rupees` writes two decimals from integer paise (no float); `bankFileProblem` refuses a payee without an
+  account number or IFSC (or with one of the wrong shape), and `bankFileRows` leaves those out and lists them. Each row
+  carries the request number as its reference and in the narration. The salary run's bank file writes through the same
+  `bankFileRows` (generic layout, the employee code as reference, a name with no English letters refused), so one rule
+  leaves people out, and its drawer says why each was left out.
+- **Export** (`POST /payment-batches/:id/export`), in one transaction: the batch moves from DRAFT once (`updateMany` on the
+  status, with the count checked), the lines must be those read, and each line's `VendorPayment` (mode BANK, no reference,
+  dated today) goes through payables' own `prepare` (role, approved request and bill, date, amounts; a few at a time,
+  before the transaction) and `insertMany` (every `PAY:` and `PAYREQ:` advisory lock in one statement, in the order a
+  single payment takes them, each payment's outstanding and request balance counting the ones before it, one insert,
+  `syncPaid`, `syncRequestsPaid`); the audit log follows through `auditPaid` after commit. The vendor is not told at
+  export, since the bank may refuse the file or it may be undone: `importUtrs` sends payables' `noticePayments` for each
+  payment that just got its UTR, with the UTR in it. A payment recorded by hand takes the same path with one payment
+  (`insert`, `syncRequestPaid`, `announce` call the many versions, and `announce` still tells the vendor at once), so it
+  posts through `PostingService` exactly as before, under the books' `booksFrom` and lock. 300 lines
+  export in about a second. Lines left out are closed and free their request. **Undo export** (in the ⋯ menu) takes the
+  payments off through payables' `removeMany` (what `removeIn` calls) while no UTR is in and none is in Tally, checked
+  again under the bills' `PAY:` locks before anything is deleted, and the batch is a draft again.
+- **UTRs** (`POST /payment-batches/:id/utrs` with cells). The web reads the bank's response file (CSV or Excel, the
+  statements import's `readCells`) or a pasted list into cells; `readUtrResponse` finds each row's request number in any
+  cell and its UTR under a UTR heading, else a bank reference heading (else the first UTR-shaped word, a bank's letters
+  first). An IFSC-shaped word is never a UTR, nor the words the service passes as `notUtr` (the debit account, each
+  line's account and IFSC), so our own file imported back finds nothing and settles nothing. It reports
+  rows the bank marks rejected or failed, and refuses two UTRs for one request or one UTR for two. Payables'
+  `setReferences` writes each `VendorPayment.reference` (never on one already in Tally, naming its request; the import is
+  all or nothing), the voucher's reference and the
+  bank book follow on the next posting run, and the batch is SETTLED once every payment it made has one. The statements
+  reader was not reused for the response: it needs a date and withdrawals, which a response file need not carry.
+- **Tested** in `src/scripts/bank-file-test.ts` (each layout's columns and order, the RTGS cut-over, missing bank details,
+  rupees with two decimals, the UTR reader; CI runs it) and `e2e/tests/payment-batches.spec.ts`.
 
 ## Bills without a PO and debit notes
 

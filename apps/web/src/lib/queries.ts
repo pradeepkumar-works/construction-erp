@@ -2,6 +2,9 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
 import type {
+  PayableRequestDto,
+  PaymentBatchDetailDto,
+  PaymentBatchDto,
   DepreciationRunDetailDto,
   DepreciationRunDto,
   FixedAssetBooksCheckDto,
@@ -996,6 +999,14 @@ export const useDepreciationRuns = (enabled = true) =>
   useQuery({ queryKey: ['fixed-assets', 'runs'], queryFn: async () => (await api.get<DepreciationRunDto[]>('/fixed-assets/runs')).data, enabled });
 export const useDepreciationRun = (id?: string) =>
   useQuery({ queryKey: ['fixed-assets', 'run', id], queryFn: async () => (await api.get<DepreciationRunDetailDto>(`/fixed-assets/runs/${id}`)).data, enabled: !!id });
+
+/** Bank payments: the batches, one batch with its lines, and the approved requests that could join one. */
+export const usePaymentBatches = (enabled = true) =>
+  useQuery({ queryKey: ['payment-batches', 'list'], queryFn: async () => (await api.get<PaymentBatchDto[]>('/payment-batches')).data, enabled });
+export const usePaymentBatch = (id?: string) =>
+  useQuery({ queryKey: ['payment-batches', 'one', id], queryFn: async () => (await api.get<PaymentBatchDetailDto>(`/payment-batches/${id}`)).data, enabled: !!id });
+export const usePayableRequests = (enabled = true) =>
+  useQuery({ queryKey: ['payment-batches', 'requests'], queryFn: async () => (await api.get<PayableRequestDto[]>('/payment-batches/requests')).data, enabled });
 
 /** Machine loans: the loans with what each owes, and the running ones by lender. */
 export const useMachineLoans = (filters?: { status?: EquipmentLoanStatus; q?: string; equipmentId?: string }, enabled = true) =>

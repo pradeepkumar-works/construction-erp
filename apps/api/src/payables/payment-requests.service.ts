@@ -93,18 +93,33 @@ export const targetLabel = (r: {
 
 /** Keep a request's `paidAmount` and `paidDate` in step with the payments drawing on it. */
 export async function syncRequestPaid(tx: Prisma.TransactionClient, requestId: string) {
-  const released = { paymentRequestId: requestId, kind: 'ADVANCE', status: 'PAID' } satisfies Prisma.ImprestEntryWhereInput;
-  const [req, s, last, r, lastRelease] = await Promise.all([
-    tx.paymentRequest.findUniqueOrThrow({ where: { id: requestId }, select: { amount: true } }),
-    tx.vendorPayment.aggregate({ where: { paymentRequestId: requestId }, _sum: { amount: true, tdsAmount: true, otherDeduction: true } }),
-    tx.vendorPayment.findFirst({ where: { paymentRequestId: requestId }, orderBy: { paymentDate: 'desc' }, select: { paymentDate: true } }),
+  await syncRequestsPaid(tx, [requestId]);
+}
+
+/** `syncRequestPaid` for many requests at once (a bank file's): their sums read together and written in one statement. */
+export async function syncRequestsPaid(tx: Prisma.TransactionClient, requestIds: string[]) {
+  const ids = [...new Set(requestIds)];
+  if (!ids.length) return;
+  const released = { paymentRequestId: { in: ids }, kind: 'ADVANCE', status: 'PAID' } satisfies Prisma.ImprestEntryWhereInput;
+  const [reqs, paid, releases] = await Promise.all([
+    tx.paymentRequest.findMany({ where: { id: { in: ids } }, select: { id: true, amount: true } }),
+    tx.vendorPayment.groupBy({ by: ['paymentRequestId'], where: { paymentRequestId: { in: ids } }, _sum: { amount: true, tdsAmount: true, otherDeduction: true }, _max: { paymentDate: true } }),
     // A fund request released into an imprest is settled by the advances paid on it.
-    tx.imprestEntry.aggregate({ where: released, _sum: { amount: true } }),
-    tx.imprestEntry.findFirst({ where: released, orderBy: { date: 'desc' }, select: { date: true } }),
+    tx.imprestEntry.groupBy({ by: ['paymentRequestId'], where: released, _sum: { amount: true }, _max: { date: true } }),
   ]);
-  const paid = (s._sum.amount ?? ZERO).add(s._sum.tdsAmount ?? ZERO).add(s._sum.otherDeduction ?? ZERO).add(r._sum.amount ?? ZERO);
-  const lastDate = [last?.paymentDate, lastRelease?.date].filter((d): d is Date => !!d).sort((a, b) => b.getTime() - a.getTime())[0];
-  await tx.paymentRequest.update({ where: { id: requestId }, data: { paidAmount: paid, paidDate: lastDate && paid.add(TOLERANCE).gte(req.amount) ? lastDate : null } });
+  if (reqs.length !== ids.length) throw new NotFoundException('Payment request not found');
+  const payOf = new Map(paid.map((s) => [s.paymentRequestId, s]));
+  const releaseOf = new Map(releases.map((r) => [r.paymentRequestId, r]));
+  const rows = reqs.map((req) => {
+    const s = payOf.get(req.id);
+    const r = releaseOf.get(req.id);
+    const total = (s?._sum.amount ?? ZERO).add(s?._sum.tdsAmount ?? ZERO).add(s?._sum.otherDeduction ?? ZERO).add(r?._sum.amount ?? ZERO);
+    const lastDate = [s?._max.paymentDate, r?._max.date].filter((d): d is Date => !!d).sort((a, b) => b.getTime() - a.getTime())[0];
+    const paidDate = lastDate && total.add(TOLERANCE).gte(req.amount) ? lastDate.toISOString().slice(0, 10) : null;
+    return Prisma.sql`(${req.id}, ${total.toFixed(2)}::numeric, ${paidDate}::date)`;
+  });
+  await tx.$executeRaw`UPDATE "PaymentRequest" AS r SET "paidAmount" = v.paid, "paidDate" = v.paid_date, "updatedAt" = now()
+    FROM (VALUES ${Prisma.join(rows)}) AS v(id, paid, paid_date) WHERE r.id = v.id`;
 }
 
 /** "Wages, into Ramesh Das's imprest" or "Local purchase, to Shiva Traders on account". */

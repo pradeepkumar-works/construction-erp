@@ -285,6 +285,10 @@ export const RECEIPT_MODES = ['BANK', 'UPI', 'CASH'] as const satisfies readonly
 export const PAYMENT_REQUEST_KINDS = ['BILL', 'PO_ADVANCE', 'WO_ADVANCE', 'FUND_REQUEST'] as const;
 export type PaymentRequestKind = (typeof PAYMENT_REQUEST_KINDS)[number];
 
+/** A batch of payments to the bank: lines added while a draft, its file made (exported), every UTR in (settled). */
+export const PAYMENT_BATCH_STATUSES = ['DRAFT', 'EXPORTED', 'SETTLED'] as const;
+export type PaymentBatchStatus = (typeof PAYMENT_BATCH_STATUSES)[number];
+
 /** What a site's fund request is for. */
 export const FUND_PURPOSES = ['WAGES', 'LOCAL_PURCHASE', 'PETTY_CONTRACTOR', 'SITE_RUNNING', 'OTHER'] as const;
 export type FundPurpose = (typeof FUND_PURPOSES)[number];
