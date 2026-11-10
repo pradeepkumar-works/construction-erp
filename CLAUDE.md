@@ -440,6 +440,12 @@ and the pre-delivery checklist.
   `PostingService` (`apps/api/src/posting`), shared by the Tally export and the books; a new kind of record that moves money
   is a block there (and its Tally mark), never a second set of rules. Hand-made vouchers go through `voucherProblem` in
   `books-rules.ts` (tested in `src/scripts/books-test.ts`, CI runs it) and need someone other than their maker to approve.
+- Fixed assets (item 189, `apps/api/src/fixed-assets`, ARCHITECTURE "Fixed assets"): an asset's depreciation is only
+  `accumulatedTo` / `bookDepreciation` and Income Tax's only `itBlockSchedule` (`@erp/shared/fixed-assets.ts`), a run's
+  lines come only from `FixedAssetsService`'s schedule and post only through `PostingService` (`ASSET_ADDITION`,
+  `DEPRECIATION`, `ASSET_DISPOSAL`, `asset-vouchers.ts`), never to a project's cost; a machine becomes an asset only by
+  `makeFromEquipment` (owned only), and anything dated inside the lock or before `booksFrom` is refused by `assertOpen`.
+  Keep `src/scripts/fixed-assets-test.ts` passing.
 - RMC (item 104, `apps/api/src/rmc`, ARCHITECTURE "RMC plant"): a plant is a project of type `PLANT`; a truck's materials
   leave the plant's store only through `StockService.issue`, and cubes are a quality test through `QualityService`. Its
   figures are pure functions in `rmc-rules.ts` tested in `src/scripts/rmc-test.ts` (CI runs it); bills and receipts post
