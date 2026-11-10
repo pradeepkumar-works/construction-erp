@@ -1,7 +1,7 @@
 import type { ApprovalRightDto } from './approvals';
 import { approvalRightsOf, mayApprove } from './approvals';
 import { PRODUCT_NAME } from './brand';
-import type { RoleKey } from './enums';
+import type { CompanyKind, RoleKey } from './enums';
 import * as P from './permissions';
 import { inRoleMenu } from './role-menu';
 import { canManageAi } from './ai';
@@ -11,7 +11,7 @@ import { canSeeLeakage } from './leakage';
 import { canSeeCashForecast } from './cash-forecast';
 import { canSeeAttendanceCheck } from './attendance-check';
 import { canReadReport, canSeeManagement } from './management';
-import { canSeeGroupCompanies, type AuthGroupDto } from './group';
+import { canNameSisterCompanies, canSeeConsolidation, canSeeGroupCompanies, type AuthGroupDto } from './group';
 import { canManageModules, isSwitchableModule, pathIsOff } from './module-switches';
 import { MASTER_LISTS, canManageMaster } from './masters';
 import { canManageIntegrations } from './integrations';
@@ -94,6 +94,8 @@ export interface NavUser {
   modulesOff?: readonly string[];
   /** Group companies: the company's group and whether the person runs it */
   group?: AuthGroupDto;
+  /** The kind of company the person is in (consolidated accounts open from the holding) */
+  companyKind?: CompanyKind;
 }
 
 const onSite = (u: NavUser) => P.canReportSafety(u.roleKey);
@@ -179,6 +181,8 @@ export const NAV_ACCESS = {
   rmc: (u: NavUser) => P.canViewRmc(u.roleKey),
   rmcBills: (u: NavUser) => P.canSellRmc(u.roleKey) || P.canBillRmc(u.roleKey),
   groupCompanies: (u: NavUser) => canSeeGroupCompanies(u),
+  consolidation: (u: NavUser) => canSeeConsolidation(u),
+  sisterCompanies: (u: NavUser) => canNameSisterCompanies(u),
   masters: (u: NavUser) => P.canManageUsers(u.roleKey) || MASTER_LISTS.some((l) => canManageMaster(u.roleKey, l)),
 } satisfies Record<string, (u: NavUser) => boolean>;
 export type NavAccessKey = keyof typeof NAV_ACCESS;
@@ -427,6 +431,8 @@ export const NAV_TREE: NavNode[] = [
   { id: 'admin.settings', parent: 'admin', label: 'Company settings', icon: 'building-2', route: '/company-settings', access: 'companyData', status: 'live', newUntil: '2027-05-31', description: 'Letterhead details, the logo and how each kind of document is numbered.', keywords: 'company profile logo letterhead gstin pan cin address numbering number series prefix financial year fy settings' },
   { id: 'admin.users', parent: 'admin', label: 'Users', icon: 'user-cog', route: '/users', access: 'users', status: 'live', description: 'Invite people and set their role.', keywords: 'invite roles access' },
   { id: 'admin.group', parent: 'admin', label: 'Group companies', icon: 'network', route: '/group', access: 'groupCompanies', status: 'live', description: "The group's companies, their kind and legal details, and who works in which.", keywords: 'parent subsidiary sister company switch holding consultancy lab' },
+  { id: 'admin.consolidation', parent: 'admin', label: 'Consolidated accounts', icon: 'layers', route: '/group/consolidated', access: 'consolidation', status: 'live', newUntil: '2027-06-30', description: "The group's profit and loss and balance sheet, company by company, less what passed between sisters.", keywords: 'consolidation consolidated group accounts holding subsidiary inter company elimination intercompany sister balance sheet profit and loss' },
+  { id: 'admin.sisters', parent: 'admin', label: 'Sister companies', icon: 'link', route: '/group/sisters', access: 'sisterCompanies', status: 'live', newUntil: '2027-06-30', description: 'Which vendors and clients in your books are companies of your group.', keywords: 'sister company inter company intercompany related party group vendor client link' },
   { id: 'admin.rules', parent: 'admin', label: 'Approval rules', icon: 'git-branch', route: '/approval-rules', access: 'users', status: 'live', description: 'Who approves what, levels, limits and escalation.', keywords: 'matrix limits', concord: ['p7-workflow'] },
   { id: 'admin.modules', parent: 'admin', label: 'Modules', icon: 'toggle-right', route: '/company-modules', access: 'modules', status: 'live', description: 'Turn off the modules the company does not use; their data is kept.', keywords: 'switch on off turn features plan hide' },
   { id: 'admin.menu', parent: 'admin', label: 'Menu and names', icon: 'panels-top-left', route: '/menu-and-names', access: 'modules', status: 'live', newUntil: '2027-03-31', description: 'Menu in the top bar or a sidebar, its look, and what each module is called.', keywords: 'navigation menu top bar sidebar rename module names look layout departments' },

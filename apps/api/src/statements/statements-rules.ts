@@ -54,6 +54,9 @@ export interface AccountFigure {
   previous: Prisma.Decimal;
 }
 
+/** A debit-positive figure in a line's own sense: income and liabilities credit positive, expenses and assets debit positive. */
+export const inLineSense = (line: StatementLine, v: Prisma.Decimal) => (STATEMENT_LINE_NATURE[line] === 'INCOME' || STATEMENT_LINE_NATURE[line] === 'LIABILITY' ? v.neg() : v);
+
 /**
  * The statement lines from accounts' balances: each account lands where `statementLineOf` puts it (separately for the
  * period and the comparative, as a balance may change sides) and shows in the line's own sense, income and liabilities
@@ -66,7 +69,6 @@ export function statementLines(accounts: AccountFigure[], order: StatementLine[]
     if (!s) byLine.set(line, (s = { amount: D(0), previous: D(0), accounts: new Map() }));
     return s;
   };
-  const sense = (line: StatementLine, v: Prisma.Decimal) => (STATEMENT_LINE_NATURE[line] === 'INCOME' || STATEMENT_LINE_NATURE[line] === 'LIABILITY' ? v.neg() : v);
   for (const a of accounts) {
     for (const which of ['amount', 'previous'] as const) {
       const v = which === 'amount' ? a.balance : a.previous;
@@ -74,7 +76,7 @@ export function statementLines(accounts: AccountFigure[], order: StatementLine[]
       const line = statementLineOf(a, v.toNumber());
       if (!order.includes(line)) continue;
       const s = slot(line);
-      const x = sense(line, v);
+      const x = inLineSense(line, v);
       s[which] = s[which].add(x);
       const acc = s.accounts.get(a.accountId) ?? { name: a.name, amount: D(0), previous: D(0) };
       acc[which] = acc[which].add(x);

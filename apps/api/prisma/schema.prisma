@@ -1052,6 +1052,8 @@ model Organization {
   tdsReturns            TdsReturn[]
   tdsCertificates       TdsCertificate[]
   depreciationLines     DepreciationLine[]
+  sisterLinks           SisterLink[]
+  namedAsSister         SisterLink[]               @relation("SisterLinkSister")
   loanEmis              LoanEmi[]
   sorBooks              SorBook[]
   sorItems              SorItem[]
@@ -1472,6 +1474,7 @@ model User {
   tdsReturnsFiled         TdsReturn[]                @relation("TdsReturnFiler")
   tdsReturnsReopened      TdsReturn[]                @relation("TdsReturnReopener")
   tdsCertificatesAdded    TdsCertificate[]           @relation("TdsCertificateMaker")
+  sisterLinksMade         SisterLink[]               @relation("SisterLinkMaker")
   loanEmisPaid            LoanEmi[]                  @relation("LoanEmiPayer")
   sorBooksCreated         SorBook[]                  @relation("SorBookCreator")
   scEnquiriesCreated      SubcontractEnquiry[]       @relation("ScEnquiryCreator")
@@ -1802,6 +1805,7 @@ model Client {
   rmcReceipts    RmcReceipt[]
   tenders        Tender[]
   letterContacts LetterContact[]
+  sisterLinks    SisterLink[]
 
   @@unique([organizationId, name])
 }
@@ -1858,6 +1862,7 @@ model Vendor {
   packages          ProcurementPackage[]
   tdsDeductions     TdsDeduction[]
   tdsCertificates   TdsCertificate[]
+  sisterLinks       SisterLink[]
 
   @@unique([organizationId, name])
 }
@@ -10475,4 +10480,27 @@ model TdsCertificate {
 
   @@unique([organizationId, certificateNo])
   @@index([vendorId, section])
+}
+
+/// Group consolidation (item 192, ARCHITECTURE "Consolidated accounts"): a vendor or client in this company's books that
+/// is a sister company of the same group. Each company's admin names its own; the consolidation takes out balances and
+/// sales between the two through the party's ledger (`VENDOR:<id>`, `CLIENT:<id>`). Exactly one of vendorId and clientId.
+model SisterLink {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  vendorId       String?
+  vendor         Vendor?      @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  clientId       String?
+  client         Client?      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  /// The sister company this party is
+  sisterId       String
+  sister         Organization @relation("SisterLinkSister", fields: [sisterId], references: [id], onDelete: Cascade)
+  createdById    String
+  createdBy      User         @relation("SisterLinkMaker", fields: [createdById], references: [id])
+  createdAt      DateTime     @default(now())
+
+  @@unique([organizationId, vendorId])
+  @@unique([organizationId, clientId])
+  @@index([sisterId])
 }

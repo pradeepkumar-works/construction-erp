@@ -10,6 +10,12 @@ export interface WalkRole {
   /** Short name for test titles and screenshot folders. */
   key: string;
   email: string;
+  /**
+   * Another company of the person's group to walk in (its name). The setup switches there, keeps only the links no role
+   * before it walks (the rest of that sidebar is the same pages), and switches the sign-in back, so the person still lands
+   * in their usual company.
+   */
+  company?: string;
 }
 
 /**
@@ -23,6 +29,8 @@ export const WALK_ROLES: WalkRole[] = [
   { key: 'admin', email: 'admin@demo.com' },
   { key: 'client', email: 'client@demo.com' },
   { key: 'supplier', email: 'supplier@demo.com' },
+  // The group's own pages (consolidated accounts) show only in the holding company.
+  { key: 'holding', email: 'admin@demo.com', company: 'Demo Infra Holdings Pvt Ltd' },
 ];
 
 export const stateFile = (role: WalkRole) => path.join(WALK_DIR, 'auth', `${role.key}.json`);

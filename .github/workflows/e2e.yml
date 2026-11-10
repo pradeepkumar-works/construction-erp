@@ -422,6 +422,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/group-companies-test.js
+      - name: Consolidated accounts sum each company by line and take out what passed between sisters, showing what does not match
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/consolidation-test.js
       - name: Launcher pins sort, Discover shows each role New, never opened and modules to ask for, and who may ask
         if: matrix.suite == 'flows'
         working-directory: apps/api

@@ -9,6 +9,7 @@ import { isUniqueViolation } from '../common/idempotency';
 import { iso } from '../common/serialize';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { CreateVendorDto, ListVendorsQuery, UpdateVendorDto } from './vendors.dto';
+import { withoutTenant } from '../prisma/tenant-context';
 
 const include = { _count: { select: { expenses: true, equipment: true, stockEntries: true } } } satisfies Prisma.VendorInclude;
 type Row = Prisma.VendorGetPayload<{ include: typeof include }>;
@@ -195,6 +196,13 @@ export class VendorsService {
     if (!row) throw new NotFoundException('Vendor not found');
     const used = row._count.expenses + row._count.equipment + row._count.stockEntries;
     if (used > 0) throw new ConflictException(`${row.name} is on ${used} expense(s), machine(s) or GRN(s); mark the vendor inactive instead`);
+    // A party named as a sister company stays until the link is taken off (consolidated accounts read it).
+    const sister = await this.prisma.sisterLink.findFirst({ where: { organizationId: user.organizationId, vendorId: id }, select: { sisterId: true } });
+    if (sister) {
+      // The sister is another company: its name is read across companies.
+      const named = await withoutTenant(async () => await this.prisma.organization.findUnique({ where: { id: sister.sisterId }, select: { name: true } }));
+      throw new ConflictException(`${row.name} is named as the sister company ${named?.name ?? 'of the group'}. Remove it under Sister companies first, then delete the vendor`);
+    }
     // TDS deducted from them goes on the quarter's return under their name and PAN, and a certificate is theirs.
     const [deductions, certificates] = await Promise.all([
       this.prisma.tdsDeduction.count({ where: { organizationId: user.organizationId, vendorId: id } }),

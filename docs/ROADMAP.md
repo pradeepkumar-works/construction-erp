@@ -757,7 +757,8 @@ quality checking). Research and design in the Claude Doc "Group and child compan
      Phase 2 (L): work between sister companies, such as a lab's tests or a consultancy's supervision on a sister's
      project, as an inter-company order and bill that post to both companies' books.
      Phase 3 (M): group reports across companies (receivables, payables, cash, headcount) for the group's admins and
-     management, and masters shared across the group (vendors, items, rates) where the companies want them.
+     management, and masters shared across the group (vendors, items, rates) where the companies want them. The group's
+     consolidated profit and loss and balance sheet are done as item 192.
 
 ## Project types (item 134)
 
@@ -1077,6 +1078,14 @@ GRN on the web and the phone), and a second quality dashboard.
      (ITNS 281, posted as payments from each section's TDS payable), what blocks filing, the interest under 201(1A) and
      the 234E fee, the challan and deductee sheets for the Return Preparation Utility and each deductee's statement on
      the letterhead. A filed quarter is locked until reopened for a correction. ARCHITECTURE "TDS returns".
+192. ~~**Consolidated accounts for the group** (M).~~ Done: Admin › Group companies › Consolidated accounts shows the
+     group's profit and loss and balance sheet for a period, a column per company beside what came out between sisters
+     and the group's, for the group's admins in the holding company. Each company's figures are its own statements,
+     summed by Schedule III line. A company's admin names which vendors and clients in its books are sister companies
+     (Sister companies); balances and sales between named sisters come out where both books agree, and the Between
+     sisters tab shows each pair with both companies' figures and the difference to settle. Each column says how far its
+     books are locked and which year is closed, and Each company's lock stops every company at its own lock. Investment
+     against share capital, minority interest and currency are not taken out. ARCHITECTURE "Consolidated accounts".
 
 ## Definition of done for every item
 Prisma migration, API endpoints with Swagger, shared types, web screen, mobile screen where site

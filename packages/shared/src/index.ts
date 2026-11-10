@@ -121,6 +121,7 @@ export * from './purchase-queue';
 export * from './nav-menu';
 export * from './nav-colours';
 export * from './group';
+export * from './consolidation';
 export * from './masters';
 export * from './correspondence';
 export * from './qa-plan';

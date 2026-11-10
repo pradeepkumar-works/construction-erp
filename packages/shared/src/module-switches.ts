@@ -40,7 +40,7 @@ export const SWITCHABLE_MODULE_INFO: Record<SwitchableModule, SwitchableModuleIn
   compliance: { label: 'Guarantees and licences', description: 'Bank guarantees, insurance and licences with their expiry reminders.', paths: ['/compliance'], section: 'billing' },
   tenders: { label: 'Tenders', description: 'Bids, their estimates and the schedule of rates.', paths: ['/tenders', '/schedule-of-rates'], section: 'tenders' },
   subcontract_enquiries: { label: 'Subcontract enquiries', description: 'Quotes from subcontractors set side by side.', paths: ['/subcontract-enquiries'], section: 'subcontracts' },
-  books: { label: 'Books', description: 'Vouchers, cash and bank books, ledgers, the financial statements and the fixed asset register.', paths: ['/books', '/statements', '/fixed-assets'], section: 'accounts' },
+  books: { label: 'Books', description: "Vouchers, cash and bank books, ledgers, the financial statements, the fixed asset register and a group's consolidated accounts.", paths: ['/books', '/statements', '/fixed-assets', '/group/consolidated'], section: 'accounts' },
   payroll: { label: 'Payroll', description: 'Salary and wage runs, payslips and statutory deductions.', paths: ['/payroll', '/payslips'], section: 'payroll' },
   biometric: { label: 'Biometric devices', description: 'Fingerprint and face machines that mark attendance.', paths: ['/biometric'], section: 'people' },
   rmc: { label: 'RMC plant', description: 'Ready-mix concrete: quotes, orders, batches, challans and cube tests.', paths: ['/rmc'], section: 'rmc' },
