@@ -112,6 +112,22 @@ test('a field is checked before it is saved, in words that say what to fix', () 
   assert.equal(customFieldProblem(normaliseCustomField({ label: 'One more', kind: 'TEXT' }), [...full.slice(1), { label: 'Old', archived: true }], { adding: true }), null);
 });
 
+test("a field named like an object's own property reads only what was sent", () => {
+  assert.equal(fieldKey('Constructor', []), 'constructor2');
+  assert.equal(fieldKey('To string', []), 'toString2');
+  const defs = [def('constructor', 'Constructor', 'TEXT'), def('toString', 'To string', 'TEXT', { archived: true })];
+  assert.deepEqual(readCustomValues(defs, {}), { values: {}, problems: [] });
+  assert.deepEqual(readCustomValues(defs, { constructor: 'C-1' }, { before: {} }), { values: { constructor: 'C-1' }, problems: [] });
+  assert.deepEqual(filledCustomValues(defs, {}), []);
+});
+
+test('a date is a real day on the calendar', () => {
+  const defs = [def('since', 'Vendor since', 'DATE')];
+  assert.deepEqual(readCustomValues(defs, { since: '2026-02-31' }).problems, ['Vendor since: give the date as YYYY-MM-DD']);
+  assert.deepEqual(readCustomValues(defs, { since: '2028-02-29' }).values, { since: '2028-02-29' });
+  assert.deepEqual(readCustomValues(defs, { since: '2027-02-29' }).problems, ['Vendor since: give the date as YYYY-MM-DD']);
+});
+
 test('keys come from the name and are never one already taken', () => {
   assert.equal(fieldKey('MSME number', []), 'msmeNumber');
   assert.equal(fieldKey('MSME number', ['msmeNumber']), 'msmeNumber2');

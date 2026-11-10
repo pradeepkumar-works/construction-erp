@@ -46,6 +46,17 @@ const numOrNull = (v: unknown): number | null => (typeof v === 'number' && Numbe
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 const isBlank = (v: unknown) => v === null || v === undefined || (typeof v === 'string' && !v.trim());
+/** A key's own value, never one inherited from Object.prototype (a field keyed `constructor` reads as blank). */
+const own = (o: Record<string, unknown> | null | undefined, key: string): unknown => (o && Object.prototype.hasOwnProperty.call(o, key) ? o[key] : undefined);
+/** Keys no field takes, so a value never lands on, or is read from, a name every object already has. */
+const RESERVED_KEYS = Object.getOwnPropertyNames(Object.prototype);
+/** A real day on the calendar: 2026-02-31 is no date. */
+const isDay = (v: string) => {
+  if (!DATE.test(v)) return false;
+  const [y, m, d] = v.split('-').map(Number);
+  const t = new Date(Date.UTC(y, m - 1, d));
+  return t.getUTCFullYear() === y && t.getUTCMonth() === m - 1 && t.getUTCDate() === d;
+};
 
 /** A key for a new field from its name, not one of `taken`: "Rain hours" → rainHours, then rainHours2. */
 export function fieldKey(label: string, taken: Iterable<string>): string {
@@ -58,7 +69,7 @@ export function fieldKey(label: string, taken: Iterable<string>): string {
   let base = words.map((w, i) => (i === 0 ? w.toLowerCase() : w[0].toUpperCase() + w.slice(1).toLowerCase())).join('');
   if (!/^[a-z]/.test(base)) base = `field${base.charAt(0).toUpperCase()}${base.slice(1)}`;
   base = base.slice(0, 26) || 'field';
-  const used = new Set(taken);
+  const used = new Set([...taken, ...RESERVED_KEYS]);
   if (!used.has(base)) return base;
   for (let i = 2; ; i++) if (!used.has(`${base}${i}`)) return `${base}${i}`;
 }
@@ -83,7 +94,7 @@ export function readExtra(fields: OwnField[], raw: unknown, opts: { required?: b
   const src = isObject(raw) ? raw : {};
   const p = opts.prefix ?? '';
   for (const f of fields) {
-    const v = src[f.key];
+    const v = own(src, f.key);
     if (isBlank(v)) {
       if (opts.required && f.required) problems.push(`${p}${f.kind === 'YES_NO' || f.kind === 'CHOICE' ? 'Choose' : 'Fill in'} ${f.label}`);
       continue;
@@ -110,7 +121,7 @@ export function readExtra(fields: OwnField[], raw: unknown, opts: { required?: b
         break;
       }
       case 'DATE':
-        if (typeof v === 'string' && DATE.test(v) && !Number.isNaN(Date.parse(`${v}T00:00:00Z`))) values[f.key] = v;
+        if (typeof v === 'string' && isDay(v)) values[f.key] = v;
         else problems.push(`${p}${f.label}: give the date as YYYY-MM-DD`);
         break;
       case 'TIME':
@@ -241,7 +252,7 @@ export function readCustomValues(defs: Pick<CustomFieldDto, keyof OwnField | 'ar
   const read = readExtra(active, { ...before, ...sent }, { required: opts.required });
   const values: FieldValues = { ...read.values };
   for (const d of defs) {
-    const kept = before[d.key];
+    const kept = own(before, d.key);
     if (d.archived && (typeof kept === 'string' || typeof kept === 'number' || typeof kept === 'boolean')) values[d.key] = kept;
   }
   return { values, problems: read.problems };
@@ -250,7 +261,7 @@ export function readCustomValues(defs: Pick<CustomFieldDto, keyof OwnField | 'ar
 /** The fields of a record that hold a value, in the company's order, with the value; archived ones only when filled. */
 export function filledCustomValues<F extends Pick<CustomFieldDto, 'key' | 'archived'>>(defs: F[], values: FieldValues | null | undefined): { field: F; value: FieldValue }[] {
   return defs.flatMap((field) => {
-    const value = values?.[field.key];
+    const value = own(values, field.key) as FieldValue | null | undefined;
     return value === undefined || value === null || value === '' ? [] : [{ field, value }];
   });
 }
