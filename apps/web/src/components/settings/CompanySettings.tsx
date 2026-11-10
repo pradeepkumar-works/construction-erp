@@ -37,8 +37,9 @@ import { DeleteOutlined, EditOutlined, RightOutlined, UploadOutlined } from '@/c
 import { navIcon } from '@/components/shell/nav-icons';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { CODE_INPUT, gstinRule, panRule, upper } from '@/components/form/inputs';
+import { SsoSettingsTab } from './SsoSettings';
 
-const TABS = ['company', 'numbering', 'more'] as const;
+const TABS = ['company', 'numbering', 'signin', 'more'] as const;
 type Tab = (typeof TABS)[number];
 
 /** A logo scaled to fit 800 × 300 and written as a PNG, or a WebP when the PNG is over the limit. */
@@ -395,7 +396,7 @@ export function CompanySettings() {
   if (error || !data) return <QueryError error={error} onRetry={() => refetch()} />;
   return (
     <div className="page-container">
-      <PageHeader title="Company settings" help="The details and logo every printed paper carries, how each kind of document is numbered, and the way to every other setting." />
+      <PageHeader title="Company settings" help="The details and logo every printed paper carries, how each kind of document is numbered, how people sign in, and the way to every other setting." />
       <Card size="small">
         <AppTabs
           variant="page"
@@ -404,6 +405,7 @@ export function CompanySettings() {
           items={[
             { key: 'company', label: 'Company', children: <CompanyTab data={data} /> },
             { key: 'numbering', label: 'Numbering', children: <NumberingTab data={data} /> },
+            { key: 'signin', label: 'Sign-in', children: <SsoSettingsTab /> },
             { key: 'more', label: 'Other settings', children: <MoreTab /> },
           ]}
         />

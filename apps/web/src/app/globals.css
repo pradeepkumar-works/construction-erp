@@ -183,6 +183,17 @@ a {
   text-decoration: underline;
 }
 
+/* A link that does something on the page (Sign in with single sign-on and back): drawn as the links beside it. */
+button.auth-link {
+  min-height: 1.5rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
 .auth-alt {
   margin: var(--s-6) 0 0;
   text-align: center;

@@ -6,6 +6,9 @@ import type {
   ConsolidationDto,
   SisterLinkInput,
   SisterLinksDto,
+  SsoCompanyDto,
+  SsoSettingsDto,
+  SsoSettingsInput,
   TdsCertificateDto,
   TdsChallanDetailDto,
   TdsQuarterDto,
@@ -718,6 +721,29 @@ export const useLetterhead = () =>
 /** Settings › Company and Numbering (admins): the letterhead's details, the logo and the number series. */
 export const useCompanySettings = (enabled = true) =>
   useQuery({ queryKey: ['company-settings'], queryFn: async () => (await api.get<CompanySettingsDto>('/company-settings')).data, enabled });
+
+/** Sign in with single sign-on: which provider a company code signs in with (404 in words when none). */
+export const useSsoCompany = (code: string | null) =>
+  useQuery({ queryKey: ['sso-company', code], queryFn: async () => (await api.get<SsoCompanyDto>(`/auth/sso/${encodeURIComponent(code!)}`)).data, enabled: !!code, retry: false, staleTime: 5 * 60_000 });
+
+/** Company settings › Sign-in: the company's single sign-on (admins). */
+export const useSsoSettings = (enabled = true) => useQuery({ queryKey: ['sso-settings'], queryFn: async () => (await api.get<SsoSettingsDto>('/sso-settings')).data, enabled });
+
+export function useSaveSsoSettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: SsoSettingsInput) => (await api.put<SsoSettingsDto>('/sso-settings', body)).data,
+    onSuccess: (s) => qc.setQueryData(['sso-settings'], s),
+  });
+}
+
+export function useRemoveSsoSettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => (await api.delete<SsoSettingsDto>('/sso-settings')).data,
+    onSuccess: (s) => qc.setQueryData(['sso-settings'], s),
+  });
+}
 
 /** Saves one part of the company settings; the letterhead is read again so the next print carries it. */
 export function useSaveCompanySettings<V>(path: 'profile' | 'logo' | 'numbering') {
