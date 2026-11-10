@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
+import { HelpLink } from '@/components/common/Help';
 import { Alert, App, Button, Form, Input, Modal, Select, Space, Table, Typography } from 'antd';
 import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
@@ -54,9 +55,7 @@ export function EnquiryFormModal({ open, request, onClose, onSent }: { open: boo
       }}
     >
       <Form form={form} layout="vertical">
-        <Typography.Paragraph type="secondary">
-          Each vendor gets a link to type rates, GST, freight and delivery days for the {request.items.length} item{request.items.length === 1 ? '' : 's'} on this indent. No sign-in is needed; their answer lands on the comparative statement.
-        </Typography.Paragraph>
+        <HelpLink>Each vendor gets a link to type rates, GST, freight and delivery days for the {request.items.length} item{request.items.length === 1 ? '' : 's'} on this indent. No sign-in is needed; their answer lands on the comparative statement.</HelpLink>
         <Form.Item name="vendorIds" label="Vendors" rules={[{ required: true, message: 'Choose at least one vendor' }]}>
           <Select
             mode="multiple"

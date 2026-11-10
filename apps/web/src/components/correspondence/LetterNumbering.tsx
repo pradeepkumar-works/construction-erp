@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { HelpLink, TitleHelp } from '@/components/common/Help';
 import { Button, Card, Flex, Form, Input, Radio, Segmented, Select, Table, Typography } from 'antd';
 import { tk } from '@/ds';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -96,9 +97,7 @@ function SeriesDialog({ editing, onClose }: { editing: LetterSeriesDto | 'new' |
             <Input {...CODE_INPUT} maxLength={60} />
           </Form.Item>
         </FormGrid>
-        <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
-          Parts: {'{PREFIX}'}, {'{DIR}'} (IN or OUT), {'{FY}'} (26-27) or {'{YYYY}'} (the year the financial year starts), and the running number {'{N}'}, {'{NN}'}, {'{NNN}'} or {'{NNNN}'}, padded with zeros. It starts again at 1 each financial year.
-        </Typography.Paragraph>
+        <HelpLink style={{ marginBottom: 0 }}>Parts: {'{PREFIX}'}, {'{DIR}'} (IN or OUT), {'{FY}'} (26-27) or {'{YYYY}'} (the year the financial year starts), and the running number {'{N}'}, {'{NN}'}, {'{NNN}'} or {'{NNNN}'}, padded with zeros. It starts again at 1 each financial year.</HelpLink>
         <Typography.Paragraph style={{ marginTop: tk.space[2], marginBottom: 0 }} type={problem ? 'danger' : undefined}>
           {problem ?? (
             <>
@@ -153,10 +152,7 @@ export function LetterNumbering() {
         }
       />
       <Flex vertical gap={tk.space[4]}>
-        <Card title="Approval by category" size="small">
-          <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
-            What an outward letter of each category passes before it gets its number: nothing, its signatory, or its signatory and then a director at head office, who seals it. A letter a director signs needs no seal.
-          </Typography.Paragraph>
+        <Card title={<TitleHelp help={<>What an outward letter of each category passes before it gets its number: nothing, its signatory, or its signatory and then a director at head office, who seals it. A letter a director signs needs no seal.</>}>Approval by category</TitleHelp>} size="small">
           <ul aria-label="Approval by category" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
             {rows.map((r) => {
               const gate = letterGate(data, r.code);

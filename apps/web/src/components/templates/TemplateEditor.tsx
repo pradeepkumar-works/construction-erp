@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Alert, App, Button, Input, InputNumber, Popconfirm, Space, Table, Typography } from 'antd';
+import { HelpLink } from '@/components/common/Help';
+import { Alert, App, Button, Input, InputNumber, Popconfirm, Space, Table } from 'antd';
 import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, PlusOutlined } from '@/components/common/icons';
@@ -120,11 +121,9 @@ export function TemplateEditor({ template, editable, standard = true }: { templa
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: tk.space[2], marginBottom: tk.space[3] }}>
-        <Typography.Text type="secondary">
-          {standard && template.isDefault ? <AppTag variant="kind">Standard list</AppTag> : null}
+        <HelpLink>{standard && template.isDefault ? <AppTag variant="kind">Standard list</AppTag> : null}
           {standard && !template.isDefault ? <AppTag variant="kind">Your list</AppTag> : null}
-          {rows.length} activities for a {inSentence(template.typeName)} project, besides those of its components. When a project has start and end dates the schedule is stretched or squeezed to fit them.
-        </Typography.Text>
+          {rows.length} activities for a {inSentence(template.typeName)} project, besides those of its components. When a project has start and end dates the schedule is stretched or squeezed to fit them.</HelpLink>
         {editable ? (
           <Space>
             {standard && !template.isDefault ? (

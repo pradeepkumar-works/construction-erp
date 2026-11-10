@@ -34,9 +34,9 @@ function tsxFiles(dir: string, out: string[] = []): string[] {
 const wordCount = (t: string) => t.split(/\s+/).filter((w) => /[A-Za-z]/.test(w)).length;
 
 function hidden(node: ts.Node): boolean {
-  for (let n: ts.Node | undefined = node.parent; n; n = n.parent) {
+  for (let n: ts.Node | undefined = node; n; n = n.parent) {
     if (ts.isJsxAttribute(n) && HIDDEN_PROPS.has(n.name.getText())) return true;
-    if (ts.isJsxElement(n) && n.openingElement.tagName.getText() === 'Help') return true;
+    if (ts.isJsxElement(n) && /^(Help|HelpLink)$/.test(n.openingElement.tagName.getText())) return true;
   }
   return false;
 }

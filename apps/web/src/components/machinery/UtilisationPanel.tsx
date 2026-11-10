@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, Col, Empty, Progress, Row, Skeleton, Space, Statistic, Table, Typography } from 'antd';
+import { HelpLink } from '@/components/common/Help';
+import { Button, Col, Empty, Progress, Row, Skeleton, Space, Statistic, Table } from 'antd';
 import { tk } from '@/ds';
 import type { TableProps } from 'antd';
 import { FileExcelOutlined } from '@/components/common/icons';
@@ -174,10 +175,8 @@ export function UtilisationPanel({ projectId: fixedProject }: { projectId?: stri
               />
             </Section>
           ) : null}
-          <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[3], marginBottom: 0 }}>
-            From approved daily logs. A day with a log is a day on site, available for the {data.shiftHours}-hour shift or the hours logged when longer.
-            Utilisation is hours worked over hours available; availability is the hours available less breakdowns. Lowest first.
-          </Typography.Paragraph>
+          <HelpLink style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[3], marginBottom: 0 }}>From approved daily logs. A day with a log is a day on site, available for the {data.shiftHours}-hour shift or the hours logged when longer.
+            Utilisation is hours worked over hours available; availability is the hours available less breakdowns. Lowest first.</HelpLink>
         </>
       )}
     </SectionStack>

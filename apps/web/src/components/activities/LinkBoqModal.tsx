@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Alert, App, Grid, Modal, Table, Typography } from 'antd';
+import { HelpLink } from '@/components/common/Help';
+import { Alert, App, Grid, Modal, Table } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ActivityDto, BoqLinkSuggestion } from '@erp/shared';
 import { api } from '@/lib/api';
@@ -79,9 +80,7 @@ export function LinkBoqModal({ open, onClose, projectId }: { open: boolean; onCl
         />
       ) : (
         <>
-          <Typography.Paragraph type="secondary">
-            Matched by the name of the BOQ&apos;s sections and items. An activity with no quantity of its own takes the item&apos;s unit and quantity. Untick anything that is not the same work.
-          </Typography.Paragraph>
+          <HelpLink>Matched by the name of the BOQ&apos;s sections and items. An activity with no quantity of its own takes the item&apos;s unit and quantity. Untick anything that is not the same work.</HelpLink>
           <Table<BoqLinkSuggestion>
             rowKey="activityId"
             size="small"

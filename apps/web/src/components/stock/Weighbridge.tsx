@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { HelpLink } from '@/components/common/Help';
 import { App, Button, Dropdown, Empty, Flex, Form, Input, InputNumber, Radio, Select, Space, Table, Typography } from 'antd';
 import { tk } from '@/ds';
 import type { TableProps } from 'antd';
@@ -303,16 +304,14 @@ export function Weighbridge({ projectId }: { projectId?: string }) {
   return (
     <>
       <Flex justify="space-between" align="center" gap={12} wrap style={{ marginBottom: tk.space[3] }}>
-        <Typography.Text type="secondary" style={small}>
-          {data.bridges
+        <HelpLink>{data.bridges
             ? `${data.bridges} weighbridge${data.bridges === 1 ? '' : 's'} read from the weighbridge on site. Weights come in within a minute.`
             : 'No weighbridge is connected: type each truck’s weights from the indicator.'}{' '}
           {!data.bridges && admin ? (
             <LinkButton size="small" type="link" href="/connections" style={{ paddingInline: 0 }}>
               Connect the weighbridge
             </LinkButton>
-          ) : null}
-        </Typography.Text>
+          ) : null}</HelpLink>
         {weighButton}
       </Flex>
       {nothing ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No trucks weighed in the last month" style={{ margin: `${tk.space[8]} 0` }} /> : null}

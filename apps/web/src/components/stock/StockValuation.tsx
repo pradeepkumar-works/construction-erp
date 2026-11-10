@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { HelpLink } from '@/components/common/Help';
 import Link from 'next/link';
 import { Alert, Statistic, Table, Typography } from 'antd';
 import { tk } from '@/ds';
@@ -82,10 +83,8 @@ export function StockValuation({ projectId }: { projectId?: string }) {
         scroll={{ x: projectId ? 980 : 1200 }}
         locale={{ emptyText: 'Nothing in stock' }}
       />
-      <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, padding: `${tk.space[2]} ${tk.space[4]} 0` }}>
-        Stock on hand at the item master rate. Ageing assumes the oldest stock is used first, so what is on hand is the latest that came in (GRNs,
-        transfers in, returns from site and positive adjustments); the buckets show how long ago that was.
-      </Typography.Paragraph>
+      <HelpLink style={{ fontSize: tk.type.caption.fontSize, padding: `${tk.space[2]} ${tk.space[4]} 0` }}>Stock on hand at the item master rate. Ageing assumes the oldest stock is used first, so what is on hand is the latest that came in (GRNs,
+        transfers in, returns from site and positive adjustments); the buckets show how long ago that was.</HelpLink>
     </div>
   );
 }

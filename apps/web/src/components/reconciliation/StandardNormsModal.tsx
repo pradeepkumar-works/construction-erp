@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { HelpLink } from '@/components/common/Help';
 import { Alert, App, Checkbox, Grid, Modal, Table, Typography } from 'antd';
 import { tk } from '@/ds';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -87,10 +88,8 @@ export function StandardNormsModal({ open, onClose, projectId }: { open: boolean
         <PageSkeleton shape="list" header={false} />
       ) : plan.matches.length ? (
         <>
-          <Typography.Paragraph type="secondary">
-            The usual figures for the work your BOQ names. They are a starting point: check each one against the approved mix design and correct it. The{' '}
-            {plan.unmatchedCount} other BOQ item{plan.unmatchedCount === 1 ? '' : 's'} the library does not recognise stay for you to set.
-          </Typography.Paragraph>
+          <HelpLink>The usual figures for the work your BOQ names. They are a starting point: check each one against the approved mix design and correct it. The{' '}
+            {plan.unmatchedCount} other BOQ item{plan.unmatchedCount === 1 ? '' : 's'} the library does not recognise stay for you to set.</HelpLink>
           <Table<StandardNormMatchDto>
             rowKey="boqItemId"
             size="small"

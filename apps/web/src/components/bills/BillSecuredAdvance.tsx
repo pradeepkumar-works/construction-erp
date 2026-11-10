@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { HelpLink } from '@/components/common/Help';
 import Link from 'next/link';
 import { App, Button, Form, Input, Space, Table, Typography } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -159,9 +160,7 @@ function MaterialDrawer({ open, bill, pct, onClose }: { open: boolean; bill: RaB
     >
       <Form form={form} layout="vertical" requiredMark="optional">
         <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
-          <Typography.Text type="secondary">
-            Non-perishable material brought to site for the work and not yet used, at the rate it was bought. The bill pays {formatPct(pct)} of its value and recovers the previous bill&apos;s advance.
-          </Typography.Text>
+          <HelpLink>Non-perishable material brought to site for the work and not yet used, at the rate it was bought. The bill pays {formatPct(pct)} of its value and recovers the previous bill&apos;s advance.</HelpLink>
           <Button size="small" icon={<InboxOutlined />} loading={stock.isPending} onClick={() => stock.mutate()}>
             Fill from stock
           </Button>

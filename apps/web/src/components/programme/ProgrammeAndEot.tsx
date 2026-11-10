@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { HelpLink } from '@/components/common/Help';
 import { Alert, App, Button, Checkbox, Descriptions, Divider, Drawer, Flex, Form, Input, InputNumber, Radio, Select, Space, Typography } from 'antd';
 import { tk } from '@/ds';
 import dayjs from 'dayjs';
@@ -179,13 +180,11 @@ export function ProgrammeAndEot({
                 <AppTag kind="programmeWatch" status={programme.watch.state}>
                   {PROGRAMME_WATCH_LABELS[programme.watch.state]}
                 </AppTag>
-                <Typography.Text>
-                  {programme.watch.nextDue
+                <HelpLink>{programme.watch.nextDue
                     ? `${programme.watch.first ? 'The first programme' : 'The next update'} is due ${formatDate(programme.watch.nextDue)}, ${whenText(programme.watch)}.`
                     : programme.watch.first
                       ? 'No programme sent yet. The first is due 15 days from the agreement: set the agreement date on the contract to count them.'
-                      : 'The works are complete: no more updates are due.'}
-                </Typography.Text>
+                      : 'The works are complete: no more updates are due.'}</HelpLink>
               </Flex>
               <p className="text-muted" style={{ marginTop: 0 }}>
                 Updates every {days(programme.intervalDays)}

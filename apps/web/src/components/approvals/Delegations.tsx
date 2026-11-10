@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { HelpLink } from '@/components/common/Help';
 import { App, Button, Flex, Form, Input, Modal, Table, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { ROLE_KEYS, isGuest, type ApprovalDelegationDto } from '@erp/shared';
@@ -67,9 +68,7 @@ export function DelegationForm({ open, onClose, forAnyone = false }: { open: boo
   return (
     <FormShell open={open} onClose={onClose} form={form} layout="modal" title={forAnyone ? 'Hand someone’s approvals over' : 'Approvals while you are away'} okText="Hand over approvals" onSubmit={submit} width={560} projectDefault={false}>
       <Form form={form} layout="vertical">
-        <Typography.Paragraph type="secondary">
-          From the first day to the last, they decide what waits on {forAnyone ? 'the person away' : 'you'} as well as their own, with {forAnyone ? 'that person’s' : 'your'} limits, and are told of it. Nobody decides an entry they or the person away made.
-        </Typography.Paragraph>
+        <HelpLink>From the first day to the last, they decide what waits on {forAnyone ? 'the person away' : 'you'} as well as their own, with {forAnyone ? 'that person’s' : 'your'} limits, and are told of it. Nobody decides an entry they or the person away made.</HelpLink>
         {forAnyone ? (
           <Form.Item name="fromUserId" label="Who is away" rules={[{ required: true, message: 'Choose who is away' }]}>
             <UserSelect roles={STAFF} />

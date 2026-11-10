@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { HelpLink } from '@/components/common/Help';
 import { App, Select, Table, Typography } from 'antd';
 import { tk } from '@/ds';
 import type { TableProps } from 'antd';
@@ -79,9 +80,7 @@ export function Devices() {
 
   return (
     <div style={{ padding: tk.space[4] }}>
-      <Typography.Paragraph type="secondary" style={{ margin: `0 0 ${tk.space[3]}`, maxWidth: 680 }}>
-        Every device a connection has reported on shows here the first time it is heard from. Match each to its machine so its hours and fuel go on the right log.
-      </Typography.Paragraph>
+      <HelpLink style={{ margin: `0 0 ${tk.space[3]}`, maxWidth: 680 }}>Every device a connection has reported on shows here the first time it is heard from. Match each to its machine so its hours and fuel go on the right log.</HelpLink>
       {error ? (
         <QueryError error={error} onRetry={() => refetch()} />
       ) : (

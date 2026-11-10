@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { HelpLink } from '@/components/common/Help';
 import { Alert, App, Button, Card, Checkbox, ColorPicker, Flex, Input, Segmented, Table, Typography } from 'antd';
 import { CHROME_START_FILL, chromeStyle, tk } from '@/ds';
 import type { NavFill, NavGradientAngle, NavLayout, NavLook, NavModuleSet, NavPaint, NavPalette, NavSettingsDto, NavSidebarLook } from '@erp/shared';
@@ -163,10 +164,8 @@ function ColoursCard({ v, set }: { v: NavSettingsDto; set: (patch: Partial<NavSe
   return (
     <Card size="small" title="Colours of the menu">
       <Flex vertical gap={tk.space[3]}>
-        <Typography.Paragraph type="secondary" style={{ margin: 0 }}>
-          The parts of the menu you put in colour take these, in the light and the dark theme; the gradients stay in one hue, so the menu reads as one colour with depth. The menu on this screen shows your choice as you pick; no one else sees it until you save.
-          {NAV_LAYOUT_PARTS[v.layout] && v.paint === 'NONE' && ' With both parts plain, these colours show only in the pictures until you put a part in colour.'}
-        </Typography.Paragraph>
+        <HelpLink style={{ margin: 0 }}>The parts of the menu you put in colour take these, in the light and the dark theme; the gradients stay in one hue, so the menu reads as one colour with depth. The menu on this screen shows your choice as you pick; no one else sees it until you save.
+          {NAV_LAYOUT_PARTS[v.layout] && v.paint === 'NONE' && ' With both parts plain, these colours show only in the pictures until you put a part in colour.'}</HelpLink>
         <Segmented<ColourKind>
           aria-label="Plain colours or gradients"
           value={shownKind}
@@ -321,9 +320,7 @@ function MenuForm({ saved }: { saved: NavSettingsDto }) {
       <Card size="small" title="Modules and their names">
         <Flex vertical gap={tk.space[3]}>
           <ChoiceCards label="How pages are grouped into modules" value={v.moduleSet} onChange={(x) => set('moduleSet', x)} choices={SETS} />
-          <Typography.Paragraph type="secondary" style={{ margin: 0 }}>
-            Give a module the name your people use, up to {NAV_NAME_MAX} characters. Leave it empty to keep ours. Each person sees only the modules and pages their role opens.
-          </Typography.Paragraph>
+          <HelpLink style={{ margin: 0 }}>Give a module the name your people use, up to {NAV_NAME_MAX} characters. Leave it empty to keep ours. Each person sees only the modules and pages their role opens.</HelpLink>
           <Table<NavModuleDef> rowKey="key" size="small" pagination={false} columns={columns} dataSource={modules} />
         </Flex>
       </Card>

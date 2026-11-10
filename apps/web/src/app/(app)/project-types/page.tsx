@@ -1,9 +1,10 @@
 'use client';
 
 import React, { Suspense, useMemo, useState } from 'react';
+import { HelpLink } from '@/components/common/Help';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { App, Button, Card, Typography } from 'antd';
+import { App, Button, Card } from 'antd';
 import { tk } from '@/ds';
 import { PROJECT_TYPE_LABELS, WORK_ELEMENT_TYPE_LABELS, canManageTemplates, type ComponentKindDto, type ProjectTypeDto } from '@erp/shared';
 import { DownloadOutlined, ImportOutlined, PlusOutlined } from '@/components/common/icons';
@@ -100,9 +101,7 @@ function KindsTab({ kinds, onOpen }: { kinds: ComponentKindDto[]; onOpen: (k: Co
   const choice = useColumnChoice('component-kinds', columns);
   return (
     <>
-      <Typography.Paragraph type="secondary" style={{ marginTop: tk.space[3] }}>
-        What a component is made of: the specs the planner fills in and the steps that become its activities. Changing a kind changes new components; Update projects in the kind gives its new steps to those laid out before.
-      </Typography.Paragraph>
+      <HelpLink style={{ marginTop: tk.space[3] }}>What a component is made of: the specs the planner fills in and the steps that become its activities. Changing a kind changes new components; Update projects in the kind gives its new steps to those laid out before.</HelpLink>
       <DataTable<ComponentKindDto & { id: string }>
         columns={columns}
         visible={choice.visible}

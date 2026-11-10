@@ -1,6 +1,7 @@
 'use client';
 
 import { MoreActions } from '@/components/record/MoreActions';
+import { HelpLink } from '@/components/common/Help';
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -412,9 +413,7 @@ function NeedDrawer({ need, onClose, onEdit }: { need: DrawingNeedDto | null; on
             </Flex>
           ) : null}
           {may && awaited && remindsByLetter(n.source) ? (
-            <Typography.Paragraph type="secondary" style={{ margin: 0 }}>
-              The letter lists every drawing {from(n)} owes on this project that is late or due within a week. It opens as a draft, to be signed and numbered like any other letter.
-            </Typography.Paragraph>
+            <HelpLink style={{ margin: 0 }}>The letter lists every drawing {from(n)} owes on this project that is late or due within a week. It opens as a draft, to be signed and numbered like any other letter.</HelpLink>
           ) : null}
           {may && !n.riskId && !n.lastLetterId ? (
             <Flex>

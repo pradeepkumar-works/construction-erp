@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { HelpLink } from '@/components/common/Help';
 import { tk } from '@/ds';
 import { Button, Segmented, Space, Table, Typography } from "antd";
 import type { TableColumnsType } from "antd";
@@ -253,11 +254,9 @@ export function ProfitLoss() {
               to,
             )}
           />
-          <Typography.Paragraph type="secondary" style={{ marginTop: tk.space[3] }}>
-            Open a line to see its accounts, and an account for its ledger.
+          <HelpLink style={{ marginTop: tk.space[3] }}>Open a line to see its accounts, and an account for its ledger.
             Accounts choose another line for an account from the chart of
-            accounts (Change, Shows in the statements as).
-          </Typography.Paragraph>
+            accounts (Change, Shows in the statements as).</HelpLink>
         </>
       )}
     </div>
@@ -299,11 +298,9 @@ function ByProject({
   ];
   return (
     <>
-      <Typography.Paragraph type="secondary">
-        Income and expenses booked to each project; head office is what has no
+      <HelpLink>Income and expenses booked to each project; head office is what has no
         project. Income is positive on income lines and expenses on expense
-        lines.
-      </Typography.Paragraph>
+        lines.</HelpLink>
       <Table
         rowKey="key"
         size="small"

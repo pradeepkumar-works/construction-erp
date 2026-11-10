@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { HelpLink } from '@/components/common/Help';
 import { Alert, App, Button, Descriptions, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Table, Typography } from 'antd';
 import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
@@ -137,7 +138,7 @@ export function SetupSteps({ d }: { d: BiometricDeviceDto }) {
         <Descriptions.Item label="Time">The device clock, or with Z or +05:30</Descriptions.Item>
       </Descriptions>
     );
-  return <Typography.Paragraph style={{ margin: 0 }}>Export the punches from the device or its software as Excel or CSV and import them on the Punches tab. Each line needs the user number and the date and time.</Typography.Paragraph>;
+  return <HelpLink style={{ margin: 0 }}>Export the punches from the device or its software as Excel or CSV and import them on the Punches tab. Each line needs the user number and the date and time.</HelpLink>;
 }
 
 const ago = (v: string | null) => (v ? formatDateTime(v) : 'Never');
@@ -224,9 +225,7 @@ export function Devices() {
   return (
     <div style={{ padding: tk.space[4] }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: tk.space[3], flexWrap: 'wrap', marginBottom: tk.space[3] }}>
-        <Typography.Paragraph type="secondary" style={{ margin: 0, maxWidth: 680 }}>
-          Fingerprint and face devices at sites and offices. A device that sends by itself (ADMS, as on ZKTeco and eSSL) or to a web address marks attendance as people punch; with any other device, import its punch file.
-        </Typography.Paragraph>
+        <HelpLink style={{ margin: 0, maxWidth: 680 }}>Fingerprint and face devices at sites and offices. A device that sends by itself (ADMS, as on ZKTeco and eSSL) or to a web address marks attendance as people punch; with any other device, import its punch file.</HelpLink>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => setEditing({ device: null })}>
           New device
         </Button>

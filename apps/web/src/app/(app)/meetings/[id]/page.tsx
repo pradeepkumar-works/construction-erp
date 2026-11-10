@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { HelpLink } from '@/components/common/Help';
 import { useParams, useRouter } from 'next/navigation';
 import { App, Button, Card, Col, Descriptions, Dropdown, Flex, Row, Space, Statistic, Typography } from 'antd';
 import { tk } from '@/ds';
@@ -162,9 +163,7 @@ function MeetingView({ m }: { m: MeetingDetailDto }) {
         )}
       </Row>
       {draft && m.canEdit ? (
-        <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
-          A draft: only your team sees it until the minutes are issued. Issuing needs who was present, and an owner and a date for every action.
-        </Typography.Paragraph>
+        <HelpLink style={{ marginTop: 0 }}>A draft: only your team sees it until the minutes are issued. Issuing needs who was present, and an owner and a date for every action.</HelpLink>
       ) : null}
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={16}>

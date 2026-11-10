@@ -113,12 +113,9 @@ export function IsCompliancePage() {
             <Section title="By discipline">
               <CountTable rows={disciplines} label="Discipline" empty="No test sampled in the period." />
             </Section>
-            <Section title="By standard">
+            <Section help={<>A test counts under every standard whose clause names its test, so a cube counts under IS 456 and IS 516. By discipline it counts once. Tests sampled{' '}
+                {formatDate(data.from)} to {formatDate(data.to)}.</>} title="By standard">
               <CountTable rows={standards} label="Standard" empty="No test in the period proves a tracked standard." />
-              <Typography.Paragraph type="secondary" style={{ marginTop: tk.space[3], marginBottom: 0 }}>
-                A test counts under every standard whose clause names its test, so a cube counts under IS 456 and IS 516. By discipline it counts once. Tests sampled{' '}
-                {formatDate(data.from)} to {formatDate(data.to)}.
-              </Typography.Paragraph>
             </Section>
           </Flex>
         </Card>

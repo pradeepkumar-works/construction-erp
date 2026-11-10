@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { HelpLink } from '@/components/common/Help';
 import { Alert, App, Grid, Modal, Table, Typography } from 'antd';
 import { tk } from '@/ds';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -89,9 +90,7 @@ export function AwardLowestModal({
     >
       {plan.orders.length ? (
         <>
-          <Typography.Paragraph type="secondary">
-            Each item goes to the vendor who quoted the lowest rate with GST for it. The orders are drafts: check and send them for approval as usual.
-          </Typography.Paragraph>
+          <HelpLink>Each item goes to the vendor who quoted the lowest rate with GST for it. The orders are drafts: check and send them for approval as usual.</HelpLink>
           <Table<Row>
             rowKey="materialRequestItemId"
             size="small"

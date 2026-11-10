@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { HelpLink, TitleHelp } from '@/components/common/Help';
 import { Alert, App, Button, Card, Checkbox, Descriptions, Drawer, Flex, Input, InputNumber, Progress, Radio, Select, Space, Spin, Switch, Table, Typography } from 'antd';
 import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
@@ -57,16 +58,14 @@ function SettingsCard({ data }: { data: AiSettingsDto }) {
             checked={data.enabled}
             loading={update.isPending && update.variables?.enabled !== undefined}
             onChange={(on) => save({ enabled: on }, on ? `Ask ${PRODUCT_NAME} is on` : `Ask ${PRODUCT_NAME} is off`)}
-            aria-describedby="ai-enabled-help"
+           
           />
           <div>
             <label htmlFor="ai-enabled" style={{ fontWeight: tk.type.title.fontWeight }}>
               On for the company
             </label>
-            <Typography.Paragraph id="ai-enabled-help" type="secondary" style={{ margin: 0 }}>
-              Staff get the Ask button in the header ({askShortcutLabel()}). Each person&apos;s answers come only from what their own role can see in {PRODUCT_NAME}. The client&apos;s
-              engineer and the consultant never see it.
-            </Typography.Paragraph>
+            <HelpLink style={{ margin: 0 }}>Staff get the Ask button in the header ({askShortcutLabel()}). Each person&apos;s answers come only from what their own role can see in {PRODUCT_NAME}. The client&apos;s
+              engineer and the consultant never see it.</HelpLink>
           </div>
         </Flex>
         <div role="group" aria-labelledby="ai-roles-label">
@@ -113,8 +112,7 @@ function SettingsCard({ data }: { data: AiSettingsDto }) {
             />
             {data.monthlyCapInr !== null && <Button onClick={() => save({ monthlyCapInr: null }, plan ? "Allowance back to the plan's" : 'Allowance back to the default')}>{plan ? "Use the plan's" : 'Use the default'}</Button>}
           </Space>
-          <Typography.Paragraph type="secondary" style={{ margin: `${tk.space[1]} 0 0` }}>
-            Ask {PRODUCT_NAME} stops for the rest of the month once the company has used this much.{' '}
+          <HelpLink style={{ margin: `${tk.space[1]} 0 0` }}>Ask {PRODUCT_NAME} stops for the rest of the month once the company has used this much.{' '}
             {plan
               ? `Your plan includes ${formatINR(plan.allowanceInr)} a month${
                   plan.status === 'TRIAL' ? ' in the free trial' : plan.status === 'ACTIVE' && unit ? ` (${plan.units} ${plan.units === 1 ? unit.one : unit.many} at ${formatINR(plan.perUnitInr)} each)` : ''
@@ -122,8 +120,7 @@ function SettingsCard({ data }: { data: AiSettingsDto }) {
               : data.monthlyCapInr === null
                 ? `This is the default of ${formatINR(data.effectiveCapInr)}.`
                 : ''}{' '}
-            Each person can also ask a limited number of questions a day.
-          </Typography.Paragraph>
+            Each person can also ask a limited number of questions a day.</HelpLink>
           {plan?.status === 'READ_ONLY' && (
             <Alert
               type="warning"
@@ -257,7 +254,7 @@ function ConversationsCard({ month, people }: { month: string; people: AiUserUsa
 
   return (
     <Card
-      title="Conversation log"
+      title={<TitleHelp help={<>Every question asked in {formatMonth(month)} and its answer. People are told in Ask {PRODUCT_NAME} that admins can read them; opening or exporting one is recorded in the audit log.</>}>Conversation log</TitleHelp>}
       style={{ marginBottom: tk.space[4] }}
       extra={
         <Button icon={<DownloadOutlined />} loading={exporting} onClick={() => void exportLog()}>
@@ -265,9 +262,6 @@ function ConversationsCard({ month, people }: { month: string; people: AiUserUsa
         </Button>
       }
     >
-      <Typography.Paragraph type="secondary">
-        Every question asked in {formatMonth(month)} and its answer. People are told in Ask {PRODUCT_NAME} that admins can read them; opening or exporting one is recorded in the audit log.
-      </Typography.Paragraph>
       <Flex gap={tk.space[3]} wrap style={{ marginBottom: tk.space[3] }}>
         <Select
           allowClear
@@ -373,15 +367,10 @@ function ConversationDrawer({ id, onClose }: { id: string | null; onClose: () =>
 
 function DataCard() {
   return (
-    <Card title="Where the data goes">
-      <Typography.Paragraph>
-        To answer, {PRODUCT_NAME} sends the question and the records needed for it to the AI model named under Use, through the OpenRouter gateway, which writes the answer. Requests go
+    <Card title={<TitleHelp help={<>To answer, {PRODUCT_NAME} sends the question and the records needed for it to the AI model named under Use, through the OpenRouter gateway, which writes the answer. Requests go
         only to providers that do not keep or train on them. Conversations are kept in {PRODUCT_NAME} for the person who asked, who can delete them, and the company&apos;s admins can read
-        them in the conversation log.
-      </Typography.Paragraph>
-      <Typography.Paragraph type="secondary" style={{ margin: 0 }}>
-        Ask {PRODUCT_NAME} only reads. It cannot create, approve, pay or delete anything, and every answer links to the records it used so people can check them.
-      </Typography.Paragraph>
+        them in the conversation log.</>}>Where the data goes</TitleHelp>}>
+      <HelpLink style={{ margin: 0 }}>Ask {PRODUCT_NAME} only reads. It cannot create, approve, pay or delete anything, and every answer links to the records it used so people can check them.</HelpLink>
     </Card>
   );
 }

@@ -292,8 +292,7 @@ export function KindEditor({ kind, editable, onClose, onUpdateProjects }: { kind
             </Button>
           </Typography.Paragraph>
         ) : null}
-        <FormSection title="Specs">
-          <Typography.Paragraph type="secondary">What the planning engineer fills in for each component, such as the staging height. A step&apos;s quantity or its lifts are read from them. Up to {MAX_SPEC_FIELDS}.</Typography.Paragraph>
+        <FormSection help={<>What the planning engineer fills in for each component, such as the staging height. A step&apos;s quantity or its lifts are read from them. Up to {MAX_SPEC_FIELDS}.</>} title="Specs">
           <LineTable
             name="specFields"
             label="Spec"

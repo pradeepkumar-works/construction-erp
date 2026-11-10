@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { HelpLink } from '@/components/common/Help';
 import { App, Button, Checkbox, Form, Input, InputNumber, Select, Typography } from 'antd';
 import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
@@ -237,11 +238,9 @@ export function ItemsTable() {
           <Form.Item name="isFuel" valuePropName="checked" extra="Fuel goes into machines with a fuel issue, and shows in Machinery › Fuel.">
             <Checkbox>Fuel (diesel, petrol)</Checkbox>
           </Form.Item>
-          <Typography.Paragraph type="secondary" style={{ marginBottom: tk.space[2] }}>
-            {readSize
+          <HelpLink style={{ marginBottom: tk.space[2] }}>{readSize
               ? `Pipe: read from the name as ${pipeSizeLabel(readSize)}. Fill these in only to correct it, or to give a weight per metre.`
-              : 'Pipe: fill these in when the name does not say the size, so pipe issued and laid compare by diameter.'}
-          </Typography.Paragraph>
+              : 'Pipe: fill these in when the name does not say the size, so pipe issued and laid compare by diameter.'}</HelpLink>
           <FormGrid cols={3}>
             <Form.Item name="pipeDiameterMm" label="Diameter">
               <InputNumber<number> min={15} max={4000} precision={0} controls={false} inputMode="numeric" suffix="mm" style={{ width: '100%' }} />

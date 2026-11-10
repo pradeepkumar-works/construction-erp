@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, App, Button, Checkbox, Form, Input, Space, Typography } from 'antd';
+import { HelpLink } from '@/components/common/Help';
+import { Alert, App, Button, Checkbox, Form, Input, Space } from 'antd';
 import { tk } from '@/ds';
 import { formatPhone, MESSAGE_CHANNEL_LABELS, normalisePhone, type MessageChannel } from '@erp/shared';
 import { errorMessage } from '@/lib/api';
@@ -60,11 +61,9 @@ export function MessagingSettingsModal({ open, onClose }: { open: boolean; onClo
   return (
     <FormShell open={open} onClose={onClose} form={form} layout="modal" title="Email, WhatsApp and SMS alerts" okText="Save" onSubmit={save} okDisabled={isLoading} projectDefault={false}>
       <Space orientation="vertical" size={12} style={{ width: '100%' }}>
-        <Typography.Text type="secondary">
-          Email tells you when a step waits on you (an order to place, a delivery to expect, material to test, money to collect) and when an entry of yours is sent back. WhatsApp
+        <HelpLink>Email tells you when a step waits on you (an order to place, a delivery to expect, material to test, money to collect) and when an entry of yours is sent back. WhatsApp
           and SMS also bring approval requests, the morning approvals digest and the DPR, test and payment reminders to your phone. WhatsApp goes first; SMS is used when
-          WhatsApp is off or does not get through.
-        </Typography.Text>
+          WhatsApp is off or does not get through.</HelpLink>
         {notReady ? <Alert type="info" showIcon title="WhatsApp and SMS are not set up on this server yet" description="You can switch alerts on now; they start once your company's account is connected." /> : null}
         <Form<Values> form={form} layout="vertical" requiredMark={false} initialValues={{ phone: '', whatsapp: false, sms: false, email: true }}>
           <Form.Item name="email" valuePropName="checked" style={{ marginBottom: tk.space[2] }}>

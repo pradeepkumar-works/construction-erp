@@ -396,10 +396,7 @@ export function ProjectFormModal({
           ) : null}
         </FormSection>
         {!isEdit && typeDef && typeDef.breakdown.some((b) => !b.parentKey) ? (
-          <FormSection title="Starting components">
-            <Typography.Paragraph type="secondary">
-              Laid out on the Components tab with their activities and weights. Set how many of each this project has; 0 leaves one out. More can be added later.
-            </Typography.Paragraph>
+          <FormSection help={<>Laid out on the Components tab with their activities and weights. Set how many of each this project has; 0 leaves one out. More can be added later.</>} title="Starting components">
             <FormGrid cols={3}>
               {typeDef.breakdown
                 .filter((b) => !b.parentKey)

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { HelpLink } from '@/components/common/Help';
 import { Button, Space, Table, Typography } from 'antd';
 import { tk } from '@/ds';
 import type { TableProps } from 'antd';
@@ -186,9 +187,7 @@ export function EngineHoursPanel({ projectId: fixedProject }: { projectId?: stri
           locale={{ emptyText: empty }}
         />
       )}
-      <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[3], marginBottom: 0 }}>
-        From each machine&rsquo;s hour meter as its tracker or maker&rsquo;s feed reads it (ignition time where there is no meter), the last week unless you choose dates. A log&rsquo;s worked and idle hours more than half an hour above the engine&rsquo;s are flagged, and so is a machine beyond its site&rsquo;s radius (2 km at least).
-      </Typography.Paragraph>
+      <HelpLink style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[3], marginBottom: 0 }}>From each machine&rsquo;s hour meter as its tracker or maker&rsquo;s feed reads it (ignition time where there is no meter), the last week unless you choose dates. A log&rsquo;s worked and idle hours more than half an hour above the engine&rsquo;s are flagged, and so is a machine beyond its site&rsquo;s radius (2 km at least).</HelpLink>
       <MachineryDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} />
       <MachineryFormModal open={!!prefill} onClose={() => setPrefill(null)} projectId={fixedProject} prefill={prefill} />
     </div>

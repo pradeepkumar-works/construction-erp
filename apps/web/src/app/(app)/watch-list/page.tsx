@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { HelpLink } from '@/components/common/Help';
 import Link from 'next/link';
 import { Alert, App, Badge, Button, Card, Descriptions, Drawer, Flex, Form, Input, Radio, Segmented, Tooltip, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
@@ -305,11 +306,9 @@ export default function Page() {
             <Typography.Text strong>{WARNING_KIND_LABELS[r.kind]}</Typography.Text>
             {r.paused ? <AppTag meaning="failed">Paused</AppTag> : null}
           </Flex>
-          <Typography.Text type="secondary">
-            {r.paused
+          <HelpLink>{r.paused
               ? `Marked wrong ${r.paused.wrong} of ${r.paused.of} times in the last 30 days, so this check stopped on ${formatDate(r.paused.since)}.${data.canResume ? ' Resume it once the check or the records are put right.' : ' An admin or management can resume it.'}`
-              : (trackRecordText(r) ?? 'Not marked yet: dismiss a warning as Fixed, Known or Wrong and it counts here.')}
-          </Typography.Text>
+              : (trackRecordText(r) ?? 'Not marked yet: dismiss a warning as Fixed, Known or Wrong and it counts here.')}</HelpLink>
         </div>
         {r.paused && data.canResume ? (
           <Button icon={<PlayCircleOutlined />} onClick={() => doResume(r.kind)} loading={resume.isPending && resume.variables === r.kind}>
@@ -384,10 +383,8 @@ export default function Page() {
             attention: true,
             children: (
               <>
-                <Typography.Paragraph type="secondary">
-                  How each check has done in your company: of its latest ten dismissals, how many were Fixed or Known rather than Wrong. A check marked Wrong more than half the time
-                  (four times or more in 30 days) pauses itself.
-                </Typography.Paragraph>
+                <HelpLink>How each check has done in your company: of its latest ten dismissals, how many were Fixed or Known rather than Wrong. A check marked Wrong more than half the time
+                  (four times or more in 30 days) pauses itself.</HelpLink>
                 <Flex vertical gap={tk.space[3]}>
                   {data.records.map(recordRow)}
                 </Flex>

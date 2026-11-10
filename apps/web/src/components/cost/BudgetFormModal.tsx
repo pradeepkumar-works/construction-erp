@@ -128,10 +128,7 @@ export function BudgetFormModal({ open, onClose, budget }: { open: boolean; onCl
             </Form.Item>
           </FormSection>
         )}
-        <FormSection title="By cost head">
-          <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginBottom: tk.space[2] }}>
-            What the whole job should cost under each head of the cost view. This total is the budget at completion; without it, the BOQ budget below is used.
-          </Typography.Paragraph>
+        <FormSection help={<>What the whole job should cost under each head of the cost view. This total is the budget at completion; without it, the BOQ budget below is used.</>} title="By cost head">
           <FormGrid cols={3}>
             {COST_HEADS.map((h) => (
               <Form.Item key={h} name={['heads', h]} label={COST_HEAD_LABELS[h]}>

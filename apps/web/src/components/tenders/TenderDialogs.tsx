@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { HelpLink } from '@/components/common/Help';
 import { Checkbox, Form, Input, InputNumber, Radio, Select, Switch, Typography } from 'antd';
 import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
@@ -243,11 +244,9 @@ export function MakeProjectDialog({ tender, open, onClose }: { tender: TenderDet
       }}
     >
       <Form form={form} layout="vertical">
-        <Typography.Paragraph>
-          <span>{`The project takes the ${tender.totals.itemCount} bid items at the quoted rates (contract value `}</span>
+        <HelpLink><span>{`The project takes the ${tender.totals.itemCount} bid items at the quoted rates (contract value `}</span>
           <Money value={tender.totals.quotedAmount} paise />
-          <span>), their rate analysis as material norms and resources, the cost budget from the analysis, and the EMD.</span>
-        </Typography.Paragraph>
+          <span>), their rate analysis as material norms and resources, the cost budget from the analysis, and the EMD.</span></HelpLink>
         <FormSection title="Project">
           <FormGrid cols={2}>
             <Form.Item name="code" label="Project code" rules={[{ required: true, whitespace: true, message: 'Enter a project code, e.g. RD-014' }]}>

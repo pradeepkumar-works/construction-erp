@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
+import { HelpLink } from '@/components/common/Help';
 import { Alert, Checkbox, Form, Input, Select, Table, Typography } from 'antd';
 import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
@@ -328,8 +329,7 @@ export function OtherBillFormModal({
               <>
                 {p.existingBill ? <Alert type="error" showIcon style={{ marginBottom: tk.space[3] }} title={`${p.equipmentCode} for ${formatMonthLong(p.month)} is already billed on ${p.existingBill.billNo}`} /> : null}
                 {!p.vendorId ? <Alert type="error" showIcon style={{ marginBottom: tk.space[3] }} title={`Link ${p.equipmentCode} to its hire agency first, in Machinery › ${p.equipmentCode} › Edit`} /> : null}
-                <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
-                  {[
+                <HelpLink>{[
                     p.vendorName,
                     `${p.logs.length} approved log${p.logs.length === 1 ? '' : 's'}: ${p.workedDays} days, ${formatQty(p.workedHours)} hours worked`,
                     p.rate ? `${formatINR(p.rate, true)} ${EQUIPMENT_RATE_UNIT_LABELS[p.rateUnit]}` : 'No rate in the machine master',
@@ -338,8 +338,7 @@ export function OtherBillFormModal({
                     p.hireOperator === true ? 'operator included' : p.hireOperator === false ? 'operator ours' : null,
                   ]
                     .filter(Boolean)
-                    .join(' · ')}
-                </Typography.Paragraph>
+                    .join(' · ')}</HelpLink>
                 <FormGrid cols={4}>
                   <Form.Item name="hireQuantity" label={`${RATE_WORD[p.rateUnit][0].toUpperCase()}${RATE_WORD[p.rateUnit].slice(1)}s billed`} extra={`${formatQty(p.hireQuantity)} in the logs`} rules={[{ required: true, message: 'Enter what the vendor bills' }]}>
                     <QuantityInput unit={RATE_WORD[p.rateUnit]} min={0.001} status={toNumber(hireQuantity) > toNumber(p.hireQuantity) ? 'warning' : undefined} />

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { HelpLink } from '@/components/common/Help';
 import { Alert, App, Button, Descriptions, Drawer, Form, Input, Skeleton, Table, Typography } from 'antd';
 import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
@@ -183,7 +184,7 @@ function CertifyModal({ bill, onClose }: { bill: PortalBillDto | null; onClose: 
 
   return (
     <FormShell open={!!bill} onClose={onClose} form={form} layout="modal" width={760} title={bill ? `Certify ${bill.billLabel}` : ''} okText="Certify" onSubmit={submit} projectDefault={false}>
-      <Typography.Paragraph type="secondary">Enter the quantity you pass for each item. Items you leave as they are pass as claimed. The contractor's QS and project manager are told.</Typography.Paragraph>
+      <HelpLink>Enter the quantity you pass for each item. Items you leave as they are pass as claimed. The contractor's QS and project manager are told.</HelpLink>
       <Form form={form} layout="vertical" requiredMark={false}>
         <FormGrid cols={2}>
           <Form.Item name="date" label="Certificate date" rules={[{ required: true, message: 'Choose the certificate date' }]}>

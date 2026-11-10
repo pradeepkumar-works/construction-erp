@@ -1,6 +1,7 @@
 'use client';
 
 import { DeleteInMenu } from '@/components/record/MoreActions';
+import { HelpLink } from '@/components/common/Help';
 import React, { useState } from 'react';
 import { Button, Checkbox, Descriptions, Drawer, Empty, Flex, Input, Progress, Segmented, Select, Space, Statistic, Table, Typography } from 'antd';
 import { tk } from '@/ds';
@@ -201,10 +202,8 @@ export function HandoverPanel({ projectId, members, initialDefectId }: { project
             {h.attachments.length ? <AttachmentGallery attachments={h.attachments} size={64} /> : null}
           </Flex>
         ) : (
-          <Typography.Text type="secondary">
-            Not handed over yet. Log snags below as you walk the site; record the completion certificate when you have it, and the defect liability period
-            {s.defectLiabilityMonths ? ` (${s.defectLiabilityMonths} months in the contract)` : ''} starts from its date.
-          </Typography.Text>
+          <HelpLink>Not handed over yet. Log snags below as you walk the site; record the completion certificate when you have it, and the defect liability period
+            {s.defectLiabilityMonths ? ` (${s.defectLiabilityMonths} months in the contract)` : ''} starts from its date.</HelpLink>
         )}
       </Section>
 

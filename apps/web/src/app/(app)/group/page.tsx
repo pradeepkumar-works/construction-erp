@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { App, Button, Card, Form, Input, Result, Switch, Typography } from 'antd';
+import { HelpLink } from '@/components/common/Help';
+import { App, Button, Card, Form, Input, Result, Switch } from 'antd';
 import { tk } from '@/ds';
 import { COMPANY_KIND_LABELS, canSeeGroupCompanies, type GroupCompanyDto, type GroupDto, type GroupPersonDto } from '@erp/shared';
 import { EditOutlined, PlusOutlined, UserAddOutlined } from '@/components/common/icons';
@@ -170,9 +171,7 @@ function PeopleTab({ group, myEmail, onGive }: { group: GroupDto; myEmail: strin
   const choice = useColumnChoice('group-people', columns);
   return (
     <>
-      <Typography.Paragraph type="secondary" style={{ marginTop: tk.space[3] }}>
-        Everyone with access to a company of the group. Access to another company uses the same sign-in. New people are added from Users in their own company.
-      </Typography.Paragraph>
+      <HelpLink style={{ marginTop: tk.space[3] }}>Everyone with access to a company of the group. Access to another company uses the same sign-in. New people are added from Users in their own company.</HelpLink>
       <DataTable<PersonRow>
         columns={columns}
         visible={choice.visible}

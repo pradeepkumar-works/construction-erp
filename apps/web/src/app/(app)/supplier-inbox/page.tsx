@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
+import { HelpLink } from '@/components/common/Help';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Button, Descriptions, Drawer, Flex, Segmented, Table, Typography } from 'antd';
@@ -265,9 +266,7 @@ function Changes({ list }: { list: ReturnType<typeof useSupplierChanges> }) {
   return (
     <>
       {list.error && <QueryError error={list.error} onRetry={() => list.refetch()} />}
-      <Typography.Paragraph type="secondary">
-        Waiting changes. A new bank account is approved only by those who pay vendors; confirm it with the supplier on a number you already had.
-      </Typography.Paragraph>
+      <HelpLink>Waiting changes. A new bank account is approved only by those who pay vendors; confirm it with the supplier on a number you already had.</HelpLink>
       <ChangeList
         changes={list.data ?? []}
         vendorColumn

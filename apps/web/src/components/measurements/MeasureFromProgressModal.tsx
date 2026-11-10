@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { HelpLink } from '@/components/common/Help';
 import { Button, Grid, Modal, Table, Typography } from 'antd';
 import { tk } from '@/ds';
 import type { ToMeasureItemDto } from '@erp/shared';
@@ -99,10 +100,8 @@ export function MeasureFromProgressModal({
         <PageSkeleton shape="list" />
       ) : data?.length ? (
         <>
-          <Typography.Paragraph type="secondary">
-            Work the site got approved that no measurement sheet holds yet. Start a sheet and its approved days come in as lines, oldest first, for you to check against
-            the book.
-          </Typography.Paragraph>
+          <HelpLink>Work the site got approved that no measurement sheet holds yet. Start a sheet and its approved days come in as lines, oldest first, for you to check against
+            the book.</HelpLink>
           <Table<ToMeasureItemDto>
             rowKey="boqItemId"
             size="small"

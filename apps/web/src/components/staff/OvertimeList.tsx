@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { HelpLink } from '@/components/common/Help';
 import { App, Button, Form, Input, Modal, Space, Table, Typography } from 'antd';
 import { tk } from '@/ds';
 import type { TableProps } from 'antd';
@@ -87,7 +88,7 @@ export function OvertimeList() {
 
   return (
     <div style={{ padding: tk.space[4] }}>
-      <Typography.Paragraph type="secondary">Overtime waiting on you: your reports' first, which you recommend to HR, then what their managers recommended once you are HR. Payroll pays approved overtime only.</Typography.Paragraph>
+      <HelpLink>Overtime waiting on you: your reports' first, which you recommend to HR, then what their managers recommended once you are HR. Payroll pays approved overtime only.</HelpLink>
       <Table<StaffAttendanceDto> rowKey="id" size="small" columns={columns} dataSource={data} pagination={false} scroll={{ x: 1390 }} locale={{ emptyText: 'No overtime waiting on you' }} />
       <Modal
         open={!!rejecting}

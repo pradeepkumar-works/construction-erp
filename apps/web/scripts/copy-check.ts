@@ -17,7 +17,7 @@ import { DEPARTMENT_MODULES, NAV_TREE } from '@erp/shared';
 import { LONG_WORDS, screenStrings } from './copy/screen-text';
 
 /** Lower it when a change takes explanations off the screen; never raise it. */
-const LONG_ON_SCREEN = 159;
+const LONG_ON_SCREEN = 53;
 
 const WRITING_PATH = path.resolve(__dirname, '../../../docs/WRITING.md');
 const writing = fs.readFileSync(WRITING_PATH, 'utf8');

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { HelpLink, TitleHelp } from '@/components/common/Help';
 import { Alert, App, Button, Card, Checkbox, Flex, InputNumber, Popconfirm, Select, Skeleton, Space, Switch, Table, Typography } from 'antd';
 import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
@@ -272,9 +273,7 @@ export default function ApprovalRulesPage() {
             size="middle"
             scroll={{ x: 190 + 170 * SUBMISSION_TYPES.length }}
             footer={() => (
-              <Typography.Text type="secondary">
-                <AppTag variant="kind" style={{ marginRight: tk.space[2] }}>Admin</AppTag>approves everything with no limit and is always notified. A position counts on the project its holder has it on, or everywhere when held at head office; set them on Users. Approvers still only see projects they have access to.
-              </Typography.Text>
+              <HelpLink><AppTag variant="kind" style={{ marginRight: tk.space[2] }}>Admin</AppTag>approves everything with no limit and is always notified. A position counts on the project its holder has it on, or everywhere when held at head office; set them on Users. Approvers still only see projects they have access to.</HelpLink>
             )}
           />
         ) : null}
@@ -283,14 +282,12 @@ export default function ApprovalRulesPage() {
       {data ? (
         <Card size="small" style={{ marginTop: tk.space[4] }}>
           <Flex gap={12} align="flex-start">
-            <Switch checked={data.paymentsNeedRequest} loading={payRule.isPending} onChange={(v) => payRule.mutate(v)} aria-labelledby="pay-request-rule" aria-describedby="pay-request-rule-note" />
+            <Switch checked={data.paymentsNeedRequest} loading={payRule.isPending} onChange={(v) => payRule.mutate(v)} aria-labelledby="pay-request-rule" />
             <div>
               <Typography.Text strong id="pay-request-rule">
                 Payments need an approved payment request
               </Typography.Text>
-              <Typography.Paragraph type="secondary" id="pay-request-rule-note" style={{ margin: 0 }}>
-                Accounts pays a bill only against a payment request approved under the {SUBMISSION_TYPE_LABELS.PAYMENT_REQUEST} column above. Off, accounts can also pay any approved bill directly. Advances always need a request.
-              </Typography.Paragraph>
+              <HelpLink style={{ margin: 0 }}>Accounts pays a bill only against a payment request approved under the {SUBMISSION_TYPE_LABELS.PAYMENT_REQUEST} column above. Off, accounts can also pay any approved bill directly. Advances always need a request.</HelpLink>
             </div>
           </Flex>
         </Card>
@@ -298,14 +295,12 @@ export default function ApprovalRulesPage() {
       {data ? (
         <Card size="small" style={{ marginTop: tk.space[4] }}>
           <Flex gap={12} align="flex-start">
-            <Switch checked={data.ordersNeedApprovedChoice} loading={choiceRule.isPending} onChange={(v) => choiceRule.mutate(v)} aria-labelledby="choice-rule" aria-describedby="choice-rule-note" />
+            <Switch checked={data.ordersNeedApprovedChoice} loading={choiceRule.isPending} onChange={(v) => choiceRule.mutate(v)} aria-labelledby="choice-rule" />
             <div>
               <Typography.Text strong id="choice-rule">
                 Orders wait for an approved supplier choice
               </Typography.Text>
-              <Typography.Paragraph type="secondary" id="choice-rule-note" style={{ margin: 0 }}>
-                When purchase finalises L1 (or chooses another supplier, with a reason) under Requests to order, the choice goes for approval under the {SUBMISSION_TYPE_LABELS.SUPPLIER_CHOICE} column above, and the order on a material request can be raised only on the approved supplier. Off, purchase orders as soon as it finalises.
-              </Typography.Paragraph>
+              <HelpLink style={{ margin: 0 }}>When purchase finalises L1 (or chooses another supplier, with a reason) under Requests to order, the choice goes for approval under the {SUBMISSION_TYPE_LABELS.SUPPLIER_CHOICE} column above, and the order on a material request can be raised only on the approved supplier. Off, purchase orders as soon as it finalises.</HelpLink>
             </div>
           </Flex>
         </Card>
@@ -313,14 +308,12 @@ export default function ApprovalRulesPage() {
       {data ? (
         <Card size="small" style={{ marginTop: tk.space[4] }}>
           <Flex gap={12} align="flex-start">
-            <Switch checked={data.progressFromDpr} loading={dprRule.isPending} onChange={(v) => dprRule.mutate(v)} aria-labelledby="dpr-progress-rule" aria-describedby="dpr-progress-rule-note" />
+            <Switch checked={data.progressFromDpr} loading={dprRule.isPending} onChange={(v) => dprRule.mutate(v)} aria-labelledby="dpr-progress-rule" />
             <div>
               <Typography.Text strong id="dpr-progress-rule">
                 Progress comes from the DPR only
               </Typography.Text>
-              <Typography.Paragraph type="secondary" id="dpr-progress-rule-note" style={{ margin: 0 }}>
-                Site staff record the day&apos;s work as the DPR&apos;s work lines, approved with the DPR under the {SUBMISSION_TYPE_LABELS.DPR} column above, so nobody types the work twice. Off, progress can also be recorded on its own. Entries already recorded stay as they are.
-              </Typography.Paragraph>
+              <HelpLink style={{ margin: 0 }}>Site staff record the day&apos;s work as the DPR&apos;s work lines, approved with the DPR under the {SUBMISSION_TYPE_LABELS.DPR} column above, so nobody types the work twice. Off, progress can also be recorded on its own. Entries already recorded stay as they are.</HelpLink>
             </div>
           </Flex>
         </Card>
@@ -414,13 +407,10 @@ function HigherLevels({
     ...HIGHER.map(level),
   ];
   return (
-    <Card size="small" title="Higher approval levels and escalation" style={{ marginTop: tk.space[4] }}>
-      <Typography.Paragraph type="secondary">
-        From the amount you set, an entry needs further approvals after the first, in order, up to six: it stays waiting until the last level approves, and nobody approves two levels of one entry. A level can name roles and
+    <Card size="small" title={<TitleHelp help={<>From the amount you set, an entry needs further approvals after the first, in order, up to six: it stays waiting until the last level approves, and nobody approves two levels of one entry. A level can name roles and
         positions, so a chain can follow the site (site in-charge, team leader, project manager) and head office (accounts, then the general manager or the managing director, each with their own limit on the first
         approval&apos;s grid). Reminders go to whoever it waits with; once it has waited past the escalation time, the next level&apos;s approvers (management above the last level) can decide it too and are told. Both are
-        checked every hour.
-      </Typography.Paragraph>
+        checked every hour.</>}>Higher approval levels and escalation</TitleHelp>} style={{ marginTop: tk.space[4] }}>
       <Table rowKey={(t) => t} columns={columns} dataSource={[...SUBMISSION_TYPES]} pagination={false} size="small" scroll={{ x: 170 + 150 * 2 + 280 * HIGHER.length }} />
     </Card>
   );

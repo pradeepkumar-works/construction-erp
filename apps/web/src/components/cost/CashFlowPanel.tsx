@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
+import { HelpLink } from '@/components/common/Help';
 import Link from 'next/link';
-import { Alert, Segmented, Statistic, Table, Typography } from 'antd';
+import { Alert, Segmented, Statistic, Table } from 'antd';
 import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
@@ -172,13 +173,11 @@ export function CashFlowPanel({ projectId: fixedProject }: { projectId?: string 
         </>
       )}
       <Table<CashFlowPeriodDto> rowKey="start" size="small" loading={isLoading || isFetching} columns={columns} dataSource={periods} pagination={false} scroll={{ x: 1530 }} />
-      <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[2] }}>
-        Client bills are approved RA bills not yet paid, expected the client&apos;s payment days after they were sent (set on the Contract tab;{' '}
+      <HelpLink style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[2] }}>Client bills are approved RA bills not yet paid, expected the client&apos;s payment days after they were sent (set on the Contract tab;{' '}
         {DEFAULT_CLIENT_PAYMENT_DAYS} days when not set). Retention and security deposit come back at the end of the defect liability period. Work still to
         bill is the revised contract value less what has been billed, billed evenly up to the completion date and received after the payment days, with GST
         and less the client&apos;s deductions. Vendor bills are approved vendor and subcontractor bills not yet paid, by due date. Cost still to spend is the
-        forecast to complete from each project&apos;s budget, spent evenly up to completion.
-      </Typography.Paragraph>
+        forecast to complete from each project&apos;s budget, spent evenly up to completion.</HelpLink>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { HelpLink } from '@/components/common/Help';
 import { App, Button, Form, Input, InputNumber, Table, Tooltip, Typography } from 'antd';
 import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
@@ -182,13 +183,11 @@ export function SlippageNotes({ lines, withheld, c }: { lines: SlippageLineDto[]
   const net = toNumber(withheld);
   return (
     <>
-      <Typography.Paragraph type="secondary">
-        {lines.length
+      <HelpLink>{lines.length
           ? `Behind the milestone targets at the measurements date. This bill ${net < 0 ? `releases ${formatMoney(-net, c, true)}` : `withholds ${formatMoney(net, c, true)}`}: the total below less what earlier bills withheld.`
           : net < 0
             ? `Every component is on its target, so this bill releases the ${formatMoney(-net, c, true)} earlier bills withheld.`
-            : 'Every component is on its target.'}
-      </Typography.Paragraph>
+            : 'Every component is on its target.'}</HelpLink>
       {lines.length ? (
         <Table<SlippageLineDto>
           rowKey="componentId"

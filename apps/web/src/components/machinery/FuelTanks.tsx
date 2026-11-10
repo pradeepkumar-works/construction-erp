@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { App, Button, Space, Table, Typography } from 'antd';
+import { App, Button, Space, Table } from 'antd';
 import { tk } from '@/ds';
 import type { TableProps } from 'antd';
 import type { FuelDispenseDto, MachineDayDto, MachineFuelDto } from '@erp/shared';
@@ -205,12 +205,9 @@ export function FuelTanks({ date, projectId, canIssue }: { date: string; project
   return (
     <>
       {rows.length ? (
-        <Section style={{ marginTop: tk.space[4] }} title="Fuel tanks">
+        <Section help={<>From each machine&rsquo;s fuel sensor through its tracker. A rise of 20 litres or more is a fill and is set against the day&rsquo;s slips; a fall
+            as big with the engine off is a drain. Set the tank&rsquo;s size on the machine in Equipment when the sensor sends a %.</>} style={{ marginTop: tk.space[4] }} title="Fuel tanks">
           <Table<TankRow> rowKey="id" size="small" pagination={false} dataSource={rows} scroll={{ x: 1000 }} columns={columns} />
-          <Typography.Paragraph type="secondary" style={{ ...small, marginTop: tk.space[2], marginBottom: 0 }}>
-            From each machine&rsquo;s fuel sensor through its tracker. A rise of 20 litres or more is a fill and is set against the day&rsquo;s slips; a fall
-            as big with the engine off is a drain. Set the tank&rsquo;s size on the machine in Equipment when the sensor sends a %.
-          </Typography.Paragraph>
         </Section>
       ) : null}
       {waiting.length ? (

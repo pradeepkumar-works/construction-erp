@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, Empty, Skeleton, Space, Table, Typography } from 'antd';
+import { HelpLink } from '@/components/common/Help';
+import { Button, Empty, Skeleton, Space, Table } from 'antd';
 import { tk } from '@/ds';
 import { DatePicker } from '@/components/common/DatePicker';
 import type { TableProps } from 'antd';
@@ -215,10 +216,8 @@ export function FuelPanel({ projectId: fixedProject }: { projectId?: string }) {
             </Section>
           ) : null}
           <FuelTanks date={data.date} projectId={projectId} canIssue={data.canIssue} />
-          <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[3], marginBottom: 0 }}>
-            A fuel issue names the machine and its meter, so each machine&apos;s litres an hour can be checked against its norm (set on the machine in
-            Equipment). The watch list flags a machine whose recent logs are off the norm by more than its tolerance.
-          </Typography.Paragraph>
+          <HelpLink style={{ fontSize: tk.type.caption.fontSize, marginTop: tk.space[3], marginBottom: 0 }}>A fuel issue names the machine and its meter, so each machine&apos;s litres an hour can be checked against its norm (set on the machine in
+            Equipment). The watch list flags a machine whose recent logs are off the norm by more than its tolerance.</HelpLink>
         </>
       )}
       <FuelIssueModal open={issuing} onClose={() => setIssuing(false)} projectId={fixedProject ?? scope} />

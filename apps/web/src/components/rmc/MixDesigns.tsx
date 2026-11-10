@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { HelpLink } from '@/components/common/Help';
 import { App, Button, Popconfirm, Space, Table, Typography } from 'antd';
 import { tk } from '@/ds';
 import { CheckOutlined, EditOutlined, PlusOutlined } from '@/components/common/icons';
@@ -102,9 +103,7 @@ export function MixDesigns() {
           ]}
         />
       )}
-      <Typography.Paragraph type="secondary" style={{ marginTop: tk.space[3] }}>
-        Material a cubic metre is at the item master’s rates. Each truck issues its materials from the plant’s store at its design, or as weighed at the batcher.
-      </Typography.Paragraph>
+      <HelpLink style={{ marginTop: tk.space[3] }}>Material a cubic metre is at the item master’s rates. Each truck issues its materials from the plant’s store at its design, or as weighed at the batcher.</HelpLink>
       <DesignForm open={creating || !!editing} design={editing} onClose={() => (setCreating(false), setEditing(null))} />
     </div>
   );

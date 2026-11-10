@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { App, Button, Form, Input, Select, Table, Typography } from 'antd';
+import { HelpLink } from '@/components/common/Help';
+import { App, Button, Form, Input, Select, Table } from 'antd';
 import { tk } from '@/ds';
 import type { TableProps } from 'antd';
 import type { BiometricCommandDto, BiometricUserDto } from '@erp/shared';
@@ -53,11 +54,9 @@ export function DeviceUserForm({ user, removing, onClose }: { user: BiometricUse
       }}
     >
       <Form form={form} layout="vertical" initialValues={{ name: user ? (user.employeeName ?? user.workerName ?? '').slice(0, DEVICE_NAME_MAX) : undefined }}>
-        <Typography.Paragraph type="secondary">
-          {removing
+        <HelpLink>{removing
             ? `User number ${user?.pin ?? ''} and the fingers or face enrolled under it are taken off, so it can no longer punch there. Its punches already in stay.`
-            : `User number ${user?.pin ?? ''} goes on the devices with this name; then enrol the person's finger or face under it on each device.`}
-        </Typography.Paragraph>
+            : `User number ${user?.pin ?? ''} goes on the devices with this name; then enrol the person's finger or face under it on each device.`}</HelpLink>
         {!removing && (
           <Form.Item name="name" label="Name on the device" extra={`Up to ${DEVICE_NAME_MAX} letters; the devices show no Hindi or accents.`} rules={[{ required: true, whitespace: true, message: 'Type the name the device shows' }]}>
             <Input maxLength={DEVICE_NAME_MAX} translate="no" />

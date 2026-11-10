@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import { Alert, App, Checkbox, Form, Input, InputNumber, Select, Switch, Typography } from 'antd';
+import { Alert, App, Checkbox, Form, Input, InputNumber, Select, Switch } from 'antd';
 import {
   CONTRACT_MODELS,
   CONTRACT_MODEL_LABELS,
@@ -168,11 +168,8 @@ export function TypeEditor({ type, kinds, open, onClose }: { type: ProjectTypeDt
             <Select mode="multiple" allowClear showSearch={{ optionFilterProp: 'label' }} options={kindOptions} placeholder="Every component type" />
           </Form.Item>
         </FormSection>
-        <FormSection title="Starting components">
-          <Typography.Paragraph type="secondary">
-            The components a new project of this type is offered, each laid out with its kind&apos;s activities. Copies number themselves (Overhead tank 1, 2…); a sub-component goes in every copy of its
-            component. Weights are each copy&apos;s share, %; left empty they share what is left by BOQ value.
-          </Typography.Paragraph>
+        <FormSection help={<>The components a new project of this type is offered, each laid out with its kind&apos;s activities. Copies number themselves (Overhead tank 1, 2…); a sub-component goes in every copy of its
+            component. Weights are each copy&apos;s share, %; left empty they share what is left by BOQ value.</>} title="Starting components">
           <LineTable
             name="breakdown"
             label="Component"

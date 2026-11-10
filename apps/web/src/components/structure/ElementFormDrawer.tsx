@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
+import { HelpLink } from '@/components/common/Help';
 import { App, Checkbox, Form, Input, InputNumber, Select, Typography } from 'antd';
 import { tk } from '@/ds';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -229,9 +230,7 @@ function PlanLines({ onQty }: { onQty: (key: string, qty: number | null) => void
   if (!lines.length) return <Typography.Paragraph type="secondary">This component type has no activities of its own; add its parts as sub-components.</Typography.Paragraph>;
   return (
     <>
-      <Typography.Paragraph type="secondary">
-        Weights are each line&apos;s share of its activity, or of the component. Fill the planned quantities you know now; the rest can wait for the drawings.
-      </Typography.Paragraph>
+      <HelpLink>Weights are each line&apos;s share of its activity, or of the component. Fill the planned quantities you know now; the rest can wait for the drawings.</HelpLink>
       <LineTable
         name="lines"
         label="Activity"

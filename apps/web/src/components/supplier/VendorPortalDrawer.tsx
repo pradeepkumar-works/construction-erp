@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { HelpLink } from '@/components/common/Help';
 import { App, Button, Drawer, Flex, Switch, Table, Typography } from 'antd';
 import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
@@ -53,9 +54,7 @@ export function VendorPortalDrawer({ vendor, onClose }: { vendor: { id: string; 
       }
     >
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      <Typography.Paragraph type="secondary">
-        A login sees this vendor&apos;s enquiries, orders, invoices and payments, and can send dispatch notes and invoices. Changes to their details come here for approval.
-      </Typography.Paragraph>
+      <HelpLink>A login sees this vendor&apos;s enquiries, orders, invoices and payments, and can send dispatch notes and invoices. Changes to their details come here for approval.</HelpLink>
       <Section title="Logins">
         <Table<SupplierLoginDto>
           rowKey="id"

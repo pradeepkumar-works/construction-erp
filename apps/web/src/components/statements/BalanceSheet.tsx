@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
+import { HelpLink } from '@/components/common/Help';
 import { tk } from '@/ds';
-import { Alert, Button, Space, Table, Typography } from "antd";
+import { Alert, Button, Space, Table } from "antd";
 import { DatePicker } from "@/components/common/DatePicker";
 import { DownloadOutlined } from "@/components/common/icons";
 import dayjs from "dayjs";
@@ -149,9 +150,7 @@ export function BalanceSheet() {
             )}
           />
           {data && (
-            <Typography.Paragraph type="secondary" style={{ marginTop: tk.space[3] }}>
-              {`Reserves and surplus include ${Number(data.profitNotClosed.amount) < 0 ? "a loss" : "profit"} of ${formatINR(Math.abs(Number(data.profitNotClosed.amount)), true)} from years not yet closed. Balances on the other side of their group move across, as accountants show them: an overdrawn bank under borrowings, advances to suppliers under loans and advances, GST credit under other current assets.`}
-            </Typography.Paragraph>
+            <HelpLink style={{ marginTop: tk.space[3] }}>{`Reserves and surplus include ${Number(data.profitNotClosed.amount) < 0 ? "a loss" : "profit"} of ${formatINR(Math.abs(Number(data.profitNotClosed.amount)), true)} from years not yet closed. Balances on the other side of their group move across, as accountants show them: an overdrawn bank under borrowings, advances to suppliers under loans and advances, GST credit under other current assets.`}</HelpLink>
           )}
         </>
       )}
