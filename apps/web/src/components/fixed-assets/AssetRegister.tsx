@@ -99,6 +99,7 @@ export function AssetRegister() {
       {s ? (
         <div style={{ marginBottom: tk.space[4] }}>
           <Figures
+            bare
             label="Fixed asset figures"
             figures={[
               figure('assetCost', s.cost, { count: s.count }),
