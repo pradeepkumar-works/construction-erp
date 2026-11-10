@@ -83,7 +83,7 @@ export default function SisterCompaniesPage() {
   if (!user) return null;
   const newButton = allowed ? (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setNaming(true)} disabled={!data}>
-      Name a sister
+      Name a sister company
     </Button>
   ) : null;
 

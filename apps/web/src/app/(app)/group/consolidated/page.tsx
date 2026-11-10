@@ -44,7 +44,7 @@ function ConsolidatedPage() {
     <div className="page-container">
       <PageHeader
         title="Consolidated accounts"
-        help="Each company's own profit and loss and balance sheet, by Schedule III line, added up for the group. Balances and sales between sisters named under Sister companies come out where both companies' books hold them; what one holds and the other does not stays in and shows under Between sisters. Investments in the companies and their share capital are not taken out."
+        help="Each company's own profit and loss and balance sheet, by Schedule III line, added up for the group. Balances, sales and interest between sisters named under Sister companies come out where both companies' books hold them; what one holds and the other does not stays in and shows under Between sisters. Not taken out: investments in the companies and their share capital, and what sits in a ledger of its own rather than the sister's (retention, TDS taken at the bill, amounts held, secured advance, security deposit). So a difference between sisters can be one of those, or a note one has not accepted, and is something to look into."
       />
       {!allowed ? (
         <NoAccess title="Group admins in the holding company only" subTitle="Switch to the holding company, or ask a group admin." />
@@ -63,7 +63,7 @@ function ConsolidatedPage() {
                 key: 'sisters',
                 label: 'Between sisters',
                 count: differing || undefined,
-                countLabel: differing === 1 ? 'difference to settle' : 'differences to settle',
+                countLabel: differing === 1 ? 'difference to look into' : 'differences to look into',
                 attention: differing > 0,
                 children: (
                   <div style={{ padding: tk.space[4] }}>

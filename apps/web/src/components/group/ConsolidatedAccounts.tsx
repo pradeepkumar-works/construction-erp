@@ -98,16 +98,27 @@ export function CompanyNotes({ data }: { data: ConsolidationDto }) {
           {!isZero(c.difference) ? `. Its own balance sheet is out by ${formatINR(c.difference)}` : ''}
         </li>
       ))}
+      {data.leftOut.map((c) => (
+        <li key={c.id}>
+          <span translate="no">{c.name}</span>: left out. {c.reason}
+        </li>
+      ))}
     </ul>
   );
 }
 
 type PairRow = SisterPairDto & { id: string };
 
-const what = (p: SisterPairDto) => (p.kind === 'SALES' ? `${p.a.name} sold to ${p.b.name}` : `${p.b.name} owes ${p.a.name}`);
+const what = (p: SisterPairDto) =>
+  p.kind === 'SALES' ? `${p.a.name} sold to ${p.b.name}` : p.kind === 'INTEREST' ? `${p.b.name} paid ${p.a.name} interest` : `${p.b.name} owes ${p.a.name}`;
+const KIND_WORD: Record<SisterPairDto['kind'], string> = { BALANCE: 'Balance', SALES: 'Sales', INTEREST: 'Interest' };
 const notNamed = (p: SisterPairDto) => [p.a, p.b].filter((s) => !s.named).map((s) => `${s.name} has not named the other as a sister`);
 
-/** Every pair of figures that should agree between sisters, with what came out and the difference to settle. */
+/**
+ * Every pair of figures that should agree between sisters, with what came out and what is left between them: a note one
+ * has not accepted, or an amount the other keeps in a ledger of its own (retention, TDS, a hold), so it is something to
+ * look into rather than a mistake.
+ */
 export function SisterPairs({ data, loading }: { data: ConsolidationDto | undefined; loading: boolean }) {
   const columns = useMemo<ListColumn<PairRow>[]>(
     () => [
@@ -120,7 +131,7 @@ export function SisterPairs({ data, loading }: { data: ConsolidationDto | undefi
         render: (_, p) => (
           <div>
             <Flex gap={tk.space[2]} align="center" wrap>
-              <AppTag variant="kind">{p.kind === 'SALES' ? 'Sales' : 'Balance'}</AppTag>
+              <AppTag variant="kind">{KIND_WORD[p.kind]}</AppTag>
               <span translate="no">{what(p)}</span>
             </Flex>
             {notNamed(p).map((t) => (
@@ -136,7 +147,7 @@ export function SisterPairs({ data, loading }: { data: ConsolidationDto | undefi
       { key: 'bName', title: 'Sister', width: 200, render: (_, p) => <span translate="no">{p.b.name}</span>, defaultFrom: 1280 },
       { key: 'b', title: "In the sister's books", kind: 'money', width: 150, value: (p) => p.b.amount },
       { key: 'eliminated', title: 'Taken out', kind: 'money', width: 140, value: (p) => p.eliminated, defaultFrom: 1024 },
-      { key: 'difference', title: 'Difference', kind: 'money', width: 140, strong: true, value: (p) => p.difference, tone: (p) => (isZero(p.difference) ? undefined : 'danger'), card: 'amount' },
+      { key: 'difference', title: 'Difference', kind: 'money', width: 140, strong: true, value: (p) => p.difference, card: 'amount' },
     ],
     [],
   );
@@ -180,6 +191,7 @@ export function ConsolidationToolbar({
         exportFileName('consolidation-between-sisters'),
         'Between sisters',
         [
+          { header: 'Kind', value: (p: SisterPairDto) => KIND_WORD[p.kind], width: 12 },
           { header: 'Between sisters', value: (p: SisterPairDto) => what(p), width: 50 },
           { header: 'Company', value: (p) => p.a.name, width: 32 },
           { header: 'In its books', value: (p) => Number(p.a.amount), width: 18 },

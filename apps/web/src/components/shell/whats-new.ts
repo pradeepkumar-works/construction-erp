@@ -14,8 +14,8 @@ export const WHATS_NEW: WhatsNew[] = [
     title: 'Consolidated accounts for the group',
     points: [
       'Admin › Group companies › Consolidated accounts shows the group’s profit and loss and balance sheet for a period, a column for each company beside what came out between sisters and the group’s total. Group admins see it from the holding company.',
-      'Each company’s figures are its own statements. Name which vendors and clients in your books are sister companies under Sister companies; balances and sales between named sisters come out where both books agree.',
-      'Between sisters lists every pair with both companies’ figures and the difference to settle, such as a debit note one sister raised and the other has not booked.',
+      'Each company’s figures are its own statements. Name which vendors and clients in your books are sister companies under Sister companies; balances, sales and interest between named sisters come out where both books agree.',
+      'Between sisters lists every pair with both companies’ figures and the difference to look into, such as a debit note one sister raised and the other has not booked, or retention and TDS held in their own ledgers.',
       'Each column says how far its books are locked and which year is closed. Choose Each company’s lock to stop every company at its own lock. Download any tab to Excel.',
     ],
   },
