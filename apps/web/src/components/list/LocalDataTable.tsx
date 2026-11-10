@@ -22,6 +22,7 @@ export function LocalDataTable<T extends { id: string }>({
   onOpen,
   emptyText,
   expandable,
+  whole,
 }: {
   /** Where its columns are kept on this browser. */
   list: string;
@@ -33,6 +34,8 @@ export function LocalDataTable<T extends { id: string }>({
   onOpen?: (id: string) => void;
   emptyText: React.ReactNode;
   expandable?: React.ComponentProps<typeof DataTable<T>>['expandable'];
+  /** Every row on one page, no paging: a statement reads top to bottom to its totals. */
+  whole?: boolean;
 }) {
   const page = useListPage<'name'>({ keys: NO_KEYS, sortBy: 'name', sortOrder: 'asc', sortFields: [], url: false });
   const choice = useColumnChoice(list, columns);
@@ -45,7 +48,7 @@ export function LocalDataTable<T extends { id: string }>({
       rows={rows}
       loading={loading}
       failed={failed}
-      table={page.tableProps<T>(rows.length)}
+      table={whole ? { pagination: false } : page.tableProps<T>(rows.length)}
       onOpen={onOpen}
       bulk={bulk}
       emptyText={typeof emptyText === 'string' ? <EmptyArt art="entries" title={emptyText} /> : emptyText}

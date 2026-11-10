@@ -49,6 +49,7 @@ export function ConsolidatedStatement({ data, which, loading }: { data: Consolid
       {
         key: 'line',
         title: 'Particulars',
+        width: 200,
         locked: true,
         card: 'title',
         cardText: (r) => r.label,
@@ -57,14 +58,19 @@ export function ConsolidatedStatement({ data, which, loading }: { data: Consolid
       ...(data?.companies ?? []).map<ListColumn<Row>>((c) => ({
         key: `company-${c.id}`,
         label: c.name,
-        title: <span translate="no">{c.name}</span>,
+        // A company's name wraps in its header, so five companies, what came out and the group fit at 1440.
+        title: (
+          <span translate="no" style={{ whiteSpace: 'normal' }}>
+            {c.name}
+          </span>
+        ),
         kind: 'money',
-        width: 150,
+        width: 120,
         value: (r) => r.companies[c.id],
         defaultFrom: 1280,
       })),
-      { key: 'eliminated', title: 'Between sisters', kind: 'money', width: 150, value: (r) => r.eliminated, defaultFrom: 1024 },
-      { key: 'group', title: 'Group', kind: 'money', width: 160, strong: true, value: (r) => r.group, card: 'amount' },
+      { key: 'eliminated', title: 'Between sisters', kind: 'money', width: 120, value: (r) => r.eliminated, defaultFrom: 1024 },
+      { key: 'group', title: 'Group', kind: 'money', width: 130, strong: true, value: (r) => r.group, card: 'amount' },
     ],
     [data?.companies],
   );
@@ -76,6 +82,7 @@ export function ConsolidatedStatement({ data, which, loading }: { data: Consolid
       loading={loading}
       failed={false}
       emptyText="Nothing in the books of the group for this period"
+      whole
     />
   );
 }

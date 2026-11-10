@@ -55,6 +55,7 @@ export default function SisterCompaniesPage() {
         render: (_, l) => (
           <Button
             size="small"
+            aria-label={`Remove ${l.partyName}`}
             onClick={() =>
               modal.confirm({
                 title: `Stop naming ${l.partyName} as a sister?`,

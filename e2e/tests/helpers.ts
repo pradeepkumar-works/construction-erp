@@ -54,6 +54,32 @@ export async function api<T>(token: string, path: string, init: { method?: strin
 }
 
 /**
+ * A token for `email` in another company of their group (by name), as the company switcher gives it. The switch is then
+ * undone on the sign-in (the token stays valid), so the person still lands in their usual company when a test signs in.
+ */
+export async function companyToken(email: string, company: string, password = PASSWORD): Promise<string> {
+  const token = await apiToken(email, password);
+  const me = await api<{ organizationId: string; companies?: { id: string; name: string }[] }>(token, '/auth/me');
+  const to = me.companies?.find((c) => c.name === company);
+  if (!to) throw new Error(`${email} has no place in ${company}`);
+  if (to.id === me.organizationId) return token;
+  const there = await api<{ accessToken: string }>(token, '/auth/switch', { method: 'POST', body: { organizationId: to.id } });
+  await api(there.accessToken, '/auth/switch', { method: 'POST', body: { organizationId: me.organizationId } });
+  return there.accessToken;
+}
+
+/** Puts a signed-in browser in another company of the group (`companyToken`) and opens Home there. */
+export async function enterCompany(page: Page, email: string, company: string) {
+  const token = await companyToken(email, company);
+  await page.evaluate((t) => {
+    window.localStorage.setItem('erp_token', t);
+    document.cookie = `erp_token=${encodeURIComponent(t)}; path=/; max-age=604800; SameSite=Lax`;
+  }, token);
+  await page.goto('/');
+  await expect(homeHeading(page)).toBeVisible();
+}
+
+/**
  * Pick an option in an antd Select: type to filter, then Enter takes the first match (or the first option when `text` is
  * empty). It waits on this field's own list (one just closed can still be fading out), and a search-as-you-type picker
  * offers no option until the server has answered for the words typed.
@@ -230,7 +256,8 @@ const webSource = (file: string) => fs.readFileSync(path.resolve(__dirname, '../
  * server, plus the guests' links written out in nav.ts.
  */
 export function navHrefs(): string[] {
-  const variants = [{}, { approvalRights: [] }, { platformAdmin: true, billing: {} }];
+  // The last runs a group from its holding company (the group's own pages: sister companies, consolidated accounts).
+  const variants = [{}, { approvalRights: [] }, { platformAdmin: true, billing: {} }, { group: { id: 'group', name: 'Group', admin: true }, companyKind: 'HOLDING' as const }];
   const tree = ROLE_KEYS.flatMap((roleKey) => variants.flatMap((v) => {
     const user = { roleKey, ...v };
     const top = navSidebar(user).filter((s) => !s.module).flatMap((s) => s.links.map((l) => l.href));
