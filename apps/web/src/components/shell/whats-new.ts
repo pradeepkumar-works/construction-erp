@@ -9,6 +9,18 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-tds-returns',
+    date: '2026-11-13',
+    title: 'TDS returns: TDS by section, challans and the quarterly 26Q and 24Q',
+    points: [
+      'A payment to a vendor now takes its TDS section (194C, 194J, 194Q and the rest), filled in from the one last used for the vendor, with the rate their PAN and any lower deduction certificate take on the value before GST.',
+      'Subcontractor bills keep their TDS under 194C and salary runs under 192: each becomes a deduction for the quarter’s return when it is approved.',
+      'Accounts › TDS returns shows each quarter: TDS by section, what is not yet deposited with the interest it runs up, and what stops the return being filed. Record a challan with its BSR code, date and serial; its tax is the sum of the deductions it paid.',
+      'Return file gives the challan and deductee sheets in the order the government’s Return Preparation Utility takes them, which makes the FVU file. Mark filed with the provisional receipt locks the quarter until it is reopened for a correction.',
+      'Print each deductee’s statement on the letterhead. Earlier TDS came across as deductions too; a payment’s that had no section waits under To fix to be confirmed. Enter the company’s TAN under Admin › Company settings.',
+    ],
+  },
+  {
     id: '2026-11-bank-payments',
     date: '2026-11-12',
     title: 'Bank payments: pay vendors with one bank file',

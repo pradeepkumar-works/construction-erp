@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { ArrayMaxSize, ArrayMinSize, IsArray, IsDateString, IsIn, IsNotEmpty, IsNumberString, IsOptional, IsString, IsUUID, Matches, MaxLength, ValidateIf } from 'class-validator';
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsDateString, IsIn, IsNotEmpty, IsOptional, IsString, IsUUID, Matches, MaxLength, ValidateIf } from 'class-validator';
 import { TDS_RETURN_FORMS, TDS_SECTION_KEYS, type TdsReturnForm } from '@erp/shared';
 
 const trim = () => Transform(({ value }) => (typeof value === 'string' ? value.trim() || null : value));
@@ -54,8 +54,10 @@ export class CreateCertificateDto {
 
 export class SuggestQuery {
   @ApiProperty() @IsUUID('4', { message: 'Choose the vendor' }) vendorId: string;
-  @ApiProperty({ enum: TDS_SECTION_KEYS }) @IsIn(SECTIONS, { message: 'Choose the TDS section' }) section: string;
-  @ApiProperty({ example: '100000' }) @num() @IsNumberString({}, { message: 'Enter the amount' }) amount: string;
+  @ApiPropertyOptional({ enum: TDS_SECTION_KEYS, description: "Left out, the section last used for the vendor; no answer when there is none" }) @IsOptional() @IsIn(SECTIONS, { message: 'Choose the TDS section' }) section?: string;
+  @ApiProperty({ example: '118000', description: 'What the payment settles' }) @num() @Matches(MONEY, { message: 'Enter the amount' }) amount: string;
+  @ApiPropertyOptional({ example: '100000', description: 'What TDS is worked out on, when typed' }) @IsOptional() @num() @Matches(MONEY, { message: 'Enter the amount TDS is worked out on' }) base?: string;
+  @ApiPropertyOptional({ description: 'The vendor bill paid, whose GST share comes off the base' }) @IsOptional() @IsUUID() vendorBillId?: string;
   @ApiProperty({ example: '2026-10-20' }) @IsDateString() on: string;
   @ApiPropertyOptional({ description: 'The payment being changed, left out of the year before' }) @IsOptional() @IsUUID() paymentId?: string;
 }

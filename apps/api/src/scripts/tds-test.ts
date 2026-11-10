@@ -16,6 +16,7 @@ import {
   TALLY_VOUCHER_KINDS,
   BOOK_SOURCES,
   deductionLedgerKey,
+  gstShareOf,
   challanInterest,
   challanLabel,
   challanProblem,
@@ -328,6 +329,19 @@ test('every ledger a deduction or a challan posts to is a fixed ledger, and a ba
   assert.equal(deductionLedgerKey({ section: null, backfilled: true }), 'TDS_PAYABLE');
   assert.equal(deductionLedgerKey({ section: '192', backfilled: true }), 'SALARY_TDS_PAYABLE', 'salary TDS was always on its own ledger');
   assert.ok((TALLY_VOUCHER_KINDS as readonly string[]).includes('TDS_CHALLAN') && (BOOK_SOURCES as readonly string[]).includes('TDS_CHALLAN'));
+});
+
+test('the GST share of a part payment comes off the TDS base, to the paise', () => {
+  // A bill of 1,00,000 + 18,000 GST paid in full: TDS on 1,00,000.
+  assert.equal(gstShareOf('118000', '18000', '118000'), '18000.00');
+  // Half of it paid: half the GST.
+  assert.equal(gstShareOf('59000', '18000', '118000'), '9000.00');
+  // 10,000 of a 1,18,000 bill: 1,525.4237… rounds to 1,525.42.
+  assert.equal(gstShareOf('10000', '18000', '118000'), '1525.42');
+  // Worked in paise, so 59 paise of a 118 bill carry exactly 9 paise of GST.
+  assert.equal(gstShareOf('0.59', '18', '118'), '0.09');
+  assert.equal(gstShareOf('1000', '0', '1000'), '0.00', 'a bill without GST');
+  assert.equal(gstShareOf('1000', '10', '0'), '0.00', 'a bill with no total takes nothing off');
 });
 
 let failed = 0;

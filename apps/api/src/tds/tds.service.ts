@@ -8,6 +8,7 @@ import {
   challanProblem,
   depositDue,
   formatINR,
+  gstShareOf,
   interest201,
   isTdsSection,
   lateFee234E,
@@ -403,16 +404,24 @@ export class TdsService {
   }
 
   /**
-   * The rate and TDS a payment form suggests for a vendor, a section, an amount and a day: the vendor's PAN and
-   * certificate, and whether the year's (or month's) payments to them cross the section's threshold. The payments
-   * counted are every payment to the vendor in the financial year before this one, a suggestion the form shows as such.
+   * The section, rate and TDS a payment form suggests for a vendor, what the payment settles and a day: the section
+   * chosen, else the one last used for the vendor (null when there is none); the base, what it settles less the vendor
+   * bill's GST share unless typed; the vendor's PAN and certificate; and whether the year's (or month's) payments to them
+   * cross the section's threshold. The payments counted are every payment to the vendor earlier in the financial year,
+   * a suggestion the form shows as such.
    */
-  async suggest(user: RequestUser, q: SuggestQuery): Promise<TdsSuggestDto> {
+  async suggest(user: RequestUser, q: SuggestQuery): Promise<TdsSuggestDto | null> {
     this.assertCan(user);
     const org = user.organizationId;
-    if (!isTdsSection(q.section)) throw new BadRequestException('Choose the TDS section');
     const vendor = await this.prisma.vendor.findFirst({ where: { id: q.vendorId, organizationId: org }, select: { pan: true } });
     if (!vendor) throw new NotFoundException('Vendor not found');
+    const last = q.section
+      ? null
+      : await this.prisma.tdsDeduction.findFirst({ where: { organizationId: org, vendorId: q.vendorId, vendorPaymentId: { not: null }, section: { not: null } }, orderBy: [{ paidOn: 'desc' }, { createdAt: 'desc' }], select: { section: true } });
+    const section = q.section ?? last?.section ?? null;
+    if (!isTdsSection(section) || TDS_SECTIONS[section].form !== 'FORM_26Q') return null;
+    const bill = q.vendorBillId ? await this.prisma.vendorBill.findFirst({ where: { id: q.vendorBillId, organizationId: org, vendorId: q.vendorId }, select: { gstAmount: true, total: true } }) : null;
+    const base = q.base ? D(q.base) : D(q.amount).sub(bill ? D(gstShareOf(q.amount, bill.gstAmount.toString(), bill.total.toString())) : ZERO);
     const fyStart = quarterOf(q.on).fy.slice(0, 4) + '-04-01';
     const before = { organizationId: org, vendorId: q.vendorId, ...(q.paymentId ? { id: { not: q.paymentId } } : {}) };
     const [year, month] = await Promise.all([
@@ -420,10 +429,21 @@ export class TdsService {
       this.prisma.vendorPayment.aggregate({ where: { ...before, paymentDate: { gte: parseDate(`${q.on.slice(0, 7)}-01`), lte: parseDate(q.on) } }, _sum: { amount: true, tdsAmount: true, otherDeduction: true } }),
     ]);
     const settled = (a: typeof year) => (a._sum.amount ?? ZERO).add(a._sum.tdsAmount ?? ZERO).add(a._sum.otherDeduction ?? ZERO);
-    const threshold = thresholdReached(q.section, { amount: q.amount, yearBefore: settled(year).toString(), monthBefore: settled(month).toString() });
-    const cert = validPan(vendor.pan) ? await this.deductions.certificateFor(this.prisma, org, q.vendorId, q.section, q.on) : null;
-    const r = tdsRate(q.section, { pan: vendor.pan, certificate: cert }, q.on, q.amount);
-    return { section: q.section, rate: rateText(r.rate), reason: r.reason, certificateNo: r.certificateNo, why: r.why, threshold, tds: threshold.due ? tdsOn(threshold.base, r.rate) : '0.00', yearBefore: money(settled(year)) };
+    const threshold = thresholdReached(section, { amount: money(base), yearBefore: settled(year).toString(), monthBefore: settled(month).toString() });
+    const cert = validPan(vendor.pan) ? await this.deductions.certificateFor(this.prisma, org, q.vendorId, section, q.on) : null;
+    const r = tdsRate(section, { pan: vendor.pan, certificate: cert }, q.on, money(base));
+    return {
+      section,
+      lastUsed: !q.section,
+      base: money(base),
+      rate: rateText(r.rate),
+      reason: r.reason,
+      certificateNo: r.certificateNo,
+      why: r.why,
+      threshold,
+      tds: threshold.due ? tdsOn(threshold.base, r.rate) : '0.00',
+      yearBefore: money(settled(year)),
+    };
   }
 
   /** What the Form 16A (or, for an employee, the salary TDS statement) prints for one deductee in one quarter. */

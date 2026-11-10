@@ -5,6 +5,7 @@ import {
   canRecordPayment,
   canViewPayables,
   challanLabel,
+  gstShareOf,
   subBillLabel,
   tdsSectionName,
   type MsmeCategory,
@@ -92,7 +93,7 @@ interface Bill {
 }
 
 /** The GST inside what a payment settles, by the bill's share of GST in its total. */
-const gstShare = (bill: Bill, settles: Prisma.Decimal) => (bill.gst && bill.gst.total.gt(0) ? settles.mul(bill.gst.gst).div(bill.gst.total).toDecimalPlaces(2) : ZERO);
+const gstShare = (bill: Bill, settles: Prisma.Decimal) => (bill.gst ? D(gstShareOf(settles.toString(), bill.gst.gst.toString(), bill.gst.total.toString())) : ZERO);
 
 type Request = { id: string; requestNo: string; amount: Prisma.Decimal };
 

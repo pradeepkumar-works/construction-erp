@@ -600,6 +600,19 @@ export const tdsLedgerKey = (section: string | null | undefined): string => (sec
 export const deductionLedgerKey = (d: { section: string | null; backfilled: boolean }): string =>
   d.section === '192' ? 'SALARY_TDS_PAYABLE' : d.backfilled ? 'TDS_PAYABLE' : tdsLedgerKey(d.section);
 
+/**
+ * The GST inside what a payment settles, by the bill's share of GST in its total: TDS is worked out on the value before
+ * GST. Rupees to the paise, rounded half up; zero for a bill with no total.
+ */
+export function gstShareOf(settles: string, gst: string, total: string): string {
+  const t = P(total);
+  if (t <= 0n) return '0.00';
+  const n = P(settles) * P(gst);
+  const q = n / t;
+  const r = n % t;
+  return rupeesOfPaise(r * 2n >= t ? q + 1n : q);
+}
+
 /** The words a writer refuses with when a deduction's quarter is filed. */
 export function filedQuarterWords(form: TdsReturnForm, q: TdsQuarter, what: string): string {
   return `${form === 'FORM_26Q' ? '26Q' : '24Q'} for ${q.label} is filed, so ${what} cannot change. Reopen it for a correction under Accounts › TDS returns, or date it after ${ddmmyyyy(q.to)}`;
@@ -703,6 +716,10 @@ export interface TdsQuarterDto {
 
 export interface TdsSuggestDto {
   section: TdsSection;
+  /** The section was not chosen: it is the one last used for the vendor */
+  lastUsed: boolean;
+  /** Rupees TDS is worked out on: what was typed, else what the payment settles less the bill's GST share */
+  base: string;
   rate: string;
   reason: TdsReason | null;
   certificateNo: string | null;
@@ -710,7 +727,7 @@ export interface TdsSuggestDto {
   threshold: ThresholdResult;
   /** Rupees of TDS suggested on the base */
   tds: string;
-  /** Rupees paid to the deductee under the section earlier in the financial year */
+  /** Rupees paid to the vendor earlier in the financial year, counted against the threshold */
   yearBefore: string;
 }
 

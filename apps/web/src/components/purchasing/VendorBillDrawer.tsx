@@ -325,6 +325,7 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
                           billId: data.id,
                           billLabel: data.billNo,
                           vendorName: data.vendorName,
+                          vendorId: data.vendorId,
                           billDate: data.invoiceDate,
                           dueDate: data.dueDate,
                           payable: data.payable,
