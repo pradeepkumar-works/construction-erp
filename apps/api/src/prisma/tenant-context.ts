@@ -53,3 +53,11 @@ export function runInTenantTx<T>(fn: () => T): T {
 export function withoutTenant<T>(fn: () => T): T {
   return storage.run({ timing: storage.getStore()?.timing }, fn);
 }
+
+/**
+ * Run something as one organisation, whatever the request's own (the group's consolidated accounts read and post each
+ * company's books as that company, so row-level security still holds). Await every query inside the callback.
+ */
+export function asTenant<T>(orgId: string, fn: () => T): T {
+  return storage.run({ orgId, timing: storage.getStore()?.timing }, fn);
+}

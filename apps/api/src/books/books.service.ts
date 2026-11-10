@@ -125,7 +125,7 @@ export class BooksService {
   // Posting
 
   /** Post every module record that changed since the last run, when that run is older than a minute. */
-  async fresh(user: RequestUser) {
+  async fresh(user: Pick<RequestUser, 'organizationId'>) {
     const st = await this.prisma.booksState.findUnique({ where: { organizationId: user.organizationId } });
     if (!st?.lastPostedAt || Date.now() - st.lastPostedAt.getTime() > FRESH_MS) await this.postAll(user.organizationId, FRESH_MS / 12);
   }

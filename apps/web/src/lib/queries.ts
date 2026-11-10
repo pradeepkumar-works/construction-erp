@@ -2,6 +2,10 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
 import type {
+  ConsolidationBasis,
+  ConsolidationDto,
+  SisterLinkInput,
+  SisterLinksDto,
   CustomFieldDto,
   CustomFieldEntity,
   CustomFieldInput,
@@ -5015,6 +5019,31 @@ export const useGivePlace = () =>
   useGroupChange(async (v: { loginId: string; organizationId: string; roleKey: RoleKey }) => (await api.post<GroupStateDto>('/group/places', v)).data);
 export const useSetGroupAdmin = () =>
   useGroupChange(async ({ loginId, admin }: { loginId: string; admin: boolean }) => (await api.put<GroupStateDto>(`/group/admins/${loginId}`, { admin })).data);
+
+/* Consolidated accounts (item 192): the group's statements for its admins in the holding, and the sister companies a
+   company's admin names. Naming or removing a sister answers with the company's whole list. */
+export const useConsolidation = (q: { from: string; to: string; basis: ConsolidationBasis }, enabled: boolean) =>
+  useQuery({
+    queryKey: ['books', 'consolidation', q],
+    queryFn: async () => (await api.get<ConsolidationDto>('/group/consolidation', { params: q })).data,
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+const SISTERS_KEY = ['group', 'sisters'] as const;
+export const useSisterLinks = (enabled: boolean) => useQuery({ queryKey: SISTERS_KEY, queryFn: async () => (await api.get<SisterLinksDto>('/group/sisters')).data, enabled });
+function useSisterChange<V>(send: (v: V) => Promise<SisterLinksDto>) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: send,
+    onSuccess: (data) => {
+      qc.setQueryData(SISTERS_KEY, data);
+      qc.invalidateQueries({ queryKey: ['books', 'consolidation'] });
+    },
+    meta: FAIL_NOTICE,
+  });
+}
+export const useSetSister = () => useSisterChange(async (v: SisterLinkInput) => (await api.put<SisterLinksDto>('/group/sisters', v)).data);
+export const useRemoveSister = () => useSisterChange(async (id: string) => (await api.delete<SisterLinksDto>(`/group/sisters/${id}`)).data);
 
 /* Launcher Home: pins and Recent from the server, badges by tile. Pin, move and unpin change the screen at once
    and roll back if the server refuses. */

@@ -51,7 +51,17 @@ export interface AuthGroupDto {
 }
 
 /** Who may open Group companies: the group's admins, and a company's admin before it has a group (to make one). */
-export const canSeeGroupCompanies = (u: { roleKey: RoleKey; group?: AuthGroupDto }) => (u.group ? u.group.admin : canMakeGroup(u.roleKey));
+export const canSeeGroupCompanies = (u: { roleKey: RoleKey; group?: Pick<AuthGroupDto, 'admin'> & Partial<AuthGroupDto> }) => (u.group ? u.group.admin : canMakeGroup(u.roleKey));
+
+/**
+ * Consolidated accounts (item 192): someone who runs the group (Group companies), from its holding company. It reads every
+ * company's statements, so never from a child company and never a company's own staff.
+ */
+export const canSeeConsolidation = (u: { roleKey: RoleKey; group?: Pick<AuthGroupDto, 'admin'> & Partial<AuthGroupDto>; companyKind?: CompanyKind }) =>
+  !!u.group && u.companyKind === 'HOLDING' && canSeeGroupCompanies(u);
+
+/** Name the company's vendors and clients that are sister companies of its group: the company's own admin. */
+export const canNameSisterCompanies = (u: { roleKey: RoleKey; group?: unknown }) => !!u.group && canMakeGroup(u.roleKey);
 
 /** Roles a person can be given in a sister company from Group companies: staff roles. Guests and suppliers are invited from the company's own pages. */
 export const isGroupPlaceRole = (role: RoleKey) => !isGuest(role);

@@ -490,6 +490,13 @@ and the pre-delivery checklist.
   `group-rules.ts`; keep `src/scripts/group-companies-test.ts` passing. A new company kind is a `CompanyKind` (schema +
   shared + label + Hindi) and its `COMPANY_KIND_INFO`. Reading across companies is `withoutTenant(async () => await …)`:
   a Prisma query returned unawaited from the callback runs later under the request's company, where RLS hides the rest.
+- Consolidated accounts (item 192, `apps/api/src/group/consolidation.service.ts`, ARCHITECTURE "Consolidated accounts"): a
+  company's figures come only through `StatementsService.companyFigures` (its own statements, read under
+  `asTenant(orgId, …)`; `withoutTenant` only for the read across companies), a sister only from `SisterLink` (each
+  company's admin names its own), turnover with a sister only from `sisterTurnover` (party documents), and the sums and
+  eliminations only from `consolidate` / `eliminations` / `companyPeriod` (`consolidation-rules.ts`); who sees it is
+  `canSeeConsolidation` (`@erp/shared/group.ts`).
+  Keep `src/scripts/consolidation-test.ts` passing.
 - Consultant checks (item 172, ARCHITECTURE "Consultant checks"): a client guest's level is only `ProjectMember.checkLevel`
   read by `checkLevelOf`; check coverage is only `checkCoverage` / `sheetsToReach`, a certificate is held only by
   `certifyCheckProblem` (through `ConsultantChecksService.assertMayCertify` in `certifyAsClient`), hidden work moves only
