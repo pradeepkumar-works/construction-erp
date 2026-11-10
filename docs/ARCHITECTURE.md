@@ -32,10 +32,16 @@ shapes of every API response, so web, mobile and API agree on one contract.
   query of a signed-in request (`src/prisma/tenant-context.ts` carries the organisation through the
   request). Unset means unrestricted, which is what migrations, the seed, scheduled jobs and public
   endpoints rely on. Code inside a request that must look across organisations (the email-in-use check)
-  wraps itself in `withoutTenant`. Raw SQL is not wrapped; child tables without `organizationId` are
-  reached only through their parent. The policies only bind a role without `BYPASSRLS`, so in production
-  the API connects as `erp_runtime` (created by a migration: row read/write rights, owns nothing) while
-  migrations and the seed run as the owner from `MIGRATE_DATABASE_URL`.
+  wraps itself in `withoutTenant`. A transaction sets it once at its start; inside a transaction's callback, a
+  query on the service's own client rather than `tx`, and a nested transaction, run on another connection, so the
+  wrapper sets it for them too (Prisma marks which operations run in a transaction). Raw SQL outside a transaction
+  is not wrapped; child tables without `organizationId` are reached only through their parent. The policies only
+  bind a role without `BYPASSRLS`, so in production the API connects as `erp_runtime` (created by a migration: row
+  read/write rights, owns nothing) while migrations and the seed run as the owner from `MIGRATE_DATABASE_URL`.
+  `src/scripts/tenant-isolation-test.ts` (CI, as `erp_runtime`) holds this: every table with `organizationId` has
+  its forced policy and its lines in `prisma/rls-rollback.sql`, a table without the column is a known line table
+  (`CHILD_TABLES`), no table shows or changes another company's row however the query is made, and Demo Buildcon's
+  admin gets not found for Demo Infra's project, DPR, bill, order and vendor and none of them in its lists.
 - New organisations come from `POST /auth/signup` (off unless `ORG_SIGNUP=open`), which creates the
   organisation, the standard roles and the first admin in one transaction. Users join by invite: a
   one-time `PasswordToken` link (SHA-256 stored, invalidated when a newer link is made or one is used).

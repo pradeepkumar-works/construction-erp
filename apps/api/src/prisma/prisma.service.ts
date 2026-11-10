@@ -4,11 +4,15 @@ import { recordDbTime, runInTenantTx, tenantRlsEnabled, tenantStore } from './te
 
 const NO_ORG = '00000000-0000-0000-0000-000000000000';
 
+/** Does this operation run inside a transaction (an interactive one's `tx`, or a batch)? Prisma marks it on the request. */
+const inTransaction = (params: unknown) => Boolean((params as { __internalParams?: { transaction?: unknown } }).__internalParams?.transaction);
+
 /**
  * The Prisma client, with the request's organisation handed to Postgres row-level security: each query of a
  * signed-in request runs in a short transaction that first sets `app.org_id`, so a query that forgot its
  * `organizationId` filter still cannot read or write another organisation's rows. Interactive and batch
- * transactions set it once at the start. Raw queries are not wrapped.
+ * transactions set it once at the start (a nested one, and a query on this client inside one, set it again). Raw
+ * queries are not wrapped. `src/scripts/tenant-isolation-test.ts` holds this.
  */
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
@@ -19,11 +23,15 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     const ext = base.$extends({
       query: {
         $allModels: {
-          async $allOperations({ args, query }) {
+          async $allOperations(params) {
+            const { args, query } = params;
             const ctx = tenantStore();
             const t0 = performance.now();
             try {
-              if (!tenantRlsEnabled() || !ctx?.orgId || ctx.inTx) return await query(args);
+              // A query is left as it is only when it runs inside a transaction, which set app.org_id at its start.
+              // Inside a transaction's callback, a query on this client rather than on `tx` runs on another
+              // connection where nothing set it, so it is wrapped like any other.
+              if (!tenantRlsEnabled() || !ctx?.orgId || inTransaction(params)) return await query(args);
               const [, result] = await base.$transaction([setOrg(base, ctx.orgId), query(args)]);
               return result;
             } finally {
@@ -37,7 +45,8 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     const transaction = (arg: unknown, opts?: unknown) => {
       const ctx = tenantStore();
       const orgId = ctx?.orgId;
-      if (!tenantRlsEnabled() || !orgId || ctx?.inTx) return (ext.$transaction as any)(arg, opts);
+      // A transaction started inside another one is a connection of its own, so it sets app.org_id too.
+      if (!tenantRlsEnabled() || !orgId) return (ext.$transaction as any)(arg, opts);
       // The operations inside run with inTx set and are not timed one by one: the whole transaction counts once.
       const t0 = performance.now();
       const timed = <T>(p: Promise<T>) => p.finally(() => recordDbTime(performance.now() - t0));

@@ -38,8 +38,9 @@ and the pre-delivery checklist.
 
 - Every tenant table has `organizationId`; every query filters by the caller's org from the JWT. Postgres
   row-level security backs this up: a new tenant table needs a `tenant_isolation` policy in its migration
-  (copy one from `20261013211500_tenant_rls`) and a line in `prisma/rls-rollback.sql`. Code in a request that
-  must see other organisations uses `withoutTenant` (`src/prisma/tenant-context.ts`).
+  (copy one from `20261013211500_tenant_rls`) and a line in `prisma/rls-rollback.sql`; a line table without the
+  column goes in `CHILD_TABLES`. Code in a request that must see other organisations uses `withoutTenant`
+  (`src/prisma/tenant-context.ts`). Keep `src/scripts/tenant-isolation-test.ts` passing.
 - Project visibility and approval rights live only in `apps/api/src/common/project-access.service.ts`
   and `packages/shared/src/permissions.ts`. Do not re-implement role checks elsewhere.
 - All site submissions share `SubmissionLifecycleService` (DRAFT → SUBMITTED → APPROVED /
