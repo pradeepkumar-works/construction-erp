@@ -7,7 +7,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { TDS_RETURN_FORM_LABELS, figure, quarterOf, type TdsDeductionDto } from '@erp/shared';
 import { api } from '@/lib/api';
 import { useTdsChallan } from '@/lib/queries';
-import { formatDate, formatDateTime } from '@/lib/format';
+import { formatDate, formatDateTime, formatINR } from '@/lib/format';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
 import { Money } from '@/components/common/Money';
 import { RecordFrame } from '@/components/record/RecordFrame';
@@ -45,6 +45,9 @@ export function ChallanRecord({ id, onClose }: { id: string; onClose: () => void
               { key: 'serial', label: 'Challan serial', children: <span className="mono" translate="no">{c.challanSerial}</span> },
               { key: 'on', label: 'Deposited on', children: formatDate(c.depositedOn) },
               { key: 'paid', label: 'Paid', children: <Money value={c.total} paise /> },
+              ...(c.late
+                ? [{ key: 'late', label: 'Interest 201(1A)', children: `Deposited late: ${c.interestMonths} ${c.interestMonths === 1 ? 'month' : 'months'} at 1.5%, ${formatINR(c.interestDue, true)} by the dates` }]
+                : []),
               ...(Number(c.fee) > 0 ? [{ key: 'fee', label: 'Late fee 234E', children: <Money value={c.fee} paise /> }] : []),
             ],
             details: [

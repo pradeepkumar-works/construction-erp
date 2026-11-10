@@ -20,6 +20,7 @@ import { tk } from '@/ds';
 import { useAuth } from '@/lib/auth';
 import { api } from '@/lib/api';
 import { useUrlParam, useUrlTab } from '@/lib/url-state';
+import { useIsPhone } from '@/lib/screen';
 import { fetchTdsStatement, useTdsCertificates, useTdsQuarter } from '@/lib/queries';
 import { formatDate, formatINR } from '@/lib/format';
 import { useNotify } from '@/lib/notify';
@@ -64,6 +65,7 @@ export function TdsQuarterView() {
   const qc = useQueryClient();
   const notify = useNotify();
   const print = usePrintPaper();
+  const phone = useIsPhone();
   const [formParam, setFormParam] = useUrlParam('form');
   const [qParam, setQParam] = useUrlParam('q');
   const form: TdsReturnForm = formOfParam(formParam);
@@ -101,7 +103,13 @@ export function TdsQuarterView() {
         <div>
           <span translate="no">{d.deducteeName}</span>
           <span style={caption}>
-            {d.sourceHref ? <Link href={d.sourceHref}>{d.sourceLabel}</Link> : d.sourceLabel}
+            {d.sourceHref ? (
+              <Link href={d.sourceHref} className="text-link">
+                {d.sourceLabel}
+              </Link>
+            ) : (
+              d.sourceLabel
+            )}
             {d.projectName ? ` · ${d.projectName}` : ''}
           </span>
         </div>
@@ -372,12 +380,14 @@ export function TdsQuarterView() {
           }
         />
       </div>
+      {/* On a phone the actions take a line of their own, so the tab bar keeps the width to scroll its tabs. */}
+      {phone && actions && <div style={{ marginBottom: tk.space[3] }}>{actions}</div>}
       <Card size="small">
         <AppTabs
           variant="page"
           activeKey={tab}
           onChange={(k) => setTab(k as Tab)}
-          extra={actions}
+          extra={phone ? undefined : actions}
           items={[
             { key: 'fix', label: 'To fix', count: blocking.length || undefined, countLabel: 'blocking filing', attention: blocking.length > 0, children: fixTab },
             {

@@ -247,7 +247,7 @@ export function PaymentFormModal({ open, onClose, bill, payment }: { open: boole
             </FormGrid>
             {suggestion && isTdsSection(suggestion.section) && (
               <Typography.Paragraph type="secondary">
-                {TDS_SECTIONS[suggestion.section].name} at {suggestion.rate}% on {formatINR(suggestion.base, true)}: <strong translate="no">{formatINR(suggestion.tds, true)}</strong>. {suggestion.threshold.due ? suggestion.why : suggestion.threshold.why}
+                {TDS_SECTIONS[suggestion.section].name} at {suggestion.rate}% on {formatINR(suggestion.base, true)}: <strong translate="no">{formatINR(suggestion.tds, true)}</strong>. {suggestion.threshold.due ? (suggestion.reason ? suggestion.why : '') : suggestion.threshold.why}
                 {offer && (
                   <Button size="small" type="link" onClick={() => {
                       // What the payment settles stays put: the TDS comes out of the amount paid.
