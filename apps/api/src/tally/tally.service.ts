@@ -246,6 +246,9 @@ export class TallyService {
       await tx.equipmentLoan.updateMany({ where: { id: { in: ids('MACHINE_LOAN') }, tallyExportId: null }, data: mark });
       await tx.loanEmi.updateMany({ where: { id: { in: ids('LOAN_EMI') }, tallyExportId: null }, data: mark });
       await tx.raBillHold.updateMany({ where: { id: { in: ids('WITHHELD_LOST') }, tallyExportId: null }, data: mark });
+      await tx.fixedAsset.updateMany({ where: { id: { in: ids('ASSET_ADDITION') }, tallyExportId: null }, data: mark });
+      await tx.depreciationRun.updateMany({ where: { id: { in: ids('DEPRECIATION') }, tallyExportId: null }, data: mark });
+      await tx.fixedAsset.updateMany({ where: { id: { in: ids('ASSET_DISPOSAL') }, tallyDisposalExportId: null }, data: { tallyDisposalExportId: created.id } });
       await tx.payrollRun.updateMany({ where: { id: { in: ids('SALARY_PAYMENT') }, tallyPaymentExportId: null }, data: { tallyPaymentExportId: created.id } });
       return created.id;
     });

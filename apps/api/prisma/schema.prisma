@@ -1040,6 +1040,10 @@ model Organization {
   supplierInvoices      SupplierInvoice[]
   supplierChanges       SupplierChangeRequest[]
   equipmentLoans        EquipmentLoan[]
+  fixedAssets           FixedAsset[]
+  assetTransfers        AssetTransfer[]
+  depreciationRuns      DepreciationRun[]
+  depreciationLines     DepreciationLine[]
   loanEmis              LoanEmi[]
   sorBooks              SorBook[]
   sorItems              SorItem[]
@@ -1450,6 +1454,10 @@ model User {
   supplierChangesAsked    SupplierChangeRequest[]    @relation("SupplierChangeAsker")
   supplierChangesDone     SupplierChangeRequest[]    @relation("SupplierChangeDecider")
   equipmentLoans          EquipmentLoan[]            @relation("EquipmentLoanCreator")
+  fixedAssets             FixedAsset[]               @relation("FixedAssetCreator")
+  assetTransfers          AssetTransfer[]            @relation("AssetTransferBy")
+  depreciationRunsMade    DepreciationRun[]          @relation("DepreciationRunPreparer")
+  depreciationRunsPosted  DepreciationRun[]          @relation("DepreciationRunPoster")
   loanEmisPaid            LoanEmi[]                  @relation("LoanEmiPayer")
   sorBooksCreated         SorBook[]                  @relation("SorBookCreator")
   scEnquiriesCreated      SubcontractEnquiry[]       @relation("ScEnquiryCreator")
@@ -1650,6 +1658,9 @@ model Project {
   boqResources       BoqResource[]
   excessRecoveries   ExcessMaterialRecovery[]
   equipment          Equipment[]
+  fixedAssets        FixedAsset[]
+  assetTransfersOut  AssetTransfer[]          @relation("AssetTransferFrom")
+  assetTransfersIn   AssetTransfer[]          @relation("AssetTransferTo")
   machineryLogs      MachineryLog[]
   expenses           Expense[]
   risks              Risk[]
@@ -1827,6 +1838,7 @@ model Vendor {
   invoices          SupplierInvoice[]
   changeRequests    SupplierChangeRequest[]
   equipmentLoans    EquipmentLoan[]
+  fixedAssets       FixedAsset[]
   materialApprovals MaterialApproval[]
   packages          ProcurementPackage[]
 
@@ -3607,6 +3619,7 @@ model Equipment {
   drivers         Driver[]
   vendorBills     VendorBill[]
   loans           EquipmentLoan[]
+  fixedAsset      FixedAsset?
   deviceLinks     DeviceLink[]
   readings        MachineReading[]
   days            MachineDay[]
@@ -5034,6 +5047,9 @@ model TallyExport {
   rmcInvoices      RmcInvoice[]
   rmcReceipts      RmcReceipt[]
   equipmentLoans   EquipmentLoan[]
+  fixedAssets      FixedAsset[]      @relation("FixedAssetAdditionTally")
+  assetDisposals   FixedAsset[]      @relation("FixedAssetDisposalTally")
+  depreciationRuns DepreciationRun[]
   loanEmis         LoanEmi[]
 
   @@index([organizationId, createdAt])
@@ -8319,6 +8335,144 @@ model EquipmentLoan {
   @@unique([organizationId, loanNo])
   @@index([organizationId, equipmentId])
   @@index([tallyExportId])
+}
+
+/// Fixed assets (ARCHITECTURE "Fixed assets"): what the company owns, numbered from the FA series, filed under a class of
+/// `ASSET_CLASSES` (Companies Act life, cost ledger, Income Tax block). An owned machine is one at most (`equipmentId`);
+/// a hired one never. Its cost posts as `ASSET_ADDITION` against what paid for it, and a sale or scrapping as
+/// `ASSET_DISPOSAL`. Depreciation never reaches project cost, which charges the machine's internal rate.
+model FixedAsset {
+  id                    String             @id @default(uuid())
+  organizationId        String
+  organization          Organization       @relation(fields: [organizationId], references: [id])
+  assetNo               String
+  name                  String
+  assetClass            String
+  method                DepreciationMethod @default(SLM)
+  cost                  Decimal            @db.Decimal(18, 2)
+  residual              Decimal            @db.Decimal(18, 2)
+  lifeYears             Int
+  putToUseOn            DateTime           @db.Date
+  fundedBy              AssetFunding       @default(BANK)
+  vendorId              String?
+  vendor                Vendor?            @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  invoiceNo             String?
+  serialNo              String?
+  /// Where it is: a site, a store or head office (null)
+  projectId             String?
+  project               Project?           @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  equipmentId           String?            @unique
+  equipment             Equipment?         @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
+  /// Depreciation charged before Nirmaan, up to and including `openingAsOf`
+  openingAsOf           DateTime?          @db.Date
+  openingDepreciation   Decimal            @default(0) @db.Decimal(18, 2)
+  status                FixedAssetStatus   @default(ACTIVE)
+  disposedOn            DateTime?          @db.Date
+  proceeds              Decimal?           @db.Decimal(18, 2)
+  disposalMode          PaymentMode?
+  disposalNote          String?
+  note                  String?
+  createdById           String
+  createdBy             User               @relation("FixedAssetCreator", fields: [createdById], references: [id])
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  tallyExportId         String?
+  tallyExport           TallyExport?       @relation("FixedAssetAdditionTally", fields: [tallyExportId], references: [id], onDelete: SetNull)
+  tallyDisposalExportId String?
+  tallyDisposalExport   TallyExport?       @relation("FixedAssetDisposalTally", fields: [tallyDisposalExportId], references: [id], onDelete: SetNull)
+
+  transfers AssetTransfer[]
+  lines     DepreciationLine[]
+
+  @@unique([organizationId, assetNo])
+  @@index([organizationId, status])
+  @@index([tallyExportId])
+  @@index([tallyDisposalExportId])
+}
+
+/// An asset moved from one place to another on a day; the asset's `projectId` moves with it in the same transaction.
+model AssetTransfer {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  assetId        String
+  asset          FixedAsset   @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  on             DateTime     @db.Date
+  fromProjectId  String?
+  fromProject    Project?     @relation("AssetTransferFrom", fields: [fromProjectId], references: [id], onDelete: SetNull)
+  toProjectId    String?
+  toProject      Project?     @relation("AssetTransferTo", fields: [toProjectId], references: [id], onDelete: SetNull)
+  note           String?
+  byId           String
+  by             User         @relation("AssetTransferBy", fields: [byId], references: [id])
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId, assetId])
+}
+
+/// A month's or a year's depreciation: prepared as a draft from the schedule, then posted, when it becomes one
+/// `DEPRECIATION` journal (Dr depreciation, Cr accumulated depreciation) on its last day. Runs never overlap.
+model DepreciationRun {
+  id             String                @id @default(uuid())
+  organizationId String
+  organization   Organization          @relation(fields: [organizationId], references: [id])
+  periodFrom     DateTime              @db.Date
+  periodTo       DateTime              @db.Date
+  status         DepreciationRunStatus @default(DRAFT)
+  total          Decimal               @default(0) @db.Decimal(18, 2)
+  preparedById   String
+  preparedBy     User                  @relation("DepreciationRunPreparer", fields: [preparedById], references: [id])
+  preparedAt     DateTime              @default(now())
+  postedById     String?
+  postedBy       User?                 @relation("DepreciationRunPoster", fields: [postedById], references: [id])
+  postedAt       DateTime?
+  tallyExportId  String?
+  tallyExport    TallyExport?          @relation(fields: [tallyExportId], references: [id], onDelete: SetNull)
+
+  lines DepreciationLine[]
+
+  @@index([organizationId, periodFrom])
+  @@index([tallyExportId])
+}
+
+/// One asset's charge in a run, for the days it was in use in the period.
+model DepreciationLine {
+  id             String          @id @default(uuid())
+  organizationId String
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  runId          String
+  run            DepreciationRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  assetId        String
+  asset          FixedAsset      @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  from           DateTime        @db.Date
+  to             DateTime        @db.Date
+  amount         Decimal         @db.Decimal(18, 2)
+
+  @@unique([runId, assetId])
+  @@index([organizationId, assetId])
+}
+
+enum DepreciationMethod {
+  SLM
+  WDV
+}
+
+enum FixedAssetStatus {
+  ACTIVE
+  DISPOSED
+}
+
+enum DepreciationRunStatus {
+  DRAFT
+  POSTED
+}
+
+enum AssetFunding {
+  BANK
+  CASH
+  VENDOR
+  MACHINE_LOAN
+  IN_BOOKS
 }
 
 /// One EMI of a machine loan's schedule: interest on what is owed at the month's start, the rest repaying the loan. Paid

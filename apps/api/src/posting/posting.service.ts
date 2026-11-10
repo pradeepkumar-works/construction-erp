@@ -12,7 +12,12 @@ import {
   tallyLoanKey,
   loanLedgerName,
   PAYMENT_MODE_LABELS,
+  ASSET_CLASSES,
+  ASSET_FUNDING_LABELS,
+  disposalResult,
+  runPeriodLabel,
   tallyVendorKey,
+  type AssetClassCode,
   type ExpenseCategory,
   type TallyHeldDto,
   type VendorBillKind,
@@ -22,6 +27,7 @@ import { dateOnly } from '../common/serialize';
 import { bankCredit } from '../epc/epc-rules';
 import { Lines, balanced, credits, debits, gstLines, isInterState, moneyLedger, type LedgerName, type LineSite, type Voucher } from '../tally/vouchers';
 import { holdLostLines, raBillSaleLines } from './client-bill-lines';
+import { additionLines, depreciationLines, disposalLines } from '../fixed-assets/asset-vouchers';
 
 type Tx = Prisma.TransactionClient | PrismaService;
 const D = (v: Prisma.Decimal.Value) => new Prisma.Decimal(v);
@@ -378,6 +384,7 @@ export class PostingService {
     await this.staffLoans(db, org, name, opts, range, add);
     await this.rmc(db, org, name, opts, range, add);
     await this.machineLoans(db, org, name, opts, range, add);
+    await this.fixedAssets(db, org, name, opts, range, add);
 
     // Oldest first, so Tally numbers and ages them in order.
     vouchers.sort((a, b) => a.date.getTime() - b.date.getTime() || a.kind.localeCompare(b.kind) || a.number.localeCompare(b.number));
@@ -608,6 +615,76 @@ export class PostingService {
         narration: `EMI ${e.no} of ${e.loan.tenureMonths} on loan ${e.loan.loanNo} (${e.loan.equipment.code} ${e.loan.equipment.name}): principal ₹${e.principal.toFixed(2)}, interest ₹${e.interest.toFixed(2)}${e.mode ? `, by ${PAYMENT_MODE_LABELS[e.mode].toLowerCase()}` : ''}${e.reference ? `, ${e.reference}` : ''}`,
         billRef: null,
         lines: new Lines(name).dr(loan.key, e.principal, { fallback: loan.name }).dr('LOAN_INTEREST', e.interest).cr(moneyLedger(e.mode ?? 'BANK'), e.emi).lines,
+      });
+    }
+  }
+
+  /**
+   * Fixed assets: an asset's cost on the day it is put to use (Dr its class's ledger, Cr what paid for it), each posted
+   * depreciation run on its last day (Dr depreciation, Cr accumulated depreciation), and a sale or scrapping (the money
+   * in and the depreciation charged against the cost, the difference a profit or loss). None carries a project: project
+   * cost charges a machine at its internal rate, so depreciation stays in the company's books.
+   */
+  private async fixedAssets(db: Tx, org: string, name: LedgerName, opts: PostingOptions, range: (field: string) => object, add: (v: Voucher) => void) {
+    const tally = opts.unexported;
+    const vendor = { vendor: { select: { name: true } } } as const;
+    const [bought, runs, gone] = await Promise.all([
+      db.fixedAsset.findMany({ where: { organizationId: org, fundedBy: { not: 'IN_BOOKS' }, ...(tally ? { tallyExportId: null } : {}), ...range('putToUseOn') }, include: vendor }),
+      db.depreciationRun.findMany({ where: { organizationId: org, status: 'POSTED', ...(tally ? { tallyExportId: null } : {}), ...range('periodTo') } }),
+      db.fixedAsset.findMany({ where: { organizationId: org, status: 'DISPOSED', ...(tally ? { tallyDisposalExportId: null } : {}), ...range('disposedOn') } }),
+    ]);
+    const charged = gone.length
+      ? await db.depreciationLine.groupBy({ by: ['assetId'], where: { organizationId: org, assetId: { in: gone.map((a) => a.id) }, run: { status: 'POSTED' } }, _sum: { amount: true } })
+      : [];
+    const chargedOf = new Map(charged.map((c) => [c.assetId, c._sum.amount ?? D(0)]));
+    const none = { projectId: null, projectCode: '', projectName: '' };
+    for (const a of bought) {
+      const lines = additionLines(name, { assetClass: a.assetClass, cost: a.cost, fundedBy: a.fundedBy, vendorId: a.vendorId, vendorName: a.vendor?.name ?? null });
+      if (!lines) continue;
+      add({
+        kind: 'ASSET_ADDITION',
+        sourceId: a.id,
+        date: a.putToUseOn,
+        number: a.assetNo,
+        reference: a.invoiceNo,
+        party: a.vendor?.name ?? '',
+        ...none,
+        narration: `${a.assetNo} ${a.name} put to use: ${ASSET_CLASSES[a.assetClass as AssetClassCode]?.label ?? a.assetClass}, ₹${a.cost.toFixed(2)}, ${ASSET_FUNDING_LABELS[a.fundedBy].toLowerCase()}${a.invoiceNo ? `, invoice ${a.invoiceNo}` : ''}`,
+        billRef: a.fundedBy === 'VENDOR' ? { name: a.invoiceNo ?? a.assetNo, type: 'New Ref' } : null,
+        lines,
+        ...(a.fundedBy === 'BANK' || a.fundedBy === 'CASH' ? { voucherType: 'Payment' } : {}),
+      });
+    }
+    for (const r of runs) {
+      add({
+        kind: 'DEPRECIATION',
+        sourceId: r.id,
+        date: r.periodTo,
+        number: `DEP/${shortId(r.id)}`,
+        reference: null,
+        party: '',
+        ...none,
+        narration: `Depreciation for ${runPeriodLabel(dateOnly(r.periodFrom), dateOnly(r.periodTo))}`,
+        billRef: null,
+        lines: depreciationLines(name, r.total),
+      });
+    }
+    for (const a of gone) {
+      const accumulated = a.openingDepreciation.add(chargedOf.get(a.id) ?? 0);
+      const proceeds = a.proceeds ?? D(0);
+      const r = disposalResult({ cost: Number(a.cost), accumulated: Number(accumulated), proceeds: Number(proceeds) });
+      add({
+        kind: 'ASSET_DISPOSAL',
+        sourceId: a.id,
+        date: a.disposedOn!,
+        number: `${a.assetNo}/OUT`,
+        reference: null,
+        party: '',
+        ...none,
+        narration: `${a.assetNo} ${a.name} ${proceeds.gt(0) ? `sold for ₹${proceeds.toFixed(2)}` : 'scrapped'}: book value ₹${r.bookValue.toFixed(2)}${r.loss ? `, loss ₹${r.loss.toFixed(2)}` : ''}${r.gain ? `, profit ₹${r.gain.toFixed(2)}` : ''}`,
+        billRef: null,
+        lines: disposalLines(name, { assetClass: a.assetClass, cost: a.cost, accumulated, proceeds, mode: a.disposalMode ?? 'BANK' }),
+        ...(proceeds.gt(0) ? { voucherType: 'Receipt' } : {}),
       });
     }
   }
