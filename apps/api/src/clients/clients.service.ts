@@ -9,6 +9,7 @@ import { isUniqueViolation } from '../common/idempotency';
 import { iso } from '../common/serialize';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { CreateClientDto, ListClientsQuery, UpdateClientDto } from './clients.dto';
+import { withoutTenant } from '../prisma/tenant-context';
 
 const include = { _count: { select: { projects: true } } } satisfies Prisma.ClientInclude;
 type Row = Prisma.ClientGetPayload<{ include: typeof include }>;
@@ -153,8 +154,12 @@ export class ClientsService {
     if (!row) throw new NotFoundException('Client not found');
     if (row._count.projects > 0) throw new ConflictException(`${row.name} has ${row._count.projects} project(s); mark the client inactive instead`);
     // A party named as a sister company stays until the link is taken off (consolidated accounts read it).
-    const sister = await this.prisma.sisterLink.findFirst({ where: { organizationId: user.organizationId, clientId: id }, select: { sister: { select: { name: true } } } });
-    if (sister) throw new ConflictException(`${row.name} is named as the sister company ${sister.sister.name}. Remove it under Sister companies first, then delete the client`);
+    const sister = await this.prisma.sisterLink.findFirst({ where: { organizationId: user.organizationId, clientId: id }, select: { sisterId: true } });
+    if (sister) {
+      // The sister is another company: its name is read across companies.
+      const named = await withoutTenant(async () => await this.prisma.organization.findUnique({ where: { id: sister.sisterId }, select: { name: true } }));
+      throw new ConflictException(`${row.name} is named as the sister company ${named?.name ?? 'of the group'}. Remove it under Sister companies first, then delete the client`);
+    }
     await this.prisma.client.delete({ where: { id } });
     await this.audit.log(user, 'CLIENT', id, 'DELETED');
     return { ok: true, undo: this.undo.offer(user, 'CLIENT', { rows: [{ model: 'client', data: row }] }) };
