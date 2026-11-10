@@ -2904,33 +2904,53 @@ companies. Nothing new is counted: a company's column is its own Profit and loss
   of `vendorId` / `clientId` (a CHECK), `sisterId` another company of the group, unique per company and party. Each
   company's admin names its own on Admin › Group companies › Sister companies (`/group/sisters`,
   `canNameSisterCompanies`); the page also lists the sisters' links that name this company, read across companies. A
-  link to a company that has left the group stays and counts for nothing.
+  link to a company that has left the group stays and counts for nothing. A vendor or client named as a sister cannot be
+  deleted (`VendorsService.remove`, `ClientsService.remove`: "remove it under Sister companies first").
 - **Figures.** `ConsolidationService.consolidation` (`apps/api/src/group`, `GET /group/consolidation?from&to&basis`, books
-  module switch) loads the group's companies and links, then for each company calls
-  `StatementsService.companyFigures(orgId, period, parties)` under `withoutTenant(async () => await …)`. That brings the
-  company's books up to date as its own pages do (`BooksService.fresh`) and reads the same `profitLossOf` /
-  `balanceSheetOf` its statements use, plus its `SisterFigure`s: each linked party ledger's (`VENDOR:<id>`,
-  `CLIENT:<id>`) balance on its statement line, and the period's income and expense lines of the vouchers that touch it
-  (GST is not turnover). No money query of its own outside `StatementsService`.
+  module switch) reads the group's companies and links under `withoutTenant` (the one read that spans companies), then
+  for each company runs `StatementsService.lockAndClose` and `companyFigures(orgId, period, parties)` under
+  `asTenant(orgId, async () => await …)` (`src/prisma/tenant-context.ts`), so each company is read as itself and RLS holds
+  it to its own rows. That brings the company's books up to date as its own pages do (`BooksService.fresh`) and reads the
+  same `profitLossOf` / `balanceSheetOf` its statements use (once, without the previous year's figures), plus its
+  `SisterFigure`s: each linked party ledger's (`VENDOR:<id>`, `CLIENT:<id>`) balance on its statement line, and its
+  turnover with the sister (`sisterTurnover`). No money query of its own outside `StatementsService`.
+- **Turnover is party documents.** A voucher counts towards a sister's turnover only when its party lines are that one
+  sister and it is a party document (`TURNOVER_SOURCES`: sales, purchase, subcontract, debit note, RMC sale, expense)
+  or a hand-made voucher whose one party line is the sister. Receipts and payments are not turnover, and neither are
+  the deductions they carry (`NOT_TURNOVER_LEDGERS`: labour cess, client and vendor deductions, recoveries, exchange
+  difference) nor GST. The income and expense lines are matched in buckets (`TURNOVER_BUCKETS`): revenue against
+  materials, construction and other expenses (a `SALES` pair), other income against finance costs (an `INTEREST`
+  pair); each elimination comes off the lines it was found on.
 - **Arithmetic** (pure, `consolidation-rules.ts`, golden figures in `src/scripts/consolidation-test.ts`, CI runs it).
-  `consolidate` sums by `StatementLine` and takes out `eliminations`: for each pair of companies in the group with a
-  link either way, the part of a balance both books hold (what A's books say B owes against what B's books say it owes
-  A) comes off A's assets and B's liabilities alike, so assets still equal liabilities; the part of a sale both hold (A's
-  income through B's ledger against B's expense through A's) comes off A's income and B's expense alike, so profit is
-  unchanged. The rest stays in and is the pair's difference, shown with both figures (`SisterPairDto`; a balance is shown
-  from the side that is owed). A company with no links passes through unchanged.
+  `consolidate` sums by `StatementLine` and takes out `eliminations`. For a balance, each company first sets off what
+  it holds both ways with the sister (a client ledger and a vendor ledger for the same company), then the two nets are
+  matched: the part both books agree on comes off A's assets and B's liabilities alike, so assets still equal
+  liabilities. For turnover, the part of a sale both hold comes off A's income and B's cost alike, so profit is
+  unchanged. The rest stays in and is the pair's difference, shown with both figures (`SisterPairDto`; a balance is
+  shown from the side that is owed). A company with no links passes through unchanged.
 - **Lock and close.** `companyPeriod`: the default basis (Period end) runs every company to the period's end and each
   column says how final it is (`consolidationNote`: not locked, locked up to a day, later entries can change, a year
   closed). Each company's lock stops a company's profit and loss and balance sheet at its own lock when that falls before
   the period's end.
-- **Who.** `canSeeConsolidation`: a group admin whose current company is the holding; the API reads the same facts (the
-  company's group and kind, the `GroupAdmin` row) and calls the same helper. A company outside the group never appears.
+- **Books begin, books off, suspended.** A company whose books begin (`booksFrom`) inside the period says "Books begin
+  on <day>"; one whose books begin after the period has no figures yet, its column says so, and no pair is reported
+  against it (`noBooks`). A company with the books module switched off is left out and listed under the notes
+  (`leftOut`); a suspended company is in, marked Suspended.
+- **Who.** `canSeeConsolidation` (`@erp/shared/group.ts`, over `canSeeGroupCompanies`): a group admin whose current
+  company is the holding; the API reads the same facts (the company's group and kind, the `GroupAdmin` row) and calls the
+  same helper. A company outside the group never appears.
 - **Web.** `/group/consolidated` (tabs Profit and loss, Balance sheet, Between sisters, each downloadable to Excel) over
   `components/group/ConsolidatedAccounts.tsx`, tables `LocalDataTable` with `kind: 'money'` columns.
 - **Not taken out.** Investment in subsidiaries against their share capital, minority interest and currency
-  translation; loans between sisters kept in manual accounts rather than a party ledger.
-- **Demo.** `seed-group-modules.ts` names, in each company, the vendors and clients called after a sister, and has
-  Buildcon raise a debit note on the lab that the lab has not booked, so the Between sisters tab has a difference.
+  translation; loans between sisters kept in manual accounts rather than a party ledger. Amounts a bill puts in a ledger
+  of its own rather than the sister's are not attributed to the sister and stay in: retention, TDS taken at the bill,
+  amounts withheld or held, secured advance and security deposit. So a pair's difference is something to look into (a
+  note one side has not accepted, or one of those amounts), not a disagreement; the tab counts "differences to look
+  into".
+- **Demo.** `seed-group-modules.ts` names, in each company that has named none yet, the vendors and clients called after
+  a sister, and has Demo Infra Projects raise a debit note on the lab's unpaid bill (through the bill's lock, the DN
+  series, the bill's debit note amount and paid state, and the audit rows, as the debit note service writes one) that
+  the lab has not booked, so the Between sisters tab has a difference.
 
 ## Material reconciliation
 
