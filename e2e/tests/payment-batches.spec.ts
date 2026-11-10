@@ -15,6 +15,9 @@ const send = (token: string, method: string, path: string, body?: unknown) =>
 const shot = (page: Page, name: string) => page.screenshot({ path: process.env.PAY_SHOTS ? join(process.env.PAY_SHOTS, name) : test.info().outputPath(name), fullPage: true });
 
 test.describe.configure({ mode: 'serial' });
+// The pull request's desktop width, tall enough that the record's sticky actions sit below its lines, and no motion, so
+// the screenshots never catch a tag between two colours.
+test.use({ viewport: { width: 1440, height: 1100 }, contextOptions: { reducedMotion: 'reduce' } });
 
 let accounts: string;
 let md: string;
