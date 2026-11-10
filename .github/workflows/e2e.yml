@@ -446,6 +446,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/correspondence-test.js
+      - name: Document numbers follow the company's pattern by calendar or financial year, and the logo is checked
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/doc-series-test.js
       - name: Indents are checked against the site store and what the BOQ allows (item 170)
         if: matrix.suite == 'flows'
         working-directory: apps/api

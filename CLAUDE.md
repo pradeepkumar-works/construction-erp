@@ -157,6 +157,10 @@ and the pre-delivery checklist.
 - Printed papers (ARCHITECTURE "Printed papers"): a paper that leaves the company prints through `printDocHtml`
   (`components/print/printDoc.ts`) on the letterhead (`GET /company-data/letterhead`, read with `usePrintPaper`); its builder
   writes only the body, and a note kept for the company stays off it.
+- Company settings (ARCHITECTURE "Company settings"): a document number comes only from `nextDocNo`, over the company's
+  pattern for its kind (`Organization.docSeries`, read by `docPatternOf`) and its `DocCounter` by prefix; a new numbered kind
+  is a key in `DOC_SERIES_KINDS` (`@erp/shared/doc-series.ts`). Patterns are checked only by `docSeriesProblem` and the logo
+  by `logoProblem`. Keep `src/scripts/doc-series-test.ts` passing.
 - Approvals inbox (`app/(app)/approvals`): the picked entry shows as `<XRecord mode="pane">` (no actions; the inbox has the
   decision bar). Every submission type has a page; a new type adds one line in `RECORD_PAGES` and one in `ApprovalPane`
   (`components/approvals/`), or the pane falls back to a summary with Open details. A decision with an approval of its own

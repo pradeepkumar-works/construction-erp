@@ -35,6 +35,7 @@ ${PRINT_FONT_LINKS}
   body { font-family: ${PRINT_FACE}; color: ${PRINT.text}; font-size: 12.5px; line-height: 1.55; margin: 0; padding: 28px; }
   .head { border-bottom: 2px solid ${PRINT.ink}; padding-bottom: 8px; margin-bottom: 18px; }
   .brand { font-size: 19px; color: ${PRINT.ink}; font-weight: 600; }
+  .logo { display: block; max-height: 56px; max-width: 200px; margin-bottom: 6px; }
   .muted { color: ${PRINT.muted}; }
   .meta { display: flex; justify-content: space-between; margin-bottom: 16px; }
   .to { margin-bottom: 14px; }
@@ -48,7 +49,7 @@ ${PRINT_FONT_LINKS}
 </style></head>
 <body>
   ${draft ? '<div class="draft">DRAFT</div>' : ''}
-  <div class="head"><div class="brand">${esc(d.company.name)}</div>${d.company.address ? `<div class="muted">${esc(d.company.address)}</div>` : ''}${d.company.gstin ? `<div class="muted">GSTIN ${esc(d.company.gstin)}</div>` : ''}</div>
+  <div class="head">${d.company.logo ? `<img class="logo" src="${esc(d.company.logo)}" alt=""/>` : ''}<div class="brand">${esc(d.company.name)}</div>${d.company.address ? `<div class="muted">${esc(d.company.address)}</div>` : ''}${d.company.gstin ? `<div class="muted">GSTIN ${esc(d.company.gstin)}</div>` : ''}</div>
   <div class="meta"><div>No. ${esc(l.letterNo ?? 'Draft')}</div><div>Date: ${esc(formatDate(l.letterDate))}</div></div>
   <div class="to">To<br/>${to}</div>
   <div class="subject">Sub.: ${esc(l.subject)}</div>

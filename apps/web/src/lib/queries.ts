@@ -443,7 +443,7 @@ import type {
   ApplyUpdatesResultDto,
   ImportRowDto,
   ProjectUpdatesDto,
-  TypeBundle, CalibrationRegisterDto, CertificateMissingDto, LabSamplesDto, QaInstrumentDto, QaLabDto, QaAuditDto, QaAuditKind, QaReportDto, DrawingNeedState, DrawingNeedDto, DrawingSource, DrawingScheduleDto, AsBuiltDueDto, AsBuiltState, ComponentDrawingsDto, DesignCommentListDto, DesignSubmissionListDto, DesignSubmissionDetailDto, DesignSubmissionStatus, DesignPurpose, DesignSubmissionKind, CopyState, ControlledCopyListDto, RevisionImpactDto, DesignDashboardDto, BillMeasureChecksDto, CheckLevel, MeasurementCheckDto, PortalMeasurementDto, PortalMeasurementsDto, SiteOrderDto, ProgrammeRegisterDto, ProgrammeSubmissionDto, EotRegisterDto, EotApplicationDto, EotBasis, EotDelayDto } from '@erp/shared';
+  TypeBundle, CalibrationRegisterDto, CertificateMissingDto, LabSamplesDto, QaInstrumentDto, QaLabDto, QaAuditDto, QaAuditKind, QaReportDto, DrawingNeedState, DrawingNeedDto, DrawingSource, DrawingScheduleDto, AsBuiltDueDto, AsBuiltState, ComponentDrawingsDto, DesignCommentListDto, DesignSubmissionListDto, DesignSubmissionDetailDto, DesignSubmissionStatus, DesignPurpose, DesignSubmissionKind, CopyState, ControlledCopyListDto, RevisionImpactDto, DesignDashboardDto, BillMeasureChecksDto, CheckLevel, MeasurementCheckDto, PortalMeasurementDto, PortalMeasurementsDto, SiteOrderDto, ProgrammeRegisterDto, ProgrammeSubmissionDto, EotRegisterDto, EotApplicationDto, EotBasis, EotDelayDto, CompanySettingsDto } from '@erp/shared';
 import { CAD_MIME_TYPES, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, NOTIFICATION_TYPES_VERSION, SEARCH_MIN_LENGTH, lastRateKey, leaveYearLabel, leaveYearOf, weeklyOffOf } from '@erp/shared';
 import { api } from './api';
 import { useModuleOn } from './modules';
@@ -694,6 +694,22 @@ export const usePickerRecord = <T>(source: PickerSource, id: string | undefined,
 /** The company as its printed papers name it (name, address, GSTIN, PAN); a print falls back to the name alone. */
 export const useLetterhead = () =>
   useQuery({ queryKey: ['letterhead'], queryFn: async () => (await api.get<LetterheadDto>('/company-data/letterhead')).data, staleTime: 30 * 60_000 });
+
+/** Settings › Company and Numbering (admins): the letterhead's details, the logo and the number series. */
+export const useCompanySettings = (enabled = true) =>
+  useQuery({ queryKey: ['company-settings'], queryFn: async () => (await api.get<CompanySettingsDto>('/company-settings')).data, enabled });
+
+/** Saves one part of the company settings; the letterhead is read again so the next print carries it. */
+export function useSaveCompanySettings<V>(path: 'profile' | 'logo' | 'numbering') {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: V) => (await api.put<CompanySettingsDto>(`/company-settings/${path}`, body)).data,
+    onSuccess: (s) => {
+      qc.setQueryData(['company-settings'], s);
+      qc.invalidateQueries({ queryKey: ['letterhead'] });
+    },
+  });
+}
 
 /** The home page's My work: only the cards the caller's role has. */
 export const useMyWork = () =>

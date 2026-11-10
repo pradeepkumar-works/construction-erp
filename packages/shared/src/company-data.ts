@@ -17,6 +17,9 @@ export const COMPANY_LOG_LABELS: Record<string, string> = {
   SUBSCRIPTION_PAID: 'Subscription paid',
   TRIAL_CHANGED: 'Trial changed',
   AI_SETTINGS: `Ask ${PRODUCT_NAME} settings`,
+  DETAILS_CHANGED: 'Company details changed',
+  LOGO_CHANGED: 'Logo changed',
+  NUMBERING_CHANGED: 'Numbering changed',
 };
 
 /** One table of the company's data and how many rows it has. */

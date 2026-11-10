@@ -3278,11 +3278,43 @@ export interface LetterheadDto {
   cin: string | null;
   /** GST state code: the billing state, else the GSTIN's first two digits */
   stateCode: string | null;
+  /** The company's logo as a data URL (Settings › Company), printed at the top left */
+  logo: string | null;
+}
+
+/** Settings › Company: the details printed on the letterhead, and the logo. */
+export interface CompanyProfileDto {
+  name: string;
+  legalName: string | null;
+  /** The registered address; the letterhead and the subscription invoices print it */
+  address: string | null;
+  gstin: string | null;
+  pan: string | null;
+  cin: string | null;
+  logo: string | null;
+}
+
+/** Settings › Numbering: one line per kind of document. */
+export interface DocSeriesLineDto {
+  kind: string;
+  label: string;
+  /** The company's pattern, else the standard one */
+  pattern: string;
+  standard: boolean;
+  /** What today's first number under the pattern reads, as PO/26-27/0001 */
+  example: string;
+  /** When its numbers start again, in words */
+  restarts: string;
+}
+
+export interface CompanySettingsDto {
+  profile: CompanyProfileDto;
+  numbering: DocSeriesLineDto[];
 }
 
 /** A letter for printing on the letterhead. */
 export interface LetterPrintDto {
-  company: { name: string; address: string | null; gstin: string | null };
+  company: { name: string; address: string | null; gstin: string | null; logo: string | null };
   letter: LetterDto;
   to: { name: string; office: string | null; organisation: string | null; address: string | null };
   signedBy: { name: string; title: string } | null;

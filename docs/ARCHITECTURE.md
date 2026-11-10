@@ -424,6 +424,29 @@ outward letters export every row the filters match, as the RFI list does.
 The older prints (RA bill, purchase order, work order and subcontractor bill, DPR, letter, transmittal, payslip) keep their
 own frames for now; a new one uses `printDocHtml`.
 
+### Company settings
+
+Company settings (`/company-settings`, Admin, for `canManageCompanyData`) is one page with three tabs: Company (the
+letterhead's details and the logo, with a preview of the head every paper prints), Numbering (each kind's number series)
+and Other settings (links to the rest of the company's settings the admin can open). The API is `CompanySettingsService`
+(`GET /company-settings`, `PUT /company-settings/profile | logo | numbering`), each change in the company log.
+
+The letterhead's legal name, registered address (`Organization.billingAddress`), GSTIN, PAN and CIN are what
+`GET /company-data/letterhead` returns. The logo is `Organization.logo`, a PNG, JPEG or WebP data URL of 200 KB at most
+(`logoProblem`, `@erp/shared/company-profile.ts`); the browser fits it to 800 by 300 before it uploads. `printDocHtml` and the
+letter print put it at the left of the letterhead.
+
+A document number comes only from `nextDocNo` (`src/common/doc-number.ts`), which reads the company's pattern for the kind
+from `Organization.docSeries` through `docPatternOf`, else the standard `PO-{YYYY}-{NNNN}` (`@erp/shared/doc-series.ts`).
+A pattern is the company's letters with `{YYYY}`, `{YY}` and `{FY}` (April to March, as 26-27), ending in the running
+number `{NNNN}`; `docPatternProblem` holds it to letters, digits and `/ - _ .`, and `docSeriesProblem` keeps two kinds
+from sharing one. The running number starts again whenever the part before it (the prefix) changes, so each year with
+`{YYYY}` and each financial year with `{FY}`. It lives in `DocCounter` (organisation, kind, prefix), under the advisory
+lock `nextDocNo` takes; the first number under a prefix follows the highest one already issued with it (`nextRunningNo`,
+which reads only a number whose rest after the prefix is all digits), so a change of pattern neither repeats nor skips.
+Letters keep their own series (`formatLetterNo`); stock entries, RA bills, workers, employees and HR letters still number
+in their own formats. Keep `src/scripts/doc-series-test.ts` passing.
+
 ### Launcher Home, pins and Recent (launcher phase 2)
 
 Home (`app/(app)/page.tsx`, `components/launcher/HomeLauncher.tsx`) is a launcher: a greeting (the page's `<h1>`), a search

@@ -864,12 +864,12 @@ export class CorrespondenceService {
     const letter = await this.get(user, id);
     if (letter.direction !== 'OUT') throw new BadRequestException('Only a letter we send is printed on the letterhead');
     const [org, contact, signer] = await Promise.all([
-      this.prisma.organization.findUniqueOrThrow({ where: { id: user.organizationId }, select: { name: true, billingAddress: true, billingGstin: true } }),
+      this.prisma.organization.findUniqueOrThrow({ where: { id: user.organizationId }, select: { name: true, billingAddress: true, billingGstin: true, gstin: true, logo: true } }),
       letter.contactId ? this.prisma.letterContact.findUnique({ where: { id: letter.contactId } }) : null,
       letter.signatoryId ? this.prisma.user.findUnique({ where: { id: letter.signatoryId }, select: { fullName: true, role: { select: { key: true } }, employee: { select: { designation: true } } } }) : null,
     ]);
     return {
-      company: { name: org.name, address: org.billingAddress, gstin: org.billingGstin },
+      company: { name: org.name, address: org.billingAddress, gstin: org.gstin ?? org.billingGstin, logo: org.logo },
       letter,
       to: contact ? { name: contact.name, office: contact.office, organisation: contact.organisation, address: contact.address } : { name: letter.party, office: null, organisation: null, address: null },
       signedBy: signer ? { name: signer.fullName, title: signer.employee?.designation ?? ROLE_LABELS[signer.role.key as RoleKey] } : null,

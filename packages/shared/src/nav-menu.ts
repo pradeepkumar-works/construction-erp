@@ -334,6 +334,7 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
     family: 'admin',
     description: 'Users, approval rules, modules, the menu, connections and the subscription.',
     subs: [
+      sub('settings', 'Company settings', 'admin.settings'),
       sub('users', 'Users', 'admin.users'),
       sub('group', 'Group companies', 'admin.group'),
       sub('rules', 'Approval rules', 'admin.rules'),
