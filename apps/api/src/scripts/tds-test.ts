@@ -308,7 +308,7 @@ test('states and ledgers', () => {
   assert.equal(tdsDeductionState({ section: '194C', challanId: null }), 'NOT_DEPOSITED');
   assert.equal(tdsDeductionState({ section: '194C', challanId: 'c' }), 'DEPOSITED');
   const q = quarterIn(2026, 2);
-  assert.equal(tdsQuarterState(q, null, '2026-09-30'), 'OPEN');
+  assert.equal(tdsQuarterState(q, null, '2026-09-30'), 'RUNNING');
   assert.equal(tdsQuarterState(q, null, '2026-10-31'), 'DUE');
   assert.equal(tdsQuarterState(q, null, '2026-11-01'), 'LATE');
   assert.equal(tdsQuarterState(q, 'FILED', '2026-11-01'), 'FILED');

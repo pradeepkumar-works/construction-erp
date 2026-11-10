@@ -126,7 +126,7 @@ export const STATUS_TONES = {
   depreciationRun: meanings<DepreciationRunStatus>({ DRAFT: 'inHand', POSTED: 'done' }),
   paymentBatch: meanings<PaymentBatchStatus>({ DRAFT: 'inHand', EXPORTED: 'waiting', SETTLED: 'done' }),
   tdsDeduction: meanings<TdsDeductionState>({ TO_CONFIRM: 'failed', NOT_DEPOSITED: 'waiting', DEPOSITED: 'done' }),
-  tdsQuarter: meanings<TdsQuarterState>({ OPEN: 'inHand', DUE: 'waiting', LATE: 'failed', FILED: 'done', REOPENED: 'waiting' }),
+  tdsQuarter: meanings<TdsQuarterState>({ RUNNING: 'inHand', DUE: 'waiting', LATE: 'failed', FILED: 'done', REOPENED: 'waiting' }),
   paymentBatchLine: meanings<PaymentBatchLineState>({ READY: 'inHand', MISSING: 'failed', LEFT_OUT: 'closed', WAITING: 'waiting', PAID: 'done', REMOVED: 'closed' }),
   billing: meanings<BillingStatus>({ TRIAL: 'inHand', ACTIVE: 'done', READ_ONLY: 'failed', EXEMPT: 'closed' }),
   accessRequest: meanings<AccessRequestStatus>({ OPEN: 'waiting', GRANTED: 'done', DECLINED: 'failed' }),

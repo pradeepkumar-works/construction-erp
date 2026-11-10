@@ -50,7 +50,7 @@ type Keyed<T> = T & { id: string };
 function standing(q: TdsQuarterDto) {
   if (q.state === 'FILED') return `Filed on ${formatDate(q.filedOn)}, receipt ${q.receiptNo ?? ''}${q.corrections ? `, ${q.corrections} ${q.corrections === 1 ? 'correction' : 'corrections'}` : ''}`;
   if (q.state === 'REOPENED') return `Reopened: ${q.reopenNote ?? ''}`;
-  if (q.state === 'OPEN') return `The quarter runs to ${formatDate(q.quarter.to)}; the return is due ${formatDate(q.returnDue)}`;
+  if (q.state === 'RUNNING') return `The quarter runs to ${formatDate(q.quarter.to)}; the return is due ${formatDate(q.returnDue)}`;
   return `Due ${formatDate(q.returnDue)}${q.totals.lateDays ? `, ${q.totals.lateDays} ${q.totals.lateDays === 1 ? 'day' : 'days'} late` : ''}`;
 }
 
@@ -374,7 +374,7 @@ export function TdsQuarterView() {
                   figure('tdsDeducted', q.totals.tds, { count: q.totals.deductions }),
                   figure('tdsNotDeposited', q.totals.notDeposited),
                   figure('tdsInterest', q.totals.interest),
-                  q.state !== 'OPEN' && figure('tdsLateFee', q.totals.lateFee),
+                  q.state !== 'RUNNING' && figure('tdsLateFee', q.totals.lateFee),
                 ]
               : undefined
           }

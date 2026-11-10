@@ -12,7 +12,7 @@ import { canSeeCashForecast } from './cash-forecast';
 import { canSeeAttendanceCheck } from './attendance-check';
 import { canReadReport, canSeeManagement } from './management';
 import { canSeeGroupCompanies, type AuthGroupDto } from './group';
-import { canManageModules, pathIsOff } from './module-switches';
+import { canManageModules, isSwitchableModule, pathIsOff } from './module-switches';
 import { MASTER_LISTS, canManageMaster } from './masters';
 import { canManageIntegrations } from './integrations';
 
@@ -448,10 +448,17 @@ export const navNode = (id: string): NavNode | undefined => BY_ID.get(id);
 /** The node a tile opens: itself, or the one it is a shortcut of. */
 export const navTarget = (node: NavNode): NavNode => (node.shortcutOf ? (BY_ID.get(node.shortcutOf) ?? node) : node);
 
+/**
+ * Whether the company's module switches leave the node out: its page belongs to a module that is off, or it sits in a
+ * module that is itself a switch that is off (Payroll's Salary TDS returns opens `/tds`, Accounts' page, yet goes with Payroll).
+ */
+export const navNodeOff = (node: NavNode, off: readonly string[] | undefined): boolean =>
+  (!!node.route && pathIsOff(node.route, off)) || (!!node.parent && isSwitchableModule(node.parent) && !!off?.includes(node.parent));
+
 /** Whether this user sees the node: live, allowed, and (a module) with a page they see. */
 export function canSeeNav(user: NavUser, node: NavNode): boolean {
   if (node.status !== 'live' || !NAV_ACCESS[node.access](user)) return false;
-  if (node.route && pathIsOff(node.route, user.modulesOff)) return false;
+  if (navNodeOff(node, user.modulesOff)) return false;
   if (node.shortcutOf) {
     const target = BY_ID.get(node.shortcutOf);
     return !!target && target !== node && canSeeNav(user, target);

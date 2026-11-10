@@ -581,14 +581,14 @@ export const tdsDeductionState = (d: { section: string | null; challanId: string
 export const TDS_DEDUCTION_STATE_LABELS: Record<TdsDeductionState, string> = { TO_CONFIRM: 'Section to confirm', NOT_DEPOSITED: 'Not deposited', DEPOSITED: 'Deposited' };
 
 /** Where a quarter's return stands, from its record and the day: not due yet, due, late, filed, or reopened for a correction. */
-export const TDS_QUARTER_STATES = ['OPEN', 'DUE', 'LATE', 'FILED', 'REOPENED'] as const;
+export const TDS_QUARTER_STATES = ['RUNNING', 'DUE', 'LATE', 'FILED', 'REOPENED'] as const;
 export type TdsQuarterState = (typeof TDS_QUARTER_STATES)[number];
 export function tdsQuarterState(q: TdsQuarter, status: TdsReturnStatus | null, today: string): TdsQuarterState {
   if (status) return status;
-  if (today <= q.to) return 'OPEN';
+  if (today <= q.to) return 'RUNNING';
   return today > returnDue(q) ? 'LATE' : 'DUE';
 }
-export const TDS_QUARTER_STATE_LABELS: Record<TdsQuarterState, string> = { OPEN: 'Quarter running', DUE: 'To file', LATE: 'Late', FILED: 'Filed', REOPENED: 'Reopened for correction' };
+export const TDS_QUARTER_STATE_LABELS: Record<TdsQuarterState, string> = { RUNNING: 'Quarter running', DUE: 'To file', LATE: 'Late', FILED: 'Filed', REOPENED: 'Reopened for correction' };
 
 /** The TDS payable ledger a section's deductions credit: salaries keep their own; each other section has one. */
 export const tdsLedgerKey = (section: string | null | undefined): string => (section === '192' ? 'SALARY_TDS_PAYABLE' : isTdsSection(section) ? `TDS_PAYABLE_${section}` : 'TDS_PAYABLE');
