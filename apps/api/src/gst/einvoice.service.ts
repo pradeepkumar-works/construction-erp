@@ -121,8 +121,7 @@ export class EinvoiceService {
 
   private loaders: Record<GstSourceKind, (user: RequestUser, id: string) => Promise<Built>> = {
     RA_BILL: async (user, id) => {
-      const b = await this.bills.get(user, id);
-      const co = await this.company(user.organizationId);
+      const [b, co] = await Promise.all([this.bills.einvoiceFacts(user, id), this.company(user.organizationId)]);
       const docNo = raInvoiceNo(b.projectCode, b.billNo);
       const certified = b.status === 'APPROVED' && (b.stage === 'CERTIFIED' || b.stage === 'PAID');
       const need = einvoiceNeeded({ buyerGstin: b.client?.gstin ?? null, docDate: b.billDate, einvoiceFrom: co.einvoiceFrom });
@@ -155,8 +154,8 @@ export class EinvoiceService {
     },
 
     RMC_INVOICE: async (user, id) => {
-      const i = await this.rmc.invoice(user, id);
-      const [co, row] = await Promise.all([this.company(user.organizationId), this.prisma.rmcInvoice.findUniqueOrThrow({ where: { id }, select: { order: { select: { rate: true } } } })]);
+      const [i, co] = await Promise.all([this.rmc.invoice(user, id), this.company(user.organizationId)]);
+      const row = await this.prisma.rmcInvoice.findUniqueOrThrow({ where: { id }, select: { order: { select: { rate: true } } } });
       const need = einvoiceNeeded({ buyerGstin: i.gstin, docDate: i.date, einvoiceFrom: co.einvoiceFrom });
       const inter = paise(i.igst) !== 0;
       const pumping = paise(i.pumping) !== 0;
@@ -179,17 +178,14 @@ export class EinvoiceService {
     },
 
     RMC_BATCH: async (user, id) => {
-      const b = await this.rmc.batch(user, id);
-      const [co, row] = await Promise.all([
-        this.company(user.organizationId),
-        this.prisma.rmcBatch.findUniqueOrThrow({
-          where: { id },
-          select: {
-            plant: { select: { name: true, siteAddress: true, location: true } },
-            order: { select: { rate: true, site: true, client: { select: { name: true, gstin: true, stateCode: true, billingAddress: true } }, project: { select: { name: true, siteAddress: true, location: true } } } },
-          },
-        }),
-      ]);
+      const [b, co] = await Promise.all([this.rmc.batch(user, id), this.company(user.organizationId)]);
+      const row = await this.prisma.rmcBatch.findUniqueOrThrow({
+        where: { id },
+        select: {
+          plant: { select: { name: true, siteAddress: true, location: true } },
+          order: { select: { rate: true, site: true, client: { select: { name: true, gstin: true, stateCode: true, billingAddress: true } }, project: { select: { name: true, siteAddress: true, location: true } } } },
+        },
+      });
       const client = row.order.client;
       const own = !client;
       const inter = !own && isInterState(co.billsFromState, gstStateCode(client.gstin) ?? client.stateCode);
@@ -218,19 +214,16 @@ export class EinvoiceService {
     },
 
     STOCK_TRANSFER: async (user, id) => {
-      const e = await this.stock.get(user, id);
+      const [e, co] = await Promise.all([this.stock.get(user, id), this.company(user.organizationId)]);
       if (e.type !== 'TRANSFER_OUT') throw new BadRequestException('Only a stock transfer sent to another project gets an e-way bill');
-      const [co, row] = await Promise.all([
-        this.company(user.organizationId),
-        this.prisma.stockEntry.findUniqueOrThrow({
-          where: { id },
-          select: {
-            project: { select: { name: true, siteAddress: true, location: true } },
-            toProject: { select: { name: true, siteAddress: true, location: true } },
-            lines: { select: { quantity: true, item: { select: { name: true, unit: true, rate: true, hsnCode: true } } }, orderBy: { sortOrder: 'asc' } },
-          },
-        }),
-      ]);
+      const row = await this.prisma.stockEntry.findUniqueOrThrow({
+        where: { id },
+        select: {
+          project: { select: { name: true, siteAddress: true, location: true } },
+          toProject: { select: { name: true, siteAddress: true, location: true } },
+          lines: { select: { quantity: true, item: { select: { name: true, unit: true, rate: true, hsnCode: true } } }, orderBy: { sortOrder: 'asc' } },
+        },
+      });
       // StockTxn keeps no value: each line travels at the item master rate, as stock valuation values it.
       const lines = row.lines.map((l) => ({ name: l.item.name, hsn: l.item.hsnCode, quantity: l.quantity.abs().toFixed(3), unit: l.item.unit, taxable: l.item.rate ? money(l.quantity.abs().mul(l.item.rate).toDecimalPlaces(2)) : '0', gstRate: '0' }));
       const value = rupeesOf(lines.reduce((s, l) => s + paise(l.taxable), 0));
@@ -293,6 +286,10 @@ export class EinvoiceService {
     return this.prisma.gstDocument.findMany({ where: { organizationId, sourceKind, sourceId }, include: { createdBy: { select: { fullName: true } } }, orderBy: { createdAt: 'desc' } });
   }
 
+  private async providerProblem(organizationId: string): Promise<string | null> {
+    return this.provider ? this.provider.ready(organizationId) : 'E-invoicing is not set up on this server: GST_PROVIDER is not set (see DEPLOY.md)';
+  }
+
   /** The number a cancelled IRN was for: the IRP never takes the same invoice number again. */
   private reusedNumber(kind: GstDocumentKind, docNo: string, docs: GstDocument[]): string | null {
     if (kind !== 'IRN') return null;
@@ -302,12 +299,15 @@ export class EinvoiceService {
 
   async state(user: RequestUser, sourceKind: GstSourceKind, sourceId: string, now = new Date()): Promise<GstSourceStateDto> {
     const kind = GST_SOURCE_DOC[sourceKind];
-    const built = await this.loaders[sourceKind](user, sourceId);
-    const docs = await this.docsOf(user.organizationId, sourceKind, sourceId);
+    // The record's own read checks access; the documents and the provider are read beside it and shown only if it passes.
+    const [built, docs, providerProblem] = await Promise.all([
+      this.loaders[sourceKind](user, sourceId),
+      this.docsOf(user.organizationId, sourceKind, sourceId),
+      this.providerProblem(user.organizationId),
+    ]);
     const live = docs.find((d) => d.status === 'PENDING' || d.status === 'ACTIVE') ?? null;
     const reused = live ? null : this.reusedNumber(kind, built.docNo, docs);
     const problems = reused ? [...built.problems, reused] : built.problems;
-    const providerProblem = this.provider ? await this.provider.ready(user.organizationId) : 'E-invoicing is not set up on this server: GST_PROVIDER is not set (see DEPLOY.md)';
     const may = this.mayAct(user, kind);
     const active = live?.status === 'ACTIVE' ? live : null;
     const cancelProblem = active ? cancelWindowProblem(kind, active.ackAt ?? active.createdAt, now) : null;

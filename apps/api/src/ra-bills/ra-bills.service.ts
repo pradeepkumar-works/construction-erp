@@ -403,6 +403,36 @@ export class RaBillsService {
     return { ...this.toDto(row, sheets, receipts?.items), ...(row.status === 'APPROVED' ? {} : { heldExtraItems }) };
   }
 
+  /** What an e-invoice reads off the bill, under the same access as `get`, without the sheets and receipts the record shows. */
+  async einvoiceFacts(user: RequestUser, id: string) {
+    await this.assertCanSee(user);
+    const r = await this.prisma.raBill.findFirst({
+      where: { id, ...this.access.submissionWhere(user) },
+      select: {
+        billNo: true, isFinal: true, omYear: true, status: true, stage: true, billDate: true, sacCode: true,
+        grossAmount: true, pvAmount: true, gstAmount: true, gstRate: true,
+        project: { select: { name: true, code: true, clientName: true, client: { select: { name: true, gstin: true, billingAddress: true, stateCode: true } } } },
+      },
+    });
+    if (!r) throw new NotFoundException('RA bill not found');
+    return {
+      billNo: r.billNo,
+      billLabel: billLabel(r.billNo, r.isFinal, r.omYear !== null),
+      status: r.status,
+      stage: r.stage,
+      billDate: dateOnly(r.billDate),
+      sacCode: r.sacCode,
+      projectName: r.project.name,
+      projectCode: r.project.code,
+      client: r.project.client,
+      clientName: r.project.client?.name ?? r.project.clientName,
+      grossAmount: money(r.grossAmount),
+      pvAmount: money(r.pvAmount),
+      gstAmount: money(r.gstAmount),
+      gstRate: pctStr(r.gstRate),
+    };
+  }
+
   /**
    * Re-take the bill's measurements and re-price it with the project's current BOQ and contract terms. Only for a bill
    * that is not approved; `strict` refuses a bill with nothing new in it.
