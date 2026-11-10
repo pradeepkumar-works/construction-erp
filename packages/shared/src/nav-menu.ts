@@ -266,7 +266,7 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
     family: 'money',
     description: 'Payables, receivables, cash, the books, statements, GST and Tally.',
     subs: [
-      sub('payables', 'Payables', 'accounts.payables', 'accounts.requests', 'accounts.payments', 'accounts.debitNotes'),
+      sub('payables', 'Payables', 'accounts.payables', 'accounts.requests', 'accounts.payments', 'accounts.bankPayments', 'accounts.debitNotes'),
       sub('receivables', 'Receivables', 'billing.receivables', 'billing.receipts'),
       sub('cash', 'Cash', 'accounts.cashForecast', 'site.imprest', 'site.funds', 'site.expenses'),
       sub('books', 'Books', 'accounts.vouchers', 'accounts.daybooks', 'accounts.cashbooks', 'accounts.ledgers'),

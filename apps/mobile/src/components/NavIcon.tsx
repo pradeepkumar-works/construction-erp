@@ -7,6 +7,7 @@ import Award from 'lucide-react-native/icons/award';
 import History from 'lucide-react-native/icons/rotate-ccw-clock';
 import BadgeIndianRupee from 'lucide-react-native/icons/badge-indian-rupee';
 import Banknote from 'lucide-react-native/icons/banknote';
+import BanknoteArrowUp from 'lucide-react-native/icons/banknote-arrow-up';
 import BookOpen from 'lucide-react-native/icons/book-open';
 import BookText from 'lucide-react-native/icons/book-text';
 import Boxes from 'lucide-react-native/icons/boxes';
@@ -141,6 +142,7 @@ export const NAV_ICONS: Record<string, LucideIcon> = {
   'award': Award,
   'badge-indian-rupee': BadgeIndianRupee,
   'banknote': Banknote,
+  'banknote-arrow-up': BanknoteArrowUp,
   'book-open': BookOpen,
   'book-text': BookText,
   'boxes': Boxes,

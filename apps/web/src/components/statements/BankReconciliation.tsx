@@ -21,7 +21,7 @@ import {
 } from "@/lib/queries";
 import { errorMessage } from "@/lib/api";
 import { formatDate, formatINR } from "@/lib/format";
-import { loadXlsx } from "@/lib/exportExcel";
+import { readCells } from "@/lib/read-cells";
 import { QueryError } from "@/components/common/QueryState";
 import { FormShell } from "@/components/form/FormShell";
 import { Balance } from "@/components/books/booksUi";
@@ -31,21 +31,6 @@ import {
 } from "@/components/books/VoucherForm";
 import { day } from "./statementsUi";
 import { Money } from '@/components/common/Money';
-
-/** The statement file's cells, row by row: Excel dates as YYYY-MM-DD, CSV kept as the bank wrote it. */
-async function readCells(f: File): Promise<unknown[][]> {
-  const XLSX = await loadXlsx();
-  const buf = await f.arrayBuffer();
-  const wb = /\.(xlsx|xls)$/i.test(f.name)
-    ? XLSX.read(new Uint8Array(buf), { type: "array", cellDates: true })
-    : XLSX.read(new TextDecoder().decode(buf), { type: "string", raw: true });
-  return XLSX.utils.sheet_to_json<unknown[]>(wb.Sheets[wb.SheetNames[0]], {
-    header: 1,
-    raw: false,
-    dateNF: "yyyy-mm-dd",
-    defval: "",
-  });
-}
 
 function ImportStatement({
   open,

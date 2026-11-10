@@ -496,8 +496,17 @@ export class NotificationsService {
 
   /** A supplier's portal logins are told what concerns their vendor: an order to accept, an enquiry, a payment. */
   async notifyVendor(organizationId: string, vendorId: string, n: Omit<NotifyInput, 'organizationId' | 'userIds' | 'type'>) {
-    const logins = await this.prisma.user.findMany({ where: { organizationId, vendorId, isActive: true }, select: { id: true } });
-    if (logins.length) await this.notify({ organizationId, userIds: logins.map((u) => u.id), type: 'SUPPLIER', ...n });
+    await this.notifyVendors(organizationId, [{ vendorId, ...n }]);
+  }
+
+  /** `notifyVendor` for many notices at once (a bank file's payments): each vendor's portal logins read once. */
+  async notifyVendors(organizationId: string, notices: ({ vendorId: string } & Omit<NotifyInput, 'organizationId' | 'userIds' | 'type'>)[]) {
+    if (!notices.length) return;
+    const logins = await this.prisma.user.findMany({ where: { organizationId, vendorId: { in: [...new Set(notices.map((x) => x.vendorId))] }, isActive: true }, select: { id: true, vendorId: true } });
+    for (const { vendorId, ...n } of notices) {
+      const userIds = logins.filter((u) => u.vendorId === vendorId).map((u) => u.id);
+      if (userIds.length) await this.notify({ organizationId, userIds, type: 'SUPPLIER', ...n });
+    }
   }
 
   async onReviewed(actor: RequestUser, type: SubmissionType, id: string, status: 'APPROVED' | 'REJECTED' | 'CHANGES_REQUESTED', note?: string | null) {

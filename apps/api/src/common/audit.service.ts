@@ -12,6 +12,14 @@ export class AuditService {
     });
   }
 
+  /** `log` for many entries at once (a bank file's payments), in one insert. */
+  logMany(user: RequestUser, entries: { entityType: string; entityId: string; action: string; note?: string | null }[]) {
+    if (!entries.length) return Promise.resolve({ count: 0 });
+    return this.prisma.auditLog.createMany({
+      data: entries.map((e) => ({ organizationId: user.organizationId, entityType: e.entityType, entityId: e.entityId, action: e.action, actorId: user.id, note: e.note ?? null })),
+    });
+  }
+
   async forEntity(organizationId: string, entityType: string, entityId: string) {
     const rows = await this.prisma.auditLog.findMany({
       where: { organizationId, entityType, entityId },

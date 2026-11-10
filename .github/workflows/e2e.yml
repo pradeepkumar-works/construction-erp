@@ -378,6 +378,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/fixed-assets-test.js
+      - name: Bank files write each bank's columns in order, RTGS from two lakh, leave out missing bank details and read UTRs back
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/bank-file-test.js
       - name: Tender pricing, quotes on the SOR, bid ranks and status moves add up
         if: matrix.suite == 'flows'
         working-directory: apps/api
