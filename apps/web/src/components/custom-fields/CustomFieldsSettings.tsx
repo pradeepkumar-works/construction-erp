@@ -109,11 +109,16 @@ function FieldDialog({ entity, field, others, onClose }: { entity: CustomFieldEn
             </Form.Item>
           </FormGrid>
         ) : null}
+        {kind === 'NUMBER' && field ? (
+          <Typography.Paragraph type="secondary">
+            A record already outside a new smallest or largest keeps its number until it is next saved, which asks for one inside.
+          </Typography.Paragraph>
+        ) : null}
         {kind === 'CHOICE' ? (
           <Form.Item
             name="options"
             label="Choices"
-            extra={`Type each and press Enter; up to ${MAX_CUSTOM_CHOICES}.`}
+            extra={`Type each and press Enter; up to ${MAX_CUSTOM_CHOICES}.${field ? ' A record holding a choice you take out keeps it until it is next saved, which asks for one of these.' : ''}`}
             rules={[{ validator: async (_, v?: string[]) => { if ((v ?? []).filter((o) => o.trim()).length < 2) throw new Error('Give at least two choices'); } }]}
           >
             <Select mode="tags" open={false} tokenSeparators={[',']} aria-label="Choices" placeholder="A, B, C" />
@@ -174,7 +179,7 @@ function EntityFields({ entity, onAdd, onEdit }: { entity: CustomFieldEntity; on
       title={info.label}
       extra={
         <Button icon={<PlusOutlined />} onClick={() => onAdd(fields)}>
-          Add field
+          New field
         </Button>
       }
     >

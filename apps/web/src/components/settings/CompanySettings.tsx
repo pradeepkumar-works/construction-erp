@@ -12,6 +12,7 @@ import {
   DOC_SERIES_TOKENS,
   LOGO_MAX_BYTES,
   canManageCompanyData,
+  canManageCustomFields,
   canSeeNav,
   dataUrlBytes,
   docPatternProblem,
@@ -405,7 +406,7 @@ export function CompanySettings() {
           items={[
             { key: 'company', label: 'Company', children: <CompanyTab data={data} /> },
             { key: 'numbering', label: 'Numbering', children: <NumberingTab data={data} /> },
-            { key: 'fields', label: 'Fields', children: <CustomFieldsSettings /> },
+            ...(user && canManageCustomFields(user.roleKey) ? [{ key: 'fields', label: 'Fields', children: <CustomFieldsSettings /> }] : []),
             { key: 'more', label: 'Other settings', children: <MoreTab /> },
           ]}
         />
