@@ -289,6 +289,13 @@ export type PaymentRequestKind = (typeof PAYMENT_REQUEST_KINDS)[number];
 export const PAYMENT_BATCH_STATUSES = ['DRAFT', 'EXPORTED', 'SETTLED'] as const;
 export type PaymentBatchStatus = (typeof PAYMENT_BATCH_STATUSES)[number];
 
+/** The quarterly TDS returns: 26Q for vendors and contractors, 24Q for salaries. */
+export const TDS_RETURN_FORMS = ['FORM_26Q', 'FORM_24Q'] as const;
+export type TdsReturnForm = (typeof TDS_RETURN_FORMS)[number];
+/** A quarter's return once filed, or opened again for a correction. */
+export const TDS_RETURN_STATUSES = ['FILED', 'REOPENED'] as const;
+export type TdsReturnStatus = (typeof TDS_RETURN_STATUSES)[number];
+
 /** What a site's fund request is for. */
 export const FUND_PURPOSES = ['WAGES', 'LOCAL_PURCHASE', 'PETTY_CONTRACTOR', 'SITE_RUNNING', 'OTHER'] as const;
 export type FundPurpose = (typeof FUND_PURPOSES)[number];
