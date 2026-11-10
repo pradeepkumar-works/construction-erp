@@ -17,9 +17,10 @@ import { AuditService } from '../common/audit.service';
 import { RequestUser } from '../common/current-user';
 import { todayIn } from '../notifications/time';
 import { PrismaService } from '../prisma/prisma.service';
+import { dateOnly, parseDate } from '../common/serialize';
 import { UpdateCompanyLogoDto, UpdateCompanyProfileDto, UpdateDocSeriesDto } from './company-settings.dto';
 
-const PROFILE_SELECT = { name: true, legalName: true, billingAddress: true, gstin: true, pan: true, cin: true, tan: true, logo: true, docSeries: true } as const;
+const PROFILE_SELECT = { name: true, legalName: true, billingAddress: true, gstin: true, pan: true, cin: true, tan: true, logo: true, docSeries: true, gstSac: true, einvoiceFrom: true } as const;
 
 /** Settings › Company and Numbering (ARCHITECTURE "Company settings"): the letterhead's details, the logo and the number series. */
 @Injectable()
@@ -39,8 +40,8 @@ export class CompanySettingsService {
     return this.toDto(o);
   }
 
-  private toDto(o: { name: string; legalName: string | null; billingAddress: string | null; gstin: string | null; pan: string | null; cin: string | null; tan: string | null; logo: string | null; docSeries: unknown }): CompanySettingsDto {
-    const profile: CompanyProfileDto = { name: o.name, legalName: o.legalName, address: o.billingAddress, gstin: o.gstin, pan: o.pan, cin: o.cin, tan: o.tan, logo: o.logo };
+  private toDto(o: { name: string; legalName: string | null; billingAddress: string | null; gstin: string | null; pan: string | null; cin: string | null; tan: string | null; logo: string | null; docSeries: unknown; gstSac: string | null; einvoiceFrom: Date | null }): CompanySettingsDto {
+    const profile: CompanyProfileDto = { name: o.name, legalName: o.legalName, address: o.billingAddress, gstin: o.gstin, pan: o.pan, cin: o.cin, tan: o.tan, logo: o.logo, gstSac: o.gstSac, einvoiceFrom: dateOnly(o.einvoiceFrom) };
     const own = readDocSeries(o.docSeries);
     const today = todayIn();
     const numbering = DOC_SERIES_KIND_KEYS.map((kind) => {
@@ -54,7 +55,16 @@ export class CompanySettingsService {
     this.assertAdmin(user);
     const o = await this.prisma.organization.update({
       where: { id: user.organizationId },
-      data: { legalName: dto.legalName, billingAddress: dto.address, gstin: dto.gstin, pan: dto.pan, cin: dto.cin, tan: dto.tan },
+      data: {
+        legalName: dto.legalName,
+        billingAddress: dto.address,
+        gstin: dto.gstin,
+        pan: dto.pan,
+        cin: dto.cin,
+        tan: dto.tan,
+        gstSac: dto.gstSac,
+        einvoiceFrom: dto.einvoiceFrom === undefined ? undefined : dto.einvoiceFrom && parseDate(dto.einvoiceFrom),
+      },
       select: PROFILE_SELECT,
     });
     await this.audit.log(user, 'COMPANY', user.organizationId, 'DETAILS_CHANGED', 'Changed the details on the letterhead');

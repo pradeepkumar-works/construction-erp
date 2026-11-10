@@ -20,6 +20,7 @@ import {
   type RmcReceiptDto,
 } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
+import { assertNoLiveGstDocument } from '../gst/gst-lock';
 import { RequestUser } from '../common/current-user';
 import { AuditService } from '../common/audit.service';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -769,6 +770,7 @@ export class RmcService {
     if (r.status !== 'ISSUED') throw new BadRequestException('This bill is already cancelled');
     if (r.tallyExportId) throw new BadRequestException('This bill has gone to Tally. Raise a credit note there instead.');
     if (r.receipts.length) throw new BadRequestException('Money has been received against this bill. Remove that first.');
+    await assertNoLiveGstDocument(this.prisma, user.organizationId, 'RMC_INVOICE', id);
     await this.prisma.$transaction([
       this.prisma.rmcBatch.updateMany({ where: { invoiceId: id }, data: { invoiceId: null } }),
       this.prisma.rmcInvoice.update({ where: { id }, data: { status: 'CANCELLED', cancelledAt: new Date(), cancelNote: note || null } }),

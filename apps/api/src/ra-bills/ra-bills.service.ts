@@ -23,6 +23,7 @@ import {
   type SortOrder,
 } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
+import { assertNoLiveGstDocument } from '../gst/gst-lock';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { ApprovalRightsService } from '../common/approval-rights.service';
@@ -210,6 +211,7 @@ export class RaBillsService {
       billDate: dateOnly(r.billDate),
       measuredUpTo: dateOnly(r.measuredUpTo),
       remarks: r.remarks,
+      sacCode: r.sacCode,
       workOrderNo: p.workOrderNo,
       agreementNo: p.agreementNo,
       agreementDate: dateOnly(p.agreementDate),
@@ -487,6 +489,7 @@ export class RaBillsService {
             billDate: parseDate(dto.billDate),
             measuredUpTo: parseDate(measuredUpTo),
             remarks: dto.remarks || null,
+            sacCode: dto.sacCode || null,
             otherDeduction,
             otherDeductionNote: dto.otherDeductionNote || null,
             ...Object.fromEntries(
@@ -541,6 +544,7 @@ export class RaBillsService {
     }
     if (dto.otherDeductionNote !== undefined) data.otherDeductionNote = dto.otherDeductionNote || null;
     if (dto.remarks !== undefined) data.remarks = dto.remarks || null;
+    if (dto.sacCode !== undefined) data.sacCode = dto.sacCode || null;
     await this.prisma.$transaction(async (tx) => {
       await tx.raBill.update({ where: { id }, data });
       await this.recompute(tx, id);
@@ -891,6 +895,7 @@ export class RaBillsService {
   private async applyCertificate(user: RequestUser, bill: Awaited<ReturnType<RaBillsService['approvedBill']>>, dto: CertifyBillDto) {
     const id = bill.id;
     assertNotExported(bill, 'This bill');
+    await assertNoLiveGstDocument(this.prisma, bill.organizationId, 'RA_BILL', id);
     if (bill.stage !== 'SENT' && bill.stage !== 'CERTIFIED') throw new BadRequestException(bill.stage === 'PAID' ? 'This bill is already paid' : 'Record the bill as sent first');
     checkNotFuture(dto.date, 'certificate date');
     if (bill.sentDate && dto.date < dateOnly(bill.sentDate)) throw new BadRequestException('The certificate date cannot be before the date the bill was sent');

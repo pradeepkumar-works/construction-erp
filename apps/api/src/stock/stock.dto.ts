@@ -3,7 +3,7 @@ import { Transform, Type } from 'class-transformer';
 import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNumberString, IsOptional, IsString, IsUUID, Matches, Max, MaxLength, Min, MinLength, ValidateIf, ValidateNested } from 'class-validator';
 import { IsQuantity } from '../common/quantity';
 import { VENDOR_ID_DOC } from '../vendors/vendors.dto';
-import { GRN_QC_STATUSES, LIST_SORT_FIELDS, RECEIPT_WAITS, type ReceiptWait, PIPE_MATERIALS, STOCK_ADJUSTMENT_REASONS, STOCK_ENTRY_TYPES, type GrnQcStatus, type PipeMaterial, type StockAdjustmentReason, type ItemSortField, type StockBalanceSortField, type StockEntrySortField, type StockEntryType } from '@erp/shared';
+import { HSN_PATTERN, GRN_QC_STATUSES, LIST_SORT_FIELDS, RECEIPT_WAITS, type ReceiptWait, PIPE_MATERIALS, STOCK_ADJUSTMENT_REASONS, STOCK_ENTRY_TYPES, type GrnQcStatus, type PipeMaterial, type StockAdjustmentReason, type ItemSortField, type StockBalanceSortField, type StockEntrySortField, type StockEntryType } from '@erp/shared';
 import { PageQuery, QueryBool } from '../common/paging';
 import { CLIENT_ID_DOC } from '../common/idempotency';
 
@@ -268,6 +268,7 @@ export class CreateItemDto {
   @ApiPropertyOptional({ example: 'Cement' }) @IsOptional() @IsString() @trim() @MaxLength(60) category?: string | null;
   @ApiPropertyOptional({ example: 'CEM-OPC53', description: "The company's code for the item, one per item; written in capitals" }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsString() @MaxLength(40) code?: string | null;
   @ApiPropertyOptional({ example: 'IS 269', description: 'The standard or specification it is bought to' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsString() @trim() @MaxLength(120) standard?: string | null;
+  @ApiPropertyOptional({ example: '25232930', description: 'Its HSN code, for e-way bills' }) @IsOptional() @ValidateIf((_, v) => v !== null) @trim() @Matches(HSN_PATTERN, { message: 'An HSN code is 4, 6 or 8 digits, like 25232930' }) hsnCode?: string | null;
   @ApiPropertyOptional({ example: '395.00', description: 'Standard rate per unit; values issues in the cost view' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumberString() rate?: string | null;
   @ApiPropertyOptional({ description: 'Diesel, petrol and the like: issued to machines and in the daily fuel position' }) @IsOptional() @IsBoolean() isFuel?: boolean;
   @ApiPropertyOptional({ example: 110, description: 'Pipe: the outside or nominal diameter it lays as, when the name does not say it' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsInt() @Min(15) @Max(4000) pipeDiameterMm?: number | null;
@@ -281,6 +282,7 @@ export class UpdateItemDto {
   @ApiPropertyOptional() @IsOptional() @IsString() @trim() @MaxLength(60) category?: string | null;
   @ApiPropertyOptional({ example: 'CEM-OPC53' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsString() @MaxLength(40) code?: string | null;
   @ApiPropertyOptional({ example: 'IS 269' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsString() @trim() @MaxLength(120) standard?: string | null;
+  @ApiPropertyOptional({ example: '25232930', description: 'Its HSN code, for e-way bills' }) @IsOptional() @ValidateIf((_, v) => v !== null) @trim() @Matches(HSN_PATTERN, { message: 'An HSN code is 4, 6 or 8 digits, like 25232930' }) hsnCode?: string | null;
   @ApiPropertyOptional({ example: '395.00' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumberString() rate?: string | null;
   @ApiPropertyOptional() @IsOptional() @IsBoolean() isFuel?: boolean;
   @ApiPropertyOptional({ example: 110, description: 'Pipe: the outside or nominal diameter it lays as, when the name does not say it' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsInt() @Min(15) @Max(4000) pipeDiameterMm?: number | null;

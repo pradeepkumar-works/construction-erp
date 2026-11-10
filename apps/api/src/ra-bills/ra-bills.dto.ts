@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNumberString, IsOptional, IsString, IsUUID, MaxLength, ValidateNested, Max, Min } from 'class-validator';
-import { BILL_STAGES, LIST_SORT_FIELDS, SUBMISSION_STATUSES, type BillSortField, type BillStage, type SubmissionStatus } from '@erp/shared';
+import { ArrayMaxSize, Matches, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNumberString, IsOptional, IsString, IsUUID, MaxLength, ValidateNested, Max, Min } from 'class-validator';
+import { HSN_PATTERN, BILL_STAGES, LIST_SORT_FIELDS, SUBMISSION_STATUSES, type BillSortField, type BillStage, type SubmissionStatus } from '@erp/shared';
 import { PageQuery, QueryBool } from '../common/paging';
 import { CLIENT_ID_DOC } from '../common/idempotency';
 
@@ -27,6 +27,7 @@ export class CreateRaBillDto {
   @ApiPropertyOptional({ example: '0', description: 'Any other deduction the client makes (₹)' }) @IsOptional() @num() @IsNumberString() otherDeduction?: string;
   @ApiPropertyOptional() @IsOptional() @trim() @IsString() @MaxLength(200) otherDeductionNote?: string | null;
   @ApiPropertyOptional() @IsOptional() @trim() @IsString() @MaxLength(1000) remarks?: string | null;
+  @ApiPropertyOptional({ example: '995421', description: "The SAC the bill's e-invoice reports, when not the company's" }) @IsOptional() @trim() @Matches(HSN_PATTERN, { message: 'A SAC code is 4, 6 or 8 digits, like 995421' }) sacCode?: string | null;
   @ApiPropertyOptional({ type: [String] }) @IsOptional() @IsArray() @IsUUID('4', { each: true }) attachmentIds?: string[];
   @ApiPropertyOptional({ default: false, description: 'Submit for approval straight away' }) @IsOptional() @IsBoolean() submit?: boolean;
 }
@@ -38,6 +39,7 @@ export class UpdateRaBillDto {
   @ApiPropertyOptional() @IsOptional() @num() @IsNumberString() otherDeduction?: string;
   @ApiPropertyOptional() @IsOptional() @trim() @IsString() @MaxLength(200) otherDeductionNote?: string | null;
   @ApiPropertyOptional() @IsOptional() @trim() @IsString() @MaxLength(1000) remarks?: string | null;
+  @ApiPropertyOptional({ example: '995421', description: "The SAC the bill's e-invoice reports, when not the company's" }) @IsOptional() @trim() @Matches(HSN_PATTERN, { message: 'A SAC code is 4, 6 or 8 digits, like 995421' }) sacCode?: string | null;
   @ApiPropertyOptional({ type: [String] }) @IsOptional() @IsArray() @IsUUID('4', { each: true }) attachmentIds?: string[];
   @ApiPropertyOptional({ default: false }) @IsOptional() @IsBoolean() submit?: boolean;
 }
