@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-consolidated-accounts',
+    date: '2026-11-14',
+    title: 'Consolidated accounts for the group',
+    points: [
+      'Admin › Group companies › Consolidated accounts shows the group’s profit and loss and balance sheet for a period, a column for each company beside what came out between sisters and the group’s total. Group admins see it from the holding company.',
+      'Each company’s figures are its own statements. Name which vendors and clients in your books are sister companies under Sister companies; balances and sales between named sisters come out where both books agree.',
+      'Between sisters lists every pair with both companies’ figures and the difference to settle, such as a debit note one sister raised and the other has not booked.',
+      'Each column says how far its books are locked and which year is closed. Choose Each company’s lock to stop every company at its own lock. Download any tab to Excel.',
+    ],
+  },
+  {
     id: '2026-11-tds-returns',
     date: '2026-11-13',
     title: 'TDS returns: TDS by section, challans and the quarterly 26Q and 24Q',
