@@ -7,21 +7,29 @@ import {
   REPORT_ROW_CAP,
   REPORT_SOURCES,
   ROLE_LABELS,
+  canPrepareBill,
+  canStopAnySchedule,
   catalogueDto,
   catalogueFor,
-  isGuest,
+  isRealDay,
   isReportSource,
+  leftOutNotes,
+  mayReceiveReport,
   readDefinition,
   reportingMonth,
   reportSourcesFor,
   runReport,
+  scheduleOwnerProblem,
   scheduleProblem,
+  scheduleSince,
   scheduleWords,
+  visibleDefinition,
   type ManagementReportDto,
   type Paginated,
   type ReportCatalogue,
   type ReportDefinition,
   type ReportFrequency,
+  type ReportReader,
   type ReportRecipientDto,
   type ReportSourceDto,
   type ReportSourceKey,
@@ -30,6 +38,7 @@ import {
 } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import type { RequestUser } from '../common/current-user';
+import { ApprovalRightsService } from '../common/approval-rights.service';
 import { dateOnly, formatDay, iso, parseDate } from '../common/serialize';
 import { pageArgs, paginated, searchWords, ilike } from '../common/paging';
 import { todayIn } from '../notifications/time';
@@ -46,6 +55,8 @@ import { ListSavedReportsQuery, ReportRunQuery, SaveReportDto, ScheduleReportDto
 /** What a source's list is asked for: the period and project as the list's own filters, a page at a time. */
 type ListArgs = { from?: string; to?: string; projectId?: string; page: number; pageSize: number };
 type Reader = (user: RequestUser, q: ListArgs) => Promise<Paginated<unknown>>;
+/** Someone a report is read as or sent to. */
+type Who = { id: string; organizationId: string; roleKey: RoleKey };
 
 /** Pages read at once: enough to keep a big report quick, few enough to leave the pool for everyone else. */
 const PAGES_AT_ONCE = 4;
@@ -83,6 +94,7 @@ export class ReportBuilderService {
     vendors: VendorsService,
     private projects: ProjectsService,
     private customFields: CustomFieldsService,
+    private rights: ApprovalRightsService,
   ) {
     this.readers = {
       'purchase-orders': (u, q) => purchaseOrders.list(u, { ...q, sortBy: 'poDate', sortOrder: 'desc' }),
@@ -95,16 +107,37 @@ export class ReportBuilderService {
     };
   }
 
+  /**
+   * Someone as a report reader: their role, and their approval rights where a source admits its approvers (RA bills, as
+   * the bills list's own check does). Given a source, the rights are read only when that source needs them.
+   */
+  async readerOf(who: Who, source?: ReportSourceKey): Promise<ReportReader> {
+    if (source && (source !== 'ra-bills' || canPrepareBill(who.roleKey))) return { roleKey: who.roleKey };
+    return { roleKey: who.roleKey, approvalRights: await this.rights.rightsFor(who) };
+  }
+
+  /** Several people as readers of a source, a few at a time where their rights have to be read. */
+  async readersOf(people: Who[], source: ReportSourceKey): Promise<Map<string, ReportReader>> {
+    const out = new Map<string, ReportReader>();
+    for (let i = 0; i < people.length; i += PAGES_AT_ONCE) {
+      const batch = people.slice(i, i + PAGES_AT_ONCE);
+      const readers = await Promise.all(batch.map((p) => this.readerOf(p, source)));
+      batch.forEach((p, j) => out.set(p.id, readers[j]));
+    }
+    return out;
+  }
+
   /** The columns the reader is offered over a source; a source whose list their role does not open is refused. */
-  async catalogue(user: RequestUser, source: ReportSourceKey): Promise<ReportCatalogue> {
+  async catalogue(user: RequestUser, source: ReportSourceKey, reader?: ReportReader): Promise<ReportCatalogue> {
     const def = REPORT_SOURCES[source];
-    if (!def.sees(user.roleKey)) throw new ForbiddenException(`Your role does not open ${def.label.toLowerCase()}`);
+    if (!def.sees(reader ?? (await this.readerOf(user, source)))) throw new ForbiddenException(`Your role does not open ${def.label.toLowerCase()}`);
     const fields = def.customFields ? await this.customFields.list(user, def.customFields) : [];
     return catalogueFor(user.roleKey, source, fields);
   }
 
   async sources(user: RequestUser): Promise<ReportSourceDto[]> {
-    return Promise.all(reportSourcesFor(user.roleKey).map(async (k) => catalogueDto(await this.catalogue(user, k))));
+    const reader = await this.readerOf(user);
+    return Promise.all(reportSourcesFor(reader).map(async (k) => catalogueDto(await this.catalogue(user, k, reader))));
   }
 
   /** Every row of the list for the period and project, up to `REPORT_ROW_CAP`, a few pages at a time. */
@@ -122,7 +155,7 @@ export class ReportBuilderService {
       const batch = await Promise.all(Array.from({ length: Math.min(PAGES_AT_ONCE, pages - p + 1) }, (_, i) => read(user, { ...q, page: p + i, pageSize: MAX_PAGE_SIZE })));
       for (const b of batch) rows.push(...b.items);
     }
-    return { rows: rows.slice(0, REPORT_ROW_CAP), total: first.total };
+    return { rows: uniqueRows(rows).slice(0, REPORT_ROW_CAP), total: first.total };
   }
 
   /** A definition run as the reader, as a `ManagementReportDto` the report page, print and Excel draw. */
@@ -138,9 +171,11 @@ export class ReportBuilderService {
     let to = today;
     if (catalogue.dated) {
       const month = reportingMonth(today);
+      if (opts.from !== undefined && !isRealDay(opts.from)) throw new BadRequestException('Choose a first day that is on the calendar');
+      if (opts.to !== undefined && !isRealDay(opts.to)) throw new BadRequestException('Choose a last day that is on the calendar');
       from = opts.from ?? `${month}-01`;
       to = opts.to ?? (monthEnd(month) > today ? today : monthEnd(month));
-      if (from > to) throw new BadRequestException('The period starts after it ends');
+      if (from > to) throw new BadRequestException('Choose a start on or before the end');
     }
     const projectId = catalogue.projects ? opts.projectId : undefined;
     const project = projectId ? await this.projects.get(user, projectId) : null;
@@ -148,7 +183,7 @@ export class ReportBuilderService {
     const run = runReport(rows, def, catalogue);
     const notes = [
       ...(def.filters.length ? [`Only rows where ${def.filters.map((f) => `${catalogue.columns.find((c) => c.key === f.column)!.label} ${REPORT_FILTER_OP_LABELS[f.op]} ${f.value}`).join(', and ')}.`] : []),
-      ...(read.left.length ? [`Left out, as your role does not see ${read.left.length === 1 ? 'it' : 'them'}: ${read.left.join(', ')}.`] : []),
+      ...leftOutNotes(read),
       ...(total > REPORT_ROW_CAP ? [`Only the first ${REPORT_ROW_CAP.toLocaleString('en-IN')} of ${total.toLocaleString('en-IN')} ${catalogue.label.toLowerCase()} are read; choose a shorter period or one project.`] : []),
     ];
     return {
@@ -171,29 +206,41 @@ export class ReportBuilderService {
 
   // Saved reports
 
-  private visible(user: RequestUser): Prisma.SavedReportWhereInput {
-    return { organizationId: user.organizationId, source: { in: reportSourcesFor(user.roleKey) }, OR: [{ ownerId: user.id }, { shared: true }] };
+  /**
+   * The reports a person sees: their own whatever the source (so one they can no longer open still shows why, and can
+   * stop sending), and over a source they open, the shared ones and those scheduled to them; an admin also sees every
+   * scheduled report, to stop it.
+   */
+  private async visible(user: RequestUser): Promise<Prisma.SavedReportWhereInput> {
+    const source = { in: reportSourcesFor(await this.readerOf(user)) };
+    const or: Prisma.SavedReportWhereInput[] = [{ ownerId: user.id }, { shared: true, source }, { schedule: { recipientIds: { has: user.id } }, source }];
+    if (canStopAnySchedule(user.roleKey)) or.push({ schedule: { isNot: null }, source });
+    return { organizationId: user.organizationId, OR: or };
   }
 
+  /** Recipients' names; someone who has left the company is no longer one. */
   private async recipientsOf(organizationId: string, ids: string[]) {
     if (!ids.length) return new Map<string, string>();
-    const users = await this.prisma.user.findMany({ where: { organizationId, id: { in: ids } }, select: { id: true, fullName: true } });
+    const users = await this.prisma.user.findMany({ where: { organizationId, id: { in: ids }, isActive: true }, select: { id: true, fullName: true } });
     return new Map(users.map((u) => [u.id, u.fullName]));
   }
 
-  private toDto(user: RequestUser, r: Row, names: Map<string, string>): SavedReportDto {
+  private toDto(user: RequestUser, r: Row, names: Map<string, string>, catalogues: Map<string, ReportCatalogue>): SavedReportDto {
     const source = r.source as ReportSourceKey;
     const s = r.schedule;
+    const mine = r.ownerId === user.id;
+    const catalogue = catalogues.get(source);
     return {
       id: r.id,
       name: r.name,
       source,
       sourceLabel: REPORT_SOURCES[source]?.label ?? r.source,
-      definition: r.definition as unknown as ReportDefinition,
+      // Someone else's report reads as what this reader's role sees of it, never the columns and conditions it hides.
+      definition: mine || !catalogue ? (r.definition as unknown as ReportDefinition) : visibleDefinition(r.definition, catalogue),
       shared: r.shared,
       ownerId: r.ownerId,
       ownerName: r.owner.fullName,
-      mine: r.ownerId === user.id,
+      mine,
       schedule: s
         ? {
             frequency: s.frequency as ReportFrequency,
@@ -211,11 +258,13 @@ export class ReportBuilderService {
 
   private async dtos(user: RequestUser, rows: Row[]) {
     const names = await this.recipientsOf(user.organizationId, [...new Set(rows.flatMap((r) => r.schedule?.recipientIds ?? []))]);
-    return rows.map((r) => this.toDto(user, r, names));
+    const others = [...new Set(rows.filter((r) => r.ownerId !== user.id && isReportSource(r.source)).map((r) => r.source as ReportSourceKey))];
+    const catalogues = new Map(await Promise.all(others.map(async (k) => [k, await this.catalogue(user, k)] as const)));
+    return rows.map((r) => this.toDto(user, r, names, catalogues));
   }
 
   async list(user: RequestUser, q: ListSavedReportsQuery): Promise<Paginated<SavedReportDto>> {
-    const where: Prisma.SavedReportWhereInput = { ...this.visible(user) };
+    const where: Prisma.SavedReportWhereInput = { ...(await this.visible(user)) };
     const and: Prisma.SavedReportWhereInput[] = [];
     if (q.mine) where.ownerId = user.id;
     if (q.scheduled) where.schedule = { isNot: null };
@@ -232,7 +281,7 @@ export class ReportBuilderService {
   }
 
   private async row(user: RequestUser, id: string): Promise<Row> {
-    const r = await this.prisma.savedReport.findFirst({ where: { id, ...this.visible(user) }, include });
+    const r = await this.prisma.savedReport.findFirst({ where: { id, ...(await this.visible(user)) }, include });
     if (!r) throw new NotFoundException('Report not found');
     return r;
   }
@@ -287,20 +336,24 @@ export class ReportBuilderService {
   /** A saved report run as the reader: someone else's shared report leaves out what the reader's role does not see. */
   async runSaved(user: RequestUser, id: string, q: ReportRunQuery) {
     const r = await this.row(user, id);
+    const source = r.source as ReportSourceKey;
+    if (r.ownerId === user.id && isReportSource(source) && !REPORT_SOURCES[source].sees(await this.readerOf(user, source)))
+      throw new ForbiddenException(`Your role no longer opens ${REPORT_SOURCES[source].label.toLowerCase()}`);
     return this.run(user, r.definition, { ...q, drop: r.ownerId !== user.id, title: r.name });
   }
 
   // Schedules
 
-  /** People a report over the source can go to: active staff of the company whose role opens its list. */
+  /** People a report over the source can go to: active staff of the company who open its list (`mayReceiveReport`). */
   async recipients(user: RequestUser, source: ReportSourceKey): Promise<ReportRecipientDto[]> {
     await this.catalogue(user, source);
     const users = await this.prisma.user.findMany({
       where: { organizationId: user.organizationId, isActive: true },
-      select: { id: true, fullName: true, role: { select: { key: true } } },
+      select: { id: true, organizationId: true, fullName: true, role: { select: { key: true } } },
       orderBy: { fullName: 'asc' },
     });
-    return users.filter((u) => mayReceive(u.role.key as RoleKey, source)).map((u) => ({ id: u.id, name: u.fullName, role: ROLE_LABELS[u.role.key as RoleKey] ?? u.role.key }));
+    const readers = await this.readersOf(users.map(asWho), source);
+    return users.filter((u) => mayReceiveReport(readers.get(u.id)!, source)).map((u) => ({ id: u.id, name: u.fullName, role: ROLE_LABELS[u.role.key as RoleKey] ?? u.role.key }));
   }
 
   async setSchedule(user: RequestUser, id: string, dto: ScheduleReportDto): Promise<SavedReportDto> {
@@ -309,25 +362,45 @@ export class ReportBuilderService {
     const problem = scheduleProblem({ ...dto, weekday: dto.weekday ?? 0, dayOfMonth: dto.dayOfMonth ?? 1, recipientIds });
     if (problem) throw new BadRequestException(problem);
     const source = r.source as ReportSourceKey;
-    const users = await this.prisma.user.findMany({ where: { organizationId: user.organizationId, id: { in: recipientIds }, isActive: true }, select: { id: true, fullName: true, role: { select: { key: true } } } });
+    const ownerProblem = scheduleOwnerProblem({ isActive: true, ...(await this.readerOf(user, source)) }, source);
+    if (ownerProblem) throw new ForbiddenException(`Your role no longer opens ${REPORT_SOURCES[source].label.toLowerCase()}`);
+    const users = await this.prisma.user.findMany({ where: { organizationId: user.organizationId, id: { in: recipientIds }, isActive: true }, select: { id: true, organizationId: true, fullName: true, role: { select: { key: true } } } });
     if (users.length !== recipientIds.length) throw new BadRequestException('Choose people who still work in the company');
-    const cannot = users.filter((u) => !mayReceive(u.role.key as RoleKey, source));
+    const readers = await this.readersOf(users.map(asWho), source);
+    const cannot = users.filter((u) => !mayReceiveReport(readers.get(u.id)!, source));
     if (cannot.length) throw new BadRequestException(`${cannot.map((u) => u.fullName).join(', ')} cannot open ${REPORT_SOURCES[source].label.toLowerCase()}; choose someone else`);
     const data = { frequency: dto.frequency, weekday: dto.weekday ?? 0, dayOfMonth: dto.dayOfMonth ?? 1, recipientIds };
+    const today = todayIn();
+    const old = r.schedule;
+    // New days start again from today, so a change never sends a period that ended before it (`scheduleSince`).
+    const since = scheduleSince(old ? { frequency: old.frequency as ReportFrequency, weekday: old.weekday, dayOfMonth: old.dayOfMonth, since: dateOnly(old.since)! } : null, data, today);
     await this.prisma.reportSchedule.upsert({
       where: { reportId: id },
-      create: { organizationId: user.organizationId, reportId: id, since: parseDate(todayIn()), ...data },
-      update: data,
+      create: { organizationId: user.organizationId, reportId: id, since: parseDate(since), ...data },
+      update: { ...data, since: parseDate(since) },
     });
     return this.get(user, id);
   }
 
+  /** The owner stops a schedule, or an admin stops anyone's (the email's footnote says so). */
   async removeSchedule(user: RequestUser, id: string): Promise<SavedReportDto> {
-    await this.own(user, id);
+    const r = await this.row(user, id);
+    if (r.ownerId !== user.id && !canStopAnySchedule(user.roleKey)) throw new ForbiddenException(`Only ${r.owner.fullName}, who made this report, or an admin can stop sending it`);
     await this.prisma.reportSchedule.deleteMany({ where: { reportId: id, organizationId: user.organizationId } });
     return this.get(user, id);
   }
 }
 
-/** A recipient is staff (never a client's guest or a supplier) whose role opens the source's list. */
-export const mayReceive = (role: RoleKey, source: ReportSourceKey) => !isGuest(role) && REPORT_SOURCES[source].sees(role);
+const asWho = (u: { id: string; organizationId: string; role: { key: string } }): Who => ({ id: u.id, organizationId: u.organizationId, roleKey: u.role.key as RoleKey });
+
+/** Rows read a page at a time, each once: a record that moves between pages while they are read is not counted twice. */
+export function uniqueRows(rows: unknown[]): unknown[] {
+  const seen = new Set<string>();
+  return rows.filter((r) => {
+    const id = r && typeof r === 'object' && typeof (r as { id?: unknown }).id === 'string' ? (r as { id: string }).id : null;
+    if (id === null) return true;
+    if (seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
+}

@@ -5,6 +5,7 @@ import {
   BILL_DEDUCTION_LABELS,
   billLabel,
   canPrepareBill,
+  canViewRaBills,
   holdBalance,
   holdCloseProblem,
   holdProblem,
@@ -341,8 +342,8 @@ export class RaBillsService {
   /** Billing roles, plus any role the approval matrix lets approve bills. */
   private async assertCanSee(user: RequestUser) {
     if (canPrepareBill(user.roleKey)) return;
-    const rights = await this.rights.rightsFor(user);
-    if (!rights.some((r) => r.type === 'BILL')) throw new ForbiddenException('Your role cannot see RA bills');
+    // The page's own check (`NAV_ACCESS.bills`) and the report source's: one helper.
+    if (!canViewRaBills(user.roleKey, await this.rights.rightsFor(user))) throw new ForbiddenException('Your role cannot see RA bills');
   }
 
   private async assertCanPrepare(user: RequestUser, projectId: string) {

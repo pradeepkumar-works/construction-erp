@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { mayGiveEveryProject, modulesOffFor, scheduleDedupeKey, scheduleDue, type ReportFrequency, type ReportSourceKey, type RoleKey } from '@erp/shared';
+import { mayGiveEveryProject, mayReceiveReport, modulesOffFor, scheduleDedupeKey, scheduleDue, scheduleOwnerProblem, type ReportFrequency, type ReportSourceKey, type RoleKey } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import type { RequestUser } from '../common/current-user';
 import { dateOnly, parseDate } from '../common/serialize';
@@ -8,7 +8,7 @@ import { todayIn } from '../notifications/time';
 import { NotificationsService } from '../notifications/notifications.service';
 import { EmailService } from '../notifications/email.service';
 import { MessagingService } from '../messaging/messaging.service';
-import { ReportBuilderService, mayReceive } from './report-builder.service';
+import { ReportBuilderService } from './report-builder.service';
 import { reportEmail } from './report-email';
 
 export interface ReportSchedulesResult {
@@ -16,6 +16,8 @@ export interface ReportSchedulesResult {
   date: string;
   /** Schedules that owed a period today */
   due: number;
+  /** Of those, schedules not sent because the person who set them up has left or no longer opens the source */
+  held: number;
   /** Recipients sent their copy for the first time this period */
   sent: number;
   /** Copies handed to the mail service */
@@ -43,10 +45,13 @@ export class ReportSchedulesService {
   ) {}
 
   async sendDue(date = todayIn()): Promise<ReportSchedulesResult> {
-    const result: ReportSchedulesResult = { job: 'REPORT_SCHEDULES', date, due: 0, sent: 0, emailed: 0, skipped: 0, failed: 0 };
+    const result: ReportSchedulesResult = { job: 'REPORT_SCHEDULES', date, due: 0, held: 0, sent: 0, emailed: 0, skipped: 0, failed: 0 };
     const schedules = await this.prisma.reportSchedule.findMany({
       where: { organization: { suspendedAt: null } },
-      include: { report: { select: { id: true, name: true, source: true, definition: true } }, organization: { select: { name: true, modulesOff: true, moduleTier: true } } },
+      include: {
+        report: { select: { id: true, name: true, source: true, definition: true, owner: { select: { id: true, isActive: true, role: { select: { key: true } } } } } },
+        organization: { select: { name: true, modulesOff: true, moduleTier: true } },
+      },
     });
     for (const s of schedules) {
       const period = scheduleDue({ frequency: s.frequency as ReportFrequency, weekday: s.weekday, dayOfMonth: s.dayOfMonth, since: dateOnly(s.since)! }, date);
@@ -56,14 +61,27 @@ export class ReportSchedulesService {
       const dedupeKey = scheduleDedupeKey(s.id, period);
       let sentAny = false;
       await asTenant(s.organizationId, async () => {
+        // A schedule never outlives its owner: it holds while they have left, or no longer open the report's source.
+        const owner = s.report.owner;
+        const ownerReader = await this.reports.readerOf({ id: owner.id, organizationId: s.organizationId, roleKey: owner.role.key as RoleKey }, source);
+        const held = scheduleOwnerProblem({ isActive: owner.isActive, ...ownerReader }, source);
+        if (held) {
+          result.held++;
+          this.log.log(`Scheduled report ${s.report.id} held: ${held}`);
+          return;
+        }
         const users = await this.prisma.user.findMany({
           where: { organizationId: s.organizationId, id: { in: s.recipientIds }, isActive: true },
-          select: { id: true, email: true, fullName: true, emailAlerts: true, seesAllProjects: true, role: { select: { key: true } } },
+          select: { id: true, organizationId: true, email: true, fullName: true, emailAlerts: true, seesAllProjects: true, role: { select: { key: true } } },
         });
         const off = modulesOffFor(s.organization);
+        const readers = await this.reports.readersOf(
+          users.map((u) => ({ id: u.id, organizationId: u.organizationId, roleKey: u.role.key as RoleKey })),
+          source,
+        );
         for (const u of users) {
           const role = u.role.key as RoleKey;
-          if (!mayReceive(role, source)) {
+          if (!mayReceiveReport(readers.get(u.id)!, source)) {
             result.skipped++;
             continue;
           }

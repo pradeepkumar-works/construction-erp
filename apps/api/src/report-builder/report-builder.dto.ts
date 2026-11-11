@@ -1,12 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsObject, IsOptional, IsString, IsUUID, Max, MaxLength, Min } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsBoolean, IsIn, IsInt, IsObject, IsOptional, IsString, IsUUID, Matches, Max, MaxLength, Min } from 'class-validator';
 import { MAX_REPORT_NAME, MAX_REPORT_RECIPIENTS, MAX_SCHEDULE_DAY, REPORT_FREQUENCIES, REPORT_SOURCE_KEYS, type ReportFrequency, type ReportSourceKey } from '@erp/shared';
 import { PageQuery, QueryBool } from '../common/paging';
 
 /** The period and project a report runs over; a source with no date or no project leaves them out. */
 export class ReportRunQuery {
-  @ApiPropertyOptional({ example: '2026-11-01', description: 'First day (default: the reporting month)' }) @IsOptional() @IsDateString({}, { message: 'Choose the first day as YYYY-MM-DD' }) from?: string;
-  @ApiPropertyOptional({ example: '2026-11-30', description: 'Last day (default: the reporting month’s last day, or today)' }) @IsOptional() @IsDateString({}, { message: 'Choose the last day as YYYY-MM-DD' }) to?: string;
+  @ApiPropertyOptional({ example: '2026-11-01', description: 'First day (default: the reporting month)' }) @IsOptional() @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'Choose the first day as YYYY-MM-DD' }) from?: string;
+  @ApiPropertyOptional({ example: '2026-11-30', description: 'Last day (default: the reporting month’s last day, or today)' }) @IsOptional() @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'Choose the last day as YYYY-MM-DD' }) to?: string;
   @ApiPropertyOptional() @IsOptional() @IsUUID() projectId?: string;
 }
 

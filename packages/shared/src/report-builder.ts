@@ -2,7 +2,8 @@ import type { RoleKey } from './enums';
 import type { MaterialRequestDto, ProjectSummary, PurchaseOrderDto, RaBillDto, StockBalanceDto, VendorBillDto, VendorDto } from './types';
 import type { ReportCell, ReportColumnKind, ReportRowDto, ReportSectionDto } from './management';
 import { extraText, type CustomFieldDto, type CustomFieldEntity } from './custom-fields';
-import { canEditVendors, canPrepareBill, canSeeVendorBank, canViewContract, canViewPurchaseOrders, canViewStockValue, canViewVendorBills, isGuest } from './permissions';
+import { canReceiveReports, canSeeVendorBank, canViewContract, canViewIndents, canViewProjects, canViewPurchaseOrders, canViewRaBills, canViewStock, canViewStockValue, canViewVendorBills, canViewVendors } from './permissions';
+import { approvalRightsOf, type ApprovalRightDto } from './approvals';
 import {
   BILL_STAGE_LABELS,
   CONTRACT_MODEL_LABELS,
@@ -59,14 +60,20 @@ export interface ReportColumnDef<R> {
   sees?: (role: RoleKey) => boolean;
 }
 
+/** Who reads a report: the role, and the company's approval rights where a list admits its approvers (RA bills). */
+export interface ReportReader {
+  roleKey: RoleKey;
+  approvalRights?: ApprovalRightDto[];
+}
+
 export interface ReportSourceDef<R> {
   key: ReportSourceKey;
   /** The list's name: "Purchase orders" */
   label: string;
   /** What the count column of a group says: "Orders" */
   countLabel: string;
-  /** The list's own role check: a role it refuses is not offered the source */
-  sees: (role: RoleKey) => boolean;
+  /** The list's own page check (its `NAV_ACCESS` helper): a reader it refuses is not offered the source */
+  sees: (reader: ReportReader) => boolean;
   /** The date a period narrows, passed to the list as from and to; null for a list that stands as of today */
   dated: { column: string; label: string } | null;
   /** The list takes a project */
@@ -94,7 +101,7 @@ const purchaseOrders: ReportSourceDef<PurchaseOrderDto> = {
   key: 'purchase-orders',
   label: 'Purchase orders',
   countLabel: 'Orders',
-  sees: canViewPurchaseOrders,
+  sees: (u) => canViewPurchaseOrders(u.roleKey),
   dated: { column: 'poDate', label: 'Order date' },
   projects: true,
   customFields: 'PURCHASE_ORDER',
@@ -128,7 +135,7 @@ const vendorBills: ReportSourceDef<VendorBillDto> = {
   key: 'vendor-bills',
   label: 'Vendor bills',
   countLabel: 'Bills',
-  sees: canViewVendorBills,
+  sees: (u) => canViewVendorBills(u.roleKey),
   dated: { column: 'invoiceDate', label: 'Invoice date' },
   projects: true,
   customFields: null,
@@ -160,7 +167,7 @@ const raBills: ReportSourceDef<RaBillDto> = {
   key: 'ra-bills',
   label: 'RA bills',
   countLabel: 'Bills',
-  sees: canPrepareBill,
+  sees: (u) => canViewRaBills(u.roleKey, approvalRightsOf(u)),
   dated: { column: 'billDate', label: 'Bill date' },
   projects: true,
   customFields: null,
@@ -190,7 +197,7 @@ const indents: ReportSourceDef<MaterialRequestDto> = {
   key: 'indents',
   label: 'Indents',
   countLabel: 'Indents',
-  sees: (role) => !isGuest(role),
+  sees: (u) => canViewIndents(u.roleKey),
   dated: { column: 'raisedOn', label: 'Raised on' },
   projects: true,
   customFields: null,
@@ -213,7 +220,7 @@ const stock: ReportSourceDef<StockBalanceDto> = {
   key: 'stock',
   label: 'Stock',
   countLabel: 'Items',
-  sees: (role) => !isGuest(role),
+  sees: (u) => canViewStock(u.roleKey),
   dated: null,
   projects: true,
   customFields: null,
@@ -240,7 +247,7 @@ const vendors: ReportSourceDef<VendorDto> = {
   key: 'vendors',
   label: 'Vendors',
   countLabel: 'Vendors',
-  sees: (role) => canEditVendors(role) || canSeeVendorBank(role),
+  sees: (u) => canViewVendors(u.roleKey),
   dated: null,
   projects: false,
   customFields: 'VENDOR',
@@ -269,7 +276,7 @@ const projects: ReportSourceDef<ProjectSummary> = {
   key: 'projects',
   label: 'Projects',
   countLabel: 'Projects',
-  sees: (role) => !isGuest(role),
+  sees: (u) => canViewProjects(u.roleKey),
   dated: null,
   projects: false,
   customFields: 'PROJECT',
@@ -306,11 +313,24 @@ export const REPORT_SOURCES: { [K in ReportSourceKey]: ReportSourceDef<RowOf[K]>
 
 export const isReportSource = (k: unknown): k is ReportSourceKey => typeof k === 'string' && (REPORT_SOURCE_KEYS as readonly string[]).includes(k);
 
-/** The sources a role may build a report over. */
-export const reportSourcesFor = (role: RoleKey): ReportSourceKey[] => REPORT_SOURCE_KEYS.filter((k) => REPORT_SOURCES[k].sees(role));
+/** The sources a reader may build a report over: the lists whose pages they open. */
+export const reportSourcesFor = (reader: ReportReader): ReportSourceKey[] => REPORT_SOURCE_KEYS.filter((k) => REPORT_SOURCES[k].sees(reader));
 
-/** Who may build reports: anyone whose role opens one of the sources' lists. */
-export const canBuildReports = (role: RoleKey) => reportSourcesFor(role).length > 0;
+/** Who may build reports: anyone who opens one of the sources' lists. */
+export const canBuildReports = (reader: ReportReader) => reportSourcesFor(reader).length > 0;
+
+/** Who a scheduled copy may go to: staff who open the source's list. */
+export const mayReceiveReport = (reader: ReportReader, source: ReportSourceKey) => canReceiveReports(reader.roleKey) && REPORT_SOURCES[source].sees(reader);
+
+/**
+ * Why a schedule no longer sends, in words; null while it does. A schedule runs only while the person who set it up still
+ * works in the company and still opens the report's source, so a report never outlives its owner's access.
+ */
+export function scheduleOwnerProblem(owner: { isActive: boolean } & ReportReader, source: ReportSourceKey): string | null {
+  if (!owner.isActive) return 'The person who set it up no longer works in the company';
+  if (!canBuildReports(owner) || !REPORT_SOURCES[source].sees(owner)) return `The person who set it up no longer opens ${REPORT_SOURCES[source].label.toLowerCase()}`;
+  return null;
+}
 
 // The catalogue a reader is offered
 
@@ -338,6 +358,15 @@ export interface ReportCatalogue {
   href: (row: unknown) => string | null;
 }
 
+/** A number as a decimal string (never "1e+21"): to three places, trailing zeros dropped. */
+const numberCell = (v: unknown): string | null => {
+  if (typeof v !== 'number' || !Number.isFinite(v)) return null;
+  // toFixed writes 1e21 and up in exponent form; a number that large is whole, so BigInt writes it out.
+  if (Math.abs(v) >= 1e21) return BigInt(v).toString();
+  const s = v.toFixed(3).replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '');
+  return s === '-0' ? '0' : s;
+};
+
 /** A company field as a report column, keyed `cf:<key>`: a number as a quantity, a date as a day, the rest as words. */
 function customColumn(d: Pick<CustomFieldDto, 'key' | 'label' | 'kind' | 'unit' | 'options' | 'archived'>): ReportColumn {
   const read = (row: unknown) => {
@@ -345,7 +374,7 @@ function customColumn(d: Pick<CustomFieldDto, 'key' | 'label' | 'kind' | 'unit' 
     return values && hasOwn(values, d.key) ? values[d.key] : undefined;
   };
   if (d.kind === 'NUMBER')
-    return { key: `cf:${d.key}`, label: d.unit ? `${d.label} (${d.unit})` : d.label, kind: 'qty', group: false, sum: true, archived: d.archived, value: (row) => (typeof read(row) === 'number' ? String(read(row)) : null) };
+    return { key: `cf:${d.key}`, label: d.unit ? `${d.label} (${d.unit})` : d.label, kind: 'qty', group: false, sum: true, archived: d.archived, value: (row) => numberCell(read(row)) };
   if (d.kind === 'DATE') return { key: `cf:${d.key}`, label: d.label, kind: 'date', group: true, sum: false, archived: d.archived, value: (row) => (typeof read(row) === 'string' ? (read(row) as string) : null) };
   const options = d.kind === 'YES_NO' ? YES_NO : d.kind === 'CHOICE' ? d.options : undefined;
   return {
@@ -414,17 +443,33 @@ const field = (o: Record<string, unknown>, k: string): unknown => (hasOwn(o, k) 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const MONTH = /^\d{4}-\d{2}$/;
 const DECIMAL = /^-?\d{1,15}(\.\d{1,6})?$/;
-const realDay = (s: string) => DAY.test(s) && new Date(`${s}T00:00:00Z`).toISOString().slice(0, 10) === s;
+/** A day as YYYY-MM-DD that is on the calendar (never 2026-02-31). */
+export const isRealDay = (s: unknown): s is string => {
+  if (typeof s !== 'string' || !DAY.test(s)) return false;
+  const t = Date.parse(`${s}T00:00:00Z`);
+  return !Number.isNaN(t) && new Date(t).toISOString().slice(0, 10) === s;
+};
+const realDay = isRealDay;
 
 /**
  * A definition as sent (user JSON), read against the catalogue the reader is offered: a fresh object of own keys only.
  * A column the source does not have, or one the reader's role does not see, is a problem; with `drop` (someone else's
  * report, or a schedule run as its recipient) a column the reader does not see is left out instead, named in `left`.
  */
-export function readDefinition(raw: unknown, catalogue: ReportCatalogue, opts: { drop?: boolean } = {}): { definition: ReportDefinition | null; problems: string[]; left: string[] } {
+export interface ReadDefinition {
+  definition: ReportDefinition | null;
+  problems: string[];
+  /** Columns left out of what the report shows (with `drop`), by name */
+  left: string[];
+  /** Columns whose conditions were left out (with `drop`), by name: the report is not limited by them */
+  leftFilters: string[];
+}
+
+export function readDefinition(raw: unknown, catalogue: ReportCatalogue, opts: { drop?: boolean } = {}): ReadDefinition {
   const problems: string[] = [];
   const left = new Set<string>();
-  if (!isRecord(raw)) return { definition: null, problems: ['Send the report as its source, columns, filters, group and totals'], left: [] };
+  const leftFilters = new Set<string>();
+  if (!isRecord(raw)) return { definition: null, problems: ['Send the report as its source, columns, filters, group and totals'], left: [], leftFilters: [] };
   if (field(raw, 'source') !== catalogue.source) problems.push(`This report is over ${catalogue.label.toLowerCase()}`);
   const byKey = new Map(catalogue.columns.map((c) => [c.key, c]));
   const column = (k: unknown, what: string): ReportColumn | null => {
@@ -435,9 +480,10 @@ export function readDefinition(raw: unknown, catalogue: ReportCatalogue, opts: {
     const c = byKey.get(k);
     if (c) return c;
     const hiddenLabel = catalogue.hidden.get(k);
-    if (hiddenLabel && opts.drop) left.add(hiddenLabel);
+    const into = what === 'to filter on' ? leftFilters : left;
+    if (hiddenLabel && opts.drop) into.add(hiddenLabel);
     else if (hiddenLabel) problems.push(`Your role does not see ${hiddenLabel}; take it out of the report`);
-    else if (opts.drop && /^cf:/.test(k)) left.add(k.slice(3));
+    else if (opts.drop && /^cf:/.test(k)) into.add(k.slice(3));
     else problems.push(`${catalogue.label} has no column “${k.slice(0, 40)}”`);
     return null;
   };
@@ -493,6 +539,7 @@ export function readDefinition(raw: unknown, catalogue: ReportCatalogue, opts: {
   const totals: string[] = [];
   const rawTotals = field(raw, 'totals') ?? [];
   if (!Array.isArray(rawTotals)) problems.push('Send the totals as a list of columns');
+  else if (rawTotals.length > MAX_REPORT_COLUMNS) problems.push(`Keep to ${MAX_REPORT_COLUMNS} totals`);
   else
     for (const k of rawTotals) {
       const c = column(k, 'to total');
@@ -512,8 +559,22 @@ export function readDefinition(raw: unknown, catalogue: ReportCatalogue, opts: {
     }
   }
 
-  if (problems.length) return { definition: null, problems, left: [...left] };
-  return { definition: { source: catalogue.source, columns, filters, groupBy, totals, sort }, problems, left: [...left] };
+  const out = { left: [...left], leftFilters: [...leftFilters] };
+  if (problems.length) return { definition: null, problems, ...out };
+  return { definition: { source: catalogue.source, columns, filters, groupBy, totals, sort }, problems, ...out };
+}
+
+/** What a reader who is not its owner is told a report's definition is: only what their role sees (none of it, when none). */
+export function visibleDefinition(raw: unknown, catalogue: ReportCatalogue): ReportDefinition {
+  return readDefinition(raw, catalogue, { drop: true }).definition ?? { source: catalogue.source, columns: [], filters: [], groupBy: null, totals: [], sort: null };
+}
+
+/** The notes a run carries for what a reader's role does not see. */
+export function leftOutNotes(read: Pick<ReadDefinition, 'left' | 'leftFilters'>): string[] {
+  return [
+    ...(read.left.length ? [`Left out, as your role does not see ${read.left.length === 1 ? 'it' : 'them'}: ${read.left.join(', ')}.`] : []),
+    ...(read.leftFilters.length ? [`Not limited by ${read.leftFilters.join(', ')}, which your role does not see.`] : []),
+  ];
 }
 
 // Running a report
@@ -561,6 +622,14 @@ function compareCells(kind: ReportColumnKind, a: ReportCell, b: ReportCell): num
   }
   if (kind === 'date' || kind === 'month') return String(a) < String(b) ? -1 : String(a) > String(b) ? 1 : 0;
   return String(a).localeCompare(String(b), 'en', { sensitivity: 'base', numeric: true });
+}
+
+/** Cells in order, up or down, blanks last either way. */
+function directed(kind: ReportColumnKind, a: ReportCell, b: ReportCell, desc: boolean): number {
+  const blankA = a === null || a === '';
+  const blankB = b === null || b === '';
+  if (blankA || blankB) return compareCells(kind, a, b);
+  return (desc ? -1 : 1) * compareCells(kind, a, b);
 }
 
 function matches(f: ReportFilter, kind: ReportColumnKind, cell: ReportCell): boolean {
@@ -618,8 +687,10 @@ export function runReport(rows: readonly unknown[], def: ReportDefinition, catal
 
   const group = def.groupBy ? col(def.groupBy) : null;
   const sortCol = def.sort ? col(def.sort.column) : null;
-  const dir = def.sort?.desc ? -1 : 1;
-  cells.sort((a, b) => (group ? compareCells(group.kind, a.r[group.key] ?? null, b.r[group.key] ?? null) : 0) || (sortCol ? dir * compareCells(sortCol.kind, a.r[sortCol.key] ?? null, b.r[sortCol.key] ?? null) : 0) || a.i - b.i);
+  const desc = !!def.sort?.desc;
+  // Sorting on the grouped column orders the groups that way; otherwise the groups go up and the rows sort inside them.
+  const groupDesc = !!group && sortCol?.key === group.key && desc;
+  cells.sort((a, b) => (group ? directed(group.kind, a.r[group.key] ?? null, b.r[group.key] ?? null, groupDesc) : 0) || (sortCol ? directed(sortCol.kind, a.r[sortCol.key] ?? null, b.r[sortCol.key] ?? null, desc) : 0) || a.i - b.i);
 
   const totalsRow = (list: ReportRowDto[], keys: string[]) => Object.fromEntries(keys.map((k) => [k, sumCells(col(k).kind, list.map((r) => r[k] ?? null))])) as ReportRowDto;
   const shown = def.columns.map(col).map((c) => ({ key: c.key, label: c.label, kind: c.kind }));
@@ -634,17 +705,20 @@ export function runReport(rows: readonly unknown[], def: ReportDefinition, catal
   };
   if (!group) return { sections: [detail], count: cells.length };
 
-  const groups = new Map<string, { label: ReportCell; rows: ReportRowDto[] }>();
+  // Blanks are their own group (keyed null), so a real value that reads "Not set" never takes them in.
+  const groups = new Map<string | null, { label: ReportCell; rows: ReportRowDto[] }>();
   for (const { r } of cells) {
     const v = r[group.key] ?? null;
-    const k = v === null || v === '' ? '' : String(v);
-    const g = groups.get(k) ?? { label: k === '' ? NOT_SET : v, rows: [] };
+    const k = v === null || v === '' ? null : String(v);
+    const g = groups.get(k) ?? { label: v, rows: [] };
     g.rows.push(r);
     groups.set(k, g);
   }
+  const blanks = groups.get(null);
+  if (blanks) blanks.label = groups.has(NOT_SET) ? `${NOT_SET} (blank)` : NOT_SET;
   const groupKey = `group:${group.key}`;
   const summaryRows = [...groups.values()].map((g) => ({ [groupKey]: g.label, _count: g.rows.length, ...totalsRow(g.rows, def.totals) }) as ReportRowDto);
-  const ordered = sortCol && def.totals.includes(sortCol.key) ? [...summaryRows].sort((a, b) => dir * compareCells(sortCol.kind, a[sortCol.key] ?? null, b[sortCol.key] ?? null)) : summaryRows;
+  const ordered = sortCol && def.totals.includes(sortCol.key) ? [...summaryRows].sort((a, b) => directed(sortCol.kind, a[sortCol.key] ?? null, b[sortCol.key] ?? null, desc)) : summaryRows;
   const summary: ReportSectionDto = {
     key: 'groups',
     title: `By ${group.label.charAt(0).toLowerCase()}${group.label.slice(1)}`,
@@ -672,7 +746,7 @@ export interface ReportScheduleRule {
   weekday: number;
   /** 1 to 28, for a monthly report */
   dayOfMonth: number;
-  /** The day the schedule was set: nothing is sent for a send day before it */
+  /** The day the schedule was set (or its days last changed): nothing is sent for a period that ended before it */
   since: string;
 }
 
@@ -703,8 +777,8 @@ export interface ScheduledPeriod {
 }
 
 /**
- * The period a schedule owes on `today`: the latest send day on or before today (none before `since`), and what it
- * covers. A weekly report covers the seven days before its send day, a monthly one the calendar month before. A run on a
+ * The period a schedule owes on `today`: the latest send day on or before today, and what it covers (none that ended
+ * before `since`). A weekly report covers the seven days before its send day, a monthly one the calendar month before. A run on a
  * later day of the same cycle owes the same period, so a missed day catches up and a second run sends nothing new.
  */
 export function scheduleDue(rule: ReportScheduleRule, today: string): ScheduledPeriod | null {
@@ -726,8 +800,20 @@ export function scheduleDue(rule: ReportScheduleRule, today: string): ScheduledP
     to = addDays(`${sy}-${String(sm).padStart(2, '0')}-01`, -1);
     key = `M${from.slice(0, 7)}`;
   }
-  if (sendOn < rule.since) return null;
+  // A new schedule never sends a period that ended before the day it was set.
+  if (to < rule.since) return null;
   return { sendOn, from, to, key };
+}
+
+/**
+ * The `since` a schedule keeps when it is saved: today for a new one, and today again when its frequency or day changes
+ * (so the new days never catch up a period that ended before the change, which the old days may already have sent);
+ * otherwise unchanged.
+ */
+export function scheduleSince(existing: Pick<ReportScheduleRule, 'frequency' | 'weekday' | 'dayOfMonth' | 'since'> | null, next: Pick<ReportScheduleRule, 'frequency' | 'weekday' | 'dayOfMonth'>, today: string): string {
+  if (!existing) return today;
+  const same = existing.frequency === next.frequency && (next.frequency === 'WEEKLY' ? existing.weekday === next.weekday : existing.dayOfMonth === next.dayOfMonth);
+  return same ? existing.since : today;
 }
 
 /** The notice each recipient's copy carries, unique per person: a second run for the same period sends nothing. */

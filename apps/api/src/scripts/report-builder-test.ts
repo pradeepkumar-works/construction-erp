@@ -2,24 +2,37 @@
  * Reports people build (ARCHITECTURE "Reports you build"). A definition names only columns of its source's catalogue
  * (an unknown column, an object's own name or a hidden one is refused, or left out for someone else's report); the
  * catalogue hides what a role does not see; filters, one level of grouping, exact money totals and sort; the company's
- * own fields as columns; a schedule's period and its dedupe; and the email a schedule sends.
+ * own fields as columns; a schedule's period and its dedupe; and the email a schedule sends. Each source is offered to
+ * exactly the roles its list's page admits (`NAV_ACCESS`), and a schedule holds once its owner leaves or loses the source.
  *
  *   node dist/scripts/report-builder-test.js
  */
 import assert from 'node:assert/strict';
 import {
+  MAX_REPORT_COLUMNS,
+  NAV_ACCESS,
+  NAV_TREE,
+  NOT_SET,
   REPORT_SOURCES,
   REPORT_SOURCE_KEYS,
+  ROLE_KEYS,
   canBuildReports,
+  canStopAnySchedule,
   catalogueFor,
+  isRealDay,
+  leftOutNotes,
+  mayReceiveReport,
   readDefinition,
   reportSourcesFor,
   runReport,
   scaled,
   scheduleDedupeKey,
   scheduleDue,
+  scheduleOwnerProblem,
   scheduleProblem,
+  scheduleSince,
   scheduleWords,
+  visibleDefinition,
   sumCells,
   unscaled,
   type CustomFieldDto,
@@ -29,6 +42,7 @@ import {
   type ReportDefinition,
 } from '@erp/shared';
 import { reportEmail } from '../report-builder/report-email';
+import { uniqueRows } from '../report-builder/report-builder.service';
 
 const tests: [string, () => void][] = [];
 const test = (name: string, fn: () => void) => tests.push([name, fn]);
@@ -53,16 +67,56 @@ test('every source has a starter its own catalogue offers, and keys that are its
 });
 
 test('a site engineer is offered purchase orders and projects, but not contract value; a client guest nothing', () => {
-  assert.ok(reportSourcesFor('SITE_ENGINEER').includes('purchase-orders'));
-  assert.ok(!reportSourcesFor('SITE_ENGINEER').includes('ra-bills'));
+  assert.ok(reportSourcesFor({ roleKey: 'SITE_ENGINEER' }).includes('purchase-orders'));
+  assert.ok(!reportSourcesFor({ roleKey: 'SITE_ENGINEER' }).includes('ra-bills'));
   const projects = catalogueFor('SITE_ENGINEER', 'projects');
   assert.ok(!projects.columns.some((c) => c.key === 'contractValue' || c.key === 'revisedContractValue'));
   assert.equal(projects.hidden.get('contractValue'), 'Contract value');
   assert.ok(catalogueFor('ACCOUNTS_MANAGER', 'projects').columns.some((c) => c.key === 'contractValue'));
   assert.ok(!catalogueFor('STORE_MANAGER', 'vendors').columns.some((c) => c.key === 'bankAccountNo'));
-  assert.equal(canBuildReports('CLIENT_ENGINEER'), false);
-  assert.equal(canBuildReports('SUPPLIER'), false);
-  assert.equal(canBuildReports('SITE_ENGINEER'), true);
+  assert.equal(canBuildReports({ roleKey: 'CLIENT_ENGINEER' }), false);
+  assert.equal(canBuildReports({ roleKey: 'SUPPLIER' }), false);
+  assert.equal(canBuildReports({ roleKey: 'SITE_ENGINEER' }), true);
+});
+
+// The page each source's list is: its node in the navigation tree.
+const SOURCE_ROUTES: Record<(typeof REPORT_SOURCE_KEYS)[number], string> = {
+  'purchase-orders': '/purchase-orders',
+  'vendor-bills': '/vendor-bills',
+  'ra-bills': '/bills',
+  indents: '/material-requests',
+  stock: '/stock',
+  vendors: '/vendors?kind=SUPPLIER',
+  projects: '/projects',
+};
+
+test('every role is offered a source exactly when its list’s page opens for them (NAV_ACCESS), approvers of RA bills too', () => {
+  const bill = [{ type: 'BILL' as const, maxAmount: null }];
+  for (const k of REPORT_SOURCE_KEYS) {
+    const node = NAV_TREE.find((n) => n.route === SOURCE_ROUTES[k]);
+    assert.ok(node?.access, `${k}: no page at ${SOURCE_ROUTES[k]}`);
+    const page = NAV_ACCESS[node.access as keyof typeof NAV_ACCESS];
+    for (const roleKey of ROLE_KEYS)
+      for (const approvalRights of [undefined, bill]) {
+        const reader = { roleKey, approvalRights };
+        assert.equal(REPORT_SOURCES[k].sees(reader), page(reader), `${k} for ${roleKey}${approvalRights ? ' with BILL rights' : ''}`);
+        // A recipient is staff who opens the page; never a client's guest or a supplier.
+        if (mayReceiveReport(reader, k)) assert.ok(page(reader) && !['CLIENT_ENGINEER', 'SUPPLIER'].includes(roleKey), `${k} to ${roleKey}`);
+      }
+  }
+  // A role that does not prepare RA bills is offered them once the company's matrix makes it an approver.
+  const role = ROLE_KEYS.find((r) => !REPORT_SOURCES['ra-bills'].sees({ roleKey: r }) && REPORT_SOURCES['ra-bills'].sees({ roleKey: r, approvalRights: bill }));
+  assert.ok(role, 'some role sees RA bills only as an approver');
+});
+
+test('a schedule holds once its owner has left the company or no longer opens the source', () => {
+  assert.equal(scheduleOwnerProblem({ isActive: true, roleKey: 'PROCUREMENT_MANAGER' }, 'purchase-orders'), null);
+  assert.match(scheduleOwnerProblem({ isActive: false, roleKey: 'PROCUREMENT_MANAGER' }, 'purchase-orders')!, /no longer works in the company/);
+  assert.match(scheduleOwnerProblem({ isActive: true, roleKey: 'SITE_ENGINEER' }, 'ra-bills')!, /no longer opens ra bills/);
+  assert.match(scheduleOwnerProblem({ isActive: true, roleKey: 'CLIENT_ENGINEER' }, 'projects')!, /no longer opens projects/);
+  // Only an admin stops someone else's schedule.
+  assert.equal(canStopAnySchedule('ADMIN'), true);
+  assert.equal(canStopAnySchedule('PROJECT_MANAGER'), false);
 });
 
 test('an unknown column is refused, an object’s own names too, and nothing but own keys is read', () => {
@@ -87,6 +141,40 @@ test('a hidden column is refused on save, and left out with its name when someon
   assert.deepEqual(dropped.definition!.columns, ['name']);
   assert.deepEqual(dropped.definition!.totals, []);
   assert.deepEqual(dropped.left, ['Contract value']);
+  assert.deepEqual(dropped.leftFilters, []);
+});
+
+test('a condition on a hidden column is dropped by name, and someone else’s report reads as only what the reader sees', () => {
+  const projects = catalogueFor('SITE_ENGINEER', 'projects');
+  const raw = { source: 'projects', columns: ['name', 'contractValue'], filters: [{ column: 'contractValue', op: 'atLeast', value: '1000000' }, { column: 'status', op: 'is', value: 'Active' }], groupBy: null, totals: ['contractValue'], sort: { column: 'contractValue', desc: true } };
+  const dropped = readDefinition(raw, projects, { drop: true });
+  assert.deepEqual(dropped.leftFilters, ['Contract value']);
+  assert.deepEqual(leftOutNotes(dropped), ['Left out, as your role does not see it: Contract value.', 'Not limited by Contract value, which your role does not see.']);
+  // A condition alone (not shown) still says the report is not limited by it.
+  const onlyFilter = readDefinition({ ...raw, columns: ['name'], totals: [], sort: null }, projects, { drop: true });
+  assert.deepEqual(leftOutNotes(onlyFilter), ['Not limited by Contract value, which your role does not see.']);
+  const seen = visibleDefinition(raw, projects);
+  assert.deepEqual(seen, { source: 'projects', columns: ['name'], filters: [{ column: 'status', op: 'is', value: 'Active' }], groupBy: null, totals: [], sort: null });
+  assert.ok(!JSON.stringify(seen).includes('contractValue'));
+  // Every column hidden: nothing of it reads back.
+  assert.deepEqual(visibleDefinition({ ...raw, columns: ['contractValue'] }, projects).columns, []);
+  assert.match(readDefinition({ ...raw, columns: ['contractValue'] }, projects, { drop: true }).problems.join(), /None of this report’s columns is shown to your role/);
+});
+
+test('totals are capped like columns, and an impossible day is never a day', () => {
+  const many = Array.from({ length: MAX_REPORT_COLUMNS + 1 }, () => 'total');
+  assert.match(readDefinition({ ...def(), totals: many }, cat).problems.join(), new RegExp(`Keep to ${MAX_REPORT_COLUMNS} totals`));
+  assert.equal(isRealDay('2026-02-31'), false);
+  assert.equal(isRealDay('2026-13-01'), false);
+  assert.equal(isRealDay('2026-00-10'), false);
+  assert.equal(isRealDay('9999-99-99'), false);
+  assert.equal(isRealDay('2028-02-29'), true);
+  assert.equal(isRealDay('2026-11-11'), true);
+});
+
+test('rows read a page at a time are each kept once', () => {
+  const rows = [{ id: 'a' }, { id: 'b' }, { id: 'a' }, { name: 'no id' }, { name: 'no id' }];
+  assert.deepEqual(uniqueRows(rows), [{ id: 'a' }, { id: 'b' }, { name: 'no id' }, { name: 'no id' }]);
 });
 
 test('filters by kind: words, figures as exact decimals, days; a condition the kind does not take is refused', () => {
@@ -138,6 +226,25 @@ test('grouping: a summary of each vendor with its count and total above the rows
   assert.equal(readDefinition({ ...def(), columns: ['poNo'], totals: ['total'] }, cat).definition, null);
 });
 
+test('a real “Not set” and a blank are two groups; sorting down on the grouped column orders the groups down', () => {
+  const rows = [po('1', NOT_SET, '1.00'), po('2', '', '2.00'), po('3', 'Acme', '3.00'), po('4', 'Zenith', '4.00'), po('5', NOT_SET, '5.00')];
+  const groups = (desc: boolean) => runReport(rows, def({ groupBy: 'vendor', sort: { column: 'vendor', desc } }), cat).sections;
+  const [down, rowsDown] = groups(true);
+  assert.deepEqual(down.rows.map((r) => [r['group:vendor'], r._count]), [
+    ['Zenith', 1],
+    [NOT_SET, 2],
+    ['Acme', 1],
+    [`${NOT_SET} (blank)`, 1],
+  ]);
+  assert.deepEqual(rowsDown.rows.map((r) => r.poNo), ['PO-4', 'PO-1', 'PO-5', 'PO-3', 'PO-2']);
+  assert.deepEqual(groups(false)[0].rows.map((r) => r['group:vendor']), ['Acme', NOT_SET, 'Zenith', `${NOT_SET} (blank)`]);
+  // With no real "Not set", the blank group keeps the plain name.
+  assert.equal(runReport([po('1', '', '1.00')], def({ groupBy: 'vendor' }), cat).sections[0].rows[0]['group:vendor'], NOT_SET);
+  // Totals sorted down keep blanks last too.
+  const byTotal = runReport([po('1', 'A', '1.00'), po('2', 'B', '9.00')], def({ groupBy: 'vendor', sort: { column: 'total', desc: true } }), cat).sections[0];
+  assert.deepEqual(byTotal.rows.map((r) => r['group:vendor']), ['B', 'A']);
+});
+
 test('sort: figures by value, words by name, blanks last; an empty report says so', () => {
   const rows = [po('1', 'b', '9.00'), po('2', 'a', '10.00'), po('3', 'c', '100.00', { vendorName: null as unknown as string })];
   assert.deepEqual(runReport(rows, def({ sort: { column: 'total', desc: false } }), cat).sections[0].rows.map((r) => r.poNo), ['PO-1', 'PO-2', 'PO-3']);
@@ -168,6 +275,9 @@ test('the company’s own fields are columns of their sources, read from the rec
     ['South', '2.000'],
     ['Not set', '0.000'],
   ]);
+  // A large number reads as a decimal, never in exponent form.
+  const big = runReport([po('9', 'A', '1.00', { customValues: { weight: 1e21 } }), po('8', 'A', '1.00', { customValues: { weight: 0.1 } })], readDefinition({ ...def(), columns: ['poNo', 'cf:weight'], totals: [] }, c).definition!, c);
+  assert.deepEqual(big.sections[0].rows.map((r) => r['cf:weight']), ['1000000000000000000000', '0.1']);
   // Projects without the field in the catalogue: a saved report naming it leaves it out with its name.
   assert.deepEqual(readDefinition({ ...def(), columns: ['poNo', 'cf:gone'], totals: [] }, cat, { drop: true }).left, ['gone']);
   assert.ok(catalogueFor('ADMIN', 'projects', fields).columns.some((x) => x.key === 'cf:weight'));
@@ -186,6 +296,36 @@ test('a weekly schedule owes the seven days before its send day, once per period
   assert.equal(scheduleDue({ ...rule, since: '2026-11-12' }, '2026-11-13'), null);
   assert.equal(scheduleDue({ ...rule, since: '2026-11-12' }, '2026-11-16')!.from, '2026-11-09');
   assert.equal(scheduleDue({ ...rule, weekday: 3, since: '2026-11-01' }, '2026-11-12')!.to, '2026-11-11');
+});
+
+test('a new schedule never sends a period that ended before the day it was set', () => {
+  const rule = { frequency: 'WEEKLY' as const, weekday: 0, dayOfMonth: 1, since: '2026-11-09' };
+  // Set on the send day itself: last week ended yesterday, so nothing goes today; next Monday's week does.
+  assert.equal(scheduleDue(rule, '2026-11-09'), null);
+  assert.deepEqual(scheduleDue(rule, '2026-11-16'), { sendOn: '2026-11-16', from: '2026-11-09', to: '2026-11-15', key: 'W2026-11-09' });
+  // A period that ends on the day it was set still goes.
+  assert.equal(scheduleDue({ ...rule, since: '2026-11-15' }, '2026-11-16')!.to, '2026-11-15');
+  assert.equal(scheduleDue({ ...rule, since: '2026-11-16' }, '2026-11-16'), null);
+  const monthly = { frequency: 'MONTHLY' as const, weekday: 0, dayOfMonth: 1, since: '2026-11-01' };
+  assert.equal(scheduleDue(monthly, '2026-11-01'), null);
+  assert.equal(scheduleDue(monthly, '2026-12-01')!.key, 'M2026-11');
+});
+
+test('changing a schedule’s frequency or day starts it again from today; recipients alone keep its start', () => {
+  const old = { frequency: 'WEEKLY' as const, weekday: 0, dayOfMonth: 1, since: '2026-10-01' };
+  const today = '2026-11-11';
+  assert.equal(scheduleSince(null, old, today), today);
+  assert.equal(scheduleSince(old, { ...old }, today), '2026-10-01');
+  // A weekly schedule's day of the month is not used, so changing it changes nothing.
+  assert.equal(scheduleSince(old, { ...old, dayOfMonth: 15 }, today), '2026-10-01');
+  assert.equal(scheduleSince(old, { ...old, weekday: 6 }, today), today);
+  assert.equal(scheduleSince(old, { ...old, frequency: 'MONTHLY' }, today), today);
+  assert.equal(scheduleSince({ ...old, frequency: 'MONTHLY' }, { ...old, frequency: 'MONTHLY', dayOfMonth: 2 }, today), today);
+  // Moved from Monday to Sunday on a Wednesday: last Sunday's week (already sent on Monday, bar a day) does not go again.
+  const moved = { ...old, weekday: 6, since: scheduleSince(old, { ...old, weekday: 6 }, today) };
+  assert.equal(scheduleDue(old, today)!.key, 'W2026-11-02');
+  assert.equal(scheduleDue({ ...old, weekday: 6 }, today)!.to, '2026-11-07');
+  assert.equal(scheduleDue(moved, today), null);
 });
 
 test('a monthly schedule owes the calendar month before its send day, across a year end', () => {
@@ -220,6 +360,8 @@ test('the scheduled email carries the first table with its total and the link', 
   assert.match(mail.html, /https:\/\/app\.example\/my-reports\/r1/);
   assert.match(mail.text, /2 projects/);
   assert.ok(!/<road>/.test(mail.html));
+  // The footnote is true: the owner, or an admin, can stop it.
+  assert.match(mail.html, /The person who set it up, or an admin, can stop it/);
 });
 
 let failed = 0;

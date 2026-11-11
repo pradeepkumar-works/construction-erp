@@ -482,3 +482,20 @@ export const canEditSubmission = (user: SubmissionActor, s: SubmissionRef): bool
 /** Can this user send the submission (back) to the approval queue? Author or an approver, from a resubmittable status. */
 export const canResubmit = (user: SubmissionActor, s: SubmissionRef): boolean =>
   RESUBMITTABLE_STATUSES.includes(s.status) && (s.submittedById === user.id || canApprove(user.roleKey));
+
+// Who opens a list: each page's NAV_ACCESS check and the report builder's sources read the same helper.
+
+/** The indents list: site staff and purchase. */
+export const canViewIndents = (role: RoleKey) => canReportSafety(role) || canPurchase(role);
+/** Stock on hand and the stock register: site staff, purchase and those who read cost. */
+export const canViewStock = (role: RoleKey) => canReportSafety(role) || canPurchase(role) || canViewCost(role);
+/** The vendor register: those who edit vendors or see their bank details. */
+export const canViewVendors = (role: RoleKey) => canEditVendors(role) || canSeeVendorBank(role);
+/** The project register: every staff role (a client's guest or a supplier sees its own pages instead). */
+export const canViewProjects = (role: RoleKey) => !isGuest(role);
+/** RA bills: the billing roles, and whoever the company's approval levels let decide a bill (`approvalRightsOf`). */
+export const canViewRaBills = (role: RoleKey, rights: readonly { type: string }[] = []) => canPrepareBill(role) || rights.some((r) => r.type === 'BILL');
+/** A scheduled report goes only to staff, never to a client's guest or a supplier. */
+export const canReceiveReports = (role: RoleKey) => !isGuest(role);
+/** Stop any scheduled report in the company, whoever set it up. */
+export const canStopAnySchedule = (role: RoleKey) => USER_ADMIN_ROLES.includes(role);

@@ -120,11 +120,12 @@ export class NotificationsController {
       OBLIGATIONS_DUE: () => this.jobs.obligationsDue(q.date),
       WATCH_LIST: () => this.jobs.watchList(q.date),
       RECEIPTS_WEEKLY: () => this.jobs.receiptsWeekly(q.date),
-      REPORT_SCHEDULES: () => this.reportSchedules.sendDue(q.date),
       PURGE_COMPANIES: () => this.companyData.purgeDue(q.date),
       BILLING: () => this.billing.daily(q.date),
       POLL_FEEDS: () => this.integrations.pollDue(),
       READ_DOCUMENTS: () => this.documentText.readAllPending(60_000),
+      // Last: a company's own reports wait behind the jobs everyone shares.
+      REPORT_SCHEDULES: () => this.reportSchedules.sendDue(q.date),
     });
     return { ...digest, failed: [...before, ...after] };
   }

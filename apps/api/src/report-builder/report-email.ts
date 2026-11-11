@@ -54,7 +54,7 @@ export function reportEmail(r: ManagementReportDto, opts: { firstName: string; h
   const text = [`Hello ${opts.firstName},`, '', lead, '', ...(first ? [first.title, first.columns.map((c) => c.label).join(' | '), ...textRows, ...textTotal] : []), '', ...r.notes, `Open the report: ${opts.href}`].join('\n');
   return {
     subject,
-    html: emailLayout({ preheader: lead, body, orgName: opts.orgName, footnote: 'You get this because it is scheduled to you. The person who set it up can stop it from the report’s Schedule.' }),
+    html: emailLayout({ preheader: lead, body, orgName: opts.orgName, footnote: 'You get this because it is scheduled to you. The person who set it up, or an admin, can stop it from the report’s Schedule.' }),
     text,
   };
 }
