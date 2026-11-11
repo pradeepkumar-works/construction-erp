@@ -2,7 +2,7 @@
 
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import React, { useEffect, useMemo } from 'react';
-import { App, Button, Form, Input, Select, Typography } from 'antd';
+import { App, Button, Checkbox, Form, Input, Select, Typography } from 'antd';
 import { tk } from '@/ds';
 import { DeleteOutlined, PlusOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -28,6 +28,8 @@ interface LineValues {
   unit?: string;
   qty?: number | null;
   rate?: number | null;
+  /** An existing item's quantity at a revised rate, beyond the deviation limit */
+  ownRate?: boolean;
 }
 
 interface FormValues {
@@ -45,7 +47,7 @@ const grid = (cols: string) => ({ display: 'grid', gridTemplateColumns: cols, ga
 const lineRate = (l: LineValues | undefined, boq: Map<string, BoqItemDto>) => {
   if (!l) return 0;
   const b = l.boqItemId && l.boqItemId !== NEW_ITEM ? boq.get(l.boqItemId) : undefined;
-  return b && !isUnapprovedExtra(b.originalQty, b.revisedQty) ? toNumber(b.rate) : (l.rate ?? 0);
+  return b && !isUnapprovedExtra(b.originalQty, b.revisedQty) && !l.ownRate ? toNumber(b.rate) : (l.rate ?? 0);
 };
 
 /** Prepare a variation (or, with `variation`, change one the client has not approved). */
@@ -89,7 +91,7 @@ export function VariationFormModal({ open, onClose, projectId, variation, prefil
         description: variation.description ?? undefined,
         lines: variation.lines.map((l) =>
           l.boqItemId
-            ? { boqItemId: l.boqItemId, qty: toNumber(l.qty), rate: toNumber(l.rate) }
+            ? { boqItemId: l.boqItemId, qty: toNumber(l.qty), rate: toNumber(l.rate), ownRate: l.ownRate }
             : { boqItemId: NEW_ITEM, itemNo: l.itemNo, description: l.description, unit: l.unit, qty: toNumber(l.qty), rate: toNumber(l.rate) },
         ),
         files: variation.attachments,
@@ -106,7 +108,7 @@ export function VariationFormModal({ open, onClose, projectId, variation, prefil
         lines: v.lines.map((l) =>
           l.boqItemId === NEW_ITEM
             ? { itemNo: l.itemNo!.trim(), description: l.description!.trim(), unit: l.unit!.trim(), qty: String(l.qty), rate: String(l.rate) }
-            : { boqItemId: l.boqItemId, qty: String(l.qty), ...(l.rate !== undefined && l.rate !== null ? { rate: String(l.rate) } : {}) },
+            : { boqItemId: l.boqItemId, qty: String(l.qty), ...(l.rate !== undefined && l.rate !== null ? { rate: String(l.rate) } : {}), ...(l.ownRate ? { ownRate: true } : {}) },
         ),
         attachmentIds: (v.files ?? []).map((f) => f.id),
       };
@@ -149,7 +151,7 @@ export function VariationFormModal({ open, onClose, projectId, variation, prefil
           </Form.Item>
         </FormSection>
 
-        <FormSection help={<>A BOQ item with a quantity change (negative to omit), or a new item with its proposed rate. Nothing changes in the BOQ until the client approves.</>} title="Items">
+        <FormSection help={<>A BOQ item with a quantity change (negative to omit), or a new item with its proposed rate. Quantity past the deviation limit that the contract pays at a revised rate is a BOQ item&apos;s line at a revised rate: approval adds it as an excess item under the BOQ item, which the measurement book measures past the limit. Nothing changes in the BOQ until the client approves.</>} title="Items">
           <Form.List name="lines" rules={[{ validator: async (_, v) => (v?.length ? undefined : Promise.reject(new Error('Add at least one item'))) }]}>
             {(fields, { add, remove }, { errors }) => (
               <>
@@ -188,10 +190,15 @@ export function VariationFormModal({ open, onClose, projectId, variation, prefil
                           rules={[{ required: true, message: 'Enter the quantity' }, { validator: async (_, v) => (v === 0 ? Promise.reject(new Error('Enter a quantity other than 0')) : undefined) }]}
                         >
                           {/* A BOQ item's change can be negative (an omission). */}
-                          <QuantityInput unit={isNew ? l?.unit : b?.unit} min={isNew || extra ? 0.001 : undefined} />
+                          <QuantityInput unit={isNew ? l?.unit : b?.unit} min={isNew || extra || l?.ownRate ? 0.001 : undefined} />
                         </Form.Item>
-                        {isNew || extra ? (
-                          <Form.Item name={[f.name, 'rate']} label="Proposed rate" rules={[{ required: true, message: 'Enter the proposed rate' }]}>
+                        {isNew || extra || l?.ownRate ? (
+                          <Form.Item
+                            name={[f.name, 'rate']}
+                            label={l?.ownRate ? 'Revised rate' : 'Proposed rate'}
+                            extra={l?.ownRate && b ? `BOQ rate ${formatINR(b.rate)}` : undefined}
+                            rules={[{ required: true, message: l?.ownRate ? 'Enter the revised rate' : 'Enter the proposed rate' }]}
+                          >
                             <MoneyInput />
                           </Form.Item>
                         ) : (
@@ -203,6 +210,11 @@ export function VariationFormModal({ open, onClose, projectId, variation, prefil
                           <Money value={amount} />
                         </Form.Item>
                       </FormGrid>
+                      {b && !extra ? (
+                        <Form.Item name={[f.name, 'ownRate']} valuePropName="checked">
+                          <Checkbox>At a revised rate (beyond the deviation limit)</Checkbox>
+                        </Form.Item>
+                      ) : null}
                     </div>
                   );
                 })}

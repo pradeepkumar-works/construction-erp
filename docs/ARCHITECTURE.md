@@ -2769,6 +2769,29 @@ Nirmaan hands the payroll provider its inputs; PF, ESI, professional tax and sal
   and decision steps); the Contract tab shows the revised contract value and the RA bill drawer warns about held
   extra items. No site app screen: variations are office work.
 
+## Excess and saving statement
+
+- **Beyond the deviation limit.** A measurement book refuses a BOQ item measured past its sanctioned quantity plus the
+  contract's tolerance (`Project.measureTolerancePct`, else `MEASURE_TOLERANCE_PCT`). What lies past it is paid at a
+  revised rate: a variation line on the item with `VariationLine.ownRate` and the rate the contractor claims. An item
+  may take one line at its BOQ rate and one at a revised rate in the same variation. Approval makes the revised-rate
+  quantity an excess item under the BOQ item (`BoqItem.excessOfId`, number from `excessItemNo`: "2.8-X", then "2.8-X2",
+  description from `excessItemDescription`, original 0, revised = approved), or adds to one already at that rate.
+  The variation line then points at the excess item. The MB's refusal names the excess item to measure on, or says to
+  record a variation at a revised rate when there is none.
+- **Statement.** `excessSaving` (`@erp/shared/excess-saving.ts`, pure, tested in `src/scripts/excess-saving-test.ts`)
+  takes each item's agreement quantity (original), sanctioned (revised, else original), approved measured quantity and
+  what it is expected to end at (`BoqItem.anticipatedQty`, else the larger of measured and sanctioned, so an item in
+  progress shows no saving until the QS types less). Excess and saving are against the agreement quantity at the bill
+  rate (the tender premium in it for an item-rate contract), in paise; each excess item sits right under its BOQ item.
+  A BOQ item measured or expected past its limit with no excess item shows by how much (`pastLimitQty`).
+- **Anticipated quantity.** Set only through `ExcessSavingService.setAnticipated` (`VARIATION_ROLES`), checked by
+  `anticipatedQtyProblem` (not below zero or below what is measured), audited as `BOQ_ANTICIPATED_SET`; null goes back
+  to the default.
+- **API and clients.** `GET /projects/:id/excess-saving` (`BILLING_ROLES`), `PATCH /boq-items/:id/anticipated`. Web: an
+  Excess and saving tab in the project's Money group (totals, the items with the expected quantity typed in place,
+  and a printed statement on the letterhead through `printDocHtml`).
+
 ## Budget and cash flow
 
 - **Tables.** `ProjectBudget` is one row per version of a project's budget (`versionNo`, unique per project): an amount

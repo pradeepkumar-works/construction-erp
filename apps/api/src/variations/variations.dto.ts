@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { ArrayMaxSize, ArrayMinSize, IsArray, IsDateString, IsIn, IsNotEmpty, IsNumberString, IsOptional, IsString, IsUUID, MaxLength, ValidateIf, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsDateString, IsIn, IsNotEmpty, IsNumberString, IsOptional, IsString, IsUUID, MaxLength, ValidateIf, ValidateNested } from 'class-validator';
 import { VARIATION_CAUSES, VARIATION_STATUSES, type VariationCause, type VariationStatus } from '@erp/shared';
 import { PageQuery } from '../common/paging';
 import { CLIENT_ID_DOC } from '../common/idempotency';
@@ -16,11 +16,15 @@ export class VariationLineInput {
   @ApiPropertyOptional({ description: 'New item only' }) @ValidateIf((o) => !o.boqItemId) @trim() @IsString() @IsNotEmpty() @MaxLength(1000) description?: string;
   @ApiPropertyOptional({ example: 'cum', description: 'New item only' }) @ValidateIf((o) => !o.boqItemId) @trim() @IsString() @IsNotEmpty() @MaxLength(20) unit?: string;
   @ApiProperty({ example: '120', description: 'Quantity added; negative when omitted. A new item: its whole quantity.' }) @num() @IsNumberString() qty: string;
-  @ApiPropertyOptional({ example: '5400', description: 'Proposed rate: required for a new item, and for a BOQ item that has no quantity yet (an extra item). Other items keep their BOQ rate.' })
+  @ApiPropertyOptional({ example: '5400', description: 'Proposed rate: required for a new item, for a BOQ item that has no quantity yet (an extra item), and with ownRate. Other items keep their BOQ rate.' })
   @IsOptional()
   @num()
   @IsNumberString()
   rate?: string;
+  @ApiPropertyOptional({ description: 'An existing item: the quantity added is paid at its own rate (beyond the deviation limit); approval makes it an excess item under the BOQ item' })
+  @IsOptional()
+  @IsBoolean()
+  ownRate?: boolean;
 }
 
 export class CreateVariationDto {

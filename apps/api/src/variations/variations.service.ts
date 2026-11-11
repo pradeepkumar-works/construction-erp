@@ -3,6 +3,8 @@ import { Prisma } from '@prisma/client';
 import {
   canManageVariations,
   canViewVariations,
+  excessItemDescription,
+  excessItemNo,
   variationLabel,
   VARIATION_STATUS_LABELS,
   type Paginated,
@@ -90,6 +92,7 @@ export class VariationsService {
         id: l.id,
         boqItemId: l.boqItemId,
         isNewItem: l.isNewItem,
+        ownRate: l.ownRate,
         itemNo: l.itemNo,
         description: l.description,
         unit: l.unit,
@@ -168,8 +171,9 @@ export class VariationsService {
 
   /** Check the lines against the project's BOQ and turn them into rows (without the variation id). */
   private async buildLines(projectId: string, organizationId: string, input: VariationLineInput[]) {
-    const ids = input.map((l) => l.boqItemId).filter((x): x is string => !!x);
-    if (new Set(ids).size !== ids.length) throw new BadRequestException('A BOQ item can only appear once in a variation');
+    // An item may take a line at its BOQ rate and one at a revised rate (beyond the deviation limit), each once.
+    const ids = input.filter((l) => l.boqItemId).map((l) => `${l.boqItemId}:${l.ownRate ? 'own' : 'boq'}`);
+    if (new Set(ids).size !== ids.length) throw new BadRequestException('A BOQ item can appear once at its BOQ rate and once at a revised rate in a variation');
     const newNos = input.filter((l) => !l.boqItemId).map((l) => l.itemNo!.toLowerCase());
     if (new Set(newNos).size !== newNos.length) throw new BadRequestException('Two new items have the same item number');
     const boq = await this.prisma.boqItem.findMany({ where: { projectId }, select: { id: true, itemNo: true, description: true, unit: true, rate: true, originalQty: true, revisedQty: true } });
@@ -188,8 +192,11 @@ export class VariationsService {
         const current = b.revisedQty ?? b.originalQty;
         if (current.add(qty).lt(0)) throw new BadRequestException(`Item ${b.itemNo}: the quantity cannot go below 0 (it is ${current})`);
         if (extra && qty.lt(0)) throw new BadRequestException(`Item ${b.itemNo} is an extra item: give the quantity the client should approve`);
-        const rate = extra && l.rate !== undefined ? D(l.rate) : b.rate;
-        row = { organizationId, boqItemId: b.id, isNewItem: extra, itemNo: b.itemNo, description: b.description, unit: b.unit, qty, rate, sortOrder: i };
+        const ownRate = !!l.ownRate && !extra;
+        if (ownRate && qty.lte(0)) throw new BadRequestException(`Item ${b.itemNo}: quantity at a revised rate must be more than 0`);
+        if (ownRate && l.rate === undefined) throw new BadRequestException(`Item ${b.itemNo}: give the revised rate`);
+        const rate = (extra || ownRate) && l.rate !== undefined ? D(l.rate) : b.rate;
+        row = { organizationId, boqItemId: b.id, isNewItem: extra, ownRate, itemNo: b.itemNo, description: b.description, unit: b.unit, qty, rate, sortOrder: i };
       } else {
         if (taken.has(l.itemNo!.toLowerCase())) throw new BadRequestException(`Item ${l.itemNo} is already in the BOQ: pick it from the list instead`);
         if (qty.lt(0)) throw new BadRequestException(`New item ${l.itemNo}: the quantity must be more than 0`);
@@ -286,6 +293,38 @@ export class VariationsService {
   }
 
   /**
+   * The excess item that takes a BOQ item's quantity beyond its deviation limit at `rate` (ARCHITECTURE "Excess and saving
+   * statement"): the one already under it at that rate gains the quantity, else a new one ("2.8-X") is made right after it.
+   */
+  private async excessItem(tx: Prisma.TransactionClient, organizationId: string, projectId: string, parentId: string, qty: Prisma.Decimal, rate: Prisma.Decimal): Promise<string> {
+    const parent = await tx.boqItem.findUniqueOrThrow({ where: { id: parentId }, include: { excessItems: true } });
+    const same = parent.excessItems.find((x) => x.rate.eq(rate));
+    if (same) {
+      await tx.boqItem.update({ where: { id: same.id }, data: { revisedQty: (same.revisedQty ?? same.originalQty).add(qty) } });
+      return same.id;
+    }
+    const taken = new Set((await tx.boqItem.findMany({ where: { projectId }, select: { itemNo: true } })).map((b) => b.itemNo.toLowerCase()));
+    const made = await tx.boqItem.create({
+      data: {
+        organizationId,
+        projectId,
+        itemNo: excessItemNo(parent.itemNo, taken),
+        description: excessItemDescription(parent.description),
+        unit: parent.unit,
+        rate,
+        originalQty: ZERO,
+        revisedQty: qty,
+        section: parent.section,
+        workElementId: parent.workElementId,
+        excessOfId: parent.id,
+        sortOrder: parent.sortOrder,
+      },
+      select: { id: true },
+    });
+    return made.id;
+  }
+
+  /**
    * The client's decision. Approval applies the approved quantities to the BOQ: a quantity change moves the item's
    * revised quantity, an extra item gets its quantity (and the approved rate), and a new item is added to the BOQ.
    */
@@ -311,13 +350,16 @@ export class VariationsService {
       for (const l of cur.lines) {
         const g = given.get(l.id);
         const qty = g?.approvedQty !== undefined ? D(g.approvedQty) : l.qty;
-        const rate = l.isNewItem && g?.approvedRate !== undefined ? D(g.approvedRate) : l.rate;
+        const rate = (l.isNewItem || l.ownRate) && g?.approvedRate !== undefined ? D(g.approvedRate) : l.rate;
         if (rate.lt(0)) throw new BadRequestException(`Item ${l.itemNo}: the rate cannot be negative`);
         if (l.isNewItem && qty.lt(0)) throw new BadRequestException(`Item ${l.itemNo}: the approved quantity cannot be negative`);
         if (!qty.isZero() && qty.isNegative() !== l.qty.isNegative()) throw new BadRequestException(`Item ${l.itemNo}: the approved quantity must have the same sign as the claim`);
         let boqItemId = l.boqItemId;
         if (!qty.isZero()) {
-          if (l.boqItemId) {
+          if (l.boqItemId && l.ownRate) {
+            // Quantity beyond the deviation limit at its own rate: an excess item under the BOQ item, or the one there at that rate.
+            boqItemId = await this.excessItem(tx, cur.organizationId, cur.projectId, l.boqItemId, qty, rate);
+          } else if (l.boqItemId) {
             const b = await tx.boqItem.findUniqueOrThrow({ where: { id: l.boqItemId } });
             const next = (b.revisedQty ?? b.originalQty).add(qty);
             if (next.lt(0)) throw new BadRequestException(`Item ${b.itemNo}: the quantity cannot go below 0`);

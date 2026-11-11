@@ -2609,6 +2609,12 @@ model BoqItem {
   sorItemId      String?
   sorItem        SorItem?     @relation(fields: [sorItemId], references: [id], onDelete: SetNull)
   sorRef         String?
+  /// An excess item: the BOQ item whose quantity beyond the deviation limit it pays at a revised rate (made by a variation)
+  excessOfId     String?
+  excessOf       BoqItem?     @relation("BoqExcess", fields: [excessOfId], references: [id], onDelete: Restrict)
+  excessItems    BoqItem[]    @relation("BoqExcess")
+  /// What the quantity surveyor expects the item to end at, for the excess and saving statement; null takes the default
+  anticipatedQty Decimal?     @db.Decimal(18, 3)
   sortOrder      Int          @default(0)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
@@ -2632,6 +2638,7 @@ model BoqItem {
   @@unique([projectId, itemNo])
   @@index([organizationId])
   @@index([workElementId])
+  @@index([excessOfId])
 }
 
 /// One node of a project's work breakdown: a component such as an intake well, a treatment plant or a tank,
@@ -6535,6 +6542,8 @@ model VariationLine {
   boqItemId      String?
   boqItem        BoqItem?     @relation(fields: [boqItemId], references: [id], onDelete: Restrict)
   isNewItem      Boolean      @default(false)
+  /// An existing item's quantity paid at its own rate (beyond the deviation limit): approval makes it an excess item
+  ownRate        Boolean      @default(false)
   itemNo         String
   description    String
   unit           String

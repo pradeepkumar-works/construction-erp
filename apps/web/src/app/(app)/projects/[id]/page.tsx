@@ -44,6 +44,7 @@ import { ProjectBudgetPanel } from '@/components/cost/ProjectBudgetPanel';
 import { EarnedValuePanel } from '@/components/cost/EarnedValuePanel';
 import { ContractPanel } from '@/components/contracts/ContractPanel';
 import { VariationsPanel } from '@/components/variations/VariationsPanel';
+import { ExcessSavingPanel } from '@/components/excess-saving/ExcessSavingPanel';
 import { BillList } from '@/components/bills/BillList';
 import { StockPanel } from '@/components/stock/StockPanel';
 import { ReconciliationPanel } from '@/components/reconciliation/ReconciliationPanel';
@@ -191,6 +192,7 @@ function ProjectPage({ project }: { project: ProjectDetail }) {
     can(!!user && canViewContract(user.roleKey)) && { key: 'contract', group: 'money', label: 'Contract', children: <ContractPanel projectId={project.id} /> },
     can(!!user && canViewContract(user.roleKey)) && { key: 'bills', group: 'money', label: 'RA bills', children: <BillList projectId={project.id} /> },
     can(!!user && canViewVariations(user.roleKey)) && { key: 'variations', group: 'money', label: 'Variations', children: <VariationsPanel projectId={project.id} /> },
+    can(!!user && canViewVariations(user.roleKey)) && { key: 'excess-saving', group: 'money', label: 'Excess and saving', children: <ExcessSavingPanel projectId={project.id} /> },
     can(!!user && canViewWorkOrders(user.roleKey)) && { key: 'subcontracts', group: 'money', label: 'Subcontracts', children: <SubcontractsPanel projectId={project.id} /> },
     { key: 'expenses', group: 'money', label: 'Site expenses', children: <ExpenseList projectId={project.id} /> },
     can(!!user && canViewCost(user.roleKey)) && { key: 'cost', group: 'money', label: 'Cost', children: <ProjectCostPanel projectId={project.id} /> },

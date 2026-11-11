@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-excess-saving',
+    date: '2026-11-19',
+    title: 'Revised rates past the deviation limit, and the excess and saving statement',
+    points: [
+      'A variation can carry quantity past the deviation limit at a revised rate. Approving it adds an excess item under the BOQ item, such as 2.8-X, at that rate.',
+      'A measurement past the limit now names the excess item to measure it on.',
+      'A project’s Excess and saving tab sets each item’s agreement quantity against what it is expected to end at, with the excess, the saving and the net at the bill rate.',
+      'Type what an item will end at in place, and print the statement for the client.',
+    ],
+  },
+  {
     id: '2026-11-committed-cost',
     date: '2026-11-19',
     title: 'The budget counts what is already ordered',

@@ -238,7 +238,7 @@ export class MeasurementsService {
    */
   private async assertWithinBoq(projectId: string, boqItemId: string, total: Prisma.Decimal, excludeId?: string) {
     const [item, project, held] = await Promise.all([
-      this.prisma.boqItem.findUniqueOrThrow({ where: { id: boqItemId }, select: { itemNo: true, unit: true, originalQty: true, revisedQty: true } }),
+      this.prisma.boqItem.findUniqueOrThrow({ where: { id: boqItemId }, select: { itemNo: true, unit: true, originalQty: true, revisedQty: true, excessItems: { select: { itemNo: true }, orderBy: { itemNo: 'asc' } } } }),
       this.prisma.project.findUniqueOrThrow({ where: { id: projectId }, select: { measureTolerancePct: true } }),
       this.prisma.measurementSheet.aggregate({ where: { boqItemId, status: { not: 'REJECTED' }, ...(excludeId ? { id: { not: excludeId } } : {}) }, _sum: { totalQty: true } }),
     ]);
@@ -246,9 +246,14 @@ export class MeasurementsService {
     const tolerancePct = project.measureTolerancePct ?? MEASURE_TOLERANCE_PCT;
     const over = measureOverBoq({ boqQty, before: Number(held._sum.totalQty ?? 0), sheet: Number(total), tolerancePct });
     const n = (v: number) => v.toLocaleString('en-IN', { maximumFractionDigits: 3 });
+    // Past the deviation limit the quantity is paid at a revised rate: on the excess item a variation made, else after one.
+    const excess = item.excessItems.map((x) => x.itemNo);
+    const next = excess.length
+      ? `Measure what is past ${n(over?.cap ?? 0)} ${item.unit} on item ${excess.join(' or ')}, which pays it at the revised rate.`
+      : 'Check the dimensions, or record a variation for the extra quantity first (at a revised rate when the contract says so).';
     if (over)
       throw new BadRequestException(
-        `Item ${item.itemNo} would be measured to ${n(over.after)} ${item.unit}, past its BOQ quantity of ${n(boqQty)} ${item.unit} and the ${tolerancePct}% the contract allows (${n(over.cap)} ${item.unit}). Check the dimensions, or record a variation for the extra quantity first.`,
+        `Item ${item.itemNo} would be measured to ${n(over.after)} ${item.unit}, past its BOQ quantity of ${n(boqQty)} ${item.unit} and the ${tolerancePct}% the contract allows (${n(over.cap)} ${item.unit}). ${next}`,
       );
   }
 
