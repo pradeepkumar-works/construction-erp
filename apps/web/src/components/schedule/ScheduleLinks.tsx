@@ -10,6 +10,7 @@ import {
   ACTIVITY_LINK_TYPES,
   SCHEDULE_FILE_FORMAT_LABELS,
   linkLabel,
+  plural,
   type ActivityLinkDto,
   type ActivityLinkType,
   type GanttActivityDto,
@@ -216,7 +217,7 @@ export function ImportScheduleModal({ projectId, open, onClose }: { projectId: s
             onChange={(f) => file && void check(f as ScheduleFileFormat, file.content)}
           />
         </Form.Item>
-        <Form.Item label="File" extra="Each row finds the activity it made last time by the file's own id, else one of the same name. A match takes the file's dates, the rest are added under their summary row. Milestones go to Milestones, and the file's links replace the links between them.">
+        <Form.Item label="File" tooltip="Each row finds the activity it made last time by the file's own id, else one of the same name. A match takes the file's dates, the rest are added under their summary row. Milestones go to Milestones, and the file's links replace the links between them.">
           <Upload
             accept={format === 'XER' ? '.xer,.txt' : '.xml'}
             maxCount={1}
@@ -241,7 +242,7 @@ export function ImportScheduleModal({ projectId, open, onClose }: { projectId: s
       {preview ? (
         <Flex vertical gap={8}>
           <Typography.Paragraph style={{ margin: 0 }}>
-            {`${preview.activities.length} activities read: ${preview.created} to add, ${preview.updated} with new dates, ${preview.activities.length - preview.created - preview.updated} unchanged; ${preview.links} links; ${preview.milestones.length} milestones.`}
+            {`${plural(preview.activities.length, 'activity', 'activities')} read: ${preview.created} to add, ${preview.updated} with new dates, ${preview.activities.length - preview.created - preview.updated} unchanged; ${plural(preview.links, 'link')}; ${plural(preview.milestones.length, 'milestone')}.`}
           </Typography.Paragraph>
           {preview.notes.length ? <Alert type="info" showIcon title="How the file was read" description={preview.notes.join('; ')} /> : null}
           {preview.skipped.length ? <Alert type="info" showIcon title="Left out" description={preview.skipped.slice(0, 8).join('; ') + (preview.skipped.length > 8 ? '…' : '')} /> : null}
