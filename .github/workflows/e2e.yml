@@ -13,7 +13,7 @@ jobs:
   suite:
     name: e2e (${{ matrix.suite }})
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 75
     strategy:
       fail-fast: false
       matrix:
@@ -599,8 +599,9 @@ jobs:
           nohup npx next start -p 3000 > /tmp/web.log 2>&1 &
           for i in $(seq 1 30); do curl -sf -o /dev/null "$E2E_WEB_URL/login" && break; sleep 2; done
       # The runner image already has Chromium's libraries; when its apt mirror cannot be reached (it failed to resolve
-      # for an hour in November 2026), install the browser alone rather than fail the run before any test.
-      - run: npx playwright install --with-deps chromium || npx playwright install chromium
+      # for an hour in November 2026, and later took ten minutes to time out), give it two minutes and then install the
+      # browser alone rather than fail the run, or run the flows out of time, before any test.
+      - run: timeout 120 npx playwright install --with-deps chromium || npx playwright install chromium
         working-directory: e2e
       - name: Playwright (${{ matrix.suite }})
         working-directory: e2e
