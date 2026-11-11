@@ -321,6 +321,7 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
           <FormGrid cols={2}>
             <Form.Item
               name="gspSecret"
+              required={!connection?.secretLast4}
               label={`Client secret${connection?.secretLast4 ? ` (saved, ends ${connection.secretLast4})` : ''}`}
               extra="Saved encrypted with the password; only the secret's last four characters are shown."
               dependencies={['gspPassword']}
@@ -330,6 +331,7 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
             </Form.Item>
             <Form.Item
               name="gspPassword"
+              required={!connection?.secretLast4}
               label="API password"
               dependencies={['gspSecret']}
               rules={[gspPart('gspSecret', !!connection?.secretLast4, "Type the API user's password")]}
