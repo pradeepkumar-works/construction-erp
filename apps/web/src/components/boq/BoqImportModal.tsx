@@ -2,7 +2,7 @@
 
 import { Help } from '@/components/common/Help';
 import React, { useMemo, useState } from 'react';
-import { boqRowsFromRead, readNumber, type ReadBoqRow } from '@erp/shared';
+import { boqRowsFromRead, carryParents, readNumber, type ReadBoqRow } from '@erp/shared';
 import { Alert, App, Button, Flex, Modal, Select, Space, Table, Typography, Upload } from 'antd';
 import { tk } from '@/ds';
 import { StageBar } from '@/components/record/StageBar';
@@ -45,6 +45,8 @@ interface ParsedRow {
   section?: string;
   sorRef?: string;
   error?: string;
+  /** A parent item or heading: its words go into the items under it, and it is not imported itself */
+  carried?: 'parent' | 'heading';
 }
 
 export async function downloadBoqTemplate() {
@@ -142,31 +144,41 @@ export function BoqImportModal({ open, onClose, projectId, onImported }: { open:
       const h = mapping[f];
       return h ? String(r[h] ?? '').trim() : '';
     };
-    return rows
-      .map((r, i) => {
-        const row: ParsedRow = {
-          key: i,
-          itemNo: get(r, 'itemNo'),
-          description: get(r, 'description'),
-          unit: get(r, 'unit'),
-          rate: get(r, 'rate').replace(/[,₹\s]/g, ''),
-          originalQty: get(r, 'originalQty').replace(/[,\s]/g, ''),
-          revisedQty: get(r, 'revisedQty').replace(/[,\s]/g, '') || undefined,
-          section: get(r, 'section') || undefined,
-          sorRef: get(r, 'sorRef') || undefined,
-        };
-        const blank = [!row.itemNo && 'item no.', !row.description && 'description', !row.unit && 'unit', !row.rate && 'rate', !row.originalQty && 'quantity'].filter(Boolean);
-        const notNumber = [row.rate && Number.isNaN(Number(row.rate)) && 'rate', row.originalQty && Number.isNaN(Number(row.originalQty)) && 'quantity', row.revisedQty && Number.isNaN(Number(row.revisedQty)) && 'revised qty'].filter(Boolean);
-        const problems = [blank.length ? `Fill in the ${blank.join(', ')}` : '', ...notNumber.map((f) => `Enter the ${f} as a number`)].filter(Boolean);
-        if (problems.length) row.error = problems.join('. ');
-        return row;
-      })
-      .filter((r) => r.itemNo || r.description || r.rate || r.originalQty);
+    // A parent item's words go in front of each sub-item's, and a heading becomes the section below it (`carryParents`).
+    const raw = rows.map((r) => ({
+      itemNo: get(r, 'itemNo'),
+      description: get(r, 'description'),
+      unit: get(r, 'unit'),
+      rate: get(r, 'rate'),
+      qty: get(r, 'originalQty'),
+      section: get(r, 'section') || null,
+    }));
+    return carryParents(raw).map((c) => {
+      const r = rows[c.index];
+      if (c.kind !== 'item') return { key: c.index, itemNo: c.itemNo, description: c.description, unit: '', rate: '', originalQty: '', section: c.section ?? undefined, carried: c.kind };
+      const row: ParsedRow = {
+        key: c.index,
+        itemNo: c.itemNo,
+        description: c.description,
+        unit: get(r, 'unit'),
+        rate: get(r, 'rate').replace(/[,₹\s]/g, ''),
+        originalQty: get(r, 'originalQty').replace(/[,\s]/g, ''),
+        revisedQty: get(r, 'revisedQty').replace(/[,\s]/g, '') || undefined,
+        section: c.section ?? undefined,
+        sorRef: get(r, 'sorRef') || undefined,
+      };
+      const blank = [!row.itemNo && 'item no.', !row.description && 'description', !row.unit && 'unit', !row.rate && 'rate', !row.originalQty && 'quantity'].filter(Boolean);
+      const notNumber = [row.rate && Number.isNaN(Number(row.rate)) && 'rate', row.originalQty && Number.isNaN(Number(row.originalQty)) && 'quantity', row.revisedQty && Number.isNaN(Number(row.revisedQty)) && 'revised qty'].filter(Boolean);
+      const problems = [blank.length ? `Fill in the ${blank.join(', ')}` : '', ...notNumber.map((f) => `Enter the ${f} as a number`)].filter(Boolean);
+      if (problems.length) row.error = problems.join('. ');
+      return row;
+    });
   }, [rows, mapping]);
 
-  const valid = parsed.filter((r) => !r.error && !leftOut.has(r.key));
+  const valid = parsed.filter((r) => !r.error && !r.carried && !leftOut.has(r.key));
+  const carriedCount = parsed.filter((r) => r.carried).length;
   const readTotal = readState ? readNumber(readState.result.fields.total) : null;
-  const rowsTotal = readState ? parsed.filter((r) => !r.error).reduce((s, r) => s + Number(r.rate) * Number(r.originalQty), 0) : 0;
+  const rowsTotal = readState ? parsed.filter((r) => !r.error && !r.carried).reduce((s, r) => s + Number(r.rate) * Number(r.originalQty), 0) : 0;
   const toCheck = readState ? readRows.filter((r) => r.check).length : 0;
   const missingRequired = FIELDS.filter((f) => f.required && !mapping[f.key]);
 
@@ -271,7 +283,7 @@ export function BoqImportModal({ open, onClose, projectId, onImported }: { open:
             pagination={{ pageSize: 8, size: 'small' }}
             scroll={{ x: 800 }}
             rowSelection={{
-              selectedRowKeys: parsed.filter((r) => !r.error && !leftOut.has(r.key)).map((r) => r.key),
+              selectedRowKeys: parsed.filter((r) => !r.error && !r.carried && !leftOut.has(r.key)).map((r) => r.key),
               getCheckboxProps: (r) => ({ disabled: !!r.error, 'aria-label': `Import item ${r.itemNo}` }),
               onChange: (keys) => setLeftOut(new Set(parsed.filter((r) => !keys.includes(r.key)).map((r) => r.key))),
             }}
@@ -342,12 +354,26 @@ export function BoqImportModal({ open, onClose, projectId, onImported }: { open:
               { title: 'Qty', dataIndex: 'originalQty', width: 100, align: 'right' },
               { title: 'Revised', dataIndex: 'revisedQty', width: 90, align: 'right', render: (v) => v ?? '-' },
               { title: 'Section', dataIndex: 'section', width: 130, render: (v) => v ?? '-' },
-              { title: 'Check', dataIndex: 'error', width: 180, render: (e?: string) => (e ? <Typography.Text type="danger">{e}</Typography.Text> : <Typography.Text type="success">OK</Typography.Text>) },
+              {
+                title: 'Check',
+                dataIndex: 'error',
+                width: 180,
+                render: (e: string | undefined, r) =>
+                  e ? (
+                    <Typography.Text type="danger">{e}</Typography.Text>
+                  ) : r.carried === 'parent' ? (
+                    <Typography.Text type="secondary">Parent item: its words lead each item under it</Typography.Text>
+                  ) : r.carried === 'heading' ? (
+                    <Typography.Text type="secondary">Heading: the section of the rows below</Typography.Text>
+                  ) : (
+                    <Typography.Text type="success">OK</Typography.Text>
+                  ),
+              },
             ]}
           />
-          {parsed.length !== valid.length && (
+          {parsed.length - carriedCount !== valid.length && (
             <Typography.Text type="warning" style={{ display: 'block', marginTop: tk.space[2] }}>
-              {parsed.length - valid.length} row{parsed.length - valid.length === 1 ? '' : 's'} with problems will be skipped.
+              {parsed.length - carriedCount - valid.length} row{parsed.length - carriedCount - valid.length === 1 ? '' : 's'} with problems will be skipped.
             </Typography.Text>
           )}
         </>

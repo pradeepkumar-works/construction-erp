@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-boq-parent-items',
+    date: '2026-11-19',
+    title: 'BOQ imports keep the parent item’s description',
+    points: [
+      'In a BOQ that describes the work once (2.8 Earth work in excavation … lead up to 50 m) and prices it on the lines under it (2.8.1 All kinds of soil), each item now reads the full description: Earth work in excavation …: All kinds of soil.',
+      'Sub-items marked (a), (b) are numbered under their parent, 2.8(a), so two parents’ (a) items both come in.',
+      'This works the same for a BOQ read from a PDF or scan and for one imported from Excel, and the import’s table shows which rows were parents and headings.',
+    ],
+  },
+  {
     id: '2026-11-tender-premium',
     date: '2026-11-19',
     title: 'RA bills add the tender premium on item-rate contracts',

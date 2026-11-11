@@ -4698,7 +4698,14 @@ days; it is claimed for delays in the register, or for the added work of a varia
   (later the Contract tab's). Import BOQ › Read a BOQ PDF or scan (`boq`) draws up to 30 pages (`DOC_READ_PAGES_OF`) and
   reads them three to a call, merged in the browser; `boqRowsFromRead` turns the lines into import rows (headings carried
   down as the section, run-on descriptions joined, a missing rate from the amount, each with what to check), shown in the
-  import's table with the amber ones explained and a tick to leave a row out. A BOQ's amounts may be rounded by half a per
+  import's table with the amber ones explained and a tick to leave a row out. **Parent items**: a schedule of rates
+  describes the work once on a numbered line with no unit, rate or quantity ("2.8 Earth work in excavation … lead up to
+  50 m") and prices it on the sub-items under it ("2.8.1 All kinds of soil", "(a) Ordinary rock"). `carryParents`
+  (`@erp/shared/boq-parents.ts`) puts the parent's words in front of each sub-item's ("…: All kinds of soil"), numbers a
+  bare marker under its parent ("2.8(a)") so (a) under two parents stays two items, and leaves the parent itself out of
+  the import; a numbered line of fewer than six words, or in capitals, is a heading and becomes the section. The PDF read
+  and a spreadsheet import walk the same way (`boqLineKind`, `isSubItemOf`), and the spreadsheet's table says which rows
+  were carried. Keep `src/scripts/doc-read-test.ts` passing. A BOQ's amounts may be rounded by half a per
   cent before quantity × rate is flagged. Work orders need `canApprove` (the roles that create projects), BOQs
   `canEditProjects` (the BOQ's editors).
 - **Tests.** `src/scripts/doc-read-test.ts` (CI) covers parsing, the checks and matching; `e2e/tests/doc-read.spec.ts`

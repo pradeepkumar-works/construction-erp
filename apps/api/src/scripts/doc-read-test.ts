@@ -5,7 +5,7 @@
  *   node dist/scripts/doc-read-test.js
  */
 import assert from 'node:assert/strict';
-import { boqRowsFromRead, disciplineOf, gstinCheckChar, itemSimilarity, matchLines, normUnit, readDateProblem, workOrderEnd } from '@erp/shared';
+import { boqLineKind, boqRowsFromRead, carryParents, disciplineOf, isSubItemOf, withParentText, gstinCheckChar, itemSimilarity, matchLines, normUnit, readDateProblem, workOrderEnd } from '@erp/shared';
 import { fixGstin, fixVehicleNo, normalise, parseReply, toDate, toNumber } from '../ai/ai-read.service';
 
 const tests: [string, () => void][] = [];
@@ -186,6 +186,51 @@ test('BOQ rows for the import: headings carried down, run-on descriptions joined
   assert.match(rows[1].check!, /rate: not printed/);
   assert.equal(rows[2].originalQty, '');
   assert.match(rows[2].check!, /quantity/);
+});
+
+test('BOQ sub-items carry their parent item’s description, and the parent is no section', () => {
+  const excavation = 'Earth work in excavation by mechanical means over areas, including disposal of excavated earth, lead up to 50 m and lift up to 1.5 m';
+  const read = normalise('boq', { fields: {}, lines: [
+    { itemNo: at('2.8'), description: at(excavation) },
+    { itemNo: at('2.8.1'), description: at('All kinds of soil'), unit: at('Cum'), quantity: at(500), rate: at(180.45), amount: at(90225) },
+    { itemNo: at('2.8.2'), description: at('Ordinary rock'), unit: at('Cum'), quantity: at(50), rate: at(250), amount: at(12500) },
+    { itemNo: at('2.9'), description: at('Excavating trenches of required width for pipes and cables,') },
+    { description: at('including excavation for sockets and dressing of sides') },
+    { itemNo: at('(a)'), description: at('Pipes up to 80 mm dia'), unit: at('m'), quantity: at(100), rate: at(28), amount: at(2800) },
+    { itemNo: at('(b)'), description: at('Pipes above 80 mm dia'), unit: at('m'), quantity: at(40), rate: at(41), amount: at(1640) },
+    { itemNo: at('3'), description: at('CONCRETE WORK') },
+    { itemNo: at('3.1'), description: at('Cement concrete 1:4:8 in foundations'), unit: at('Cum'), quantity: at(20), rate: at(5800), amount: at(116000) },
+  ] }, 1);
+  const rows = boqRowsFromRead(read.lines);
+  assert.deepEqual(rows.map((r) => r.itemNo), ['2.8.1', '2.8.2', '2.9(a)', '2.9(b)', '3.1']);
+  assert.equal(rows[0].description, `${excavation}: All kinds of soil`);
+  assert.equal(rows[0].section, null, 'the parent item is not cut down into a section');
+  assert.equal(rows[2].description, 'Excavating trenches of required width for pipes and cables, including excavation for sockets and dressing of sides: Pipes up to 80 mm dia');
+  assert.equal(rows[4].description, 'Cement concrete 1:4:8 in foundations', 'an item under a heading takes nothing from the last parent');
+  assert.equal(rows[4].section, 'CONCRETE WORK');
+});
+
+test('BOQ parents: what a figureless line is, whose sub-item a number is, and how the words join', () => {
+  const line = (itemNo: string, description: string) => boqLineKind({ itemNo, description, unit: '', rate: '', qty: '' });
+  assert.equal(line('2', 'Earth work'), 'heading', 'a short numbered title is a heading');
+  assert.equal(line('2', 'EARTH WORK IN EXCAVATION AND FILLING OF ALL KINDS'), 'heading', 'all capitals is a heading');
+  assert.equal(line('', 'Earth work in excavation over areas of all kinds'), 'heading', 'with no number it is no parent');
+  assert.equal(line('2.8', 'Earth work in excavation over areas of all kinds'), 'parent');
+  assert.equal(boqLineKind({ itemNo: '2.8', description: 'x', unit: 'Cum', rate: '', qty: '' }), 'item');
+  assert.equal(isSubItemOf('2.8.1', '2.8'), true);
+  assert.equal(isSubItemOf('2.8(a)', '2.8'), true);
+  assert.equal(isSubItemOf('2.8a', '2.8'), true);
+  assert.equal(isSubItemOf('(ii)', '2.8'), true);
+  assert.equal(isSubItemOf('2.81', '2.8'), false, '2.81 is the next item, not under 2.8');
+  assert.equal(isSubItemOf('3.1', '2.8'), false);
+  assert.equal(withParentText('Brick work in cement mortar:', '1:6'), 'Brick work in cement mortar: 1:6');
+  assert.equal(withParentText('Brick work', 'Brick work in superstructure'), 'Brick work in superstructure', 'not said twice');
+  // A spreadsheet walks the same way: a parent row is carried, not imported.
+  const carried = carryParents([
+    { itemNo: '4.1', description: 'Providing and laying in position cement concrete of specified grade', unit: '', rate: '', qty: '' },
+    { itemNo: '4.1.1', description: '1:2:4', unit: 'Cum', rate: '6200', qty: '30' },
+  ]);
+  assert.deepEqual(carried.map((c) => [c.kind, c.parentNo]), [['parent', null], ['item', '4.1']]);
 });
 
 test('a date that cannot be right is left for the person, with the reason', () => {
