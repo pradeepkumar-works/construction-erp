@@ -26,6 +26,7 @@ import { OmPanel } from '@/components/om/OmPanel';
 import { BoqTab } from '@/components/boq/BoqTab';
 import { ActivitiesTab } from '@/components/activities/ActivitiesTab';
 import { GanttPanel } from '@/components/schedule/GanttPanel';
+import { PhotoTimeline } from '@/components/site-photos/PhotoTimeline';
 import { LookaheadPanel } from '@/components/schedule/LookaheadPanel';
 import { ProgrammeTab } from '@/components/programme/ProgrammeTab';
 import { ProgressList } from '@/components/progress/ProgressList';
@@ -172,6 +173,7 @@ function ProjectPage({ project }: { project: ProjectDetail }) {
     { key: 'site-summary', group: 'site', label: 'Summary', children: <AreaSummary project={project} area="site" /> },
     { key: 'progress', group: 'site', label: 'Progress entries', children: <ProgressList projectId={project.id} newLabel="New progress entry" /> },
     { key: 'dpr', group: 'site', label: 'Daily reports', children: <DprList projectId={project.id} newLabel="New daily report" /> },
+    { key: 'photos', group: 'site', label: 'Photos', children: <PhotoTimeline projectId={project.id} /> },
     { key: 'attendance', group: 'site', label: 'Attendance', children: <AttendancePanel projectId={project.id} /> },
     { key: 'mb', group: 'site', label: 'Measurement book', children: <MeasurementList projectId={project.id} /> },
     { key: 'inspections', group: 'site', label: 'Quality', children: <ProjectQualityTab projectId={project.id} /> },

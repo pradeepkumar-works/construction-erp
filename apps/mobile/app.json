@@ -39,7 +39,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Nirmaan checks you are at the site when you check in for the day."
+          "locationWhenInUsePermission": "Nirmaan checks you are at the site when you check in for the day, and records where each site photo was taken."
         }
       ],
       [

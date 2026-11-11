@@ -10,7 +10,9 @@ import { shrinkPhoto } from '../offline/shrink';
 import { colors, fontSize, maxFontScale, radius, spacing, touch, typography } from '../theme';
 import { useT } from '../i18n/LanguageContext';
 import { formatDateTime, formatTime } from '../utils/format';
-import { captureTime, stampedName, takenAtFromName } from '../utils/photoTime';
+import { withPlace, type PhotoFix } from '@erp/shared';
+import { captureTime, exifFix, stampedName, takenAtFromName } from '../utils/photoTime';
+import { askPhotoPlace, photoPosition } from '../utils/location';
 import { slopFor, Touchable } from './Touchable';
 
 export interface LocalPhoto {
@@ -86,7 +88,7 @@ export function PhotoPicker({ label, photos, onChange, max = 10 }: Props) {
 
   /** Adds picked photos (as many as there is room for); resolves to how many were added. */
   const addAssets = useCallback(
-    async (assets: ImagePicker.ImagePickerAsset[], fromCamera: boolean) => {
+    async (assets: ImagePicker.ImagePickerAsset[], fromCamera: boolean, here?: Promise<PhotoFix | null>) => {
       const room = Math.max(0, max - count.current);
       const fresh: LocalPhoto[] = [];
       for (const [i, a] of assets.slice(0, room).entries()) {
@@ -95,7 +97,9 @@ export function PhotoPicker({ label, photos, onChange, max = 10 }: Props) {
         // A photo just taken was taken now; one from the library keeps its own time when the phone tells us it.
         const takenAt = fromCamera ? captureTime(a.exif) : captureTime(a.exif, new Date(NaN));
         shot += 1;
-        const name = Number.isNaN(takenAt.getTime()) ? (a.fileName ?? `site-photo-${Date.now()}-${i}.${ext}`) : stampedName(takenAt, shot, ext);
+        const stamped = Number.isNaN(takenAt.getTime()) ? (a.fileName ?? `site-photo-${Date.now()}-${i}.${ext}`) : stampedName(takenAt, shot, ext);
+        // Where it was taken: the camera's own GPS when the photo has it, else (just taken) where the phone is now.
+        const name = Number.isNaN(takenAt.getTime()) ? stamped : withPlace(stamped, exifFix(a.exif) ?? (here ? await here : null));
         const small = await shrinkPhoto({ uri: a.uri, width: a.width, height: a.height, name, type });
         fresh.push({ key: `${Date.now()}-${i}-${Math.random().toString(36).slice(2, 8)}`, uri: small.uri, name: small.name, type: small.type, uploading: true });
       }
@@ -116,10 +120,11 @@ export function PhotoPicker({ label, photos, onChange, max = 10 }: Props) {
         Alert.alert(t('Camera permission needed'), t('Allow camera access to take site photos.'));
         return;
       }
+      const placed = await askPhotoPlace();
       // Shot after shot: the camera comes back after each photo until Back is pressed or the form is full.
       while (count.current < max) {
         const res = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.6, exif: true });
-        if (res.canceled || !(await addAssets(res.assets, true))) break;
+        if (res.canceled || !(await addAssets(res.assets, true, placed ? photoPosition() : undefined))) break;
       }
     } catch (e) {
       Alert.alert(t('Camera unavailable'), errorMessage(e));

@@ -33,3 +33,33 @@ export function takenAtFromName(name: string | null | undefined): string | null 
   const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4]), Number(m[5]), Number(m[6]));
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }
+
+/** A degree value from EXIF: a number, "20/1,27/1,4500/100" or [20, 27, 45]. */
+function degrees(v: unknown): number | null {
+  if (typeof v === 'number') return Number.isFinite(v) ? v : null;
+  const parts = Array.isArray(v) ? v : typeof v === 'string' ? v.split(/[,\s]+/).filter(Boolean) : null;
+  if (!parts?.length) return null;
+  const nums = parts.map((p) => {
+    if (typeof p === 'number') return p;
+    const [a, b] = String(p).split('/').map(Number);
+    return b === undefined ? a : b ? a / b : NaN;
+  });
+  if (nums.some((n) => !Number.isFinite(n))) return null;
+  return (nums[0] ?? 0) + (nums[1] ?? 0) / 60 + (nums[2] ?? 0) / 3600;
+}
+
+/**
+ * Where a picked photo was taken, from the camera's EXIF GPS (Android's flat GPSLatitude… tags or iOS's "{GPS}" block),
+ * or null when the photo has none (ARCHITECTURE "Site photos", Place and time).
+ */
+export function exifFix(exif: Record<string, unknown> | null | undefined): { lat: number; lng: number; accuracyM: number | null } | null {
+  if (!exif) return null;
+  const gps = (exif['{GPS}'] as Record<string, unknown> | undefined) ?? {};
+  const lat = degrees(exif.GPSLatitude ?? gps.Latitude);
+  const lng = degrees(exif.GPSLongitude ?? gps.Longitude);
+  if (lat === null || lng === null) return null;
+  const s = String(exif.GPSLatitudeRef ?? gps.LatitudeRef ?? 'N').toUpperCase().startsWith('S') ? -1 : 1;
+  const w = String(exif.GPSLongitudeRef ?? gps.LongitudeRef ?? 'E').toUpperCase().startsWith('W') ? -1 : 1;
+  const acc = degrees(exif.GPSHPositioningError ?? gps.HPositioningError);
+  return { lat: s * Math.abs(lat), lng: w * Math.abs(lng), accuracyM: acc === null ? null : Math.round(acc) };
+}

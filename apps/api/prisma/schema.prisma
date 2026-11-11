@@ -4905,6 +4905,13 @@ model Attachment {
   textPages          Int?
   /// Why the PDF could not be read, when it could not (shown on its page view); null when it was read
   textError          String?
+  /// When a site photo was taken, from the time the phone stamped into its name (ARCHITECTURE "Site photos"); null when it has none
+  takenAt            DateTime?
+  /// Where it was taken, from the fix stamped into its name; null when the phone had none
+  lat                Decimal?           @db.Decimal(9, 6)
+  lng                Decimal?           @db.Decimal(9, 6)
+  /// How far off the phone said that fix may be, in metres
+  accuracyM          Int?
   createdAt          DateTime           @default(now())
 
   pages           DocumentPage[]
@@ -4918,6 +4925,7 @@ model Attachment {
   joiningDocument EmployeeDocument?
 
   @@index([organizationId])
+  @@index([organizationId, takenAt])
   // Every record lists its files: one index per parent column.
   @@index([progressEntryId])
   @@index([dailyReportId])
