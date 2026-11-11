@@ -13,7 +13,7 @@ import { todayIn } from '../notifications/time';
 import { progressRollup } from '../common/progress';
 import { CreateLinkDto, CreateMilestoneDto, FreezeBaselineDto, ImportScheduleDto, UpdateLinkDto, UpdateMilestoneDto } from './schedule.dto';
 import { criticalPath, findCycle, linkProblem, lookaheadWeeks, moves, readiness, type NetLink } from './schedule-rules';
-import { parseMsProjectXml, parseXer, toMsProjectXml, toXer, type ScheduleFile } from './schedule-files';
+import { importPlan, parseMsProjectXml, parseXer, toMsProjectXml, toXer, type ScheduleFile } from './schedule-files';
 
 const D = (v: string | number | Prisma.Decimal) => new Prisma.Decimal(v);
 const maxDate = (dates: (string | null)[]) => dates.reduce<string | null>((m, d) => (d && (!m || d > m) ? d : m), null);
@@ -342,27 +342,30 @@ export class ScheduleService {
     return { projectId, today: g.today, weeks, overdue: open.filter((a) => a.plannedEnd! < g.today).map(item).sort(order) };
   }
 
-  /** The activities with dates and their links, as an MS Project XML or P6 XER file. */
+  /** The activities with dates and their links, as an MS Project XML or P6 XER file, with the ids an earlier import gave them. */
   async exportFile(user: RequestUser, projectId: string, format: ScheduleFileFormat): Promise<{ fileName: string; mimeType: string; content: string }> {
     await this.access.assertCanAccessProject(user, projectId);
     const project = await this.prisma.project.findFirst({ where: { id: projectId }, select: { code: true, name: true, startDate: true } });
     if (!project) throw new NotFoundException('Project not found');
     const [activities, links] = await Promise.all([
-      this.prisma.activity.findMany({ where: { projectId, plannedStart: { not: null }, plannedEnd: { not: null } }, orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }], select: { id: true, name: true, plannedStart: true, plannedEnd: true } }),
+      this.prisma.activity.findMany({ where: { projectId, plannedStart: { not: null }, plannedEnd: { not: null } }, orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }], select: { id: true, name: true, plannedStart: true, plannedEnd: true, scheduleKey: true } }),
       this.prisma.activityLink.findMany({ where: { projectId } }),
     ]);
     if (!activities.length) throw new BadRequestException('Give the activities planned dates before exporting the schedule');
     const rows = activities.map((a) => ({ key: a.id, name: a.name, start: dateOnly(a.plannedStart)!, end: dateOnly(a.plannedEnd)! }));
     const fl = links.map((l) => ({ predKey: l.predecessorId, succKey: l.successorId, type: l.type, lagDays: l.lagDays }));
+    const kept = new Map(activities.flatMap((a) => (a.scheduleKey?.startsWith(`${format}:`) && /^\d+$/.test(a.scheduleKey.slice(format.length + 1)) ? [[a.id, Number(a.scheduleKey.slice(format.length + 1))] as const] : [])));
     await this.audit.log(user, 'PROJECT', projectId, 'SCHEDULE_EXPORTED', format);
     return format === 'XER'
-      ? { fileName: `${project.code}-schedule.xer`, mimeType: 'text/plain', content: toXer(project, rows, fl, todayIn()) }
-      : { fileName: `${project.code}-schedule.xml`, mimeType: 'application/xml', content: toMsProjectXml({ ...project, start: dateOnly(project.startDate) }, rows, fl) };
+      ? { fileName: `${project.code}-schedule.xer`, mimeType: 'text/plain', content: toXer(project, rows, fl, todayIn(), kept) }
+      : { fileName: `${project.code}-schedule.xml`, mimeType: 'application/xml', content: toMsProjectXml({ ...project, start: dateOnly(project.startDate) }, rows, fl, kept) };
   }
 
   /**
-   * Read an MS Project XML or P6 XER file into the project: activities matched by name get the file's dates, the rest are
-   * added (unit "job", quantity 1), and the file's links replace the links between them. `dryRun` only says what would change.
+   * Read an MS Project XML or P6 XER file into the project (`importPlan`): each row finds the activity it made before
+   * by its file id, else one of the same name used once, else it is added (unit "job", quantity 1) under the summary row
+   * it sits in; milestones go to Milestones; the file's links replace the links between the activities it touched.
+   * `dryRun` only says what would change.
    */
   async importFile(user: RequestUser, projectId: string, dto: ImportScheduleDto): Promise<ScheduleImportResultDto> {
     await this.access.assertCanAccessProject(user, projectId);
@@ -373,48 +376,54 @@ export class ScheduleService {
       throw new BadRequestException((e as Error).message);
     }
     if (!file.activities.length) throw new BadRequestException('The file has no activities with dates.');
-    const existing = await this.prisma.activity.findMany({ where: { projectId }, select: { id: true, name: true, plannedStart: true, plannedEnd: true } });
-    const norm = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim();
-    const byName = new Map(existing.map((a) => [norm(a.name), a]));
-    const seen = new Set<string>();
-    const plan = file.activities.flatMap((f) => {
-      const key = norm(f.name);
-      if (seen.has(key)) return [];
-      seen.add(key);
-      const match = byName.get(key);
-      const action: 'CREATE' | 'UPDATE' | 'SAME' = !match ? 'CREATE' : dateOnly(match.plannedStart) === f.start && dateOnly(match.plannedEnd) === f.end ? 'SAME' : 'UPDATE';
-      return [{ ...f, matchId: match?.id ?? null, action }];
-    });
-    const dupes = file.activities.length - plan.length;
-    const skipped = [...file.skipped, ...(dupes ? [`${dupes} row${dupes === 1 ? '' : 's'} with a name already read`] : [])];
-    // The file's links, by name, must not loop with the links that stay.
-    const keyToName = new Map(file.activities.map((f) => [f.key, norm(f.name)]));
-    const fileLinks = file.links.map((l) => ({ pred: keyToName.get(l.predKey)!, succ: keyToName.get(l.succKey)!, type: l.type, lag: Math.max(-365, Math.min(365, l.lagDays)) })).filter((l) => l.pred !== l.succ);
+    const [existing, milestones] = await Promise.all([
+      this.prisma.activity.findMany({ where: { projectId }, select: { id: true, name: true, scheduleKey: true, plannedStart: true, plannedEnd: true, parentActivityId: true, workElementId: true, _count: { select: { progressEntries: true } } } }),
+      this.prisma.milestone.findMany({ where: { projectId }, select: { id: true, name: true, scheduleKey: true, dueDate: true } }),
+    ]);
+    const plan = importPlan(
+      dto.format,
+      file,
+      existing.map((a) => ({ id: a.id, name: a.name, scheduleKey: a.scheduleKey, start: dateOnly(a.plannedStart), end: dateOnly(a.plannedEnd), parentActivityId: a.parentActivityId, workElementId: a.workElementId, hasProgress: a._count.progressEntries > 0 })),
+      milestones.map((m) => ({ id: m.id, name: m.name, scheduleKey: m.scheduleKey, date: dateOnly(m.dueDate)! })),
+    );
+    const fileLinks = plan.links.map((l) => ({ pred: l.predKey, succ: l.succKey, type: l.type, lag: Math.max(-365, Math.min(365, l.lagDays)) })).filter((l) => l.pred !== l.succ);
     const result: ScheduleImportResultDto = {
       format: dto.format,
       dryRun: !!dto.dryRun,
-      activities: plan.map((p) => ({ name: p.name, start: p.start, end: p.end, action: p.action })),
-      created: plan.filter((p) => p.action === 'CREATE').length,
-      updated: plan.filter((p) => p.action === 'UPDATE').length,
+      activities: plan.rows.map((p) => ({ name: p.name, start: p.start, end: p.end, action: p.action, summary: !!p.summary })),
+      created: plan.rows.filter((p) => p.action === 'CREATE').length,
+      updated: plan.rows.filter((p) => p.action === 'UPDATE').length,
       links: fileLinks.length,
-      skipped,
+      milestones: plan.milestones.map((m) => ({ name: m.name, date: m.date, action: m.action })),
+      skipped: file.skipped,
+      notes: plan.notes,
     };
-    if (findCycle([...new Set(plan.map((p) => norm(p.name)))], fileLinks)) throw new BadRequestException('The links in the file go round in a loop. Fix them in the planning tool and export again.');
+    if (findCycle(plan.rows.map((p) => p.key), fileLinks)) throw new BadRequestException('The links in the file go round in a loop. Fix them in the planning tool and export again.');
     if (dto.dryRun) return result;
 
     const org = user.organizationId;
+    const elementOf = new Map(existing.map((a) => [a.id, a.workElementId]));
     await this.prisma.$transaction(async (tx) => {
       const ids = new Map<string, string>();
       const last = await tx.activity.aggregate({ where: { projectId }, _max: { sortOrder: true } });
       let sort = (last._max.sortOrder ?? 0) + 1;
-      for (const p of plan) {
+      // Parents first: a summary row's activity exists before the tasks placed under it.
+      for (const p of [...plan.rows.filter((r) => r.summary), ...plan.rows.filter((r) => !r.summary)]) {
         if (p.matchId) {
-          ids.set(norm(p.name), p.matchId);
-          if (p.action === 'UPDATE') await tx.activity.update({ where: { id: p.matchId }, data: { plannedStart: parseDate(p.start), plannedEnd: parseDate(p.end) } });
-        } else {
-          const a = await tx.activity.create({ data: { organizationId: org, projectId, name: p.name, unit: 'job', plannedQty: D(1), plannedStart: parseDate(p.start), plannedEnd: parseDate(p.end), sortOrder: sort++ } });
-          ids.set(norm(p.name), a.id);
+          ids.set(p.key, p.matchId);
+          await tx.activity.update({ where: { id: p.matchId }, data: { scheduleKey: p.scheduleKey, ...(p.action === 'UPDATE' ? { plannedStart: parseDate(p.start), plannedEnd: parseDate(p.end) } : {}) } });
+          continue;
         }
+        const parentId = !p.parent ? null : 'id' in p.parent ? p.parent.id : (ids.get(p.parent.key) ?? null);
+        const a = await tx.activity.create({
+          data: { organizationId: org, projectId, name: p.name, unit: 'job', plannedQty: D(1), plannedStart: parseDate(p.start), plannedEnd: parseDate(p.end), sortOrder: sort++, scheduleKey: p.scheduleKey, parentActivityId: parentId, workElementId: parentId ? (elementOf.get(parentId) ?? null) : null },
+        });
+        ids.set(p.key, a.id);
+        elementOf.set(a.id, a.workElementId);
+      }
+      for (const m of plan.milestones) {
+        if (m.matchId) await tx.milestone.update({ where: { id: m.matchId }, data: { scheduleKey: m.scheduleKey, ...(m.action === 'UPDATE' ? { dueDate: parseDate(m.date) } : {}) } });
+        else await tx.milestone.create({ data: { organizationId: org, projectId, name: m.name, dueDate: parseDate(m.date)!, scheduleKey: m.scheduleKey, sortOrder: sort++ } });
       }
       const touched = [...ids.values()];
       await tx.activityLink.deleteMany({ where: { projectId, predecessorId: { in: touched }, successorId: { in: touched } } });
@@ -432,7 +441,7 @@ export class ScheduleService {
         }),
       });
     });
-    await this.audit.log(user, 'PROJECT', projectId, 'SCHEDULE_IMPORTED', `${dto.format}: ${result.created} added, ${result.updated} moved, ${result.links} links`);
+    await this.audit.log(user, 'PROJECT', projectId, 'SCHEDULE_IMPORTED', `${dto.format}: ${result.created} added, ${result.updated} moved, ${result.links} links, ${result.milestones.length} milestones`);
     return result;
   }
 }

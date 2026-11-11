@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-schedule-import-ids',
+    date: '2026-11-19',
+    title: 'Schedule imports keep every row, its group and its milestones',
+    points: [
+      'Importing an MS Project XML or P6 XER file no longer drops a task whose name is used elsewhere in the plan, such as Approval of drawings under each discipline. Each row keeps the file’s own id, so importing an updated programme moves the right activities.',
+      'The summary row above a task becomes its parent activity, named with the row above it (Detailed Engineering › Mechanical), and the file’s milestones are added to Milestones.',
+      'Export writes the same ids back, so the plan goes to the planner and returns without duplicates.',
+    ],
+  },
+  {
     id: '2026-11-single-sign-on',
     date: '2026-11-18',
     title: 'Sign in with Microsoft or Google',

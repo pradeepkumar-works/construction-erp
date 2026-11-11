@@ -206,7 +206,7 @@ export function ImportScheduleModal({ projectId, open, onClose }: { projectId: s
       okDisabled={!preview || !file}
       onSubmit={async (v) => {
         const r = await act.mutateAsync({ path: '/schedule/import', body: { format: v.format, content: file!.content } });
-        notify.saved(`Schedule imported: ${r.created} added, ${r.updated} with new dates, ${r.links} links`);
+        notify.saved(`Schedule imported: ${r.created} added, ${r.updated} with new dates, ${r.links} links, ${r.milestones.length} milestones`);
       }}
     >
       <Form form={form} layout="vertical" initialValues={{ format: 'MSP_XML' }}>
@@ -216,7 +216,7 @@ export function ImportScheduleModal({ projectId, open, onClose }: { projectId: s
             onChange={(f) => file && void check(f as ScheduleFileFormat, file.content)}
           />
         </Form.Item>
-        <Form.Item label="File" extra="Activities are matched by name: a match takes the file's dates, the rest are added. The file's links replace the links between them.">
+        <Form.Item label="File" extra="Each row finds the activity it made last time by the file's own id, else one of the same name. A match takes the file's dates, the rest are added under their summary row. Milestones go to Milestones, and the file's links replace the links between them.">
           <Upload
             accept={format === 'XER' ? '.xer,.txt' : '.xml'}
             maxCount={1}
@@ -241,17 +241,22 @@ export function ImportScheduleModal({ projectId, open, onClose }: { projectId: s
       {preview ? (
         <Flex vertical gap={8}>
           <Typography.Paragraph style={{ margin: 0 }}>
-            {`${preview.activities.length} activities read: ${preview.created} to add, ${preview.updated} with new dates, ${preview.activities.length - preview.created - preview.updated} unchanged; ${preview.links} links.`}
+            {`${preview.activities.length} activities read: ${preview.created} to add, ${preview.updated} with new dates, ${preview.activities.length - preview.created - preview.updated} unchanged; ${preview.links} links; ${preview.milestones.length} milestones.`}
           </Typography.Paragraph>
+          {preview.notes.length ? <Alert type="info" showIcon title="How the file was read" description={preview.notes.join('; ')} /> : null}
           {preview.skipped.length ? <Alert type="info" showIcon title="Left out" description={preview.skipped.slice(0, 8).join('; ') + (preview.skipped.length > 8 ? '…' : '')} /> : null}
           <Table
             size="small"
-            rowKey="name"
+            rowKey={(r) => `${r.kind}:${r.i}`}
             pagination={false}
-            scroll={{ x: 540, y: 240 }}
-            dataSource={preview.activities}
+            scroll={{ x: 640, y: 240 }}
+            dataSource={[
+              ...preview.activities.map((a, i) => ({ ...a, i, kind: a.summary ? ('Group' as const) : ('Activity' as const) })),
+              ...preview.milestones.map((m, i) => ({ name: m.name, start: m.date, end: m.date, action: m.action, i, kind: 'Milestone' as const })),
+            ]}
             columns={[
-              { title: 'Activity', dataIndex: 'name', width: 220 },
+              { title: 'Activity', dataIndex: 'name', width: 220, render: (v: string, r) => (r.kind === 'Activity' ? v : <Typography.Text strong>{v}</Typography.Text>) },
+              { title: 'Kind', dataIndex: 'kind', width: 100 },
               { title: 'Dates', key: 'dates', width: 210, render: (_, r) => <span translate="no">{`${formatDate(r.start)} to ${formatDate(r.end)}`}</span> },
               { title: 'Change', dataIndex: 'action', width: 110, render: (v: keyof typeof ACTION_LABELS) => <AppTag variant="kind">{ACTION_LABELS[v]}</AppTag> },
             ]}

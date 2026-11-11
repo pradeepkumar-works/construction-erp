@@ -2,9 +2,9 @@ import { expect, test } from '@playwright/test';
 import { API_URL, api, apiToken, chooseOption, PASSWORD, signIn } from './helpers';
 
 type GanttActivity = { id: string; name: string; plannedStart: string; plannedEnd: string; critical: boolean; totalFloat: number | null; linkStartsOn: string | null };
-type Gantt = { activities: GanttActivity[]; links: { id: string }[]; summary: { links: number; critical: number; linkConflicts: number } };
+type Gantt = { activities: GanttActivity[]; milestones: { name: string }[]; links: { id: string }[]; summary: { links: number; critical: number; linkConflicts: number } };
 type Lookahead = { weeks: { activities: { name: string; readiness: string; waitingOn: string[] }[] }[] };
-type ImportResult = { created: number; updated: number; links: number; activities: { name: string; action: string }[] };
+type ImportResult = { created: number; updated: number; links: number; activities: { name: string; action: string }[]; milestones: { name: string; action: string }[] };
 
 const iso = (offset: number) => {
   const d = new Date();
@@ -91,7 +91,7 @@ test('links are added on the Gantt, loops refused, activities moved to their lin
   const imp = page.locator('.ant-modal').filter({ hasText: 'Import a schedule' });
   await imp.getByText('Primavera P6 XER').click();
   await imp.locator('input[type=file]').setInputFiles({ name: 'plan.xer', mimeType: 'text/plain', buffer: Buffer.from(changed) });
-  await expect(imp).toContainText('3 activities read: 1 to add, 0 with new dates, 2 unchanged; 2 links.');
+  await expect(imp).toContainText('3 activities read: 1 to add, 0 with new dates, 2 unchanged; 2 links; 0 milestones.');
   await imp.getByRole('button', { name: 'Import', exact: true }).click();
   await expect(page.getByText('Schedule imported: 1 added, 0 with new dates, 2 links')).toBeVisible();
   g = await api<Gantt>(owner, `/projects/${project.id}/gantt`);
@@ -103,6 +103,27 @@ test('links are added on the Gantt, loops refused, activities moved to their lin
   const dry = await api<ImportResult>(owner, `/projects/${project.id}/schedule/import`, { method: 'POST', body: { format: 'MSP_XML', content: xml.content, dryRun: true } });
   expect([dry.created, dry.updated]).toEqual([0, 0]);
   expect((await call(owner, 'POST', `/projects/${project.id}/schedule/import`, { format: 'XER', content: '<Project/>' })).status).toBe(400);
+
+  // A programme with the same task under two disciplines keeps both, each under its summary row, and its milestone.
+  const task = (uid: number, name: string, level: number, from: number, to: number, extra = '') =>
+    `<Task><UID>${uid}</UID><Name>${name}</Name><OutlineLevel>${level}</OutlineLevel><Start>${iso(from)}T08:00:00</Start><Finish>${iso(to)}T17:00:00</Finish>${extra}</Task>`;
+  const design = `<?xml version="1.0"?><Project xmlns="http://schemas.microsoft.com/project"><Tasks>${[
+    task(50, 'Design', 1, 40, 60, '<Summary>1</Summary>'),
+    task(51, 'Mechanical', 2, 40, 50, '<Summary>1</Summary>'),
+    task(52, 'Approval of drawings', 3, 40, 50),
+    task(53, 'Civil', 2, 45, 60, '<Summary>1</Summary>'),
+    task(54, 'Approval of drawings', 3, 45, 60, '<PredecessorLink><PredecessorUID>52</PredecessorUID><Type>3</Type></PredecessorLink>'),
+    task(55, 'Drawings approved', 1, 60, 60, '<Milestone>1</Milestone>'),
+  ].join('')}</Tasks></Project>`;
+  const first = await api<ImportResult>(owner, `/projects/${project.id}/schedule/import`, { method: 'POST', body: { format: 'MSP_XML', content: design } });
+  expect([first.created, first.links, first.milestones.length]).toEqual([4, 1, 1]);
+  g = await api<Gantt>(owner, `/projects/${project.id}/gantt`);
+  const approvals = g.activities.filter((a) => a.name === 'Approval of drawings');
+  expect(approvals.map((a) => [a.plannedStart, a.plannedEnd]).sort()).toEqual([[iso(40), iso(50)], [iso(45), iso(60)]]);
+  expect(g.milestones.map((m) => m.name)).toContain('Drawings approved');
+  // The same file again finds every row by its id: nothing added, nothing moved.
+  const again = await api<ImportResult>(owner, `/projects/${project.id}/schedule/import`, { method: 'POST', body: { format: 'MSP_XML', content: design, dryRun: true } });
+  expect([again.created, again.updated, again.milestones.every((m) => m.action === 'SAME')]).toEqual([0, 0, true]);
 });
 
 test('only project editors change links; anyone on the project reads the look-ahead and exports', async () => {

@@ -211,12 +211,17 @@ export interface ScheduleImportResultDto {
   format: ScheduleFileFormat;
   /** True when nothing was saved (a preview) */
   dryRun: boolean;
-  activities: { name: string; start: string; end: string; action: 'CREATE' | 'UPDATE' | 'SAME' }[];
+  /** `summary`: a summary row of the file, made the parent activity of the tasks under it */
+  activities: { name: string; start: string; end: string; action: 'CREATE' | 'UPDATE' | 'SAME'; summary: boolean }[];
   created: number;
   updated: number;
   links: number;
-  /** What was left out, in words: summary rows, milestones, links to rows not in the file */
+  /** The file's milestones, added to the project's Milestones or moved to the file's date */
+  milestones: { name: string; date: string; action: 'CREATE' | 'UPDATE' | 'SAME' }[];
+  /** What was left out, in words: rows with no dates, links to rows not in the file */
   skipped: string[];
+  /** How the file was read where it was not plain: repeated names, a summary row that could not hold its tasks */
+  notes: string[];
 }
 
 /** Points of progress a project may trail its plan (or the time gone) by before it counts as behind. */
