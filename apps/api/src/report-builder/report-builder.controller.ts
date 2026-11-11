@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { ReportBuilderService } from './report-builder.service';
@@ -20,6 +20,7 @@ export class ReportBuilderController {
     summary: 'Run a report that is not saved',
     description: 'The definition is checked against the caller’s columns (400 for a column the source does not have or the role does not see); rows come from the source’s own list as the caller.',
   })
+  @HttpCode(200)
   @Post('run')
   run(@CurrentUser() user: RequestUser, @Body() dto: RunReportDto) {
     return this.reports.run(user, dto.definition, dto);

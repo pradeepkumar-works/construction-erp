@@ -11,6 +11,7 @@ import { canSeeLeakage } from './leakage';
 import { canSeeCashForecast } from './cash-forecast';
 import { canSeeAttendanceCheck } from './attendance-check';
 import { canReadReport, canSeeManagement } from './management';
+import { canBuildReports } from './report-builder';
 import { canNameSisterCompanies, canSeeConsolidation, canSeeGroupCompanies, type AuthGroupDto } from './group';
 import { canManageModules, isSwitchableModule, pathIsOff } from './module-switches';
 import { MASTER_LISTS, canManageMaster } from './masters';
@@ -162,6 +163,7 @@ export const NAV_ACCESS = {
   reportLabour: (u: NavUser) => canReadReport(u.roleKey, 'labour'),
   reportStock: (u: NavUser) => canReadReport(u.roleKey, 'stock'),
   reportHr: (u: NavUser) => canReadReport(u.roleKey, 'headcount'),
+  myReports: (u: NavUser) => canBuildReports(u.roleKey),
   subscription: (u: NavUser) => !!u.billing && P.canManageBilling(u.roleKey),
   platform: (u: NavUser) => !!u.platformAdmin,
   books: (u: NavUser) => P.canKeepBooks(u.roleKey),
@@ -417,6 +419,7 @@ export const NAV_TREE: NavNode[] = [
   { id: 'reports.pfEsi', parent: 'reports', label: 'PF and ESI', icon: 'landmark', route: '/management/reports/pf-esi', access: 'reportHr', status: 'live', newUntil: '2027-02-28', description: 'The month’s provident fund and ESI person by person, to deposit by the 15th.', keywords: 'pf esi epf eps ecr statutory challan contribution' },
   { id: 'reports.settlements', parent: 'reports', label: 'Full and final settlements', icon: 'user-minus', route: '/management/reports/settlements', access: 'reportHr', status: 'live', newUntil: '2027-02-28', description: 'Who left, what their settlement paid and recovered, and whether it is paid.', keywords: 'fnf f&f exit gratuity encashment' },
   { id: 'reports.staffCost', parent: 'reports', label: 'Staff cost by site', icon: 'badge-indian-rupee', route: '/management/reports/staff-cost', access: 'reportHr', status: 'live', newUntil: '2027-02-28', description: 'Salaries and the company’s PF and ESI by site, month by month.', keywords: 'salary cost ctc site allocation' },
+  { id: 'reports.myReports', parent: 'reports', label: 'My reports', icon: 'table-properties', route: '/my-reports', access: 'myReports', status: 'live', newUntil: '2027-05-31', description: 'Tables you build from orders, bills, indents, stock, vendors and projects, saved and emailed on a schedule.', keywords: 'custom report builder query export excel schedule email saved table pivot group totals' },
   { id: 'reports.progress', parent: 'reports', label: 'Progress reports', icon: 'file-text', route: '/reports', access: 'reports', status: 'live', description: 'Daily, weekly and monthly progress reports for the client, as PDF, Word or Excel.', keywords: 'pdf word excel mpr dpr wpr mis daily monthly weekly client official', concord: ['p9-status', 'p11-projdash'] },
   { id: 'reports.cost', parent: 'reports', label: 'Project cost', icon: 'chart-pie', route: '/cost', access: 'cost', status: 'live', description: 'Budget against actual by cost head, margin per BOQ item.', keywords: 'budget cash flow margin job cost', concord: ['p9-budget', 'p9-jobcost', 'p9-cumbudget', 'p9-clientsub'] },
   { id: 'reports.cashflow', parent: 'reports', label: 'Cash flow', icon: 'chart-line', route: '/cost?tab=cash-flow', access: 'cost', status: 'live', description: 'Money in and out by month, planned and actual.' },

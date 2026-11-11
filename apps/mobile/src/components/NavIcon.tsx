@@ -43,6 +43,7 @@ import FileCheck from 'lucide-react-native/icons/file-check';
 import FileMinus from 'lucide-react-native/icons/file-minus';
 import FilePenLine from 'lucide-react-native/icons/file-pen-line';
 import FileSpreadsheet from 'lucide-react-native/icons/file-spreadsheet';
+import TableProperties from 'lucide-react-native/icons/table-properties';
 import FileStack from 'lucide-react-native/icons/file-stack';
 import FileText from 'lucide-react-native/icons/file-text';
 import FingerprintPattern from 'lucide-react-native/icons/fingerprint-pattern';
@@ -179,6 +180,7 @@ export const NAV_ICONS: Record<string, LucideIcon> = {
   'file-minus': FileMinus,
   'file-pen-line': FilePenLine,
   'file-spreadsheet': FileSpreadsheet,
+  'table-properties': TableProperties,
   'file-stack': FileStack,
   'file-text': FileText,
   'fingerprint-pattern': FingerprintPattern,
