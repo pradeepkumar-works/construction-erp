@@ -1092,6 +1092,12 @@ GRN on the web and the phone), and a second quality dashboard.
      offer them as columns and Excel carries them. A required field is asked for on save, an order's before it goes for
      approval; a field is archived, never deleted, and records keep its values. The DPR's own fields share the same kinds
      and readers, unchanged. ARCHITECTURE "Custom fields".
+196. ~~**Reports people build, save and schedule** (M).~~ Done: Reports › My reports builds a table over purchase
+     orders, vendor bills, RA bills, indents, stock, vendors or projects (the columns, conditions, one grouping, totals
+     and a sort, the company's own fields included), saves it for oneself or the company, prints it, takes it to Excel
+     and emails it weekly or monthly. Each person's copy is run as them, so it shows only their projects and the
+     columns their role sees; a definition is read against the source's catalogue, so no column name or typed text
+     reaches a query, and money totals are exact. ARCHITECTURE "Reports you build".
 
 ## Definition of done for every item
 Prisma migration, API endpoints with Swagger, shared types, web screen, mobile screen where site

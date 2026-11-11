@@ -3673,6 +3673,65 @@ them. They are the DPR's own field kinds, in one shared home.
   Hindi names on the web.
 - **Tested** in `src/scripts/custom-fields-test.ts` (CI runs it) and `e2e/tests/custom-fields.spec.ts`.
 
+## Reports you build (item 196)
+
+Reports › My reports lets anyone whose role opens orders, bills, indents, stock, vendors or projects build a table of
+their own (the columns, conditions, one grouping, totals and a sort), save it, open it again, print it, take it to
+Excel and have it emailed weekly or monthly. It reads nothing a list does not already show the reader.
+
+- **Sources.** `REPORT_SOURCES` (`@erp/shared/report-builder.ts`) is `purchase-orders`, `vendor-bills`, `ra-bills`,
+  `indents`, `stock`, `vendors` and `projects`. Each has who sees it (`canViewPurchaseOrders`, `canViewVendorBills`,
+  `canPrepareBill`, staff for indents, stock and projects, `canEditVendors` or `canSeeVendorBank` for vendors), the
+  column its period is over (`dated`: order date, invoice date, bill date, the IST day an indent was raised; stock,
+  vendors and projects have none), whether it takes a project, its custom fields' entity, its starter columns and its
+  column catalogue. A column is a key, a label, a `ReportColumnKind` (a `month` kind joins the report kinds), how it
+  reads its value off the list's row, and whether it groups or totals; a column some roles may not see names its helper
+  (`canViewContract` for contract values, `canSeeVendorBank` for bank details, `canViewStockValue` for stock value).
+  Quantities across items in different units do not total. `catalogueFor(role, source, customFields)` is what a reader is
+  offered: the columns their role sees, the hidden ones named, and each custom field of the source as a `cf:<key>`
+  column (a number totals as a quantity, a date is a date, the rest text through `extraText`).
+- **A definition** is `{ source, columns, filters, groupBy, totals, sort }`, JSON from the user, and is read only by
+  `readDefinition` against the reader's catalogue: own keys only, columns only from the catalogue, a condition only of
+  its kind (`filterOpsFor`: is, is not, contains for text; at least, at most for figures; on or after, on or before for
+  days), real days and months and decimal figures, a total only of a shown column that totals, grouping only by a
+  column that groups, and the caps (`MAX_REPORT_COLUMNS` 20, `MAX_REPORT_FILTERS` 10). Its problems are words ("Purchase
+  orders has no column “x”", "Your role does not see Contract value; take it out of the report"), a 400. No column name or
+  typed value reaches a query: the rows are the list's, and the definition only picks from them.
+- **Rows** come only from each source's own list service called as the reader (`ReportBuilderService` readers, like
+  `SearchService`): purchase orders, vendor bills, RA bills and indents over the period, stock balances, vendors and
+  projects, read a page of 500 at a time, four at once, up to `REPORT_ROW_CAP` (20,000; a note says when it stops). So a
+  site engineer's report holds only their projects' rows, and switched-off modules stay off.
+- **Running.** The pure `runReport(rows, definition, catalogue)` filters, groups, totals and sorts. Money totals are exact:
+  each cell is scaled to paise as a `BigInt` and summed (`sumCells`), quantities to three places, counts as numbers,
+  never floats. Ungrouped, the result is one section of rows with a total row; grouped, a section "By <column>" (each
+  group's count and totals, blanks as Not set) over the rows sorted by group. `ReportBuilderService.run` defaults the
+  period to the reporting month (`reportingMonth`), never past today, and returns a `ManagementReportDto` (`key:
+  'saved'`, the period, the project or "Every project you see", notes with the conditions in words), so the management
+  report's table, Print and Excel draw it unchanged.
+- **Saved reports.** `SavedReport` (`tenant_isolation`): owner, name, source, definition, `shared`. A report is listed
+  and opened by its owner, or by anyone when shared whose role opens its source; only the owner changes or deletes it.
+  Save checks the whole definition before writing. Opening someone else's report, a column the reader's role does not
+  see is left out with a note rather than refused; saving or running one's own with such a column is refused.
+- **Schedules.** `ReportSchedule` (`tenant_isolation`, one per report): weekly on a weekday or monthly on a day up to the
+  28th, up to 20 people whose role opens the source (`mayReceive`), from the day it was set. `scheduleDue(rule, today)`
+  names the period a schedule owes: weekly, the seven days before the latest such weekday; monthly, the calendar month
+  before the latest such day, so a missed run is caught up within the cycle and a new schedule never sends a period
+  that ended before it was set. `ReportSchedulesService.sendDue` runs each recipient's copy as that recipient (their
+  projects, their role's columns, their company's modules), keeps it as their notice under
+  `scheduleDedupeKey` (`SAVED_REPORT:<schedule>:<period>`, the notifications unique index, so a second run sends nothing)
+  and emails it through the pure `reportEmail` (the first section's first 25 rows with its total, and the link). It
+  rides on the approval digest's cron (`REPORT_SCHEDULES` in `/notifications/jobs/approval-digest`, also
+  `/notifications/jobs/report-schedules`); there is no cron of its own.
+- **API** (`/report-builder`): `GET sources`, `POST run` (an unsaved definition), `GET recipients?source=`, `GET|POST
+  reports`, `GET|PATCH|DELETE reports/:id`, `GET reports/:id/run?from&to&projectId`, `PUT|DELETE reports/:id/schedule`.
+- **Web.** Reports › My reports (`/my-reports`, access `myReports` over `canBuildReports`) is a list with Mine and
+  Emailed on a schedule, and New report (the header's New menu too). `ReportForm` is the builder (a `FormShell` drawer:
+  what it is over, columns in order, group by, totals, sort, conditions as a `LineTable`), `ScheduleForm` the Schedule
+  modal with Stop sending. A report's page (`/my-reports/[id]`) has its period and project in the address, the tables
+  through `ReportSection`, Print and Excel. A scheduled copy's notice opens the report.
+- **Not yet.** More sources (DPRs, stock movements, payments), more than one grouping, charts, and building on the phone.
+- **Tested** in `src/scripts/report-builder-test.ts` (CI runs it) and `e2e/tests/report-builder.spec.ts`.
+
 ## Bills without a PO and debit notes
 
 Hire, workshop and other service bills, and what a vendor owes back (v5 item 91).
