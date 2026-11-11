@@ -20,6 +20,10 @@ export const COMPANY_LOG_LABELS: Record<string, string> = {
   DETAILS_CHANGED: 'Company details changed',
   LOGO_CHANGED: 'Logo changed',
   NUMBERING_CHANGED: 'Numbering changed',
+  SSO_CHANGED: 'Single sign-on changed',
+  SSO_REMOVED: 'Single sign-on removed',
+  SSO_PERSON_ADDED: 'Added at first single sign-on',
+  SSO_LINKED: 'Linked at first single sign-on',
 };
 
 /** One table of the company's data and how many rows it has. */

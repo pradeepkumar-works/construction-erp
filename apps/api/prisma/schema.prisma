@@ -781,8 +781,9 @@ model Login {
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
-  users       User[]
-  groupAdmins GroupAdmin[]
+  users         User[]
+  groupAdmins   GroupAdmin[]
+  ssoIdentities SsoIdentity[]
 }
 
 model Organization {
@@ -1122,6 +1123,9 @@ model Organization {
   cashSnapshots         CashForecastSnapshot[]
   hindranceChecks       HindranceCheck[]
   employeeDocuments     EmployeeDocument[]
+  sso                   OrganizationSso?
+  ssoIdentities         SsoIdentity[]
+  ssoTickets            SsoTicket[]
 }
 
 model Role {
@@ -10549,6 +10553,81 @@ model SisterLink {
   @@unique([organizationId, vendorId])
   @@unique([organizationId, clientId])
   @@index([sisterId])
+}
+
+/// Single sign-on (item 195, ARCHITECTURE "Single sign-on"): SSO_PROVIDERS in @erp/shared
+enum SsoProvider {
+  ENTRA
+  GOOGLE
+}
+
+/// A company's single sign-on with Microsoft Entra ID or Google Workspace. No row: its people sign in with passwords.
+model OrganizationSso {
+  id              String       @id @default(uuid())
+  organizationId  String       @unique
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  provider        SsoProvider
+  /// Entra: the directory (tenant) id; a token from any other directory is refused. Null for Google.
+  tenantId        String?
+  clientId        String
+  /// The client secret, sealed under INTEGRATION_KEY (`sealSecret`); never sent to the web
+  clientSecretEnc String
+  secretLast4     String
+  /// Lower-case email domains whose people sign in this way (Google: the Workspace `hd` must be one)
+  allowedDomains  String[]
+  /// Passwords are refused for the company's people, platform admins and supplier logins aside (`ssoEnforced`)
+  enforce         Boolean      @default(false)
+  /// Someone from an allowed domain with no sign-in anywhere is added on first sign-in, in `newPersonRole`
+  addNewPeople    Boolean      @default(false)
+  /// A role key of SSO_NEW_PERSON_ROLES
+  newPersonRole   String?
+  updatedById     String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}
+
+/// A person's account at the company's provider, linked once to their Login: issuer and subject (Entra tid:oid, Google
+/// sub). Later sign-ins match only by it, never by email.
+model SsoIdentity {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  loginId        String
+  login          Login        @relation(fields: [loginId], references: [id])
+  issuer         String
+  subject        String
+  /// The email the provider gave when it was linked
+  email          String?
+  lastUsedAt     DateTime     @default(now())
+  createdAt      DateTime     @default(now())
+
+  @@unique([organizationId, issuer, subject])
+  @@unique([organizationId, loginId, issuer])
+}
+
+enum SsoTicketKind {
+  /// A sign-in on its way to the provider: the hash of its state (the PKCE verifier and nonce are derived from it)
+  STATE
+  /// A finished sign-in waiting for the web to exchange it for a session (`userId`)
+  CODE
+}
+
+/// One-use steps of a single sign-on, kept only as the sha256 of their secret. Read outside the tenant: the person is not
+/// signed in yet. Rows over a day old are removed as new ones come in.
+model SsoTicket {
+  id             String        @id @default(uuid())
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+  kind           SsoTicketKind
+  hash           String        @unique
+  userId         String?
+  /// SHA-256 of the value the starting browser tab keeps (`bindingHash`): the code is exchanged only with it
+  binding        String?
+  expiresAt      DateTime
+  usedAt         DateTime?
+  createdAt      DateTime      @default(now())
+
+  @@index([createdAt])
 }
 
 /// GST e-invoicing and e-way bills: an IRN for an invoice, or an e-way bill for goods on the road.

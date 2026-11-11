@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
+import { IsEmail, IsIn, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 import { MIN_PASSWORD_LENGTH } from '@erp/shared';
 
 export class LoginDto {
@@ -11,6 +11,11 @@ export class LoginDto {
   @IsString()
   @MinLength(4)
   password: string;
+
+  @ApiPropertyOptional({ enum: ['web', 'phone'], description: "The phone app sends 'phone': its session is marked so, and a company that requires single sign-on still takes its password (ARCHITECTURE \"Single sign-on\")" })
+  @IsOptional()
+  @IsIn(['web', 'phone'])
+  client?: 'web' | 'phone';
 }
 
 export class ChangePasswordDto {

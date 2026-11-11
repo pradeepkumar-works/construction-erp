@@ -7,9 +7,10 @@ export function middleware(req: NextRequest) {
   const token = req.cookies.get(TOKEN_KEY)?.value;
   const { pathname } = req.nextUrl;
   const isLogin = ['/login', '/signup', '/forgot-password'].some((p) => pathname.startsWith(p));
-  // An invite or reset link works whether or not someone is signed in on this browser.
-  // The product page, the privacy page and a supplier's quote link are open to everyone too.
-  if (pathname.startsWith('/set-password') || pathname.startsWith('/quote/') || pathname === '/welcome' || pathname === '/privacy') return NextResponse.next();
+  // An invite or reset link works whether or not someone is signed in on this browser, and so does the way back from
+  // single sign-on (it swaps whatever session is here for the new one). The product page, the privacy page and a
+  // supplier's quote link are open to everyone too.
+  if (pathname.startsWith('/set-password') || pathname === '/login/sso' || pathname.startsWith('/quote/') || pathname === '/welcome' || pathname === '/privacy') return NextResponse.next();
 
   // A signed-out visitor to the bare domain gets the product page, which has "Sign in" at the top.
   if (!token && pathname === '/') {

@@ -18,6 +18,20 @@ interface AuthContextValue {
   switchCompany: (organizationId: string) => Promise<void>;
 }
 
+/**
+ * A session the API marked as the phone app's (`ph`, a password typed on the phone where the company requires single
+ * sign-on on the website): the website never takes it (ARCHITECTURE "Single sign-on").
+ */
+export function isPhoneToken(token: string): boolean {
+  try {
+    const body = token.split('.')[1] ?? '';
+    const claims = JSON.parse(atob(body.replace(/-/g, '+').replace(/_/g, '/'))) as { ph?: unknown };
+    return claims.ph === 1;
+  } catch {
+    return false;
+  }
+}
+
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -27,7 +41,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refresh = useCallback(async () => {
     const token = getToken();
-    if (!token) {
+    if (token && isPhoneToken(token)) setToken(null);
+    if (!token || isPhoneToken(token)) {
       setUser(null);
       setLoading(false);
       return;
@@ -49,12 +64,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     const { data } = await api.post<LoginResponse>('/auth/login', { email, password });
+    if (isPhoneToken(data.accessToken)) throw new Error('This session is the phone app’s. Sign in here on the website.');
     setToken(data.accessToken);
     setUser(data.user);
     return data.user;
   }, []);
 
   const signIn = useCallback((data: LoginResponse) => {
+    if (isPhoneToken(data.accessToken)) throw new Error('This session is the phone app’s. Sign in here on the website.');
     setToken(data.accessToken);
     setUser(data.user);
   }, []);

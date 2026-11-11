@@ -415,6 +415,10 @@ export type NavPalette = (typeof NAV_PALETTES)[number];
 /** The discipline an Indian Standard belongs to (`is-standards.ts`): the library filters and compliance groups by it. */
 export const IS_DISCIPLINES = ['CIVIL', 'MECHANICAL', 'ELECTRICAL'] as const;
 export type IsDiscipline = (typeof IS_DISCIPLINES)[number];
+/** Who signs a company's people in with single sign-on (`sso.ts`; labels in `SSO_PROVIDER_INFO`). */
+export const SSO_PROVIDERS = ['ENTRA', 'GOOGLE'] as const;
+export type SsoProvider = (typeof SSO_PROVIDERS)[number];
+
 /** GST e-invoicing and e-way bills (`einvoice.ts`): an IRN for an invoice or an e-way bill for goods moving, the record it
  *  is for, and where it stands (PENDING while the provider is asked, ACTIVE once made, CANCELLED, FAILED when refused). */
 export const GST_DOCUMENT_KINDS = ['IRN', 'EWB'] as const;

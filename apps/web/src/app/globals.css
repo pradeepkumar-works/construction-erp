@@ -183,6 +183,18 @@ a {
   text-decoration: underline;
 }
 
+/* A button that reads as a link (the sign-in card's Use another company code, Sign in with your email and password):
+   drawn as the links beside it, a 24 px target (44 on touch, below). */
+button.auth-link {
+  min-height: 1.5rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
 .auth-alt {
   margin: var(--s-6) 0 0;
   text-align: center;
@@ -651,6 +663,9 @@ kbd {
   :root .ant-btn {
     min-height: 2.75rem;
     min-width: 2.75rem;
+  }
+  button.auth-link {
+    min-height: 2.75rem;
   }
   :root .ant-select {
     --ant-select-height: 2.75rem;

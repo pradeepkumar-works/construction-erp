@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/auth';
 import { errorMessage } from '@/lib/api';
 import { useAuthOptions } from '@/lib/queries';
 import { AuthCard } from '@/components/auth/AuthCard';
+import { SsoSignIn } from '@/components/auth/SsoSignIn';
 
 const DEMO_PASSWORD = 'password123';
 const DEMO_ACCOUNTS: { email: string; role: string }[] = [
@@ -28,6 +29,9 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const { data: options } = useAuthOptions();
+  // Use single sign-on: the company code, then its provider (?sso=1 opens on it, as the SSO page's way back and a
+  // single sign-on invite do; the invite's ?code= fills in the company code).
+  const [sso, setSso] = useState(params.get('sso') === '1');
   // The product page's "See it as …" opens this page with ?demo=pm: fill in that demo account, ready to sign in.
   const demo = params.get('demo');
   useEffect(() => {
@@ -48,6 +52,13 @@ export default function LoginPage() {
       setSubmitting(false);
     }
   };
+
+  if (sso && options?.sso)
+    return (
+      <AuthCard title="Single sign-on" subtitle="Sign in with your work account at Microsoft or Google.">
+        <SsoSignIn onPassword={() => setSso(false)} initialCode={params.get('code')} />
+      </AuthCard>
+    );
 
   return (
     <AuthCard title="Sign in" subtitle="Manage projects, site progress and approvals.">
@@ -78,6 +89,19 @@ export default function LoginPage() {
         <Button type="primary" htmlType="submit" block size="large" loading={submitting} style={{ marginTop: tk.space[2] }}>
           Sign in
         </Button>
+        {options?.sso && (
+          <Button
+            block
+            size="large"
+            style={{ marginTop: tk.space[3] }}
+            onClick={() => {
+              setError(null);
+              setSso(true);
+            }}
+          >
+            Use single sign-on
+          </Button>
+        )}
       </Form>
 
       <p className="auth-alt">
