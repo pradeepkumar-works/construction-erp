@@ -4,6 +4,8 @@
  * where on the page each figure came from; matching what it read to vendors, orders and order lines is plain code here
  * and in the API, and nothing is saved until the user presses Save on the form it fills.
  */
+import { carryParents } from './boq-parents';
+
 export const DOC_READ_KINDS = ['invoice', 'challan', 'drawing', 'workOrder', 'boq'] as const;
 export type DocReadKind = (typeof DOC_READ_KINDS)[number];
 
@@ -210,24 +212,26 @@ export interface ReadBoqRow {
  * from the amount when only the amount is printed (said so). Rows without a quantity or rate stay, to be checked.
  */
 export function boqRowsFromRead(lines: DocReadLine[]): ReadBoqRow[] {
+  const text = (l: DocReadLine, k: string) => readText(l[k])?.trim() ?? '';
+  const num = (l: DocReadLine, k: string) => readNumber(l[k]);
+  // Headings, parent items and run-on lines first (`carryParents`), then each item's figures and what needs a look.
+  const carried = carryParents(
+    lines.map((l) => ({
+      itemNo: text(l, 'itemNo'),
+      description: text(l, 'description'),
+      unit: text(l, 'unit'),
+      rate: num(l, 'rate') === null ? '' : 'x',
+      qty: num(l, 'quantity') === null && num(l, 'amount') === null ? '' : 'x',
+      section: text(l, 'section') || null,
+    })),
+  );
   const rows: ReadBoqRow[] = [];
-  let section: string | null = null;
-  lines.forEach((l, i) => {
-    const text = (k: string) => readText(l[k])?.trim() ?? '';
-    const itemNo = text('itemNo');
-    const description = text('description');
-    const qty = readNumber(l.quantity);
-    let rate = readNumber(l.rate);
-    const amount = readNumber(l.amount);
-    if (text('section')) section = text('section');
-    if (!description) return;
-    // A line with no figures and no unit is a heading, or more of the item above when it runs on without a number.
-    const last = rows[rows.length - 1];
-    if (qty === null && rate === null && amount === null && !text('unit')) {
-      if (!itemNo && last && !looksLikeHeading(description)) last.description = `${last.description} ${description}`.slice(0, 2000);
-      else section = description.slice(0, 120);
-      return;
-    }
+  for (const c of carried) {
+    if (c.kind !== 'item') continue;
+    const l = lines[c.index];
+    const qty = num(l, 'quantity');
+    let rate = num(l, 'rate');
+    const amount = num(l, 'amount');
     // One note per reason: "rate, amount: quantity × rate is not the amount", not the reason three times.
     const byReason = new Map<string, string[]>();
     for (const [k, f] of Object.entries(l)) if (f.confidence === 'low' && f.value !== null) byReason.set(f.reason ?? 'hard to read', [...(byReason.get(f.reason ?? 'hard to read') ?? []), BOQ_READ_LABELS[k] ?? k]);
@@ -238,23 +242,21 @@ export function boqRowsFromRead(lines: DocReadLine[]): ReadBoqRow[] {
     }
     if (qty === null) checks.push('quantity: not read');
     if (rate === null) checks.push('rate: not read');
-    if (!text('unit')) checks.push('unit: not read');
+    if (!text(l, 'unit')) checks.push('unit: not read');
+    if (!c.itemNo) checks.push('item no.: not printed; numbered in order');
+    if (!c.description) continue;
     rows.push({
-      line: i,
-      itemNo: itemNo || `${rows.length + 1}`,
-      section,
-      description,
-      unit: text('unit'),
+      line: c.index,
+      itemNo: c.itemNo || `${rows.length + 1}`,
+      section: c.section,
+      description: c.description,
+      unit: text(l, 'unit'),
       rate: rate === null ? '' : String(rate),
       originalQty: qty === null ? '' : String(qty),
       check: checks.length ? checks.join('; ') : null,
     });
-    if (!itemNo) rows[rows.length - 1].check = [rows[rows.length - 1].check, 'item no.: not printed; numbered in order'].filter(Boolean).join('; ');
-  });
+  }
   return rows;
 }
-
-/** "PART B: CONCRETE WORKS", "Sub-head 3 Earthwork", "SCHEDULE A": a heading, not the end of an item's description. */
-const looksLikeHeading = (t: string) => /^(part|section|sub[\s-]*head|head|schedule|bill\s+no)\b/i.test(t) || (t.replace(/[^A-Za-z]/g, '').length >= 4 && t === t.toUpperCase());
 
 const BOQ_READ_LABELS: Record<string, string> = { itemNo: 'item no.', section: 'section', description: 'description', unit: 'unit', quantity: 'quantity', rate: 'rate', amount: 'amount' };
