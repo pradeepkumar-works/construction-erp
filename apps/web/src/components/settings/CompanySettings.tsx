@@ -247,7 +247,7 @@ function CompanyTab({ data }: { data: CompanySettingsDto }) {
         title="E-invoicing"
         help="RA bills and ready-mix bills to a registered client get an IRN and a signed QR from the IRP once the company is under e-invoicing. The IRP is reached through the GST provider set up in Administration › Connections."
         extra={
-          <Button icon={<EditOutlined />} onClick={() => setEinvoicing(true)}>
+          <Button icon={<EditOutlined />} aria-label="Edit e-invoicing" onClick={() => setEinvoicing(true)}>
             Edit
           </Button>
         }
