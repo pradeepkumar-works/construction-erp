@@ -43,9 +43,14 @@ export default function SubcontractBillScreen() {
         <KeyValue label={t('GST {rate}%', { rate: data.gstRate })} value={rupees(data.gstAmount)} />
         {data.deductions
           .filter((d) => Number(d.amount) > 0)
-          .map((d) => (
-            <KeyValue key={d.key} label={d.pct ? t('Less {label} @ {pct}%', { label: t(d.label), pct: d.pct }) : t('Less {label}', { label: t(d.label) })} value={`(${rupees(d.amount)})`} />
+          .map((d, i) => (
+            <KeyValue
+              key={`${d.key}-${i}`}
+              label={d.key === 'backCharge' ? t('Less back-charge, {label}', { label: d.label }) : d.pct ? t('Less {label} @ {pct}%', { label: t(d.label), pct: d.pct }) : t('Less {label}', { label: t(d.label) })}
+              value={`(${rupees(d.amount)})`}
+            />
           ))}
+        {Number(data.retentionReleased) > 0 ? <KeyValue label={t('Add retention paid back')} value={rupees(data.retentionReleased)} /> : null}
         <KeyValue label={t('Their invoice')} value={data.invoiceNo} />
         <KeyValue label={t('Remarks')} value={data.remarks} multiline />
       </Card>

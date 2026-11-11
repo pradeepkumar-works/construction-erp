@@ -14,8 +14,10 @@ import { formatINR, formatQty, toNumber } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
+import { LineTable } from '@/components/form/LineTable';
+import { useMasterOptions } from '@/components/quality/NcrFormModal';
 import { recordPage } from '@/components/approvals/queue';
-import { unitLabel } from '@erp/shared';
+import { BACK_CHARGE_OTHER, halfOfHeld, unitLabel } from '@erp/shared';
 import { Money } from '@/components/common/Money';
 
 interface FormValues {
@@ -26,8 +28,10 @@ interface FormValues {
   isFinal?: boolean;
   /** Own items: quantity in this bill, by work order line id */
   qty?: Record<string, number | null>;
-  otherDeduction?: number | null;
-  otherDeductionNote?: string;
+  /** Back-charges by kind */
+  charges?: { kindCode?: string; amount?: number | null; note?: string }[];
+  /** Retention held on earlier bills paid back on this one */
+  retentionRelease?: number | null;
   remarks?: string;
   docs?: AttachmentDto[];
 }
@@ -35,17 +39,22 @@ interface FormValues {
 /**
  * Prepare (or correct) a subcontractor's running bill on an approved work order. BOQ items take their quantities from
  * approved measurements under the order and material issued to them is recovered, both up to "measured up to"; only the
- * order's own items take a quantity here. The bill works out the deductions when it is saved.
+ * order's own items take a quantity here. The bill works out the deductions when it is saved. Back-charges go by kind,
+ * and retention held on earlier bills can be paid back; `release` makes a bill that only pays back retention (ARCHITECTURE
+ * "Subcontracts", Retention release and back-charges).
  */
 export function SubBillFormModal({
   open,
   bill,
   workOrderId,
   fromInvoice,
+  release,
   onClose,
   onSaved,
 }: {
   open: boolean;
+  /** A new bill that only pays back retention */
+  release?: boolean;
   bill?: SubcontractBillDto | null;
   workOrderId?: string;
   /** A subcontractor's invoice from the supplier portal: the bill takes its number and date, which links the two. */
@@ -60,6 +69,10 @@ export function SubBillFormModal({
   const woId = bill?.workOrderId ?? workOrderId ?? watchedWo;
   const orders = useWorkOrders({ open: true, pageSize: 100, sortBy: 'woDate', sortOrder: 'desc' }, open && !bill && !workOrderId);
   const { data: wo, isLoading: woLoading } = useWorkOrder(open ? woId : undefined);
+  const isRelease = bill ? bill.isRelease : !!release;
+  const kinds = useMasterOptions('back-charge', null, open);
+  /** What this bill may pay back: held before it (editing), else held on the order now. */
+  const held = bill ? bill.retentionHeldBefore : wo?.retentionHeld;
 
   useEffect(() => {
     if (!open) return;
@@ -72,8 +85,8 @@ export function SubBillFormModal({
         invoiceNo: bill.invoiceNo ?? undefined,
         isFinal: bill.isFinal,
         qty: Object.fromEntries(bill.lines.filter((l) => !l.boqItemId).map((l) => [l.workOrderLineId, toNumber(l.thisQty)])),
-        otherDeduction: toNumber(bill.otherDeduction) || null,
-        otherDeductionNote: bill.otherDeductionNote ?? undefined,
+        charges: bill.charges.map((c) => ({ kindCode: c.kindCode, amount: toNumber(c.amount), note: c.note ?? undefined })),
+        retentionRelease: toNumber(bill.retentionReleased) || null,
         remarks: bill.remarks ?? undefined,
         docs: bill.attachments,
       });
@@ -95,18 +108,22 @@ export function SubBillFormModal({
     mutationFn: async ({ v, submit }: { v: FormValues; submit: boolean }) => {
       const body = {
         billDate: v.billDate.format('YYYY-MM-DD'),
-        measuredUpTo: v.measuredUpTo.format('YYYY-MM-DD'),
+        ...(isRelease
+          ? {}
+          : {
+              measuredUpTo: v.measuredUpTo.format('YYYY-MM-DD'),
+              isFinal: !!v.isFinal,
+              quantities: ownLines.map((l) => ({ workOrderLineId: l.id, quantity: String(v.qty?.[l.id] ?? 0) })),
+            }),
         invoiceNo: v.invoiceNo?.trim() || null,
-        isFinal: !!v.isFinal,
-        quantities: ownLines.map((l) => ({ workOrderLineId: l.id, quantity: String(v.qty?.[l.id] ?? 0) })),
-        otherDeduction: String(v.otherDeduction ?? 0),
-        otherDeductionNote: v.otherDeductionNote?.trim() || null,
+        charges: (v.charges ?? []).filter((c) => c.kindCode || c.amount).map((c) => ({ kindCode: c.kindCode ?? '', amount: String(c.amount ?? 0), note: c.note?.trim() || null })),
+        retentionRelease: String(v.retentionRelease ?? 0),
         remarks: v.remarks?.trim() || null,
         attachmentIds: (v.docs ?? []).map((d) => d.id),
         submit,
       };
       if (bill) return (await api.patch<SubcontractBillDto>(`/subcontract-bills/${bill.id}`, body)).data;
-      return (await api.post<SubcontractBillDto>('/subcontract-bills', { ...body, id: crypto.randomUUID(), workOrderId: v.workOrderId })).data;
+      return (await api.post<SubcontractBillDto>('/subcontract-bills', { ...body, id: crypto.randomUUID(), workOrderId: v.workOrderId, isRelease })).data;
     },
     onSuccess: (b, { submit }) => {
       notify.saved(submit ? `${b.label} submitted for approval: net payable ${formatINR(b.netPayable, true)}` : `${b.label} saved as a draft: net payable ${formatINR(b.netPayable, true)}`, recordPage('SUBCONTRACT_BILL', b.id));
@@ -126,7 +143,7 @@ export function SubBillFormModal({
       layout="drawer"
       width={860}
       allValues
-      title={bill ? `Edit ${bill.label}` : wo ? `New bill on ${wo.woNo} · ${wo.vendorName}` : 'New subcontractor bill'}
+      title={bill ? `Edit ${bill.label}` : isRelease && wo ? `Release retention on ${wo.woNo} · ${wo.vendorName}` : wo ? `New bill on ${wo.woNo} · ${wo.vendorName}` : 'New subcontractor bill'}
       okText="Save and submit"
       secondaryText="Save as draft"
       onSubmit={(v, secondary) => save.mutateAsync({ v, submit: !secondary })}
@@ -147,19 +164,23 @@ export function SubBillFormModal({
             <Form.Item name="billDate" label="Bill date" rules={[{ required: true, message: 'Choose the bill date' }]}>
               <DatePicker style={{ width: '100%' }} />
             </Form.Item>
-            <Form.Item name="measuredUpTo" label="Work measured up to" rules={[{ required: true, message: 'Choose the day work is measured up to' }]} tooltip="Approved measurements and material issued to them up to this day go in the bill">
-              <DatePicker style={{ width: '100%' }} />
-            </Form.Item>
+            {!isRelease && (
+              <Form.Item name="measuredUpTo" label="Work measured up to" rules={[{ required: true, message: 'Choose the day work is measured up to' }]} tooltip="Approved measurements and material issued to them up to this day go in the bill">
+                <DatePicker style={{ width: '100%' }} />
+              </Form.Item>
+            )}
             <Form.Item name="invoiceNo" label="Their invoice no.">
               <Input maxLength={60} placeholder="SC/24-25/017" />
             </Form.Item>
-            <Form.Item name="isFinal" label="Final bill" valuePropName="checked">
-              <Checkbox>This is their final bill</Checkbox>
-            </Form.Item>
+            {!isRelease && (
+              <Form.Item name="isFinal" label="Final bill" valuePropName="checked">
+                <Checkbox>This is their final bill</Checkbox>
+              </Form.Item>
+            )}
           </FormGrid>
         </FormSection>
         {woId && woLoading && <Typography.Text type="secondary">Loading the work order…</Typography.Text>}
-        {wo && (boqLines.length > 0 || ownLines.length > 0) && (
+        {wo && !isRelease && (boqLines.length > 0 || ownLines.length > 0) && (
           <FormSection title="Work in this bill">
             {boqLines.length > 0 && (
               <Alert
@@ -203,15 +224,66 @@ export function SubBillFormModal({
             )}
           </FormSection>
         )}
-        <FormSection title="Deductions and documents">
-          <FormGrid cols={2}>
-            <Form.Item name="otherDeduction" label="Other deduction" tooltip="Anything else to recover: damages, hire of our equipment, a penalty">
-              <MoneyInput />
-            </Form.Item>
-            <Form.Item name="otherDeductionNote" label="For">
-              <Input maxLength={200} placeholder="Hire of our mixer, 6 days" />
-            </Form.Item>
-          </FormGrid>
+        <FormSection title="Retention">
+          <Form.Item
+            name="retentionRelease"
+            label="Retention to pay back"
+            tooltip="Retention kept on their earlier bills, paid back on this one: often half with the final bill and the rest after the defects liability period"
+            extra={held !== undefined ? <span translate="no">{formatINR(held, true)} held{toNumber(held) > 0 ? `, half is ${formatINR(halfOfHeld(held), true)}` : ''}</span> : null}
+            rules={[
+              { required: isRelease, message: 'Enter the retention to pay back' },
+              {
+                validator: (_, v: number | null | undefined) =>
+                  v && held !== undefined && v > toNumber(held) ? Promise.reject(new Error(`Pay back at most ${formatINR(held, true)}, the retention held`)) : Promise.resolve(),
+              },
+            ]}
+          >
+            <MoneyInput style={{ maxWidth: 240 }} />
+          </Form.Item>
+        </FormSection>
+        <FormSection title="Back-charges and documents">
+          <LineTable
+            name="charges"
+            label="Back-charge"
+            addText="Add back-charge"
+            newLine={() => ({ kindCode: undefined, amount: null, note: '' })}
+            columns={[
+              {
+                key: 'kind',
+                title: 'For',
+                width: 240,
+                render: (f) => (
+                  <Form.Item name={[f.name, 'kindCode']} noStyle rules={[{ required: true, message: 'Choose what the back-charge is for' }]}>
+                    <Select aria-label="Back-charge for" options={kinds.options} placeholder="Cleaning, damage…" style={{ width: '100%' }} />
+                  </Form.Item>
+                ),
+              },
+              {
+                key: 'amount',
+                title: 'Amount',
+                width: 150,
+                render: (f) => (
+                  <Form.Item name={[f.name, 'amount']} noStyle rules={[{ required: true, message: 'Enter the back-charge amount' }]}>
+                    <MoneyInput aria-label="Back-charge amount" />
+                  </Form.Item>
+                ),
+              },
+              {
+                key: 'note',
+                title: 'Details',
+                render: (f) => (
+                  <Form.Item
+                    name={[f.name, 'note']}
+                    noStyle
+                    dependencies={[['charges', f.name, 'kindCode']]}
+                    rules={[({ getFieldValue }) => ({ required: getFieldValue(['charges', f.name, 'kindCode']) === BACK_CHARGE_OTHER, message: 'Say what the other charge is for' })]}
+                  >
+                    <Input aria-label="Back-charge details" maxLength={200} placeholder="Debris left at block B" />
+                  </Form.Item>
+                ),
+              },
+            ]}
+          />
           <Form.Item name="remarks" label="Remarks">
             <Input.TextArea rows={2} maxLength={1000} />
           </Form.Item>
@@ -220,8 +292,8 @@ export function SubBillFormModal({
           </Form.Item>
           {wo && (
             <Typography.Paragraph type="secondary" style={{ fontSize: tk.type.caption.fontSize, marginBottom: 0 }}>
-              Deducted on saving: retention {wo.retentionPct}%, TDS {wo.tdsPct}%
-              {toNumber(wo.advanceAmount) > 0 ? `, advance recovery ${wo.advanceRecoveryPct}% (${formatINR(toNumber(wo.advanceAmount) - toNumber(wo.advanceRecovered), true)} left)` : ''}, and material issued to them at our rates. GST {wo.gstRate}% is added.
+              {isRelease ? 'A retention release takes no work and deducts nothing but its back-charges.' : <>Deducted on saving: retention {wo.retentionPct}%, TDS {wo.tdsPct}%
+              {toNumber(wo.advanceAmount) > 0 ? `, advance recovery ${wo.advanceRecoveryPct}% (${formatINR(toNumber(wo.advanceAmount) - toNumber(wo.advanceRecovered), true)} left)` : ''}, and material issued to them at our rates. GST {wo.gstRate}% is added.</>}
             </Typography.Paragraph>
           )}
         </FormSection>

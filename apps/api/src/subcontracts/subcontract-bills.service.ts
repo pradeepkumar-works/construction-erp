@@ -2,8 +2,14 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable,
 import { Prisma } from '@prisma/client';
 import {
   SUB_BILL_DEDUCTION_LABELS,
+  BACK_CHARGE_OTHER,
+  backChargesProblem,
+  backChargesTotal,
   canPrepareSubcontractBill,
+  retentionHeld,
+  retentionReleaseProblem,
   subBillLabel,
+  type BackChargeInput,
   type Paginated,
   type SortOrder,
   type SubcontractBillDeductionDto,
@@ -27,6 +33,7 @@ import { workOrderAdvanceBase } from '../payables/advances';
 import { subBillPayable } from '../payables/payable';
 import { subBillLines } from './sub-bill-lines';
 import { TdsDeductionsService } from '../tds/tds-deductions.service';
+import { MastersService } from '../masters/masters.service';
 
 type Tx = Prisma.TransactionClient;
 const round2 = (v: Prisma.Decimal) => v.toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
@@ -37,6 +44,7 @@ const include = {
   workOrder: { select: { woNo: true, title: true, vendorId: true, vendor: { select: { name: true, gstin: true, pan: true, msmeCategory: true } } } },
   lines: { orderBy: { sortOrder: 'asc' as const }, include: { workOrderLine: { include: { boqItem: { select: { itemNo: true } } } } } },
   materials: { include: { item: { select: { name: true, unit: true } } }, orderBy: { item: { name: 'asc' as const } } },
+  charges: { orderBy: [{ sortOrder: 'asc' as const }, { id: 'asc' as const }] },
   submittedBy: { select: { fullName: true } },
   reviewedBy: { select: { fullName: true } },
   attachments: { select: ATTACHMENT_FIELDS },
@@ -80,13 +88,20 @@ export class SubcontractBillsService {
     private audit: AuditService,
     private lifecycle: SubmissionLifecycleService,
     private attachments: AttachmentsService,
+    private masters: MastersService,
     tds: TdsDeductionsService,
   ) {
     // The bill's TDS under 194C becomes a deduction for the quarter's return in the approval's own transaction.
     lifecycle.onApproved('SUBCONTRACT_BILL', (tx, user, id) => tds.forSubcontractBill(tx, user.organizationId, id));
   }
 
-  toDto(r: Row): SubcontractBillDto {
+  /** The company's back-charge kinds by code. */
+  private async chargeKinds(organizationId: string) {
+    return new Map((await this.masters.entriesFor(organizationId, 'backCharge')).map((e) => [e.code, e]));
+  }
+
+  toDto(r: Row, kinds: Map<string, { name: string }>): SubcontractBillDto {
+    const kindName = (code: string) => kinds.get(code)?.name ?? code;
     const deductions: SubcontractBillDeductionDto[] = [];
     const pct = (key: 'retention' | 'advanceRecovery' | 'tds', p: Prisma.Decimal, amount: Prisma.Decimal) => {
       if (!amount.isZero()) deductions.push({ key, label: SUB_BILL_DEDUCTION_LABELS[key], pct: pctStr(p), amount: money(amount) });
@@ -96,15 +111,18 @@ export class SubcontractBillsService {
     pct('tds', r.tdsPct, r.tdsAmount);
     if (!r.materialRecovery.isZero()) deductions.push({ key: 'material', label: SUB_BILL_DEDUCTION_LABELS.material, pct: null, amount: money(r.materialRecovery) });
     if (!r.excessRecovery.isZero()) deductions.push({ key: 'excessMaterial', label: SUB_BILL_DEDUCTION_LABELS.excessMaterial, pct: null, amount: money(r.excessRecovery) });
-    if (!r.otherDeduction.isZero()) deductions.push({ key: 'other', label: r.otherDeductionNote || SUB_BILL_DEDUCTION_LABELS.other, pct: null, amount: money(r.otherDeduction) });
+    // Back-charges one by one; an older bill without them keeps its single other recovery.
+    if (r.charges.length) for (const c of r.charges) deductions.push({ key: 'backCharge', label: c.note ? `${kindName(c.kindCode)}: ${c.note}` : kindName(c.kindCode), pct: null, amount: money(c.amount) });
+    else if (!r.otherDeduction.isZero()) deductions.push({ key: 'other', label: r.otherDeductionNote || SUB_BILL_DEDUCTION_LABELS.other, pct: null, amount: money(r.otherDeduction) });
     const w = r.workOrder;
     return {
       id: r.id,
       projectId: r.projectId,
       projectName: r.project.name,
       billNo: r.billNo,
-      label: subBillLabel(w.woNo, r.billNo, r.isFinal),
+      label: subBillLabel(w.woNo, r.billNo, r.isFinal, r.isRelease),
       isFinal: r.isFinal,
+      isRelease: r.isRelease,
       workOrderId: r.workOrderId,
       woNo: w.woNo,
       woTitle: w.title,
@@ -129,8 +147,10 @@ export class SubcontractBillsService {
       excessRecovery: money(r.excessRecovery),
       otherDeduction: money(r.otherDeduction),
       otherDeductionNote: r.otherDeductionNote,
+      charges: r.charges.map((c) => ({ kindCode: c.kindCode, kindName: kindName(c.kindCode), amount: money(c.amount), note: c.note })),
       deductions,
       totalDeductions: money(r.totalDeductions),
+      retentionReleased: money(r.retentionReleased),
       netPayable: money(r.netPayable),
       debitNoteAmount: money(r.debitNoteAmount),
       paidAmount: money(r.paidAmount),
@@ -217,19 +237,23 @@ export class SubcontractBillsService {
       this.prisma.subcontractBill.findMany({ where, include, orderBy: [...ORDER[sortBy](order), { id: 'asc' }], skip: args.skip, take: args.take }),
       this.prisma.subcontractBill.count({ where }),
     ]);
-    return paginated(rows.map((r) => this.toDto(r)), total, args);
+    const kinds = await this.chargeKinds(user.organizationId);
+    return paginated(rows.map((r) => this.toDto(r, kinds)), total, args);
   }
 
   async get(user: RequestUser, id: string): Promise<SubcontractBillDto> {
     await this.assertCanSee(user);
     const row = await this.prisma.subcontractBill.findFirst({ where: { id, ...this.access.submissionWhere(user) }, include });
     if (!row) throw new NotFoundException('Subcontractor bill not found');
-    const [sheets, issues] = await Promise.all([
+    const [sheets, issues, kinds, earlier] = await Promise.all([
       this.prisma.measurementSheet.findMany({ where: { subcontractBillId: id }, include: { boqItem: { select: { itemNo: true, unit: true } } }, orderBy: [{ date: 'asc' }, { mbNo: 'asc' }] }),
       this.prisma.stockEntry.findMany({ where: { subcontractBillId: id }, select: { id: true, entryNo: true, date: true, _count: { select: { lines: true } } }, orderBy: [{ date: 'asc' }, { entryNo: 'asc' }] }),
+      this.chargeKinds(user.organizationId),
+      this.heldBefore(this.prisma, row.workOrderId, row.billNo),
     ]);
     return {
-      ...this.toDto(row),
+      ...this.toDto(row, kinds),
+      retentionHeldBefore: earlier,
       measurements: sheets.map((s) => ({ id: s.id, mbNo: s.mbNo, date: dateOnly(s.date), boqItemNo: s.boqItem.itemNo, unit: s.boqItem.unit, location: s.location, totalQty: dec(s.totalQty) })),
       issues: issues.map((e) => ({ id: e.id, entryNo: e.entryNo, date: dateOnly(e.date), lines: e._count.lines })),
     };
@@ -257,14 +281,17 @@ export class SubcontractBillsService {
       ownQty.set(line.id, q);
     }
 
-    // Take what is approved up to the date and not in an earlier bill.
+    // Take what is approved up to the date and not in an earlier bill; a retention release bill takes no work.
     await tx.measurementSheet.updateMany({ where: { subcontractBillId: id }, data: { subcontractBillId: null } });
     await tx.stockEntry.updateMany({ where: { subcontractBillId: id }, data: { subcontractBillId: null } });
-    await tx.measurementSheet.updateMany({ where: { workOrderId: wo.id, status: 'APPROVED', subcontractBillId: null, date: { lte: bill.measuredUpTo } }, data: { subcontractBillId: id } });
-    await tx.stockEntry.updateMany({ where: { workOrderId: wo.id, type: { in: ['ISSUE', 'RETURN_FROM_SITE'] }, subcontractBillId: null, date: { lte: bill.measuredUpTo } }, data: { subcontractBillId: id } });
-    // Material used over the norm, raised from the reconciliation and not yet on a bill.
     await tx.excessMaterialRecovery.updateMany({ where: { subcontractBillId: id }, data: { subcontractBillId: null } });
-    await tx.excessMaterialRecovery.updateMany({ where: { workOrderId: wo.id, subcontractBillId: null }, data: { subcontractBillId: id } });
+    if (bill.isRelease) ownQty.clear();
+    else {
+      await tx.measurementSheet.updateMany({ where: { workOrderId: wo.id, status: 'APPROVED', subcontractBillId: null, date: { lte: bill.measuredUpTo } }, data: { subcontractBillId: id } });
+      await tx.stockEntry.updateMany({ where: { workOrderId: wo.id, type: { in: ['ISSUE', 'RETURN_FROM_SITE'] }, subcontractBillId: null, date: { lte: bill.measuredUpTo } }, data: { subcontractBillId: id } });
+      // Material used over the norm, raised from the reconciliation and not yet on a bill.
+      await tx.excessMaterialRecovery.updateMany({ where: { workOrderId: wo.id, subcontractBillId: null }, data: { subcontractBillId: id } });
+    }
 
     const earlier = { workOrderId: wo.id, billNo: { lt: bill.billNo } };
     const [measured, billed, issued, recovered, excess] = await Promise.all([
@@ -275,7 +302,7 @@ export class SubcontractBillsService {
       tx.excessMaterialRecovery.aggregate({ where: { subcontractBillId: id }, _sum: { amount: true } }),
     ]);
     const upto = new Map(measured.map((m) => [m.boqItemId, m._sum.totalQty ?? ZERO]));
-    const lines = subBillLines(wo.lines, billed, upto, ownQty);
+    const lines = bill.isRelease ? [] : subBillLines(wo.lines, billed, upto, ownQty);
 
     // Material issued to them less what they brought back, at each item's current rate (the last approved PO rate, or as
     // set in the item master). A return of material an earlier bill recovered comes off as a credit.
@@ -313,7 +340,12 @@ export class SubcontractBillsService {
       dueDate: addDays(bill.billDate, this.paymentDays(wo.paymentDays, wo.vendor.msmeCategory)),
     };
     const totalDeductions = data.retentionAmount.add(data.advanceRecoveryAmount).add(data.tdsAmount).add(materialRecovery).add(excessRecovery).add(bill.otherDeduction);
-    if (strict && grossAmount.lte(0) && materialRecovery.isZero() && excessRecovery.isZero())
+    // Retention paid back: never more than earlier bills kept and have not paid back.
+    const held = await this.heldBefore(tx, wo.id, bill.billNo);
+    const releaseProblem = retentionReleaseProblem(bill.retentionReleased.toFixed(2), held, bill.isRelease);
+    if (releaseProblem) throw new BadRequestException(releaseProblem);
+    if (bill.isRelease && bill.otherDeduction.gt(bill.retentionReleased)) throw new BadRequestException('Back-charges on a retention release bill cannot be more than the retention it pays back');
+    if (strict && !bill.isRelease && grossAmount.lte(0) && materialRecovery.isZero() && excessRecovery.isZero() && bill.retentionReleased.isZero())
       throw new BadRequestException(
         'Nothing to bill: there are no approved measurements of their work up to this date beyond earlier bills, and no quantities for the work order’s own items',
       );
@@ -321,7 +353,34 @@ export class SubcontractBillsService {
     await tx.subcontractBillLine.createMany({ data: lines.map((l) => ({ ...l, billId: id })) });
     await tx.subcontractBillMaterial.deleteMany({ where: { billId: id } });
     if (materials.length) await tx.subcontractBillMaterial.createMany({ data: materials.map((m) => ({ ...m, billId: id })) });
-    await tx.subcontractBill.update({ where: { id }, data: { ...data, totalDeductions, netPayable: grossAmount.add(data.gstAmount).sub(totalDeductions) } });
+    await tx.subcontractBill.update({ where: { id }, data: { ...data, totalDeductions, netPayable: grossAmount.add(data.gstAmount).sub(totalDeductions).add(bill.retentionReleased) } });
+  }
+
+  /** Retention the work order's bills before `billNo` kept and have not paid back. */
+  private async heldBefore(db: Tx | PrismaService, workOrderId: string, billNo: number): Promise<string> {
+    const bills = await db.subcontractBill.findMany({ where: { workOrderId, billNo: { lt: billNo }, status: 'APPROVED' }, select: { billNo: true, retentionAmount: true, retentionReleased: true } });
+    return retentionHeld(bills.map((b) => ({ billNo: b.billNo, retentionAmount: money(b.retentionAmount), retentionReleased: money(b.retentionReleased) })));
+  }
+
+  /**
+   * A bill's back-charges, replacing those it had: each a kind from the company's `backCharge` list (one already on the
+   * bill stays allowed after the kind is switched off). Sets `otherDeduction` to their sum. An older client's single
+   * other deduction comes in as one "Other" charge.
+   */
+  private async setCharges(tx: Tx, user: RequestUser, id: string, dto: { charges?: BackChargeInput[]; otherDeduction?: string; otherDeductionNote?: string | null }) {
+    let charges = dto.charges;
+    if (charges === undefined && dto.otherDeduction !== undefined) {
+      const v = this.parseOther(dto.otherDeduction);
+      charges = v.isZero() ? [] : [{ kindCode: BACK_CHARGE_OTHER, amount: v.toFixed(2), note: dto.otherDeductionNote?.trim() || SUB_BILL_DEDUCTION_LABELS.other }];
+    }
+    if (charges === undefined) return;
+    const had = await tx.subcontractBillCharge.findMany({ where: { billId: id }, select: { kindCode: true } });
+    const kinds = new Set([...[...(await this.chargeKinds(user.organizationId)).values()].filter((k) => k.isActive).map((k) => k.code), ...had.map((h) => h.kindCode)]);
+    const problem = backChargesProblem(charges, kinds);
+    if (problem) throw new BadRequestException(problem);
+    await tx.subcontractBillCharge.deleteMany({ where: { billId: id } });
+    if (charges.length) await tx.subcontractBillCharge.createMany({ data: charges.map((c, i) => ({ billId: id, kindCode: c.kindCode, amount: D(c.amount), note: c.note?.trim() || null, sortOrder: i })) });
+    await tx.subcontractBill.update({ where: { id }, data: { otherDeduction: D(backChargesTotal(charges)), otherDeductionNote: null } });
   }
 
   /**
@@ -346,6 +405,13 @@ export class SubcontractBillsService {
     if (measuredUpTo > billDate) throw new BadRequestException('Work can only be billed up to the bill date');
   }
 
+  private parseRelease(raw: string) {
+    const v = D(raw);
+    if (v.lt(0)) throw new BadRequestException('The retention to release cannot be negative');
+    if (v.decimalPlaces() > 2) throw new BadRequestException('Enter the retention to release in rupees and paise');
+    return v;
+  }
+
   private parseOther(raw: string) {
     const v = D(raw);
     if (v.lt(0)) throw new BadRequestException('The other deduction cannot be negative');
@@ -365,8 +431,10 @@ export class SubcontractBillsService {
     if (!wo) throw new NotFoundException('Work order not found');
     await this.assertCanPrepare(user, wo.projectId);
     if (wo.status !== 'APPROVED') throw new ConflictException(`${wo.woNo} is not approved yet`);
-    if (wo.closedAt) throw new ConflictException(`${wo.woNo} is closed`);
-    const measuredUpTo = dto.measuredUpTo ?? dto.billDate;
+    // Retention is paid back after the final bill and once the order is closed, at the end of the defects period.
+    const release = !!dto.isRelease;
+    if (wo.closedAt && !release) throw new ConflictException(`${wo.woNo} is closed`);
+    const measuredUpTo = release ? dto.billDate : (dto.measuredUpTo ?? dto.billDate);
     this.checkDates(dto.billDate, measuredUpTo);
     let id: string;
     try {
@@ -375,9 +443,10 @@ export class SubcontractBillsService {
         const bills = await tx.subcontractBill.findMany({ where: { workOrderId: wo.id }, select: { billNo: true, isFinal: true, status: true, measuredUpTo: true }, orderBy: { billNo: 'desc' } });
         const open = bills.find((b) => b.status !== 'APPROVED');
         if (open) throw new ConflictException(`Bill ${open.billNo} on ${wo.woNo} is not approved yet. Finish or delete it before preparing the next one.`);
-        if (bills.some((b) => b.isFinal)) throw new ConflictException(`The final bill on ${wo.woNo} has already been made`);
+        if (!release && bills.some((b) => b.isFinal)) throw new ConflictException(`The final bill on ${wo.woNo} has already been made`);
         const last = bills[0];
-        if (last && dateOnly(last.measuredUpTo) > measuredUpTo) throw new BadRequestException(`Bill ${last.billNo} already took work up to ${dateOnly(last.measuredUpTo)}`);
+        if (last && dateOnly(last.measuredUpTo) > measuredUpTo)
+          throw new BadRequestException(release ? `Date the release on or after ${dateOnly(last.measuredUpTo)}, the day bill ${last.billNo} took work up to` : `Bill ${last.billNo} already took work up to ${dateOnly(last.measuredUpTo)}`);
         const row = await tx.subcontractBill.create({
           data: {
             id: dto.id,
@@ -385,13 +454,13 @@ export class SubcontractBillsService {
             projectId: wo.projectId,
             workOrderId: wo.id,
             billNo: (last?.billNo ?? 0) + 1,
-            isFinal: !!dto.isFinal,
+            isFinal: release ? false : !!dto.isFinal,
+            isRelease: release,
             billDate: parseDate(dto.billDate),
             measuredUpTo: parseDate(measuredUpTo),
+            retentionReleased: this.parseRelease(dto.retentionRelease ?? '0'),
             invoiceNo: dto.invoiceNo || null,
             dueDate: parseDate(dto.billDate),
-            otherDeduction: this.parseOther(dto.otherDeduction ?? '0'),
-            otherDeductionNote: dto.otherDeductionNote || null,
             remarks: dto.remarks || null,
             ...Object.fromEntries(
               [
@@ -416,6 +485,7 @@ export class SubcontractBillsService {
           } as Prisma.SubcontractBillUncheckedCreateInput,
           select: { id: true },
         });
+        await this.setCharges(tx, user, row.id, dto);
         await this.recompute(tx, row.id, dto.quantities);
         return row.id;
       });
@@ -436,7 +506,7 @@ export class SubcontractBillsService {
     const row = await this.lifecycle.load(user, 'SUBCONTRACT_BILL', id);
     await this.assertCanPrepare(user, row.projectId);
     await this.lifecycle.assertEditable(user, row);
-    const cur = await this.prisma.subcontractBill.findUniqueOrThrow({ where: { id }, select: { billDate: true, measuredUpTo: true, billNo: true, workOrderId: true } });
+    const cur = await this.prisma.subcontractBill.findUniqueOrThrow({ where: { id }, select: { billDate: true, measuredUpTo: true, billNo: true, workOrderId: true, isRelease: true } });
     const billDate = dto.billDate ?? dateOnly(cur.billDate);
     const measuredUpTo = dto.measuredUpTo ?? dateOnly(cur.measuredUpTo);
     this.checkDates(billDate, measuredUpTo);
@@ -447,13 +517,13 @@ export class SubcontractBillsService {
       if (before && dateOnly(before.measuredUpTo) > measuredUpTo) throw new BadRequestException(`Bill ${cur.billNo - 1} already took work up to ${dateOnly(before.measuredUpTo)}`);
       data.measuredUpTo = parseDate(dto.measuredUpTo);
     }
-    if (dto.isFinal !== undefined) data.isFinal = dto.isFinal;
+    if (dto.isFinal !== undefined && !cur.isRelease) data.isFinal = dto.isFinal;
     if (dto.invoiceNo !== undefined) data.invoiceNo = dto.invoiceNo || null;
-    if (dto.otherDeduction !== undefined) data.otherDeduction = this.parseOther(dto.otherDeduction);
-    if (dto.otherDeductionNote !== undefined) data.otherDeductionNote = dto.otherDeductionNote || null;
+    if (dto.retentionRelease !== undefined) data.retentionReleased = this.parseRelease(dto.retentionRelease);
     if (dto.remarks !== undefined) data.remarks = dto.remarks || null;
     await this.prisma.$transaction(async (tx) => {
       await tx.subcontractBill.update({ where: { id }, data });
+      await this.setCharges(tx, user, id, dto);
       await this.recompute(tx, id, dto.quantities);
     });
     await this.attachments.sync(user, 'subcontractBillId', id, dto.attachmentIds);

@@ -150,6 +150,8 @@ export const COMMERCIAL: Record<string, string> = {
   '{item} {upto} of {ordered} {unit}': '{item} {ordered} {unit} में से {upto}',
   'GST {rate}%': 'GST {rate}%',
   'Less {label}': 'कटौती: {label}',
+  'Less back-charge, {label}': 'बैक-चार्ज कटौती: {label}',
+  'Add retention paid back': 'जोड़ें: लौटाई गई रिटेंशन',
   'Less {label} @ {pct}%': 'कटौती: {label} @ {pct}%',
   'Their invoice': 'उनका इनवॉइस',
   '{qty} to date': 'अब तक {qty}',

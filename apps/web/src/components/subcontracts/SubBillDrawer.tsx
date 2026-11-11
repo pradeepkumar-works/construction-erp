@@ -110,7 +110,7 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
           },
           notices: (
             <>
-              {data.status === 'DRAFT' && (
+              {data.status === 'DRAFT' && !data.isRelease && (
                 <Alert type="info" showIcon style={{ marginBottom: tk.space[3] }} title="Draft: the quantities come from approved measurements and the recoveries from material issued to them. Saving again picks up anything approved since." />
               )}
               {excess.length > 0 && (
@@ -143,7 +143,7 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
             },
             { key: 'work', label: 'Work', span: 2, children: data.woTitle },
             { key: 'date', label: 'Bill date', children: formatDate(data.billDate) },
-            { key: 'upto', label: 'Measured up to', children: formatDate(data.measuredUpTo) },
+            ...(data.isRelease ? [] : [{ key: 'upto', label: 'Measured up to', children: formatDate(data.measuredUpTo) }]),
             {
               key: 'due',
               label: 'Payment due',
@@ -172,11 +172,11 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
             checksSection('subcontract-bill', data.id, dataUpdatedAt),
             {
               key: 'abstract',
-              title: 'Abstract',
-              count: data.lines.length,
+              title: data.isRelease ? 'Amounts' : 'Abstract',
+              count: data.isRelease ? undefined : data.lines.length,
               children: (
                 <>
-                  <Table<SubcontractBillLineDto>
+                  {data.isRelease ? null : <Table<SubcontractBillLineDto>
                     rowKey="id"
                     size="small"
                     pagination={false}
@@ -210,13 +210,16 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                       { title: 'Up to date (₹)', dataIndex: 'uptoAmount', width: 140, align: 'right', render: (v) => <Money value={v} paise /> },
                       { title: 'This bill (₹)', dataIndex: 'amount', width: 140, align: 'right', render: (v) => <strong><Money value={v} paise /></strong> },
                     ]}
-                  />
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: tk.space[3] }}>
+                  />}
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: data.isRelease ? 0 : tk.space[3] }}>
                     <Section style={{ width: 380 }}>
-                      {[
-                        ['Work in this bill', data.grossAmount],
-                        [`GST ${formatPct(data.gstRate)}`, data.gstAmount],
-                      ].map(([k, v]) => (
+                      {(data.isRelease
+                        ? []
+                        : [
+                            ['Work in this bill', data.grossAmount],
+                            [`GST ${formatPct(data.gstRate)}`, data.gstAmount],
+                          ]
+                      ).map(([k, v]) => (
                         <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: `${tk.space.half} 0` }}>
                           <span>{k}</span>
                           <Money value={v} paise />
@@ -224,16 +227,21 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                       ))}
                       {data.deductions
                         .filter((d) => toNumber(d.amount) > 0)
-                        .map((d) => (
-                          <div key={d.key} style={{ display: 'flex', justifyContent: 'space-between', padding: `${tk.space.half} 0` }}>
+                        .map((d, i) => (
+                          <div key={`${d.key}-${i}`} style={{ display: 'flex', justifyContent: 'space-between', gap: tk.space[3], padding: `${tk.space.half} 0` }}>
                             <span>
-                              Less {d.label}
+                              Less {d.key === 'backCharge' ? `back-charge, ${d.label}` : d.label}
                               {d.pct ? ` @ ${formatPct(d.pct)}` : ''}
-                              {d.key === 'other' && data.otherDeductionNote ? <span className="text-muted"> ({data.otherDeductionNote})</span> : null}
                             </span>
                             <span className="mono" translate="no">({formatINR(d.amount, true)})</span>
                           </div>
                         ))}
+                      {toNumber(data.retentionReleased) > 0 ? (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: `${tk.space.half} 0` }}>
+                          <span>Add retention paid back</span>
+                          <Money value={data.retentionReleased} paise />
+                        </div>
+                      ) : null}
                       <Divider style={{ margin: `${tk.space[2]} 0` }} />
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: tk.type.title.fontWeight }}>
                         <span>Bill net</span>
@@ -314,6 +322,9 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                   },
                 ]
               : []),
+            ...(data.isRelease
+              ? []
+              : [
             {
               key: 'measurements',
               title: 'Measurements',
@@ -336,6 +347,7 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                 />
               ),
             },
+                ]),
             ...((data.issues?.length ?? 0) > 0
               ? [
                   {

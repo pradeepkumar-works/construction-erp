@@ -3454,12 +3454,24 @@ retention, advance, TDS and material recovery (`apps/api/src/subcontracts`).
   "measured up to" that no earlier bill took; own items take the quantity entered on the bill (a BOQ line given a
   quantity is refused). Material: ISSUE entries tagged to the order up to the same day and not yet recovered, valued
   at `Item.rate` (the last PO rate) when the bill is saved. Deductions in order: retention %, advance recovery %
-  (capped at what is still outstanding), TDS % on the work value, material, other (with a note). Net payable = work
-  + GST − deductions. Due date = bill date + the order's payment days (default 30, at most 45 for a micro or small
+  (capped at what is still outstanding), TDS % on the work value, material, back-charges. Net payable = work
+  + GST − deductions + retention paid back. Due date = bill date + the order's payment days (default 30, at most 45 for a micro or small
   enterprise). One open bill per order and nothing after the final bill, under advisory lock `SB:<workOrderId>`;
   a draft is recomputed on every save. An issue recovered in an approved bill cannot be deleted. The previous value
   is what earlier bills charged (`SubcontractBillLine.prevAmount`, the sum of their own line amounts, `subBillLines`),
   never the previous quantity at today's rate, so an amended rate applies only to work billed after it.
+- **Retention release and back-charges** (rules in `@erp/shared/subcontract-recoveries.ts`). A bill may pay back
+  retention held on the order (`SubcontractBill.retentionReleased`): what earlier bills kept less what they paid back
+  (`retentionHeld`, approved bills before it), checked by `retentionReleaseProblem` in `recompute`. A retention
+  release bill (`isRelease`, "WO-… bill N (retention release)") takes no work, measurements or issues, may follow the
+  final bill and a closed order, is dated on or after the last bill's "measured up to", and must pay back something;
+  the form offers half of what is held. What the company charges the subcontractor back (cleaning, damage, labour or
+  machines supplied, rework, water and power, a safety lapse, delay) is `SubcontractBillCharge` rows, each a code of
+  the `backCharge` master with an amount and, for `other`, a note (`backChargesProblem`, at most 30); their sum is
+  `otherDeduction`, so the books and payables read it as before, and a bill from before them shows its "other
+  deduction" as one `other` charge (the migration turns it into one). On a release bill the back-charges cannot pass
+  the retention it pays back. The order's record shows retention held and paid back, back-charges by kind
+  (`backChargesByKind`) and Release retention; the posting debits `RETENTION_PAYABLE` with what is paid back.
 - **Defaults.** TDS under section 194C from the PAN: 1% when its fourth letter is P or H, else 2% (no PAN is
   shown as a 20% warning, not defaulted). GST 18% when the vendor has a GSTIN, else 0.
 - **Margin.** `GET /work-orders/margin?projectId=` gives, per BOQ item on approved orders, the client rate against

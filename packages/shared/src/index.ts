@@ -26,6 +26,7 @@ export * from './approvals';
 export * from './onboarding';
 export * from './brand';
 export * from './subcontract';
+export * from './subcontract-recoveries';
 export * from './work-order-amendment';
 export * from './tally';
 export * from './quality';

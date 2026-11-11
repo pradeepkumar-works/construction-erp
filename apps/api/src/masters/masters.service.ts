@@ -137,6 +137,12 @@ export class MastersService {
         (await this.prisma.projectBudget.groupBy({ by: ['reasonCode'], where: { organizationId: org, reasonCode: { not: null } }, _count: { _all: true } })).forEach((r) => add(names.get(r.reasonCode!) ?? null, r._count._all));
         break;
       }
+      case 'backCharge': {
+        // Subcontractor bills keep the kind's code on each charge.
+        const names = new Map((await this.entriesFor(org, list)).map((e) => [e.code, e.name]));
+        (await this.prisma.subcontractBillCharge.groupBy({ by: ['kindCode'], where: { bill: { organizationId: org } }, _count: { _all: true } })).forEach((r) => add(names.get(r.kindCode) ?? null, r._count._all));
+        break;
+      }
       case 'workTrade':
         (await this.prisma.defect.groupBy({ by: ['trade'], where: { organizationId: org, trade: { not: null } }, _count: { _all: true } })).forEach((r) => add(r.trade, r._count._all));
         break;

@@ -663,9 +663,11 @@ export const SUBCONTRACT_BILL_EXPORT: ExportColumn<SubcontractBillDto>[] = [
   { header: 'Project', value: (r) => r.projectName, width: 34 },
   { header: 'Work value', value: (r) => toNumber(r.grossAmount) },
   { header: 'GST', value: (r) => toNumber(r.gstAmount) },
-  ...(['retention', 'advanceRecovery', 'tds', 'material', 'other'] as const).map(
+  ...(['retention', 'advanceRecovery', 'tds', 'material', 'excessMaterial'] as const).map(
     (key): ExportColumn<SubcontractBillDto> => ({ header: SUB_BILL_DEDUCTION_LABELS[key], value: (r) => toNumber(r.deductions.find((d) => d.key === key)?.amount) }),
   ),
+  { header: 'Back-charges', value: (r) => r.deductions.filter((d) => d.key === 'backCharge' || d.key === 'other').reduce((s, d) => s + toNumber(d.amount), 0) },
+  { header: 'Retention paid back', value: (r) => toNumber(r.retentionReleased) },
   { header: 'Total deductions', value: (r) => toNumber(r.totalDeductions) },
   { header: 'Net payable', value: (r) => toNumber(r.netPayable) },
   { header: 'Due date', value: (r) => r.dueDate, width: 12 },

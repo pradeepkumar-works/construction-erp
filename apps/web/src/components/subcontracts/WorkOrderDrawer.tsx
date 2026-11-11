@@ -56,7 +56,7 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
   const { message } = App.useApp();
   const qc = useQueryClient();
   const { data, isLoading, error, refetch } = useWorkOrder(id ?? undefined);
-  const [billing, setBilling] = useState(false);
+  const [billing, setBilling] = useState<false | 'bill' | 'release'>(false);
   const [closing, setClosing] = useState(false);
   const [closeForm] = Form.useForm<{ note: string }>();
   const [amending, setAmending] = useState<WorkOrderAmendmentDto | null>(null);
@@ -108,6 +108,8 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
   const finalApproved = !!data?.bills?.some((b) => b.isFinal && b.status === 'APPROVED');
   const mayAmend = !!data?.open && issuer && !data.openAmendment && !finalApproved;
   const openAmendment = amendments.data?.find((a) => a.id === data?.openAmendment?.id) ?? null;
+  const held = data ? toNumber(data.retentionHeld) : 0;
+  const mayRelease = approved && billingRole && !openBill && held > 0;
   const mayContinue = !!openAmendment && !!user && issuer && canEditSubmission(user, openAmendment) && canResubmit(user, openAmendment);
 
   return (
@@ -206,6 +208,24 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
                 ),
             },
             ...(approved ? [{ key: 'billed', label: 'Billed', children: <Money value={data.billedAmount} paise /> }] : []),
+            ...(approved && (held > 0 || toNumber(data.retentionReleased) > 0)
+              ? [
+                  {
+                    key: 'held',
+                    label: 'Retention held',
+                    children: (
+                      <span>
+                        <Money value={data.retentionHeld} paise />
+                        {toNumber(data.retentionReleased) > 0 ? (
+                          <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
+                            {formatINR(data.retentionReleased, true)} paid back
+                          </div>
+                        ) : null}
+                      </span>
+                    ),
+                  },
+                ]
+              : []),
             ...(data.supplierAcceptedAt
               ? [{ key: 'accepted', label: 'Subcontractor accepted', children: `${formatDateTime(data.supplierAcceptedAt)}${data.supplierAcceptedBy ? ` by ${data.supplierAcceptedBy}` : ''}${data.supplierNote ? `: ${data.supplierNote}` : ''}` }]
               : []),
@@ -319,6 +339,28 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
                   },
                 ]
               : []),
+            ...(data.backCharges?.length
+              ? [
+                  {
+                    key: 'backCharges',
+                    title: 'Back-charges',
+                    count: data.backCharges.length,
+                    children: (
+                      <Table
+                        rowKey="kindCode"
+                        size="small"
+                        pagination={false}
+                        dataSource={data.backCharges}
+                        columns={[
+                          { title: 'For', dataIndex: 'kindName' },
+                          { title: 'Charges', dataIndex: 'count', width: 100, align: 'right', render: (v: number) => <span className="mono" translate="no">{v}</span> },
+                          { title: 'Amount', dataIndex: 'amount', width: 150, align: 'right', render: (v: string) => <Money value={v} paise /> },
+                        ]}
+                      />
+                    ),
+                  },
+                ]
+              : []),
             ...(requests
               ? [{ key: 'advances', title: 'Advance requests', empty: asked.loaded && asked.rows.length === 0, children: <TargetRequests approved target={{ kind: 'WO_ADVANCE', workOrderId: data.id, label: data.woNo, vendorName: data.vendorName }} base={String(toNumber(data.value) - toNumber(data.advanceRequested))} /> }]
               : []),
@@ -341,8 +383,13 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
               )}
               <ReviewActions type="work_order" id={data.id} status={data.status} amount={data.value} size={size} />
               {data.open && billingRole && !openBill && !finalBilled ? (
-                <Button size={size} type="primary" icon={<FileAddOutlined />} onClick={() => setBilling(true)}>
+                <Button size={size} type="primary" icon={<FileAddOutlined />} onClick={() => setBilling('bill')}>
                   New subcontractor bill
+                </Button>
+              ) : null}
+              {mayRelease ? (
+                <Button size={size} type={data.open && !finalBilled ? 'default' : 'primary'} onClick={() => setBilling('release')}>
+                  Release retention
                 </Button>
               ) : null}
               {mayAmend ? (
@@ -381,7 +428,7 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
           </Form.Item>
         </Form>
       </FormShell>
-      <SubBillFormModal open={billing} workOrderId={data?.id} onClose={() => setBilling(false)} />
+      <SubBillFormModal open={!!billing} workOrderId={data?.id} release={billing === 'release'} onClose={() => setBilling(false)} />
       <WoAmendmentForm open={!!amending} amendment={amending} onClose={() => setAmending(null)} />
       {deleteDialog}
     </RecordFrame>

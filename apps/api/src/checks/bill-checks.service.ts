@@ -423,6 +423,7 @@ export class BillChecksService {
       materialRecovery: n(bill.materialRecovery),
       excessRecovery: n(bill.excessRecovery),
       otherDeduction: n(bill.otherDeduction),
+      retentionReleased: n(bill.retentionReleased),
       totalDeductions: n(bill.totalDeductions),
       netPayable: n(bill.netPayable),
       manDays: attendance?.lines.map((l) => ({

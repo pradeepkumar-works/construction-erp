@@ -1,7 +1,7 @@
 /** Subcontractor work orders and their bills. */
 
 /** "WO-2026-0003 bill 2", or "WO-2026-0003 bill 5 (final)". */
-export const subBillLabel = (woNo: string, billNo: number, isFinal: boolean): string => `${woNo} bill ${billNo}${isFinal ? ' (final)' : ''}`;
+export const subBillLabel = (woNo: string, billNo: number, isFinal: boolean, isRelease = false): string => `${woNo} bill ${billNo}${isRelease ? ' (retention release)' : isFinal ? ' (final)' : ''}`;
 
 /** What a subcontractor bill recovers, in the order the bill shows it. */
 export const SUB_BILL_DEDUCTION_LABELS = {
