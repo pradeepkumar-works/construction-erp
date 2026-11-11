@@ -7,8 +7,10 @@
  *   OIDC_PORT=4011 node e2e/oidc/standin.mjs
  *
  * A test registers a client and who signs in through it, by client id:
- *   POST /__client { clientId, clientSecret, claims: { email, oid | sub, tid?, email_verified?, hd?, name? } }
+ *   POST /__client { clientId, clientSecret, claims: { email, oid | sub, tid?, upn?, xms_edov?, acct?, email_verified?, hd?, name? } }
  * `tid` in the claims is the directory the token names (and its issuer), so a token for another tenant is one line.
+ * Entra tokens carry the optional claims a registered app asks for (DEPLOY.md): `xms_edov` (the directory verified the
+ * email) and `acct` (0 a member, 1 a guest), true and 0 unless the claims say otherwise (null leaves one out).
  * It checks what a real provider checks: the client secret, the redirect URI and the PKCE verifier (S256), and a code
  * is used once.
  */
@@ -112,7 +114,9 @@ createServer(async (req, res) => {
         asked.provider.kind === 'entra'
           ? (() => {
               const tid = who.tid ?? asked.provider.tenant;
-              return { ...common, iss: `${BASE}/entra/${tid}/v2.0`, tid, oid: who.oid, sub: `pw-${who.oid}`, email: who.email, preferred_username: who.email };
+              const optional = { xms_edov: 'xms_edov' in who ? who.xms_edov : true, acct: 'acct' in who ? who.acct : 0 };
+              for (const k of Object.keys(optional)) if (optional[k] === null) delete optional[k];
+              return { ...common, iss: `${BASE}/entra/${tid}/v2.0`, tid, oid: who.oid, sub: `pw-${who.oid}`, email: who.email, preferred_username: who.upn ?? who.email, ...optional };
             })()
           : { ...common, iss: `${BASE}/google`, sub: who.sub, email: who.email, email_verified: who.email_verified ?? true, ...(who.hd ? { hd: who.hd } : {}) };
       return send(res, 200, { token_type: 'Bearer', access_token: randomBytes(16).toString('hex'), expires_in: 600, id_token: jwt(claims) });

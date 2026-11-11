@@ -57,6 +57,9 @@ async function ssoSignIn(browser: Browser, code: string, provider: 'Microsoft' |
 
 const tokenOf = (page: Page) => page.evaluate(() => window.localStorage.getItem('erp_token')!);
 
+/** The one refusal of a password on the sign-in page (`PASSWORD_REFUSED` in apps/api/src/auth/sso-rules.ts). */
+const PASSWORD_REFUSED = 'Invalid email or password. If your company uses single sign-on, choose Use single sign-on on the Nirmaan website.';
+
 test.describe.serial('single sign-on', () => {
   let adminToken = '';
   let entra: Company;
@@ -130,7 +133,7 @@ test.describe.serial('single sign-on', () => {
     await context.close();
   });
 
-  test('lane 6: with single sign-on required, a password is refused and pointed to it', async ({ browser, page }) => {
+  test('lane 6: with single sign-on required, a website password is refused in the same words as a wrong one', async ({ browser, page }) => {
     await standIn(entra, { email: admin.email, oid: `oid-admin-${tag}`, name: admin.name });
     const sso = await ssoSignIn(browser, entra.code, 'Microsoft');
     await expect(homeHeading(sso.page)).toBeVisible();
@@ -140,25 +143,54 @@ test.describe.serial('single sign-on', () => {
     await dialog.getByRole('switch', { name: 'Require single sign-on' }).click();
     await dialog.getByRole('button', { name: 'Save' }).click();
     await expect(dialog).toBeHidden();
-    await expect(sso.page.getByText('Yes, passwords are refused')).toBeVisible();
+    await expect(sso.page.getByText('Yes, website passwords are refused')).toBeVisible();
     ssoAdminToken = await tokenOf(sso.page);
     await sso.context.close();
+
+    // The password session opened before it was required has ended (F4).
+    const before = await fetch(`${API_URL}/auth/me`, { headers: { authorization: `Bearer ${adminToken}` } });
+    expect(before.status, 'a website password session ends once SSO is required').toBe(401);
 
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/login');
     await page.getByLabel('Email').fill(admin.email);
     await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
     await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-    await expect(page.locator('.ant-alert-error')).toContainText(`signs in with Microsoft. Choose "Use single sign-on" and enter the company code ${entra.code}.`);
+    // The same words as a wrong password: nothing about the company or its code (F7).
+    await expect(page.locator('.ant-alert-error')).toHaveText(PASSWORD_REFUSED);
+    const wrong = await fetch(`${API_URL}/auth/login`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: admin.email, password: 'not-the-password' }) });
+    const right = await fetch(`${API_URL}/auth/login`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: admin.email, password: PASSWORD }) });
+    expect([wrong.status, right.status]).toEqual([401, 401]);
+    expect(((await right.json()) as { message: string }).message).toBe(((await wrong.json()) as { message: string }).message);
     await expect(page).toHaveURL(/\/login/);
     await shot(page, 'sso-enforced.png');
+
+    // The phone app keeps the password (PHONE): its session is marked so, stands under the requirement, and the
+    // website will not take it.
+    const phone = await fetch(`${API_URL}/auth/login`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: admin.email, password: PASSWORD, client: 'phone' }) });
+    expect(phone.ok, 'the phone still signs in with a password').toBe(true);
+    const phoneToken = ((await phone.json()) as { accessToken: string }).accessToken;
+    expect(JSON.parse(Buffer.from(phoneToken.split('.')[1], 'base64url').toString())).toMatchObject({ ph: 1 });
+    expect((await fetch(`${API_URL}/auth/me`, { headers: { authorization: `Bearer ${phoneToken}` } })).status).toBe(200);
+    await page.evaluate((t) => {
+      window.localStorage.setItem('erp_token', t);
+      document.cookie = `erp_token=${encodeURIComponent(t)}; path=/; max-age=600; SameSite=Lax`;
+    }, phoneToken);
+    await page.goto('/');
+    await expect(page).toHaveURL(/\/login/);
+    expect(await page.evaluate(() => window.localStorage.getItem('erp_token')), 'the website dropped the phone session').toBeNull();
   });
 
   test('lane 7: a platform admin keeps their password under a company that requires it', async ({ page }) => {
     const staffToken = await signUp(`Sso Staff ${tag}`, PLATFORM_EMAIL, 'Nirmaan Staff');
     const me = await api<{ platformAdmin?: boolean }>(staffToken, '/auth/me');
     expect(me.platformAdmin, `${PLATFORM_EMAIL} is on PLATFORM_ADMIN_EMAILS`).toBe(true);
-    await api(staffToken, '/sso-settings', { method: 'PUT', body: { provider: 'ENTRA', tenantId: TID, clientId: `staff-${tag}`, clientSecret: 'staff-secret', allowedDomains: ['nirmaan-e2e.in'], enforce: true, addNewPeople: false } });
+    // Kept between runs, so last run's requirement comes off before this run's client goes in (a new provider under it is refused).
+    const staffSso = { provider: 'ENTRA', tenantId: TID, clientId: `staff-${tag}`, clientSecret: 'staff-secret', allowedDomains: ['nirmaan-e2e.in'], addNewPeople: false };
+    const current = await api<{ settings: { clientId: string } | null }>(staffToken, '/sso-settings');
+    if (current.settings) await api(staffToken, '/sso-settings', { method: 'PUT', body: { ...staffSso, clientId: current.settings.clientId, clientSecret: undefined, enforce: false } });
+    await api(staffToken, '/sso-settings', { method: 'PUT', body: { ...staffSso, enforce: false } });
+    await api(staffToken, '/sso-settings', { method: 'PUT', body: { ...staffSso, clientSecret: undefined, enforce: true } });
     await page.setViewportSize({ width: 1440, height: 900 });
     await signIn(page, PLATFORM_EMAIL);
     await expect(homeHeading(page)).toContainText('Nirmaan');
@@ -179,6 +211,16 @@ test.describe.serial('single sign-on', () => {
     await standIn(entra, { email: `kiran@elsewhere-${tag}.in`, oid: `oid-out-${tag}` });
     const out = await ssoSignIn(browser, entra.code, 'Microsoft');
     await expect(out.page.getByText(SSO_PROBLEMS.DOMAIN)).toBeVisible();
+
+    // Where SSO is required, an invite opens the company's sign-in with its code filled in: no password to set (B4).
+    const invited = await api<{ invite: { link: string; sso?: boolean; expiresAt: string | null } }>(ssoAdminToken, '/users', {
+      method: 'POST',
+      body: { email: `asha@${domain}`, fullName: 'Asha Invite', roleKey: 'SITE_ENGINEER' },
+    });
+    expect(invited.invite).toMatchObject({ sso: true, expiresAt: null });
+    expect(invited.invite.link).toMatch(new RegExp(`/login\\?sso=1&code=${entra.code}$`));
+    await out.page.goto(new URL(invited.invite.link).pathname + new URL(invited.invite.link).search);
+    await expect(out.page.getByRole('link', { name: 'Sign in with Microsoft' })).toBeVisible();
     await out.context.close();
   });
 
@@ -187,13 +229,58 @@ test.describe.serial('single sign-on', () => {
     const { page, context, callbackUrl } = await ssoSignIn(browser, entra.code, 'Microsoft');
     const exchanged = page.waitForRequest((r) => r.url().endsWith('/auth/sso/exchange'));
     await expect(homeHeading(page)).toBeVisible();
-    const code = ((await exchanged).postDataJSON() as { code: string }).code;
-    const again = await fetch(`${API_URL}/auth/sso/exchange`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ code }) });
+    const { code, b } = (await exchanged).postDataJSON() as { code: string; b: string };
+    const again = await fetch(`${API_URL}/auth/sso/exchange`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ code, b }) });
     expect(again.status, 'the one-time code does not work twice').toBe(400);
     await page.goto(callbackUrl);
     await expect(page.getByText(SSO_PROBLEMS.EXPIRED)).toBeVisible();
     await shot(page, 'sso-replay.png');
     await context.close();
+  });
+
+  test('lane 9b: a one-time code made in one browser does not sign in another', async ({ browser }) => {
+    await standIn(entra, { email: admin.email, oid: `oid-admin-${tag}`, name: admin.name });
+    const maker = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const page = await maker.newPage();
+    await page.goto('/login');
+    await page.getByRole('button', { name: 'Use single sign-on' }).click();
+    await page.getByLabel('Company code').fill(entra.code);
+    await page.getByRole('button', { name: 'Continue' }).click();
+    // The code the API sends back is the one an attacker would hand someone: keep it unused (the exchange held back)
+    // and note the value this tab sent with it.
+    let b = '';
+    await page.route('**/auth/sso/exchange', async (route) => {
+      b = (route.request().postDataJSON() as { b: string }).b;
+      await route.abort();
+    });
+    const answered = page.waitForResponse((r) => r.url().includes('/auth/sso/callback'));
+    const started = page.waitForResponse((r) => r.url().includes('/start?b='));
+    await page.getByRole('link', { name: 'Sign in with Microsoft' }).click();
+    expect(await (await started).headerValue('set-cookie'), 'the state cookie goes only to the SSO routes').toMatch(/nirmaan_sso=[^;]+; Path=\/api\/auth\/sso;.*HttpOnly; SameSite=Lax/);
+    const location = (await answered).headers().location ?? '';
+    expect(location).toMatch(/\/login\/sso#code=/);
+    await expect.poll(() => b, { message: 'the starting tab sent its value' }).not.toBe('');
+
+    const other = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const victim = await other.newPage();
+    const exchanges: string[] = [];
+    victim.on('request', (r) => void (r.url().endsWith('/auth/sso/exchange') && exchanges.push(r.url())));
+    await victim.goto(location);
+    await expect(victim.getByText(SSO_PROBLEMS.BROWSER)).toBeVisible();
+    expect(exchanges, 'a tab that started no sign-in exchanges nothing').toEqual([]);
+    expect(await victim.evaluate(() => window.localStorage.getItem('erp_token'))).toBeNull();
+
+    // Nor does the API take the code with any other value; the starting tab's still works, once.
+    const code = /#code=([^&]+)/.exec(location)![1];
+    const post = (body: unknown) => fetch(`${API_URL}/auth/sso/exchange`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    expect((await post({ code, b: 'A'.repeat(43) })).status, 'another value').toBe(400);
+    expect((await post({ code })).status, 'no value').toBe(400);
+    expect((await post({ code, b })).status, 'the starting tab’s value').toBe(200);
+    // A start the sign-in page did not make (no value) goes no further.
+    const bare = await fetch(`${API_URL}/auth/sso/${entra.code}/start`, { redirect: 'manual' });
+    expect(bare.headers.get('location')).toMatch(/\/login\/sso#error=BROWSER$/);
+    await other.close();
+    await maker.close();
   });
 
   test('lane 10: the sign-in pages and Company settings › Sign-in pass the walk at 1440 and 390 in both themes', async ({ browser }) => {
@@ -222,7 +309,7 @@ test.describe.serial('single sign-on', () => {
         await context.addInitScript((t) => window.localStorage.setItem('erp_token', t), ssoAdminToken);
         const settings = await context.newPage();
         await settle(settings, '/company-settings?tab=signin');
-        await expect(settings.getByText('Yes, passwords are refused')).toBeVisible();
+        await expect(settings.getByText('Yes, website passwords are refused')).toBeVisible();
         found.push(...(await walkFindings(settings, `Sign-in tab ${view.name} ${mode}`, view.touch ? 44 : 24, view.touch)));
         if (view.name === '390' && mode === 'dark') await shot(settings, 'sso-walk-390-dark.png');
         await context.close();
