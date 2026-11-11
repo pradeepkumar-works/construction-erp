@@ -7,7 +7,7 @@ import { AppTag } from '@/components/common/AppTag';
 import { MergeCellsOutlined, PlusOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ItemDto, ItemSortField, PipeMaterial } from '@erp/shared';
-import { LIST_SORT_FIELDS, PIPE_MATERIALS, PIPE_MATERIAL_LABELS, canManageStore, itemCodeOf, itemCodeProblem, pipeSizeLabel, pipeSizeOf } from '@erp/shared';
+import { HSN_PATTERN, LIST_SORT_FIELDS, PIPE_MATERIALS, PIPE_MATERIAL_LABELS, canManageStore, itemCodeOf, itemCodeProblem, pipeSizeLabel, pipeSizeOf } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
@@ -36,6 +36,7 @@ interface ItemForm {
   standard?: string;
   category?: string;
   rate?: number | null;
+  hsnCode?: string;
   isFuel?: boolean;
   pipeDiameterMm?: number | null;
   pipeMaterial?: PipeMaterial | null;
@@ -57,7 +58,7 @@ export function ItemsTable() {
 
   const save = useMutation({
     mutationFn: async (v: ItemForm) => {
-      const body = { name: v.name, unit: v.unit, code: itemCodeOf(v.code), standard: v.standard?.trim() || null, category: v.category?.trim() || null, rate: v.rate === undefined || v.rate === null ? null : String(v.rate), isFuel: !!v.isFuel,
+      const body = { name: v.name, unit: v.unit, code: itemCodeOf(v.code), standard: v.standard?.trim() || null, category: v.category?.trim() || null, rate: v.rate === undefined || v.rate === null ? null : String(v.rate), hsnCode: v.hsnCode?.trim() || null, isFuel: !!v.isFuel,
         pipeDiameterMm: v.pipeDiameterMm ?? null,
         pipeMaterial: v.pipeMaterial ?? null,
         kgPerMetre: v.kgPerMetre === undefined || v.kgPerMetre === null ? null : String(v.kgPerMetre),
@@ -83,7 +84,7 @@ export function ItemsTable() {
   const open = (i: ItemDto | 'new') => {
     setEditing(i);
     form.resetFields();
-    if (i !== 'new') form.setFieldsValue({ name: i.name, unit: i.unit, code: i.code ?? undefined, standard: i.standard ?? undefined, category: i.category ?? undefined, rate: i.rate === null ? undefined : Number(i.rate), isFuel: !!i.isFuel,
+    if (i !== 'new') form.setFieldsValue({ name: i.name, unit: i.unit, code: i.code ?? undefined, standard: i.standard ?? undefined, category: i.category ?? undefined, rate: i.rate === null ? undefined : Number(i.rate), hsnCode: i.hsnCode ?? undefined, isFuel: !!i.isFuel,
         pipeDiameterMm: i.pipeDiameterMm ?? undefined,
         pipeMaterial: i.pipeMaterial ?? undefined,
         kgPerMetre: i.kgPerMetre ? Number(i.kgPerMetre) : undefined,
@@ -231,9 +232,14 @@ export function ItemsTable() {
           <Form.Item name="category" label="Category">
             <MasterInput list="itemCategory" maxLength={60} placeholder="e.g. Cement, Steel, Fuel" />
           </Form.Item>
-          <Form.Item name="rate" label="Standard rate per unit" extra="Values material issued in the project cost view.">
-            <MoneyInput />
-          </Form.Item>
+          <FormGrid cols={2}>
+            <Form.Item name="rate" label="Standard rate per unit" extra="Values material issued in the project cost view.">
+              <MoneyInput />
+            </Form.Item>
+            <Form.Item name="hsnCode" label="HSN" extra="For e-way bills on transfers" rules={[{ pattern: HSN_PATTERN, message: 'An HSN is 4, 6 or 8 digits, e.g. 25232930' }]}>
+              <Input {...CODE_INPUT} inputMode="numeric" maxLength={8} placeholder="e.g. 25232930" />
+            </Form.Item>
+          </FormGrid>
           <Form.Item name="isFuel" valuePropName="checked" extra="Fuel goes into machines with a fuel issue, and shows in Machinery › Fuel.">
             <Checkbox>Fuel (diesel, petrol)</Checkbox>
           </Form.Item>

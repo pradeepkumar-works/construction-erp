@@ -15,6 +15,7 @@ import { formatDateTime, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
+import { CODE_INPUT, gstinRule, upper } from '@/components/form/inputs';
 import { MoreActions } from '@/components/record/MoreActions';
 
 
@@ -24,6 +25,9 @@ interface Values {
   projectId?: string | null;
   agentId?: string | null;
   credential?: string;
+  /** A GSP: its client secret and the API user's password, sealed together as one credential */
+  gspSecret?: string;
+  gspPassword?: string;
   /** A maker's feed */
   url?: string;
   auth?: FeedAuth;
@@ -43,8 +47,19 @@ interface Values {
   /** A batching plant: the folder its controller writes batch reports to, and how far back the first read goes */
   folder?: string;
   sinceDays?: number | null;
+  /** A GST provider: its e-invoice and e-way bill addresses, the GSTIN and API user, and its client id (clientId above) */
+  ewbUrl?: string;
+  gstin?: string;
+  userName?: string;
 }
 
+/** A GSP's secret and password go together: each is needed when nothing is saved, or when the other one is typed. */
+const gspPart = (other: string, saved: boolean, message: string) => ({ getFieldValue }: { getFieldValue: (k: string) => unknown }) => ({
+  validator: async (_: unknown, v: string | undefined) => {
+    if (v?.trim()) return;
+    if (!saved || String(getFieldValue(other) ?? '').trim()) throw new Error(message);
+  },
+});
 const CREDENTIAL_LABEL: Record<FeedAuth, string> = { BEARER: 'API key', BASIC: 'User name and password, as user:password', OAUTH: 'Client secret' };
 const str = (v: unknown) => (typeof v === 'string' ? v : undefined);
 
@@ -65,6 +80,7 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
   const dispenser = kind === 'FUEL_DISPENSER';
   const bridge = kind === 'WEIGHBRIDGE';
   const batcher = kind === 'BATCHING_PLANT';
+  const gsp = kind === 'GST_GSP';
   const plants = useRmcPlants(open && batcher);
   const source = (Form.useWatch('source', form) ?? str(connection?.config.source) ?? 'SERIAL') as WeighbridgeSource;
   const fuels = useStockItems({ fuel: true, pageSize: 100 }, open && dispenser);
@@ -81,7 +97,10 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
       title={connection ? `Edit ${connection.name}` : 'New connection'}
       okText={connection ? 'Save' : 'Connect'}
       onSubmit={async (v) => {
-        const credential = v.credential?.trim() || undefined;
+        const secret = v.gspSecret?.trim();
+        const password = v.gspPassword ?? '';
+        // A GSP's credential is JSON, so a colon in either part is kept as typed (readGspCredential on the API).
+        const credential = gsp ? (secret || password ? JSON.stringify({ clientSecret: secret, password }) : undefined) : v.credential?.trim() || undefined;
         const config = polled
           ? { url: v.url?.trim(), auth: v.auth ?? 'BEARER', ...(v.auth === 'OAUTH' ? { tokenUrl: v.tokenUrl?.trim(), clientId: v.clientId?.trim(), scope: v.scope?.trim() || undefined } : {}) }
           : dispenser
@@ -95,7 +114,9 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
                 }
               : batcher
                 ? { folder: v.folder?.trim(), sinceDays: v.sinceDays ?? BATCH_SINCE_DAYS }
-                : undefined;
+                : gsp
+                  ? { url: v.url?.trim(), ewbUrl: v.ewbUrl?.trim() || undefined, gstin: v.gstin?.trim(), userName: v.userName?.trim(), clientId: v.clientId?.trim() }
+                  : undefined;
         if (connection) {
           await act.mutateAsync({
             method: 'patch',
@@ -132,6 +153,9 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
                 stableSeconds: typeof connection.config.stableSeconds === 'number' ? connection.config.stableSeconds : WEIGH_STABLE_SECONDS,
                 folder: str(connection.config.folder),
                 sinceDays: typeof connection.config.sinceDays === 'number' ? connection.config.sinceDays : BATCH_SINCE_DAYS,
+                ewbUrl: str(connection.config.ewbUrl),
+                gstin: str(connection.config.gstin),
+                userName: str(connection.config.userName),
               }
             : { kind: 'GENERIC_WEBHOOK', auth: 'BEARER', source: 'SERIAL', baud: 9600, minKg: WEIGH_MIN_KG, stableSeconds: WEIGH_STABLE_SECONDS, sinceDays: BATCH_SINCE_DAYS }
         }
@@ -155,7 +179,7 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
             <Form.Item name="projectId" label="Plant" extra="Its batches wait for challans on this plant's RMC page" rules={[{ required: true, message: 'Choose the RMC plant the controller batches for' }]}>
               <Select loading={plants.isLoading} placeholder="Choose the plant" options={(plants.data ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))} />
             </Form.Item>
-          ) : (
+          ) : gsp ? null : (
             <Form.Item name="projectId" label="Project" extra="Where its readings belong when they do not say">
               <ProjectSelect allowClear placeholder="Any project" style={{ width: '100%' }} />
             </Form.Item>
@@ -230,6 +254,39 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
             </Form.Item>
           </FormGrid>
         )}
+        {gsp && (
+          <>
+            <Alert
+              type="info"
+              showIcon
+              style={{ marginBottom: tk.space[3] }}
+              title="Untested against the live IRP"
+              description="Written to NIC's published e-invoice and e-way bill APIs as GSPs pass them through. Try it on the GSP's sandbox first."
+            />
+            <Form.Item
+              name="url"
+              label="E-invoice API address"
+              extra="The GSP's address for NIC's e-invoice API, starting https://"
+              rules={[{ required: true, whitespace: true, message: "Enter the GSP's e-invoice API address" }]}
+            >
+              <Input maxLength={2000} placeholder="https://gsp.example/eivital" translate="no" />
+            </Form.Item>
+            <Form.Item name="ewbUrl" label="E-way bill API address" extra="Only when the GSP gives a separate one">
+              <Input maxLength={2000} placeholder="https://gsp.example/ewb" translate="no" />
+            </Form.Item>
+            <FormGrid cols={2}>
+              <Form.Item name="gstin" label="GSTIN" normalize={upper} rules={[{ required: true, message: 'Type the GSTIN the API user was made for' }, gstinRule]}>
+                <Input {...CODE_INPUT} maxLength={15} />
+              </Form.Item>
+              <Form.Item name="userName" label="API user name" extra="Made on the e-invoice portal for this GSP" rules={[{ required: true, whitespace: true, message: 'Type the API user name made on the portal' }]}>
+                <Input maxLength={100} translate="no" autoComplete="off" />
+              </Form.Item>
+              <Form.Item name="clientId" label="Client ID" extra="The GSP's" rules={[{ required: true, whitespace: true, message: "Type the GSP's client ID" }]}>
+                <Input maxLength={200} translate="no" autoComplete="off" />
+              </Form.Item>
+            </FormGrid>
+          </>
+        )}
         {polled && (
           <>
             <Form.Item
@@ -260,7 +317,29 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
             )}
           </>
         )}
-        {bridge || batcher ? null : (
+        {gsp ? (
+          <FormGrid cols={2}>
+            <Form.Item
+              name="gspSecret"
+              required={!connection?.secretLast4}
+              label={`Client secret${connection?.secretLast4 ? ` (saved, ends ${connection.secretLast4})` : ''}`}
+              extra="Saved encrypted with the password; only the secret's last four characters are shown."
+              dependencies={['gspPassword']}
+              rules={[gspPart('gspPassword', !!connection?.secretLast4, "Type the GSP's client secret")]}
+            >
+              <Input.Password maxLength={1000} autoComplete="new-password" placeholder={connection?.secretLast4 ? 'Leave blank to keep it' : undefined} />
+            </Form.Item>
+            <Form.Item
+              name="gspPassword"
+              required={!connection?.secretLast4}
+              label="API password"
+              dependencies={['gspSecret']}
+              rules={[gspPart('gspSecret', !!connection?.secretLast4, "Type the API user's password")]}
+            >
+              <Input.Password maxLength={1000} autoComplete="new-password" placeholder={connection?.secretLast4 ? 'Leave blank to keep it' : undefined} />
+            </Form.Item>
+          </FormGrid>
+        ) : bridge || batcher ? null : (
           <Form.Item
           name="credential"
           label={
@@ -271,7 +350,11 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
                 : 'Key or password'
           }
           extra={polled ? 'Saved encrypted; only the last four characters are shown.' : 'For a service that asks for one. It is saved encrypted; only the last four characters are shown.'}
-          rules={polled && !connection?.secretLast4 ? [{ required: true, whitespace: true, message: `Enter the ${CREDENTIAL_LABEL[auth].toLowerCase()} the maker gave you` }] : undefined}
+          rules={
+            polled && !connection?.secretLast4
+              ? [{ required: true, whitespace: true, message: `Enter the ${CREDENTIAL_LABEL[auth].toLowerCase()} the maker gave you` }]
+              : undefined
+          }
         >
           <Input.Password maxLength={2000} autoComplete="new-password" placeholder={connection?.secretLast4 ? 'Leave blank to keep it' : undefined} />
           </Form.Item>
@@ -384,6 +467,15 @@ function SetUp({ c, onClose, onAddress }: { c: IntegrationConnectionDto | null; 
           <Descriptions size="small" column={1} bordered>
             {viaConnector ? (
               <Descriptions.Item label="Read by">{c.agentName ?? 'No Connector: choose one with Edit'}</Descriptions.Item>
+            ) : transport === 'CALL' ? (
+              <Descriptions.Item label="Calls">
+                <span translate="no" style={{ wordBreak: 'break-all' }}>
+                  {str(c.config.url) ?? NO_VALUE}
+                </span>
+                <Typography.Paragraph type="secondary" style={{ margin: `${tk.space[1]} 0 0` }}>
+                  Nirmaan calls it when someone generates an IRN or e-way bill on a record.
+                </Typography.Paragraph>
+              </Descriptions.Item>
             ) : transport === 'POLL' ? (
               <Descriptions.Item label="Feed address">
                 <span translate="no" style={{ wordBreak: 'break-all' }}>
@@ -436,7 +528,7 @@ export function Connections() {
     { title: 'Site', dataIndex: 'projectName', ellipsis: true, render: (v: string | null) => v ?? 'Any site' },
     { title: 'Comes in by', key: 'by', width: 180, render: (_, c) => {
         const t = INTEGRATION_KIND_INFO[c.kind].transport;
-        return t === 'CONNECTOR' ? (c.agentName ?? 'No Connector') : t === 'POLL' ? 'Read every hour' : 'Its web address';
+        return t === 'CONNECTOR' ? (c.agentName ?? 'No Connector') : t === 'POLL' ? 'Read every hour' : t === 'CALL' ? 'Nirmaan calls it' : 'Its web address';
       },
     },
     { title: 'Last message', dataIndex: 'lastEventAt', width: 170, render: (v: string | null) => (v ? formatDateTime(v) : 'None yet') },

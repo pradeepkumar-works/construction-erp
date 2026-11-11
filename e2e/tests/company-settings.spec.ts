@@ -28,7 +28,7 @@ test('an admin sets the letterhead, a logo and numbering by financial year, and 
   await expect(page.getByRole('heading', { name: 'Company settings', level: 1 })).toBeVisible();
 
   // The letterhead's details, shown in the preview.
-  await page.getByRole('button', { name: 'Edit' }).click();
+  await page.locator('section').filter({ has: page.getByRole('heading', { name: 'Letterhead details' }) }).getByRole('button', { name: 'Edit' }).click();
   const details = page.getByRole('dialog', { name: 'Letterhead details' });
   await details.getByLabel('Legal name').fill('E2E Settings Constructions Pvt Ltd');
   await details.getByLabel('Registered address').fill('Plot 12, Saheed Nagar, Bhubaneswar 751007');

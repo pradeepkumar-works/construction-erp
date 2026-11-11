@@ -418,3 +418,12 @@ export type IsDiscipline = (typeof IS_DISCIPLINES)[number];
 /** Who signs a company's people in with single sign-on (`sso.ts`; labels in `SSO_PROVIDER_INFO`). */
 export const SSO_PROVIDERS = ['ENTRA', 'GOOGLE'] as const;
 export type SsoProvider = (typeof SSO_PROVIDERS)[number];
+
+/** GST e-invoicing and e-way bills (`einvoice.ts`): an IRN for an invoice or an e-way bill for goods moving, the record it
+ *  is for, and where it stands (PENDING while the provider is asked, ACTIVE once made, CANCELLED, FAILED when refused). */
+export const GST_DOCUMENT_KINDS = ['IRN', 'EWB'] as const;
+export type GstDocumentKind = (typeof GST_DOCUMENT_KINDS)[number];
+export const GST_DOCUMENT_STATUSES = ['PENDING', 'ACTIVE', 'CANCELLED', 'FAILED'] as const;
+export type GstDocumentStatus = (typeof GST_DOCUMENT_STATUSES)[number];
+export const GST_SOURCE_KINDS = ['RA_BILL', 'RMC_INVOICE', 'RMC_BATCH', 'STOCK_TRANSFER'] as const;
+export type GstSourceKind = (typeof GST_SOURCE_KINDS)[number];

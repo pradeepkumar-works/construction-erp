@@ -22,6 +22,7 @@ import { ReceiveTransferModal } from './ReceiveTransferModal';
 import { GrnQcModal, GrnQcTag } from './GrnQc';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
 import { DebitNoteFormModal, type DebitNoteGrn } from '@/components/payables/DebitNoteFormModal';
+import { GstDocumentBlock } from '@/components/gst/GstDocumentPanel';
 
 /** What a debit note starts from: a GRN's rejected quantities, or what went back to the supplier. */
 export function debitNoteFrom(e: StockEntryDto): DebitNoteGrn | null {
@@ -201,6 +202,7 @@ export function StockEntryDrawer({ id, onClose }: { id: string | null; onClose: 
                 : []),
             ]}
           />
+          {data.type === 'TRANSFER_OUT' ? <GstDocumentBlock sourceKind="STOCK_TRANSFER" sourceId={data.id} /> : null}
           {data.attachments.length > 0 && (
             <>
               <Divider titlePlacement="start" plain>

@@ -346,6 +346,10 @@ export const TALLY_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'ACCOUNTS_MANAGER'
 export const canExportTally = (role: RoleKey) => TALLY_ROLES.includes(role);
 /** See the GST registers (outward supplies and input tax): those who keep the books. */
 export const canViewGstRegisters = (role: RoleKey) => TALLY_ROLES.includes(role);
+/** Make and cancel a bill's e-invoice (its IRN and QR) with the IRP: those who keep the books. */
+export const canFileEinvoice = (role: RoleKey) => TALLY_ROLES.includes(role);
+/** Make, extend and cancel an e-way bill for goods leaving a plant or store: the books, and those who keep the stock. */
+export const canMakeEwayBill = (role: RoleKey) => TALLY_ROLES.includes(role) || STOCK_KEEPER_ROLES.includes(role);
 /** The books: accounts keep them and make vouchers; management approves what accounts makes by hand. */
 export const canKeepBooks = (role: RoleKey) => TALLY_ROLES.includes(role);
 export const canApproveVouchers = (role: RoleKey) => role === 'ADMIN' || role === 'MANAGEMENT';

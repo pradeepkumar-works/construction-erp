@@ -106,7 +106,7 @@ jobs:
           pnpm build
           # The stand-in OpenID provider single sign-on signs in through (e2e/tests/sso.spec.ts); no real Microsoft or Google.
           OIDC_PORT=4011 nohup node ../../e2e/oidc/standin.mjs > /tmp/oidc.log 2>&1 &
-          DATABASE_URL="$RUNTIME_URL" JWT_SECRET=e2e-secret PORT=4000 STORAGE_MODE=db ORG_SIGNUP=open PUSH_DISABLED=true EMAIL_DISABLED=true PLATFORM_ADMIN_EMAILS=admin@demo.com,sso-staff@nirmaan-e2e.in AI_PROVIDER=fake WATI_WEBHOOK_SECRET=e2e-wati \
+          DATABASE_URL="$RUNTIME_URL" JWT_SECRET=e2e-secret PORT=4000 STORAGE_MODE=db ORG_SIGNUP=open PUSH_DISABLED=true EMAIL_DISABLED=true PLATFORM_ADMIN_EMAILS=admin@demo.com,sso-staff@nirmaan-e2e.in AI_PROVIDER=fake GST_PROVIDER=fake WATI_WEBHOOK_SECRET=e2e-wati \
             RAZORPAY_KEY_ID=rzp_test_e2e RAZORPAY_KEY_SECRET=e2e-razorpay-secret RAZORPAY_WEBHOOK_SECRET=e2e-webhook-secret RAZORPAY_API_URL=http://localhost:4010/v1 \
             BILLING_PRICE=1500 BILLING_SELLER_NAME="Nirmaan Software Pvt Ltd" BILLING_SELLER_GSTIN=21AAACN1234F1Z5 BILLING_SELLER_ADDRESS="Bhubaneswar, Odisha" \
             INTEGRATION_KEY=e2e-integration-key WEB_URL="$E2E_WEB_URL" SSO_CALLBACK_URL="$E2E_API_URL/auth/sso/callback" SSO_ENTRA_AUTHORITY="$E2E_OIDC_URL/entra" SSO_GOOGLE_ISSUER="$E2E_OIDC_URL/google" \
@@ -398,6 +398,14 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/tds-test.js
+      - name: E-invoice INV-01 and e-way bill payloads, tax split, the IRP's answers, validity and the cancel and extend windows hold
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/einvoice-test.js
+      - name: An IRN or e-way bill is asked for once, kept PENDING with no answer, resent as first sent, refused when its record moved
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: DATABASE_URL="$RUNTIME_URL" node dist/scripts/einvoice-race-test.js
       - name: Tender pricing, quotes on the SOR, bid ranks and status moves add up
         if: matrix.suite == 'flows'
         working-directory: apps/api

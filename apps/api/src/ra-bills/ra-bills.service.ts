@@ -23,6 +23,7 @@ import {
   type SortOrder,
 } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
+import { assertNoLiveGstDocument } from '../gst/gst-lock';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { ApprovalRightsService } from '../common/approval-rights.service';
@@ -210,6 +211,7 @@ export class RaBillsService {
       billDate: dateOnly(r.billDate),
       measuredUpTo: dateOnly(r.measuredUpTo),
       remarks: r.remarks,
+      sacCode: r.sacCode,
       workOrderNo: p.workOrderNo,
       agreementNo: p.agreementNo,
       agreementDate: dateOnly(p.agreementDate),
@@ -401,6 +403,36 @@ export class RaBillsService {
     return { ...this.toDto(row, sheets, receipts?.items), ...(row.status === 'APPROVED' ? {} : { heldExtraItems }) };
   }
 
+  /** What an e-invoice reads off the bill, under the same access as `get`, without the sheets and receipts the record shows. */
+  async einvoiceFacts(user: RequestUser, id: string) {
+    await this.assertCanSee(user);
+    const r = await this.prisma.raBill.findFirst({
+      where: { id, ...this.access.submissionWhere(user) },
+      select: {
+        billNo: true, isFinal: true, omYear: true, status: true, stage: true, billDate: true, sacCode: true,
+        grossAmount: true, pvAmount: true, gstAmount: true, gstRate: true,
+        project: { select: { name: true, code: true, clientName: true, client: { select: { name: true, gstin: true, billingAddress: true, stateCode: true } } } },
+      },
+    });
+    if (!r) throw new NotFoundException('RA bill not found');
+    return {
+      billNo: r.billNo,
+      billLabel: billLabel(r.billNo, r.isFinal, r.omYear !== null),
+      status: r.status,
+      stage: r.stage,
+      billDate: dateOnly(r.billDate),
+      sacCode: r.sacCode,
+      projectName: r.project.name,
+      projectCode: r.project.code,
+      client: r.project.client,
+      clientName: r.project.client?.name ?? r.project.clientName,
+      grossAmount: money(r.grossAmount),
+      pvAmount: money(r.pvAmount),
+      gstAmount: money(r.gstAmount),
+      gstRate: pctStr(r.gstRate),
+    };
+  }
+
   /**
    * Re-take the bill's measurements and re-price it with the project's current BOQ and contract terms. Only for a bill
    * that is not approved; `strict` refuses a bill with nothing new in it.
@@ -487,6 +519,7 @@ export class RaBillsService {
             billDate: parseDate(dto.billDate),
             measuredUpTo: parseDate(measuredUpTo),
             remarks: dto.remarks || null,
+            sacCode: dto.sacCode || null,
             otherDeduction,
             otherDeductionNote: dto.otherDeductionNote || null,
             ...Object.fromEntries(
@@ -541,6 +574,7 @@ export class RaBillsService {
     }
     if (dto.otherDeductionNote !== undefined) data.otherDeductionNote = dto.otherDeductionNote || null;
     if (dto.remarks !== undefined) data.remarks = dto.remarks || null;
+    if (dto.sacCode !== undefined) data.sacCode = dto.sacCode || null;
     await this.prisma.$transaction(async (tx) => {
       await tx.raBill.update({ where: { id }, data });
       await this.recompute(tx, id);
@@ -915,6 +949,8 @@ export class RaBillsService {
     }
     for (const l of bill.stageLines) if (!passed.has(l.stageId)) passed.set(l.stageId, l.thisPct);
     await this.prisma.$transaction(async (tx) => {
+      // Under the bill's GST lock, so an IRN cannot start between this check and the new figures.
+      await assertNoLiveGstDocument(tx, bill.organizationId, 'RA_BILL', id);
       if (dto.holds) {
         await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`RA:${bill.projectId}`}))`;
         await this.replaceHolds(tx, bill, dto.holds);

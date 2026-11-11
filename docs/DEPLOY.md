@@ -32,6 +32,7 @@ API (`apps/api`):
 | `UPLOAD_DIR` | disk mode only |
 | `CRON_SECRET` | long random string; Vercel Cron sends it as `Authorization: Bearer` to the daily notification jobs. Jobs are disabled when unset. |
 | `INTEGRATION_KEY` | long random passphrase that seals the keys and passwords saved on Admin › Connections (AES-256-GCM, item 139). Without it a connection that needs one cannot be saved; web addresses and Connectors work either way. Changing it makes the saved keys unreadable, so each has to be entered again. |
+| `GST_PROVIDER` | e-invoices (IRN and signed QR) and e-way bills, item 194. `gsp` calls NIC's e-invoice and e-way bill APIs through each company's GST provider, set up on Admin › Connections as a GST provider connection (its API addresses, GSTIN, API user and client id, and the client secret and API password sealed under `INTEGRATION_KEY`, which must be set). `fake` answers at once with stand-in numbers that are marked as such on the record and the print, and calls nothing: for CI and local work only, never production. Unset, the records say e-invoicing is not set up and nothing is called. The GSP adapter is written to NIC's published API and untested against the live IRP: try it on the GSP's sandbox first. E-way bills made without an IRN (RMC challans, stock transfers) on `gsp` sign in as the IRP does, which is not confirmed: confirm on the GSP sandbox before switching them on (see E-invoicing through a GSP below). |
 | `NOTIFICATION_TIMEZONE` | IANA zone for "today" in the DPR reminder and digest (default `Asia/Kolkata`) |
 | `MAIL_API_KEY` | email through the Cogitrex mail service (`POST https://communication.cogitrex.com/mail/send`): approval digest, user invites and password resets, supplier enquiries and approved purchase orders to vendors. The key is the sending mailbox's API key from the portal (Mailboxes → `notifications@cogitrex.com`). `EMAIL_FROM` is then the mailbox address (default `notifications@cogitrex.com`; the display name is set on the mailbox). `MAIL_API_URL` overrides the service URL. `GET /api/health` shows which provider is live in `email`: `mail-api`, `resend`, `log` (no key) or `disabled`. |
 | `RESEND_API_KEY`, `EMAIL_FROM` | email through Resend instead, used when `MAIL_API_KEY` is unset. `EMAIL_FROM` must be a verified sender/domain in Resend. With neither key nothing is emailed (the digest is logged; invite links are shown to the admin to share; "Forgot password" tells users to ask their admin). `EMAIL_PROVIDER` (`mail-api`, `resend` or `log`) picks one when both keys are set. |
@@ -99,6 +100,23 @@ New people are invited by a link to the company's sign-in (no password), and For
 move to another provider, directory, client ID or secret, turn Require off first, change it, sign in through it, then
 require it again. Add new people gives someone from the domains with no sign-in yet a place in the chosen role at their
 first sign-in.
+
+## E-invoicing through a GSP
+
+`GST_PROVIDER=gsp` goes live for a company only after its operator has passed these gates on the GSP's sandbox, with
+the sandbox addresses on the company's GST provider connection (Admin › Connections):
+
+1. **IRN.** Generate one on a certified RA bill and on an RMC bill, print both, and cancel one within the day. The
+   connection's health turns green and the IRN, ack and QR match the sandbox portal.
+2. **No answer.** With the sandbox address pointed at nothing, Generate answers "The IRP did not answer. Try again in a
+   minute." and the bill stays locked; with the address put back, Generate again after a minute fills the same row.
+3. **E-way bills without an IRN: confirm on the GSP sandbox.** An RMC challan's or a stock transfer's e-way bill signs
+   in as the IRP does (`/eivital/v1.04/auth`, then `/ewaybillapi/v1.03/ewayapi`). Not every GSP passes e-way bill calls
+   through that sign-in; if the sandbox refuses it, do not make e-way bills through Nirmaan on `gsp` for that GSP until
+   it has an adapter of its own, and make them on the e-way bill portal.
+4. **Extend and cancel.** Extend an e-way bill near its end and cancel one, on the sandbox.
+
+Untested against the live IRP: written to NIC's published API (e-invoice v1.03/v1.04, e-way bill v1.03).
 
 ## WhatsApp and SMS
 
