@@ -10628,6 +10628,7 @@ model SsoTicket {
   createdAt      DateTime      @default(now())
 
   @@index([createdAt])
+}
 
 /// GST e-invoicing and e-way bills: an IRN for an invoice, or an e-way bill for goods on the road.
 enum GstDocumentKind {
