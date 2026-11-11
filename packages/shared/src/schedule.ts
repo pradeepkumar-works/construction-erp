@@ -170,6 +170,11 @@ export interface GanttDto {
     networkFinish: string | null;
   };
   links: ActivityLinkDto[];
+  /**
+   * The working calendar the critical path counts on (ARCHITECTURE "Working calendar"); with it on, float and lags are
+   * working days. `nonWorking` lists the holidays and breaks over the chart, the weekly days off being `daysOff`.
+   */
+  calendar: { on: boolean; daysOff: number[]; workWeek: string; nonWorking: { date: string; reason: string }[] };
 }
 
 /** Whether an activity in the look-ahead can start: its predecessors done (or started, for a start link), or what holds it. */
@@ -197,7 +202,8 @@ export interface LookaheadActivityDto {
 export interface LookaheadDto {
   projectId: string;
   today: string;
-  weeks: { from: string; to: string; activities: LookaheadActivityDto[] }[];
+  /** `daysOff`: the week's days the working calendar does not count, with why */
+  weeks: { from: string; to: string; activities: LookaheadActivityDto[]; daysOff: { date: string; reason: string }[] }[];
   /** Past their planned end and not done: carried into the first week */
   overdue: LookaheadActivityDto[];
 }

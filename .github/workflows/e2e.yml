@@ -494,6 +494,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/excess-saving-test.js
+      - name: The working calendar counts the schedule's lengths, lags and float on working days, past Sundays, holidays and breaks
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/working-calendar-test.js
       - name: Consultants check their share of the measurements before certifying, hidden work is countersigned above its sign-off, and site orders run to their compliance
         if: matrix.suite == 'flows'
         working-directory: apps/api

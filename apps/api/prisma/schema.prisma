@@ -1096,6 +1096,7 @@ model Organization {
   exitClearanceLines    ExitClearanceLine[]
   hrLetterTemplates     HrLetterTemplate[]
   holidays              Holiday[]
+  scheduleBreaks        ScheduleBreak[]
   outboundMessages      OutboundMessage[]
   billingPayments       BillingPayment[]
   variations            Variation[]
@@ -1654,6 +1655,10 @@ model Project {
   weeklyOff              Int?
   /// How far, in %, measurement may run past a BOQ item's quantity before it needs a variation; 25 when not set
   measureTolerancePct    Int?
+  /// The schedule counts working days only: not its weekly days off, holidays or breaks (ARCHITECTURE "Working calendar")
+  workingCalendar        Boolean        @default(false)
+  /// The schedule's weekly days off, 0 Sunday to 6 Saturday
+  scheduleDaysOff        Int[]          @default([])
   /// When the schedule baseline was last frozen (activity planned dates and milestone due dates copied to their baseline)
   baselineAt             DateTime?
   baselineById           String?
@@ -1774,6 +1779,7 @@ model Project {
   rmcInvoices        RmcInvoice[]
   staffAttendance    StaffAttendance[]
   holidays           Holiday[]
+  scheduleBreaks     ScheduleBreak[]
   variations         Variation[]
   budgets            ProjectBudget[]
   opening            ProjectOpening?
@@ -6412,6 +6418,23 @@ model LeaveOpening {
 
   @@unique([employeeId, year, type])
   @@index([organizationId])
+}
+
+/// A stretch the site does not work, which a project's working calendar leaves out of the schedule (a monsoon shutdown).
+model ScheduleBreak {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  fromDate       DateTime     @db.Date
+  toDate         DateTime     @db.Date
+  reason         String
+  createdById    String?
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId])
+  @@index([projectId, fromDate])
 }
 
 /// A holiday for every site (projectId null) or one site.

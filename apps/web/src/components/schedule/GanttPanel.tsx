@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Alert, App, Button, Checkbox, Dropdown, Form, Input, Modal, Segmented, Space, Table } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
-import { CheckOutlined, DeleteOutlined, DownloadOutlined, EditOutlined, FlagOutlined, LockOutlined, PlusOutlined, UploadOutlined } from '@/components/common/icons';
+import { CalendarOutlined, CheckOutlined, DeleteOutlined, DownloadOutlined, EditOutlined, FlagOutlined, LockOutlined, PlusOutlined, UploadOutlined } from '@/components/common/icons';
 import type { GanttActivityDto, GanttDto, MilestoneDto, MilestoneState, ScheduleFileFormat } from '@erp/shared';
 import { MILESTONE_STATE_LABELS, SCHEDULE_FILE_FORMAT_LABELS, SCHEDULE_FILE_FORMATS, canEditProjects, canFreezeBaseline, completionBasis, completionWords, daysBetween } from '@erp/shared';
 import { tk } from '@/ds';
@@ -18,6 +18,7 @@ import { Loading, QueryError } from '@/components/common/QueryState';
 import { GanttChart, GanttLegend, type GanttScale } from './GanttChart';
 import { MilestoneFormModal } from './MilestoneFormModal';
 import { ImportScheduleModal, LinksDrawer, exportSchedule } from './ScheduleLinks';
+import { WorkingCalendarDrawer } from './WorkingCalendarDrawer';
 import { AskButton } from '@/components/ai/AskButton';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
@@ -88,6 +89,7 @@ function factsLine(data: GanttDto): Part[] {
     s.activities ? { text: `${s.behind} behind plan`, tone: s.behind ? ('pending' as const) : undefined } : null,
     s.activities ? { text: `${s.late} past their planned finish`, tone: s.late ? ('danger' as const) : undefined } : null,
     s.links ? { text: `${s.critical} of ${s.scheduled} on the critical path, ${plural(s.links, 'link')}` } : null,
+    data.calendar.on ? { text: `Working days ${data.calendar.workWeek}` } : null,
     s.milestones ? { text: `${s.milestonesAchieved} of ${plural(s.milestones, 'milestone')} achieved` } : null,
   ].filter((p): p is Part => !!p);
 }
@@ -111,6 +113,7 @@ export function GanttPanel({ projectId }: { projectId: string }) {
   const [linksOf, setLinksOf] = useState<GanttActivityDto | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [moveOpen, setMoveOpen] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const notify = useNotify();
   const schedule = useScheduleAction<{ moved: { id: string; name: string; from: string; to: string }[] }>(projectId);
   const editor = !!user && canEditProjects(user.roleKey);
@@ -252,6 +255,9 @@ export function GanttPanel({ projectId }: { projectId: string }) {
           ) : null}
         </Space>
         <Space wrap>
+          <Button icon={<CalendarOutlined />} onClick={() => setCalendarOpen(true)}>
+            Calendar
+          </Button>
           <Dropdown menu={{ items: SCHEDULE_FILE_FORMATS.map((f) => ({ key: f, label: SCHEDULE_FILE_FORMAT_LABELS[f] })), onClick: ({ key }) => void download(key as ScheduleFileFormat) }}>
             <Button icon={<DownloadOutlined />}>Export</Button>
           </Dropdown>
@@ -268,7 +274,7 @@ export function GanttPanel({ projectId }: { projectId: string }) {
         </Space>
       </div>
       <GanttChart data={data} scale={scale} showBaseline={showBaseline && !!data.baselineAt} onMilestone={editor ? (m) => setForm({ milestone: m }) : undefined} onActivity={setLinksOf} />
-      <GanttLegend showBaseline={showBaseline && !!data.baselineAt} linked={s.links > 0} />
+      <GanttLegend showBaseline={showBaseline && !!data.baselineAt} linked={s.links > 0} calendar={data.calendar.on} />
 
       <h4 style={{ margin: `${tk.space[5]} 0 ${tk.space[2]}`, display: 'flex', alignItems: 'center', gap: tk.space[2] }}>
         <FlagOutlined /> Milestones
@@ -276,6 +282,7 @@ export function GanttPanel({ projectId }: { projectId: string }) {
       <Table<MilestoneDto> className="milestone-table" rowKey="id" size="small" pagination={false} columns={columns} dataSource={data.milestones} scroll={{ x: 800 }} locale={{ emptyText: 'No milestones yet' }} />
 
       <LinksDrawer projectId={projectId} data={data} activity={linksOf} editor={editor} onClose={() => setLinksOf(null)} />
+      <WorkingCalendarDrawer projectId={projectId} open={calendarOpen} onClose={() => setCalendarOpen(false)} />
       {editor && importOpen ? <ImportScheduleModal projectId={projectId} open onClose={() => setImportOpen(false)} /> : null}
       <Modal
         open={moveOpen}

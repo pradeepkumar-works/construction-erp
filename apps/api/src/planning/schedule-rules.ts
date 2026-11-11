@@ -1,14 +1,17 @@
-import type { ActivityLinkType, LookaheadReadiness } from '@erp/shared';
+import type { ActivityLinkType, DayClock, LookaheadReadiness } from '@erp/shared';
 
 /**
- * Links between activities and the critical path, on calendar days: an activity runs from its start day
- * to its end day, both counted, so a one-day activity starts and ends on the same day. Pure functions, tested in
- * `src/scripts/schedule-links-test.ts`.
+ * Links between activities and the critical path: an activity runs from its start day to its end day, both counted, so
+ * a one-day activity starts and ends on the same day. Days are calendar days, or with a project's working calendar on
+ * (`dayClock`, ARCHITECTURE "Working calendar") working days: durations, lags and float then count only those. Pure
+ * functions, tested in `src/scripts/schedule-links-test.ts` and `src/scripts/working-calendar-test.ts`.
  */
 const DAY_MS = 86_400_000;
 export const dayNo = (d: string) => Math.floor(Date.parse(`${d.slice(0, 10)}T00:00:00Z`) / DAY_MS);
 export const fromDayNo = (n: number) => new Date(n * DAY_MS).toISOString().slice(0, 10);
 export const addDays = (d: string, n: number) => fromDayNo(dayNo(d) + n);
+/** Every day counts: the clock with no working calendar. */
+const CALENDAR: DayClock = { toIndex: (d) => dayNo(d), fromIndex: fromDayNo };
 
 export interface NetActivity {
   id: string;
@@ -104,14 +107,16 @@ function finishAllowed(type: ActivityLinkType, lag: number, succStart: number, s
  * The critical path method over the activities with dates. Each keeps its planned duration and starts no earlier than
  * its planned start (the plan is a constraint, not a suggestion), later when a link says so; one already started runs
  * its planned length from the day it started, and done ones stay where they ran. The backward pass runs from the latest early finish. Links touching an activity without dates are ignored.
+ * With a working calendar (`clock`) a length counts the working days in it (at least one), a start on a day off moves to
+ * the next working day, and lags and float are working days.
  * Returns null when the links make a loop.
  */
-export function criticalPath(activities: NetActivity[], links: NetLink[]): { results: Map<string, NetResult>; finish: string | null } | null {
+export function criticalPath(activities: NetActivity[], links: NetLink[], clock: DayClock = CALENDAR): { results: Map<string, NetResult>; finish: string | null } | null {
   const dated = activities.filter((a) => a.start && a.end && a.end >= a.start);
   const byId = new Map(dated.map((a) => [a.id, a]));
   const used = links.filter((l) => byId.has(l.pred) && byId.has(l.succ));
   if (findCycle([...byId.keys()], used)) return null;
-  const dur = (a: NetActivity) => dayNo(a.end!) - dayNo(a.start!) + 1;
+  const dur = (a: NetActivity) => Math.max(1, clock.toIndex(a.end!, 'back') - clock.toIndex(a.start!, 'forward') + 1);
 
   // Topological order (Kahn).
   const incoming = new Map<string, NetLink[]>(dated.map((a) => [a.id, []]));
@@ -138,7 +143,7 @@ export function criticalPath(activities: NetActivity[], links: NetLink[]): { res
   for (const id of order) {
     const a = byId.get(id)!;
     const d = dur(a);
-    let start = dayNo(a.startedOn ?? a.start!);
+    let start = clock.toIndex(a.startedOn ?? a.start!, 'forward');
     if (!a.done && !a.startedOn)
       for (const l of incoming.get(id)!) start = Math.max(start, startAllowed(l.type, l.lag, es.get(l.pred)!, ef.get(l.pred)!, d));
     es.set(id, start);
@@ -168,9 +173,10 @@ export function criticalPath(activities: NetActivity[], links: NetLink[]): { res
   const results = new Map<string, NetResult>();
   for (const id of order) {
     const float = lf.get(id)! - ef.get(id)!;
-    results.set(id, { es: fromDayNo(es.get(id)!), ef: fromDayNo(ef.get(id)!), ls: fromDayNo(ls.get(id)!), lf: fromDayNo(lf.get(id)!), float, critical: !byId.get(id)!.done && float <= 0 });
+    const at = (n: number) => clock.fromIndex(n);
+    results.set(id, { es: at(es.get(id)!), ef: at(ef.get(id)!), ls: at(ls.get(id)!), lf: at(lf.get(id)!), float, critical: !byId.get(id)!.done && float <= 0 });
   }
-  return { results, finish: fromDayNo(finish) };
+  return { results, finish: clock.fromIndex(finish) };
 }
 
 /** The activities the links push later than planned, with the dates they would move to (duration kept). */

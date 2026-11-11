@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type { ActivityLinkDto, GanttActivityDto, GanttDto, LookaheadActivityDto, LookaheadDto, MilestoneDto, ScheduleFileFormat, ScheduleImportResultDto } from '@erp/shared';
-import { grantedExtensionDays, linkLabel, revisedCompletion } from '@erp/shared';
+import { dayClock, grantedExtensionDays, linkLabel, nonWorkingDays, revisedCompletion, workWeekWords } from '@erp/shared';
 import { expectedPct, milestoneState, scheduleState, slipDays } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
@@ -14,6 +14,7 @@ import { progressRollup } from '../common/progress';
 import { CreateLinkDto, CreateMilestoneDto, FreezeBaselineDto, ImportScheduleDto, UpdateLinkDto, UpdateMilestoneDto } from './schedule.dto';
 import { criticalPath, findCycle, linkProblem, lookaheadWeeks, moves, readiness, type NetLink } from './schedule-rules';
 import { importPlan, parseMsProjectXml, parseXer, toMsProjectXml, toXer, type ScheduleFile } from './schedule-files';
+import { WorkingCalendarService } from './working-calendar.service';
 
 const D = (v: string | number | Prisma.Decimal) => new Prisma.Decimal(v);
 const maxDate = (dates: (string | null)[]) => dates.reduce<string | null>((m, d) => (d && (!m || d > m) ? d : m), null);
@@ -29,6 +30,7 @@ export class ScheduleService {
     private access: ProjectAccessService,
     private audit: AuditService,
     private undo: UndoService,
+    private calendars: WorkingCalendarService,
   ) {
     undo.register('MILESTONE', { entityType: 'MILESTONE', check: (user, row) => this.access.assertCanAccessProject(user, row.projectId as string) });
   }
@@ -69,6 +71,7 @@ export class ScheduleService {
     const elements = await this.prisma.workElement.findMany({ where: { projectId }, select: { id: true, parentId: true, weightPct: true } });
     const links = await this.prisma.activityLink.findMany({ where: { projectId }, orderBy: { createdAt: 'asc' } });
     if (!project) throw new NotFoundException('Project not found');
+    const cal = await this.calendars.calendarOf(projectId);
 
     // Own dates first; an activity with sub-activities then takes its progress from the roll-up and its dates from them.
     const own = new Map(
@@ -136,6 +139,7 @@ export class ScheduleService {
           : { id: r.id, start: r.plannedStart, end: r.plannedEnd, done: r.state === 'DONE', startedOn: r.actualStart },
       ),
       links.map((l) => ({ pred: l.predecessorId, succ: l.successorId, type: l.type, lag: l.lagDays })),
+      dayClock(cal),
     );
     for (const r of rows) {
       const c = net?.results.get(r.id);
@@ -154,6 +158,11 @@ export class ScheduleService {
     const plannedFinish = maxDate([...rows.map((r) => r.plannedEnd), ...ms.map((m) => m.dueDate)]);
     const baselineFinish = project.baselineAt ? maxDate([...rows.map((r) => r.baselineEnd), ...ms.map((m) => m.baselineDate)]) : null;
     const extensionDays = grantedExtensionDays(project.risks);
+    // The holidays and breaks over the chart's dates, for it to shade; weekly days off it works out from `daysOff`.
+    const span = [today, dateOnly(project.startDate), dateOnly(project.endDate), ...rows.flatMap((r) => [r.plannedStart, r.plannedEnd, r.actualStart, r.baselineStart, r.baselineEnd]), ...ms.flatMap((m) => [m.dueDate, m.baselineDate])]
+      .filter((d): d is string => !!d)
+      .sort();
+    const calendar = { on: cal.on, daysOff: cal.daysOff, workWeek: workWeekWords(cal.daysOff), nonWorking: span.length ? nonWorkingDays(cal, span[0], span[span.length - 1], false) : [] };
     return {
       projectId,
       projectStart: dateOnly(project.startDate),
@@ -186,6 +195,7 @@ export class ScheduleService {
         networkFinish: net?.finish ?? null,
       },
       links: links.map((l) => this.linkDto(l, names)),
+      calendar,
     };
   }
 
@@ -323,6 +333,7 @@ export class ScheduleService {
   /** The three weeks from this Monday: activities planned in each, whether they can start, and what is overdue. */
   async lookahead(user: RequestUser, projectId: string): Promise<LookaheadDto> {
     const g = await this.gantt(user, projectId);
+    const cal = await this.calendars.calendarOf(projectId);
     const byId = new Map(g.activities.map((a) => [a.id, a]));
     const item = (a: GanttActivityDto): LookaheadActivityDto => {
       const r = readiness(
@@ -338,7 +349,7 @@ export class ScheduleService {
     // The work itself: an activity with sub-activities is only their heading.
     const open = g.activities.filter((a) => !a.isSummary && a.plannedStart && a.plannedEnd && a.state !== 'DONE');
     const order = (x: LookaheadActivityDto, y: LookaheadActivityDto) => x.plannedStart.localeCompare(y.plannedStart) || Number(y.critical) - Number(x.critical) || x.name.localeCompare(y.name);
-    const weeks = lookaheadWeeks(g.today).map((w) => ({ ...w, activities: open.filter((a) => a.plannedStart! <= w.to && a.plannedEnd! >= w.from && a.plannedEnd! >= g.today).map(item).sort(order) }));
+    const weeks = lookaheadWeeks(g.today).map((w) => ({ ...w, activities: open.filter((a) => a.plannedStart! <= w.to && a.plannedEnd! >= w.from && a.plannedEnd! >= g.today).map(item).sort(order), daysOff: nonWorkingDays(cal, w.from, w.to) }));
     return { projectId, today: g.today, weeks, overdue: open.filter((a) => a.plannedEnd! < g.today).map(item).sort(order) };
   }
 

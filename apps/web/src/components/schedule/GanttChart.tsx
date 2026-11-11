@@ -234,12 +234,30 @@ export function GanttChart({
     );
   };
 
+  // Days the working calendar leaves out, shaded under the bars: holidays and breaks, and at the week scale the weekly days off.
+  const shaded: { left: number; width: number }[] = [];
+  if (data.calendar.on) {
+    const off = new Set(data.calendar.nonWorking.map((d) => d.date));
+    let runFrom: number | null = null;
+    for (let i = 0; i <= range.days; i++) {
+      const day = dayjs(range.start).add(i, 'day');
+      const isOff = i < range.days && (off.has(day.format('YYYY-MM-DD')) || (scale === 'week' && data.calendar.daysOff.includes(day.day())));
+      if (isOff && runFrom === null) runFrom = i;
+      if (!isOff && runFrom !== null) {
+        shaded.push({ left: runFrom * px, width: (i - runFrom) * px });
+        runFrom = null;
+      }
+    }
+  }
   const today = x(data.today) + px / 2;
   return (
     <div ref={scroller} className="gantt-chart" style={{ overflowX: 'auto', border: tk.line('hairline'), borderRadius: tk.radius.md }}>
       <div style={{ position: 'relative', width: LABEL_W + width, minWidth: '100%' }}>
         {/* Month lines and today, under the rows' contents and the sticky names */}
         <div style={{ position: 'absolute', top: 0, bottom: 0, left: LABEL_W, width, pointerEvents: 'none' }}>
+          {shaded.map((d) => (
+            <div key={d.left} className="gantt-day-off" style={{ position: 'absolute', top: 0, bottom: 0, left: d.left, width: d.width, background: tk.color.surface.sunken }} />
+          ))}
           {months.map((m) => (
             <div key={m.left} style={{ position: 'absolute', top: 0, bottom: 0, left: m.left, borderLeft: tk.line('hairline') }} />
           ))}
@@ -270,7 +288,7 @@ export function GanttChart({
 }
 
 /** What the colours and shapes mean: red is only for late, and the critical path and today are in ink. */
-export function GanttLegend({ showBaseline, linked }: { showBaseline: boolean; linked?: boolean }) {
+export function GanttLegend({ showBaseline, linked, calendar }: { showBaseline: boolean; linked?: boolean; calendar?: boolean }) {
   const item = (mark: React.CSSProperties, label: string) => (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: tk.space[2] }}>
       <span aria-hidden style={{ display: 'inline-block', boxSizing: 'border-box', ...mark }} />
@@ -290,6 +308,7 @@ export function GanttLegend({ showBaseline, linked }: { showBaseline: boolean; l
       {linked ? item({ height: 12, borderLeft: `2px solid ${tk.color.text.muted}` }, 'Earliest start its links allow') : null}
       <span>◆ Milestone{showBaseline ? ' (hollow: baseline date)' : ''}, red when missed</span>
       {item({ height: 12, borderLeft: `2px dashed ${MARK}` }, 'Today')}
+      {calendar ? item({ width: 14, height: 12, background: tk.color.surface.sunken, border: tk.line('hairline') }, 'Not a working day') : null}
     </div>
   );
 }
