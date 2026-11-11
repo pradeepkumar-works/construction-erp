@@ -13,7 +13,7 @@ import {
   type SsoSettingsInput,
 } from '@erp/shared';
 import { tk } from '@/ds';
-import { useRemoveSsoSettings, useSaveSsoSettings, useSsoSettings } from '@/lib/queries';
+import { useAuthOptions, useRemoveSsoSettings, useSaveSsoSettings, useSsoSettings } from '@/lib/queries';
 import { useNotify } from '@/lib/notify';
 import { formatDateTime, NO_VALUE } from '@/lib/format';
 import { Section, SectionStack } from '@/components/common/Section';
@@ -23,7 +23,7 @@ import { FormGrid, FormShell } from '@/components/form/FormShell';
 
 type SsoForm = SsoSettingsInput;
 
-const PHONE_NOTE = 'The phone app signs in with passwords for now, so requiring single sign-on stops its sign-in for these people too.';
+const PHONE_NOTE = 'The phone app has no single sign-on yet, so it still takes their password: requiring single sign-on is a rule for the website.';
 
 function SsoDialog({ open, data, onClose }: { open: boolean; data: SsoSettingsDto; onClose: () => void }) {
   const [form] = Form.useForm<SsoForm>();
@@ -104,10 +104,10 @@ function SsoDialog({ open, data, onClose }: { open: boolean; data: SsoSettingsDt
           name="enforce"
           label="Require single sign-on"
           valuePropName="checked"
-          tooltip={`Passwords stop working for the company's people; platform admins and supplier logins keep theirs. ${PHONE_NOTE}`}
-          extra={data.signedInWithSso || s?.enforce ? undefined : 'Use single sign-on once before you require it.'}
+          tooltip={`Passwords stop working on the website for the company's people, and sessions opened with one end; platform admins, client guests and supplier logins keep theirs. ${PHONE_NOTE}`}
+          extra={data.mayRequire || s?.enforce ? undefined : 'Use single sign-on once before you require it.'}
         >
-          <Switch disabled={!data.signedInWithSso && !s?.enforce} />
+          <Switch disabled={!data.mayRequire && !s?.enforce} />
         </Form.Item>
       </Form>
     </FormShell>
@@ -118,6 +118,7 @@ function SsoDialog({ open, data, onClose }: { open: boolean; data: SsoSettingsDt
 export function SsoSettingsTab() {
   const { data, isLoading, error, refetch } = useSsoSettings();
   const remove = useRemoveSsoSettings();
+  const { data: options } = useAuthOptions();
   const notify = useNotify();
   const [editing, setEditing] = useState(false);
   if (isLoading) return <PageSkeleton shape="record" />;
@@ -151,7 +152,7 @@ export function SsoSettingsTab() {
               { key: 'client', label: 'Client ID', children: <span className="mono" translate="no">{s.clientId}</span> },
               { key: 'secret', label: 'Client secret', children: <span translate="no">Saved, ending {s.secretLast4}</span> },
               { key: 'domains', label: 'Email domains', children: <span translate="no">{s.allowedDomains.join(', ')}</span> },
-              { key: 'enforce', label: 'Require single sign-on', children: s.enforce ? 'Yes, passwords are refused' : 'No, passwords still work' },
+              { key: 'enforce', label: 'Require single sign-on', children: s.enforce ? 'Yes, website passwords are refused' : 'No, passwords still work' },
               { key: 'new', label: 'New people', children: s.addNewPeople && s.newPersonRole ? `Added as ${ROLE_LABELS[s.newPersonRole]}` : 'Added by an admin' },
               { key: 'linked', label: 'People linked', children: <span translate="no">{s.linked}</span> },
               { key: 'updated', label: 'Last changed', children: formatDateTime(s.updatedAt) },
@@ -177,7 +178,7 @@ export function SsoSettingsTab() {
             <span style={{ color: tk.color.text.muted }}>Everyone signs in with their email and password again. Links to accounts are kept.</span>
             <Popconfirm
               title="Stop single sign-on?"
-              description="People who never set a password use Forgot password on the sign-in page."
+              description={options?.resetByEmail ? 'People who never set a password use Forgot password on the sign-in page.' : 'People who never set a password need a password link from Users.'}
               okText="Stop single sign-on"
               okButtonProps={{ danger: true }}
               onConfirm={async () => {

@@ -183,7 +183,8 @@ a {
   text-decoration: underline;
 }
 
-/* A link that does something on the page (Use single sign-on and back): drawn as the links beside it. */
+/* A button that reads as a link (the sign-in card's Use another company code, Sign in with your email and password):
+   drawn as the links beside it, a 24 px target (44 on touch, below). */
 button.auth-link {
   min-height: 1.5rem;
   padding: 0;

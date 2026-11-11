@@ -9,11 +9,24 @@ import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { AuthCard } from '@/components/auth/AuthCard';
 import { LinkButton } from '@/components/common/LinkButton';
+import { SSO_BINDING } from '@/components/auth/SsoSignIn';
+
+/** The value the tab kept when its sign-in started, read once and forgotten. */
+function takeBinding(): string | null {
+  try {
+    const b = window.sessionStorage.getItem(SSO_BINDING);
+    window.sessionStorage.removeItem(SSO_BINDING);
+    return b;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Where the API sends the browser back after single sign-on (ARCHITECTURE "Single sign-on"): `#code=` is a one-time
  * code, exchanged here for the session, and `#error=` says what went wrong. Both are in the fragment, which no server
- * sees, and both leave the address bar at once.
+ * sees, and both leave the address bar at once. The code is exchanged only with the value this tab kept when it
+ * started the sign-in: a tab that started none (a link someone else sent) exchanges nothing.
  */
 export default function SsoReturnPage() {
   const router = useRouter();
@@ -28,8 +41,12 @@ export default function SsoReturnPage() {
     window.history.replaceState(null, '', window.location.pathname);
     const code = hash.get('code');
     const error = hash.get('error') ?? '';
+    const b = takeBinding();
     // A failure the API sent back is shown as the exchange's own would be: in the promise's answer, not while drawing.
-    const exchange = code ? api.post<LoginResponse>('/auth/sso/exchange', { code }) : Promise.reject(new Error(isSsoProblem(error) ? SSO_PROBLEMS[error] : SSO_PROBLEMS.EXPIRED));
+    const exchange =
+      code && b
+        ? api.post<LoginResponse>('/auth/sso/exchange', { code, b })
+        : Promise.reject(new Error(code ? SSO_PROBLEMS.BROWSER : isSsoProblem(error) ? SSO_PROBLEMS[error] : SSO_PROBLEMS.EXPIRED));
     exchange
       .then(({ data }) => {
         signIn(data);

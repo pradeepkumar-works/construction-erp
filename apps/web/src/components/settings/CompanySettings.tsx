@@ -13,6 +13,7 @@ import {
   LOGO_MAX_BYTES,
   canManageCompanyData,
   canManageCustomFields,
+  canManageSso,
   canSeeNav,
   dataUrlBytes,
   docPatternProblem,
@@ -408,7 +409,7 @@ export function CompanySettings() {
             { key: 'company', label: 'Company', children: <CompanyTab data={data} /> },
             { key: 'numbering', label: 'Numbering', children: <NumberingTab data={data} /> },
             ...(user && canManageCustomFields(user.roleKey) ? [{ key: 'fields', label: 'Fields', children: <CustomFieldsSettings /> }] : []),
-            { key: 'signin', label: 'Sign-in', children: <SsoSettingsTab /> },
+            ...(user && canManageSso(user.roleKey) ? [{ key: 'signin', label: 'Sign-in', children: <SsoSettingsTab /> }] : []),
             { key: 'more', label: 'Other settings', children: <MoreTab /> },
           ]}
         />

@@ -32,7 +32,7 @@ export function PasswordLinkModal({ result, onClose }: { result: { name: string;
           {link.messaged ? <Alert type="success" showIcon title={`Also sent on ${MESSAGE_CHANNEL_LABELS[link.messaged]} to their mobile number.`} /> : null}
           {link.link ? (
             <Space.Compact style={{ width: '100%' }}>
-              <Input readOnly value={link.link} aria-label="Set-password link" onFocus={(e) => e.target.select()} />
+              <Input readOnly value={link.link} aria-label={link.sso ? 'Sign-in link' : 'Set-password link'} onFocus={(e) => e.target.select()} />
               <Button icon={<CopyOutlined />} onClick={copy}>
                 Copy
               </Button>
@@ -41,7 +41,9 @@ export function PasswordLinkModal({ result, onClose }: { result: { name: string;
             <Alert type="warning" showIcon title="Links cannot be made yet" description={`Ask ${PRODUCT_NAME} support to finish setting up the web address.`} />
           )}
           <Typography.Text type="secondary">
-            The link works once and expires on {formatDateTime(link.expiresAt)}. Making a new link cancels this one.
+            {link.sso || !link.expiresAt
+              ? 'Your company signs in with single sign-on, so there is no password to set: the link opens its sign-in with the company code filled in.'
+              : `The link works once and expires on ${formatDateTime(link.expiresAt)}. Making a new link cancels this one.`}
           </Typography.Text>
         </Space>
       ) : null}

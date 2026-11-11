@@ -29,14 +29,32 @@ function remember(code: string | null) {
 }
 
 /** The API starts the sign-in and sends the browser to the company's provider (ARCHITECTURE "Single sign-on"). */
-export const ssoStartUrl = (code: string) => `${API_URL}/auth/sso/${encodeURIComponent(code)}/start`;
+export const ssoStartUrl = (code: string, binding?: string) => `${API_URL}/auth/sso/${encodeURIComponent(code)}/start${binding ? `?b=${binding}` : ''}`;
+
+/**
+ * The tab a sign-in starts in keeps a random value and sends it to /start; the return page exchanges the one-time code
+ * only with it (`/login/sso`), so a code made in someone else's browser cannot sign this one in. sessionStorage is the
+ * tab's own and outlives the trip to the provider; the web and the API may be on different sites, so no cookie can.
+ */
+export const SSO_BINDING = 'erp_sso_binding';
+
+function newBinding(): string | null {
+  try {
+    const bytes = crypto.getRandomValues(new Uint8Array(32));
+    const b = btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    window.sessionStorage.setItem(SSO_BINDING, b);
+    return b;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Sign in › Use single sign-on: the company code, then the provider's button. Drawn only in the browser (the
  * sign-in page shows it once the server's options say SSO is on), so the remembered code is read as it first draws.
  */
-export function SsoSignIn({ onPassword }: { onPassword: () => void }) {
-  const [code, setCode] = useState<string | null>(() => remembered());
+export function SsoSignIn({ onPassword, initialCode }: { onPassword: () => void; initialCode?: string | null }) {
+  const [code, setCode] = useState<string | null>(() => initialCode?.trim().toUpperCase() || remembered());
   const lookup = useSsoCompany(code);
   const company = lookup.data ?? null;
   const error = lookup.error ? errorMessage(lookup.error, 'That company code was not found. Check it with your admin.') : null;
@@ -49,7 +67,18 @@ export function SsoSignIn({ onPassword }: { onPassword: () => void }) {
       {error && <Alert type="error" showIcon title={error} style={{ marginBottom: tk.space[6] }} />}
       {company ? (
         <>
-          <Button type="primary" block size="large" href={ssoStartUrl(company.companyCode)}>
+          <Button
+            type="primary"
+            block
+            size="large"
+            href={ssoStartUrl(company.companyCode)}
+            onClick={(e) => {
+              const b = newBinding();
+              if (!b) return;
+              e.preventDefault();
+              window.location.assign(ssoStartUrl(company.companyCode, b));
+            }}
+          >
             Sign in with {SSO_PROVIDER_INFO[company.provider].button}
           </Button>
           <p className="auth-alt">
