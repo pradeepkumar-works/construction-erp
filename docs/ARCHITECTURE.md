@@ -2803,7 +2803,18 @@ Nirmaan hands the payroll provider its inputs; PF, ESI, professional tax and sal
 - **Forecast** (`BudgetService`, on the approved version only, so a draft or a version waiting never moves it). % complete = executed value (approved progress × BOQ rate) ÷ BOQ value, capped at
   100%. Budget at completion = the cost-head total, else Σ BOQ qty × budget rate. Actual cost is `CostService.compute`
   from the start of the project. Earned = budget × % complete; variance = earned − actual; forecast at completion =
-  actual + budget × (1 − % complete); forecast margin = revised contract value − forecast.
+  actual + budget × (1 − % complete), by head where the budget is by head, but never less than what is already ordered
+  (Committed cost below); forecast margin = revised contract value − forecast.
+- **Committed cost** (`BudgetService.commitments`, pure in `@erp/shared/committed-cost.ts`, tested in
+  `src/scripts/committed-cost-test.ts`). What approved, open orders still bind the project to, before GST, not yet in
+  actual cost: a purchase order's quantity still to come at its rate (`poBalance`, received net of returns, never below
+  zero; material, since material is costed when issued) and a work order's value as amended less the work its approved
+  bills charged (`woBalance`; subcontract). A closed order commits nothing more. A head's cost to complete is the larger
+  of its budget for the work left and its commitment (`costToComplete`), so the forecast, the cash flow's spending to come,
+  the management dashboard and the margin fade all read it; a head whose actual cost and commitment pass its budget is
+  `overCommitted` by the amount. Material received and not yet issued is in neither. The Budget tab shows the commitment
+  under Actual cost, a Committed column by head with what goes past the budget, and Open orders with each order's value,
+  what is received or billed and the balance.
 - **Cash flow** (`CashFlowService`, six months or twelve weeks from today). In: open RA bills (receivables summary) due
   the payment days after sending, approved bills not sent due the payment days after the bill date, retention and
   deposit held at the release date, and work still to bill (revised contract value − approved bills' work value) spread
@@ -2869,8 +2880,8 @@ the cost run up before: their margin then reads as nearly all of their billing (
   (BAC − EV) ÷ (CPI × SPI), ETC = EAC − AC, VAC = BAC − EAC, TCPI = (BAC − EV) ÷ (BAC − AC). No index while its divisor is
   zero. Earned schedule = the first day the plan had the earned share done; SPI(t) = earned schedule ÷ days elapsed, and the
   forecast finish stretches the planned duration by it.
-- **Two estimates, named.** Budget and cash flow's Forecast at completion is AC + the budget for the work left (what the
-  rest costs if it goes to budget); Earned value's Estimate at completion is BAC ÷ CPI (if it goes the way the work so far
+- **Two estimates, named.** Budget and cash flow's Forecast at completion is AC + the budget for the work left, or what is
+  already ordered when that is more (what the rest costs if it goes to budget); Earned value's Estimate at completion is BAC ÷ CPI (if it goes the way the work so far
   has). Each says which under its figure (`EAC_METHOD_NOTES`, `@erp/shared/earned-value.ts`), so a gap between them reads
   as the cost index, not as an error.
 - **Cost not booked.** When the actual cost is under `COST_BOOKED_MIN_SHARE` (40%) of the earned budget (`costLooksIncomplete`,

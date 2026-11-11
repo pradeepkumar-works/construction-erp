@@ -102,11 +102,11 @@ export interface PortfolioMoneyDto {
   received: string;
   /** Cost booked to date (site expenses, material issued, machinery, labour, subcontractors) */
   cost: string;
-  /** Approved purchase and work orders still open, less what is billed against them, before GST */
+  /** Approved purchase orders still to deliver and work orders still to bill, before GST (ARCHITECTURE "Committed cost") */
   committed: string;
   /** Cost budget at completion; null without a budget */
   budget: string | null;
-  /** Actual plus the budget for the work still to do; null without a budget or below FORECAST_MIN_DONE_PCT done */
+  /** Actual plus the budget for the work still to do, or what is committed when more; null without a budget or below FORECAST_MIN_DONE_PCT done */
   forecastCost: string | null;
   /** Work done less cost */
   margin: string;
@@ -236,7 +236,7 @@ export interface PortfolioProjectDetailDto {
   openBills: { billId: string; label: string; stage: string; sentDate: string; outstanding: string; daysOutstanding: number }[];
   waiting: { type: SubmissionType; id: string; title: string; submittedByName: string; submittedAt: string; days: number; amount: string | null }[];
   risks: { id: string; riskNo: string; title: string; kind: string; score: number; daysLost: number | null; dueDate: string | null }[];
-  orders: { kind: 'PO' | 'WO'; id: string; number: string; vendorName: string; date: string; value: string; billed: string; open: string }[];
+  orders: { kind: 'PO' | 'WO'; id: string; number: string; vendorName: string; date: string; value: string; /** Received (PO) or billed (WO), before GST */ done: string; open: string }[];
 }
 
 export const MANAGEMENT_REPORT_KEYS = [

@@ -497,11 +497,11 @@ function OpenItems({ data }: { data: PortfolioProjectDetailDto }) {
                   render: (_, o) => money(o.value),
                 },
                 {
-                  key: 'billed',
-                  title: 'Billed',
+                  key: 'done',
+                  title: 'Received or billed',
                   align: 'right',
                   className: 'mono',
-                  render: (_, o) => money(o.billed),
+                  render: (_, o) => money(o.done),
                 },
                 {
                   key: 'open',

@@ -15,7 +15,7 @@ export class ManagementController {
   @ApiOperation({
     summary: 'The portfolio: every contract project with its schedule, money from work done to cash, cost and health',
     description:
-      'Management, accounts and project managers (`canSeeManagement`), over the projects the caller sees (stores and RMC plants left out). Work done counts each BOQ item at the larger of its approved progress and measurement; committed is open purchase and work orders not yet billed; each project carries the reasons it needs attention. With the approvals waiting by age, billed, received and cost for 12 months, and the cash forecast’s headline for those who see it.',
+      'Management, accounts and project managers (`canSeeManagement`), over the projects the caller sees (stores and RMC plants left out). Work done counts each BOQ item at the larger of its approved progress and measurement; committed is approved purchase orders not yet received and work orders not yet billed; each project carries the reasons it needs attention. With the approvals waiting by age, billed, received and cost for 12 months, and the cash forecast’s headline for those who see it.',
   })
   @Get('portfolio')
   portfolio(@CurrentUser() user: RequestUser, @Query() q: VerticalQuery) {

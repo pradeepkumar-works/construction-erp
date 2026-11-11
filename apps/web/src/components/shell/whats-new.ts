@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-committed-cost',
+    date: '2026-11-19',
+    title: 'The budget counts what is already ordered',
+    points: [
+      'A project’s Budget tab shows what approved purchase orders still have to deliver and work orders still have to bill, by cost head, beside the actual cost.',
+      'A head whose cost so far and open orders already go past its budget says by how much.',
+      'The forecast at completion never ends below what is already ordered, so the forecast margin, cash flow and management dashboard see a commitment before its bills arrive.',
+      'Open orders lists each order with its value, what is received or billed, and the balance.',
+    ],
+  },
+  {
     id: '2026-11-labour-compliance',
     date: '2026-11-19',
     title: 'Contractors’ labour papers and challans, and bills held without them',

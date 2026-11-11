@@ -4,6 +4,7 @@ import type { BudgetOpenVersionDto, BudgetVersionDto } from './budget-versions';
 import type { MachineEngineDto } from './telematics';
 import type { VendorRecordDto } from './vendor-score';
 import type { LabourHoldDto } from './labour-compliance';
+import type { CommitmentDto } from './committed-cost';
 import type { LetterAction, LetterGate, LetterMarkDto, LetterMode, LetterPriority, LetterStatus } from './correspondence';
 import type { NavSettingsDto } from './nav-menu';
 import type { DprLineDto } from './dpr-lines';
@@ -1173,10 +1174,14 @@ export interface BudgetHeadDto {
   actual: string;
   /** budget × % complete */
   earned: string | null;
-  /** actual + budget × (1 − % complete) */
+  /** Ordered on approved purchase orders and work orders and not yet in actual cost (ARCHITECTURE "Committed cost") */
+  committed: string;
+  /** actual + the larger of budget × (1 − % complete) and committed */
   forecast: string | null;
   /** earned − actual: negative is an overrun */
   variance: string | null;
+  /** actual + committed − budget, when the orders already go past the budget */
+  overCommitted: string | null;
 }
 
 /** One BOQ item with its budgeted cost per unit. */
@@ -1230,6 +1235,10 @@ export interface ProjectBudgetDto {
   /** earnedBudget − actualCost: negative is an overrun */
   costVariance: string | null;
   forecastAtCompletion: string | null;
+  /** Ordered and not yet in actual cost, all heads */
+  committedCost: string;
+  /** The approved orders behind it, largest balance first */
+  commitments: CommitmentDto[];
   /** forecastAtCompletion − actualCost */
   forecastToComplete: string | null;
   revisedContractValue: string | null;

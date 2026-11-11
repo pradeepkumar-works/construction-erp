@@ -92,8 +92,8 @@ export function costLooksIncomplete(actualCost: number, earned: number | null): 
 
 /** What each screen's estimate at completion assumes, so the two can be told apart. */
 export const EAC_METHOD_NOTES = {
-  /** Budget and cash flow: actual cost so far plus the budget for the work left. */
-  BUDGET: 'Spent so far plus the budget for the work left',
+  /** Budget and cash flow: actual cost so far plus the budget for the work left, or what is already ordered when that is more. */
+  BUDGET: 'Spent so far plus the budget for the work left, or what is on order when more',
   /** Earned value: the budget at completion at the cost index so far. */
   EARNED_VALUE: 'The budget at the cost index so far',
 } as const;

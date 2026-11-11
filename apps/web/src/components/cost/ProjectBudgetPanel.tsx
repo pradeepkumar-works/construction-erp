@@ -1,15 +1,16 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { Alert, Button, Col, Empty, Progress, Row, Skeleton, Statistic, Table, Typography } from 'antd';
 import { tk } from '@/ds';
 import { EditOutlined } from '@/components/common/icons';
-import type { BudgetBoqItemDto, BudgetHeadDto } from '@erp/shared';
+import type { BudgetBoqItemDto, BudgetHeadDto, CommitmentDto } from '@erp/shared';
 import { COST_HEAD_LABELS, EAC_METHOD_NOTES, canSetBudget, unitLabel } from '@erp/shared';
 import { CostBookedNote } from './EarnedValuePanel';
 import { useAuth } from '@/lib/auth';
 import { useProjectBudget } from '@/lib/queries';
-import { formatINR, formatPct, formatQty, toNumber, NO_VALUE } from '@/lib/format';
+import { formatDate, formatINR, formatPct, formatQty, toNumber, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { HEAD_COLORS } from './CostBar';
 import { BudgetFormModal } from './BudgetFormModal';
@@ -19,6 +20,7 @@ import { OpeningSection } from './OpeningSection';
 import { AskButton } from '@/components/ai/AskButton';
 import { Section, SectionStack } from '@/components/common/Section';
 import { Money } from '@/components/common/Money';
+import { AppTag } from '@/components/common/AppTag';
 
 const RED = tk.color.tone.danger.fg;
 const GREEN = tk.color.tone.success.fg;
@@ -88,6 +90,11 @@ export function ProjectBudgetPanel({ projectId }: { projectId: string }) {
             </Col>
             <Col xs={12} md={8} lg={4}>
               <Statistic title="Actual cost" value={formatINR(data.actualCost)} styles={{ content: { fontSize: tk.type.subhead.fontSize } }} />
+              {toNumber(data.committedCost) > 0 ? (
+                <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
+                  {formatINR(data.committedCost)} more on open orders
+                </div>
+              ) : null}
             </Col>
             <Col xs={12} md={8} lg={4}>
               <Statistic
@@ -131,7 +138,8 @@ export function ProjectBudgetPanel({ projectId }: { projectId: string }) {
           <OpeningSection projectId={projectId} />
 
           <Section help={<>Work done is approved progress at BOQ rates over the BOQ value. Earned is the budget for the work done (budget × work done); variance is
-              earned less actual, red when over budget. Forecast is the actual cost so far plus the budget for the work left. Actual cost is the cost view&apos;s,
+              earned less actual, red when over budget. Committed is what approved purchase orders still have to deliver and work orders still to bill. Forecast is the
+              actual cost so far plus the budget for the work left, or what is committed when that is more. Actual cost is the cost view&apos;s,
               from the start of the project, with its opening cost where it has one.</>} style={{ marginTop: tk.space[4] }} title="By cost head">
             {data.hasHeadBudget ? (
               <Table<BudgetHeadDto>
@@ -139,7 +147,7 @@ export function ProjectBudgetPanel({ projectId }: { projectId: string }) {
                 size="small"
                 pagination={false}
                 dataSource={data.heads}
-                scroll={{ x: 860 }}
+                scroll={{ x: 1000 }}
                 columns={[
                   { title: 'Head', dataIndex: 'head', render: (h: BudgetHeadDto['head']) => (
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: tk.space[2] }}>
@@ -149,6 +157,24 @@ export function ProjectBudgetPanel({ projectId }: { projectId: string }) {
                     ) },
                   { title: 'Budget', dataIndex: 'budget', width: 140, align: 'right', render: (v) => <Money value={v} /> },
                   { title: 'Actual', dataIndex: 'actual', width: 140, align: 'right', render: (v) => <Money value={v} /> },
+                  {
+                    title: 'Committed',
+                    dataIndex: 'committed',
+                    width: 150,
+                    align: 'right',
+                    render: (v: string, r) => (
+                      <>
+                        {toNumber(v) > 0 ? <Money value={v} /> : <span className="text-muted">{NO_VALUE}</span>}
+                        {r.overCommitted ? (
+                          <div>
+                            <AppTag meaning="failed" style={{ margin: 0 }}>
+                              {formatINR(r.overCommitted)} past budget
+                            </AppTag>
+                          </div>
+                        ) : null}
+                      </>
+                    ),
+                  },
                   {
                     title: 'Used',
                     key: 'used',
@@ -188,6 +214,57 @@ export function ProjectBudgetPanel({ projectId }: { projectId: string }) {
             ) : (
               <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No budget by cost head" />
             )}
+          </Section>
+
+          <Section
+            style={{ marginTop: tk.space[4] }}
+            title="Open orders"
+            extra={
+              <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
+                {toNumber(data.committedCost) > 0 ? `${formatINR(data.committedCost)} still to deliver or bill` : null}
+              </Typography.Text>
+            }
+          >
+            <Table<CommitmentDto>
+              rowKey={(c) => `${c.kind}:${c.id}`}
+              size="small"
+              pagination={{ pageSize: 20, hideOnSinglePage: true }}
+              dataSource={data.commitments}
+              scroll={{ x: 900 }}
+              locale={{ emptyText: 'No approved purchase or work order still to deliver or bill' }}
+              columns={[
+                {
+                  title: 'Order',
+                  key: 'order',
+                  width: 170,
+                  render: (_, c) => (
+                    <div>
+                      <Link href={c.kind === 'PO' ? `/purchase-orders/${c.id}` : `/work-orders/${c.id}`} translate="no">
+                        {c.number}
+                      </Link>
+                      <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
+                        {c.kind === 'PO' ? 'Material' : 'Subcontract'} · {formatDate(c.date)}
+                      </div>
+                    </div>
+                  ),
+                },
+                {
+                  title: 'For',
+                  key: 'for',
+                  render: (_, c) => (
+                    <div>
+                      <div translate="no">{c.vendorName}</div>
+                      <div className="text-muted" style={{ fontSize: tk.type.caption.fontSize }}>
+                        {c.title}
+                      </div>
+                    </div>
+                  ),
+                },
+                { title: 'Value', dataIndex: 'value', width: 140, align: 'right', render: (v) => <Money value={v} /> },
+                { title: 'Received or billed', dataIndex: 'done', width: 160, align: 'right', render: (v) => <Money value={v} /> },
+                { title: 'Balance', dataIndex: 'balance', width: 140, align: 'right', render: (v) => <Money value={v} /> },
+              ]}
+            />
           </Section>
 
           <Section
