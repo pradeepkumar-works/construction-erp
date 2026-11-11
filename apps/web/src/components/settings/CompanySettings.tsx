@@ -8,11 +8,13 @@ import { tk } from '@/ds';
 import type { CompanyProfileDto, CompanySettingsDto, DocSeriesLineDto } from '@erp/shared';
 import {
   CIN_PATTERN,
+  HSN_PATTERN,
   TAN_PATTERN,
   DOC_SERIES_TOKENS,
   LOGO_MAX_BYTES,
   canManageCompanyData,
   canManageCustomFields,
+  canManageSso,
   canSeeNav,
   dataUrlBytes,
   docPatternProblem,
@@ -26,7 +28,9 @@ import { useAuth } from '@/lib/auth';
 import { useCompanySettings, useSaveCompanySettings } from '@/lib/queries';
 import { useNotify } from '@/lib/notify';
 import { useUrlTab } from '@/lib/url-state';
-import { formatBytes, todayDate, NO_VALUE } from '@/lib/format';
+import { formatBytes, formatDate, todayDate, NO_VALUE } from '@/lib/format';
+import { DatePicker } from '@/components/common/DatePicker';
+import dayjs from 'dayjs';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { NoAccess } from '@/components/common/NoAccess';
@@ -39,8 +43,9 @@ import { navIcon } from '@/components/shell/nav-icons';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { CustomFieldsSettings } from '@/components/custom-fields/CustomFieldsSettings';
 import { CODE_INPUT, gstinRule, panRule, upper } from '@/components/form/inputs';
+import { SsoSettingsTab } from './SsoSettings';
 
-const TABS = ['company', 'numbering', 'fields', 'more'] as const;
+const TABS = ['company', 'numbering', 'fields', 'signin', 'more'] as const;
 type Tab = (typeof TABS)[number];
 
 /** A logo scaled to fit 800 × 300 and written as a PNG, or a WebP when the PNG is over the limit. */
@@ -148,11 +153,58 @@ function ProfileDialog({ open, profile, onClose }: { open: boolean; profile: Com
   );
 }
 
+interface EinvoiceForm {
+  gstSac: string | null;
+  einvoiceFrom: dayjs.Dayjs | null;
+}
+
+/** When the company came under e-invoicing, and the SAC its works bills report unless a bill names its own. */
+function EinvoiceDialog({ open, profile, onClose }: { open: boolean; profile: CompanyProfileDto; onClose: () => void }) {
+  const [form] = Form.useForm<EinvoiceForm>();
+  const notify = useNotify();
+  const save = useSaveCompanySettings<{ gstSac: string | null; einvoiceFrom: string | null }>('profile');
+  useEffect(() => {
+    if (open) form.setFieldsValue({ gstSac: profile.gstSac, einvoiceFrom: profile.einvoiceFrom ? dayjs(profile.einvoiceFrom) : null });
+  }, [open, profile, form]);
+  return (
+    <FormShell
+      open={open}
+      onClose={onClose}
+      form={form}
+      layout="modal"
+      width={520}
+      projectDefault={false}
+      title="E-invoicing"
+      okText="Save"
+      onSubmit={async (v) => {
+        await save.mutateAsync({ gstSac: v.gstSac?.trim() || null, einvoiceFrom: v.einvoiceFrom ? v.einvoiceFrom.format('YYYY-MM-DD') : null });
+        notify.success('E-invoicing saved');
+      }}
+    >
+      <Form form={form} layout="vertical">
+        <FormGrid cols={2}>
+          <Form.Item
+            name="einvoiceFrom"
+            label="E-invoicing from"
+            tooltip="The day the company's turnover put it under e-invoicing (above ₹5 crore in a year). Leave empty when it is not, and no bill gets an IRN"
+          >
+            <DatePicker style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item name="gstSac" label="SAC for works bills" tooltip="Reported on an RA bill's e-invoice unless the bill names its own, e.g. 995421 for civil works" rules={[{ pattern: HSN_PATTERN, message: 'A SAC is 4, 6 or 8 digits, e.g. 995421' }]}>
+            <Input {...CODE_INPUT} inputMode="numeric" maxLength={8} placeholder="e.g. 995421" />
+          </Form.Item>
+        </FormGrid>
+      </Form>
+    </FormShell>
+  );
+}
+
 function CompanyTab({ data }: { data: CompanySettingsDto }) {
   const p = data.profile;
   const { message } = App.useApp();
   const notify = useNotify();
   const [editing, setEditing] = useState(false);
+  const [einvoicing, setEinvoicing] = useState(false);
   const saveLogo = useSaveCompanySettings<{ logo: string | null }>('logo');
   const pickLogo = async (file: File) => {
     try {
@@ -195,6 +247,24 @@ function CompanyTab({ data }: { data: CompanySettingsDto }) {
           ]}
         />
       </Section>
+      <Section
+        title="E-invoicing"
+        help="RA bills and ready-mix bills to a registered client get an IRN and a signed QR from the IRP once the company is under e-invoicing. The IRP is reached through the GST provider set up in Admin › Connections."
+        extra={
+          <Button icon={<EditOutlined />} aria-label="Edit e-invoicing" onClick={() => setEinvoicing(true)}>
+            Edit
+          </Button>
+        }
+      >
+        <Descriptions
+          size="small"
+          column={{ xs: 1, md: 2 }}
+          items={[
+            { key: 'from', label: 'E-invoicing from', children: p.einvoiceFrom ? formatDate(p.einvoiceFrom) : 'Not under e-invoicing' },
+            { key: 'sac', label: 'SAC for works bills', children: <span className="mono" translate="no">{p.gstSac ?? NO_VALUE}</span> },
+          ]}
+        />
+      </Section>
       <Section title="Logo" help="A PNG, JPEG or WebP. It is scaled to fit 800 × 300 and printed at the top left of every paper.">
         <Flex align="center" gap={tk.space[3]} wrap>
           <Upload
@@ -219,6 +289,7 @@ function CompanyTab({ data }: { data: CompanySettingsDto }) {
         </Flex>
       </Section>
       <ProfileDialog open={editing} profile={p} onClose={() => setEditing(false)} />
+      <EinvoiceDialog open={einvoicing} profile={p} onClose={() => setEinvoicing(false)} />
     </SectionStack>
   );
 }
@@ -397,7 +468,7 @@ export function CompanySettings() {
   if (error || !data) return <QueryError error={error} onRetry={() => refetch()} />;
   return (
     <div className="page-container">
-      <PageHeader title="Company settings" help="The details and logo every printed paper carries, how each kind of document is numbered, the fields of your own on vendors, projects and orders, and the way to every other setting." />
+      <PageHeader title="Company settings" help="The details and logo every printed paper carries, how each kind of document is numbered, the fields of your own on vendors, projects and orders, how people sign in, and the way to every other setting." />
       <Card size="small">
         <AppTabs
           variant="page"
@@ -407,6 +478,7 @@ export function CompanySettings() {
             { key: 'company', label: 'Company', children: <CompanyTab data={data} /> },
             { key: 'numbering', label: 'Numbering', children: <NumberingTab data={data} /> },
             ...(user && canManageCustomFields(user.roleKey) ? [{ key: 'fields', label: 'Fields', children: <CustomFieldsSettings /> }] : []),
+            ...(user && canManageSso(user.roleKey) ? [{ key: 'signin', label: 'Sign-in', children: <SsoSettingsTab /> }] : []),
             { key: 'more', label: 'Other settings', children: <MoreTab /> },
           ]}
         />

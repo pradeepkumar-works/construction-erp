@@ -7,11 +7,12 @@ import type { RoleKey } from './enums';
  * it. The API's `integration-rules.ts` holds the secrets, pairing codes and health; this holds the labels and shapes.
  */
 
-export const INTEGRATION_KINDS = ['GENERIC_WEBHOOK', 'CONNECTOR_CHECK', 'MACHINE_FEED', 'GPS_TRACKER', 'FUEL_DISPENSER', 'WEIGHBRIDGE', 'BATCHING_PLANT'] as const;
+export const INTEGRATION_KINDS = ['GENERIC_WEBHOOK', 'CONNECTOR_CHECK', 'MACHINE_FEED', 'GPS_TRACKER', 'FUEL_DISPENSER', 'WEIGHBRIDGE', 'BATCHING_PLANT', 'GST_GSP'] as const;
 export type IntegrationKind = (typeof INTEGRATION_KINDS)[number];
 
-/** How a kind's messages reach Nirmaan: posted to its web address, read on site by a paired Connector, or asked for by Nirmaan. */
-export type IntegrationTransport = 'HOOK' | 'CONNECTOR' | 'POLL';
+/** How a kind's messages reach Nirmaan: posted to its web address, read on site by a paired Connector, or asked for by
+ *  Nirmaan; a CALL kind is a service Nirmaan sends to when someone acts (the GST provider), and nothing comes in from it. */
+export type IntegrationTransport = 'HOOK' | 'CONNECTOR' | 'POLL' | 'CALL';
 
 export interface IntegrationKindInfo {
   label: string;
@@ -69,7 +70,29 @@ export const INTEGRATION_KIND_INFO: Record<IntegrationKind, IntegrationKindInfo>
       "The Connector reads the batch reports the plant's controller writes to a folder on its computer. Each batch, with the materials it weighed, waits on the RMC page to become a truck's challan at those weights.",
     quietAfterMin: 2 * 24 * 60,
   },
+  GST_GSP: {
+    label: 'GST provider (GSP) for e-invoices and e-way bills',
+    transport: 'CALL',
+    description:
+      "The company's GST Suvidha Provider, through which Nirmaan asks NIC's IRP for a bill's IRN and QR and the e-way bill system for an e-way bill. Used when the server runs with GST_PROVIDER=gsp.",
+    quietAfterMin: 90 * 24 * 60,
+  },
 };
+
+/** A GST provider's settings, kept in the connection's config; the client secret and the API password are its sealed
+ *  credential, kept as JSON of the two (`gspCredential`), so either may hold a colon. */
+export interface GspConfig {
+  /** The GSP's address for NIC's e-invoice API, e.g. https://gsp.example.com/eivital */
+  url: string;
+  /** The GSP's address for NIC's e-way bill API, when it is not the same */
+  ewbUrl?: string;
+  /** The company's GSTIN the API user was made for */
+  gstin: string;
+  /** The API user made on the e-invoice portal for the GSP */
+  userName: string;
+  /** The GSP's client id */
+  clientId: string;
+}
 
 /** A fuel dispenser's settings: the fuel item it pours, issued from the connection's site. */
 export interface FuelDispenserConfig {

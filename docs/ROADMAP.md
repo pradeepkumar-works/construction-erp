@@ -873,8 +873,10 @@ drones, sensors and the rest when a customer asks. The machine and site devices 
      calling out only, an outbox that keeps readings while the internet is down, a Windows start-up task. ARCHITECTURE
      "Integration layer".
 140. **Tally live two-way sync** (L).
-141. **E-invoice (IRN), GSTIN check and e-way bills on dispatch** (M).
-142. **E-way bill for transfers, returns and machine moves** (S).
+141. **E-invoice (IRN), GSTIN check and e-way bills on dispatch** (M). The IRN and the e-way bill on an RMC challan are
+     done as item 194; the GSTIN check is left.
+142. **E-way bill for transfers, returns and machine moves** (S). Transfers are done as item 194; returns and machine
+     moves are left.
 143. **GSTR-2B download and match** (M).
 144. **Weather by site** (S).
 145. **WhatsApp documents to outsiders** (M).
@@ -1092,6 +1094,24 @@ GRN on the web and the phone), and a second quality dashboard.
      offer them as columns and Excel carries them. A required field is asked for on save, an order's before it goes for
      approval; a field is archived, never deleted, and records keep its values. The DPR's own fields share the same kinds
      and readers, unchanged. ARCHITECTURE "Custom fields".
+194. ~~**E-invoices (IRN and QR) and e-way bills** (M).~~ Done: a certified RA bill and an RMC bill to a registered
+     client, from a company under e-invoicing (Company settings › E-invoicing), get an IRN, its acknowledgement and the
+     signed QR from the IRP, printed on the bill; an RMC challan and a stock transfer get an e-way bill with the vehicle,
+     distance and value, extended near its end or cancelled. The JSON is NIC's INV-01 and GENEWAYBILL, built and checked
+     in one pure place, made once per payload (the IRP's duplicate answer is taken as made when its figures match),
+     cancelled within 24 hours (after that a credit note); a live IRN or e-way bill refuses a corrected certificate on
+     the RA bill, the cancel of the RMC bill, the turn-back of the RMC challan and the delete of the stock transfer. NIC is reached through
+     the company's GSP (`GST_PROVIDER=gsp`, credentials sealed on a GST provider connection, untested against the live
+     IRP); `GST_PROVIDER=fake` stands in for CI. ARCHITECTURE "E-invoices and e-way bills".
+
+195. ~~**Sign in with Microsoft or Google** (M).~~ Done: a company signs its people in to the web with Microsoft Entra ID
+     or Google Workspace. Admins set it up under Company settings › Sign-in (provider, client, sealed secret, email
+     domains); people choose Use single sign-on and the company code. The API runs the code flow with PKCE, checks the ID
+     token (the company's own directory, a verified email in its domains) and links each account to the person once.
+     Require single sign-on refuses passwords for the company's people, platform admins and supplier logins aside, and Add
+     new people gives someone from the domains a place in a chosen role at their first sign-in. The phone keeps passwords.
+     ARCHITECTURE "Single sign-on".
+
 196. ~~**Reports people build, save and schedule** (M).~~ Done: Reports › My reports builds a table over purchase
      orders, vendor bills, RA bills, indents, stock, vendors or projects (the columns, conditions, one grouping, totals
      and a sort, the company's own fields included), saves it for oneself or the company, prints it, takes it to Excel

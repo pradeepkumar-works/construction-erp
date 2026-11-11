@@ -2,6 +2,10 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
 import type {
+  GstSourceKind,
+  GstSourceStateDto,
+  TransportMode,
+  VehicleType,
   ConsolidationBasis,
   ConsolidationDto,
   SisterLinkInput,
@@ -9,6 +13,9 @@ import type {
   CustomFieldDto,
   CustomFieldEntity,
   CustomFieldInput,
+  SsoCompanyDto,
+  SsoSettingsDto,
+  SsoSettingsInput,
   TdsCertificateDto,
   TdsChallanDetailDto,
   TdsQuarterDto,
@@ -727,6 +734,29 @@ export const useLetterhead = () =>
 /** Settings › Company and Numbering (admins): the letterhead's details, the logo and the number series. */
 export const useCompanySettings = (enabled = true) =>
   useQuery({ queryKey: ['company-settings'], queryFn: async () => (await api.get<CompanySettingsDto>('/company-settings')).data, enabled });
+
+/** Use single sign-on: which provider a company code signs in with (404 in words when none). */
+export const useSsoCompany = (code: string | null) =>
+  useQuery({ queryKey: ['sso-company', code], queryFn: async () => (await api.get<SsoCompanyDto>(`/auth/sso/${encodeURIComponent(code!)}`)).data, enabled: !!code, retry: false, staleTime: 5 * 60_000 });
+
+/** Company settings › Sign-in: the company's single sign-on (admins). */
+export const useSsoSettings = (enabled = true) => useQuery({ queryKey: ['sso-settings'], queryFn: async () => (await api.get<SsoSettingsDto>('/sso-settings')).data, enabled });
+
+export function useSaveSsoSettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: SsoSettingsInput) => (await api.put<SsoSettingsDto>('/sso-settings', body)).data,
+    onSuccess: (s) => qc.setQueryData(['sso-settings'], s),
+  });
+}
+
+export function useRemoveSsoSettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => (await api.delete<SsoSettingsDto>('/sso-settings')).data,
+    onSuccess: (s) => qc.setQueryData(['sso-settings'], s),
+  });
+}
 
 /** Saves one part of the company settings; the letterhead is read again so the next print carries it. */
 export function useSaveCompanySettings<V>(path: 'profile' | 'logo' | 'numbering') {
@@ -5272,4 +5302,61 @@ export function useScheduleReport(id: string) {
       v.stop ? (await api.delete<SavedReportDto>(`/report-builder/reports/${id}/schedule`)).data : (await api.put<SavedReportDto>(`/report-builder/reports/${id}/schedule`, { frequency: v.frequency, weekday: v.weekday, dayOfMonth: v.dayOfMonth, recipientIds: v.recipientIds })).data,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['report-builder', 'reports'] }),
   });
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// E-invoices and e-way bills (item 194)
+
+/** A record's IRN or e-way bill: whether it gets one, what it lacks, the live one and the earlier ones. */
+export const useGstSource = (sourceKind: GstSourceKind, sourceId: string | undefined, enabled = true) =>
+  useQuery({
+    queryKey: ['gst', sourceKind, sourceId],
+    queryFn: async () => (await api.get<GstSourceStateDto>(`/gst/sources/${sourceKind}/${sourceId}`)).data,
+    enabled: enabled && !!sourceId,
+  });
+
+export interface GstGenerateInput {
+  mode?: TransportMode;
+  vehicleNo?: string | null;
+  vehicleType?: VehicleType;
+  distanceKm?: number;
+}
+
+export interface EwayExtendInput {
+  fromPlace: string;
+  /** The GST state code of where the goods are now. */
+  fromState: string;
+  remainingKm: number;
+  vehicleNo?: string | null;
+  mode?: TransportMode;
+  reason: string;
+  remark: string;
+}
+
+/** Makes, cancels or extends a record's IRN or e-way bill; the record and its source list are fetched again, since a live one locks it. */
+export function useGstActions(sourceKind: GstSourceKind, sourceId: string | undefined) {
+  const qc = useQueryClient();
+  const done = (s: GstSourceStateDto) => {
+    qc.setQueryData(['gst', sourceKind, sourceId], s);
+    void qc.invalidateQueries({ queryKey: sourceKind === 'RA_BILL' ? ['bills'] : sourceKind === 'STOCK_TRANSFER' ? ['stock'] : ['rmc'] });
+  };
+  return {
+    generate: useMutation({
+      mutationFn: async (v: GstGenerateInput) => (await api.post<GstSourceStateDto>(`/gst/sources/${sourceKind}/${sourceId}/generate`, v)).data,
+      onSuccess: done,
+      // A refusal the IRP or the e-way bill system wrote is kept as a FAILED document: fetch the history either way.
+      onError: () => void qc.invalidateQueries({ queryKey: ['gst', sourceKind, sourceId] }),
+      meta: FAIL_NOTICE,
+    }),
+    cancel: useMutation({
+      mutationFn: async ({ id, ...v }: { id: string; reason: string; remark: string }) => (await api.post<GstSourceStateDto>(`/gst/documents/${id}/cancel`, v)).data,
+      onSuccess: done,
+      meta: FAIL_NOTICE,
+    }),
+    extend: useMutation({
+      mutationFn: async ({ id, ...v }: EwayExtendInput & { id: string }) => (await api.post<GstSourceStateDto>(`/gst/documents/${id}/extend`, v)).data,
+      onSuccess: done,
+      meta: FAIL_NOTICE,
+    }),
+  };
 }

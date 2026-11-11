@@ -39,6 +39,8 @@ import { QuantityInput } from '@/components/form/inputs';
 import { Section } from '@/components/common/Section';
 import { OmBillSection } from '@/components/om/OmBillSection';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
+import { useGstSection } from '@/components/gst/GstDocumentPanel';
+import { printedIrn } from '@/components/gst/gstPrint';
 
 type StageAction = 'send' | 'certify';
 type CertifyValues = { date: dayjs.Dayjs; certificateNo?: string; qty: Record<string, number | null>; stagePct?: Record<string, number | null>; holds?: HoldLine[] };
@@ -134,6 +136,8 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
   const stageClaims = data?.stageLines.filter((l) => toNumber(l.thisPct) > 0) ?? [];
   const stageAt = data ? (['NOT_SENT', 'SENT', 'CERTIFIED', 'PAID'] as const).indexOf(data.stage) : 0;
   const withClient = approved && data?.stage !== 'NOT_SENT';
+  // An IRN is made for a bill the client has certified, so only then is it asked about.
+  const gst = useGstSection('RA_BILL', data?.id, approved && (data?.stage === 'CERTIFIED' || data?.stage === 'PAID'));
 
   const dateItem = (
     <Form.Item name="date" label={action === 'send' ? 'Date sent' : 'Certificate date'} rules={[{ required: true, message: 'Choose the date' }]}>
@@ -165,7 +169,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
             </>
           ),
           print: () => {
-            if (!openBillPrint(data, user?.organizationName ?? '')) message.warning('Pop-up blocked. Allow pop-ups to print the bill.');
+            if (!openBillPrint(data, user?.organizationName ?? '', printedIrn(gst.state))) message.warning('Pop-up blocked. Allow pop-ups to print the bill.');
           },
           notices: (
             <>
@@ -226,6 +230,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
           ]),
           sections: [
             checksSection('ra-bill', data.id, dataUpdatedAt),
+            ...(gst.section ? [gst.section] : []),
             ...(data.om ? [{ key: 'om', title: 'Operation and maintenance', children: <OmBillSection om={data.om} /> }] : []),
             ...(data.stageLines.length
               ? [{ key: 'stages', title: 'Payment stages', count: data.stageLines.filter((l) => toNumber(l.thisPct) > 0).length, children: <BillStages bill={data} editable={editable} /> }]

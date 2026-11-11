@@ -42,6 +42,23 @@ export function loginBlock(f: { emailFailures: Date[]; addressFailures: Date[]; 
   return null;
 }
 
+/** Single sign-ons one address may start in the window */
+export const SSO_STARTS_PER_ADDRESS = 60;
+
+/**
+ * Whether an address may start a single sign-on: under the cap on starts, and under the limit of failures that look
+ * like probing (a callback in a browser that did not start it, a state or code no one issued). A refusal by the
+ * provider or by the company's rules is no one guessing, so it never counts, and none of it counts against a password.
+ */
+export function ssoBlock(f: { addressFailures: Date[]; addressStarts: Date[]; now: Date }): LoginBlock | null {
+  const failed = loginBlock({ emailFailures: [], addressFailures: f.addressFailures, now: f.now });
+  if (failed) return failed;
+  const from = f.now.getTime() - LOGIN_WINDOW_MINUTES * MINUTE;
+  const starts = f.addressStarts.filter((d) => d.getTime() > from).sort((a, b) => a.getTime() - b.getTime());
+  if (starts.length >= SSO_STARTS_PER_ADDRESS) return { reason: 'ADDRESS', until: new Date(starts[starts.length - SSO_STARTS_PER_ADDRESS].getTime() + LOGIN_WINDOW_MINUTES * MINUTE) };
+  return null;
+}
+
 /** Whether one more reset link may be sent: under the hourly limit for the email and for the address. */
 export function resetAllowed(f: { emailRequests: Date[]; addressRequests: Date[]; now: Date }): boolean {
   const from = f.now.getTime() - 60 * MINUTE;

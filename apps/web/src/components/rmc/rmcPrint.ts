@@ -1,4 +1,5 @@
-import type { LetterheadDto, RmcInvoiceDto, RmcOrderDto } from '@erp/shared';
+import type { GstDocumentDto, LetterheadDto, RmcInvoiceDto, RmcOrderDto } from '@erp/shared';
+import { irnBlockHtml } from '@/components/gst/gstPrint';
 import { GST_STATES, RMC_GST_RATE, RMC_HSN } from '@erp/shared';
 import { esc, inr, metaItem, openPrintWindow, printDocHtml, signLine } from '@/components/print/printDoc';
 import { rupeesInWords } from '@/components/bills/billPrint';
@@ -60,7 +61,7 @@ export function buildRmcQuotationPrintHtml(o: RmcOrderDto, letterhead: Letterhea
  * A ready-mix tax invoice under GST: both GSTINs, the place of supply, concrete under its HSN and pumping, CGST and SGST
  * within the state or IGST across it, the total in words, and the challans it bills.
  */
-export function buildRmcInvoicePrintHtml(i: RmcInvoiceDto, letterhead: LetterheadDto): string {
+export function buildRmcInvoicePrintHtml(i: RmcInvoiceDto, letterhead: LetterheadDto, irn: GstDocumentDto | null = null): string {
   const rate = toNumber(i.quantity) > 0 ? toNumber(i.concrete) / toNumber(i.quantity) : 0;
   const pumpRate = toNumber(i.quantity) > 0 ? toNumber(i.pumping) / toNumber(i.quantity) : 0;
   const grades = [...new Set(i.challans.map((c) => c.grade))].join(', ');
@@ -72,6 +73,7 @@ export function buildRmcInvoicePrintHtml(i: RmcInvoiceDto, letterhead: Letterhea
     ${metaItem('Place of supply', esc(stateName(i.customerStateCode)))}
     ${metaItem('Order', `${esc(i.orderNo ?? '')}${i.plantAddress ? `<br/><span class="muted">Dispatched from ${esc(i.plantAddress)}</span>` : ''}`)}
   </div>
+  ${irnBlockHtml(irn)}
   <table>
     <thead><tr><th class="c">#</th><th>Description</th><th class="c">HSN</th><th class="num">Quantity</th><th class="num">Rate (₹)</th><th class="num">Taxable value (₹)</th></tr></thead>
     <tbody>
@@ -104,4 +106,4 @@ export function buildRmcInvoicePrintHtml(i: RmcInvoiceDto, letterhead: Letterhea
 }
 
 export const openRmcQuotationPrint = (o: RmcOrderDto, l: LetterheadDto) => openPrintWindow(buildRmcQuotationPrintHtml(o, l));
-export const openRmcInvoicePrint = (i: RmcInvoiceDto, l: LetterheadDto) => openPrintWindow(buildRmcInvoicePrintHtml(i, l));
+export const openRmcInvoicePrint = (i: RmcInvoiceDto, l: LetterheadDto, irn: GstDocumentDto | null = null) => openPrintWindow(buildRmcInvoicePrintHtml(i, l, irn));

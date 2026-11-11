@@ -48,6 +48,7 @@ import {
 } from '@erp/shared';
 import { todayIn } from '../notifications/time';
 import { PrismaService } from '../prisma/prisma.service';
+import { assertNoLiveGstDocument } from '../gst/gst-lock';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
@@ -769,6 +770,7 @@ export class StockService {
     const itemIds = [...new Set(row.lines.map((l) => l.itemId))];
     let before = new Map<string, Decimal>();
     await this.inLock(user.organizationId, async (tx) => {
+      if (row.type === 'TRANSFER_OUT') await assertNoLiveGstDocument(tx, user.organizationId, 'STOCK_TRANSFER', row.id);
       before = await this.balancesOf(tx, row.projectId, itemIds);
       for (const itemId of itemIds) {
         const own = row.lines.filter((l) => l.itemId === itemId).reduce((s, l) => s.add(l.quantity), ZERO);
@@ -1631,7 +1633,7 @@ export class StockService {
       ? await this.prisma.stockTxn.groupBy({ by: ['itemId', 'projectId'], where: { itemId: { in: rows.map((r) => r.id) } } })
       : [];
     return paginated(
-      rows.map((r) => ({ id: r.id, name: r.name, unit: r.unit, code: r.code, standard: r.standard, category: r.category, rate: money(r.rate), isFuel: r.isFuel, ...pipeFields(r), aliases: r.aliases, projectCount: used.filter((u) => u.itemId === r.id).length, createdAt: iso(r.createdAt) })),
+      rows.map((r) => ({ id: r.id, name: r.name, unit: r.unit, code: r.code, standard: r.standard, hsnCode: r.hsnCode, category: r.category, rate: money(r.rate), isFuel: r.isFuel, ...pipeFields(r), aliases: r.aliases, projectCount: used.filter((u) => u.itemId === r.id).length, createdAt: iso(r.createdAt) })),
       total,
       args,
     );
@@ -1678,7 +1680,7 @@ export class StockService {
     const r = await this.prisma.item.findFirst({ where: { id, organizationId: user.organizationId } });
     if (!r) throw new NotFoundException('Item not found');
     const used = await this.prisma.stockTxn.groupBy({ by: ['projectId'], where: { itemId: id } });
-    return { id: r.id, name: r.name, unit: r.unit, code: r.code, standard: r.standard, category: r.category, rate: money(r.rate), isFuel: r.isFuel, ...pipeFields(r), aliases: r.aliases, projectCount: used.length, createdAt: iso(r.createdAt) };
+    return { id: r.id, name: r.name, unit: r.unit, code: r.code, standard: r.standard, hsnCode: r.hsnCode, category: r.category, rate: money(r.rate), isFuel: r.isFuel, ...pipeFields(r), aliases: r.aliases, projectCount: used.length, createdAt: iso(r.createdAt) };
   }
 
   async createItem(user: RequestUser, dto: CreateItemDto): Promise<ItemDto> {
@@ -1686,7 +1688,7 @@ export class StockService {
     await this.assertItemUnique(user.organizationId, dto.name, dto.unit);
     const code = await this.itemCode(user.organizationId, dto.code);
     try {
-      const row = await this.prisma.item.create({ data: { organizationId: user.organizationId, name: dto.name, unit: dto.unit, code: code ?? null, standard: blank(dto.standard), category: blank(dto.category), rate: this.rate(dto.rate) ?? null, isFuel: dto.isFuel ?? false, ...this.pipeData(dto) } });
+      const row = await this.prisma.item.create({ data: { organizationId: user.organizationId, name: dto.name, unit: dto.unit, code: code ?? null, standard: blank(dto.standard), hsnCode: blank(dto.hsnCode), category: blank(dto.category), rate: this.rate(dto.rate) ?? null, isFuel: dto.isFuel ?? false, ...this.pipeData(dto) } });
       await this.audit.log(user, 'ITEM', row.id, 'CREATED', `${row.name} (${row.unit})`);
       return this.getItem(user, row.id);
     } catch (e) {
@@ -1706,7 +1708,7 @@ export class StockService {
     await this.assertItemUnique(user.organizationId, name, unit, id);
     const code = await this.itemCode(user.organizationId, dto.code, id);
     try {
-      await this.prisma.item.update({ where: { id }, data: { name, unit, ...(code !== undefined ? { code } : {}), ...(dto.standard !== undefined ? { standard: blank(dto.standard) } : {}), ...(dto.category !== undefined ? { category: blank(dto.category) } : {}), ...(dto.rate !== undefined ? { rate: this.rate(dto.rate) } : {}), ...(dto.isFuel !== undefined ? { isFuel: dto.isFuel } : {}), ...this.pipeData(dto) } });
+      await this.prisma.item.update({ where: { id }, data: { name, unit, ...(code !== undefined ? { code } : {}), ...(dto.standard !== undefined ? { standard: blank(dto.standard) } : {}), ...(dto.hsnCode !== undefined ? { hsnCode: blank(dto.hsnCode) } : {}), ...(dto.category !== undefined ? { category: blank(dto.category) } : {}), ...(dto.rate !== undefined ? { rate: this.rate(dto.rate) } : {}), ...(dto.isFuel !== undefined ? { isFuel: dto.isFuel } : {}), ...this.pipeData(dto) } });
     } catch (e) {
       if (isUniqueViolation(e)) throw new ConflictException(`${name} (${unit}) is already in the item master`);
       throw e;

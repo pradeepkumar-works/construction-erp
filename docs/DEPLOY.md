@@ -32,6 +32,7 @@ API (`apps/api`):
 | `UPLOAD_DIR` | disk mode only |
 | `CRON_SECRET` | long random string; Vercel Cron sends it as `Authorization: Bearer` to the daily notification jobs. Jobs are disabled when unset. |
 | `INTEGRATION_KEY` | long random passphrase that seals the keys and passwords saved on Admin › Connections (AES-256-GCM, item 139). Without it a connection that needs one cannot be saved; web addresses and Connectors work either way. Changing it makes the saved keys unreadable, so each has to be entered again. |
+| `GST_PROVIDER` | e-invoices (IRN and signed QR) and e-way bills, item 194. `gsp` calls NIC's e-invoice and e-way bill APIs through each company's GST provider, set up on Admin › Connections as a GST provider connection (its API addresses, GSTIN, API user and client id, and the client secret and API password sealed under `INTEGRATION_KEY`, which must be set). `fake` answers at once with stand-in numbers that are marked as such on the record and the print, and calls nothing: for CI and local work only, never production. Unset, the records say e-invoicing is not set up and nothing is called. The GSP adapter is written to NIC's published API and untested against the live IRP: try it on the GSP's sandbox first. E-way bills made without an IRN (RMC challans, stock transfers) on `gsp` sign in as the IRP does, which is not confirmed: confirm on the GSP sandbox before switching them on (see E-invoicing through a GSP below). |
 | `NOTIFICATION_TIMEZONE` | IANA zone for "today" in the DPR reminder and digest (default `Asia/Kolkata`) |
 | `MAIL_API_KEY` | email through the Cogitrex mail service (`POST https://communication.cogitrex.com/mail/send`): approval digest, user invites and password resets, supplier enquiries and approved purchase orders to vendors. The key is the sending mailbox's API key from the portal (Mailboxes → `notifications@cogitrex.com`). `EMAIL_FROM` is then the mailbox address (default `notifications@cogitrex.com`; the display name is set on the mailbox). `MAIL_API_URL` overrides the service URL. `GET /api/health` shows which provider is live in `email`: `mail-api`, `resend`, `log` (no key) or `disabled`. |
 | `RESEND_API_KEY`, `EMAIL_FROM` | email through Resend instead, used when `MAIL_API_KEY` is unset. `EMAIL_FROM` must be a verified sender/domain in Resend. With neither key nothing is emailed (the digest is logged; invite links are shown to the admin to share; "Forgot password" tells users to ask their admin). `EMAIL_PROVIDER` (`mail-api`, `resend` or `log`) picks one when both keys are set. |
@@ -57,6 +58,7 @@ API (`apps/api`):
 | `AI_EVAL_MODELS` | comma-separated models a question may name, only to compare models with `scripts/ai-eval.ts` (`AI_EVAL_MODEL=…`) without redeploying, e.g. `claude-sonnet-5-5,claude-haiku-5-5,google/gemini-3.8-flash`. Leave unset otherwise. |
 | `AI_DEFAULT_MONTHLY_CAP_INR`, `AI_DAILY_QUESTIONS`, `AI_USD_INR` | a company's monthly allowance unless its admin sets one (default 5000), questions per person per day (default 60), and the rupee rate for the cost estimate (default 88) |
 | `AI_DISABLED`, `AI_PROVIDER` | `AI_DISABLED=true` switches the assistant off everywhere (kill switch). `AI_PROVIDER=fake` uses a scripted stand-in instead of the model: for CI and local work only, never production. `AI_PROVIDER=openrouter` or `anthropic` picks the gateway when both keys are set. |
+| `SSO_CALLBACK_URL` | single sign-on (item 195, "Single sign-on" below): the API's own callback, `https://<api>/api/auth/sso/callback`, registered with Microsoft or Google as the redirect URI. Single sign-on also needs `WEB_URL` (where the browser is sent back to) and `INTEGRATION_KEY` (which seals each company's client secret). Unset = the sign-in page offers no single sign-on. `SSO_ENTRA_AUTHORITY` and `SSO_GOOGLE_ISSUER` are for tests only: they point a local API at a stand-in provider (`e2e/oidc/standin.mjs`), and are honoured only at http://localhost or 127.0.0.1 and never on a deployed API (NODE_ENV=production or Vercel). |
 | `PROTECTED_ORG_CODES` | comma-separated organisation codes that can never be deleted (default `DEMO`, the public demo company) |
 
 Web (`apps/web`): `NEXT_PUBLIC_API_URL`, e.g. `https://construction-erp-api-pradeep15.vercel.app/api`, and
@@ -66,6 +68,55 @@ their company's admin).
 Mobile (`apps/mobile`): `EXPO_PUBLIC_API_URL`, same value. For push notifications the app needs an
 EAS project id (`eas init` writes `extra.eas.projectId` into `app.json`) and a development or
 production build; Expo Go on Android cannot receive remote push.
+
+## Single sign-on
+
+A company's people can sign in with Microsoft Entra ID or Google Workspace (ARCHITECTURE "Single sign-on"). The server
+needs `SSO_CALLBACK_URL`, `WEB_URL` and `INTEGRATION_KEY`; each company then registers an app with its provider and enters
+it under Admin › Company settings › Sign-in, which shows the redirect URI to register and the company code people type.
+
+**Microsoft Entra ID.** In the Entra admin centre, App registrations › New registration: any name (say "Nirmaan"),
+Accounts in this organizational directory only (single tenant), and a Web redirect URI of `SSO_CALLBACK_URL`. From the
+app's Overview copy the Application (client) ID and the Directory (tenant) ID. Under Certificates & secrets add a client
+secret and copy its Value (shown once; note when it expires and enter a new one before then). API permissions keeps the
+default delegated `openid`, `email` and `profile` (User.Read is not needed). Under Token configuration › Add optional
+claim › ID, add `xms_edov` (the directory says it verified the email), `acct` (member or guest) and `email`. Entra's
+email can be typed by anyone who edits a profile, so a person's first sign-in is linked only by an email the directory
+verified (`xms_edov` true) or by a member's sign-in name (`acct` 0), whose domain the directory owns; without these
+claims a first sign-in is refused ("does not vouch for your account's email"), and a guest of the directory is never
+linked. Nirmaan accepts only tokens of that directory: the tenant id in the token must be the one entered, and once
+linked a person is known by their directory object id, so a renamed mailbox stays the same person.
+
+**Google Workspace.** In Google Cloud console, for a project of the Workspace: OAuth consent screen › Internal (only the
+Workspace's accounts), then Credentials › Create credentials › OAuth client ID › Web application, with an Authorized
+redirect URI of `SSO_CALLBACK_URL`. Copy the client ID and secret. Enter the Workspace's domains in Email domains: a
+token's `hd` must be one of them and its email verified, so a personal Gmail account is refused.
+
+Then, on Sign-in: sign in once through Use single sign-on, and only then turn on Require single sign-on. Requiring it
+refuses website passwords for the company's people and ends the website sessions they opened with one; platform admins
+on `PLATFORM_ADMIN_EMAILS`, client guests and supplier logins keep their passwords. The phone app has no single sign-on
+yet, so until it does Require single sign-on is a rule for the website: a password still works through the phone app.
+New people are invited by a link to the company's sign-in (no password), and Forgot password sends nothing for them. To
+move to another provider, directory, client ID or secret, turn Require off first, change it, sign in through it, then
+require it again. Add new people gives someone from the domains with no sign-in yet a place in the chosen role at their
+first sign-in.
+
+## E-invoicing through a GSP
+
+`GST_PROVIDER=gsp` goes live for a company only after its operator has passed these gates on the GSP's sandbox, with
+the sandbox addresses on the company's GST provider connection (Admin › Connections):
+
+1. **IRN.** Generate one on a certified RA bill and on an RMC bill, print both, and cancel one within the day. The
+   connection's health turns green and the IRN, ack and QR match the sandbox portal.
+2. **No answer.** With the sandbox address pointed at nothing, Generate answers "The IRP did not answer. Try again in a
+   minute." and the bill stays locked; with the address put back, Generate again after a minute fills the same row.
+3. **E-way bills without an IRN: confirm on the GSP sandbox.** An RMC challan's or a stock transfer's e-way bill signs
+   in as the IRP does (`/eivital/v1.04/auth`, then `/ewaybillapi/v1.03/ewayapi`). Not every GSP passes e-way bill calls
+   through that sign-in; if the sandbox refuses it, do not make e-way bills through Nirmaan on `gsp` for that GSP until
+   it has an adapter of its own, and make them on the e-way bill portal.
+4. **Extend and cancel.** Extend an e-way bill near its end and cancel one, on the sandbox.
+
+Untested against the live IRP: written to NIC's published API (e-invoice v1.03/v1.04, e-way bill v1.03).
 
 ## WhatsApp and SMS
 

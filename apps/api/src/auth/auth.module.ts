@@ -6,6 +6,8 @@ import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
 import { PasswordLinksService } from './password-links.service';
 import { LoginGuardService } from './login-guard.service';
+import { SsoService } from './sso.service';
+import { SsoController, SsoSettingsController } from './sso.controller';
 import { jwtSecret } from '../common/jwt-secret';
 
 @Module({
@@ -18,8 +20,8 @@ import { jwtSecret } from '../common/jwt-secret';
       }),
     }),
   ],
-  controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, PasswordLinksService, LoginGuardService],
+  controllers: [SsoController, AuthController, SsoSettingsController],
+  providers: [AuthService, JwtStrategy, PasswordLinksService, LoginGuardService, SsoService],
   exports: [AuthService, PasswordLinksService],
 })
 export class AuthModule {}

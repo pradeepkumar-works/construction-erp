@@ -59,6 +59,9 @@ importers:
       class-validator:
         specifier: ^0.15.1
         version: 0.15.1
+      jose:
+        specifier: ^5.10.0
+        version: 5.10.0
       multer:
         specifier: ^2.0.2
         version: 2.4.0
@@ -274,6 +277,9 @@ importers:
       '@geoman-io/leaflet-geoman-free':
         specifier: 2.20.3
         version: 2.20.3(leaflet@1.9.4)
+      '@rc-component/qrcode':
+        specifier: 2.0.0
+        version: 2.0.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@tanstack/react-query':
         specifier: ^5.104.2
         version: 5.104.2(react@19.2.3)

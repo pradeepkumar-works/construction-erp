@@ -6,7 +6,7 @@
  *   node dist/scripts/login-guard-test.js
  */
 import assert from 'node:assert/strict';
-import { ADDRESS_FAILURES, blockMessage, LOCK_AFTER_FAILURES, loginBlock, resetAllowed } from '../auth/login-guard-rules';
+import { ADDRESS_FAILURES, blockMessage, LOCK_AFTER_FAILURES, loginBlock, resetAllowed, SSO_STARTS_PER_ADDRESS, ssoBlock } from '../auth/login-guard-rules';
 import { jwtSecret, jwtSecretProblem } from '../common/jwt-secret';
 
 const tests: [string, () => void][] = [];
@@ -54,6 +54,19 @@ test('the refusal says when to try again and how to get back in', () => {
   const at = () => '3:45 pm';
   assert.match(blockMessage({ reason: 'ACCOUNT', until: now }, at), /Try again after 3:45 pm, or reset your password/);
   assert.match(blockMessage({ reason: 'ADDRESS', until: now }, at), /from this network\. Try again after 3:45 pm/);
+});
+
+test('single sign-on: an address is held off by its probing failures or by too many starts, never by a password', () => {
+  assert.equal(ssoBlock({ addressFailures: times(ADDRESS_FAILURES - 1, 10, 0.2), addressStarts: times(SSO_STARTS_PER_ADDRESS - 1, 10, 0.1), now }), null);
+  assert.equal(ssoBlock({ addressFailures: times(ADDRESS_FAILURES, 10, 0.2), addressStarts: [], now })?.reason, 'ADDRESS');
+  const starts = times(SSO_STARTS_PER_ADDRESS, 12, 0.1);
+  const b = ssoBlock({ addressFailures: [], addressStarts: starts, now });
+  assert.equal(b?.reason, 'ADDRESS');
+  assert.equal(b?.until.getTime(), ago(12).getTime() + 15 * 60_000, 'until the oldest start in the window ages out');
+  assert.equal(ssoBlock({ addressFailures: [], addressStarts: times(SSO_STARTS_PER_ADDRESS, 30, 0.1), now }), null, 'old starts do not count');
+  // An office whose people's single sign-ons were refused by the provider counts nothing toward a password:
+  // the password check reads only failed passwords (LOGIN_FAILED), as loginBlock is given them.
+  assert.equal(loginBlock({ emailFailures: [], addressFailures: [], now }), null);
 });
 
 test('a deployed API will not sign tokens with the secret in the repository', () => {

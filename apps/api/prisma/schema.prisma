@@ -619,6 +619,8 @@ enum IntegrationKind {
   WEIGHBRIDGE
   /// A batching plant's controller, its batch reports read from their folder by the Connector
   BATCHING_PLANT
+  /// The company's GST Suvidha Provider: Nirmaan asks NIC's IRP and e-way bill system through it (GST_PROVIDER=gsp)
+  GST_GSP
 }
 
 enum IntegrationDirection {
@@ -779,8 +781,9 @@ model Login {
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
-  users       User[]
-  groupAdmins GroupAdmin[]
+  users         User[]
+  groupAdmins   GroupAdmin[]
+  ssoIdentities SsoIdentity[]
 }
 
 model Organization {
@@ -879,6 +882,10 @@ model Organization {
   tan                      String?
   cin                      String?
   gstin                    String?
+  /// GST e-invoicing: the SAC of the company's works bills (995421 and the like), which an RA bill may override, and the
+  /// day its turnover put it under e-invoicing (null = not under it); see ARCHITECTURE "E-invoices and e-way bills"
+  gstSac                   String?
+  einvoiceFrom             DateTime?          @db.Date
 
   users                 User[]
   roles                 Role[]
@@ -1056,6 +1063,7 @@ model Organization {
   reportSchedules       ReportSchedule[]
   depreciationLines     DepreciationLine[]
   sisterLinks           SisterLink[]
+  gstDocuments          GstDocument[]
   namedAsSister         SisterLink[]               @relation("SisterLinkSister")
   loanEmis              LoanEmi[]
   sorBooks              SorBook[]
@@ -1117,6 +1125,9 @@ model Organization {
   cashSnapshots         CashForecastSnapshot[]
   hindranceChecks       HindranceCheck[]
   employeeDocuments     EmployeeDocument[]
+  sso                   OrganizationSso?
+  ssoIdentities         SsoIdentity[]
+  ssoTickets            SsoTicket[]
 }
 
 model Role {
@@ -1479,6 +1490,7 @@ model User {
   tdsReturnsReopened      TdsReturn[]                @relation("TdsReturnReopener")
   tdsCertificatesAdded    TdsCertificate[]           @relation("TdsCertificateMaker")
   sisterLinksMade         SisterLink[]               @relation("SisterLinkMaker")
+  gstDocumentsMade        GstDocument[]              @relation("GstDocumentMaker")
   loanEmisPaid            LoanEmi[]                  @relation("LoanEmiPayer")
   sorBooksCreated         SorBook[]                  @relation("SorBookCreator")
   scEnquiriesCreated      SubcontractEnquiry[]       @relation("ScEnquiryCreator")
@@ -3381,6 +3393,8 @@ model Item {
   code           String?
   /// The standard or specification it is bought to (IS 8329, IS 1786 Fe 550D)
   standard       String?
+  /// Its HSN code, for e-way bills of stock moving between the company's places
+  hsnCode        String?
   category       String?
   /// Standard rate per unit; values issues in the project cost view
   rate           Decimal?      @db.Decimal(18, 2)
@@ -4019,6 +4033,8 @@ model RaBill {
   grossUpto               Decimal          @db.Decimal(18, 2)
   gstRate                 Decimal          @db.Decimal(5, 2)
   gstAmount               Decimal          @db.Decimal(18, 2)
+  /// The SAC the bill's e-invoice reports, when not the company's (Organization.gstSac)
+  sacCode                 String?
   // Contract percentages taken when the bill was prepared, and the deductions they give
   retentionPct            Decimal          @db.Decimal(5, 2)
   securityDepositPct      Decimal          @db.Decimal(5, 2)
@@ -10586,4 +10602,146 @@ model SisterLink {
   @@unique([organizationId, vendorId])
   @@unique([organizationId, clientId])
   @@index([sisterId])
+}
+
+/// Single sign-on (item 195, ARCHITECTURE "Single sign-on"): SSO_PROVIDERS in @erp/shared
+enum SsoProvider {
+  ENTRA
+  GOOGLE
+}
+
+/// A company's single sign-on with Microsoft Entra ID or Google Workspace. No row: its people sign in with passwords.
+model OrganizationSso {
+  id              String       @id @default(uuid())
+  organizationId  String       @unique
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  provider        SsoProvider
+  /// Entra: the directory (tenant) id; a token from any other directory is refused. Null for Google.
+  tenantId        String?
+  clientId        String
+  /// The client secret, sealed under INTEGRATION_KEY (`sealSecret`); never sent to the web
+  clientSecretEnc String
+  secretLast4     String
+  /// Lower-case email domains whose people sign in this way (Google: the Workspace `hd` must be one)
+  allowedDomains  String[]
+  /// Passwords are refused for the company's people, platform admins and supplier logins aside (`ssoEnforced`)
+  enforce         Boolean      @default(false)
+  /// Someone from an allowed domain with no sign-in anywhere is added on first sign-in, in `newPersonRole`
+  addNewPeople    Boolean      @default(false)
+  /// A role key of SSO_NEW_PERSON_ROLES
+  newPersonRole   String?
+  updatedById     String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}
+
+/// A person's account at the company's provider, linked once to their Login: issuer and subject (Entra tid:oid, Google
+/// sub). Later sign-ins match only by it, never by email.
+model SsoIdentity {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  loginId        String
+  login          Login        @relation(fields: [loginId], references: [id])
+  issuer         String
+  subject        String
+  /// The email the provider gave when it was linked
+  email          String?
+  lastUsedAt     DateTime     @default(now())
+  createdAt      DateTime     @default(now())
+
+  @@unique([organizationId, issuer, subject])
+  @@unique([organizationId, loginId, issuer])
+}
+
+enum SsoTicketKind {
+  /// A sign-in on its way to the provider: the hash of its state (the PKCE verifier and nonce are derived from it)
+  STATE
+  /// A finished sign-in waiting for the web to exchange it for a session (`userId`)
+  CODE
+}
+
+/// One-use steps of a single sign-on, kept only as the sha256 of their secret. Read outside the tenant: the person is not
+/// signed in yet. Rows over a day old are removed as new ones come in.
+model SsoTicket {
+  id             String        @id @default(uuid())
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+  kind           SsoTicketKind
+  hash           String        @unique
+  userId         String?
+  /// SHA-256 of the value the starting browser tab keeps (`bindingHash`): the code is exchanged only with it
+  binding        String?
+  expiresAt      DateTime
+  usedAt         DateTime?
+  createdAt      DateTime      @default(now())
+
+  @@index([createdAt])
+}
+
+/// GST e-invoicing and e-way bills: an IRN for an invoice, or an e-way bill for goods on the road.
+enum GstDocumentKind {
+  IRN
+  EWB
+}
+
+enum GstDocumentStatus {
+  /// Sent to the provider, its answer not kept yet (a retry asks again; the IRP's duplicate answer fills it)
+  PENDING
+  ACTIVE
+  CANCELLED
+  /// The provider refused it; kept as the log, never live
+  FAILED
+}
+
+/// The record an IRN or e-way bill is for.
+enum GstSourceKind {
+  RA_BILL
+  RMC_INVOICE
+  RMC_BATCH
+  STOCK_TRANSFER
+}
+
+/// One request to the IRP or the e-way bill system and what came of it (ARCHITECTURE "E-invoices and e-way bills").
+/// A record has at most one PENDING or ACTIVE document of a kind (a partial unique index); the IRN, ack, QR and e-way
+/// bill number live only here.
+model GstDocument {
+  id             String            @id @default(uuid())
+  organizationId String
+  organization   Organization      @relation(fields: [organizationId], references: [id])
+  kind           GstDocumentKind
+  sourceKind     GstSourceKind
+  sourceId       String
+  /// The invoice or challan number sent
+  docNo          String
+  /// The JSON sent, and the sha256 of its canonical form: the same payload is made once
+  payload        Json
+  payloadHash    String
+  status         GstDocumentStatus @default(PENDING)
+  /// FAKE or GSP
+  provider       String
+  /// The IRN, or the e-way bill number
+  number         String?
+  ackNo          String?
+  /// When the IRP acknowledged it, or the e-way bill was made
+  ackAt          DateTime?
+  /// E-way bill: when it runs out
+  validUntil     DateTime?
+  /// The IRP's signed QR (a JWT), printed as the bill's QR code
+  signedQr       String?
+  vehicleNo      String?
+  distanceKm     Int?
+  extensions     Int               @default(0)
+  error          String?
+  /// The provider's answer, cut to about 8 KB
+  response       Json?
+  cancelledAt    DateTime?
+  cancelReason   String?
+  cancelRemark   String?
+  createdById    String
+  createdBy      User              @relation("GstDocumentMaker", fields: [createdById], references: [id])
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@index([organizationId, sourceKind, sourceId])
 }

@@ -23,6 +23,8 @@ export class PlatformService {
 
   private assertStaff(user: RequestUser) {
     if (user.support || !isPlatformAdmin(user.email)) throw new ForbiddenException('Only platform admins can use this');
+    // Staff sign in to the console with their own password, never through a company's directory or the phone.
+    if (user.ssoOrg || user.phone) throw new ForbiddenException('Sign in with your email and password on the website to use the platform console');
   }
 
   async companies(user: RequestUser): Promise<PlatformCompanyDto[]> {

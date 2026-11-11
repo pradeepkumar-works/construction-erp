@@ -471,6 +471,15 @@ and the pre-delivery checklist.
   `CustomFieldsService.read` inside the entity's own `create` / `update` (an order's required ones there on Save and
   submit, before any write, and by `assertComplete` in `submitOrder`), never a check of a form's own. A new kind of record is a `CUSTOM_FIELD_ENTITIES` key (`@erp/shared/custom-fields.ts`,
   where the DPR's field kinds and `readExtra` live too). Keep `src/scripts/custom-fields-test.ts` passing.
+- E-invoices and e-way bills (item 194, `apps/api/src/gst`, ARCHITECTURE "E-invoices and e-way bills"): a payload is only
+  `einvoicePayload` / `ewayPayload`, what blocks one only `einvoiceProblems` / `ewayProblems` / `ewayTransportProblems`,
+  whether one is due only `einvoiceNeeded` / `ewayNeeded`, validity only `ewayValidUntil` and the windows only
+  `cancelWindowProblem` / `ewayExtendProblem` (`@erp/shared/einvoice.ts`); an IRN or e-way bill is a `GstDocument` made
+  only through `EinvoiceService.generate` (one live per source, the same payload hash returns it) over a `GstProvider`
+  (`GST_PROVIDER=fake` in CI and local work, never a real GSP or the IRP from tests), and a source with a live one is
+  locked only by `assertNoLiveGstDocument`. Records show it through `GstDocumentPanel`, papers through `irnBlockHtml`.
+  A PENDING row is re-sent only when older than the provider's `answerWithinMs`, with its stored payload, and no answer
+  leaves it PENDING and locked. Keep `src/scripts/einvoice-test.ts` and `src/scripts/einvoice-race-test.ts` passing.
 - Reports you build (item 196, `apps/api/src/report-builder`, ARCHITECTURE "Reports you build"): a source is a
   `REPORT_SOURCES` key with its column catalogue (`@erp/shared/report-builder.ts`; a column a role may not see names its
   helper, custom fields join as `cf:<key>`), a definition is read only by `readDefinition` against `catalogueFor(role, …)`,
@@ -577,6 +586,15 @@ and the pre-delivery checklist.
 - Security (ARCHITECTURE "Signing in and headers"): sign-in and reset requests go through `LoginGuardService` (rules in
   `auth/login-guard-rules.ts`, keep `src/scripts/login-guard-test.ts` passing); a password change sets `Login.tokensValidAfter`.
   The web's CSP is in `next.config.ts`: a page that loads from a new outside service adds it there.
+- Single sign-on (item 195, `apps/api/src/auth/sso.service.ts`, ARCHITECTURE "Single sign-on"): an ID token is accepted
+  only by `jose` (`verifyOptions`) and `claimsProblem`, a person found only by `matchLogin` (linked once by issuer and
+  subject, by a vouched-for email only the first time, never a guest or a platform admin), and every session goes through
+  `AuthService.issue` with its `SessionProof`, where `proofAccepted` (`auth/sso-rules.ts`) refuses a website password for
+  a company that requires SSO (`ssoEnforced`: platform admins and guests aside; the phone by `phoneMayUsePassword`) and
+  another company's SSO that is not `sameSignIn`, and `sessionStands` ends open sessions on each request; never a session
+  signed anywhere else. State and codes are stored only hashed, the code bound to the starting tab (`bindingHash`), the
+  client secret only sealed under `INTEGRATION_KEY`, and the session reaches the web only through `POST /auth/sso/exchange`.
+  Tests point at the stand-in `e2e/oidc/standin.mjs`, never a real provider. Keep `src/scripts/sso-test.ts` passing.
 - Input checks (ARCHITECTURE "Measurement book", Other input checks): a quantity field is `@IsQuantity()` (`src/common/quantity.ts`),
   a day's record calls `assertNotAfterToday`, and a web date field is `DatePicker` from `components/common/DatePicker` (it reads
   typed dates in the common formats; ESLint refuses antd's). Keep `src/scripts/validation-test.ts` passing.

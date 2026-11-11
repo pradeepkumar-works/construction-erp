@@ -188,6 +188,8 @@ export const canViewAuditLog = (role: RoleKey) => role === 'ADMIN';
 export const canManageCompanyData = (role: RoleKey) => role === 'ADMIN';
 /** Add, change and archive the company's own fields on vendors, projects and orders (Company settings › Fields). */
 export const canManageCustomFields = (role: RoleKey) => role === 'ADMIN';
+/** Single sign-on settings (Company settings › Sign-in): admins only. */
+export const canManageSso = (role: RoleKey) => role === 'ADMIN';
 /** See and pay for the company's subscription: admins only. */
 export const canManageBilling = (role: RoleKey) => role === 'ADMIN';
 /** Changing or deleting a view someone else shared with the company (owners always can). */
@@ -344,6 +346,10 @@ export const TALLY_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'ACCOUNTS_MANAGER'
 export const canExportTally = (role: RoleKey) => TALLY_ROLES.includes(role);
 /** See the GST registers (outward supplies and input tax): those who keep the books. */
 export const canViewGstRegisters = (role: RoleKey) => TALLY_ROLES.includes(role);
+/** Make and cancel a bill's e-invoice (its IRN and QR) with the IRP: those who keep the books. */
+export const canFileEinvoice = (role: RoleKey) => TALLY_ROLES.includes(role);
+/** Make, extend and cancel an e-way bill for goods leaving a plant or store: the books, and those who keep the stock. */
+export const canMakeEwayBill = (role: RoleKey) => TALLY_ROLES.includes(role) || STOCK_KEEPER_ROLES.includes(role);
 /** The books: accounts keep them and make vouchers; management approves what accounts makes by hand. */
 export const canKeepBooks = (role: RoleKey) => TALLY_ROLES.includes(role);
 export const canApproveVouchers = (role: RoleKey) => role === 'ADMIN' || role === 'MANAGEMENT';

@@ -116,7 +116,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
-    const res = await request<LoginResponse>('/auth/login', { method: 'POST', body: { email: email.trim(), password } });
+    // 'phone': the session is the phone app's, which keeps passwords where a company requires single sign-on on the website.
+    const res = await request<LoginResponse>('/auth/login', { method: 'POST', body: { email: email.trim(), password, client: 'phone' } });
     // Client and consultant guests, and suppliers, only have their portals on the web.
     if (isSupplier(res.user.roleKey)) throw new Error('Supplier accounts use the supplier portal on the web.');
     if (isGuest(res.user.roleKey)) throw new Error('Client and consultant accounts use the client portal on the web.');

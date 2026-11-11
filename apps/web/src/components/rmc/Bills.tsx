@@ -8,7 +8,10 @@ import { openRmcInvoicePrint } from './rmcPrint';
 import type { RmcInvoiceDto, RmcReceiptDto } from '@erp/shared';
 import { PAYMENT_MODE_LABELS, canBillRmc, type PaymentMode } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
-import { useRmcAction, useRmcInvoices, useRmcReceipts } from '@/lib/queries';
+import { useGstSource, useRmcAction, useRmcInvoices, useRmcReceipts } from '@/lib/queries';
+import { GstDocumentPanel } from '@/components/gst/GstDocumentPanel';
+import { printedIrn } from '@/components/gst/gstPrint';
+import { Section } from '@/components/common/Section';
 import { errorMessage } from '@/lib/api';
 import { formatDate, NO_VALUE } from '@/lib/format';
 import { tk } from '@/ds';
@@ -29,6 +32,7 @@ function InvoiceDrawer({ invoice, onClose, onReceive }: { invoice: RmcInvoiceDto
   const act = useRmcAction<RmcInvoiceDto>();
   const print = usePrintPaper();
   const i = invoice;
+  const gst = useGstSource('RMC_INVOICE', i?.id, !!i);
   return (
     <Drawer
       open={!!i}
@@ -38,7 +42,7 @@ function InvoiceDrawer({ invoice, onClose, onReceive }: { invoice: RmcInvoiceDto
       extra={
         i ? (
           <Space wrap>
-            <Button size="small" icon={<PrinterOutlined />} onClick={() => print((l) => openRmcInvoicePrint(i, l))}>
+            <Button size="small" icon={<PrinterOutlined />} onClick={() => print((l) => openRmcInvoicePrint(i, l, printedIrn(gst.data)))}>
               Print invoice
             </Button>
             {i.canReceive && (
@@ -90,6 +94,11 @@ function InvoiceDrawer({ invoice, onClose, onReceive }: { invoice: RmcInvoiceDto
               { key: 'due', label: 'Due', children: <Money paise value={i.due} /> },
             ]}
           />
+          {gst.data && gst.data.sourceId === i.id ? (
+            <Section title="E-invoice" style={{ marginTop: tk.space[4] }}>
+              <GstDocumentPanel sourceKind="RMC_INVOICE" sourceId={i.id} state={gst.data} />
+            </Section>
+          ) : null}
           <Typography.Title level={2} style={{ fontSize: tk.type.lead.fontSize, marginTop: tk.space[4] }}>
             Challans
           </Typography.Title>
