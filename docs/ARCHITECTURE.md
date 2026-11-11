@@ -94,6 +94,70 @@ shapes of every API response, so web, mobile and API agree on one contract.
   and Google Fonts for printouts, `frame-ancestors 'none'`, `X-Frame-Options: DENY`, `nosniff` and HSTS. A new outside
   service a page loads from is a line in that CSP.
 
+### Single sign-on (item 195)
+
+A company's people sign in to the website with Microsoft Entra ID or Google Workspace (OpenID Connect). **The phone app
+has no single sign-on yet, so until it does, Require single sign-on is a rule for the website: a password still works
+through the phone path** (`phoneMayUsePassword` in `auth/sso-rules.ts`, one line to change if the phone is to refuse
+too).
+
+- **Data.** `OrganizationSso` (one per company, no row = passwords): `provider` ENTRA or GOOGLE, Entra's `tenantId`,
+  `clientId`, the client secret sealed under `INTEGRATION_KEY` (`sealSecret`, never sent to the web, which sees
+  `secretLast4`), `allowedDomains`, `enforce`, `addNewPeople` and `newPersonRole` (`SSO_NEW_PERSON_ROLES`: staff, never
+  an admin, supplier or guest). `SsoIdentity` links a person's account at the provider to their `Login` once, by issuer
+  and subject, per company. `SsoTicket` holds the one-use steps (STATE, CODE) only as sha256, with the hash of the
+  starting tab's value (`binding`). All three are tenant tables read outside the tenant while nobody is signed in yet;
+  tickets stay out of the company export.
+- **Flow** (`auth/sso.service.ts`, rules pure in `auth/sso-rules.ts`). Sign in › Use single sign-on › company code
+  (`GET /auth/sso/:orgCode` names the provider) › Sign in with Microsoft or Google: the page makes a random value `b`,
+  keeps it in the tab's sessionStorage and goes to `GET /auth/sso/:orgCode/start?b=…` (no `b`, no sign-in). Start keeps
+  a random state, hashed, with `bindingHash(b)`; the PKCE verifier and the nonce are HMACs of the state under a key
+  derived by HKDF from the server's (`flowKey`, `flowSecrets`), so neither is stored. The state also goes in an HttpOnly
+  SameSite=Lax cookie on `/api/auth/sso`, so the provider's answer is taken only in the browser that started. The
+  provider answers at `SSO_CALLBACK_URL` (`GET /auth/sso/callback`): the state is used once, the code redeemed with the
+  verifier and the secret, and the ID token verified with `jose` (`verifyOptions`: RS256 against the provider's JWKS
+  from discovery, `aud`, `iss`, and `exp`, `iat` and `nonce` required) and `claimsProblem` (issuer, nonce, `azp` when
+  there are several audiences, Entra `tid` the company's, Google `email_verified` and `hd` in the domains). The browser
+  goes back to `/login/sso#code=…`, a one-time code (a minute, once) bound to the same `b`: the page exchanges it only
+  when its tab holds a `b` (and forgets it), and `POST /auth/sso/exchange { code, b }` compares the hashes in constant
+  time and leaves the code unused on a mismatch, so a code made in someone else's browser (a login CSRF) signs no one
+  in. The web and the API may be on different sites, so no cookie carries `b`. The session token never travels in a URL;
+  the CSP needs nothing new, as start is a navigation. Failures go to `/login/sso#error=<SSO_PROBLEMS key>`.
+- **Counting.** Only what looks like probing counts in `AuthAttempt` (`SSO_FAILED`, against the address): a callback in
+  a browser that did not start it, a state or code no one issued. A refusal by the provider (the person cancelled), a
+  discovery or token failure (the company's settings) and the company's own rules count nothing, so one office's
+  mistakes never hold it off. Starts are capped per address (`SSO_STARTED`, `ssoBlock` in `login-guard-rules.ts`), and
+  none of it counts toward the password check.
+- **Providers.** The real ones, over https only (`endpointAllowed`). `SSO_ENTRA_AUTHORITY` and `SSO_GOOGLE_ISSUER` point
+  a local run at the tests' stand-in (`e2e/oidc/standin.mjs`) and are honoured only at http://localhost or 127.0.0.1 and
+  never on a deployed API (`providerBasesFrom`, the same `isDeployed` as `JWT_SECRET`).
+- **Who.** `matchLogin`: a linked identity is its Login (Entra `tid:oid`, Google `sub`), whatever the email says now.
+  A first sign-in is matched only by an email the provider vouches for: Google's verified email; for Entra, the email
+  when the directory says it verified it (the optional claim `xms_edov`), else a member's `preferred_username` (`acct`
+  0, no `#EXT#`), whose domain the directory owns; a directory guest is never linked (`linkProblem`). It links the Login
+  with that email if it has an active place in the company and no identity of this issuer there (audited as
+  `SSO_LINKED`); someone with no Login anywhere is added only when the company adds new people (a random unusable
+  password hash, the chosen role, audited as `SSO_PERSON_ADDED`). A Login only another company has is never attached,
+  and a platform admin's email (`PLATFORM_ADMIN_EMAILS`) is never linked or added: staff sign in with their password,
+  and the platform console takes only a website password session.
+- **Requiring it.** Every session names its proof (`SessionProof`: a website password, a phone password or a company's
+  SSO; the JWT says `sso`, the proving company, or `ph`) and `AuthService.issue` is the one gate (`proofAccepted`).
+  Another company's SSO stands only for the same sign-in (`sameSignIn`: the same Entra directory, or Google domains the
+  other takes all of), whether or not this company requires it, so a sister's admin, who runs that directory, never
+  speaks for someone here. A company whose `ssoEnforced` holds (it requires SSO and the person is no platform admin and
+  no guest: client guests and supplier logins keep their passwords) takes no website password: sign-in skips those
+  companies (`passwordRefused`, `pickPlace` over the rest), always compares the password, and answers every refusal in
+  the same words (`PASSWORD_REFUSED`), naming no company. Sessions opened with a website password end on the next
+  request once the company requires SSO (`sessionStands` in `jwt.strategy.ts`); the phone app's sessions (`client:
+  'phone'` on `POST /auth/login`) stand, and the website will not take one. An invite there is a single sign-on invite
+  (`/login?sso=1&code=…`, no password), an older password link says to use single sign-on, and Forgot password goes to a
+  place that takes a password (none, none sent). Turning it on needs the admin's own session to have come through it
+  (`mayRequire`, platform admins aside), and with it on, a new provider, directory, client ID or secret is refused until
+  it is turned off (`ssoSaveProblem`), so nobody shuts every admin out.
+- **Settings.** Company settings › Sign-in (`canManageSso`, admins): `GET/PUT/DELETE /sso-settings`, checked by
+  `ssoSettingsProblem` and `ssoSaveProblem`; `SSO_CHANGED` records whether it is required and what moved. Server settings
+  in `auth/sso-config.ts`. Rules tested in `src/scripts/sso-test.ts`; the flow in `e2e/tests/sso.spec.ts`.
+
 ## One approval workflow
 
 `SubmissionLifecycleService` owns the state machine used by progress entries, DPRs, material

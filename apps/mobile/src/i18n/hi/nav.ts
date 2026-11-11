@@ -371,7 +371,7 @@ export const NAV: Record<string, string> = {
   'Mark modules as new or featured, and answer requests for access.': 'मॉड्यूल को नया या ख़ास चिह्नित करें, और एक्सेस के अनुरोधों का जवाब दें।',
   'Data and privacy': 'डेटा और गोपनीयता',
   'Company settings': 'कंपनी सेटिंग्स',
-  'Letterhead details, the logo, how each kind of document is numbered and your own fields on vendors, projects and orders.': 'लेटरहेड का ब्योरा, लोगो, हर तरह के दस्तावेज़ की नंबरिंग, और वेंडर, प्रोजेक्ट व ऑर्डर पर आपके अपने फ़ील्ड।',
+  'Letterhead details, the logo, how each kind of document is numbered, your own fields on vendors, projects and orders, and how people sign in.': 'लेटरहेड का ब्योरा, लोगो, हर तरह के दस्तावेज़ की नंबरिंग, वेंडर, प्रोजेक्ट व ऑर्डर पर आपके अपने फ़ील्ड, और लोग कैसे साइन इन करते हैं।',
   'Audit log': 'ऑडिट लॉग',
   'Who did what and when, across every module, to search and export.': 'किसने क्या और कब किया, हर मॉड्यूल में, खोजने और एक्सपोर्ट करने के लिए।',
   'Group companies': 'समूह की कंपनियाँ',

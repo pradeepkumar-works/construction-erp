@@ -9,6 +9,7 @@ import { RequestUser } from '../common/current-user';
 import { billingConfig, billingState } from '../common/billing';
 import { jwtSecret } from '../common/jwt-secret';
 import { todayIn } from '../notifications/time';
+import { proofOfClaims, sessionStands } from './sso-rules';
 
 export interface JwtPayload {
   sub: string;
@@ -16,6 +17,10 @@ export interface JwtPayload {
   /** A read-only support session: sub is the Nirmaan staff member, org the company they are looking at */
   sup?: boolean;
   exp?: number;
+  /** Signed in through this company's single sign-on (ARCHITECTURE "Single sign-on"); absent for a password */
+  sso?: string;
+  /** Signed in with a password on the phone app (`client: 'phone'`) */
+  ph?: 1;
   /** Issued at (seconds), set by the signer */
   iat?: number;
 }
@@ -44,7 +49,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         seesAllProjects: true,
         login: { select: { tokensValidAfter: true } },
         role: { select: { key: true } },
-        organization: { select: { code: true, trialEndsAt: true, paidUntil: true, modulesOff: true, moduleTier: true } },
+        organization: { select: { code: true, trialEndsAt: true, paidUntil: true, modulesOff: true, moduleTier: true, sso: { select: { enforce: true } } } },
       },
     });
     if (!user) throw new UnauthorizedException();
@@ -52,6 +57,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const validAfter = user.login.tokensValidAfter;
     if (validAfter && payload.iat !== undefined && payload.iat < Math.floor(validAfter.getTime() / 1000))
       throw new UnauthorizedException('Your password was changed. Sign in again.');
+    // A company that has come to require single sign-on ends the website password sessions it requires it of.
+    const proof = proofOfClaims(payload);
+    if (!sessionStands(user.organization.sso, { platformAdmin: isPlatformAdmin(user.email), roleKey: user.role.key }, proof))
+      throw new UnauthorizedException('Your company now signs in with single sign-on. Sign in again with "Use single sign-on".');
     // A supplier's login acts only for its vendor; one without a vendor cannot act at all.
     if (user.role.key === 'SUPPLIER' && !user.vendorId) throw new UnauthorizedException();
     setTenant(user.organizationId);
@@ -68,6 +77,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       ...(user.vendorId ? { vendorId: user.vendorId } : {}),
       ...(readOnly ? { billingReadOnly: true } : {}),
       ...(off.length ? { modulesOff: off } : {}),
+      ...(proof.kind === 'SSO' ? { ssoOrg: proof.organizationId } : proof.kind === 'PHONE' ? { phone: true as const } : {}),
     };
   }
 

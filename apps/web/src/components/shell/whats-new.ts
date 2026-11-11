@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-single-sign-on',
+    date: '2026-11-18',
+    title: 'Sign in with Microsoft or Google',
+    points: [
+      'A company can now sign its people in with their Microsoft Entra ID or Google Workspace work account. On the sign-in page, choose Use single sign-on and enter the company code.',
+      'Admins set it up under Admin › Company settings › Sign-in: the provider, the client ID and secret from its app registration, and the email domains that sign in this way. The page shows the redirect URI to register.',
+      'Turn on Add new people and someone from your domains gets a place in the role you choose at their first sign-in. Otherwise an admin adds each person first, as now.',
+      'Require single sign-on stops passwords on the website for the company’s people once you have signed in through it yourself, and ends the sessions they opened with one. Client guests and supplier logins keep their passwords. The phone app has no single sign-on yet, so it still takes a password.',
+    ],
+  },
+  {
     id: '2026-11-einvoices',
     date: '2026-11-15',
     title: 'E-invoices and e-way bills from the record',

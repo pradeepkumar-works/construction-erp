@@ -13,35 +13,96 @@ import { todayIn } from '../notifications/time';
 import { aiConfigured } from '../ai/ai.config';
 import { PasswordLinksService } from './password-links.service';
 import { LoginGuardService } from './login-guard.service';
+import { ssoServerProblem } from './sso-config';
 import { SignupDto } from './auth.dto';
+import { PASSWORD_REFUSED, ownSignInMessage, passwordRefused, proofAccepted, proofClaims, proofOfClaims, ssoRequiredMessage, type SessionProof, type SignInClient } from './sso-rules';
+
+const PASSWORD: SessionProof = { kind: 'PASSWORD' };
+const PHONE: SessionProof = { kind: 'PHONE' };
 
 @Injectable()
 export class AuthService {
   constructor(private prisma: PrismaService, private jwt: JwtService, private rights: ApprovalRightsService, private links: PasswordLinksService, private guard: LoginGuardService) {}
 
-  /** Sign in. A locked email or an address making too many tries is refused (429) before the password is checked. */
-  async login(emailIn: string, password: string, ip: string | null = null): Promise<LoginResponse> {
+  /**
+   * Sign in. A locked email or an address making too many tries is refused (429) before the password is checked. A
+   * company that requires single sign-on is no place for a website password (`passwordRefused`; the phone app keeps
+   * passwords until it has single sign-on): the person lands in the last used company that takes one. Every refusal
+   * reads the same (`PASSWORD_REFUSED`) and the password is always compared, so the answer says nothing of the account
+   * or its company.
+   */
+  async login(emailIn: string, password: string, ip: string | null = null, client: SignInClient = 'web'): Promise<LoginResponse> {
     const email = emailIn.trim().toLowerCase();
     await this.guard.assertMayTry(email, ip);
-    // One sign-in per person (group companies): it lands in the company used last, or the first one they were given.
-    const login = await this.prisma.login.findUnique({
-      where: { email },
-      select: { passwordHash: true, lastOrganizationId: true, users: { select: { id: true, organizationId: true, isActive: true, createdAt: true, organization: { select: { suspendedAt: true } } } } },
-    });
-    const place = login ? pickPlace(login.users.map((u) => ({ ...u, suspended: !!u.organization.suspendedAt })), login.lastOrganizationId) : null;
-    if (!login || !place || !(await bcrypt.compare(password, login.passwordHash))) {
+    const { login, place } = await this.passwordPlace(email, client);
+    const ok = login ? await bcrypt.compare(password, login.passwordHash) : false;
+    if (!login || !place || !ok) {
       await this.guard.failed(email, ip);
-      throw new UnauthorizedException('Invalid email or password');
+      throw new UnauthorizedException(PASSWORD_REFUSED);
     }
     await this.guard.succeeded(email);
-    return this.issue(place.id);
+    return this.issue(place.id, client === 'phone' ? PHONE : PASSWORD);
   }
 
-  /** A session for one of the person's users; the login remembers the company for the next sign-in. */
-  private async issue(userId: string): Promise<LoginResponse> {
-    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId }, include: { role: true, organization: true } });
+  /**
+   * The place a password signs in to (group companies: the company used last, or the first one given), among the
+   * person's companies that take a password on this client.
+   */
+  private async passwordPlace(email: string, client: SignInClient) {
+    const login = await this.prisma.login.findUnique({
+      where: { email },
+      select: {
+        passwordHash: true,
+        lastOrganizationId: true,
+        users: {
+          select: {
+            id: true,
+            organizationId: true,
+            isActive: true,
+            createdAt: true,
+            role: { select: { key: true } },
+            organization: { select: { suspendedAt: true, sso: { select: { enforce: true } } } },
+          },
+        },
+      },
+    });
+    const takesPassword = (login?.users ?? [])
+      .filter((u) => !passwordRefused(u.organization.sso, { platformAdmin: isPlatformAdmin(email), roleKey: u.role.key }, client))
+      .map((u) => ({ ...u, suspended: !!u.organization.suspendedAt }));
+    return { login, place: login ? pickPlace(takesPassword, login.lastOrganizationId) : null };
+  }
+
+  private findPlace(userId: string) {
+    return this.prisma.user.findUniqueOrThrow({ where: { id: userId }, include: { role: true, organization: { include: { sso: true } } } });
+  }
+
+  /**
+   * Refuses (403) a session the company does not take: a website password where it requires single sign-on, or another
+   * company's single sign-on that is not the same sign-in as its own (`proofAccepted`), whether or not it requires it.
+   */
+  private async assertProof(user: Awaited<ReturnType<AuthService['findPlace']>>, proof: SessionProof) {
+    const sso = user.organization.sso;
+    const person = { platformAdmin: isPlatformAdmin(user.email), roleKey: user.role.key };
+    const other = proof.kind === 'SSO' && proof.organizationId !== user.organizationId ? proof.organizationId : null;
+    const provedBy = other ? await withoutTenant(async () => await this.prisma.organizationSso.findUnique({ where: { organizationId: other } })) : null;
+    if (proofAccepted({ organizationId: user.organizationId, setup: sso }, person, proof, provedBy)) return;
+    throw new ForbiddenException(other || !sso ? ownSignInMessage(user.organization, sso?.provider ?? null) : ssoRequiredMessage(user.organization, sso.provider));
+  }
+
+  /** Refuses (403) setting a password, by an invite or reset link, where the person's company requires single sign-on. */
+  async assertPasswordTaken(userId: string) {
+    await this.assertProof(await this.findPlace(userId), PASSWORD);
+  }
+
+  /**
+   * A session for one of the person's users, proved by `proof`, which the token carries (`sso`) so a company switch
+   * knows it; the login remembers the company for the next sign-in.
+   */
+  async issue(userId: string, proof: SessionProof): Promise<LoginResponse> {
+    const user = await this.findPlace(userId);
     if (user.organization.suspendedAt) throw new ForbiddenException(`${user.organization.name} is suspended on ${PRODUCT_NAME}. Please contact ${PRODUCT_NAME} support.`);
-    const accessToken = await this.jwt.signAsync({ sub: user.id, org: user.organizationId });
+    await this.assertProof(user, proof);
+    const accessToken = await this.jwt.signAsync({ sub: user.id, org: user.organizationId, ...proofClaims(proof) });
     await this.prisma.login.update({ where: { id: user.loginId }, data: { lastOrganizationId: user.organizationId } });
     return { accessToken, user: await this.toAuthUser(user) };
   }
@@ -58,7 +119,7 @@ export class AuthService {
         ? await this.prisma.user.findFirst({ where: { loginId: me.loginId, organizationId, isActive: true, organization: { groupId: me.organization.groupId } }, select: { id: true } })
         : null;
       if (!target) throw new NotFoundException('You have no place in that company. Ask the group admin to give you one.');
-      return this.issue(target.id);
+      return this.issue(target.id, sessionProofOf(req));
     });
   }
 
@@ -68,6 +129,7 @@ export class AuthService {
       signup: signupOpen(),
       demoLogin: process.env.DEMO_LOGIN !== 'false',
       resetByEmail: this.links.canEmail && !!this.links.configuredWebUrl(),
+      sso: !ssoServerProblem(),
       pricing: billing ? { unit: billing.unit, price: billing.price, trialDays: billing.trialDays, yearChargedMonths: BILLING_YEAR_CHARGED_MONTHS } : null,
     };
   }
@@ -96,7 +158,7 @@ export class AuthService {
       const u = await tx.user.create({ data: { organizationId: org.id, roleId: admin.id, loginId: login.id, email, fullName: dto.fullName.trim(), phone: dto.phone?.trim() || null } });
       return u.id;
     });
-    return this.issue(userId);
+    return this.issue(userId, PASSWORD);
   }
 
   /** Always succeeds, so the answer does not reveal whether an email has an account. */
@@ -105,11 +167,12 @@ export class AuthService {
     if (!this.links.configuredWebUrl() || !this.links.canEmail) return { ok: true };
     // Past the hourly limit nothing is sent, and the answer is the same, so it tells no one anything.
     if (!(await this.guard.mayRequestReset(email, ip))) return { ok: true };
-    // One link per sign-in: it sets the password of every company the person signs in to.
-    const users = await this.prisma.user.findMany({ where: { email, isActive: true }, select: { id: true }, orderBy: { createdAt: 'asc' }, take: 1 });
-    for (const u of users) {
-      const recent = await this.prisma.passwordToken.findFirst({ where: { userId: u.id, purpose: 'RESET', createdAt: { gt: new Date(Date.now() - 60_000) } }, select: { id: true } });
-      if (!recent) await this.links.create(u.id, 'RESET');
+    // One link per sign-in: it sets the password of every company the person signs in to, and goes to a place that
+    // takes a password on the website, as signing in would pick it, so a company that requires single sign-on sends none.
+    const { place } = await withoutTenant(async () => await this.passwordPlace(email, 'web'));
+    if (place) {
+      const recent = await this.prisma.passwordToken.findFirst({ where: { userId: place.id, purpose: 'RESET', createdAt: { gt: new Date(Date.now() - 60_000) } }, select: { id: true } });
+      if (!recent) await this.links.create(place.id, 'RESET');
     }
     return { ok: true };
   }
@@ -120,7 +183,7 @@ export class AuthService {
 
   /** Accept an invite or reset: set the password and sign in. */
   async setPassword(token: string, password: string): Promise<LoginResponse> {
-    return this.issue(await this.links.use(token, password));
+    return this.issue(await this.links.use(token, password, (userId) => this.assertPasswordTaken(userId)), PASSWORD);
   }
 
   async me(req: RequestUser): Promise<AuthUser> {
@@ -152,7 +215,7 @@ export class AuthService {
     if (!(await bcrypt.compare(currentPassword, user.login.passwordHash))) throw new BadRequestException('Current password is incorrect');
     // Other sessions of the old password end, in every company of the sign-in; this one goes on with the token returned.
     await this.prisma.login.update({ where: { id: user.loginId }, data: { passwordHash: await bcrypt.hash(newPassword, 10), tokensValidAfter: new Date() } });
-    return { ok: true, accessToken: await this.jwt.signAsync({ sub: user.id, org: user.organizationId }) };
+    return { ok: true, accessToken: await this.jwt.signAsync({ sub: user.id, org: user.organizationId, ...proofClaims(sessionProofOf(req)) }) };
   }
 
   private async toAuthUser(user: { id: string; loginId: string; email: string; fullName: string; phone: string | null; organizationId: string; vendorId: string | null; seesAllProjects: boolean; navLook: NavLook | null; role: { key: string; name: string }; organization: BillingOrg & ModulesOrg & NavOrg & GroupOrg & { name: string; aiEnabled: boolean; aiRoles: string[]; progressFromDpr: boolean } }): Promise<AuthUser> {
@@ -230,3 +293,6 @@ const navigationOf = (org: NavOrg): Pick<AuthUser, 'navigation'> => {
 };
 
 const signupOpen = () => process.env.ORG_SIGNUP === 'open';
+
+/** How the request's session was proved, from its token's `sso` or `ph` claim. */
+export const sessionProofOf = (req: RequestUser): SessionProof => proofOfClaims({ sso: req.ssoOrg, ph: req.phone ? 1 : undefined });
