@@ -136,6 +136,7 @@ export const NAV_ACCESS = {
   contract: (u: NavUser) => P.canViewContract(u.roleKey),
   clients: (u: NavUser) => P.canViewContract(u.roleKey) || P.canEditContract(u.roleKey),
   compliance: (u: NavUser) => P.canViewCompliance(u.roleKey),
+  labourCompliance: (u: NavUser) => P.canViewLabourCompliance(u.roleKey),
   payables: (u: NavUser) => P.canViewPayables(u.roleKey),
   paymentRequests: (u: NavUser) => P.canViewPaymentRequests(u.roleKey),
   debitNotes: (u: NavUser) => P.canViewDebitNotes(u.roleKey),
@@ -328,6 +329,7 @@ export const NAV_TREE: NavNode[] = [
   { id: 'subcontracts.bills', parent: 'subcontracts', label: 'Subcontractor bills', icon: 'receipt-text', route: '/subcontract-bills', access: 'subcontractBills', status: 'live', badge: 'scBillsWaiting', description: 'Running bills with retention and recoveries.', keywords: 'petty contractor', concord: ['p5-sub'] },
   { id: 'subcontracts.enquiries', parent: 'subcontracts', label: 'Subcontract enquiries', icon: 'scale', route: '/subcontract-enquiries', access: 'enquiries', status: 'live', description: 'Work sent to subcontractors to quote, their rates compared item by item, and the chosen quote made a work order.', keywords: 'quote quotation comparative statement cs rfq l1 subcontractor rates award' },
   { id: 'subcontracts.backCharges', parent: 'subcontracts', label: 'Back-charge kinds', icon: 'tags', route: '/masters/back-charge', nav: false, access: 'subcontractBills', status: 'live', group: 'Masters', newUntil: '2027-05-31', description: 'What a subcontractor is charged for on their bill, such as cleaning or damage.', keywords: 'back charge recovery deduction subcontractor cleaning damage penalty' },
+  { id: 'subcontracts.labourCompliance', parent: 'subcontracts', label: 'Labour compliance', icon: 'clipboard-check', route: '/labour-compliance', access: 'labourCompliance', status: 'live', newUntil: '2027-05-31', description: 'Contractors’ labour licences, PF and ESI codes and challans, insurance and BOCW, with the bills held for what is missing.', keywords: 'clra labour licence pf esi epf challan ecr trrn wc workmen compensation bocw contract labour statutory compliance hold' },
   { id: 'subcontracts.vendors', parent: 'subcontracts', label: 'Subcontractors', icon: 'contact', route: '/vendors?kind=SUBCONTRACTOR', access: 'vendors', status: 'live', description: 'Subcontractors with GST and bank details.' },
   { id: 'subcontracts.labour', parent: 'subcontracts', label: 'Labour contractors', icon: 'pickaxe', shortcutOf: 'payroll.contractors', access: 'labourSummary', status: 'live', description: "Labour contractors' man-days each month.", concord: ['p5-labour'] },
 

@@ -482,6 +482,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/subcontract-recoveries-test.js
+      - name: Contractors owe a labour licence, PF, ESI, workmen's compensation and BOCW by their head count, and a challan for each due month
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/labour-compliance-test.js
       - name: Consultants check their share of the measurements before certifying, hidden work is countersigned above its sign-off, and site orders run to their compliance
         if: matrix.suite == 'flows'
         working-directory: apps/api

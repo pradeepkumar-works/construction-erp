@@ -282,6 +282,7 @@ import type {
   ComplianceDocKind,
   ComplianceDocStatus,
   ComplianceRegisterDto,
+  LabourRegisterDto,
   ImprestDto,
   MusterDto,
   OutputDto,
@@ -4489,6 +4490,14 @@ export const useImprest = (id: string | null | undefined) =>
   });
 
 /* Guarantees, insurance and licences register */
+/** Contractors' labour papers and challans, and what each owes (ARCHITECTURE "Contract labour compliance"). */
+export const useLabourCompliance = (filters?: { projectId?: string; vendorId?: string; months?: number }) =>
+  useQuery({
+    queryKey: ['labour-compliance', clean(filters)],
+    queryFn: async () => (await api.get<LabourRegisterDto>('/labour-compliance', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+  });
+
 export const useComplianceDocs = (filters?: { kind?: ComplianceDocKind; status?: ComplianceDocStatus | 'ALL'; state?: 'EXPIRING' | 'EXPIRED'; projectId?: string; q?: string }) =>
   useQuery({
     queryKey: ['compliance', 'list', clean(filters)],

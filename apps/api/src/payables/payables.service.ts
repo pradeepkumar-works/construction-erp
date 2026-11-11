@@ -35,6 +35,7 @@ import { advanceAdjusted, advancePaid, advanceRecovered } from './advances';
 import { SUB_BILL_PAYABLE, VENDOR_BILL_PAYABLE, subBillPayable, vendorBillPayable } from './payable';
 import { syncRequestPaid, syncRequestsPaid, targetLabel } from './payment-requests.service';
 import { todayIn } from '../notifications/time';
+import { LabourComplianceService } from '../labour-compliance/labour-compliance.service';
 import { TdsDeductionsService, type PaymentTds } from '../tds/tds-deductions.service';
 
 const D = (v: Prisma.Decimal.Value) => new Prisma.Decimal(v);
@@ -187,6 +188,7 @@ export class PayablesService {
     private audit: AuditService,
     private notifications: NotificationsService,
     private tds: TdsDeductionsService,
+    private labour: LabourComplianceService,
   ) {}
 
   toDto(r: Row): VendorPaymentDto {
@@ -442,6 +444,8 @@ export class PayablesService {
       if (org.paymentsNeedRequest) throw new BadRequestException(`Payments here need an approved payment request: ask for one on ${bill.label} (Request payment), then pay against it`);
     }
     if (isBill(bill) && bill.status !== 'APPROVED') throw new BadRequestException(`${bill.label} is not approved yet; only approved bills are paid`);
+    // A subcontractor's bill waits for their labour papers (ARCHITECTURE "Contract labour compliance").
+    if (bill.type === 'SUBCONTRACT_BILL') await this.labour.assertPayable(user.organizationId, bill.id);
     this.checkDate(dto.paymentDate, bill);
     const amounts = this.amounts(bill, dto);
     const tds = await this.tds.preparePayment(user.organizationId, { vendorId: bill.vendorId, section: dto.tdsSection, base: dto.tdsBase, tdsAmount: amounts.tdsAmount, settles: settles(amounts), gstShare: gstShare(bill, settles(amounts)), paymentDate: dto.paymentDate });

@@ -5107,6 +5107,30 @@ photos day by day.
   to the PM and HR only, a planted padded head count, and roles. `bill-checks-test` counts the padded bill as a seeded
   anomaly.
 
+## Contract labour compliance
+
+- **What it is.** The papers a contractor whose men work on our sites must show the principal employer, and the monthly
+  challans, kept per contractor (`LabourPaper`, `LabourChallan`, `apps/api/src/labour-compliance`). Papers: the CLRA
+  labour licence (per site, with the most workers it allows and its validity), the PF and ESI codes, the workmen's
+  compensation policy (workers covered, validity) and the BOCW registration (validity). Challans: PF and ESI for a wage
+  month, with the amount, workers, day paid and challan or TRRN number (one per contractor, kind and month).
+- **What is owed** (`labourProblems`, `@erp/shared/labour-compliance.ts`, pure): from the contractor's men on our head
+  counts (`AttendanceLine` by vendor), the site's peak and each month's peak over all sites. A labour licence for the
+  site from `LABOUR_LAW_FROM.CLRA` (20) men there, the PF code from 20 and the ESI code and BOCW registration from 10, a
+  WC policy where ESI is not needed; a paper must be valid on the day it is judged and, where it counts workers, cover the
+  peak. Every month with men needs its PF and ESI challans once due (`challanDue`: the 15th of the next month). A
+  challan paid after that is marked late but counts. Nothing is asked of a contractor with no men on the head counts.
+- **The register** (`GET /api/labour-compliance`, `canViewLabourCompliance`; kept by `canKeepLabourCompliance`, billing
+  roles and HR): each contractor and site over the last six months judged as of today, problems first; the papers and
+  challans with their scans (attachments). Page `/labour-compliance`, in Subcontracts and in the labour department's menu.
+- **Holding the bill.** A subcontractor bill is judged from its work order's start up to the bill's date (`forBill`): the
+  bill's checks carry a `labour` rule with each problem, the bill shows the hold, and `PayablesService.prepare` refuses a
+  payment request for it (`assertPayable`, 409) until nothing is missing or management (`canReleaseLabourHold`) releases
+  the hold on that bill with a reason (`POST /subcontract-bills/:id/release-labour-hold`, audited
+  `LABOUR_HOLD_RELEASED`). The bill's approval is not held; only its payment.
+- **Tests.** `src/scripts/labour-compliance-test.ts` (CI flows): the thresholds, validity, workers covered, challans due
+  and late, a site's own licence, the hold words.
+
 ## Management dashboard and reports
 
 - **What it is.** Item 132, asked by Pradeep on 26 Oct 2026 from the end-to-end test report's BI review: one place for

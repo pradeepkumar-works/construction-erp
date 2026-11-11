@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-labour-compliance',
+    date: '2026-11-19',
+    title: 'Contractors’ labour papers and challans, and bills held without them',
+    points: [
+      'Labour compliance lists every contractor with men on the head counts in the last six months and what they have not shown: the labour licence for the site, PF and ESI codes, workmen’s compensation policy, BOCW registration, and the PF and ESI challan for each month.',
+      'Record a paper or challan from the contractor’s row, with its number, validity, workers covered and a scan.',
+      'A subcontractor’s approved bill is not sent for payment while something is missing; management can release the hold on a bill with a reason.',
+    ],
+  },
+  {
     id: '2026-11-sub-retention',
     date: '2026-11-19',
     title: 'Subcontractor retention is paid back, and back-charges say what they were for',

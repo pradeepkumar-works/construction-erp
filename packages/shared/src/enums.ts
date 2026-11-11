@@ -273,6 +273,13 @@ export type ReceiptKind = (typeof RECEIPT_KINDS)[number];
 export const VENDOR_KINDS = ['SUPPLIER', 'HIRE_AGENCY', 'SUBCONTRACTOR', 'LABOUR_CONTRACTOR', 'SERVICE'] as const;
 export type VendorKind = (typeof VENDOR_KINDS)[number];
 
+/** A contractor's standing labour-law papers (ARCHITECTURE "Contract labour compliance"). */
+export const LABOUR_PAPER_KINDS = ['CLRA_LICENCE', 'PF_CODE', 'ESI_CODE', 'WC_POLICY', 'BOCW_REGISTRATION'] as const;
+export type LabourPaperKind = (typeof LABOUR_PAPER_KINDS)[number];
+/** A contractor's monthly contribution challans. */
+export const LABOUR_CHALLAN_KINDS = ['PF', 'ESI'] as const;
+export type LabourChallanKind = (typeof LABOUR_CHALLAN_KINDS)[number];
+
 export const MSME_CATEGORIES = ['MICRO', 'SMALL', 'MEDIUM'] as const;
 export type MsmeCategory = (typeof MSME_CATEGORIES)[number];
 

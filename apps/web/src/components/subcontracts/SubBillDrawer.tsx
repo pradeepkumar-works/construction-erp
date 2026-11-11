@@ -1,13 +1,13 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import { Alert, App, Button, Divider, Table, Typography } from 'antd';
+import { Alert, App, Button, Divider, Form, Input, Table, Typography } from 'antd';
 import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { SubcontractBillDto, SubcontractBillLineDto } from '@erp/shared';
-import { MSME_CATEGORY_LABELS, canEditSubmission, figure, canPrepareSubcontractBill, canResubmit, canViewPaymentRequests, canViewPayables, unitLabel } from '@erp/shared';
+import { MSME_CATEGORY_LABELS, canEditSubmission, canReleaseLabourHold, figure, canPrepareSubcontractBill, canResubmit, canViewPaymentRequests, canViewPayables, unitLabel } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
@@ -31,6 +31,7 @@ import { openSubBillPrint } from './subcontractPrint';
 import { Section } from '@/components/common/Section';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
 import { Money } from '@/components/common/Money';
+import { FormShell } from '@/components/form/FormShell';
 
 
 interface RecordProps {
@@ -82,6 +83,14 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
   const requests = data?.status === 'APPROVED' && !!user && canViewPaymentRequests(user.roleKey);
   const asked = useTargetRequests({ subcontractBillId: data?.id }, !!requests);
   const checks = useChecksFigure('subcontract-bill', id ?? undefined, dataUpdatedAt);
+  const [releasing, setReleasing] = useState(false);
+  const [releaseForm] = Form.useForm<{ note: string }>();
+  const release = useMutation({
+    mutationFn: async (note: string) => (await api.post(`/subcontract-bills/${id}/release-labour-hold`, { note })).data,
+    onSuccess: () => done('Labour hold released; the bill can be paid'),
+    meta: FAIL_NOTICE,
+  });
+  const hold = data?.status === 'APPROVED' && data.labourHold?.problems.length ? data.labourHold : null;
 
   return (
     <RecordFrame
@@ -110,6 +119,48 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
           },
           notices: (
             <>
+              {hold && !hold.releasedAt ? (
+                <Alert
+                  type="warning"
+                  showIcon
+                  style={{ marginBottom: tk.space[3] }}
+                  title="Payment held for the contractor’s labour papers"
+                  description={
+                    <>
+                      <ul style={{ margin: 0, paddingInlineStart: tk.space[4] }}>
+                        {hold.problems.map((p) => (
+                          <li key={p.key}>{p.text}</li>
+                        ))}
+                      </ul>
+                      <p style={{ margin: `${tk.space[1]} 0 0` }}>
+                        Record them in <Link href="/labour-compliance">Labour compliance</Link>.
+                      </p>
+                    </>
+                  }
+                  action={
+                    user && canReleaseLabourHold(user.roleKey) && toNumber(data.outstanding) > 0 ? (
+                      <Button
+                        size="small"
+                        onClick={() => {
+                          releaseForm.resetFields();
+                          setReleasing(true);
+                        }}
+                      >
+                        Release hold
+                      </Button>
+                    ) : undefined
+                  }
+                />
+              ) : null}
+              {hold?.releasedAt ? (
+                <Alert
+                  type="info"
+                  showIcon
+                  style={{ marginBottom: tk.space[3] }}
+                  title={`Labour hold released by ${hold.releasedByName ?? 'management'} on ${formatDate(hold.releasedAt.slice(0, 10))}`}
+                  description={hold.note}
+                />
+              ) : null}
               {data.status === 'DRAFT' && !data.isRelease && (
                 <Alert type="info" showIcon style={{ marginBottom: tk.space[3] }} title="Draft: the quantities come from approved measurements and the recoveries from material issued to them. Saving again picks up anything approved since." />
               )}
@@ -394,6 +445,14 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
         }
       }
     >
+      <FormShell open={releasing} onClose={() => setReleasing(false)} form={releaseForm} layout="modal" title="Release the labour hold" okText="Release hold" onSubmit={(v) => release.mutateAsync(v.note)}>
+        <Typography.Paragraph type="secondary">The bill can then be paid though the papers are missing. The reason stays on the bill and in its history.</Typography.Paragraph>
+        <Form form={releaseForm} layout="vertical">
+          <Form.Item name="note" label="Why" rules={[{ required: true, whitespace: true, min: 5, message: 'Say why the bill is paid without them' }]}>
+            <Input.TextArea rows={2} maxLength={500} placeholder="Challans seen at the contractor’s office; copies to follow" />
+          </Form.Item>
+        </Form>
+      </FormShell>
       {deleteDialog}
     </RecordFrame>
   );

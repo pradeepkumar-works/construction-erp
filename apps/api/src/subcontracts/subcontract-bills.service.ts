@@ -32,6 +32,7 @@ import { pctStr } from './work-orders.service';
 import { workOrderAdvanceBase } from '../payables/advances';
 import { subBillPayable } from '../payables/payable';
 import { subBillLines } from './sub-bill-lines';
+import { LabourComplianceService } from '../labour-compliance/labour-compliance.service';
 import { TdsDeductionsService } from '../tds/tds-deductions.service';
 import { MastersService } from '../masters/masters.service';
 
@@ -89,6 +90,7 @@ export class SubcontractBillsService {
     private lifecycle: SubmissionLifecycleService,
     private attachments: AttachmentsService,
     private masters: MastersService,
+    private labour: LabourComplianceService,
     tds: TdsDeductionsService,
   ) {
     // The bill's TDS under 194C becomes a deduction for the quarter's return in the approval's own transaction.
@@ -245,15 +247,17 @@ export class SubcontractBillsService {
     await this.assertCanSee(user);
     const row = await this.prisma.subcontractBill.findFirst({ where: { id, ...this.access.submissionWhere(user) }, include });
     if (!row) throw new NotFoundException('Subcontractor bill not found');
-    const [sheets, issues, kinds, earlier] = await Promise.all([
+    const [sheets, issues, kinds, earlier, labourHold] = await Promise.all([
       this.prisma.measurementSheet.findMany({ where: { subcontractBillId: id }, include: { boqItem: { select: { itemNo: true, unit: true } } }, orderBy: [{ date: 'asc' }, { mbNo: 'asc' }] }),
       this.prisma.stockEntry.findMany({ where: { subcontractBillId: id }, select: { id: true, entryNo: true, date: true, _count: { select: { lines: true } } }, orderBy: [{ date: 'asc' }, { entryNo: 'asc' }] }),
       this.chargeKinds(user.organizationId),
       this.heldBefore(this.prisma, row.workOrderId, row.billNo),
+      this.labour.forBill(user.organizationId, id),
     ]);
     return {
       ...this.toDto(row, kinds),
       retentionHeldBefore: earlier,
+      labourHold,
       measurements: sheets.map((s) => ({ id: s.id, mbNo: s.mbNo, date: dateOnly(s.date), boqItemNo: s.boqItem.itemNo, unit: s.boqItem.unit, location: s.location, totalQty: dec(s.totalQty) })),
       issues: issues.map((e) => ({ id: e.id, entryNo: e.entryNo, date: dateOnly(e.date), lines: e._count.lines })),
     };

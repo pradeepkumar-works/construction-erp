@@ -49,6 +49,8 @@ export const NAV: Record<string, string> = {
   'Budget and cash flow': 'बजट और कैश फ़्लो',
   'Budget revision reasons': 'बजट संशोधन के कारण',
   'Back-charge kinds': 'बैक-चार्ज के प्रकार',
+  'Labour compliance': 'श्रम अनुपालन',
+  'Contractors’ labour licences, PF and ESI codes and challans, insurance and BOCW, with the bills held for what is missing.': 'ठेकेदारों के श्रम लाइसेंस, PF और ESI कोड और चालान, बीमा और BOCW, और जो कमी है उसके लिए रोके गए बिल।',
   'What a subcontractor is charged for on their bill, such as cleaning or damage.': 'उप-ठेकेदार के बिल पर किस बात का चार्ज लगा, जैसे सफ़ाई या नुकसान।',
   "Why a project's budget is revised, such as a variation or a rate change.": 'प्रोजेक्ट का बजट क्यों संशोधित हुआ, जैसे वेरिएशन या दर में बदलाव।',
   'Budget per cost head and the planned cash flow.': 'हर लागत मद का बजट और योजना वाला कैश फ़्लो।',

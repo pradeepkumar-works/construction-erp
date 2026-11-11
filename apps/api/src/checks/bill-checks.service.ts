@@ -424,6 +424,7 @@ export class BillChecksService {
       excessRecovery: n(bill.excessRecovery),
       otherDeduction: n(bill.otherDeduction),
       retentionReleased: n(bill.retentionReleased),
+      labour: dto.labourHold ? { problems: dto.labourHold.problems, releasedByName: dto.labourHold.releasedAt ? (dto.labourHold.releasedByName ?? 'management') : null, note: dto.labourHold.note } : undefined,
       totalDeductions: n(bill.totalDeductions),
       netPayable: n(bill.netPayable),
       manDays: attendance?.lines.map((l) => ({

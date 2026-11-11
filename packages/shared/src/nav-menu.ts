@@ -225,7 +225,7 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
       sub('enquiries', 'Subcontract enquiries', 'subcontracts.enquiries'),
       sub('orders', 'Work orders', 'subcontracts.orders'),
       sub('bills', 'Subcontractor bills', 'subcontracts.bills'),
-      sub('labour', 'Labour contractors', 'payroll.contractors'),
+      sub('labour', 'Labour contractors', 'payroll.contractors', 'subcontracts.labourCompliance'),
       sub('masters', 'Masters', 'subcontracts.vendors', 'site.trades', 'subcontracts.backCharges'),
     ],
   },
@@ -286,6 +286,7 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
     subs: [
       sub('attendance', 'Labour attendance', 'site.attendance'),
       sub('check', 'Attendance cross-check', 'site.attendanceCheck'),
+      sub('compliance', 'Labour compliance', 'subcontracts.labourCompliance'),
       sub('biometric', 'Biometric devices', 'people.biometric'),
       sub('reports', 'Labour and attendance', 'reports.labour'),
       sub('masters', 'Masters', 'site.trades'),
