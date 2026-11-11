@@ -42,6 +42,7 @@ import { LeakageModule } from './leakage/leakage.module';
 import { InsightsModule } from './insights/insights.module';
 import { CashForecastModule } from './cash-forecast/cash-forecast.module';
 import { ManagementModule } from './management/management.module';
+import { ReportBuilderModule } from './report-builder/report-builder.module';
 import { HindranceModule } from './hindrance/hindrance.module';
 import { AttendanceCheckModule } from './attendance-check/attendance-check.module';
 import { SafetyModule } from './safety/safety.module';
@@ -194,6 +195,7 @@ import { VitalsController } from './vitals.controller';
     InsightsModule,
     CashForecastModule,
     ManagementModule,
+    ReportBuilderModule,
     HindranceModule,
     AttendanceCheckModule,
     SafetyModule,

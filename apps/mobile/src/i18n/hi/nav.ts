@@ -316,6 +316,8 @@ export const NAV: Record<string, string> = {
   'Management dashboard': 'मैनेजमेंट डैशबोर्ड',
   "Every project's schedule, money from work done to cash, cost, and what needs action.": 'हर प्रोजेक्ट का शेड्यूल, किए काम से नकद तक पैसा, लागत, और किस पर कदम उठाना है।',
   'Monthly MIS': 'मासिक MIS',
+  'My reports': 'मेरी रिपोर्ट',
+  'Tables you build from orders, bills, indents, stock, vendors and projects, saved and emailed on a schedule.': 'ऑर्डर, बिल, इंडेंट, स्टॉक, वेंडर और प्रोजेक्ट से आपकी बनाई तालिकाएँ, सहेजी हुई और तय समय पर ईमेल से भेजी जाने वाली।',
   'The month and the year so far for every project, with what needs action.': 'हर प्रोजेक्ट का महीना और अब तक का साल, और किस पर कदम उठाना है।',
   'Project profit and loss': 'प्रोजेक्ट लाभ-हानि',
   'Billed against cost by head, and the margin forecast at completion.': 'मद के अनुसार लागत के मुकाबले बिल, और पूरा होने पर अनुमानित मार्जिन।',

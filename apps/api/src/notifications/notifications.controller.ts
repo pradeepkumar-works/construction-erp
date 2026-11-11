@@ -5,6 +5,7 @@ import { NotificationJobsService } from './notification-jobs.service';
 import { JobQuery, ListNotificationsQuery, ReadAllNotificationsQuery, RegisterPushTokenDto, RemovePushTokenQuery } from './notifications.dto';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { GuestAllowed, Public } from '../common/decorators';
+import { ReportSchedulesService } from '../report-builder/report-schedules.service';
 import { CronGuard } from './cron.guard';
 import { DemoClockService } from '../demo/demo-clock.service';
 import { IntegrationsService } from '../integrations/integrations.service';
@@ -28,6 +29,7 @@ export class NotificationsController {
     private documentText: DocumentTextService,
     private integrations: IntegrationsService,
     private demoClock: DemoClockService,
+    private reportSchedules: ReportSchedulesService,
   ) {}
 
   /** The current user's notifications, newest first, plus the unread count. */
@@ -94,7 +96,7 @@ export class NotificationsController {
   @Public()
   @UseGuards(CronGuard)
   @ApiSecurity('cron')
-  @ApiOperation({ summary: 'Daily digest of pending approvals (in-app, push, email and WhatsApp); also moves demo companies\' dates up to today, writes and sends the morning briefs, reads filed PDFs for Ask the contract, and sends the test-due, payments-due, machinery-due, guarantee and licence expiry and defect liability reminders, new early warnings (five a person a day at most), and on Mondays the watch list. Auth: Authorization: Bearer <CRON_SECRET>.' })
+  @ApiOperation({ summary: 'Daily digest of pending approvals (in-app, push, email and WhatsApp); also moves demo companies\' dates up to today, writes and sends the morning briefs, reads filed PDFs for Ask the contract, and sends the test-due, payments-due, machinery-due, guarantee and licence expiry and defect liability reminders, new early warnings (five a person a day at most), on Mondays the watch list, and the reports people scheduled. Auth: Authorization: Bearer <CRON_SECRET>.' })
   @Get('jobs/approval-digest')
   async approvalDigest(@Query() q: JobQuery) {
     // Vercel Hobby has no third cron for the overnight batch, so morning briefs not yet written are written first
@@ -122,8 +124,19 @@ export class NotificationsController {
       BILLING: () => this.billing.daily(q.date),
       POLL_FEEDS: () => this.integrations.pollDue(),
       READ_DOCUMENTS: () => this.documentText.readAllPending(60_000),
+      // Last: a company's own reports wait behind the jobs everyone shares.
+      REPORT_SCHEDULES: () => this.reportSchedules.sendDue(q.date),
     });
     return { ...digest, failed: [...before, ...after] };
+  }
+
+  @Public()
+  @UseGuards(CronGuard)
+  @ApiSecurity('cron')
+  @ApiOperation({ summary: 'Scheduled reports: each schedule owing a period sends every recipient their copy, run as them, once per period (the approval digest runs it too). Auth: Authorization: Bearer <CRON_SECRET>.' })
+  @Get('jobs/report-schedules')
+  reportSchedulesJob(@Query() q: JobQuery) {
+    return this.reportSchedules.sendDue(q.date);
   }
 
   private async runAll(jobs: Record<string, () => Promise<unknown>>): Promise<string[]> {

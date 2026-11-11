@@ -158,5 +158,6 @@ export * from './company-profile';
 export * from './fixed-assets';
 export * from './bank-file';
 export * from './tds';
+export * from './report-builder';
 export * from './sso';
 export * from './einvoice';

@@ -6,7 +6,8 @@ import { cellExcel, cellText, isNegative, isNumeric } from './report-format';
 
 /** What a report covers, in words: its one project or site, a vertical, or all of them. */
 export const scopeWords = (r: ManagementReportDto) =>
-  r.projectName ?? (r.verticalName ? `Every project in ${r.verticalName}` : isHrReport(r.key) ? 'Every site and head office' : 'Every contract project');
+  r.projectName ??
+  r.scope ?? (r.verticalName ? `Every project in ${r.verticalName}` : isHrReport(r.key) ? 'Every site and head office' : 'Every contract project');
 
 /**
  * A management report printed (A4, landscape when a section is wide) and exported to Excel: the same figures, sections,
@@ -154,5 +155,6 @@ export async function exportManagementReport(r: ManagementReportDto) {
       return workbookSheet(sheetName(s.title), cols, [...(s.rows as Row[]), ...(s.total ? [s.total as Row] : [])]);
     }),
   ];
-  await downloadWorkbook(exportFileName(r.key === 'mis' ? 'monthly-mis' : r.key), sheets);
+  const base = r.key === 'mis' ? 'monthly-mis' : r.key === 'saved' ? r.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'report' : r.key;
+  await downloadWorkbook(exportFileName(base), sheets);
 }

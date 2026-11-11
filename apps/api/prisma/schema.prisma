@@ -1059,6 +1059,8 @@ model Organization {
   tdsReturns            TdsReturn[]
   tdsCertificates       TdsCertificate[]
   customFieldDefs       CustomFieldDef[]
+  savedReports          SavedReport[]
+  reportSchedules       ReportSchedule[]
   depreciationLines     DepreciationLine[]
   sisterLinks           SisterLink[]
   gstDocuments          GstDocument[]
@@ -1293,6 +1295,7 @@ model User {
   updatedAt       DateTime     @updatedAt
 
   savedViews              SavedView[]
+  savedReports            SavedReport[]
   navPins                 NavPin[]
   navVisits               NavVisit[]
   accessRequests          AccessRequest[]            @relation("AccessRequester")
@@ -2840,6 +2843,52 @@ model CustomFieldDef {
   updatedAt      DateTime     @updatedAt
 
   @@unique([organizationId, entity, key])
+}
+
+/// A report someone built over one of the lists (ARCHITECTURE "Reports you build"): the definition names columns of
+/// the source's catalogue (`REPORT_SOURCES`), read only by `readDefinition`; its rows come from the source's list service.
+model SavedReport {
+  id             String          @id @default(uuid())
+  organizationId String
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  ownerId        String
+  owner          User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name           String
+  /// A `ReportSourceKey`: purchase-orders, vendor-bills, ra-bills, indents, stock, vendors, projects
+  source         String
+  /// ReportDefinition: { source, columns, filters, groupBy, totals, sort }
+  definition     Json
+  /// Everyone in the company whose role opens the source may open it; only the owner changes it
+  shared         Boolean         @default(false)
+  schedule       ReportSchedule?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([organizationId, ownerId])
+}
+
+/// When a saved report is emailed: weekly on a weekday or monthly on a day, to its recipients, each copy run as them.
+model ReportSchedule {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  reportId       String       @unique
+  report         SavedReport  @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  /// WEEKLY or MONTHLY (`REPORT_FREQUENCIES`)
+  frequency      String
+  /// 0 Monday to 6 Sunday, for a weekly report
+  weekday        Int          @default(0)
+  /// 1 to 28, for a monthly report
+  dayOfMonth     Int          @default(1)
+  /// The users it goes to; each copy is run as that person, with their access
+  recipientIds   String[]
+  /// The day it was set: nothing is sent for a send day before it (`scheduleDue`)
+  since          DateTime     @db.Date
+  lastSentOn     DateTime?    @db.Date
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
 }
 
 /// A company's component kind: its own, or its copy of a built-in kind (same code). Built on a

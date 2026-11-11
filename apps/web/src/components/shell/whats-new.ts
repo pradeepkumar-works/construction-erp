@@ -32,6 +32,16 @@ export const WHATS_NEW: WhatsNew[] = [
     ],
   },
   {
+    id: '2026-11-my-reports',
+    date: '2026-11-15',
+    title: 'Build your own reports, save them and have them emailed',
+    points: [
+      'Reports › My reports › New report builds a table over purchase orders, vendor bills, RA bills, indents, stock, vendors or projects: choose the columns, the conditions, one grouping and the totals. Your company’s own fields are columns too.',
+      'A report opens on the reporting month, or the period and project you choose, with Print and Excel. Share it and everyone whose role opens it sees it with their own access: only their projects, and only the columns their role sees.',
+      'Schedule emails it weekly or monthly to the people you choose, each with their own copy, once for each week or month.',
+    ],
+  },
+  {
     id: '2026-11-custom-fields',
     date: '2026-11-14',
     title: 'Your own fields on vendors, projects and purchase orders',
