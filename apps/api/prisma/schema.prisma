@@ -4082,6 +4082,9 @@ model RaBill {
   totalDeductions         Decimal          @db.Decimal(18, 2)
   /// gross + price variation + GST + secured advance + released - deductions
   netPayable              Decimal          @db.Decimal(18, 2)
+  /// An item-rate contract won above or below the schedule of rates: the factor its BOQ items were billed at
+  /// (1 + tender premium %), null when billed at the BOQ rates
+  tenderFactor            Decimal?         @db.Decimal(9, 6)
   /// Price variation on this bill's work value (negative when the indices fell); in the GST and deduction base
   pvAmount                Decimal          @default(0) @db.Decimal(18, 2)
   /// The month the current indices are for, and any note on where they came from

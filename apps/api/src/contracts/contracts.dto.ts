@@ -40,6 +40,12 @@ export class UpdateContractDto {
   @ApiPropertyOptional({ example: 60, description: 'Days the client takes to pay a bill once sent' }) @IsOptional() @int() @ValidateIf((_, v) => v !== null) @IsInt() @Min(0) @Max(365) clientPaymentDays?: number | null;
   @ApiPropertyOptional({ example: 14, description: 'Days the contract allows to give notice of a hindrance' }) @IsOptional() @int() @ValidateIf((_, v) => v !== null) @IsInt() @Min(1) @Max(180) noticeDays?: number | null;
   @ApiPropertyOptional({ example: 25, description: 'How far, in %, measurement may run past a BOQ item before it needs a variation (25 when not set)' }) @IsOptional() @int() @ValidateIf((_, v) => v !== null) @IsInt() @Min(0) @Max(500) measureTolerancePct?: number | null;
+  @ApiPropertyOptional({ example: '4.25', description: 'Tender premium: % above (+) or below (-) the schedule of rates the BOQ is priced at; null when won at the BOQ rates' })
+  @IsOptional()
+  @num()
+  @ValidateIf((_, v) => v !== null)
+  @IsNumberString()
+  tenderPremiumPct?: string | null;
   @ApiPropertyOptional({ description: 'The contract has a price variation (escalation) clause' }) @IsOptional() @IsBoolean() priceVariation?: boolean;
   @pct('18', 'GST charged on bills') @IsOptional() @num() @IsNumberString() gstRate?: string;
   @pct('2', 'Income-tax TDS (section 194C) the client deducts') @IsOptional() @num() @IsNumberString() tdsPct?: string;

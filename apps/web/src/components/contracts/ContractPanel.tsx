@@ -7,7 +7,7 @@ import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import { EditOutlined } from '@/components/common/icons';
 import type { ContractExtensionDto } from '@erp/shared';
-import { CONTRACT_PERCENT_FIELDS, CONTRACT_PERCENT_LABELS, DELAY_PARTY_LABELS, GST_STATES, canEditContract, isForeign, MEASURE_TOLERANCE_PCT } from '@erp/shared';
+import { CONTRACT_PERCENT_FIELDS, CONTRACT_PERCENT_LABELS, DELAY_PARTY_LABELS, GST_STATES, billsByStages, canEditContract, isForeign, MEASURE_TOLERANCE_PCT, tenderPremiumWords } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useContract } from '@/lib/queries';
 import { formatDate, formatINR, formatMoney, toNumber, NO_VALUE } from '@/lib/format';
@@ -87,6 +87,9 @@ export function ContractPanel({ projectId }: { projectId: string }) {
             {formatDate(c.revisedEndDate)}
             {c.extensionDays > 0 && <span className="text-muted" translate="no"> +{c.extensionDays} days</span>}
           </Descriptions.Item>
+          {!billsByStages(c.contractModel) && (
+            <Descriptions.Item label="Tender premium">{c.tenderPremiumPct !== null ? tenderPremiumWords(c.tenderPremiumPct) : 'None (billed at the BOQ rates)'}</Descriptions.Item>
+          )}
           <Descriptions.Item label="Defect liability">{c.defectLiabilityMonths !== null ? `${c.defectLiabilityMonths} months` : NO_VALUE}</Descriptions.Item>
           <Descriptions.Item label="Client pays within">{c.clientPaymentDays !== null ? `${c.clientPaymentDays} days` : 'Not set (30 days assumed)'}</Descriptions.Item>
           <Descriptions.Item label="Hindrance notice within">{c.noticeDays !== null ? `${c.noticeDays} days` : 'Not set (14 days assumed)'}</Descriptions.Item>

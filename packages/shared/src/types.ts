@@ -1620,6 +1620,10 @@ export interface ProjectContractDto {
   noticeDays: number | null;
   /** How far, in %, measurement may run past a BOQ item's quantity before it needs a variation; null = 25 */
   measureTolerancePct: number | null;
+  /** How the contract is priced and billed */
+  contractModel: ContractModel;
+  /** Tender premium: % above (+) or below (−) the schedule of rates the BOQ is priced at; null when won at the BOQ rates */
+  tenderPremiumPct: number | null;
   priceVariation: boolean;
   /** Price variation: the date the base indices are taken at */
   pvBaseDate: string | null;
@@ -1853,6 +1857,7 @@ export interface RaBillDto extends SubmissionBase {
   obligationLines: ObligationBillLineDto[];
   /** An O&M bill: the period, the instalment and what was taken off it; null on a works bill */
   om: OmBillDto | null;
+  /** Rate × this: a stage-billed contract's unit-rate items, or an item-rate contract won above or below the schedule of rates; null at the BOQ rates */
   tenderFactor: string | null;
   gstRate: string;
   gstAmount: string;

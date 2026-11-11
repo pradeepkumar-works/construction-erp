@@ -2,7 +2,7 @@ import { Prisma } from '@prisma/client';
 import { BILLABLE_BOQ_ITEM } from '../variations/variations.service';
 import type { BillStagePlan } from '../stage-billing/stage-plan';
 import { windowRecovery } from '../stage-billing/stage-billing-rules';
-import { cappedSecurityDeposit, securedAdvanceOf } from '@erp/shared';
+import { billsByStages, cappedSecurityDeposit, securedAdvanceOf, takesTenderFactor, type ContractModel } from '@erp/shared';
 import { obligationRecovery } from '../contracts/obligation-recovery';
 
 /*
@@ -64,14 +64,19 @@ export const TERMS_SELECT = { mobilisationAdvance: true, contractValue: true, ad
 export type Terms = Prisma.ProjectGetPayload<{ select: typeof TERMS_SELECT }>;
 
 /** The project's percentages and terms a bill is priced with. */
-export const BILL_TERMS_SELECT = { retentionPct: true, securityDepositPct: true, advanceRecoveryPct: true, tdsPct: true, gstTdsPct: true, labourCessPct: true, gstRate: true, securedAdvancePct: true, ...TERMS_SELECT } satisfies Prisma.ProjectSelect;
+export const BILL_TERMS_SELECT = { contractModel: true, tenderFactor: true, retentionPct: true, securityDepositPct: true, advanceRecoveryPct: true, tdsPct: true, gstTdsPct: true, labourCessPct: true, gstRate: true, securedAdvancePct: true, ...TERMS_SELECT } satisfies Prisma.ProjectSelect;
 
 /**
  * Take the approved measurements up to the bill's date that no earlier bill took (not extra items waiting for their
  * variation, nor the lump-sum items a break-up pays by stages) and make its lines: previous, this bill and up to date per
  * BOQ item, unit-rate items of a lump-sum contract at rate × the tender factor.
  */
-export async function measuredLines(tx: Prisma.TransactionClient, bill: { id: string; projectId: string; billNo: number; measuredUpTo: Date }, plan: BillStagePlan | null): Promise<Line[]> {
+export async function measuredLines(
+  tx: Prisma.TransactionClient,
+  bill: { id: string; projectId: string; billNo: number; measuredUpTo: Date },
+  plan: BillStagePlan | null,
+  contract: { contractModel: ContractModel; tenderFactor: Prisma.Decimal | null } | null = null,
+): Promise<Line[]> {
   const id = bill.id;
   await tx.measurementSheet.updateMany({ where: { raBillId: id }, data: { raBillId: null } });
   // Extra items (no BOQ quantity) wait for the client's approved variation before they are billed.
@@ -93,12 +98,27 @@ export async function measuredLines(tx: Prisma.TransactionClient, bill: { id: st
     const uptoQty = upto.get(b.id) ?? ZERO;
     const prevQty = prev.get(b.id) ?? ZERO;
     if (uptoQty.lte(0) && prevQty.isZero()) return;
-    // Unit-rate items of a lump-sum contract are paid at the BOQ rate × the tender factor.
-    const rate = plan?.unitRateBoqItemIds.has(b.id) ? round2(b.rate.mul(plan.tenderFactor)) : b.rate;
+    const rate = billRate(b, plan, contract);
     lines.push({ boqItemId: b.id, boqQty: b.revisedQty ?? b.originalQty, rate, prevQty, thisQty: uptoQty.sub(prevQty), uptoQty, certifiedQty: null, sortOrder: i });
   });
   return lines;
 }
+
+/**
+ * The rate a BOQ item is billed at: × the tender factor for a lump-sum contract's unit-rate items, and for every item of
+ * an item-rate contract's BOQ as tendered when it was won at a premium above or below the schedule of rates
+ * (`takesTenderFactor`); else the BOQ rate.
+ */
+export function billRate(b: { id: string; rate: Prisma.Decimal; originalQty: Prisma.Decimal }, plan: BillStagePlan | null, contract: { contractModel: ContractModel; tenderFactor: Prisma.Decimal | null } | null): Prisma.Decimal {
+  const factor = plan ? plan.tenderFactor : (contract?.tenderFactor ?? null);
+  if (!factor || factor.eq(1)) return b.rate;
+  const takes = plan ? plan.unitRateBoqItemIds.has(b.id) : !!contract && takesTenderFactor(contract.contractModel, { originalQty: b.originalQty.toNumber(), unitRate: false });
+  return takes ? round2(b.rate.mul(factor)) : b.rate;
+}
+
+/** The tender factor an item-rate bill was priced with, kept on the bill so its print says so; null when none. */
+export const itemRateFactor = (plan: BillStagePlan | null, contract: { contractModel: ContractModel; tenderFactor: Prisma.Decimal | null }) =>
+  !plan && contract.tenderFactor && !contract.tenderFactor.eq(1) && !billsByStages(contract.contractModel) ? contract.tenderFactor : null;
 
 /**
  * Work value, price variation, GST, deductions and net payable of a set of lines priced on certified (else claimed)
