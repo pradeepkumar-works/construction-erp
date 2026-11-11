@@ -71,7 +71,7 @@ export function newEntriesFor(user: AuthUser): NewEntry[][] {
           { kind: 'letter-in' as const, label: 'Letter received', action: 'Record letter', href: '/correspondence', icon: <MailOutlined /> },
         ]
       : []),
-    ...(canBuildReports(role) ? [{ kind: 'report' as const, label: 'Report', action: 'New report', keywords: 'custom report builder table totals excel schedule', href: '/my-reports', icon: <TableOutlined /> }] : []),
+    ...(canBuildReports(user) ? [{ kind: 'report' as const, label: 'Report', action: 'New report', keywords: 'custom report builder table totals excel schedule', href: '/my-reports', icon: <TableOutlined /> }] : []),
   ];
   // Nothing from a module the company has turned off.
   return [site, checks, office].map((g) => g.filter((e) => !pathIsOff(e.href, user.modulesOff))).filter((g) => g.length > 0);

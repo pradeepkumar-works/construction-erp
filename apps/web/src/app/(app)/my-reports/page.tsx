@@ -29,11 +29,11 @@ const crumbs = [{ title: 'Reports', href: '/modules/reports' }];
 /** Reports › My reports (ARCHITECTURE "Reports you build"): the reports the user saved and those shared with them. */
 export default function MyReportsPage() {
   const { user } = useAuth();
-  if (user && !canBuildReports(user.roleKey))
+  if (user && !canBuildReports(user))
     return (
       <div className="page-container">
         <PageHeader title="My reports" crumbs={crumbs} />
-        <NoAccess title="Reports you build are for roles that see orders, bills, indents, stock, vendors or projects" />
+        <NoAccess title="Not open to your role" subTitle="Reports are built over orders, bills, indents, stock, vendors or projects, and your role opens none of them. Ask your admin if you need it." />
       </div>
     );
   return <MyReports />;
@@ -69,13 +69,21 @@ function MyReports() {
         render: (_, r) => (
           <div>
             <Link href={`/my-reports/${r.id}`} style={{ fontWeight: tk.type.strong.fontWeight }}>
-              {r.name}
+              <span translate="no">{r.name}</span>
             </Link>
             <div style={{ fontSize: tk.type.caption.fontSize, color: tk.color.text.muted }}>{r.sourceLabel}</div>
           </div>
         ),
       },
-      { key: 'schedule', title: 'Emailed', render: (_, r) => (r.schedule ? `${r.schedule.words}, to ${r.schedule.recipients.length === 1 ? r.schedule.recipients[0].name : `${r.schedule.recipients.length} people`}` : NO_VALUE) },
+      { key: 'schedule', title: 'Emailed', render: (_, r) =>
+          r.schedule ? (
+            <>
+              {r.schedule.words}, to {r.schedule.recipients.length === 1 ? <span translate="no">{r.schedule.recipients[0].name}</span> : `${r.schedule.recipients.length} people`}
+            </>
+          ) : (
+            NO_VALUE
+          ),
+      },
       { key: 'owner', title: 'Made by', width: 180, render: (_, r) => (r.mine ? 'You' : <span translate="no">{r.ownerName}</span>) },
       { key: 'shared', title: 'Shared', width: 110, defaultFrom: 900, render: (_, r) => (r.shared ? 'Shared' : 'Only you') },
       { key: 'updatedAt', title: 'Changed', label: 'Changed on', width: 130, sorter: true, sortOrder: sortOrderFor('updatedAt'), render: (_, r) => formatDate(r.updatedAt) },

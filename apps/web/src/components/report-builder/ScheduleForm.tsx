@@ -70,11 +70,11 @@ export function ScheduleForm({ open, report, onClose }: { open: boolean; report:
         </Form.Item>
         <FormGrid cols={2}>
           {frequency === 'MONTHLY' ? (
-            <Form.Item name="dayOfMonth" label="On the" extra="Over the month before.">
+            <Form.Item name="dayOfMonth" label="On the" tooltip="Over the month before">
               <Select options={Array.from({ length: MAX_SCHEDULE_DAY }, (_, i) => ({ value: i + 1, label: `${ordinal(i + 1)} of the month` }))} />
             </Form.Item>
           ) : (
-            <Form.Item name="weekday" label="Every" extra="Over the seven days before.">
+            <Form.Item name="weekday" label="Every" tooltip="Over the seven days before">
               <Select options={REPORT_WEEKDAYS.map((d, i) => ({ value: i, label: d }))} />
             </Form.Item>
           )}
@@ -83,7 +83,7 @@ export function ScheduleForm({ open, report, onClose }: { open: boolean; report:
           name="recipientIds"
           label="To"
           rules={[{ required: true, type: 'array', min: 1, message: 'Choose who gets it' }, { type: 'array', max: MAX_REPORT_RECIPIENTS, message: `Up to ${MAX_REPORT_RECIPIENTS} people` }]}
-          extra="Only people whose role opens it. Each one gets it with their own access."
+          tooltip="Only people whose role opens it. Each one gets it with their own access."
         >
           <Select mode="multiple" loading={isLoading} showSearch={{ optionFilterProp: 'label' }} options={(people ?? []).map((p) => ({ value: p.id, label: `${p.name} · ${p.role}` }))} placeholder="Choose people" />
         </Form.Item>

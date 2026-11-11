@@ -2,18 +2,20 @@
 
 import React, { useMemo, useState } from 'react';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { App, Button, Flex, Spin, Typography } from 'antd';
+import { App, Button, Flex, Result, Spin, Typography } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
-import type { ManagementReportDto, SavedReportDto } from '@erp/shared';
+import { canStopAnySchedule, type ManagementReportDto, type SavedReportDto } from '@erp/shared';
 import { tk } from '@/ds';
 import { useAuth } from '@/lib/auth';
-import { useDeleteReport, useProjects, useReportSources, useSavedReport, useSavedReportRun } from '@/lib/queries';
+import { useDeleteReport, useProjects, useReportSources, useSavedReport, useSavedReportRun, useScheduleReport } from '@/lib/queries';
+import { errorMessage, errorStatus } from '@/lib/api';
 import { useProjectScope } from '@/lib/project-scope';
 import { formatDate } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { DatePicker } from '@/components/common/DatePicker';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
+import { ResultMark } from '@/components/common/ResultMark';
 import { FileExcelOutlined, MailOutlined, PrinterOutlined } from '@/components/common/icons';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
 import { MoreActions } from '@/components/record/MoreActions';
@@ -46,7 +48,7 @@ export default function SavedReportPage() {
 }
 
 function SavedReport({ report }: { report: SavedReportDto }) {
-  const { message } = App.useApp();
+  const { message, modal } = App.useApp();
   const { user } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -64,6 +66,7 @@ function SavedReport({ report }: { report: SavedReportDto }) {
   const [exporting, setExporting] = useState(false);
   const [askDelete, deleteDialog] = useConfirmDelete();
   const remove = useDeleteReport();
+  const schedule = useScheduleReport(report.id);
 
   const options = useMemo(() => (projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` })), [projects]);
   const setParams = (next: Record<string, string | undefined>) => {
@@ -93,12 +96,50 @@ function SavedReport({ report }: { report: SavedReportDto }) {
   };
 
   const s = report.schedule;
-  const subtitle = [report.sourceLabel, report.mine ? null : `made by ${report.ownerName}`, s ? `emailed ${s.words.charAt(0).toLowerCase()}${s.words.slice(1)} to ${s.recipients.map((r) => r.name).join(', ')}` : null].filter(Boolean).join(', ');
+  // The owner stops their schedule, an admin anyone's (the email says so); from here even when the report cannot run.
+  const mayStop = !!s && (report.mine || (!!user && canStopAnySchedule(user.roleKey)));
+  const stop = () =>
+    modal.confirm({
+      title: 'Stop sending this report?',
+      content: 'Nobody gets it by email any more. The report itself stays.',
+      okText: 'Stop sending',
+      onOk: async () => {
+        await schedule.mutateAsync({ stop: true });
+        message.success('The report is no longer sent');
+      },
+    });
+  const facts: React.ReactNode[] = [
+    report.sourceLabel,
+    report.mine ? null : (
+      <>
+        Made by <span translate="no">{report.ownerName}</span>
+      </>
+    ),
+    s ? (
+      <>
+        {s.words} to <span translate="no">{s.recipients.map((r) => r.name).join(', ')}</span>
+      </>
+    ) : null,
+    s?.lastSentOn ? `Last sent ${formatDate(s.lastSentOn)}` : null,
+  ].filter(Boolean);
+  const subtitle = facts.map((f, i) => (
+    <React.Fragment key={i}>
+      {i ? ' · ' : null}
+      {f}
+    </React.Fragment>
+  ));
+  const more = [
+    ...(report.mine ? [{ key: 'edit', label: 'Edit', onSelect: () => setEditing(true) }] : []),
+    ...(mayStop && !report.mine ? [{ key: 'stop', label: 'Stop sending', onSelect: stop }] : []),
+    ...(report.mine ? [{ key: 'delete', label: 'Delete', danger: true, onSelect: () => askDelete({ what: `report ${report.name}`, onConfirm: async () => (await remove.mutateAsync(report.id), router.push('/my-reports')) }) }] : []),
+  ];
 
   return (
     <div className="page-container">
       <PageHeader
-        title={report.name}
+        title={<span translate="no">{report.name}</span>}
+        docTitle={report.name}
+        subtitle={subtitle}
         crumbs={crumbs}
         extra={
           <>
@@ -109,25 +150,14 @@ function SavedReport({ report }: { report: SavedReportDto }) {
               Excel
             </Button>
             {report.mine ? (
-              <>
-                <Button icon={<MailOutlined />} onClick={() => setScheduling(true)}>
-                  Schedule
-                </Button>
-                <MoreActions
-                  label="More actions for this report"
-                  items={[
-                    { key: 'edit', label: 'Edit', onSelect: () => setEditing(true) },
-                    { key: 'delete', label: 'Delete', danger: true, onSelect: () => askDelete({ what: `report ${report.name}`, onConfirm: async () => (await remove.mutateAsync(report.id), router.push('/my-reports')) }) },
-                  ]}
-                />
-              </>
+              <Button icon={<MailOutlined />} onClick={() => setScheduling(true)}>
+                Schedule
+              </Button>
             ) : null}
+            {more.length ? <MoreActions label="More actions for this report" items={more} /> : null}
           </>
         }
       />
-      <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
-        {subtitle.charAt(0).toUpperCase() + subtitle.slice(1)}.{s?.lastSentOn ? ` Last sent ${formatDate(s.lastSentOn)}.` : ''}
-      </Typography.Paragraph>
       {source && (source.dated || source.projects) ? (
         <Flex wrap align="center" gap={tk.space[3]} style={{ marginBottom: tk.space[4] }}>
           {source.dated ? (
@@ -143,11 +173,28 @@ function SavedReport({ report }: { report: SavedReportDto }) {
           {isFetching && data ? <Spin size="small" description="Updating…" /> : null}
         </Flex>
       ) : null}
-      {isLoading && !data ? <PageSkeleton shape="list" header={false} /> : error || !data ? <QueryError error={error} onRetry={() => refetch()} /> : <ReportBody data={data} />}
+      {isLoading && !data ? <PageSkeleton shape="list" header={false} /> : error || !data ? <RunProblem error={error} onRetry={() => refetch()} mayStop={mayStop && report.mine} onStop={stop} /> : <ReportBody data={data} />}
       {report.mine ? <ReportForm open={editing} report={report} onClose={() => setEditing(false)} /> : null}
       {report.mine ? <ScheduleForm open={scheduling} report={report} onClose={() => setScheduling(false)} /> : null}
       {deleteDialog}
     </div>
+  );
+}
+
+/**
+ * A run the reader cannot have: their role no longer opens the source (their own report keeps Stop sending), or none of
+ * someone else's columns is shown to them. Said as it is, with no Try again; anything else is the usual error.
+ */
+function RunProblem({ error, onRetry, mayStop, onStop }: { error: unknown; onRetry: () => void; mayStop: boolean; onStop: () => void }) {
+  const status = errorStatus(error);
+  if (status !== 403 && status !== 400) return <QueryError error={error} onRetry={onRetry} />;
+  return (
+    <Result
+      icon={<ResultMark kind={status === 403 ? 'no-access' : 'error'} />}
+      title={status === 403 ? 'Not open to your role' : 'Nothing to show'}
+      subTitle={errorMessage(error)}
+      extra={mayStop ? <Button onClick={onStop}>Stop sending</Button> : undefined}
+    />
   );
 }
 

@@ -5219,6 +5219,16 @@ export const useSavedReport = (id: string | undefined) =>
     enabled: !!id,
   });
 
+/** A report not yet saved, run as the reader over the reporting month: the builder's preview. */
+export const useReportPreview = (definition: ReportDefinition | null) =>
+  useQuery({
+    queryKey: ['report-builder', 'preview', definition],
+    queryFn: async () => (await api.post<ManagementReportDto & { count: number; countLabel: string }>('/report-builder/run', { definition })).data,
+    enabled: !!definition,
+    placeholderData: keepPreviousData,
+    retry: false,
+  });
+
 /** A saved report run as the reader for the period and project. */
 export const useSavedReportRun = (id: string | undefined, params: { from?: string; to?: string; projectId?: string }) =>
   useQuery({
