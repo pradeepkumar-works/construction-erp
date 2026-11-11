@@ -2720,6 +2720,15 @@ Nirmaan hands the payroll provider its inputs; PF, ESI, professional tax and sal
   its percentage of this bill's work value, advance recovery capped at the advance not yet recovered; net = work + GST
   − deductions. A draft or returned bill is rebuilt on every edit and on submit, so measurements approved meanwhile are
   included. Only one bill per project may be unapproved (advisory lock `RA:<projectId>`), and nothing follows a final bill.
+- **Tender premium.** A percentage-rate tender is won a % above or below the schedule of rates the BOQ is priced at
+  ("4.25% above SOR"). The contract keeps it as `Project.tenderFactor` (1 + % / 100, the same column a lump-sum
+  contract's unit-rate items are paid at), set as a % on the contract form (`tenderPremiumPct`, held by
+  `tenderPremiumProblem`, between −60% and 100%). On an item-rate contract every item of the BOQ as tendered (an
+  original quantity) is billed at rate × factor rounded to paise; an extra item from a variation keeps the rate the
+  client agreed (`takesTenderFactor`, `@erp/shared/tender-premium.ts`, through `billRate` in `ra-bill-pricing.ts`).
+  The bill keeps the factor it was priced at (`RaBill.tenderFactor`), its abstract and print say so
+  (`tenderPremiumWords`), and the bill checks expect that rate. A premium set after bills went out re-prices the
+  up-to-date value of the next bill. Keep `src/scripts/tender-premium-test.ts` passing.
 - **After approval** the bill is recorded as sent and certified (`POST /ra-bills/:id/send|certify`, billing roles).
   Certifying with lower quantities keeps the first claim, re-prices the bill on the certified quantities and
   rebuilds the next bill if it is still open. It becomes paid through receipts (below).

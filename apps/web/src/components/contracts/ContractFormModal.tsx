@@ -8,7 +8,7 @@ import { PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ContractPercentField, LdPeriod, ProjectContractDto } from '@erp/shared';
-import { CONTRACT_PERCENT_FIELDS, CONTRACT_PERCENT_LABELS, CURRENCIES, LD_PERIODS, LD_PERIOD_LABELS, MAX_GST_RATE, MEASURE_TOLERANCE_PCT } from '@erp/shared';
+import { TENDER_PREMIUM_RANGE, billsByStages, tenderPremiumProblem, tenderPremiumWords, CONTRACT_PERCENT_FIELDS, CONTRACT_PERCENT_LABELS, CURRENCIES, LD_PERIODS, LD_PERIOD_LABELS, MAX_GST_RATE, MEASURE_TOLERANCE_PCT } from '@erp/shared';
 import { inContract, moneyPrefix, outOfContract } from '@/lib/format';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
@@ -32,6 +32,7 @@ type FormValues = {
   clientPaymentDays?: number | null;
   noticeDays?: number | null;
   measureTolerancePct?: number | null;
+  tenderPremiumPct?: number | null;
   priceVariation?: boolean;
   ldRatePct?: number | null;
   ldPeriod?: LdPeriod;
@@ -61,6 +62,9 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
   const rate = Form.useWatch('exchangeRate', form);
   // Amounts are typed in the contract currency and kept in rupees at the contract rate.
   const typed = { currency, exchangeRate: rate ? String(rate) : null };
+  // A stage-billed contract keeps its tender factor in the billing break-up; an item-rate one keeps it here as a premium.
+  const itemRate = !billsByStages(contract.contractModel);
+  const premium = Form.useWatch('tenderPremiumPct', form);
 
   useEffect(() => {
     if (!open) return;
@@ -79,6 +83,7 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
       clientPaymentDays: contract.clientPaymentDays,
       noticeDays: contract.noticeDays,
       measureTolerancePct: contract.measureTolerancePct,
+      tenderPremiumPct: contract.tenderPremiumPct,
       priceVariation: contract.priceVariation,
       ldRatePct: Number(contract.ldRatePct),
       ldPeriod: contract.ldPeriod,
@@ -107,6 +112,7 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
         clientPaymentDays: v.clientPaymentDays ?? null,
         noticeDays: v.noticeDays ?? null,
         measureTolerancePct: v.measureTolerancePct ?? null,
+        ...(itemRate ? { tenderPremiumPct: v.tenderPremiumPct ? String(v.tenderPremiumPct) : null } : {}),
         priceVariation: !!v.priceVariation,
         ldRatePct: String(v.ldRatePct ?? 0),
         ldPeriod: v.ldPeriod ?? 'WEEK',
@@ -174,10 +180,21 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
                 </Form.Item>
               ) : null}
             </FormGrid>
-            <FormGrid cols={2}>
+            <FormGrid cols={itemRate ? 3 : 2}>
               <Form.Item name="contractValue" label="Contract value">
                 <MoneyInput prefix={moneyPrefix(typed)} />
               </Form.Item>
+              {itemRate ? (
+                <Form.Item
+                  name="tenderPremiumPct"
+                  label="Tender premium (%)"
+                  tooltip="A percentage-rate tender won above (+) or below (−) the schedule of rates the BOQ is priced at. Every BOQ item as tendered is billed at its rate with this added; an extra item from a variation is billed at the rate the client agreed. Leave empty when the BOQ rates are the quoted rates."
+                  extra={premium ? tenderPremiumWords(premium) : undefined}
+                  rules={[{ validator: (_, v: number | null | undefined) => { const p = tenderPremiumProblem(v ?? null); return p ? Promise.reject(new Error(p)) : Promise.resolve(); } }]}
+                >
+                  <InputNumber<number> style={{ width: '100%' }} min={TENDER_PREMIUM_RANGE.min} max={TENDER_PREMIUM_RANGE.max} step={0.01} precision={3} inputMode="decimal" placeholder="0" suffix="%" />
+                </Form.Item>
+              ) : null}
               <Form.Item name="dates" label="Start / completion date (as agreed)" extra="Extensions of time come from the delay register.">
                 <DatePicker.RangePicker style={{ width: '100%' }} allowEmpty={[true, true]} />
               </Form.Item>

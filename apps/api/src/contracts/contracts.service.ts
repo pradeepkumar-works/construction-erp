@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { CONTRACT_PERCENT_FIELDS, LD_PERIOD_DAYS, MAX_GST_RATE, canEditContract, canViewContract, delayDays, grantedExtensionDays, revisedCompletion, type DelayParty, type LdExposureDto, type ProjectContractDto } from '@erp/shared';
+import { CONTRACT_PERCENT_FIELDS, LD_PERIOD_DAYS, MAX_GST_RATE, canEditContract, canViewContract, delayDays, factorOfPremium, premiumOfFactor, tenderPremiumProblem, grantedExtensionDays, revisedCompletion, type DelayParty, type LdExposureDto, type ProjectContractDto } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -84,6 +84,8 @@ export class ContractsService {
       clientPaymentDays: p.clientPaymentDays,
       noticeDays: p.noticeDays,
       measureTolerancePct: p.measureTolerancePct,
+      contractModel: p.contractModel,
+      tenderPremiumPct: premiumOfFactor(p.tenderFactor ? p.tenderFactor.toString() : null),
       priceVariation: p.priceVariation,
       pvBaseDate: dateOnly(p.pvBaseDate),
       pvComponents: p.pvComponents.map((c) => ({ id: c.id, name: c.name, sharePct: pctStr(c.sharePct), baseIndex: c.baseIndex.toFixed(3).replace(/\.?0+$/, '') })),
@@ -245,6 +247,13 @@ export class ContractsService {
     if (dto.clientPaymentDays !== undefined) data.clientPaymentDays = dto.clientPaymentDays;
     if (dto.noticeDays !== undefined) data.noticeDays = dto.noticeDays;
     if (dto.measureTolerancePct !== undefined) data.measureTolerancePct = dto.measureTolerancePct;
+    if (dto.tenderPremiumPct !== undefined) {
+      const pct = dto.tenderPremiumPct === null ? null : Number(dto.tenderPremiumPct);
+      const problem = tenderPremiumProblem(pct);
+      if (problem) throw new BadRequestException(problem);
+      const factor = factorOfPremium(pct);
+      data.tenderFactor = factor === null ? null : new Prisma.Decimal(factor);
+    }
     if (dto.priceVariation !== undefined) data.priceVariation = dto.priceVariation;
     for (const k of ['ldRatePct', 'ldCapPct'] as const) {
       const v = dto[k];

@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-tender-premium',
+    date: '2026-11-19',
+    title: 'RA bills add the tender premium on item-rate contracts',
+    points: [
+      'A contract won a percentage above or below the schedule of rates takes that premium on its contract terms, for example 4.25 above or −3.5 below.',
+      'Each BOQ item as tendered is then billed at its rate with the premium, to the paisa; an extra item from a variation keeps the rate the client agreed.',
+      'The bill’s abstract and its print say which premium the rates include, and the bill checks expect those rates.',
+    ],
+  },
+  {
     id: '2026-11-schedule-import-ids',
     date: '2026-11-19',
     title: 'Schedule imports keep every row, its group and its milestones',

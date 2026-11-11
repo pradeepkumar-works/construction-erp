@@ -9,7 +9,7 @@ import { AppTag } from '@/components/common/AppTag';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ContractCurrency, RaBillDto, RaBillItemDto, RaBillStageLineDto, ReceiptDto } from '@erp/shared';
-import { GST_STATES, RECEIPT_MODE_LABELS, figure, canEditSubmission, canPrepareBill, canRecordReceipt, canResubmit, isForeign, unitLabel } from '@erp/shared';
+import { GST_STATES, RECEIPT_MODE_LABELS, figure, canEditSubmission, canPrepareBill, canRecordReceipt, canResubmit, isForeign, premiumOfFactor, tenderPremiumWords, unitLabel } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
@@ -247,6 +247,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
               count: data.items.length,
               children: (
                 <>
+                  {data.stageLines.length ? null : <PremiumNote factor={data.tenderFactor} />}
                   <Table<RaBillItemDto>
                     rowKey="id"
                     size="small"
@@ -510,4 +511,15 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
 
 export function BillDrawer(props: RecordProps & { open: boolean; onClose: () => void }) {
   return <BillRecord mode="drawer" {...props} />;
+}
+
+/** An item-rate bill won at a tender premium: its rates are the BOQ's with the premium added. */
+function PremiumNote({ factor }: { factor: string | null }) {
+  const pct = premiumOfFactor(factor);
+  if (pct === null) return null;
+  return (
+    <p className="text-muted" style={{ marginBlockStart: 0, marginBlockEnd: tk.space[2] }}>
+      Rates include the tender premium, {tenderPremiumWords(pct)}.
+    </p>
+  );
 }

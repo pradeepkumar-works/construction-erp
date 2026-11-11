@@ -64,6 +64,7 @@ export * from './photo-checks';
 export * from './reconciliation';
 export * from './stock-against-dpr';
 export * from './stage-billing';
+export * from './tender-premium';
 export * from './epc';
 export * from './fleet';
 export * from './ppe';

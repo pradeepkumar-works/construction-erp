@@ -39,7 +39,7 @@ import { BillDateDto, BillHoldDto, BillHoldsDto, BillPriceVariationDto, BillSecu
 import { StageBillingService } from '../stage-billing/stage-billing.service';
 import { ConsultantChecksService } from '../consultant-checks/consultant-checks.service';
 import { storedLines } from '../contracts/obligation-recovery';
-import { BILL_TERMS_SELECT, PCT_DEDUCTIONS, TERMS_SELECT, billTotals, measuredLines, writeBill, type Line } from './ra-bill-pricing';
+import { BILL_TERMS_SELECT, PCT_DEDUCTIONS, TERMS_SELECT, billTotals, itemRateFactor, measuredLines, writeBill, type Line } from './ra-bill-pricing';
 import { ClaimStageDto } from '../stage-billing/stage-billing.dto';
 import { billOwed, invoiceOf, RECEIPT_SUMS, settlement, syncBillStage } from '../receivables/bill-settlement';
 import { StockService } from '../stock/stock.service';
@@ -252,7 +252,7 @@ export class RaBillsService {
       obligationRecovery: money(r.obligationRecovery),
       obligationLines: storedLines(r.obligationLines),
       om: omBillDto(r),
-      tenderFactor: r.stageLines.length && r.project.tenderFactor ? r.project.tenderFactor.toFixed(6).replace(/\.?0+$/, '') : null,
+      tenderFactor: r.tenderFactor ? r.tenderFactor.toFixed(6).replace(/\.?0+$/, '') : r.stageLines.length && r.project.tenderFactor ? r.project.tenderFactor.toFixed(6).replace(/\.?0+$/, '') : null,
       pvLines: r.pvLines.map((l) => ({ id: l.id, name: l.name, sharePct: pctStr(l.sharePct), baseIndex: idx(l.baseIndex), currentIndex: idx(l.currentIndex), amount: money(l.amount) })),
       gstRate: pctStr(r.gstRate),
       gstAmount: money(r.gstAmount),
@@ -451,8 +451,10 @@ export class RaBillsService {
     }
     // A lump-sum project with a billing break-up bills its stages, and measures only its unit-rate items.
     const plan = await this.stageBilling.planFor(tx, bill);
-    const lines = await measuredLines(tx, bill, plan);
-    const { amounts, data } = await billTotals(tx, bill, lines, bill.project, bill.project, plan);
+    const lines = await measuredLines(tx, bill, plan, bill.project);
+    const priced = await billTotals(tx, bill, lines, bill.project, bill.project, plan);
+    const { amounts } = priced;
+    const data = { ...priced.data, tenderFactor: itemRateFactor(plan, bill.project) };
     if (strict && data.grossAmount.lte(0)) {
       throw new BadRequestException(
         plan

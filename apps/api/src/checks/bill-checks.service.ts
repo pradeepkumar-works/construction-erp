@@ -17,6 +17,7 @@ import { AttendanceCheckService } from '../attendance-check/attendance-check.ser
 import { ExpensesService } from '../expenses/expenses.service';
 import { RaBillsService } from '../ra-bills/ra-bills.service';
 import { boqBasis } from '../stage-billing/stage-plan';
+import { billRate } from '../ra-bills/ra-bill-pricing';
 import { windowRecovery } from '../stage-billing/stage-billing-rules';
 import { type Check, type Link, expenseChecks, otherVendorBillChecks, qty, raBillChecks, rulesSummary, subcontractBillChecks, vendorBillChecks } from './bill-rules';
 
@@ -474,6 +475,8 @@ export class BillChecksService {
     // A lump-sum contract's unit-rate items are paid at the BOQ rate × the tender factor.
     const unitRate = billsByStages(project.contractModel) ? (await boqBasis(this.prisma, bill.projectId)).unitRateBoqItemIds : new Set<string>();
     const factor = project.tenderFactor ?? new Prisma.Decimal(1);
+    // An item-rate contract won at a tender premium bills its BOQ items as tendered at rate × the factor.
+    const itemRate = billsByStages(project.contractModel) ? null : { contractModel: project.contractModel, tenderFactor: project.tenderFactor };
     const prev = new Map<string, number>();
     for (const b of billed) prev.set(b.boqItemId, (prev.get(b.boqItemId) ?? 0) + n(b.certifiedQty ?? b.thisQty));
     const checks = raBillChecks({
@@ -483,7 +486,7 @@ export class BillChecksService {
         unit: i.boqItem.unit,
         boqQty: n(i.boqItem.revisedQty ?? i.boqItem.originalQty),
         rate: n(i.rate),
-        boqRate: n(unitRate.has(i.boqItemId) ? i.boqItem.rate.mul(factor).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP) : i.boqItem.rate),
+        boqRate: n(unitRate.has(i.boqItemId) ? i.boqItem.rate.mul(factor).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP) : billRate(i.boqItem, null, itemRate)),
         prevQty: n(i.prevQty),
         thisQty: n(i.thisQty),
         uptoQty: n(i.uptoQty),

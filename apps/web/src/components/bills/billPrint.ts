@@ -1,5 +1,5 @@
 import type { GstDocumentDto, RaBillDto } from '@erp/shared';
-import { BILL_STAGE_LABELS, CURRENCIES, SUBMISSION_STATUS_LABELS, OM_BENCHMARK_INFO, GST_STATES, currencySymbol, fromRupees, isForeign, type ContractCurrency } from '@erp/shared';
+import { BILL_STAGE_LABELS, CURRENCIES, SUBMISSION_STATUS_LABELS, OM_BENCHMARK_INFO, GST_STATES, currencySymbol, fromRupees, isForeign, premiumOfFactor, tenderPremiumWords, type ContractCurrency } from '@erp/shared';
 import { AUTO_PRINT_SCRIPT, brandFooter, PRINT_BRAND_CSS, PRINT_FONT_LINKS, PRINT, PRINT_FACE } from '@/components/print/printBrand';
 import { BRAND } from '@/lib/brand';
 import { irnBlockHtml } from '@/components/gst/gstPrint';
@@ -77,6 +77,7 @@ export function buildBillPrintHtml(b: RaBillDto, orgName: string, irn: GstDocume
     .join('');
   // A lump-sum bill pays its stages, then its measured unit-rate items, and shows the two totals apart.
   const staged = b.stageLines.length > 0;
+  const premium = staged ? null : premiumOfFactor(b.tenderFactor);
   const sum = (xs: string[]) => String(xs.reduce((t, x) => t + toNumber(x), 0));
   const stageRows = b.stageLines
     .filter((l) => toNumber(l.thisPct) > 0 || toNumber(l.prevPct) > 0)
@@ -208,7 +209,7 @@ ${
   om
     ? ''
     : `
-  <h2>${staged ? `Unit-rate items (rate × tender factor ${esc(b.tenderFactor ?? '1')})` : 'Abstract of cost'}</h2>
+  <h2>${staged ? `Unit-rate items (rate × tender factor ${esc(b.tenderFactor ?? '1')})` : premium !== null ? `Abstract of cost (rates with the tender premium, ${esc(tenderPremiumWords(premium))})` : 'Abstract of cost'}</h2>
   <table>
     <thead>
       <tr><th rowspan="2" class="c">#</th><th rowspan="2">Item</th><th rowspan="2">Description</th><th rowspan="2">Unit</th><th rowspan="2" class="num">BOQ qty</th><th rowspan="2" class="num">Rate (${sym})</th>
