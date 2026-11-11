@@ -10,6 +10,7 @@ import {
   IsInt,
   IsNotEmpty,
   IsNumberString,
+  IsObject,
   IsOptional,
   IsString,
   IsUUID,
@@ -36,6 +37,7 @@ import {
 } from '@erp/shared';
 import { PageQuery, QueryBool } from '../common/paging';
 import { CLIENT_ID_DOC } from '../common/idempotency';
+import { CUSTOM_VALUES_DOC } from '../custom-fields/custom-fields.dto';
 
 const trim = () => Transform(({ value }) => (typeof value === 'string' ? value.trim() || null : value));
 const num = () => Transform(({ value }) => (typeof value === 'number' ? String(value) : typeof value === 'string' ? value.trim() : value));
@@ -97,6 +99,7 @@ class PoFields {
   @ApiPropertyOptional({ description: 'Why the order goes to this vendor when a complete quotation on its request was lower; needed before it is submitted' })
   @IsOptional() @trim() @IsString() @MaxLength(500) selectionReason?: string | null;
   @ApiPropertyOptional({ type: [String], description: 'Quotation or other documents' }) @IsOptional() @IsArray() @IsUUID('all', { each: true }) attachmentIds?: string[];
+  @ApiPropertyOptional(CUSTOM_VALUES_DOC) @IsOptional() @IsObject() customValues?: Record<string, unknown>;
   @ApiPropertyOptional({ default: false, description: 'Submit for approval as well' }) @IsOptional() @IsBoolean() submit?: boolean;
 }
 

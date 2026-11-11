@@ -1,11 +1,11 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import type { PurchaseOrderDto } from '@erp/shared';
-import { MSME_CATEGORY_LABELS, canViewCost } from '@erp/shared';
+import type { CustomFieldDto, PurchaseOrderDto } from '@erp/shared';
+import { MSME_CATEGORY_LABELS, canViewCost, extraText, filledCustomValues, ownFieldLabel } from '@erp/shared';
 import { useFetch } from '../../src/api/hooks';
 import { useAuth } from '../../src/auth/AuthContext';
-import { useT } from '../../src/i18n/LanguageContext';
+import { useLanguage, useT } from '../../src/i18n/LanguageContext';
 import { AttachmentGallery, Card, ErrorState, KeyValue, Loading, ReviewActions, Screen, SubmissionHeader } from '../../src/components';
 import { OrderBudget, OrderQuotes } from '../../src/components/OrderDecision';
 import { colors, fontSize, maxFontScale, spacing, typography } from '../../src/theme';
@@ -13,17 +13,23 @@ import { fmtQty, formatDate, formatMoney } from '../../src/utils/format';
 
 const rupees = (v: string) => formatMoney(v);
 
-/** A purchase order on the phone: read it and approve it. Orders are raised on the web. */
+/**
+ * A purchase order on the phone: read it and approve it. Orders are raised on the web; the company's own fields on it
+ * show here read only, so whoever decides on the phone sees them.
+ */
 export default function PurchaseOrderScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const t = useT();
   const { user } = useAuth();
+  const { language } = useLanguage();
+  const { data: fields } = useFetch<CustomFieldDto[]>((api) => api.get('/custom-fields?entity=PURCHASE_ORDER'), []);
   const { data, loading, refreshing, error, refresh, reload, setData } = useFetch<PurchaseOrderDto>((api) => api.get(`/purchase-orders/${id}`), [id], { enabled: !!id });
 
   if (loading && !data) return <Loading />;
   if (error && !data) return <ErrorState message={error} onRetry={reload} />;
   if (!data) return null;
+  const filled = filledCustomValues(fields ?? [], data.customValues);
 
   return (
     <Screen refreshing={refreshing} onRefresh={refresh}>
@@ -45,6 +51,15 @@ export default function PurchaseOrderScreen() {
         {data.selectionReason ? <KeyValue label={t('Why this vendor')} value={data.selectionReason} multiline /> : null}
         <KeyValue label={t('Remarks')} value={data.remarks} multiline />
       </Card>
+      {filled.length ? (
+        <Card title={t('More details')}>
+          {filled.map(({ field, value }) => {
+            const text = extraText(field, value);
+            const label = ownFieldLabel(field, language);
+            return <KeyValue key={field.key} label={field.archived ? t('{label} (archived)', { label }) : label} value={text === 'Yes' || text === 'No' ? t(text) : text} multiline={field.kind === 'LONG_TEXT'} />;
+          })}
+        </Card>
+      ) : null}
       <Card title={t('Items')} count={data.lines.length}>
         {data.lines.map((l) => (
           <View key={l.id} style={styles.line}>

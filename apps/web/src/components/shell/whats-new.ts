@@ -21,6 +21,17 @@ export const WHATS_NEW: WhatsNew[] = [
     ],
   },
   {
+    id: '2026-11-custom-fields',
+    date: '2026-11-14',
+    title: 'Your own fields on vendors, projects and purchase orders',
+    points: [
+      'New field under Admin › Company settings › Fields adds fields of your own: an MSME number on vendors, a funding scheme on projects, a cost centre on orders. Each is text, long text, a number with its unit and range, yes or no, a choice, a date or a time.',
+      'The vendor, project and purchase order forms ask for them under More details, and each record shows what it holds, on the phone’s order screen too. A required field is asked for on every save; on an order, before it goes for approval.',
+      'Lists offer each field as a column under Columns, and Export to Excel carries them.',
+      'Archive a field you no longer use: forms stop asking for it and records keep their values. Restore brings it back.',
+    ],
+  },
+  {
     id: '2026-11-consolidated-accounts',
     date: '2026-11-14',
     title: 'Consolidated accounts for the group',

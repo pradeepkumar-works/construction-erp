@@ -12,6 +12,9 @@ import { GST_STATES, GSTIN_PATTERN, IFSC_PATTERN, MSME_CATEGORIES, MSME_CATEGORY
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
+import { useCustomFields } from '@/lib/queries';
+import { CustomFieldsFormSection } from '@/components/custom-fields/CustomFieldsFormSection';
+import { customValuesBody } from '@/components/custom-fields/values';
 
 interface FormValues {
   name: string;
@@ -31,6 +34,7 @@ interface FormValues {
   bankName?: string;
   remarks?: string;
   isActive?: boolean;
+  customValues?: Record<string, unknown>;
 }
 
 const up = (v?: string) => v?.replace(/\s+/g, '').toUpperCase() || null;
@@ -61,6 +65,7 @@ export function VendorFormModal({
   const { user } = useAuth();
   const qc = useQueryClient();
   const bank = !!user && canSeeVendorBank(user.roleKey);
+  const { data: fields } = useCustomFields('VENDOR', open);
   const gstin = Form.useWatch('gstin', form);
   const msme = Form.useWatch('msmeCategory', form);
   const fromGstin = gstStateCode(gstin && GSTIN_PATTERN.test(gstin.trim().toUpperCase()) ? gstin : null);
@@ -89,6 +94,7 @@ export function VendorFormModal({
         bankName: vendor.bankName ?? undefined,
         remarks: vendor.remarks ?? undefined,
         isActive: vendor.isActive,
+        customValues: vendor.customValues,
       });
     else if (initial) form.setFieldsValue(initial);
   }, [open, vendor, initial, form]);
@@ -115,6 +121,7 @@ export function VendorFormModal({
         remarks: v.remarks?.trim() || null,
         ...(bank ? { bankAccountName: v.bankAccountName?.trim() || null, bankAccountNo: up(v.bankAccountNo), bankIfsc: up(v.bankIfsc), bankName: v.bankName?.trim() || null } : {}),
         ...(vendor ? { isActive: v.isActive ?? true } : {}),
+        customValues: customValuesBody(fields, v.customValues),
       };
       return vendor ? (await api.patch<VendorDto>(`/vendors/${vendor.id}`, body)).data : (await api.post<VendorDto>('/vendors', body)).data;
     },
@@ -210,6 +217,7 @@ export function VendorFormModal({
         <Form.Item name="remarks" label="Remarks">
           <Input.TextArea rows={2} maxLength={1000} />
         </Form.Item>
+        <CustomFieldsFormSection entity="VENDOR" stored={vendor?.customValues} />
         {vendor ? (
           <Form.Item name="isActive" valuePropName="checked" style={{ marginBottom: 0 }} extra="Inactive vendors are not suggested on new entries.">
             <Checkbox>Active</Checkbox>

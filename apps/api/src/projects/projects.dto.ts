@@ -1,8 +1,9 @@
 import { ApiProperty, ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNumber, IsNumberString, IsOptional, IsString, IsUUID, Max, MaxLength, Min, MinLength, ValidateIf, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNumber, IsNumberString, IsObject, IsOptional, IsString, IsUUID, Max, MaxLength, Min, MinLength, ValidateIf, ValidateNested } from 'class-validator';
 import { CHECK_LEVELS, type CheckLevel, CONTRACT_MODELS, MAX_BREAKDOWN, MAX_COMPONENT_COUNT, type ContractModel, MAX_CHAINAGE_M, MAX_SECTOR_NAMES, LIST_SORT_FIELDS, PROJECT_STATUSES, PROJECT_TYPES, ProjectStatus, ProjectType, type ProjectSortField } from '@erp/shared';
 import { PageQuery } from '../common/paging';
+import { CUSTOM_VALUES_DOC } from '../custom-fields/custom-fields.dto';
 
 /** `q` matches code, name, client, location and work order no. */
 export class ListProjectsQuery extends PageQuery {
@@ -38,6 +39,7 @@ export class CreateProjectDto {
   @ApiPropertyOptional({ description: 'The agreement number, when the work order says one (read from the work order)' }) @IsOptional() @IsString() @MaxLength(100) agreementNo?: string;
   @ApiPropertyOptional({ example: '2026-11-05' }) @IsOptional() @IsDateString() agreementDate?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() description?: string;
+  @ApiPropertyOptional(CUSTOM_VALUES_DOC) @IsOptional() @IsObject() customValues?: Record<string, unknown>;
   @ApiPropertyOptional({ example: '2026-01-01' }) @IsOptional() @IsDateString() startDate?: string;
   @ApiPropertyOptional({ example: '2027-06-30' }) @IsOptional() @IsDateString() endDate?: string;
   @ApiPropertyOptional({ example: '125000000.00' }) @IsOptional() @IsNumberString() contractValue?: string;

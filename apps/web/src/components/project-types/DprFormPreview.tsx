@@ -22,7 +22,7 @@ import {
 import { CameraOutlined } from '@/components/common/icons';
 import { DatePicker } from '@/components/common/DatePicker';
 import { FormGrid, FormSection } from '@/components/form/FormShell';
-import { OwnFieldInput } from '@/components/dpr/OwnFields';
+import { FieldInput } from '@/components/custom-fields/FieldInput';
 
 export type PreviewMode = 'web' | 'phone';
 
@@ -135,7 +135,7 @@ export function DprFormPreview({ def, mode, locations, progressFromDpr }: { def:
                   )
                 }
               >
-                <OwnFieldInput field={f} aria-label={f.label} />
+                <FieldInput field={f} aria-label={f.label} />
               </Form.Item>
             ))}
           </Grid>

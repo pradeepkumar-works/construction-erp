@@ -52,6 +52,7 @@ import { ProgrammeModule } from './programme/programme.module';
 import { MaintenanceModule } from './maintenance/maintenance.module';
 import { UnitsModule } from './units/units.module';
 import { MastersModule } from './masters/masters.module';
+import { CustomFieldsModule } from './custom-fields/custom-fields.module';
 import { CorrespondenceModule } from './correspondence/correspondence.module';
 import { SectorModule } from './sector/sector.module';
 import { TemplatesModule } from './templates/templates.module';
@@ -203,6 +204,7 @@ import { VitalsController } from './vitals.controller';
     MaintenanceModule,
     UnitsModule,
     MastersModule,
+    CustomFieldsModule,
     CorrespondenceModule,
     SectorModule,
     TemplatesModule,

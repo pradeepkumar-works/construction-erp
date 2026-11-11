@@ -35,6 +35,7 @@ import { ProjectTypesService } from '../templates/project-types.service';
 import { StructureService } from '../structure/structure.service';
 import { MastersService } from '../masters/masters.service';
 import { dateOnly, iso, money, parseDate } from '../common/serialize';
+import { CustomFieldsService, storedValues } from '../custom-fields/custom-fields.service';
 import { AddMemberDto, CopyTeamDto, CreateProjectDto, ListProjectsQuery, UpdateProjectDto } from './projects.dto';
 
 const projectInclude = {
@@ -71,6 +72,7 @@ export class ProjectsService {
     private structure: StructureService,
     private notifications: NotificationsService,
     private masters: MastersService,
+    private fields: CustomFieldsService,
   ) {}
 
   /**
@@ -118,6 +120,7 @@ export class ProjectsService {
     const types = await this.types.featuresOf(rows[0]?.organizationId ?? '', rows);
     return rows.map((p) => ({
       id: p.id,
+      customValues: storedValues(p.customValues),
       code: p.code,
       name: p.name,
       type: p.type,
@@ -305,6 +308,8 @@ export class ProjectsService {
     this.checkChainage(dto.chainageStart ?? null, dto.chainageEnd ?? null);
     this.checkSite(dto.siteLat ?? null, dto.siteLng ?? null, dto.siteCheckInStrict ?? false);
     const data = this.toData(dto) as Prisma.ProjectCreateInput;
+    // Required fields are asked for whenever the values are sent, as the form always sends them.
+    if (dto.customValues !== undefined) data.customValues = await this.fields.read(user, 'PROJECT', dto.customValues, undefined, { required: true });
     await this.withClient(user, dto, data);
     if (dto.clientId === null) delete data.client;
     const type = await this.withType(user, dto, data);
@@ -385,7 +390,8 @@ export class ProjectsService {
     // A new built-in kind with no type named leaves the old type, whose kind it no longer is.
     await this.withType(user, dto.type !== undefined && dto.typeCode === undefined ? { ...dto, typeCode: null } : dto, data);
     await this.withVertical(user, dto, data, false);
-    const before = await this.prisma.project.findUniqueOrThrow({ where: { id }, select: { startDate: true } });
+    const before = await this.prisma.project.findUniqueOrThrow({ where: { id }, select: { startDate: true, customValues: true } });
+    if (dto.customValues !== undefined) data.customValues = await this.fields.read(user, 'PROJECT', dto.customValues, before.customValues, { required: true });
     const row = await this.prisma.project.update({ where: { id }, data, include: projectInclude });
     await this.audit.log(user, 'PROJECT', row.id, 'UPDATED');
     // The dates arriving for the first time spread the activities that have none.

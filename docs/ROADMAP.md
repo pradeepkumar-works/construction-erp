@@ -1088,6 +1088,12 @@ GRN on the web and the phone), and a second quality dashboard.
      sisters tab shows each pair with both companies' figures and the difference to settle. Each column says how far its
      books are locked and which year is closed, and Each company's lock stops every company at its own lock. Investment
      against share capital, minority interest and currency are not taken out. ARCHITECTURE "Consolidated accounts".
+193. ~~**A company's own fields on vendors, projects and purchase orders** (M).~~ Done: an admin adds fields of the
+     company's own (text, long text, number with unit and range, yes or no, a choice, date, time) in Company settings ›
+     Fields, and the vendor, project and purchase order forms ask for them under More details, records show them, lists
+     offer them as columns and Excel carries them. A required field is asked for on save, an order's before it goes for
+     approval; a field is archived, never deleted, and records keep its values. The DPR's own fields share the same kinds
+     and readers, unchanged. ARCHITECTURE "Custom fields".
 194. ~~**E-invoices (IRN and QR) and e-way bills** (M).~~ Done: a certified RA bill and an RMC bill to a registered
      client, from a company under e-invoicing (Company settings › E-invoicing), get an IRN, its acknowledgement and the
      signed QR from the IRP, printed on the bill; an RMC challan and a stock transfer get an e-way bill with the vehicle,
