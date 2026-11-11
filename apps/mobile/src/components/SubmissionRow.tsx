@@ -27,6 +27,7 @@ export const TYPE_ICON: Record<EntryType, keyof typeof Ionicons.glyphMap> = {
   WO_AMENDMENT: 'git-compare',
   INSPECTION: 'shield-checkmark',
   ATTENDANCE: 'people',
+  ROLL_CALL: 'checkbox',
   RISK: 'alert-circle',
   SAFETY_INCIDENT: 'medkit',
   TOOLBOX_TALK: 'megaphone',

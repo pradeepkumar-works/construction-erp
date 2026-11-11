@@ -2,16 +2,18 @@ import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from '
 import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { STAFF_ATTENDANCE_LABELS, STAFF_ATTENDANCE_STATUSES, manDays, type ActivityDto, type RollCallDto, type RollCallRowDto, type StaffAttendanceStatus } from '@erp/shared';
+import { useAuth } from '../src/auth/AuthContext';
 import { useApi, useFetch } from '../src/api/hooks';
 import { errorMessage } from '../src/api/client';
 import { Button, Card, Chips, DatePicker, EmptyState, ErrorBanner, Input, Loading, Screen, Select, useSnackbar } from '../src/components';
 import { useProjectOptions } from '../src/forms/common';
 import { DraftNotice, useFormDraft, useLeaveGuard } from '../src/forms/draft';
 import { useT } from '../src/i18n/LanguageContext';
-import { isOfflineError } from '../src/offline';
+import { isOfflineError, useOffline } from '../src/offline';
+import { readCache, writeCache } from '../src/offline/cache';
 import { colors, maxFontScale, spacing, typography } from '../src/theme';
 import type { TranslateVars } from '../src/i18n/translate';
-import { isIsoDate, today } from '../src/utils/format';
+import { formatDate, isIsoDate, today } from '../src/utils/format';
 
 interface Mark {
   status: StaffAttendanceStatus | null;
@@ -20,13 +22,34 @@ interface Mark {
 
 const fromRow = (r: RollCallRowDto): Mark => ({ status: r.status, ot: r.otHours ?? '' });
 
+/** A site's roll from another day, for a day with no copy on the phone: the same workers, nobody marked yet. */
+const blankRoll = (r: RollCallDto, date: string): RollCallDto => ({
+  ...r,
+  date,
+  locked: false,
+  lockedByRun: null,
+  headCount: null,
+  rows: r.rows.map((x) => ({ ...x, status: null, otHours: null, inTime: null, outTime: null, note: null, markedByName: null })),
+  totals: { workers: r.rows.length, present: 0, halfDay: 0, absent: 0, unmarked: r.rows.length, manDays: 0, otHours: 0 },
+});
+
+/** The roll with the marks saved on this phone, while the outbox waits for a signal. */
+const withMarks = (r: RollCallDto, marks: Record<string, Mark>): RollCallDto => ({
+  ...r,
+  rows: r.rows.map((x) => (marks[x.workerId] ? { ...x, status: marks[x.workerId].status, otHours: marks[x.workerId].ot.trim() || null } : x)),
+});
+
 /**
  * The roll call of the named workers at one site for one day: mark each present, half day or absent,
- * with overtime. Saving also brings the day's head count in step. Needs a connection. A day nobody has marked yet is
- * kept on the phone as a draft while it is marked; changing a day already saved is not.
+ * with overtime. Saving also brings the day's head count in step. With no signal the roll is the last one this phone
+ * loaded for the site (its marks cleared for a new day), and Save keeps the marks in the outbox, which sends them when
+ * the signal is back. A day nobody has marked yet is kept on the phone as a draft while it is marked; changing a day
+ * already saved is not.
  */
 export default function RollCallScreen() {
   const api = useApi();
+  const { user } = useAuth();
+  const { enqueue } = useOffline();
   const t = useT();
   const snackbar = useSnackbar();
   const params = useLocalSearchParams<{ projectId?: string }>();
@@ -40,9 +63,27 @@ export default function RollCallScreen() {
   const [notice, setNotice] = useState<string | null>(null);
 
   const valid = !!projectId && isIsoDate(date) && date <= today();
-  const roll = useFetch<RollCallDto>((a) => a.get('/workers/roll-call', { projectId: projectId!, date }), [projectId, date], { enabled: valid, refetchOnFocus: false });
-  const activities = useFetch<ActivityDto[]>((a) => a.get(`/projects/${projectId}/activities`), [projectId], { enabled: !!projectId, refetchOnFocus: false });
-  const fresh = !roll.data || roll.data.rows.every((r) => !r.status);
+  const roll = useFetch<RollCallDto>((a) => a.get('/workers/roll-call', { projectId: projectId!, date }), [projectId, date], { enabled: valid, refetchOnFocus: false, cacheKey: `roll-call:${projectId}:${date}` });
+  const activities = useFetch<ActivityDto[]>((a) => a.get(`/projects/${projectId}/activities`), [projectId], { enabled: !!projectId, refetchOnFocus: false, cacheKey: `activities:${projectId}` });
+
+  // With no signal and no copy of this day, the site's last roll on this phone, unmarked, so the day can still be marked.
+  const rosterKey = `${user?.id ?? 'anon'}:roll-roster:${projectId}`;
+  const [roster, setRoster] = useState<RollCallDto | null>(null);
+  useEffect(() => {
+    if (roll.data) {
+      void writeCache(rosterKey, roll.data);
+      return;
+    }
+    setRoster(null);
+    if (!roll.error || !projectId) return;
+    let live = true;
+    void readCache<RollCallDto>(rosterKey).then((r) => live && r && r.projectId === projectId && setRoster(blankRoll(r, date)));
+    return () => {
+      live = false;
+    };
+  }, [roll.data, roll.error, rosterKey, projectId, date]);
+  const day = roll.data ?? roster;
+  const fresh = !day || day.rows.every((r) => !r.status);
 
   /** Marks of a restored draft, put on the roll once its day has loaded. */
   const restoredMarks = useRef<{ day: string; marks: Record<string, Mark> } | null>(null);
@@ -69,12 +110,12 @@ export default function RollCallScreen() {
 
   // The day's marks from the server; a restored draft's marks go on top when its day is still unmarked.
   useEffect(() => {
-    if (!roll.data) return;
-    const server = Object.fromEntries(roll.data.rows.map((r) => [r.workerId, fromRow(r)]));
+    if (!day) return;
+    const server = Object.fromEntries(day.rows.map((r) => [r.workerId, fromRow(r)]));
     const kept = restoredMarks.current;
-    if (kept && kept.day === `${roll.data.projectId}|${roll.data.date}`) {
+    if (kept && kept.day === `${day.projectId}|${day.date}`) {
       restoredMarks.current = null;
-      if (roll.data.rows.every((r) => !r.status)) {
+      if (day.rows.every((r) => !r.status)) {
         setMarks({ ...server, ...Object.fromEntries(Object.entries(kept.marks).filter(([id]) => id in server)) });
         return;
       }
@@ -86,16 +127,16 @@ export default function RollCallScreen() {
     setMarks(server);
     // Loaded by itself: not a change of the user's to keep or warn about.
     draft.settle();
-  }, [roll.data]);
+  }, [day]);
   const startOver = () => {
     setActivityId(null);
-    setMarks(Object.fromEntries((roll.data?.rows ?? []).map((r) => [r.workerId, fromRow(r)])));
+    setMarks(Object.fromEntries((day?.rows ?? []).map((r) => [r.workerId, fromRow(r)])));
     setNotice(null);
   };
 
-  const rows = roll.data?.rows ?? [];
+  const rows = day?.rows ?? [];
   const changed = useMemo(() => rows.filter((r) => marks[r.workerId] && (marks[r.workerId].status !== r.status || marks[r.workerId].ot !== (r.otHours ?? ''))), [rows, marks]);
-  const locked = !!roll.data?.locked;
+  const locked = !!day?.locked;
   // Stable, so a memoised row re-renders only when its own mark changes.
   const set = useCallback((id: string, patch: Partial<Mark>) => setMarks((m) => ({ ...m, [id]: { ...m[id], ...patch } })), []);
 
@@ -119,13 +160,27 @@ export default function RollCallScreen() {
           note: r.note,
         };
       });
-      const d = await api.put<RollCallDto>('/workers/roll-call', { projectId, date, entries });
-      draft.clear();
-      roll.setData(d);
-      const head = (d.headCount ?? []).reduce((s, l) => s + l.count, 0);
-      snackbar.show(`${t('Roll call saved')}. ${t('Head count for the day: {n}', { n: head })}`);
+      const body = { projectId, date, entries };
+      try {
+        const d = await api.put<RollCallDto>('/workers/roll-call', body);
+        draft.clear();
+        roll.setData(d);
+        const head = (d.headCount ?? []).reduce((s, l) => s + l.count, 0);
+        snackbar.show(`${t('Roll call saved')}. ${t('Head count for the day: {n}', { n: head })}`);
+      } catch (e) {
+        if (!isOfflineError(e) || !day) throw e;
+        // No signal: the outbox sends the marks when it is back; the roll on this phone shows them meanwhile.
+        const projectName = projects.options.find((o) => o.value === projectId)?.label ?? t('Project');
+        await enqueue({ type: 'ROLL_CALL', payload: body, photos: [], title: `${t('Roll call')} · ${formatDate(date)}`, subtitle: `${projectName} · ${t('{n} marks', { n: entries.length })}` });
+        const marked = withMarks(day, marks);
+        if (roll.data) roll.setData(marked);
+        else setRoster(marked);
+        void writeCache(`${user?.id ?? 'anon'}:roll-call:${projectId}:${date}`, marked);
+        draft.clear();
+        snackbar.show(t('Saved on this phone. It goes when the phone has a signal; see Outbox.'));
+      }
     } catch (e) {
-      setError(isOfflineError(e) && fresh ? t('No signal. The marks are kept on this phone: save again when you have a signal.') : errorMessage(e));
+      setError(errorMessage(e));
     } finally {
       setBusy(false);
     }
@@ -154,13 +209,18 @@ export default function RollCallScreen() {
         searchable
         placeholder={t("Keep each worker's activity")}
       />
-      <ErrorBanner message={error ?? roll.error} />
+      <ErrorBanner message={error ?? (roster ? null : roll.error)} />
+      {roster && !roll.data ? (
+        <Card>
+          <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('No signal: this is the roll last loaded on this phone. Mark it and save; the marks go when the signal is back.')}</Text>
+        </Card>
+      ) : null}
       {locked ? (
         <Card>
           <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('Payroll for this month is approved, so its roll call can no longer change.')}</Text>
         </Card>
       ) : null}
-      {roll.data ? (
+      {day ? (
         <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, styles.summary]}>
           {t('{total} on the roll · {present} present · {half} half day · {absent} absent · {unmarked} not marked · {md} man-days', {
             total: rows.length,
@@ -172,7 +232,7 @@ export default function RollCallScreen() {
           })}
         </Text>
       ) : null}
-      {roll.loading && !roll.data ? <Loading /> : null}
+      {roll.loading && !day ? <Loading /> : null}
     </>
   );
 
@@ -185,7 +245,7 @@ export default function RollCallScreen() {
         renderItem={({ item }) => <RollRow row={item} mark={marks[item.workerId]} locked={locked} options={statusOptions} onSet={set} t={t} />}
         extraData={marks}
         ListHeaderComponent={header}
-        ListEmptyComponent={roll.data ? <EmptyState title={t('No workers posted to this site')} subtitle={t("Add the contractors' workers by name on the web, under Attendance.")} icon="people-outline" /> : null}
+        ListEmptyComponent={day ? <EmptyState title={t('No workers posted to this site')} subtitle={t("Add the contractors' workers by name on the web, under Attendance.")} icon="people-outline" /> : null}
         contentContainerStyle={styles.list}
         keyboardShouldPersistTaps="handled"
         initialNumToRender={12}

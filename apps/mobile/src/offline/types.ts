@@ -4,11 +4,13 @@ export type OutboxStatus = 'PENDING' | 'SYNCING' | 'FAILED';
 
 /**
  * What an outbox entry creates: one of the approval submissions, a day's attendance sheet, a delay or risk, a safety
- * record, an RFI, a snag, a breakdown, or a store's receipt, issue or fuel issue (the stock is checked when it arrives).
+ * record, an RFI, a snag, a breakdown, a store's receipt, issue or fuel issue (the stock is checked when it arrives), or
+ * the marks of a site's roll call.
  */
 export type OutboxType =
   | SubmissionType
   | 'ATTENDANCE'
+  | 'ROLL_CALL'
   | 'RISK'
   | 'SAFETY_INCIDENT'
   | 'TOOLBOX_TALK'
@@ -66,6 +68,7 @@ export const OUTBOX_PATH: Record<OutboxType, string> = {
   WO_AMENDMENT: '/work-order-amendments',
   INSPECTION: '/inspections',
   ATTENDANCE: '/attendance',
+  ROLL_CALL: '/workers/roll-call',
   RISK: '/risks',
   SAFETY_INCIDENT: '/safety/incidents',
   TOOLBOX_TALK: '/safety/talks',
@@ -78,6 +81,12 @@ export const OUTBOX_PATH: Record<OutboxType, string> = {
   DEFECT: '/defects',
   BREAKDOWN: '/maintenance/jobs',
 };
+
+/**
+ * Entries sent with PUT rather than POST, as they are (no client id or photos): the roll call sets each listed worker's
+ * mark for the day, so sending it again after a lost answer changes nothing.
+ */
+export const OUTBOX_PUT: Partial<Record<OutboxType, true>> = { ROLL_CALL: true };
 
 export const OUTBOX_DETAIL: Record<SubmissionType, string> = {
   PROGRESS: '/progress/',

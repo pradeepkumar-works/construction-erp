@@ -1993,7 +1993,11 @@ A site labour register, not HR: no PF, ESI or payslips (those stay with Payroll 
   gives the man-days tagged to each activity against its approved progress in the same days, and output per
   man-day. Seeing them needs `canViewWorkers` (recorders, quantity surveyors, accounts).
 - **Web and mobile.** The Attendance page and project tab gain Roll call, Workers and Muster & output beside the
-  head count. The site app has an online Roll call screen.
+  head count. The site app's Roll call screen (`app/roll-call.tsx`) works with no signal: each day's roll is kept on the
+  phone as it loads (`cacheKey`), a day never loaded opens on the site's last roll with its marks cleared, and Save
+  with no signal puts the marks in the outbox (`ROLL_CALL`), sent as the same `PUT` when the signal is back
+  (`OUTBOX_PUT`: it sets each listed worker's mark, so a resend changes nothing). A refusal (a worker marked at another
+  site meanwhile, a locked month) stays in the outbox with the server's words.
 
 ### Site imprest
 
