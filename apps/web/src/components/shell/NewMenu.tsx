@@ -4,9 +4,9 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Dropdown } from 'antd';
 import type { MenuProps } from 'antd';
-import { AccountBookOutlined, AlertOutlined, AuditOutlined, BankOutlined, CarOutlined, CheckSquareOutlined, ColumnWidthOutlined, CommentOutlined, ContainerOutlined, CopyOutlined, ExperimentOutlined, FileAddOutlined, FileDoneOutlined, FileProtectOutlined, FileSearchOutlined, FileTextOutlined, IssuesCloseOutlined, LineChartOutlined, MailOutlined, PlusOutlined, ProjectOutlined, QuestionCircleOutlined, SafetyCertificateOutlined, SafetyOutlined, ShoppingCartOutlined, TeamOutlined, TrophyOutlined, WalletOutlined, WarningOutlined } from '@/components/common/icons';
+import { AccountBookOutlined, AlertOutlined, AuditOutlined, BankOutlined, CarOutlined, CheckSquareOutlined, ColumnWidthOutlined, CommentOutlined, ContainerOutlined, CopyOutlined, ExperimentOutlined, FileAddOutlined, FileDoneOutlined, FileProtectOutlined, FileSearchOutlined, FileTextOutlined, IssuesCloseOutlined, LineChartOutlined, MailOutlined, PlusOutlined, ProjectOutlined, QuestionCircleOutlined, SafetyCertificateOutlined, SafetyOutlined, ShoppingCartOutlined, TableOutlined, TeamOutlined, TrophyOutlined, WalletOutlined, WarningOutlined } from '@/components/common/icons';
 import type { AuthUser } from '@erp/shared';
-import { canKeepBooks, canManageFixedAssets, canManageMachineLoans, canManageProjects, canManageVariations, canMeasure, canRecordPayment, canRaiseNcr, canRaiseRfi, canRecordAttendance, canRecordTest, canReportSafety, canRequestInspection, canSellRmc, canPrepareBill, canPurchase, canRaiseRisk, canRequestFunds, canRequestPayment, canSubmitExpense, canManageTenders, canRunSubcontractEnquiries, canRecordMeetings, canRaiseMaterialApprovals, canManageDocuments, canViewLetters, canViewPayables, isGuest, pathIsOff } from '@erp/shared';
+import { canBuildReports, canKeepBooks, canManageFixedAssets, canManageMachineLoans, canManageProjects, canManageVariations, canMeasure, canRecordPayment, canRaiseNcr, canRaiseRfi, canRecordAttendance, canRecordTest, canReportSafety, canRequestInspection, canSellRmc, canPrepareBill, canPurchase, canRaiseRisk, canRequestFunds, canRequestPayment, canSubmitExpense, canManageTenders, canRunSubcontractEnquiries, canRecordMeetings, canRaiseMaterialApprovals, canManageDocuments, canViewLetters, canViewPayables, isGuest, pathIsOff } from '@erp/shared';
 import { requestNew, type NewKind } from '@/lib/new-intent';
 
 export interface NewEntry {
@@ -71,6 +71,7 @@ export function newEntriesFor(user: AuthUser): NewEntry[][] {
           { kind: 'letter-in' as const, label: 'Letter received', action: 'Record letter', href: '/correspondence', icon: <MailOutlined /> },
         ]
       : []),
+    ...(canBuildReports(user) ? [{ kind: 'report' as const, label: 'Report', action: 'New report', keywords: 'custom report builder table totals excel schedule', href: '/my-reports', icon: <TableOutlined /> }] : []),
   ];
   // Nothing from a module the company has turned off.
   return [site, checks, office].map((g) => g.filter((e) => !pathIsOff(e.href, user.modulesOff))).filter((g) => g.length > 0);

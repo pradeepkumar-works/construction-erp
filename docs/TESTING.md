@@ -41,6 +41,9 @@ Playwright tests of the main web flows:
   no forecast for a project manager, and Draft reminder opening the letter form with the contract's clause (nothing saved).
 - `leakage.spec.ts`: Leakage checks (AI item 121): the month's flags open their working, the store sees no rates and a
   site engineer no page; a PO above what another site paid says so on its record (the draft is deleted afterwards).
+- `report-builder.spec.ts`: Reports you build (item 196): build, save, share, group and total a report, Print and Excel, a
+  hidden column left out for another role, and a schedule's copy reaching a recipient who opens their link to their own
+  rows (lane 7). Lane 7 runs the schedules job, so start the API with `CRON_SECRET=e2e-cron`.
 
 The tests add and approve entries, so run them against a local or CI database, never production.
 

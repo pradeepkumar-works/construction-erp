@@ -288,7 +288,7 @@ export const MANAGEMENT_REPORTS: Record<ManagementReportKey, ManagementReportInf
 
 /** The HR and payroll reports: read by the people who see payroll (HR, accounts, management and admins), not by site managers. */
 export const HR_REPORT_KEYS: readonly ManagementReportKey[] = ['headcount', 'staff-attendance', 'leave-register', 'pf-esi', 'settlements', 'staff-cost'];
-export const isHrReport = (key: ManagementReportKey) => HR_REPORT_KEYS.includes(key);
+export const isHrReport = (key: string) => (HR_REPORT_KEYS as readonly string[]).includes(key);
 
 /** The desks that read one report of their own beside those who see the dashboard: the procurement manager reads
  *  procurement spend, the store manager the stock position, and HR the labour and attendance report. */
@@ -302,7 +302,8 @@ export const REPORT_DESKS: Partial<Record<ManagementReportKey, (role: RoleKey) =
  *  reports only those who see payroll. */
 export const canReadReport = (role: RoleKey, key: ManagementReportKey) => (isHrReport(key) ? canViewPayroll(role) : canSeeManagement(role) || !!REPORT_DESKS[key]?.(role));
 
-export type ReportColumnKind = 'text' | 'money' | 'qty' | 'pct' | 'date' | 'days' | 'count';
+/** `month` is a YYYY-MM cell (a report you build groups by it). */
+export type ReportColumnKind = 'text' | 'money' | 'qty' | 'pct' | 'date' | 'days' | 'count' | 'month';
 export type ReportCell = string | number | null;
 
 export interface ReportColumnDto {
@@ -327,7 +328,8 @@ export interface ReportSectionDto {
 }
 
 export interface ManagementReportDto {
-  key: ManagementReportKey;
+  /** A management report's key, or `saved` for a report someone built (ARCHITECTURE "Reports you build") */
+  key: ManagementReportKey | 'saved';
   title: string;
   /** The period in words: "October 2026", "1 Apr 2026 to 26 Oct 2026", "As of 26 Oct 2026" */
   period: string;
@@ -337,6 +339,8 @@ export interface ManagementReportDto {
   projectName: string | null;
   /** The vertical it is limited to, by name, else null */
   verticalName: string | null;
+  /** What a report you built covers, in words, when it is not one project ("Every project you see", "Every vendor") */
+  scope?: string | null;
   generatedAt: string;
   /** The paragraph the report opens with, written from its own figures (the Monthly MIS) */
   commentary?: string | null;

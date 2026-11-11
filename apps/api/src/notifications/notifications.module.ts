@@ -19,6 +19,7 @@ import { CompanySettingsService } from '../company-data/company-settings.service
 import { CompanyDataController } from '../company-data/company-data.controller';
 import { BillingService } from '../billing/billing.service';
 import { BillingController } from '../billing/billing.controller';
+import { ReportBuilderModule } from '../report-builder/report-builder.module';
 
 /**
  * Global so SubmissionLifecycleService (CommonModule) can emit notifications, and invites send WhatsApp / SMS, without an import cycle.
@@ -26,7 +27,7 @@ import { BillingController } from '../billing/billing.controller';
  */
 @Global()
 @Module({
-  imports: [PayablesModule, WarningsModule, BriefsModule, DocumentsModule, IntegrationsModule],
+  imports: [PayablesModule, WarningsModule, BriefsModule, DocumentsModule, IntegrationsModule, ReportBuilderModule],
   controllers: [NotificationsController, MessagingController, CompanyDataController, CompanySettingsController, BillingController],
   providers: [DemoClockService, NotificationsService, NotificationJobsService, NotificationSchedulerService, ExpoPushService, EmailService, MessagingService, CompanyDataService, CompanySettingsService, BillingService],
   exports: [NotificationsService, NotificationJobsService, EmailService, MessagingService],

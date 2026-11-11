@@ -49,6 +49,8 @@ export function notificationHref(n: NotificationDto): string {
   if (n.entityType === 'FINAL_SETTLEMENT') return '/payroll?tab=settlements';
   if (n.type === 'HANDOFF' && n.entityType === 'MATERIAL_REQUEST' && n.entityId) return `/requests-to-order/${n.entityId}`;
   if (n.type === 'HANDOFF' && n.entityType === 'PURCHASE_ORDER' && n.entityId) return `/purchase-orders/${n.entityId}`;
+  // A scheduled report: the report itself.
+  if (n.entityType === 'SAVED_REPORT' && n.entityId) return `/my-reports/${n.entityId}`;
   if (n.entityType && n.entityId) return `/notifications?type=${n.entityType}&id=${n.entityId}`;
   if (n.type === 'APPROVAL_DIGEST') return '/approvals';
   if (n.type === 'DPR_REMINDER' && n.projectId) return `/projects/${n.projectId}?tab=dpr`;

@@ -107,6 +107,7 @@ export const MENU: Record<string, string> = {
   'Reports and MIS': 'रिपोर्ट और MIS',
   'The management dashboard, the watch list, the monthly MIS and every report.': 'मैनेजमेंट डैशबोर्ड, वॉच लिस्ट, मासिक MIS और हर रिपोर्ट।',
   'Dashboards': 'डैशबोर्ड',
+  'My reports': 'मेरी रिपोर्ट',
   'Monthly': 'मासिक',
   'Operations': 'संचालन',
   'Finance': 'वित्त',

@@ -52,6 +52,12 @@ import type {
   GroupCompanyInput,
   GroupStateDto,
   ManagementReportDto,
+  ReportDefinition,
+  ReportFrequency,
+  ReportRecipientDto,
+  ReportSourceDto,
+  ReportSourceKey,
+  SavedReportDto,
   ManagementReportKey,
   PortfolioDto,
   PortfolioProjectDetailDto,
@@ -5211,6 +5217,90 @@ export function useSaveCustomField() {
       return (await api.post<CustomFieldDto>('/custom-fields', { ...v.field, entity: v.entity })).data;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['custom-fields'] }),
+  });
+}
+
+// Reports you build (ARCHITECTURE "Reports you build")
+
+export const useReportSources = (enabled = true) =>
+  useQuery({
+    queryKey: ['report-builder', 'sources'],
+    queryFn: async () => (await api.get<ReportSourceDto[]>('/report-builder/sources')).data,
+    staleTime: 5 * 60_000,
+    enabled,
+  });
+
+export interface SavedReportFilters extends PageParams {
+  mine?: boolean;
+  scheduled?: boolean;
+}
+
+export const useSavedReportsPage = (filters: SavedReportFilters) =>
+  useQuery({
+    queryKey: ['report-builder', 'reports', 'page', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<SavedReportDto>>('/report-builder/reports', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+export const useSavedReport = (id: string | undefined) =>
+  useQuery({
+    queryKey: ['report-builder', 'reports', id],
+    queryFn: async () => (await api.get<SavedReportDto>(`/report-builder/reports/${id}`)).data,
+    enabled: !!id,
+  });
+
+/** A report not yet saved, run as the reader over the reporting month: the builder's preview. */
+export const useReportPreview = (definition: ReportDefinition | null) =>
+  useQuery({
+    queryKey: ['report-builder', 'preview', definition],
+    queryFn: async () => (await api.post<ManagementReportDto & { count: number; countLabel: string }>('/report-builder/run', { definition })).data,
+    enabled: !!definition,
+    placeholderData: keepPreviousData,
+    retry: false,
+  });
+
+/** A saved report run as the reader for the period and project. */
+export const useSavedReportRun = (id: string | undefined, params: { from?: string; to?: string; projectId?: string }) =>
+  useQuery({
+    queryKey: ['report-builder', 'reports', id, 'run', clean(params)],
+    queryFn: async () => (await api.get<ManagementReportDto>(`/report-builder/reports/${id}/run`, { params: clean(params) })).data,
+    enabled: !!id,
+    placeholderData: keepPreviousData,
+  });
+
+export const useReportRecipients = (source: ReportSourceKey | undefined, enabled = true) =>
+  useQuery({
+    queryKey: ['report-builder', 'recipients', source],
+    queryFn: async () => (await api.get<ReportRecipientDto[]>('/report-builder/recipients', { params: { source } })).data,
+    enabled: enabled && !!source,
+    staleTime: 60_000,
+  });
+
+/** Save a new report (no `id`) or change one. */
+export function useSaveReport() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { id?: string; name: string; shared: boolean; definition: ReportDefinition }) =>
+      v.id ? (await api.patch<SavedReportDto>(`/report-builder/reports/${v.id}`, v)).data : (await api.post<SavedReportDto>('/report-builder/reports', v)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['report-builder', 'reports'] }),
+  });
+}
+
+export function useDeleteReport() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => (await api.delete(`/report-builder/reports/${id}`)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['report-builder', 'reports'] }),
+  });
+}
+
+/** Email a report on a schedule, or stop it (`stop`). */
+export function useScheduleReport(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { stop: true } | { stop?: false; frequency: ReportFrequency; weekday?: number; dayOfMonth?: number; recipientIds: string[] }) =>
+      v.stop ? (await api.delete<SavedReportDto>(`/report-builder/reports/${id}/schedule`)).data : (await api.put<SavedReportDto>(`/report-builder/reports/${id}/schedule`, { frequency: v.frequency, weekday: v.weekday, dayOfMonth: v.dayOfMonth, recipientIds: v.recipientIds })).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['report-builder', 'reports'] }),
   });
 }
 

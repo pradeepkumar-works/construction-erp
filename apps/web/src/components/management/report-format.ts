@@ -1,5 +1,5 @@
 import type { ReportCell, ReportColumnKind } from '@erp/shared';
-import { formatDate, formatINR, formatINRCompact, formatPct, formatQty, NO_VALUE, formatCount } from '@/lib/format';
+import { formatDate, formatMonth, formatINR, formatINRCompact, formatPct, formatQty, NO_VALUE, formatCount } from '@/lib/format';
 
 /**
  * How a management report's cell reads, on the screen, in print and in Excel (ARCHITECTURE "Management dashboard and
@@ -20,6 +20,8 @@ export function cellText(kind: ReportColumnKind, v: ReportCell | undefined, comp
       return formatPct(v);
     case 'date':
       return formatDate(String(v));
+    case 'month':
+      return formatMonth(String(v));
     case 'days':
       return typeof v === 'number' ? plural(v, 'day') : String(v);
     case 'count':
@@ -33,13 +35,13 @@ export function cellText(kind: ReportColumnKind, v: ReportCell | undefined, comp
 export function cellExcel(kind: ReportColumnKind, v: ReportCell | undefined): string | number | null {
   if (v === null || v === undefined || v === '') return null;
   if (kind === 'text') return String(v);
-  if (kind === 'date') return String(v);
+  if (kind === 'date' || kind === 'month') return String(v);
   const n = typeof v === 'number' ? v : Number(v);
   if (!Number.isFinite(n)) return String(v);
   return kind === 'money' ? Math.round(n * 100) / 100 : n;
 }
 
-export const isNumeric = (kind: ReportColumnKind) => kind !== 'text' && kind !== 'date';
+export const isNumeric = (kind: ReportColumnKind) => kind !== 'text' && kind !== 'date' && kind !== 'month';
 
 /** A figure below zero (a loss) reads in the danger colour. */
 export const isNegative = (kind: ReportColumnKind, v: ReportCell | undefined) => (kind === 'money' || kind === 'pct') && typeof v === 'number' && v < 0;

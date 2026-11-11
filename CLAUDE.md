@@ -480,6 +480,13 @@ and the pre-delivery checklist.
   locked only by `assertNoLiveGstDocument`. Records show it through `GstDocumentPanel`, papers through `irnBlockHtml`.
   A PENDING row is re-sent only when older than the provider's `answerWithinMs`, with its stored payload, and no answer
   leaves it PENDING and locked. Keep `src/scripts/einvoice-test.ts` and `src/scripts/einvoice-race-test.ts` passing.
+- Reports you build (item 196, `apps/api/src/report-builder`, ARCHITECTURE "Reports you build"): a source is a
+  `REPORT_SOURCES` key with its column catalogue (`@erp/shared/report-builder.ts`; a column a role may not see names its
+  helper, custom fields join as `cf:<key>`), a definition is read only by `readDefinition` against `catalogueFor(role, …)`,
+  rows come only from the source's own list service called as the reader, and filtering, grouping, exact totals and the
+  sort are only `runReport`; the result is a `ManagementReportDto`. A schedule's period is only `scheduleDue`, each copy is
+  run as its recipient and kept under `scheduleDedupeKey`, called from the approval digest's cron. A new source is a key
+  there and a reader in `ReportBuilderService`. Keep `src/scripts/report-builder-test.ts` passing.
 - RMC (item 104, `apps/api/src/rmc`, ARCHITECTURE "RMC plant"): a plant is a project of type `PLANT`; a truck's materials
   leave the plant's store only through `StockService.issue`, and cubes are a quality test through `QualityService`. Its
   figures are pure functions in `rmc-rules.ts` tested in `src/scripts/rmc-test.ts` (CI runs it); bills and receipts post
