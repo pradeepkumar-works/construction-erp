@@ -2,6 +2,10 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
 import type {
+  GstSourceKind,
+  GstSourceStateDto,
+  TransportMode,
+  VehicleType,
   ConsolidationBasis,
   ConsolidationDto,
   SisterLinkInput,
@@ -5182,4 +5186,61 @@ export function useSaveCustomField() {
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['custom-fields'] }),
   });
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// E-invoices and e-way bills (item 194)
+
+/** A record's IRN or e-way bill: whether it gets one, what it lacks, the live one and the earlier ones. */
+export const useGstSource = (sourceKind: GstSourceKind, sourceId: string | undefined, enabled = true) =>
+  useQuery({
+    queryKey: ['gst', sourceKind, sourceId],
+    queryFn: async () => (await api.get<GstSourceStateDto>(`/gst/sources/${sourceKind}/${sourceId}`)).data,
+    enabled: enabled && !!sourceId,
+  });
+
+export interface GstGenerateInput {
+  mode?: TransportMode;
+  vehicleNo?: string | null;
+  vehicleType?: VehicleType;
+  distanceKm?: number;
+}
+
+export interface EwayExtendInput {
+  fromPlace: string;
+  /** The GST state code of where the goods are now. */
+  fromState: string;
+  remainingKm: number;
+  vehicleNo?: string | null;
+  mode?: TransportMode;
+  reason: string;
+  remark: string;
+}
+
+/** Makes, cancels or extends a record's IRN or e-way bill; the record and its source list are fetched again, since a live one locks it. */
+export function useGstActions(sourceKind: GstSourceKind, sourceId: string | undefined) {
+  const qc = useQueryClient();
+  const done = (s: GstSourceStateDto) => {
+    qc.setQueryData(['gst', sourceKind, sourceId], s);
+    void qc.invalidateQueries({ queryKey: sourceKind === 'RA_BILL' ? ['bills'] : sourceKind === 'STOCK_TRANSFER' ? ['stock'] : ['rmc'] });
+  };
+  return {
+    generate: useMutation({
+      mutationFn: async (v: GstGenerateInput) => (await api.post<GstSourceStateDto>(`/gst/sources/${sourceKind}/${sourceId}/generate`, v)).data,
+      onSuccess: done,
+      // A refusal the IRP or the e-way bill system wrote is kept as a FAILED document: fetch the history either way.
+      onError: () => void qc.invalidateQueries({ queryKey: ['gst', sourceKind, sourceId] }),
+      meta: FAIL_NOTICE,
+    }),
+    cancel: useMutation({
+      mutationFn: async ({ id, ...v }: { id: string; reason: string; remark: string }) => (await api.post<GstSourceStateDto>(`/gst/documents/${id}/cancel`, v)).data,
+      onSuccess: done,
+      meta: FAIL_NOTICE,
+    }),
+    extend: useMutation({
+      mutationFn: async ({ id, ...v }: EwayExtendInput & { id: string }) => (await api.post<GstSourceStateDto>(`/gst/documents/${id}/extend`, v)).data,
+      onSuccess: done,
+      meta: FAIL_NOTICE,
+    }),
+  };
 }

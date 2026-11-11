@@ -9,6 +9,18 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-einvoices',
+    date: '2026-11-15',
+    title: 'E-invoices and e-way bills from the record',
+    points: [
+      'Set when the company came under e-invoicing, and the SAC of its works bills, under Admin › Company settings › E-invoicing. A bill to a client with a GSTIN dated from then gets an E-invoice section.',
+      'On a certified RA bill or an RMC bill, Generate IRN gets the IRN, the acknowledgement and the signed QR from the IRP. Print the bill and they are on it. Generating twice gives back the same IRN.',
+      'An RMC challan and a stock transfer get Generate e-way bill: the vehicle and the distance by road, valid a day for each 200 km. Extend validity near its end, or cancel it within 24 hours.',
+      'A bill with a live IRN cannot be certified again or cancelled until the IRN is cancelled, within 24 hours of it being made; after that, raise a credit note. A transfer with a live e-way bill cannot be deleted.',
+      'Nirmaan reaches the IRP through your GST provider (GSP): set it up under Admin › Connections with its addresses, your GSTIN and API user, and the client secret and password. The HSN of each item is on its card in Items.',
+    ],
+  },
+  {
     id: '2026-11-custom-fields',
     date: '2026-11-14',
     title: 'Your own fields on vendors, projects and purchase orders',

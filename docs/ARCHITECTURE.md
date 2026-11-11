@@ -3673,6 +3673,98 @@ them. They are the DPR's own field kinds, in one shared home.
   Hindi names on the web.
 - **Tested** in `src/scripts/custom-fields-test.ts` (CI runs it) and `e2e/tests/custom-fields.spec.ts`.
 
+## E-invoices and e-way bills (item 194)
+
+A company whose turnover put it under e-invoicing reports each B2B tax invoice to NIC's Invoice Registration Portal and
+prints the IRN and signed QR it gets back; goods worth more than ₹50,000 travel with an e-way bill. Nirmaan does both from
+the record (`apps/api/src/gst`, `EinvoiceService`, routes under `/gst/sources/:sourceKind/:sourceId` and
+`/gst/documents/:id`), without retyping anything on the portals.
+
+- **What gets one.** A certified RA bill (`RA_BILL`, invoice number `raInvoiceNo`: `RA/<project code>/<bill no.>`) and an
+  RMC bill (`RMC_INVOICE`) get an IRN when the buyer has a GSTIN and the bill is dated on or after
+  `Organization.einvoiceFrom` (Company settings › E-invoicing; null means not under it) — `einvoiceNeeded`. An RMC challan
+  (`RMC_BATCH`, supply on a delivery challan, or own use when the order has no client) and a stock transfer out
+  (`STOCK_TRANSFER`, own use, `CHL`) get an e-way bill; above `EWAY_THRESHOLD` it is needed, below it is offered.
+- **Table.** `GstDocument` (tenant table with RLS): `kind` IRN or EWB, the source (`sourceKind`, `sourceId`, `docNo`),
+  `payload` and `payloadHash`, `status` (`PENDING` sent with no answer kept, `ACTIVE`, `CANCELLED`, `FAILED` refused and
+  kept as the log), `provider` (FAKE or GSP), `number`, `ackNo`, `ackAt`, `validUntil`, `signedQr`, the vehicle, distance
+  and extensions, the cancel reason and remark, the provider's `error` and `response`. A partial unique index
+  (`GstDocument_one_live`) keeps one PENDING or ACTIVE row per source. The IRN and QR live only here, never copied onto
+  the bill: the records read their live document. Codes are `Organization.gstSac` (the SAC of works bills),
+  `RaBill.sacCode` (a bill's own) and `Item.hsnCode`; concrete is `RMC_HSN`.
+- **Rules** (`@erp/shared/einvoice.ts`, pure, golden JSON in `src/scripts/einvoice-test.ts`). `einvoicePayload` writes
+  NIC INV-01 v1.1 (seller and buyer GSTIN, legal name, address read by `readGstAddress`, state code, document type INV,
+  number and date as dd/mm/yyyy, items with SAC/HSN and `IsServc`, unit by `uqcOf`, GST rate, CGST and SGST within the
+  state or IGST across it, totals to two places); `ewayPayload` writes GENEWAYBILL with the vehicle, distance and value.
+  Money is integer paise: each line's tax is allocated so the lines add up to what the bill stored (the last line takes
+  the paisa left), never worked out again. `einvoiceProblems` / `ewayProblems` / `ewayTransportProblems` say what to
+  fill (the SAC, a PIN code, an HSN or rate on a transfer's item, a split that disagrees with the place of supply, the
+  vehicle, a GST rate outside `IRP_GST_RATES`, an HSN starting with 0, which the e-way bill JSON carries as a number). An
+  RA bill is supplied where the company bills from (CGST and SGST, as the register and Tally read it); an RMC bill
+  follows its own split. That is a modelling limit: works for a client in another state are billed as the record holds
+  them, with no place of supply of their own, so a bill that should be IGST is fixed on the bill before it is sent. A
+  line's `UnitPrice` is its own amount over its quantity, never today's order rate. An e-way bill's `actFromStateCode`
+  is where the goods leave and `actToStateCode` the ship-to state; an extension's `fromState` is where the goods are
+  now, chosen on the form.
+- **Dates.** `DocDtls.Dt` is the bill's own date, never the day it is reported: the IRN certifies the invoice as issued,
+  and the return and the books read the same date. The IRP refuses an invoice more than 30 days old from a company
+  with turnover of ₹10 crore or more and takes it below that, and Nirmaan does not know the turnover, so the age is
+  `einvoiceWarnings` (`EINVOICE_REPORT_DAYS`), shown above Generate, never a block. Validity is `ewayValidUntil` (a day for each 200 km, 20 km for over-dimensional cargo,
+  each ending at midnight in India); cancel is `cancelWindowProblem` (24 hours, after that a credit note), extend
+  `ewayExtendProblem` (8 hours either side of the end). NIC's answers are read in `einvoice-rules.ts` (`readIrnAnswer`
+  takes error 2150, Duplicate IRN, as made with the IRN it names).
+- **Values.** An RMC challan travels at its quantity at the order's rate with GST (`invoiceAmounts`, pumping left out as
+  a service). `StockTxn` has no value, so a transfer's line is its quantity at the item master's `rate` (the rate stock
+  valuation uses); a line with no rate or no HSN blocks it and the record names the item.
+- **Made once.** `generate` loads the source through its own service (so its access rules apply), builds the payload and
+  refuses with every problem before writing. Under the source's `GST:` advisory lock (`lockGstSource`) it returns the
+  ACTIVE row when the payload hash matches and refuses a different live one. It refuses a number whose IRN was
+  cancelled: cancelled IRNs cannot be reused, and an RA bill's number is fixed (its project and bill number), so the
+  record says to raise the corrected invoice outside Nirmaan or ask support for a revised bill number. A PENDING row
+  younger than the provider's `answerWithinMs` (30 s for the GSP, its whole deadline) is being made by another request:
+  409. An older one is claimed by touching its `updatedAt` inside the lock and resent with its stored payload, never
+  one built again from today's facts, so a stuck row can always be finished. Otherwise a new PENDING row is written;
+  after it commits the payload is built again, and a record changed in between marks the row FAILED, saying the record
+  changed, and nothing is sent. The provider is called outside the transaction, and ACTIVE or FAILED is written only
+  where the row is still PENDING (`updateMany`), so a late answer never overwrites a made IRN.
+- **Three outcomes.** A provider answers made, refused or no answer (`unanswered`: a thrown or timed-out call, a 5xx, a
+  body that is not JSON). Refused marks the row FAILED and frees the record (502). No answer leaves it PENDING and locked,
+  since the IRP may hold it, and says "The IRP did not answer. Try again in a minute." (504). A retry is the stale
+  resend: the IRP's 2150 (Duplicate IRN) is taken as made only when GetIrnDetails gives the same number, date, total
+  and assessable value as the stored payload (`duplicateIrnProblem`); other figures mark the row FAILED with "The IRP
+  holds IRN X for other figures: cancel it there within 24 hours or raise a credit note". A stale e-way bill is first
+  looked up by its document (`findEwb`, NIC's GetEwayBillGeneratedByConsigner), and NIC's 604 (already made) on a
+  resend is filled from that answer. `src/scripts/einvoice-race-test.ts` proves the claim, the stale resend, the
+  changed record, no answer and the lookup against the database.
+- **Locks.** While a live IRN or e-way bill stands (`assertNoLiveGstDocument`, `gst-lock.ts`), a re-certificate of the RA
+  bill, the cancel of an RMC bill, the turn-back of an RMC challan and the delete of a stock transfer are refused with
+  `liveGstDocWords`, which name it. The check runs inside each change's own transaction and takes the same `GST:`
+  advisory lock `generate` holds while it writes PENDING, so a change cannot slip between that row and the IRP.
+- **Providers** (`GstProvider`, picked by `GST_PROVIDER`). `fake` (`FakeGstProvider`) answers at once and calls nothing:
+  the IRN as NIC makes it (sha256 of the seller's GSTIN, the financial year, the type and the number), a 15 digit ack, a
+  12 digit e-way bill number and an unsigned QR token over `qrText`; the record and the print say the numbers are stand-ins.
+  `gsp` (`NicGspProvider`) calls NIC's e-invoice and e-way bill APIs in plain JSON through the company's GST provider, a
+  `GST_GSP` connection on Admin › Connections (the first `CALL` connection: Nirmaan calls it, nothing comes in): its
+  addresses, GSTIN, API user and client id in the config, the client secret and API password sealed together under
+  `INTEGRATION_KEY` as JSON (`gspCredential` / `readGspCredential`, so a colon in either is safe; the connection shows
+  the secret's last four); each call moves the connection's health. Every call refuses a redirect, one deadline covers
+  a request's calls, the IRP token is kept per connection and saved version (`id:updatedAt`) for five hours, and NIC's
+  1005 (invalid token) drops it and signs in once more. An e-way bill made without an IRN signs in as the IRP does,
+  which is to be confirmed on the GSP's sandbox before it is used (DEPLOY.md). It is written to NIC's published API and untested against
+  the live IRP; a GSP that signs in its own way or encrypts the bodies needs its own adapter. Unset, the records say
+  e-invoicing is not set up.
+- **Screens.** The RA bill record's E-invoice section (certified bills), the RMC bill drawer, the RMC challan drawer and a
+  stock transfer's drawer share `GstDocumentPanel` (`components/gst`): what to fill, Generate, the number with its
+  acknowledgement or validity and the QR (antd `QRCode`), Cancel with its reason, Extend validity, and the earlier ones.
+  The RA bill print and the RMC tax invoice (on the letterhead through `printDocHtml`) print `irnBlockHtml`: the invoice
+  number, IRN, ack and the QR drawn by `qrSvg`. The screen's QR draws in the print's ink on its paper in both themes,
+  since a reader scans dark on light.
+- **Who.** `canFileEinvoice` (admin, management, accounts) makes and cancels IRNs; `canMakeEwayBill` (those and the stock
+  keepers) makes, extends and cancels e-way bills; everything is in the audit log under the source's entity.
+- **Not yet.** The bill's email goes when it is sent, before it is certified, so it carries no IRN. B2C dynamic QR, credit
+  and debit note IRNs, Part B updates on their own, consolidated e-way bills, the GSTIN check, a revision suffix on an RA
+  bill's number after its IRN is cancelled, and a place of supply of a bill's own are not built.
+
 ## Bills without a PO and debit notes
 
 Hire, workshop and other service bills, and what a vendor owes back (v5 item 91).
@@ -4928,6 +5020,9 @@ secrets, pairing codes, health and batches are pure in `apps/api/src/integration
 - **A new kind** is an `IntegrationKind` (schema + `INTEGRATION_KINDS` + `INTEGRATION_KIND_INFO`), a handler in
   `IntegrationsService.handlers`, and for a site device a reader in the Connector's `READERS` (`apps/connector/src/readers.ts`).
   Item 139 ships two: a web address for any service (`GENERIC_WEBHOOK`) and the Connector's own check (`CONNECTOR_CHECK`).
+- **Calling out.** A `CALL` kind is a service Nirmaan calls on someone's action and that sends nothing in: the GST
+  provider (`GST_GSP`, item 194, ARCHITECTURE "E-invoices and e-way bills"). It has no web address and no handler work;
+  each call moves its health.
 - **Who.** Admins and management (`canManageIntegrations`); every change is in the audit log.
 - **Not yet.** A queue of outgoing jobs with retries (it comes with Tally live sync, item 140), pruning of an old log, and
   a watch list warning for a connection that is failing or quiet.

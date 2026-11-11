@@ -25,6 +25,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { AuditService } from '../common/audit.service';
 import { iso } from '../common/serialize';
+import { readGspConfig, readGspCredential } from '../gst/einvoice-rules';
 import { setTenant, withoutTenant } from '../prisma/tenant-context';
 import {
   agentState,
@@ -116,6 +117,8 @@ export class IntegrationsService {
     FUEL_DISPENSER: (c, payload, at, ctx) => this.dispense(c, payload, at, ctx),
     WEIGHBRIDGE: (c, payload) => this.weighing(c, payload),
     BATCHING_PLANT: (c, payload) => this.plantRow(c, payload),
+    // Nirmaan calls the GST provider; nothing comes in from it.
+    GST_GSP: async () => ({ status: 'IGNORED', summary: 'A GST provider sends nothing in; Nirmaan calls it' }),
   };
 
   /** A row of the plant controller's batch report, read by the Connector: kept for a challan on the RMC page. */
@@ -265,10 +268,19 @@ export class IntegrationsService {
     return { ...r.config };
   }
 
+  /** A GST provider's settings, checked and trimmed before they are saved. */
+  private gspConfig(config: unknown, hasCredential: boolean): Record<string, unknown> {
+    const r = readGspConfig(config, hasCredential);
+    if (r.problem) throw new BadRequestException(r.problem);
+    return { ...r.config };
+  }
+
+  /** A key sealed, and the last four characters to show: for a GSP those of its client secret, never of the password. */
   private sealed(credential: string) {
     const key = this.integrationKey();
     if (!key) throw new BadRequestException('Keys cannot be saved until INTEGRATION_KEY is set on the server (see DEPLOY.md)');
-    return { secretEnc: sealSecret(credential, key), secretLast4: last4(credential) };
+    const gsp = readGspCredential(credential);
+    return { secretEnc: sealSecret(credential, key), secretLast4: last4(gsp ? gsp.clientSecret : credential) };
   }
 
   async createConnection(user: RequestUser, dto: CreateConnectionDto): Promise<IntegrationSecretDto> {
@@ -277,6 +289,10 @@ export class IntegrationsService {
     if (info.transport === 'CONNECTOR' && !dto.agentId) throw new BadRequestException('Choose the Connector that reads it');
     await this.checkRefs(user, dto.projectId, info.transport === 'CONNECTOR' ? dto.agentId : null);
     if (info.transport === 'POLL') dto.config = this.feedConfig(dto.config, !!dto.credential);
+    if (dto.kind === 'GST_GSP') {
+      if (dto.credential && !readGspCredential(dto.credential)) throw new BadRequestException("Type both the GSP's client secret and the API password");
+      dto.config = this.gspConfig(dto.config, !!dto.credential);
+    }
     if (dto.kind === 'FUEL_DISPENSER') dto.config = await this.fuel.checkConfig(user, dto.projectId, dto.config);
     if (dto.kind === 'WEIGHBRIDGE') dto.config = this.weighbridgeConfig(dto.projectId, dto.config);
     if (dto.kind === 'BATCHING_PLANT') dto.config = await this.batchingConfig(user, dto.projectId, dto.config, null);
@@ -310,6 +326,11 @@ export class IntegrationsService {
     if (INTEGRATION_KIND_INFO[c.kind].transport === 'POLL' && (dto.config !== undefined || dto.credential !== undefined)) {
       const hasCredential = dto.credential ? true : dto.credential === '' || dto.credential === null ? false : !!c.secretEnc;
       dto.config = this.feedConfig(dto.config ?? c.config, hasCredential);
+    }
+    if (c.kind === 'GST_GSP' && (dto.config !== undefined || dto.credential !== undefined)) {
+      if (dto.credential && !readGspCredential(dto.credential)) throw new BadRequestException("Type both the GSP's client secret and the API password");
+      const hasCredential = dto.credential ? true : dto.credential === '' || dto.credential === null ? false : !!c.secretEnc;
+      dto.config = this.gspConfig(dto.config ?? c.config, hasCredential);
     }
     if (c.kind === 'FUEL_DISPENSER' && (dto.config !== undefined || dto.projectId !== undefined))
       dto.config = await this.fuel.checkConfig(user, dto.projectId === undefined ? c.projectId : dto.projectId, dto.config ?? c.config);

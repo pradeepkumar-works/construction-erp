@@ -748,6 +748,8 @@ export interface ItemDto {
   code?: string | null;
   /** The standard it is bought to (IS 8329) */
   standard?: string | null;
+  /** Its HSN code, for e-way bills */
+  hsnCode?: string | null;
   category: string | null;
   /** Standard rate per unit used to value issues in the cost view. */
   rate: string | null;
@@ -1815,6 +1817,8 @@ export interface RaBillDto extends SubmissionBase {
   billDate: string;
   measuredUpTo: string;
   remarks: string | null;
+  /** The SAC its e-invoice reports, when not the company's */
+  sacCode: string | null;
   projectCode: string;
   workOrderNo: string | null;
   agreementNo: string | null;
@@ -3305,6 +3309,10 @@ export interface CompanyProfileDto {
   /** Tax deduction account number, quoted on every TDS return and challan */
   tan: string | null;
   logo: string | null;
+  /** The SAC the e-invoice of a works bill reports, unless the bill names its own */
+  gstSac: string | null;
+  /** The day the company came under e-invoicing (its turnover passed ₹5 crore); null when it is not */
+  einvoiceFrom: string | null;
 }
 
 /** Settings › Numbering: one line per kind of document. */

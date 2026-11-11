@@ -13,6 +13,7 @@ import { LinkButton } from '@/components/common/LinkButton';
 import { BatchStatusTag, M3 } from './rmcUi';
 import { DeliveryForm } from './BatchForms';
 import { unitLabel } from '@erp/shared';
+import { GstDocumentBlock } from '@/components/gst/GstDocumentPanel';
 
 const variance = (v: number | null) => (v === null ? NO_VALUE : `${v > 0 ? '+' : ''}${v.toFixed(1)}%`);
 
@@ -96,6 +97,7 @@ export function BatchDrawer({ id, onClose }: { id: string | null; onClose: () =>
               },
             ]}
           />
+          <GstDocumentBlock sourceKind="RMC_BATCH" sourceId={b.id} />
           {b.note && <Typography.Paragraph style={{ marginTop: tk.space[3] }}>{b.note}</Typography.Paragraph>}
           <Typography.Title level={2} style={{ fontSize: tk.type.lead.fontSize, marginTop: tk.space[4] }}>
             Weighed against the design

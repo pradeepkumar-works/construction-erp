@@ -471,6 +471,15 @@ and the pre-delivery checklist.
   `CustomFieldsService.read` inside the entity's own `create` / `update` (an order's required ones there on Save and
   submit, before any write, and by `assertComplete` in `submitOrder`), never a check of a form's own. A new kind of record is a `CUSTOM_FIELD_ENTITIES` key (`@erp/shared/custom-fields.ts`,
   where the DPR's field kinds and `readExtra` live too). Keep `src/scripts/custom-fields-test.ts` passing.
+- E-invoices and e-way bills (item 194, `apps/api/src/gst`, ARCHITECTURE "E-invoices and e-way bills"): a payload is only
+  `einvoicePayload` / `ewayPayload`, what blocks one only `einvoiceProblems` / `ewayProblems` / `ewayTransportProblems`,
+  whether one is due only `einvoiceNeeded` / `ewayNeeded`, validity only `ewayValidUntil` and the windows only
+  `cancelWindowProblem` / `ewayExtendProblem` (`@erp/shared/einvoice.ts`); an IRN or e-way bill is a `GstDocument` made
+  only through `EinvoiceService.generate` (one live per source, the same payload hash returns it) over a `GstProvider`
+  (`GST_PROVIDER=fake` in CI and local work, never a real GSP or the IRP from tests), and a source with a live one is
+  locked only by `assertNoLiveGstDocument`. Records show it through `GstDocumentPanel`, papers through `irnBlockHtml`.
+  A PENDING row is re-sent only when older than the provider's `answerWithinMs`, with its stored payload, and no answer
+  leaves it PENDING and locked. Keep `src/scripts/einvoice-test.ts` and `src/scripts/einvoice-race-test.ts` passing.
 - RMC (item 104, `apps/api/src/rmc`, ARCHITECTURE "RMC plant"): a plant is a project of type `PLANT`; a truck's materials
   leave the plant's store only through `StockService.issue`, and cubes are a quality test through `QualityService`. Its
   figures are pure functions in `rmc-rules.ts` tested in `src/scripts/rmc-test.ts` (CI runs it); bills and receipts post

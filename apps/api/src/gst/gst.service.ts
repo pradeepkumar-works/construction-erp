@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import {
   canViewGstRegisters,
   gstStateCode,
+  raInvoiceNo,
   subBillLabel,
   type GstInwardRowDto,
   type GstOutwardRowDto,
@@ -88,7 +89,7 @@ export class GstService {
     const outward: GstOutwardRowDto[] = raBills.map((b) => {
       const c = b.project.client;
       const gstin = c?.gstin ?? null;
-      const invoiceNo = `RA/${b.project.code}/${b.billNo}`;
+      const invoiceNo = raInvoiceNo(b.project.code, b.billNo);
       if (invoiceNo.length > MAX_INVOICE_NO) warnings.push(`${invoiceNo} is longer than the 16 characters GST allows for an invoice number: shorten the project code.`);
       const tax = split(b.gstAmount, false);
       return {
