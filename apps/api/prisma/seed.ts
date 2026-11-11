@@ -41,6 +41,7 @@ import { seedProjectTypes } from './seed-project-types';
 import { seedFixedAssets } from './seed-fixed-assets';
 import { seedTds } from './seed-tds';
 import { seedPaymentBatches } from './seed-payment-batches';
+import { seedSitePhotos } from './seed-site-photos';
 import { DEFAULT_SETTINGS, computePayslip, structureCost, type RulesStructure } from '../src/payroll/payroll-rules';
 import { COMPANY_KIND_INFO, DEFAULT_CLOSEOUT_ITEMS, PAYSLIP_CODES, PERMIT_PRECAUTIONS, ROLE_KEYS, ROLE_LABELS, STANDARD_CHECKLISTS, gstinCheckChar, isWeeklyOff, leaveDays, ppeReplaceBy, ranBeforeNirmaan, scaleFrom, takeoffValue, VERTICAL_OF_TYPE, type MarkupPoint, type ProjectType, type PpeKind, type TakeoffKind } from '@erp/shared';
 import { day } from './seed-clock';
@@ -1988,6 +1989,7 @@ async function modulesPass(organizationId: string, passwordHash: string) {
   await seedScEnquiries(organizationId);
   await seedMeetings(organizationId);
   await seedMaterialApprovals(organizationId);
+  await seedSitePhotos(prisma, organizationId);
   await seedLeakage(organizationId);
   // Engine hours need the site's location (seedAttendanceExtras) and the tracker's link (seedIntegrations); fuel needs the hours.
   await seedTelematics(prisma, organizationId);

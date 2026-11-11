@@ -37,6 +37,7 @@ import { BillChecksModule } from './checks/bill-checks.module';
 import { WarningsModule } from './warnings/warnings.module';
 import { BriefsModule } from './briefs/briefs.module';
 import { PhotoChecksModule } from './photo-checks/photo-checks.module';
+import { SitePhotosModule } from './site-photos/site-photos.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { LeakageModule } from './leakage/leakage.module';
 import { InsightsModule } from './insights/insights.module';
@@ -190,6 +191,7 @@ import { VitalsController } from './vitals.controller';
     WarningsModule,
     BriefsModule,
     PhotoChecksModule,
+    SitePhotosModule,
     WhatsappModule,
     LeakageModule,
     InsightsModule,

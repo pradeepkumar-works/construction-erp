@@ -464,6 +464,7 @@ import type {
   MeetingLinkOptionsDto,
   MaterialApprovalListDto,
   LookaheadDto,
+  SitePhotosDto,
   EarnedValueDto,
   EvBasis,
   MaterialApprovalDetailDto,
@@ -915,6 +916,10 @@ export const useGantt = (projectId: string | undefined) =>
   });
 
 /** Three weeks from this Monday on a project; under the activities key so a change to the plan refreshes it. */
+/** A project's photo timeline (ARCHITECTURE "Site photos", Photo timeline); the last 30 days unless a range is given. */
+export const useSitePhotos = (projectId: string, range: { from?: string; to?: string }) =>
+  useQuery({ queryKey: ['site-photos', projectId, range.from ?? null, range.to ?? null], queryFn: async () => (await api.get<SitePhotosDto>(`/site-photos/${projectId}`, { params: range })).data });
+
 export const useLookahead = (projectId: string | undefined) =>
   useQuery({ queryKey: ['activities', projectId, 'lookahead'], queryFn: async () => (await api.get<LookaheadDto>(`/projects/${projectId}/lookahead`)).data, enabled: !!projectId });
 /** Links, moving to the links' dates and importing a schedule file: the Gantt, look-ahead and activities refresh. */

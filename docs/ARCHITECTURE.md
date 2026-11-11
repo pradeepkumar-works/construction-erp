@@ -4870,6 +4870,34 @@ days; it is claimed for delays in the register, or for the added work of a varia
   the letters, who sees what and that a superseded revision is not searched. `scripts/ai-eval.ts` has a `contract` set for
   the real model.
 
+## Site photos
+
+Gap 7 of the Project Management review: a photo that says where and when it was taken, and one place to see a site's
+photos day by day.
+
+- **Place and time.** The phone stamps both into the photo's file name, so they travel through the outbox and the upload
+  with the photo and need no new upload field: `site-20261018-143205-1@19.813520,85.831235~12.jpg` was taken at 14:32:05
+  on 18 October 2026 on the phone's clock, 12 m from that fix (`packages/shared/src/photo-place.ts`: `withPlace`,
+  `readPhotoName`). The time is the camera's EXIF time, else the moment it was taken (`apps/mobile/src/utils/photoTime.ts`);
+  the fix is the photo's own EXIF GPS (`exifFix`), else for a photo just taken where the phone is then (`photoPosition`:
+  a fix up to two minutes old, else a quick one within five seconds, never holding the photo up). The camera asks for
+  location once; a photo with no fix or a 0,0 one goes without (`fixProblem`). A photo picked from the gallery takes
+  only its own EXIF place, never where the phone is now.
+- **Upload.** `POST /uploads` (and the direct Blob upload) reads an image's name into `Attachment.takenAt` (the phone's
+  clock read in the company's time zone, `photoPlaceOf`), `lat`, `lng` and `accuracyM`. The migration fills `takenAt` for
+  photos sent before, from their names.
+- **At the site or away.** `photoPlace` against `Project.siteLat` / `siteLng`: at the site within 500 m
+  (`PHOTO_NEAR_SITE_M`) plus the fix's own accuracy, else away with its distance; no fix, or a site with no pin, says so
+  (`NO_FIX`, `NO_SITE`) rather than guess. Advice only: nothing blocks a record over where its photos were taken.
+- **Photo timeline.** The project's Photos tab (site group, `components/site-photos/PhotoTimeline.tsx`) reads
+  `GET /site-photos/:projectId?from&to` (`SitePhotosService`): the photos on its progress entries, DPRs and inspections
+  past draft, under the same project rule as those lists (`submissionWhere`), by the day taken (else the record's day),
+  each with its time, place, who sent it and a link to its record. The last 30 days unless a range is picked, the latest
+  300 at most (`total` counts the rest); Away and No location pick out the photos to look at, and an away one opens on a
+  map. Days and counts are `photoDays` and `placeCounts`.
+- **Tests.** `src/scripts/photo-place-test.ts` (CI): the name round trip, signs and accuracy, 0,0 and off-earth fixes, the
+  distance, the 500 m line with its accuracy margin, the words, the upload's time zone and the timeline's order.
+
 ## Site photo checks
 
 - **What it is.** AI item 76. Each photo on a DPR, a progress entry, a safety incident or a snag gets a caption and, when

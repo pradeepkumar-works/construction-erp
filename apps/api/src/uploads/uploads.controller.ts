@@ -10,9 +10,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AttachmentsService } from '../common/attachments.service';
 import { StorageService } from '../common/storage.service';
 import { CurrentUser, RequestUser } from '../common/current-user';
-import { CAD_MIME_TYPES } from '@erp/shared';
+import { CAD_MIME_TYPES, readPhotoName } from '@erp/shared';
 import { CompleteDirectUploadDto, StartDirectUploadDto } from './uploads.dto';
-import { todayIn } from '../notifications/time';
+import { atWallClock, todayIn } from '../notifications/time';
 import { ACTIVE_FILE, SANDBOXED_FILE_CSP } from '../common/security-headers';
 import { fileLinkProblem } from '../common/file-links';
 import { jwtSecret } from '../common/jwt-secret';
@@ -21,6 +21,21 @@ const ALLOWED = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'applica
 const ALLOWED_WORDS = 'jpeg, png, webp, heic, pdf, dxf, dwg';
 /** The type a file is kept as: CAD drawings by their extension, since browsers send them as octet-stream or nothing. */
 const typeOf = (fileName: string, sent: string) => CAD_MIME_TYPES[extname(fileName).toLowerCase()] ?? sent;
+/**
+ * When and where a site photo was taken, as the phone stamped it into the name (ARCHITECTURE "Site photos"): the
+ * phone's wall clock is read in the company's time zone.
+ */
+export function photoPlaceOf(fileName: string): { takenAt: Date | null; lat: number | null; lng: number | null; accuracyM: number | null } {
+  const { takenAt, fix } = readPhotoName(fileName);
+  let at: Date | null = null;
+  if (takenAt) {
+    const [day, time] = takenAt.split(' ');
+    const t = atWallClock(day, time.slice(0, 5));
+    at = Number.isNaN(t.getTime()) ? null : new Date(t.getTime() + Number(time.slice(6, 8)) * 1000);
+  }
+  return { takenAt: at, lat: fix?.lat ?? null, lng: fix?.lng ?? null, accuracyM: fix?.accuracyM ?? null };
+}
+
 /** A file sent straight to Blob storage may be this large (a drawing set, a long invoice PDF). */
 const DIRECT_MAX_BYTES = 100 * 1024 * 1024;
 
@@ -60,6 +75,7 @@ export class UploadsController {
         storagePath: saved.storagePath,
         data: saved.data ? new Uint8Array(saved.data) : null,
         uploadedById: user.id,
+        ...(file.mimetype.startsWith('image/') ? photoPlaceOf(file.originalname) : {}),
       },
     });
     return this.attachments.toDto(row);
@@ -101,7 +117,7 @@ export class UploadsController {
     const blob = await head(dto.url).catch(() => null);
     if (!blob) throw new BadRequestException('The file did not arrive; send it again');
     const row = await this.prisma.attachment.create({
-      data: { organizationId: user.organizationId, fileName: dto.fileName.slice(0, 200), mimeType: blob.contentType, size: blob.size, storagePath: blob.url, uploadedById: user.id },
+      data: { organizationId: user.organizationId, fileName: dto.fileName.slice(0, 200), mimeType: blob.contentType, size: blob.size, storagePath: blob.url, uploadedById: user.id, ...(blob.contentType.startsWith('image/') ? photoPlaceOf(dto.fileName) : {}) },
     });
     return this.attachments.toDto(row);
   }

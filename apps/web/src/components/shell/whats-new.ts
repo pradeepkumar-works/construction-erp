@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-site-photos',
+    date: '2026-11-19',
+    title: 'Site photos show where and when they were taken',
+    points: [
+      'A photo taken on the phone app now carries where the phone was, besides the time, and works with no signal like the rest of the entry.',
+      'A project’s new Photos tab shows every photo on its progress entries, daily reports and inspections, day by day, with the time, who sent it and the record it is on.',
+      'Each photo says whether it was taken at the site or how far away, against the site’s pin; Away and No location pick those out, and an away photo opens on a map.',
+    ],
+  },
+  {
     id: '2026-11-boq-parent-items',
     date: '2026-11-19',
     title: 'BOQ imports keep the parent item’s description',
