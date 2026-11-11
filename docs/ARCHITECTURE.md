@@ -3680,8 +3680,11 @@ their own (the columns, conditions, one grouping, totals and a sort), save it, o
 Excel and have it emailed weekly or monthly. It reads nothing a list does not already show the reader.
 
 - **Sources.** `REPORT_SOURCES` (`@erp/shared/report-builder.ts`) is `purchase-orders`, `vendor-bills`, `ra-bills`,
-  `indents`, `stock`, `vendors` and `projects`. Each has who sees it (`canViewPurchaseOrders`, `canViewVendorBills`,
-  `canPrepareBill`, staff for indents, stock and projects, `canEditVendors` or `canSeeVendorBank` for vendors), the
+  `indents`, `stock`, `vendors` and `projects`. Each has who sees it, the same `permissions.ts` helper its list's page
+  uses in `NAV_ACCESS` (`canViewPurchaseOrders`, `canViewVendorBills`, `canViewRaBills` with the reader's approval
+  rights, so an approver of RA bills is offered them as the bills list and its `assertCanSee` admit them,
+  `canViewIndents`, `canViewStock`, `canViewVendors`, `canViewProjects`); a reader is a `ReportReader` (role and
+  approval rights), and a test over every role holds each source to its page. It also has the
   column its period is over (`dated`: order date, invoice date, bill date, the IST day an indent was raised; stock,
   vendors and projects have none), whether it takes a project, its custom fields' entity, its starter columns and its
   column catalogue. A column is a key, a label, a `ReportColumnKind` (a `month` kind joins the report kinds), how it
@@ -3695,7 +3698,10 @@ Excel and have it emailed weekly or monthly. It reads nothing a list does not al
   its kind (`filterOpsFor`: is, is not, contains for text; at least, at most for figures; on or after, on or before for
   days), real days and months and decimal figures, a total only of a shown column that totals, grouping only by a
   column that groups, and the caps (`MAX_REPORT_COLUMNS` 20, `MAX_REPORT_FILTERS` 10). Its problems are words ("Purchase
-  orders has no column “x”", "Your role does not see Contract value; take it out of the report"), a 400. No column name or
+  orders has no column “x”", "Your role does not see Contract value; take it out of the report"), a 400. With `drop`
+  (someone else's report) a hidden column is left out instead: a shown one is named in `left`, a condition on one in
+  `leftFilters`, and the run's notes say both (`leftOutNotes`: "Not limited by Contract value, which your role does not
+  see."); `GET reports/:id` gives a reader who is not the owner `visibleDefinition`, never the hidden keys. No column name or
   typed value reaches a query: the rows are the list's, and the definition only picks from them.
 - **Rows** come only from each source's own list service called as the reader (`ReportBuilderService` readers, like
   `SearchService`): purchase orders, vendor bills, RA bills and indents over the period, stock balances, vendors and
@@ -3704,29 +3710,37 @@ Excel and have it emailed weekly or monthly. It reads nothing a list does not al
 - **Running.** The pure `runReport(rows, definition, catalogue)` filters, groups, totals and sorts. Money totals are exact:
   each cell is scaled to paise as a `BigInt` and summed (`sumCells`), quantities to three places, counts as numbers,
   never floats. Ungrouped, the result is one section of rows with a total row; grouped, a section "By <column>" (each
-  group's count and totals, blanks as Not set) over the rows sorted by group. `ReportBuilderService.run` defaults the
+  group's count and totals; blanks are their own group, Not set, or "Not set (blank)" beside a real value of that name)
+  over the rows sorted by group, the groups going down when the sort is down on the grouped column. `ReportBuilderService.run` defaults the
   period to the reporting month (`reportingMonth`), never past today, and returns a `ManagementReportDto` (`key:
   'saved'`, the period, the project or "Every project you see", notes with the conditions in words), so the management
   report's table, Print and Excel draw it unchanged.
 - **Saved reports.** `SavedReport` (`tenant_isolation`): owner, name, source, definition, `shared`. A report is listed
-  and opened by its owner, or by anyone when shared whose role opens its source; only the owner changes or deletes it.
+  and opened by its owner whatever its source (one their role no longer opens says "Your role no longer opens <source>",
+  a 403, and keeps Stop sending), and over a source the reader opens by anyone when shared, by each recipient of its
+  schedule, and by an admin when it is scheduled; only the owner changes or deletes it. A shared report none of whose
+  columns the reader sees says so instead of running.
   Save checks the whole definition before writing. Opening someone else's report, a column the reader's role does not
   see is left out with a note rather than refused; saving or running one's own with such a column is refused.
 - **Schedules.** `ReportSchedule` (`tenant_isolation`, one per report): weekly on a weekday or monthly on a day up to the
-  28th, up to 20 people whose role opens the source (`mayReceive`), from the day it was set. `scheduleDue(rule, today)`
+  28th, up to 20 staff who open the source (`mayReceiveReport`, `canReceiveReports`; `GET recipients` offers only them),
+  from the day it was set; a change of frequency or day starts it again from that day (`scheduleSince`), recipients alone
+  do not. The owner stops it, or an admin anyone's (`canStopAnySchedule`), as the email's footnote says. A schedule holds
+  while its owner has left or no longer opens the source (`scheduleOwnerProblem`), so it never outlives their access. `scheduleDue(rule, today)`
   names the period a schedule owes: weekly, the seven days before the latest such weekday; monthly, the calendar month
   before the latest such day, so a missed run is caught up within the cycle and a new schedule never sends a period
   that ended before it was set. `ReportSchedulesService.sendDue` runs each recipient's copy as that recipient (their
   projects, their role's columns, their company's modules), keeps it as their notice under
   `scheduleDedupeKey` (`SAVED_REPORT:<schedule>:<period>`, the notifications unique index, so a second run sends nothing)
   and emails it through the pure `reportEmail` (the first section's first 25 rows with its total, and the link). It
-  rides on the approval digest's cron (`REPORT_SCHEDULES` in `/notifications/jobs/approval-digest`, also
+  rides on the approval digest's cron (`REPORT_SCHEDULES`, last in `/notifications/jobs/approval-digest`, also
   `/notifications/jobs/report-schedules`); there is no cron of its own.
 - **API** (`/report-builder`): `GET sources`, `POST run` (an unsaved definition), `GET recipients?source=`, `GET|POST
   reports`, `GET|PATCH|DELETE reports/:id`, `GET reports/:id/run?from&to&projectId`, `PUT|DELETE reports/:id/schedule`.
 - **Web.** Reports › My reports (`/my-reports`, access `myReports` over `canBuildReports`) is a list with Mine and
   Emailed on a schedule, and New report (the header's New menu too). `ReportForm` is the builder (a `FormShell` drawer:
-  what it is over, columns in order, group by, totals, sort, conditions as a `LineTable`), `ScheduleForm` the Schedule
+  what it is over, columns in order, group by, totals, sort, conditions as a `LineTable`, and a Preview at its foot from
+  `POST run` a moment after each change: the count, the first 10 rows and the notes), `ScheduleForm` the Schedule
   modal with Stop sending. A report's page (`/my-reports/[id]`) has its period and project in the address, the tables
   through `ReportSection`, Print and Excel. A scheduled copy's notice opens the report.
 - **Not yet.** More sources (DPRs, stock movements, payments), more than one grouping, charts, and building on the phone.
