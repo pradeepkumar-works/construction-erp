@@ -20,6 +20,8 @@ export interface RequestUser {
   modulesOff?: SwitchableModule[];
   /** The session was proved by this company's single sign-on (the token's `sso` claim); a password session has none */
   ssoOrg?: string;
+  /** The session was signed in with a password on the phone app (the token's `ph` claim) */
+  phone?: true;
 }
 
 export const CurrentUser = createParamDecorator((_data: unknown, ctx: ExecutionContext): RequestUser => {

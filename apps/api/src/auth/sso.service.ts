@@ -2,13 +2,15 @@ import { BadRequestException, ForbiddenException, HttpException, Injectable, Log
 import { Prisma, type OrganizationSso } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { randomBytes, timingSafeEqual } from 'crypto';
-import { createRemoteJWKSet, jwtVerify, type JWTVerifyGetKey } from 'jose';
+import { createRemoteJWKSet, errors, jwtVerify, type JWTVerifyGetKey } from 'jose';
 import {
   SSO_PROBLEMS,
+  SSO_PROVIDER_INFO,
   canManageSso,
   normaliseDomain,
   ssoSettingsProblem,
   type LoginResponse,
+  type RoleKey,
   type SsoCompanyDto,
   type SsoProblem,
   type SsoSettingsDto,
@@ -24,18 +26,24 @@ import { jwtSecret } from '../common/jwt-secret';
 import { last4, openSecret, sealSecret } from '../integrations/integration-rules';
 import { AuthService } from './auth.service';
 import { LoginGuardService } from './login-guard.service';
-import { integrationKey, providerBases, ssoCallbackUrl, ssoServerProblem } from './sso-config';
+import { integrationKey, providerBases, ssoCallbackUrl, ssoServerMissing, ssoServerProblem } from './sso-config';
 import {
+  BINDING,
   CODE_SECONDS,
   STATE_MINUTES,
   authorizeUrl,
+  bindingHash,
   claimsProblem,
   discoveryUrl,
+  endpointAllowed,
+  flowKey,
   flowSecrets,
   identityOf,
   issuersOf,
   matchLogin,
   sha256,
+  ssoSaveProblem,
+  verifyOptions,
   type Claims,
   type Place,
   type ProvedIdentity,
@@ -54,11 +62,15 @@ const DISCOVERY_HOURS = 1;
 const TIMEOUT_MS = 10_000;
 export const SSO_COOKIE = 'nirmaan_sso';
 
-/** A refusal that ends a sign-in: the problem the sign-in page reads, and who to count it against. */
+/**
+ * A refusal that ends a sign-in: the problem the sign-in page reads, and, for a step that looks like probing (a browser
+ * that did not start the sign-in, a state no one issued), what to count against the address. A provider's refusal or a
+ * company's rule is no one guessing and counts nothing.
+ */
 class SsoRefused extends Error {
   constructor(
     readonly problem: SsoProblem,
-    readonly who: string | null = null,
+    readonly probed: string | null = null,
   ) {
     super(problem);
   }
@@ -114,8 +126,9 @@ export class SsoService {
     if (!res.ok) throw new Error(`discovery ${res.status}`);
     const body = (await res.json()) as Record<string, unknown>;
     const doc = { authorization_endpoint: body.authorization_endpoint, token_endpoint: body.token_endpoint, jwks_uri: body.jwks_uri };
-    if (!Object.values(doc).every((v) => typeof v === 'string' && /^https?:\/\//.test(v)) || !issuersOf(setup, bases).includes(String(body.issuer)))
-      throw new Error('discovery document is not this issuer');
+    // https only, but for a local run's stand-in on this machine (`endpointAllowed`).
+    if (!Object.values(doc).every((v) => endpointAllowed(v, bases)) || !issuersOf(setup, bases).includes(String(body.issuer)))
+      throw new Error('discovery document is not this issuer, or names an endpoint that is not https');
     this.discoveries.set(url, { at: Date.now(), doc: doc as Discovery });
     return doc as Discovery;
   }
@@ -130,29 +143,35 @@ export class SsoService {
   }
 
   /**
-   * `GET /auth/sso/:orgCode/start`: a STATE ticket (its hash only) and the provider's sign-in page. The state also goes
-   * in a cookie, so the callback finishes only in the browser that started.
+   * `GET /auth/sso/:orgCode/start?b=…`: a STATE ticket (its hash only, with the hash of the starting tab's value `b`)
+   * and the provider's sign-in page. The state also goes in a cookie, so the callback finishes only in the browser that
+   * started, and the code it makes is exchanged only with `b`.
    */
-  async start(code: string, ip: string | null): Promise<{ location: string; state?: string }> {
+  async start(code: string, binding: string | undefined, ip: string | null): Promise<{ location: string; state?: string }> {
     try {
+      // The sign-in page always sends one: a start without it was not made by the page.
+      if (typeof binding !== 'string' || !BINDING.test(binding)) throw new SsoRefused('BROWSER');
       try {
-        await this.guard.assertMayTry(`sso:${code.trim().toLowerCase()}`, ip);
+        await this.guard.assertMayStartSso(ip, code.trim().slice(0, 40));
       } catch (e) {
         if (e instanceof HttpException) throw new SsoRefused('TOO_MANY');
         throw e;
       }
       const org = await this.companyByCode(code);
-      if (ssoServerProblem() || !org?.sso) throw new SsoRefused('NOT_SET_UP');
+      if (ssoServerProblem() || !org?.sso) {
+        if (ssoServerProblem()) this.log.warn(`SSO is not set up on this server: ${ssoServerMissing().join(', ')}`);
+        throw new SsoRefused('NOT_SET_UP');
+      }
       if (org.suspendedAt) throw new SsoRefused('SUSPENDED');
       const doc = await this.discovery(org.sso).catch((e: Error) => {
         this.log.warn(`SSO discovery for ${org.code}: ${e.message}`);
-        throw new SsoRefused('PROVIDER', `sso:${org.code.toLowerCase()}`);
+        throw new SsoRefused('PROVIDER');
       });
       const state = randomBytes(32).toString('base64url');
-      const { nonce, challenge } = flowSecrets(state, jwtSecret());
+      const { nonce, challenge } = flowSecrets(state, flowKey(jwtSecret()));
       const now = Date.now();
       await withoutTenant(async () => {
-        await this.prisma.ssoTicket.create({ data: { organizationId: org.id, kind: 'STATE', hash: sha256(state), expiresAt: new Date(now + STATE_MINUTES * 60_000) } });
+        await this.prisma.ssoTicket.create({ data: { organizationId: org.id, kind: 'STATE', hash: sha256(state), binding: bindingHash(binding), expiresAt: new Date(now + STATE_MINUTES * 60_000) } });
         // Keeps the table small: nothing older than a day is ever read.
         await this.prisma.ssoTicket.deleteMany({ where: { createdAt: { lt: new Date(now - 86_400_000) } } });
       });
@@ -162,21 +181,25 @@ export class SsoService {
     }
   }
 
-  /** A failed step: counted under the login guard (unless nothing was tried) and sent to the sign-in page in words. */
+  /** A failed step: counted under the login guard when it looks like probing, and sent to the sign-in page in words. */
   private async refused(e: unknown, ip: string | null): Promise<string> {
     if (!(e instanceof SsoRefused)) throw e;
-    if (e.who) await this.guard.ssoFailed(e.who, ip);
+    if (e.probed) await this.guard.ssoProbed(e.probed, ip);
     return configuredWebUrl() ? this.webUrl(`error=${e.problem}`) : '/';
   }
 
-  /** Uses a ticket once: the conditional update succeeds for one caller only, before its expiry. */
-  private async useTicket(kind: 'STATE' | 'CODE', secret: string) {
+  /**
+   * Uses a ticket once: the conditional update succeeds for one caller only, before its expiry. `known` says whether
+   * the secret was ever issued (an unknown one is someone guessing). `accept` may refuse the ticket before it is used.
+   */
+  private async useTicket(kind: 'STATE' | 'CODE', secret: string, accept: (t: { binding: string | null }) => boolean = () => true) {
     return withoutTenant(async () => {
-      const t = await this.prisma.ssoTicket.findUnique({ where: { hash: sha256(secret) }, select: { id: true, kind: true, organizationId: true, userId: true } });
-      if (!t || t.kind !== kind) return null;
+      const t = await this.prisma.ssoTicket.findUnique({ where: { hash: sha256(secret) }, select: { id: true, kind: true, organizationId: true, userId: true, binding: true } });
+      if (!t || t.kind !== kind) return { ticket: null, known: false, accepted: false };
+      if (!accept(t)) return { ticket: null, known: true, accepted: false };
       const now = new Date();
       const used = await this.prisma.ssoTicket.updateMany({ where: { id: t.id, usedAt: null, expiresAt: { gt: now } }, data: { usedAt: now } });
-      return used.count === 1 ? t : null;
+      return { ticket: used.count === 1 ? t : null, known: true, accepted: true };
     });
   }
 
@@ -186,26 +209,26 @@ export class SsoService {
    */
   async callback(q: { state?: string; code?: string; error?: string }, cookie: string | null, ip: string | null): Promise<string> {
     try {
-      const state = typeof q.state === 'string' ? q.state : '';
-      const ticket = state ? await this.useTicket('STATE', state) : null;
-      if (!ticket) throw new SsoRefused('EXPIRED', 'sso:callback');
+      const state = typeof q.state === 'string' ? q.state.slice(0, 200) : '';
+      const used = state ? await this.useTicket('STATE', state) : { ticket: null, known: false };
+      const ticket = used.ticket;
+      if (!ticket) throw new SsoRefused('EXPIRED', used.known ? null : 'sso:callback');
       const sso = await withoutTenant(async () => await this.prisma.organizationSso.findUnique({ where: { organizationId: ticket.organizationId }, include: { organization: { select: { code: true } } } }));
       if (!sso) throw new SsoRefused('NOT_SET_UP');
-      const who = `sso:${sso.organization.code.toLowerCase()}`;
-      if (!cookie || !sameText(cookie, state)) throw new SsoRefused('BROWSER', who);
-      if (q.error || typeof q.code !== 'string' || !q.code) throw new SsoRefused('PROVIDER', who);
-      const { verifier, nonce } = flowSecrets(state, jwtSecret());
+      if (!cookie || !sameText(cookie, state)) throw new SsoRefused('BROWSER', `sso:${sso.organization.code}`);
+      if (q.error || typeof q.code !== 'string' || !q.code) throw new SsoRefused('PROVIDER');
+      const { verifier, nonce } = flowSecrets(state, flowKey(jwtSecret()));
       const claims = await this.idToken(sso, q.code, verifier).catch((e: Error) => {
         this.log.warn(`SSO token for ${sso.organization.code}: ${e.message}`);
-        throw new SsoRefused('TOKEN', who);
+        throw new SsoRefused('TOKEN');
       });
       const problem = claimsProblem(sso, claims, { nonce, bases: providerBases() });
-      if (problem) throw new SsoRefused(problem, typeof claims.email === 'string' ? claims.email : who);
+      if (problem) throw new SsoRefused(problem);
       const identity = identityOf(sso, claims);
       const userId = await this.signInAs(ticket.organizationId, sso, identity);
       const code = randomBytes(32).toString('base64url');
       await withoutTenant(async () => {
-        await this.prisma.ssoTicket.create({ data: { organizationId: ticket.organizationId, kind: 'CODE', hash: sha256(code), userId, expiresAt: new Date(Date.now() + CODE_SECONDS * 1000) } });
+        await this.prisma.ssoTicket.create({ data: { organizationId: ticket.organizationId, kind: 'CODE', hash: sha256(code), userId, binding: ticket.binding, expiresAt: new Date(Date.now() + CODE_SECONDS * 1000) } });
       });
       return this.webUrl(`code=${code}`);
     } catch (e) {
@@ -226,8 +249,15 @@ export class SsoService {
     });
     const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
     if (!res.ok || typeof body.id_token !== 'string') throw new Error(`token endpoint ${res.status} ${typeof body.error === 'string' ? body.error : ''}`);
-    const { payload } = await jwtVerify(body.id_token, this.keys(doc.jwks_uri), { audience: sso.clientId, algorithms: ['RS256'], clockTolerance: 60 });
-    return payload as Claims;
+    try {
+      const { payload } = await jwtVerify(body.id_token, this.keys(doc.jwks_uri), verifyOptions(sso, providerBases()));
+      return payload as Claims;
+    } catch (e) {
+      // The signature held (jose checks it first) but the issuer is not the company's: `claimsProblem` refuses it too,
+      // and says why (a token of another directory reads TENANT).
+      if (e instanceof errors.JWTClaimValidationFailed && e.claim === 'iss') return e.payload as Claims;
+      throw e;
+    }
   }
 
   private async placeOf(organizationId: string, loginId: string): Promise<{ place: Place; userId: string | null }> {
@@ -242,7 +272,8 @@ export class SsoService {
     const found: Found = await withoutTenant(async () => {
       const linked = await this.prisma.ssoIdentity.findUnique({ where: { organizationId_issuer_subject: key }, select: { id: true, loginId: true } });
       if (linked) return { linked, at: await this.placeOf(organizationId, linked.loginId) };
-      const login = identity.email ? await this.prisma.login.findUnique({ where: { email: identity.email }, select: { id: true } }) : null;
+      // An account that may not be linked (a guest, an email nobody vouches for) finds no one by its email.
+      const login = identity.email && !identity.linkProblem ? await this.prisma.login.findUnique({ where: { email: identity.email }, select: { id: true } }) : null;
       if (!login) return null;
       const [at, other] = await Promise.all([this.placeOf(organizationId, login.id), this.prisma.ssoIdentity.findFirst({ where: { organizationId, loginId: login.id, issuer: identity.issuer }, select: { id: true } })]);
       return { loginId: login.id, at, issuerLinked: !!other };
@@ -250,14 +281,14 @@ export class SsoService {
     const match = matchLogin({
       setup: sso,
       identity,
+      platformEmail: !!identity.email && isPlatformAdmin(identity.email),
       linked: found && 'linked' in found ? { place: found.at.place } : null,
       byEmail: found && 'loginId' in found ? { place: found.at.place, issuerLinked: found.issuerLinked } : null,
     });
-    const who = identity.email ?? `sso:${identity.subject}`;
     try {
       switch (match.kind) {
         case 'REFUSE':
-          throw new SsoRefused(match.problem, who);
+          throw new SsoRefused(match.problem);
         case 'LINKED':
           if (!found || !('linked' in found)) throw new Error('a linked match without its link');
           await withoutTenant(async () => await this.prisma.ssoIdentity.update({ where: { id: found.linked.id }, data: { lastUsedAt: new Date() } }));
@@ -265,6 +296,7 @@ export class SsoService {
         case 'LINK':
           if (!found || !('loginId' in found)) throw new Error('an email match without its login');
           await withoutTenant(async () => await this.prisma.ssoIdentity.create({ data: { ...key, loginId: found.loginId, email: identity.email } }));
+          await this.auditLinked(organizationId, found.at.userId!, identity);
           return found.at.userId!;
         case 'ADD':
           return await this.addPerson(organizationId, sso.newPersonRole as SsoNewPersonRole, identity);
@@ -282,7 +314,7 @@ export class SsoService {
     const passwordHash = await bcrypt.hash(randomBytes(32).toString('hex'), 10);
     return withoutTenant(async () => {
       const role = await this.prisma.role.findUnique({ where: { organizationId_key: { organizationId, key: roleKey } }, select: { id: true } });
-      if (!role) throw new SsoRefused('NO_PLACE', email);
+      if (!role) throw new SsoRefused('NO_PLACE');
       const user = await this.prisma.$transaction(async (tx) => {
         const login = await tx.login.create({ data: { email, passwordHash, lastOrganizationId: organizationId } });
         const u = await tx.user.create({ data: { organizationId, roleId: role.id, loginId: login.id, email, fullName: identity.name ?? email.split('@')[0] }, select: { id: true, email: true, fullName: true } });
@@ -294,14 +326,25 @@ export class SsoService {
     });
   }
 
-  /** `POST /auth/sso/exchange`: the one-time code for a session, used once within a minute. */
-  async exchange(code: string, ip: string | null): Promise<LoginResponse> {
-    const t = await this.useTicket('CODE', code);
-    if (!t?.userId) {
-      await this.guard.ssoFailed('sso:exchange', ip);
-      throw new BadRequestException(SSO_PROBLEMS.EXPIRED);
+  /** A first sign-in that linked someone already in the company, in its log. */
+  private async auditLinked(organizationId: string, userId: string, identity: ProvedIdentity) {
+    const u = await withoutTenant(async () => await this.prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { id: true, email: true, fullName: true, role: { select: { key: true } } } }));
+    await this.audit.log({ id: u.id, organizationId, roleKey: u.role.key as RoleKey, email: u.email, fullName: u.fullName }, 'COMPANY', organizationId, 'SSO_LINKED', `${u.fullName} (${u.email}) linked to ${identity.email ?? identity.subject}`);
+  }
+
+  /**
+   * `POST /auth/sso/exchange`: the one-time code for a session, used once within a minute, and only with the value the
+   * tab that started the sign-in kept (`b`), so a code made in someone else's browser signs no one in here. A wrong `b`
+   * leaves the code unused.
+   */
+  async exchange(code: string, binding: string, ip: string | null): Promise<LoginResponse> {
+    const want = Buffer.from(bindingHash(binding ?? ''));
+    const used = await this.useTicket('CODE', code, (t) => !!t.binding && t.binding.length === want.length && timingSafeEqual(Buffer.from(t.binding), want));
+    if (!used.ticket?.userId) {
+      if (!used.known) await this.guard.ssoProbed('sso:exchange', ip);
+      throw new BadRequestException(used.known && !used.accepted ? SSO_PROBLEMS.BROWSER : SSO_PROBLEMS.EXPIRED);
     }
-    return this.auth.issue(t.userId, { kind: 'SSO', organizationId: t.organizationId });
+    return this.auth.issue(used.ticket.userId, { kind: 'SSO', organizationId: used.ticket.organizationId });
   }
 
   private assertAdmin(user: RequestUser) {
@@ -335,25 +378,32 @@ export class SsoService {
       callbackUrl: ssoCallbackUrl(),
       serverProblem: ssoServerProblem(),
       signedInWithSso: user.ssoOrg === user.organizationId,
+      mayRequire: this.mayRequire(user),
     };
+  }
+
+  /** Whether this session may turn on Require single sign-on: proved by the company's own, or a platform admin's. */
+  private mayRequire(user: RequestUser) {
+    return user.ssoOrg === user.organizationId || isPlatformAdmin(user.email);
   }
 
   async save(user: RequestUser, dto: SaveSsoSettingsDto): Promise<SsoSettingsDto> {
     this.assertAdmin(user);
     const server = ssoServerProblem();
     if (server) throw new BadRequestException(server);
-    const existing = await this.prisma.organizationSso.findUnique({ where: { organizationId: user.organizationId }, select: { id: true } });
+    const existing = await this.prisma.organizationSso.findUnique({ where: { organizationId: user.organizationId } });
     const problem = ssoSettingsProblem(dto, !!existing);
     if (problem) throw new BadRequestException(problem);
-    // Requiring single sign-on before it has worked once could shut every admin out.
-    if (dto.enforce && user.ssoOrg !== user.organizationId && !isPlatformAdmin(user.email))
-      throw new BadRequestException('Use single sign-on once, then require it. Sign out, choose "Use single sign-on" and come back here.');
     const allowedDomains = [...new Set(dto.allowedDomains.map((d) => normaliseDomain(d)!))];
     const secret = dto.clientSecret?.trim();
+    const next = { provider: dto.provider, tenantId: dto.provider === 'ENTRA' ? dto.tenantId!.trim().toLowerCase() : null, clientId: dto.clientId.trim(), enforce: dto.enforce };
+    // Requiring single sign-on before it has worked once, or moving it to another provider under the requirement, could shut every admin out.
+    const refused = ssoSaveProblem(existing, next, { newSecret: !!secret, mayRequire: this.mayRequire(user) });
+    if (refused) throw new BadRequestException(refused);
     const data = {
-      provider: dto.provider,
-      tenantId: dto.provider === 'ENTRA' ? dto.tenantId!.trim().toLowerCase() : null,
-      clientId: dto.clientId.trim(),
+      provider: next.provider,
+      tenantId: next.tenantId,
+      clientId: next.clientId,
       allowedDomains,
       enforce: dto.enforce,
       addNewPeople: dto.addNewPeople,
@@ -363,7 +413,7 @@ export class SsoService {
     };
     if (existing) await this.prisma.organizationSso.update({ where: { id: existing.id }, data });
     else await this.prisma.organizationSso.create({ data: { ...data, organizationId: user.organizationId, clientSecretEnc: data.clientSecretEnc!, secretLast4: data.secretLast4! } });
-    await this.audit.log(user, 'COMPANY', user.organizationId, 'SSO_CHANGED', `${dto.provider === 'ENTRA' ? 'Microsoft Entra ID' : 'Google Workspace'} for ${allowedDomains.join(', ')}${dto.enforce ? ', required' : ''}${secret ? ', new secret' : ''}`);
+    await this.audit.log(user, 'COMPANY', user.organizationId, 'SSO_CHANGED', ssoChangeNote(existing, { ...next, allowedDomains }, !!secret));
     return this.settings(user);
   }
 
@@ -374,4 +424,15 @@ export class SsoService {
     if (gone.count) await this.audit.log(user, 'COMPANY', user.organizationId, 'SSO_REMOVED', 'Back to passwords');
     return this.settings(user);
   }
+}
+
+/** The company log's line for a save: the provider and domains, whether it is required, and what moved. */
+function ssoChangeNote(before: OrganizationSso | null, after: { provider: OrganizationSso['provider']; tenantId: string | null; clientId: string; enforce: boolean; allowedDomains: string[] }, newSecret: boolean): string {
+  const parts = [`${SSO_PROVIDER_INFO[after.provider].name} for ${after.allowedDomains.join(', ')}`, after.enforce ? 'required' : 'not required'];
+  if (before && before.enforce !== after.enforce) parts.push(after.enforce ? 'Require single sign-on turned on' : 'Require single sign-on turned off');
+  if (before && before.provider !== after.provider) parts.push(`provider was ${SSO_PROVIDER_INFO[before.provider].name}`);
+  if (before && (before.tenantId ?? '') !== (after.tenantId ?? '')) parts.push(`directory (tenant) ID was ${before.tenantId ?? 'none'}`);
+  if (before && before.clientId !== after.clientId) parts.push(`client ID was ${before.clientId}`);
+  if (newSecret) parts.push('new secret');
+  return parts.join(', ');
 }

@@ -6,14 +6,14 @@ import { CurrentUser, RequestUser } from '../common/current-user';
 import { AllowWhenUnpaid } from '../common/billing';
 import { clientIp } from './login-guard.service';
 import { cookieOf, STATE_MINUTES } from './sso-rules';
-import { ssoCallbackUrl } from './sso-config';
+import { ssoCallbackUrl, ssoCookiePath } from './sso-config';
 import { SSO_COOKIE, SsoService } from './sso.service';
 import { SaveSsoSettingsDto, SsoExchangeDto } from './sso.dto';
 
-/** The state cookie lives on the API's own address, only as long as a sign-in may take. */
+/** The state cookie lives on the API's own single sign-on routes, only as long as a sign-in may take. */
 function stateCookie(value: string, maxAge: number) {
   const secure = ssoCallbackUrl()?.startsWith('https://') ? '; Secure' : '';
-  return `${SSO_COOKIE}=${encodeURIComponent(value)}; Path=/; Max-Age=${maxAge}; HttpOnly; SameSite=Lax${secure}`;
+  return `${SSO_COOKIE}=${encodeURIComponent(value)}; Path=${ssoCookiePath()}; Max-Age=${maxAge}; HttpOnly; SameSite=Lax${secure}`;
 }
 
 /** Single sign-on with Microsoft Entra ID or Google Workspace (ARCHITECTURE "Single sign-on"). */
@@ -39,7 +39,7 @@ export class SsoController {
   @HttpCode(200)
   @Post('exchange')
   exchange(@Body() dto: SsoExchangeDto, @Req() req: Request) {
-    return this.sso.exchange(dto.code, clientIp(req));
+    return this.sso.exchange(dto.code, dto.b, clientIp(req));
   }
 
   @ApiOperation({ summary: 'Whether a company signs in with single sign-on, and with whom' })
@@ -49,11 +49,11 @@ export class SsoController {
     return this.sso.company(code);
   }
 
-  @ApiOperation({ summary: "Start a single sign-on: redirects to the company's provider" })
+  @ApiOperation({ summary: "Start a single sign-on: redirects to the company's provider", description: '`b` is the random value the sign-in page keeps in the tab; the one-time code is exchanged only with it.' })
   @Public()
   @Get(':orgCode/start')
-  async start(@Param('orgCode') code: string, @Req() req: Request, @Res() res: Response) {
-    const { location, state } = await this.sso.start(code, clientIp(req));
+  async start(@Param('orgCode') code: string, @Query('b') binding: string | undefined, @Req() req: Request, @Res() res: Response) {
+    const { location, state } = await this.sso.start(code, typeof binding === 'string' ? binding : undefined, clientIp(req));
     if (state) res.setHeader('Set-Cookie', stateCookie(state, STATE_MINUTES * 60));
     res.setHeader('Cache-Control', 'no-store');
     res.redirect(302, location);

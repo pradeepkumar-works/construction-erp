@@ -10609,6 +10609,8 @@ model SsoTicket {
   kind           SsoTicketKind
   hash           String        @unique
   userId         String?
+  /// SHA-256 of the value the starting browser tab keeps (`bindingHash`): the code is exchanged only with it
+  binding        String?
   expiresAt      DateTime
   usedAt         DateTime?
   createdAt      DateTime      @default(now())

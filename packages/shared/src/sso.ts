@@ -36,7 +36,9 @@ export const SSO_PROBLEMS = {
   PROVIDER: 'Your company’s sign-in service did not let you in. Try again, or ask your admin to check the single sign-on settings.',
   TOKEN: 'The answer from your company’s sign-in service could not be checked. Try again, or ask your admin to check the client ID and secret.',
   TENANT: 'That account belongs to another organisation’s directory. Sign in with your work account for this company.',
-  UNVERIFIED: 'Your Google account’s email is not verified. Sign in with your work account, or ask your admin to verify it.',
+  UNVERIFIED: 'Your company’s sign-in service does not vouch for your account’s email. Ask your admin to check it (see Company settings › Sign-in), then sign in again.',
+  GUEST: 'A guest account of your company’s directory cannot sign in here. Sign in with your own work account.',
+  PLATFORM: 'This account signs in with its email and password. Choose Sign in with your email and password.',
   DOMAIN: 'Your email’s domain is not one this company signs in with. Sign in with your work account, or ask your admin to add the domain.',
   NO_PLACE: 'You have no place in this company yet. Ask your admin to add you, then sign in again.',
   SWITCHED_OFF: 'Your place in this company is switched off. Ask your admin to switch it on.',
@@ -115,6 +117,8 @@ export interface SsoSettingsDto {
   serverProblem: string | null;
   /** This session was signed in through the company's single sign-on (needed before requiring it) */
   signedInWithSso: boolean;
+  /** This session may turn on Require single sign-on: it came through the company's own single sign-on, or it is a platform admin's */
+  mayRequire: boolean;
 }
 
 /** `GET /auth/sso/:orgCode`: which button the sign-in page shows. */

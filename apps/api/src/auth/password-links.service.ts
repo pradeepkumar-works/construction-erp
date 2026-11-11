@@ -1,15 +1,24 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import { createHash, randomBytes } from 'crypto';
 import * as bcrypt from 'bcryptjs';
-import { INVITE_LINK_HOURS, RESET_LINK_HOURS, type PasswordLinkDto, type PasswordTokenInfoDto, type PasswordTokenPurpose } from '@erp/shared';
+import { INVITE_LINK_HOURS, RESET_LINK_HOURS, SSO_PROVIDER_INFO, type PasswordLinkDto, type PasswordTokenInfoDto, type PasswordTokenPurpose, type SsoProvider } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService, escapeHtml } from '../notifications/email.service';
 import { MessagingService } from '../messaging/messaging.service';
 import { EMAIL_COLORS, emailButton, emailLayout } from '../notifications/email-layout';
 import { PRODUCT_NAME } from '@erp/shared';
 import { configuredWebUrl } from '../common/web-url';
+import { isPlatformAdmin } from '../common/platform-admin';
+import { passwordRefused, ssoRequiredMessage } from './sso-rules';
 
 const hash = (token: string) => createHash('sha256').update(token).digest('hex');
+
+/** The person and company a link is for, with what decides whether the company takes their password. */
+const LINK_USER = { id: true, email: true, fullName: true, phone: true, organizationId: true, role: { select: { key: true } }, organization: { select: { name: true, code: true, sso: { select: { enforce: true, provider: true } } } } } as const;
+type LinkUser = { id: string; email: string; fullName: string; phone: string | null; organizationId: string; role: { key: string }; organization: { name: string; code: string; sso: { enforce: boolean; provider: SsoProvider } | null } };
+
+/** The company signs this person in with single sign-on on the website, so a password link would be refused. */
+const ssoOnly = (u: LinkUser) => passwordRefused(u.organization.sso, { platformAdmin: isPlatformAdmin(u.email), roleKey: u.role.key }, 'web');
 const trimUrl = (u: string) => u.trim().replace(/\/+$/, '');
 
 /**
@@ -36,15 +45,16 @@ export class PasswordLinksService {
    * `origin` is only used when nothing is configured, and only by callers whose result goes back to an admin.
    */
   async create(userId: string, purpose: PasswordTokenPurpose, origin?: string | null): Promise<PasswordLinkDto> {
-    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId }, include: { organization: { select: { name: true } } } });
+    const user: LinkUser = await this.prisma.user.findUniqueOrThrow({ where: { id: userId }, select: LINK_USER });
+    const base0 = this.configuredWebUrl() ?? (origin && /^https?:\/\/[^/\s]+$/.test(origin) ? trimUrl(origin) : null);
+    if (ssoOnly(user)) return this.ssoInvite(user, purpose, base0);
     const token = randomBytes(32).toString('base64url');
     const expiresAt = new Date(Date.now() + (purpose === 'INVITE' ? INVITE_LINK_HOURS : RESET_LINK_HOURS) * 3600_000);
     await this.prisma.$transaction([
       this.prisma.passwordToken.updateMany({ where: { userId, usedAt: null }, data: { usedAt: new Date() } }),
       this.prisma.passwordToken.create({ data: { organizationId: user.organizationId, userId, purpose, tokenHash: hash(token), expiresAt } }),
     ]);
-    const base = this.configuredWebUrl() ?? (origin && /^https?:\/\/[^/\s]+$/.test(origin) ? trimUrl(origin) : null);
-    const link = base ? `${base}/set-password?token=${token}` : null;
+    const link = base0 ? `${base0}/set-password?token=${token}` : null;
     let emailed = false;
     let emailError: string | null = null;
     if (link && this.canEmail) {
@@ -72,10 +82,38 @@ export class PasswordLinksService {
     return { link, emailed, emailError, messaged, expiresAt: expiresAt.toISOString() };
   }
 
+  /**
+   * Where the company requires single sign-on of the person, no password is set: the invite (or the link an admin asks
+   * for) opens the company's sign-in instead, with its code filled in.
+   */
+  private async ssoInvite(user: LinkUser, purpose: PasswordTokenPurpose, base: string | null): Promise<PasswordLinkDto> {
+    const org = user.organization;
+    const link = base ? `${base}/login?sso=1&code=${encodeURIComponent(org.code)}` : null;
+    let emailed = false;
+    let emailError: string | null = null;
+    if (link && this.canEmail) {
+      const button = SSO_PROVIDER_INFO[org.sso!.provider].button;
+      const lead = purpose === 'INVITE' ? `You have been invited to ${org.name} on ${PRODUCT_NAME}. ${org.name} signs in with ${button}: open the link and choose Sign in with ${button}.` : `${org.name} signs in to ${PRODUCT_NAME} with ${button}: open the link and choose Sign in with ${button}. There is no password to set.`;
+      const sent = await this.email.deliver({
+        to: user.email,
+        subject: purpose === 'INVITE' ? `[${org.name}] You are invited to ${PRODUCT_NAME}` : `[${org.name}] Sign in to ${PRODUCT_NAME} with ${button}`,
+        text: `Hello ${user.fullName},\n\n${lead}\n\n${link}\n\nThe company code is ${org.code}.\n`,
+        html: emailLayout({
+          preheader: lead,
+          orgName: org.name,
+          body: `<p style="margin:0 0 12px">Hello ${escapeHtml(user.fullName)},</p><p style="margin:0">${escapeHtml(lead)}</p>${emailButton(link, `Sign in with ${button}`)}<p style="margin:0;color:${EMAIL_COLORS.muted};font-size:13px">The company code is ${escapeHtml(org.code)}. If the button does not work, open <a href="${escapeHtml(link)}" style="color:${EMAIL_COLORS.link};word-break:break-all">${escapeHtml(link)}</a></p>`,
+        }),
+      });
+      emailed = sent.ok;
+      emailError = sent.error ?? null;
+    }
+    return { link, emailed, emailError, messaged: null, expiresAt: null, sso: true };
+  }
+
   private async valid(token: string) {
     const row = await this.prisma.passwordToken.findUnique({
       where: { tokenHash: hash(token) },
-      include: { user: { select: { id: true, email: true, fullName: true, isActive: true } }, organization: { select: { name: true } } },
+      include: { user: { select: { ...LINK_USER, isActive: true } }, organization: { select: { name: true } } },
     });
     if (!row || row.usedAt || row.expiresAt < new Date() || !row.user.isActive) {
       throw new BadRequestException('This link is no longer valid. Ask your admin for a new one, or use "Forgot password" on the sign-in page.');
@@ -83,8 +121,10 @@ export class PasswordLinksService {
     return row;
   }
 
+  /** What a link is for. One made before the company required single sign-on says to use that instead. */
   async info(token: string): Promise<PasswordTokenInfoDto> {
     const r = await this.valid(token);
+    if (ssoOnly(r.user)) throw new ForbiddenException(ssoRequiredMessage(r.user.organization, r.user.organization.sso!.provider));
     return { purpose: r.purpose, email: r.user.email, fullName: r.user.fullName, organizationName: r.organization.name, expiresAt: r.expiresAt.toISOString() };
   }
 

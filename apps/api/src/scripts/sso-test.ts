@@ -1,30 +1,46 @@
 /**
  * Single sign-on rules: what an ID token must say (another directory, an unverified or outside Google account, a wrong
- * issuer or nonce refused), who it signs in (linked once, by email only the first time, a new person only when the
- * company adds them), domains, who a company that requires SSO still lets use a password (platform admins and supplier
- * logins), which sessions a sister company takes, and the PKCE and settings checks.
+ * issuer, nonce or authorized party refused), who it signs in (linked once, by a verified email only the first time,
+ * never a directory guest or a platform admin, a new person only when the company adds them), domains, who a company
+ * that requires SSO still lets use a password (platform admins, guests, the phone app), which sessions stand and which a
+ * sister company takes, the browser binding, the provider addresses, the settings and the PKCE checks.
  *
  *   node dist/scripts/sso-test.js
  */
 import assert from 'node:assert/strict';
 import { createHash, generateKeyPairSync } from 'node:crypto';
-import { SignJWT, createLocalJWKSet, exportJWK, jwtVerify } from 'jose';
+import { SignJWT, createLocalJWKSet, errors as joseErrors, exportJWK, jwtVerify } from 'jose';
 import { SSO_PROBLEMS, domainAllowed, isSsoProblem, normaliseDomain, ssoSettingsProblem } from '@erp/shared';
 import {
+  BINDING,
+  PASSWORD_REFUSED,
   REAL_BASES,
   authorizeUrl,
+  bindingHash,
   claimsProblem,
   cookieOf,
   discoveryUrl,
+  endpointAllowed,
+  flowKey,
   flowSecrets,
   identityOf,
   matchLogin,
+  ownSignInMessage,
+  passwordRefused,
+  phoneMayUsePassword,
   proofAccepted,
+  proofClaims,
+  proofOfClaims,
+  providerBasesFrom,
   sameSignIn,
+  sessionStands,
   ssoEnforced,
   ssoRequiredMessage,
+  ssoSaveProblem,
+  verifyOptions,
   type Claims,
   type MatchFacts,
+  type ProvedIdentity,
   type SsoSetup,
 } from '../auth/sso-rules';
 
@@ -36,12 +52,13 @@ const entra: SsoSetup = { provider: 'ENTRA', tenantId: TID, clientId: 'app-1', a
 const google: SsoSetup = { provider: 'GOOGLE', tenantId: null, clientId: 'g-1', allowedDomains: ['acme.in'], enforce: false, addNewPeople: false, newPersonRole: null };
 const bases = REAL_BASES;
 const nonce = 'n-123';
-const entraClaims = (o: Claims = {}): Claims => ({ iss: `https://login.microsoftonline.com/${TID}/v2.0`, tid: TID, oid: 'oid-9', sub: 'pairwise', email: 'Ravi@Acme.in', name: 'Ravi K', nonce, ...o });
+// As a directory sends it once its app asks for the optional claims xms_edov and acct (DEPLOY.md).
+const entraClaims = (o: Claims = {}): Claims => ({ iss: `https://login.microsoftonline.com/${TID}/v2.0`, tid: TID, oid: 'oid-9', sub: 'pairwise', email: 'Ravi@Acme.in', xms_edov: true, acct: 0, preferred_username: 'ravi@acme.in', name: 'Ravi K', nonce, ...o });
 const googleClaims = (o: Claims = {}): Claims => ({ iss: 'https://accounts.google.com', sub: '1077', email: 'ravi@acme.in', email_verified: true, hd: 'acme.in', nonce, ...o });
 
 test('an Entra token from the company directory passes and is the person by tid and oid', () => {
   assert.equal(claimsProblem(entra, entraClaims(), { nonce, bases }), null);
-  assert.deepEqual(identityOf(entra, entraClaims()), { issuer: `entra:${TID}`, subject: 'oid-9', email: 'ravi@acme.in', name: 'Ravi K' });
+  assert.deepEqual(identityOf(entra, entraClaims()), { issuer: `entra:${TID}`, subject: 'oid-9', email: 'ravi@acme.in', name: 'Ravi K', linkProblem: null });
 });
 
 test('a token for another tenant is refused as TENANT, even when its issuer names that tenant', () => {
@@ -56,10 +73,28 @@ test('a wrong issuer or nonce is refused', () => {
   assert.equal(claimsProblem(google, googleClaims({ nonce: undefined }), { nonce, bases }), 'TOKEN');
 });
 
-test('an Entra token without oid is refused; its email falls back to preferred_username', () => {
+test('an Entra token without oid is refused', () => {
   assert.equal(claimsProblem(entra, entraClaims({ oid: undefined }), { nonce, bases }), 'TOKEN');
-  assert.equal(identityOf(entra, entraClaims({ email: undefined, preferred_username: 'ravi@acme.in' })).email, 'ravi@acme.in');
-  assert.equal(identityOf(entra, entraClaims({ email: undefined, preferred_username: 'RAVI' })).email, null);
+});
+
+test('Entra, first link: only an email the directory verified, or a member’s sign-in name; never a guest', () => {
+  const id = (o: Claims) => identityOf(entra, entraClaims(o));
+  // xms_edov true: the email claim is the directory's verified one.
+  assert.deepEqual([id({ preferred_username: 'other@acme.in', acct: undefined }).email, id({ acct: undefined }).linkProblem], ['ravi@acme.in', null]);
+  // No xms_edov: a member's preferred_username (its domain is the directory's own), never the typed email.
+  assert.deepEqual([id({ xms_edov: undefined, email: 'boss@acme.in' }).email, id({ xms_edov: undefined }).linkProblem], ['ravi@acme.in', null]);
+  assert.deepEqual([id({ xms_edov: false }).email, id({ xms_edov: 'true', acct: undefined }).linkProblem], ['ravi@acme.in', 'UNVERIFIED'], 'only the boolean true');
+  // Neither: nothing to match by.
+  const none = id({ xms_edov: undefined, acct: undefined });
+  assert.deepEqual([none.email, none.linkProblem], [null, 'UNVERIFIED']);
+  assert.equal(id({ xms_edov: undefined, preferred_username: 'RAVI' }).linkProblem, 'UNVERIFIED');
+  // Guests: acct 1, or a #EXT# sign-in name, even with a verified email.
+  assert.deepEqual([id({ acct: 1 }).email, id({ acct: 1 }).linkProblem], [null, 'GUEST']);
+  assert.equal(id({ acct: undefined, preferred_username: 'ravi_acme.in#EXT#@contoso.onmicrosoft.com' }).linkProblem, 'GUEST');
+  // A later sign-in goes by tid:oid whatever the email says.
+  assert.deepEqual(matchLogin(facts({ linked: { place: 'ACTIVE' }, identity: none })), { kind: 'LINKED' });
+  assert.deepEqual(matchLogin(facts({ identity: none, byEmail: null })), { kind: 'REFUSE', problem: 'UNVERIFIED' });
+  assert.deepEqual(matchLogin(facts({ identity: id({ acct: 1 }), byEmail: { place: 'ACTIVE', issuerLinked: false } })), { kind: 'REFUSE', problem: 'GUEST' });
 });
 
 test('Google: an unverified email is refused', () => {
@@ -71,7 +106,7 @@ test('Google: hd must be one of the domains; a personal account has none', () =>
   assert.equal(claimsProblem(google, googleClaims({ hd: 'other.in' }), { nonce, bases }), 'DOMAIN');
   assert.equal(claimsProblem(google, googleClaims({ hd: undefined, email: 'ravi@gmail.com' }), { nonce, bases }), 'DOMAIN');
   assert.equal(claimsProblem(google, googleClaims({ iss: 'accounts.google.com' }), { nonce, bases }), null, 'Google names itself either way');
-  assert.deepEqual(identityOf(google, googleClaims()), { issuer: 'google', subject: '1077', email: 'ravi@acme.in', name: null });
+  assert.deepEqual(identityOf(google, googleClaims()), { issuer: 'google', subject: '1077', email: 'ravi@acme.in', name: null, linkProblem: null });
 });
 
 test('a stand-in provider is reached only through the bases', () => {
@@ -81,10 +116,11 @@ test('a stand-in provider is reached only through the bases', () => {
   assert.equal(claimsProblem(google, googleClaims({ iss: 'accounts.google.com' }), { nonce, bases: stand }), 'TOKEN', 'the bare name is the real Google only');
 });
 
-const facts = (o: Partial<MatchFacts>): MatchFacts => ({ setup: entra, identity: { issuer: `entra:${TID}`, subject: 'oid-9', email: 'ravi@acme.in', name: null }, linked: null, byEmail: null, ...o });
+const who = (email: string | null, o: Partial<ProvedIdentity> = {}): ProvedIdentity => ({ issuer: `entra:${TID}`, subject: 'oid-9', email, name: null, linkProblem: null, ...o });
+const facts = (o: Partial<MatchFacts>): MatchFacts => ({ setup: entra, identity: who('ravi@acme.in'), platformEmail: false, linked: null, byEmail: null, ...o });
 
 test('a linked identity signs in by its link, whatever its email now says', () => {
-  assert.deepEqual(matchLogin(facts({ linked: { place: 'ACTIVE' }, identity: { issuer: 'x', subject: 'y', email: 'someone@else.com', name: null } })), { kind: 'LINKED' });
+  assert.deepEqual(matchLogin(facts({ linked: { place: 'ACTIVE' }, identity: who('someone@else.com') })), { kind: 'LINKED' });
   assert.deepEqual(matchLogin(facts({ linked: { place: 'OFF' } })), { kind: 'REFUSE', problem: 'SWITCHED_OFF' });
   assert.deepEqual(matchLogin(facts({ linked: { place: 'NONE' } })), { kind: 'REFUSE', problem: 'NO_PLACE' });
 });
@@ -94,8 +130,13 @@ test('a first sign-in links by email in an allowed domain, once', () => {
   assert.deepEqual(matchLogin(facts({ byEmail: { place: 'ACTIVE', issuerLinked: true } })), { kind: 'REFUSE', problem: 'LINKED_ELSEWHERE' }, 'never by email after linking');
   assert.deepEqual(matchLogin(facts({ byEmail: { place: 'NONE', issuerLinked: false } })), { kind: 'REFUSE', problem: 'NO_PLACE' }, "another company's person is not taken over");
   assert.deepEqual(matchLogin(facts({ byEmail: { place: 'OFF', issuerLinked: false } })), { kind: 'REFUSE', problem: 'SWITCHED_OFF' });
-  assert.deepEqual(matchLogin(facts({ identity: { issuer: 'x', subject: 'y', email: 'ravi@other.in', name: null }, byEmail: { place: 'ACTIVE', issuerLinked: false } })), { kind: 'REFUSE', problem: 'DOMAIN' });
-  assert.deepEqual(matchLogin(facts({ identity: { issuer: 'x', subject: 'y', email: null, name: null } })), { kind: 'REFUSE', problem: 'DOMAIN' });
+  assert.deepEqual(matchLogin(facts({ identity: who('ravi@other.in'), byEmail: { place: 'ACTIVE', issuerLinked: false } })), { kind: 'REFUSE', problem: 'DOMAIN' });
+  assert.deepEqual(matchLogin(facts({ identity: who(null) })), { kind: 'REFUSE', problem: 'DOMAIN' });
+});
+
+test('a platform admin’s email is never linked or added by a company’s directory', () => {
+  assert.deepEqual(matchLogin(facts({ platformEmail: true, byEmail: { place: 'ACTIVE', issuerLinked: false } })), { kind: 'REFUSE', problem: 'PLATFORM' });
+  assert.deepEqual(matchLogin(facts({ platformEmail: true, setup: { ...entra, addNewPeople: true, newPersonRole: 'SITE_ENGINEER' } })), { kind: 'REFUSE', problem: 'PLATFORM' });
 });
 
 test('someone new is added only when the company adds new people, in its role', () => {
@@ -114,12 +155,14 @@ test('domains: exact, lower case, a subdomain is its own', () => {
   assert.equal(normaliseDomain('https://acme.in'), null);
 });
 
-test('requiring SSO refuses passwords, platform admins and supplier logins aside', () => {
+test('requiring SSO refuses passwords, platform admins, client guests and supplier logins aside', () => {
   const on = { enforce: true };
   assert.equal(ssoEnforced(on, { platformAdmin: false, roleKey: 'SITE_ENGINEER' }), true);
   assert.equal(ssoEnforced(on, { platformAdmin: false, roleKey: 'ADMIN' }), true);
   assert.equal(ssoEnforced(on, { platformAdmin: true, roleKey: 'ADMIN' }), false);
   assert.equal(ssoEnforced(on, { platformAdmin: false, roleKey: 'SUPPLIER' }), false);
+  assert.equal(ssoEnforced(on, { platformAdmin: false, roleKey: 'CLIENT_ENGINEER' }), false, "the client's engineer is not in the directory");
+  assert.equal(ssoEnforced(on, { platformAdmin: false, roleKey: 'CONSULTANT' }), false);
   assert.equal(ssoEnforced({ enforce: false }, { platformAdmin: false, roleKey: 'SITE_ENGINEER' }), false);
   assert.equal(ssoEnforced(null, { platformAdmin: false, roleKey: 'SITE_ENGINEER' }), false);
 });
@@ -136,6 +179,82 @@ test('a company that requires SSO takes its own sign-in, or a sister on the same
   assert.equal(proofAccepted(a, { platformAdmin: true, roleKey: 'ADMIN' }, { kind: 'PASSWORD' }, null), true);
 });
 
+test('a sister’s single sign-on never stands for a company that is not the same sign-in, required or not', () => {
+  const person = { platformAdmin: false, roleKey: 'PROJECT_MANAGER' };
+  const sisterOwnDirectory = { ...entra, tenantId: '99999999-2222-3333-4444-555555555555' };
+  // The sister's admin runs its directory, so a person linked there is no proof here.
+  assert.equal(proofAccepted({ organizationId: 'B', setup: null }, person, { kind: 'SSO', organizationId: 'A' }, sisterOwnDirectory), false, 'B has no SSO: its own password');
+  assert.equal(proofAccepted({ organizationId: 'B', setup: entra }, person, { kind: 'SSO', organizationId: 'A' }, sisterOwnDirectory), false, 'B does not require it, yet another directory is still no proof');
+  assert.equal(proofAccepted({ organizationId: 'B', setup: entra }, person, { kind: 'SSO', organizationId: 'A' }, null), false, 'A has stopped SSO');
+  assert.equal(proofAccepted({ organizationId: 'B', setup: entra }, person, { kind: 'SSO', organizationId: 'A' }, { ...entra, clientId: 'app-2' }), true, 'the same directory');
+  assert.equal(ownSignInMessage({ name: 'Acme Roads', code: 'ROADS' }, null), 'Acme Roads takes its own sign-in. Sign out, then sign in with your email and password.');
+  assert.match(ownSignInMessage({ name: 'Acme Roads', code: 'ROADS' }, 'ENTRA'), /company code ROADS\.$/);
+});
+
+test('the phone keeps passwords under Require SSO (one rule); a website password session ends', () => {
+  const person = { platformAdmin: false, roleKey: 'SITE_ENGINEER' };
+  const on = { ...entra, enforce: true };
+  assert.equal(phoneMayUsePassword, true, 'PHONE in the design note: refusing on the phone too is this one line');
+  assert.equal(passwordRefused(on, person, 'web'), true);
+  assert.equal(passwordRefused(on, person, 'phone'), !phoneMayUsePassword);
+  assert.equal(proofAccepted({ organizationId: 'A', setup: on }, person, { kind: 'PHONE' }, null), true);
+  // Each request: a password session opened before the company required SSO no longer stands on the website.
+  assert.equal(sessionStands(on, person, { kind: 'PASSWORD' }), false);
+  assert.equal(sessionStands(on, person, { kind: 'PHONE' }), true);
+  assert.equal(sessionStands(on, person, { kind: 'SSO', organizationId: 'A' }), true);
+  assert.equal(sessionStands(on, { platformAdmin: true, roleKey: 'ADMIN' }, { kind: 'PASSWORD' }), true);
+  assert.equal(sessionStands(on, { platformAdmin: false, roleKey: 'CLIENT_ENGINEER' }, { kind: 'PASSWORD' }), true);
+  assert.equal(sessionStands({ ...on, enforce: false }, person, { kind: 'PASSWORD' }), true);
+  // The token says which: sso, ph or nothing, and reads back the same.
+  for (const p of [{ kind: 'PASSWORD' as const }, { kind: 'PHONE' as const }, { kind: 'SSO' as const, organizationId: 'A' }]) assert.deepEqual(proofOfClaims(proofClaims(p)), p);
+  assert.deepEqual(proofClaims({ kind: 'PASSWORD' }), {});
+  assert.deepEqual(proofOfClaims({ ph: true }), { kind: 'PASSWORD' }, 'only the 1 the server signs');
+});
+
+test('the one code is exchanged only in the tab that started the sign-in', () => {
+  const b = 'k3V9x1-ZqPaLw_8Rr2Tt5Yy7Uu0Ii4Oo6Pp9Ss1Dd3';
+  assert.equal(BINDING.test(b), true);
+  for (const bad of ['', 'short', `${b}!`, 'x'.repeat(129)]) assert.equal(BINDING.test(bad), false, bad);
+  assert.equal(bindingHash(b), bindingHash(b));
+  assert.notEqual(bindingHash(b), bindingHash(`${b}x`));
+  assert.equal(bindingHash(b).length, 64);
+});
+
+test('the sign-in page’s refusal of a password names no company and no account', () => {
+  assert.doesNotMatch(PASSWORD_REFUSED, /company code|signs in with/);
+  assert.match(PASSWORD_REFUSED, /^Invalid email or password\. If your company uses single sign-on, choose Use single sign-on/);
+});
+
+test('a stand-in is honoured only on this machine and never on a deployed API; endpoints are https', () => {
+  const stand = { entra: 'http://localhost:4950/entra', google: 'http://127.0.0.1:4950/google/' };
+  assert.deepEqual(providerBasesFrom(stand, false), { entraAuthority: 'http://localhost:4950/entra', googleIssuer: 'http://127.0.0.1:4950/google' });
+  assert.deepEqual(providerBasesFrom(stand, true), REAL_BASES, 'deployed: the real providers, whatever is set');
+  assert.deepEqual(providerBasesFrom({ entra: 'https://evil.example/entra', google: 'http://10.0.0.5/google' }, false), REAL_BASES, 'only localhost or 127.0.0.1');
+  assert.deepEqual(providerBasesFrom({ entra: 'file://localhost/x', google: 'not a url' }, false), REAL_BASES);
+  assert.equal(endpointAllowed('https://login.microsoftonline.com/x/oauth2/v2.0/token', REAL_BASES), true);
+  assert.equal(endpointAllowed('http://login.microsoftonline.com/x/token', REAL_BASES), false, 'the real providers: https only');
+  assert.equal(endpointAllowed('http://localhost:4950/keys', REAL_BASES), false);
+  assert.equal(endpointAllowed('http://localhost:4950/keys', providerBasesFrom(stand, false)), true);
+  assert.equal(endpointAllowed('http://evil.example/keys', providerBasesFrom(stand, false)), false);
+  assert.equal(endpointAllowed(42, REAL_BASES), false);
+});
+
+test('changing the provider under Require SSO, or requiring it unproved, is refused', () => {
+  const on = { ...entra, enforce: true };
+  const may = { newSecret: false, mayRequire: true };
+  assert.equal(ssoSaveProblem(on, on, may), null, 'already on and unchanged: no check');
+  assert.equal(ssoSaveProblem(on, on, { newSecret: false, mayRequire: false }), null, 'nor for a password session');
+  assert.equal(ssoSaveProblem(on, { ...on, allowedDomains: ['acme.com'] } as typeof on, may), null, 'domains are not the provider');
+  for (const after of [{ ...on, clientId: 'app-2' }, { ...on, tenantId: '99999999-2222-3333-4444-555555555555' }, { ...on, provider: 'GOOGLE' as const, tenantId: null }])
+    assert.match(ssoSaveProblem(on, after, may)!, /^Turn off Require single sign-on, change the settings, sign in through it again, then require it\.$/);
+  assert.match(ssoSaveProblem(on, on, { newSecret: true, mayRequire: true })!, /^Turn off Require/, 'a new secret too');
+  assert.equal(ssoSaveProblem(on, { ...on, clientId: 'app-2', enforce: false }, may), null, 'turning it off first is fine');
+  assert.match(ssoSaveProblem(entra, on, { newSecret: false, mayRequire: false })!, /^Use single sign-on once/);
+  assert.equal(ssoSaveProblem(entra, on, may), null);
+  assert.match(ssoSaveProblem(entra, { ...on, clientId: 'app-2' }, may)!, /^Save the new settings first/);
+  assert.equal(ssoSaveProblem(null, on, may), null, 'a platform admin setting up a required company');
+});
+
 test('Google sisters: the proving company’s domains must all be the other’s', () => {
   assert.equal(sameSignIn({ ...google, allowedDomains: ['acme.in'] }, { ...google, allowedDomains: ['acme.in', 'acme.com'] }), true);
   assert.equal(sameSignIn({ ...google, allowedDomains: ['acme.in', 'other.in'] }, { ...google, allowedDomains: ['acme.in'] }), false);
@@ -143,6 +262,14 @@ test('Google sisters: the proving company’s domains must all be the other’s'
 
 test('the refusal says how to sign in instead', () => {
   assert.equal(ssoRequiredMessage({ name: 'Acme Infra', code: 'ACME' }, 'ENTRA'), 'Acme Infra signs in with Microsoft. Choose "Use single sign-on" and enter the company code ACME.');
+});
+
+test('the flow key is HKDF of the server key for single sign-on, not the signing key itself', () => {
+  assert.equal(flowKey('secret').length, 32);
+  assert.notDeepEqual(flowKey('secret'), Buffer.from('secret'));
+  assert.deepEqual(flowKey('secret'), flowKey('secret'));
+  assert.notDeepEqual(flowKey('secret'), flowKey('secret2'));
+  assert.notEqual(flowSecrets('s', flowKey('secret')).verifier, flowSecrets('s', 'secret').verifier);
 });
 
 test('PKCE: verifier and nonce come from the state and the key, the challenge is S256', () => {
@@ -206,6 +333,34 @@ test('jose: a token signed by the provider key verifies; another key or audience
   await assert.rejects(jwtVerify(await sign(good.privateKey, 'someone-else'), keys, { audience: 'g-1', algorithms: ['RS256'] }));
   const none = `${Buffer.from('{"alg":"none"}').toString('base64url')}.${Buffer.from(JSON.stringify(googleClaims({ aud: 'g-1' }))).toString('base64url')}.`;
   await assert.rejects(jwtVerify(none, keys, { audience: 'g-1', algorithms: ['RS256'] }), Error, 'an unsigned token never passes');
+
+  // The service's own options: issuer, and exp, iat and nonce required.
+  const opts = verifyOptions(google, bases);
+  const signed = (claims: Claims, withIat = true) => {
+    const t = new SignJWT(claims).setProtectedHeader({ alg: 'RS256', kid: 'k1' }).setAudience('g-1').setExpirationTime('5m');
+    return (withIat ? t.setIssuedAt() : t).sign(good.privateKey);
+  };
+  await jwtVerify(await signed(googleClaims()), keys, opts);
+  await assert.rejects(jwtVerify(await signed(googleClaims({ nonce: undefined })), keys, opts), Error, 'no nonce');
+  await assert.rejects(jwtVerify(await signed(googleClaims(), false), keys, opts), Error, 'no iat');
+  await assert.rejects(jwtVerify(await signed(googleClaims({ iss: 'https://evil.example' })), keys, opts), Error, 'another issuer');
+
+  // A signed token of another Entra directory fails jose on its issuer; the service reads why from the error's payload,
+  // which claimsProblem refuses whatever (the two check the same issuers).
+  const other = '99999999-2222-3333-4444-555555555555';
+  const t = await new SignJWT(entraClaims({ tid: other, iss: `https://login.microsoftonline.com/${other}/v2.0` }))
+    .setProtectedHeader({ alg: 'RS256', kid: 'k1' }).setAudience('app-1').setIssuedAt().setExpirationTime('5m').sign(good.privateKey);
+  const failed = await jwtVerify(t, keys, verifyOptions(entra, bases)).then(() => null, (e: unknown) => e);
+  assert.ok(failed instanceof joseErrors.JWTClaimValidationFailed && failed.claim === 'iss');
+  assert.equal(claimsProblem(entra, failed.payload as Claims, { nonce, bases }), 'TENANT');
+  assert.deepEqual(verifyOptions(entra, bases).issuer, [`https://login.microsoftonline.com/${TID}/v2.0`]);
+});
+
+test('a token for several audiences must name this app as its authorized party', () => {
+  assert.equal(claimsProblem(google, googleClaims({ aud: ['g-1', 'other'] }), { nonce, bases }), 'TOKEN');
+  assert.equal(claimsProblem(google, googleClaims({ aud: ['g-1', 'other'], azp: 'g-1' }), { nonce, bases }), null);
+  assert.equal(claimsProblem(google, googleClaims({ aud: 'g-1', azp: 'other' }), { nonce, bases }), 'TOKEN', 'an azp that is not this app');
+  assert.equal(claimsProblem(google, googleClaims({ aud: 'g-1' }), { nonce, bases }), null);
 });
 
 void (async () => {

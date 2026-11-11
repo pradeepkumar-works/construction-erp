@@ -158,7 +158,10 @@ export interface PasswordLinkDto {
   emailError?: string | null;
   /** Also sent to the user's phone on WhatsApp or SMS (invites only), else null */
   messaged?: 'WHATSAPP' | 'SMS' | null;
-  expiresAt: string;
+  /** When the link stops working; null for a single sign-on invite, whose link opens the company's sign-in and never expires */
+  expiresAt: string | null;
+  /** The company requires single sign-on of this person: the link opens its sign-in (`/login?sso=1&code=…`), no password is set */
+  sso?: true;
 }
 
 /** POST /users: the new user, plus the invite link when no password was given. */

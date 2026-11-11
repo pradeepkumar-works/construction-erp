@@ -188,7 +188,6 @@ export const canViewAuditLog = (role: RoleKey) => role === 'ADMIN';
 export const canManageCompanyData = (role: RoleKey) => role === 'ADMIN';
 /** Add, change and archive the company's own fields on vendors, projects and orders (Company settings › Fields). */
 export const canManageCustomFields = (role: RoleKey) => role === 'ADMIN';
-
 /** Single sign-on settings (Company settings › Sign-in): admins only. */
 export const canManageSso = (role: RoleKey) => role === 'ADMIN';
 /** See and pay for the company's subscription: admins only. */

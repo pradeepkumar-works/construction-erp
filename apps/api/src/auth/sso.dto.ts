@@ -51,4 +51,9 @@ export class SsoExchangeDto {
   @IsString()
   @MaxLength(128)
   code: string;
+
+  @ApiProperty({ description: 'The value the tab that started the sign-in kept, as sent to /start' })
+  @IsString()
+  @MaxLength(128)
+  b: string;
 }

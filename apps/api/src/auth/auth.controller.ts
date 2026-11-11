@@ -18,7 +18,7 @@ export class AuthController {
   @Public()
   @Post('login')
   login(@Body() dto: LoginDto, @Req() req: Request) {
-    return this.auth.login(dto.email, dto.password, clientIp(req));
+    return this.auth.login(dto.email, dto.password, clientIp(req), dto.client ?? 'web');
   }
 
   @ApiOperation({ summary: 'What the sign-in screens may offer: organisation sign-up and reset by email' })
