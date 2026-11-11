@@ -25,6 +25,9 @@ interface Values {
   projectId?: string | null;
   agentId?: string | null;
   credential?: string;
+  /** A GSP: its client secret and the API user's password, sealed together as one credential */
+  gspSecret?: string;
+  gspPassword?: string;
   /** A maker's feed */
   url?: string;
   auth?: FeedAuth;
@@ -50,6 +53,13 @@ interface Values {
   userName?: string;
 }
 
+/** A GSP's secret and password go together: each is needed when nothing is saved, or when the other one is typed. */
+const gspPart = (other: string, saved: boolean, message: string) => ({ getFieldValue }: { getFieldValue: (k: string) => unknown }) => ({
+  validator: async (_: unknown, v: string | undefined) => {
+    if (v?.trim()) return;
+    if (!saved || String(getFieldValue(other) ?? '').trim()) throw new Error(message);
+  },
+});
 const CREDENTIAL_LABEL: Record<FeedAuth, string> = { BEARER: 'API key', BASIC: 'User name and password, as user:password', OAUTH: 'Client secret' };
 const str = (v: unknown) => (typeof v === 'string' ? v : undefined);
 
@@ -87,7 +97,10 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
       title={connection ? `Edit ${connection.name}` : 'New connection'}
       okText={connection ? 'Save' : 'Connect'}
       onSubmit={async (v) => {
-        const credential = v.credential?.trim() || undefined;
+        const secret = v.gspSecret?.trim();
+        const password = v.gspPassword ?? '';
+        // A GSP's credential is JSON, so a colon in either part is kept as typed (readGspCredential on the API).
+        const credential = gsp ? (secret || password ? JSON.stringify({ clientSecret: secret, password }) : undefined) : v.credential?.trim() || undefined;
         const config = polled
           ? { url: v.url?.trim(), auth: v.auth ?? 'BEARER', ...(v.auth === 'OAUTH' ? { tokenUrl: v.tokenUrl?.trim(), clientId: v.clientId?.trim(), scope: v.scope?.trim() || undefined } : {}) }
           : dispenser
@@ -304,28 +317,41 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
             )}
           </>
         )}
-        {bridge || batcher ? null : (
+        {gsp ? (
+          <FormGrid cols={2}>
+            <Form.Item
+              name="gspSecret"
+              label={`Client secret${connection?.secretLast4 ? ` (saved, ends ${connection.secretLast4})` : ''}`}
+              extra="Saved encrypted with the password; only the secret's last four characters are shown."
+              dependencies={['gspPassword']}
+              rules={[gspPart('gspPassword', !!connection?.secretLast4, "Type the GSP's client secret")]}
+            >
+              <Input.Password maxLength={1000} autoComplete="new-password" placeholder={connection?.secretLast4 ? 'Leave blank to keep it' : undefined} />
+            </Form.Item>
+            <Form.Item
+              name="gspPassword"
+              label="API password"
+              dependencies={['gspSecret']}
+              rules={[gspPart('gspSecret', !!connection?.secretLast4, "Type the API user's password")]}
+            >
+              <Input.Password maxLength={1000} autoComplete="new-password" placeholder={connection?.secretLast4 ? 'Leave blank to keep it' : undefined} />
+            </Form.Item>
+          </FormGrid>
+        ) : bridge || batcher ? null : (
           <Form.Item
           name="credential"
           label={
-            gsp
-              ? `Client secret and API password, as secret:password${connection?.secretLast4 ? ` (saved, ends ${connection.secretLast4})` : ''}`
-              : polled
+            polled
               ? `${CREDENTIAL_LABEL[auth]}${connection?.secretLast4 ? ` (saved, ends ${connection.secretLast4})` : ''}`
               : connection?.secretLast4
                 ? `Key or password (saved, ends ${connection.secretLast4})`
                 : 'Key or password'
           }
-          extra={polled || gsp ? 'Saved encrypted; only the last four characters are shown.' : 'For a service that asks for one. It is saved encrypted; only the last four characters are shown.'}
+          extra={polled ? 'Saved encrypted; only the last four characters are shown.' : 'For a service that asks for one. It is saved encrypted; only the last four characters are shown.'}
           rules={
-            gsp
-              ? [
-                  ...(connection?.secretLast4 ? [] : [{ required: true, whitespace: true, message: "Enter the GSP's client secret and the API password, as secret:password" }]),
-                  { pattern: /^[^:]+:.+$/, message: 'Type the client secret, a colon, then the API password' },
-                ]
-              : polled && !connection?.secretLast4
-                ? [{ required: true, whitespace: true, message: `Enter the ${CREDENTIAL_LABEL[auth].toLowerCase()} the maker gave you` }]
-                : undefined
+            polled && !connection?.secretLast4
+              ? [{ required: true, whitespace: true, message: `Enter the ${CREDENTIAL_LABEL[auth].toLowerCase()} the maker gave you` }]
+              : undefined
           }
         >
           <Input.Password maxLength={2000} autoComplete="new-password" placeholder={connection?.secretLast4 ? 'Leave blank to keep it' : undefined} />

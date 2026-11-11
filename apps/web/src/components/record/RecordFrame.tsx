@@ -411,7 +411,7 @@ function RecordPage({ kind, list, loading, error, onRetry, record, children }: R
               <Col xs={24} xl={7}>
                 <Card title="History" size="small" style={{ position: 'sticky', top: `calc(${top}px + ${tk.space[3]})` }}>
                   {/* A long history scrolls in its box, which the a11y patch makes a Tab stop when nothing in it takes focus. */}
-                  <div data-scroll-region style={{ maxHeight: `calc(100vh - ${top + 160}px)`, overflowY: 'auto' }}>
+                  <div data-scroll-region role="region" aria-label="History" style={{ maxHeight: `calc(100vh - ${top + 160}px)`, overflowY: 'auto' }}>
                     <AuditTrail type={record.activity.type} id={record.activity.id} submission={record.activity.submission} />
                   </div>
                 </Card>

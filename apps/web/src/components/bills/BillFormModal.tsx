@@ -136,7 +136,7 @@ export function BillFormModal({ open, onClose, projectId, defaultProjectId, bill
           </Form.Item>
         </FormGrid>
         <FormGrid cols={2}>
-          <Form.Item name="sacCode" label="SAC" tooltip="The services code the bill's e-invoice reports; empty takes the company's (Administration › Company › E-invoicing)" rules={[{ pattern: HSN_PATTERN, message: 'A SAC is 4, 6 or 8 digits, e.g. 995421' }]}>
+          <Form.Item name="sacCode" label="SAC" tooltip="The services code the bill's e-invoice reports; empty takes the company's (Admin › Company settings › E-invoicing)" rules={[{ pattern: HSN_PATTERN, message: 'A SAC is 4, 6 or 8 digits, e.g. 995421' }]}>
             <Input {...CODE_INPUT} inputMode="numeric" maxLength={8} placeholder="e.g. 995421" />
           </Form.Item>
         </FormGrid>

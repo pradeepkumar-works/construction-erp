@@ -8,6 +8,7 @@ import {
   EWAY_MAX_KM,
   EWB_CANCEL_REASONS,
   EWB_EXTEND_REASONS,
+  GST_STATES,
   GST_DOCUMENT_KIND_LABELS,
   GST_DOCUMENT_STATUS_LABELS,
   IRN_CANCEL_REASONS,
@@ -23,14 +24,18 @@ import { Help } from '@/components/common/Help';
 import { Section } from '@/components/common/Section';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { CODE_INPUT, upper } from '@/components/form/inputs';
+import { PRINT } from '@/components/print/printBrand';
 import type { RecordSection } from '@/components/record/RecordFrame';
 
 const options = (o: Record<string, string>) => Object.entries(o).map(([value, label]) => ({ value, label }));
+/** The facts' column gives way to the QR at ten 32 steps, about the width of the QR and its gap. */
+const FACTS_BASIS = `calc(${tk.space[8]} * 10)`;
+const stateOptions = Object.entries(GST_STATES).map(([value, label]) => ({ value, label }));
 const mono = (v: string | null | undefined) => (v ? <span className="mono" translate="no">{v}</span> : NO_VALUE);
 
 type MakeValues = { mode: TransportMode; vehicleNo?: string; vehicleType: VehicleType; distanceKm?: number };
 type CancelValues = { reason: string; remark: string };
-type ExtendValues = { fromPlace: string; remainingKm?: number; vehicleNo?: string; mode: TransportMode; reason: string; remark: string };
+type ExtendValues = { fromPlace: string; fromState: string; remainingKm?: number; vehicleNo?: string; mode: TransportMode; reason: string; remark: string };
 
 const vehicleRule = ({ getFieldValue }: { getFieldValue: (k: string) => unknown }) => ({
   validator: async (_: unknown, v: string | undefined) => {
@@ -50,7 +55,7 @@ function DocumentFacts({ d }: { d: GstDocumentDto }) {
       <Descriptions
         size="small"
         column={1}
-        style={{ flex: '1 1 320px', minWidth: 0 }}
+        style={{ flex: `1 1 ${FACTS_BASIS}`, minWidth: 0 }}
         items={[
           { key: 'n', label: irn ? 'IRN' : 'E-way bill no.', children: <Typography.Text copyable={d.number ? { text: d.number } : false} style={{ wordBreak: 'break-all' }}>{mono(d.number)}</Typography.Text> },
           ...(irn
@@ -68,7 +73,7 @@ function DocumentFacts({ d }: { d: GstDocumentDto }) {
           ...(d.provider === 'FAKE' ? [{ key: 'p', label: 'Provider', children: <AppTag meaning="waiting">Stand-in, not registered</AppTag> }] : []),
         ]}
       />
-      {irn && d.signedQr ? <QRCode value={d.signedQr} size={160} type="svg" bordered={false} aria-label="E-invoice QR code" /> : null}
+      {irn && d.signedQr ? <QRCode value={d.signedQr} size={160} type="svg" bordered={false} color={PRINT.ink} bgColor={PRINT.paper} aria-label="E-invoice QR code" /> : null}
     </Flex>
   );
 }
@@ -154,6 +159,22 @@ export function GstDocumentPanel({ sourceKind, sourceId, state }: { sourceKind: 
                     <li key={p}>{p}</li>
                   ))}
                 </ul>
+              }
+            />
+          ) : null}
+          {state.warnings.length ? (
+            <Alert
+              type="info"
+              showIcon
+              title={state.warnings.length === 1 ? state.warnings[0] : `Before generating the ${word}`}
+              description={
+                state.warnings.length > 1 ? (
+                  <ul style={{ margin: 0, paddingLeft: tk.space[4] }}>
+                    {state.warnings.map((p) => (
+                      <li key={p}>{p}</li>
+                    ))}
+                  </ul>
+                ) : undefined
               }
             />
           ) : null}
@@ -253,6 +274,7 @@ export function GstDocumentPanel({ sourceKind, sourceId, state }: { sourceKind: 
           const s = await act.extend.mutateAsync({
             id: live!.id,
             fromPlace: v.fromPlace.trim(),
+            fromState: v.fromState,
             remainingKm: v.remainingKm!,
             vehicleNo: v.mode === '1' ? normaliseVehicleNo(v.vehicleNo) : null,
             mode: v.mode,
@@ -267,6 +289,9 @@ export function GstDocumentPanel({ sourceKind, sourceId, state }: { sourceKind: 
             <Input maxLength={200} placeholder="e.g. Cuttack 753001" />
           </Form.Item>
           <FormGrid cols={2}>
+            <Form.Item name="fromState" label="State the goods are in now" rules={[{ required: true, message: 'Choose the state the goods are in now' }]}>
+              <Select showSearch={{ optionFilterProp: 'label' }} options={stateOptions} />
+            </Form.Item>
             <Form.Item name="remainingKm" label="Distance left (km)" rules={[kmRule]}>
               <InputNumber min={1} max={EWAY_MAX_KM} precision={0} style={{ width: '100%' }} />
             </Form.Item>

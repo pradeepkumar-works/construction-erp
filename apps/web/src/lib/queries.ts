@@ -5208,6 +5208,8 @@ export interface GstGenerateInput {
 
 export interface EwayExtendInput {
   fromPlace: string;
+  /** The GST state code of where the goods are now. */
+  fromState: string;
   remainingKm: number;
   vehicleNo?: string | null;
   mode?: TransportMode;

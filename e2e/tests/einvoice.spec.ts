@@ -122,6 +122,21 @@ const paperText = async (page: Page) => {
   return { paper, text };
 };
 
+test('lane 0: a project manager sees the bill but may not generate its IRN, and the API refuses him', async ({ page }) => {
+  const own = await api<GstState>(ctx.owner, `/gst/sources/RA_BILL/${ctx.b2b.id}`);
+  expect(own.canGenerate).toBe(true);
+  const his = await api<GstState>(ctx.pm, `/gst/sources/RA_BILL/${ctx.b2b.id}`);
+  expect(his).toMatchObject({ offered: true, canGenerate: false, canCancel: false, live: null });
+  const refused = await call(ctx.pm, 'POST', `/gst/sources/RA_BILL/${ctx.b2b.id}/generate`, {});
+  expect(refused.status).toBe(403);
+  expect((await refused.json()).message).toContain('make e-invoices');
+  expect((await api<GstState>(ctx.owner, `/gst/sources/RA_BILL/${ctx.b2b.id}`)).live).toBeNull();
+  await signIn(page, email('pm'));
+  await settle(page, `/bills/${ctx.b2b.id}`);
+  await expect(section(page)).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Generate IRN' })).toHaveCount(0);
+});
+
 test('lanes 1 to 3: a certified bill prints as before, gets its IRN, ack and QR, and the same IRN again', async ({ page }) => {
   await signIn(page, email('owner'));
   await settle(page, `/bills/${ctx.b2b.id}`);
@@ -167,6 +182,20 @@ test('lanes 1 to 3: a certified bill prints as before, gets its IRN, ack and QR,
   await shot(page, 'gst-again.png');
 });
 
+test('lane 3b: a project manager may not cancel the live IRN either', async ({ page }) => {
+  const live = (await api<GstState>(ctx.owner, `/gst/sources/RA_BILL/${ctx.b2b.id}`)).live!;
+  const his = await api<GstState>(ctx.pm, `/gst/sources/RA_BILL/${ctx.b2b.id}`);
+  expect(his).toMatchObject({ canGenerate: false, canCancel: false });
+  expect(his.live!.id).toBe(live.id);
+  const refused = await call(ctx.pm, 'POST', `/gst/documents/${live.id}/cancel`, { reason: '2', remark: 'Not mine to cancel' });
+  expect(refused.status).toBe(403);
+  expect((await api<GstState>(ctx.owner, `/gst/sources/RA_BILL/${ctx.b2b.id}`)).live).toMatchObject({ id: live.id, status: 'ACTIVE' });
+  await signIn(page, email('pm'));
+  await settle(page, `/bills/${ctx.b2b.id}`);
+  await expect(section(page).getByText(live.number!)).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Cancel IRN' })).toHaveCount(0);
+});
+
 test('lane 4: with a live IRN the certificate cannot be corrected, and the refusal names the IRN', async ({ page }) => {
   const live = (await api<GstState>(ctx.owner, `/gst/sources/RA_BILL/${ctx.b2b.id}`)).live!;
   const refused = await call(ctx.owner, 'POST', `/ra-bills/${ctx.b2b.id}/certify`, { date: localToday(), certificateNo: 'CERT-GA-01-B' });
@@ -199,7 +228,7 @@ test('lane 5: the IRN is cancelled within 24 hours and reads Cancelled; its numb
   await dialog.getByLabel('Remark').fill('Wrong certificate quantity typed');
   await dialog.getByRole('button', { name: 'Cancel IRN' }).click();
   await expect(s.getByText('Cancelled', { exact: true })).toBeVisible();
-  await expect(s.getByText('the IRP does not take the same invoice number again', { exact: false })).toBeVisible();
+  await expect(s.getByText('Cancelled IRNs cannot be reused. Raise the corrected invoice outside Nirmaan, or ask support for a revised bill number', { exact: false })).toBeVisible();
   await expect(s.getByRole('button', { name: 'Generate IRN' })).toHaveCount(0);
   await shot(page, 'gst-cancel.png');
   const after = await api<GstState>(ctx.owner, `/gst/sources/RA_BILL/${ctx.b2b.id}`);
