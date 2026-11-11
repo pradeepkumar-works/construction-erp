@@ -394,6 +394,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/einvoice-test.js
+      - name: An IRN or e-way bill is asked for once, kept PENDING with no answer, resent as first sent, refused when its record moved
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: DATABASE_URL="$RUNTIME_URL" node dist/scripts/einvoice-race-test.js
       - name: Tender pricing, quotes on the SOR, bid ranks and status moves add up
         if: matrix.suite == 'flows'
         working-directory: apps/api

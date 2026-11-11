@@ -9,6 +9,8 @@ import type { EwbExtendInput, GstProvider } from './gst-provider';
  */
 export class FakeGstProvider implements GstProvider {
   readonly name = 'FAKE';
+  /** It answers at once; a few seconds covers a slow database. */
+  readonly answerWithinMs = 5_000;
   constructor(private now: () => Date = () => new Date()) {}
 
   async ready() {
@@ -31,6 +33,11 @@ export class FakeGstProvider implements GstProvider {
     const ewbNo = fakeEwbNo(payloadHash(payload));
     const validUntil = ewayValidUntil(madeAt, Number(payload.transDistance), payload.vehicleType as VehicleType);
     return { ok: true as const, value: { ewbNo, madeAt, validUntil }, raw: { status: '1', data: { ewayBillNo: ewbNo } } };
+  }
+
+  /** The fake keeps nothing between calls: sending again gives the same number, from the same payload. */
+  async findEwb() {
+    return { ok: true as const, value: null, raw: null };
   }
 
   async extendEwb(_ctx: unknown, ewbNo: string, input: EwbExtendInput) {

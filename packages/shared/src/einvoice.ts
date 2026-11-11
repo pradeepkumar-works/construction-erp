@@ -187,7 +187,6 @@ export interface EinvoiceLine {
   /** Decimal strings; a service line without a quantity goes as 1 OTH at its value */
   quantity: string | null;
   unit: string | null;
-  unitPrice: string | null;
   taxable: string;
   gstRate: string;
 }
@@ -229,6 +228,24 @@ function allocateTaxes(lines: { taxable: number; rate: number }[], totals: { igs
   return out;
 }
 
+/** The GST rates the IRP takes on a line (GstRt). */
+export const IRP_GST_RATES = [0, 0.1, 0.25, 1, 1.5, 3, 5, 6, 7.5, 12, 18, 28] as const;
+const ratesInWords = `${IRP_GST_RATES.slice(0, -1).join(', ')} or ${IRP_GST_RATES[IRP_GST_RATES.length - 1]}%`;
+
+/** Days after an invoice's date that a company with turnover of ₹10 crore or more may still report it to the IRP. */
+export const EINVOICE_REPORT_DAYS = 30;
+
+/**
+ * What to know before making the IRN, which does not stop it: an invoice older than 30 days, which the IRP refuses from a
+ * company with turnover of ₹10 crore or more and takes from a smaller one. The date sent stays the bill's own.
+ */
+export function einvoiceWarnings(s: EinvoiceSource, now: Date): string[] {
+  const days = Math.round((Date.parse(`${ymdIst(now)}T00:00:00Z`) - Date.parse(`${s.docDate}T00:00:00Z`)) / 86_400_000);
+  return days > EINVOICE_REPORT_DAYS
+    ? [`The bill is dated ${gstDate(s.docDate)}, ${days} days ago. The IRP refuses an invoice more than ${EINVOICE_REPORT_DAYS} days old from a company with turnover of ₹10 crore or more; below that it takes it`]
+    : [];
+}
+
 /** What the record must have before the IRP can take it, each in words that say what to fill and where. Empty when it can go. */
 export function einvoiceProblems(s: EinvoiceSource): string[] {
   const out = [...partyProblems(s.seller, true), ...partyProblems(s.buyer, true)];
@@ -238,6 +255,7 @@ export function einvoiceProblems(s: EinvoiceSource): string[] {
     const code = l.hsn?.trim() ?? '';
     if (!code) out.push(`Set the ${l.isService ? 'SAC' : 'HSN'} code of "${l.description}" ${s.hsnFixAt}`);
     else if (!HSN_PATTERN.test(code) || code.length < EINVOICE_HSN_DIGITS) out.push(`The ${l.isService ? 'SAC' : 'HSN'} code of "${l.description}" (${code}) needs ${EINVOICE_HSN_DIGITS} or 8 digits for e-invoicing: correct it ${s.hsnFixAt}`);
+    if (!(IRP_GST_RATES as readonly number[]).includes(Number(l.gstRate))) out.push(`The GST rate of "${l.description}" (${l.gstRate}%) is not one the IRP takes: it takes ${ratesInWords}`);
   }
   const sellerState = stateOf(s.seller);
   const pos = s.placeOfSupply;
@@ -260,7 +278,8 @@ export function einvoicePayload(s: EinvoiceSource) {
   const items = lines.map((l, i) => {
     const tax = taxes[i];
     const qty = l.quantity !== null ? Number(l.quantity) : 1;
-    const unitPrice = l.unitPrice !== null ? Number(l.unitPrice) : rupees(l.t);
+    // The price per unit is the line's own: its value over its quantity, never a rate read from elsewhere today.
+    const unitPrice = l.quantity !== null && qty > 0 ? Math.round((l.t / qty) * 10) / 1000 : rupees(l.t);
     return {
       SlNo: String(i + 1),
       PrdDesc: l.description.slice(0, 300),
@@ -375,6 +394,8 @@ export function ewayProblems(s: EwaySource): string[] {
     const code = l.hsn?.trim() ?? '';
     if (!code) out.push(`Set the HSN code of ${l.name} ${s.hsnFixAt}`);
     else if (!HSN_PATTERN.test(code)) out.push(`The HSN code of ${l.name} (${code}) is not 4, 6 or 8 digits: correct it ${s.hsnFixAt}`);
+    // NIC's e-way bill JSON carries the HSN as a number, which would drop the leading 0 of chapters 01 to 09.
+    else if (code.startsWith('0')) out.push(`The HSN code of ${l.name} (${code}) starts with 0, which the e-way bill system's JSON cannot carry: make this e-way bill on the e-way bill portal`);
     if (P(l.taxable) <= 0) out.push(`${l.name} has no value: set its rate ${s.hsnFixAt}`);
   }
   return out;
@@ -432,7 +453,7 @@ export function ewayPayload(s: EwaySource, t: EwayTransport) {
     fromAddr2: from.addr2 ?? '',
     fromPlace: from.place,
     fromPincode: from.pin,
-    actFromStateCode: fromState,
+    actFromStateCode: Number(stateOf(s.dispatchFrom) ?? fromState),
     fromStateCode: fromState,
     toGstin,
     toTrdName: (own ? s.from : s.to).legalName.slice(0, 100),
@@ -440,7 +461,8 @@ export function ewayPayload(s: EwaySource, t: EwayTransport) {
     toAddr2: to.addr2 ?? '',
     toPlace: to.place,
     toPincode: to.pin,
-    actToStateCode: own ? fromState : toState,
+    // Where the goods actually go: the ship-to place's state, which may differ from the buyer's.
+    actToStateCode: Number(stateOf(s.shipTo) ?? toState),
     toStateCode: toState,
     transactionType: 1,
     otherValue: 0,
@@ -462,7 +484,7 @@ export function ewayPayload(s: EwaySource, t: EwayTransport) {
     itemList: lines.map((l) => ({
       productName: l.name.slice(0, 100),
       productDesc: l.name.slice(0, 100),
-      hsnCode: Number(l.hsn!.trim()),
+      hsnCode: Number(l.hsn!.trim()), // ewayProblems refuses a code starting with 0, so nothing is lost
       quantity: Number(l.quantity),
       qtyUnit: uqcOf(l.unit),
       cgstRate: own || inter ? 0 : l.rate / 2,
@@ -552,6 +574,8 @@ export interface GstSourceStateDto {
   reason: string;
   /** What to fill before it can be made, in words; empty when it can go */
   problems: string[];
+  /** What to know before making it, which does not stop it (an invoice older than 30 days) */
+  warnings: string[];
   /** The one being made or made, if any */
   live: GstDocumentDto | null;
   /** Earlier ones: cancelled or refused */

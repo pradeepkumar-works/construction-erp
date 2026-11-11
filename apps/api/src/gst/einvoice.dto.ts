@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min, MinLength } from 'class-validator';
-import { EWAY_MAX_KM, EWB_CANCEL_REASONS, EWB_EXTEND_REASONS, GST_SOURCE_KINDS, IRN_CANCEL_REASONS, TRANSPORT_MODES, VEHICLE_TYPES, type GstSourceKind, type TransportMode, type VehicleType } from '@erp/shared';
+import { EWAY_MAX_KM, EWB_CANCEL_REASONS, GST_STATES, EWB_EXTEND_REASONS, GST_SOURCE_KINDS, IRN_CANCEL_REASONS, TRANSPORT_MODES, VEHICLE_TYPES, type GstSourceKind, type TransportMode, type VehicleType } from '@erp/shared';
 
 const trim = () => Transform(({ value }) => (typeof value === 'string' ? value.trim() : value));
 
@@ -25,6 +25,9 @@ export class CancelGstDocumentDto {
 
 export class ExtendEwayBillDto {
   @ApiProperty({ example: 'Near Cuttack 753001', description: 'Where the goods are now, with its PIN code' }) @trim() @IsString() @MaxLength(200) fromPlace: string;
+  @ApiProperty({ enum: Object.keys(GST_STATES), example: '21', description: 'The GST state the goods are in now' })
+  @IsIn(Object.keys(GST_STATES), { message: 'Choose the state the goods are in now' })
+  fromState: string;
   @ApiProperty({ example: 40 }) @IsInt() @Min(1) @Max(EWAY_MAX_KM) remainingKm: number;
   @ApiPropertyOptional({ example: 'OD02AB1234' }) @IsOptional() @trim() @IsString() @MaxLength(20) vehicleNo?: string | null;
   @ApiPropertyOptional({ enum: Object.keys(TRANSPORT_MODES), default: '1' }) @IsOptional() @IsIn(Object.keys(TRANSPORT_MODES)) mode?: TransportMode;

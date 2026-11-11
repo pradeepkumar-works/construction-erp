@@ -762,7 +762,6 @@ export class StockService {
     if (row.type === 'TRANSFER_OUT') {
       const received = await this.prisma.stockEntry.findUnique({ where: { transferOutId: row.id }, select: { entryNo: true } });
       if (received) throw new ConflictException(`${row.entryNo} was received as ${received.entryNo}; delete that first`);
-      await assertNoLiveGstDocument(this.prisma, user.organizationId, 'STOCK_TRANSFER', row.id);
     }
     if (row.subcontractBillId) {
       const bill = await this.prisma.subcontractBill.findUnique({ where: { id: row.subcontractBillId }, select: { status: true, billNo: true, workOrder: { select: { woNo: true } } } });
@@ -771,6 +770,7 @@ export class StockService {
     const itemIds = [...new Set(row.lines.map((l) => l.itemId))];
     let before = new Map<string, Decimal>();
     await this.inLock(user.organizationId, async (tx) => {
+      if (row.type === 'TRANSFER_OUT') await assertNoLiveGstDocument(tx, user.organizationId, 'STOCK_TRANSFER', row.id);
       before = await this.balancesOf(tx, row.projectId, itemIds);
       for (const itemId of itemIds) {
         const own = row.lines.filter((l) => l.itemId === itemId).reduce((s, l) => s.add(l.quantity), ZERO);

@@ -12,6 +12,7 @@ import {
   einvoiceNeeded,
   einvoicePayload,
   einvoiceProblems,
+  einvoiceWarnings,
   ewayExtendProblem,
   ewayNeeded,
   ewayPayload,
@@ -27,8 +28,30 @@ import {
   type EwaySource,
   type GstParty,
 } from '@erp/shared';
-import { canonicalJson, ewbDateTime, fakeAckNo, fakeEwbNo, financialYear, irnOf, payloadHash, readEwbAnswer, readGspConfig, readGspCredential, readIrnAnswer, readIrnCancel, readQrClaims } from '../gst/einvoice-rules';
+import {
+  canonicalJson,
+  duplicateIrnProblem,
+  ewbDateTime,
+  fakeAckNo,
+  fakeEwbNo,
+  financialYear,
+  gspCredential,
+  gstErrorCodes,
+  irnOf,
+  payloadHash,
+  readEwbAnswer,
+  readEwbByDoc,
+  readGspConfig,
+  readGspCredential,
+  readIrnAnswer,
+  readIrnCancel,
+  readIrnDetails,
+  readQrClaims,
+} from '../gst/einvoice-rules';
 import { FakeGstProvider } from '../gst/providers/fake-gst.provider';
+import { NicGspProvider } from '../gst/providers/nic-gsp.provider';
+import { sealSecret } from '../integrations/integration-rules';
+import type { PrismaService } from '../prisma/prisma.service';
 
 const cases: [string, () => void | Promise<void>][] = [];
 const test = (name: string, fn: () => void | Promise<void>) => cases.push([name, fn]);
@@ -44,7 +67,7 @@ const raBill: EinvoiceSource = {
   seller: company,
   buyer: roads,
   placeOfSupply: '21',
-  lines: [{ description: 'Works contract: RA bill 3, NH55 widening', hsn: '995421', isService: true, quantity: null, unit: null, unitPrice: null, taxable: '1002500.50', gstRate: '18' }],
+  lines: [{ description: 'Works contract: RA bill 3, NH55 widening', hsn: '995421', isService: true, quantity: null, unit: null, taxable: '1002500.50', gstRate: '18' }],
   igst: '0.00',
   cgst: '90225.04',
   sgst: '90225.05',
@@ -87,8 +110,8 @@ const rmcBill: EinvoiceSource = {
   buyer: kolkata,
   placeOfSupply: '19',
   lines: [
-    { description: 'Ready-mix concrete, M25', hsn: '38245010', isService: false, quantity: '7.500', unit: 'cum', unitPrice: '4850.00', taxable: '36375.00', gstRate: '18' },
-    { description: 'Pumping the concrete', hsn: '995421', isService: true, quantity: null, unit: null, unitPrice: null, taxable: '2625.00', gstRate: '18' },
+    { description: 'Ready-mix concrete, M25', hsn: '38245010', isService: false, quantity: '7.500', unit: 'cum', taxable: '36375.00', gstRate: '18' },
+    { description: 'Pumping the concrete', hsn: '995421', isService: true, quantity: null, unit: null, taxable: '2625.00', gstRate: '18' },
   ],
   igst: '7020.00',
   cgst: '0.00',
@@ -146,6 +169,30 @@ test('the record says what to fill: the SAC, its six digits, the PIN code, and a
   assert.match(einvoiceProblems({ ...raBill, docNo: '0RA/1' })[0], /not one GST takes/);
   assert.equal(hsnProblem('99542'), 'An HSN or SAC code is 4, 6 or 8 digits');
   assert.equal(hsnProblem('995421'), null);
+});
+
+test("a line's GST rate must be one the IRP takes, and the record says which those are", () => {
+  assert.deepEqual(einvoiceProblems({ ...raBill, lines: [{ ...raBill.lines[0], gstRate: '13' }] }), [
+    'The GST rate of "Works contract: RA bill 3, NH55 widening" (13%) is not one the IRP takes: it takes 0, 0.1, 0.25, 1, 1.5, 3, 5, 6, 7.5, 12, 18 or 28%',
+  ]);
+  for (const r of ['0', '0.1', '0.25', '7.5', '12.00', '28']) assert.deepEqual(einvoiceProblems({ ...raBill, lines: [{ ...raBill.lines[0], gstRate: r }] }), [], r);
+});
+
+test('an invoice more than 30 days old is warned of before Generate, never blocked, and keeps its own date', () => {
+  const bill = { ...raBill, docDate: '2026-10-01' };
+  assert.deepEqual(einvoiceWarnings(bill, new Date('2026-10-31T10:00:00Z')), []);
+  const late = einvoiceWarnings(bill, new Date('2026-11-01T10:00:00Z'));
+  assert.equal(late.length, 1);
+  assert.match(late[0], /dated 01\/10\/2026, 31 days ago\. The IRP refuses an invoice more than 30 days old from a company with turnover of ₹10 crore or more/);
+  assert.deepEqual(einvoiceProblems(bill), []);
+  assert.equal(einvoicePayload(bill).DocDtls.Dt, '01/10/2026');
+});
+
+test("a line's unit price is its own value over its quantity, never a rate read from elsewhere", () => {
+  const odd = einvoicePayload({ ...rmcBill, lines: [{ ...rmcBill.lines[0], quantity: '7.300', taxable: '35405.00' }, rmcBill.lines[1]], igst: '6845.40' });
+  assert.equal(odd.ItemList[0].UnitPrice, 4850);
+  const thirds = einvoicePayload({ ...rmcBill, lines: [{ ...rmcBill.lines[0], quantity: '3.000', taxable: '100.00' }], igst: '18.00' });
+  assert.equal(thirds.ItemList[0].UnitPrice, 33.333);
 });
 
 test('an address is read into lines, place and PIN, the state name left out', () => {
@@ -293,6 +340,22 @@ test('the e-way bill form and record say what to fill: the vehicle, the distance
   assert.deepEqual(ewayProblems(bare), ['Set the HSN code of Cement OPC 53 in Items', 'Cement OPC 53 has no value: set its rate in Items']);
 });
 
+test("an HSN starting with 0 is refused for an e-way bill, whose JSON carries it as a number and would drop the 0", () => {
+  const milk = { ...transfer, lines: [{ ...transfer.lines[0], name: 'Curing compound', hsn: '04012000' }] };
+  assert.deepEqual(ewayProblems(milk), ["The HSN code of Curing compound (04012000) starts with 0, which the e-way bill system's JSON cannot carry: make this e-way bill on the e-way bill portal"]);
+  const p = ewayPayload(transfer, { mode: '1', vehicleNo: 'OD02AB1234', vehicleType: 'R', distanceKm: 42 });
+  assert.equal(p.itemList[0].hsnCode, 25232930);
+});
+
+test('the goods go from where they are dispatched to where they are shipped: the actual states are those places', () => {
+  const pour: GstParty = { ...kolkata, gstin: null, address: 'Pour site, Salt Lake, Kolkata 700091', who: 'the pour site', fixAt: 'on the order', stateCode: '19' };
+  const supply: EwaySource = { ...transfer, purpose: 'SUPPLY', to: { ...roads }, shipTo: pour, igst: '0', cgst: '16470.00', sgst: '16470.00', lines: transfer.lines.map((l) => ({ ...l, gstRate: '18' })) };
+  const p = ewayPayload(supply, { mode: '1', vehicleNo: 'OD02AB1234', vehicleType: 'R', distanceKm: 440 });
+  assert.equal(p.toStateCode, 21, 'the buyer is billed in Odisha');
+  assert.equal(p.actToStateCode, 19, 'the goods go to West Bengal');
+  assert.equal(p.actFromStateCode, 21);
+});
+
 test('an e-way bill runs to midnight in India: a day for each 200 km, 20 km for over-dimensional cargo', () => {
   const made = new Date('2026-11-10T04:30:00Z');
   assert.equal(ewayValidUntil(made, 42, 'R').toISOString(), '2026-11-11T18:29:59.000Z');
@@ -313,16 +376,118 @@ test('cancel within 24 hours, else a credit note; extend from 8 hours before run
   assert.match(ewayExtendProblem(until, new Date('2026-11-12T02:31:00Z'))!, /make a new one/);
 });
 
-test("a GSP connection takes https addresses on the internet, the GSTIN, user and client id, and its key as secret:password", () => {
+test("a GSP connection takes https addresses on the internet, the GSTIN, user and client id, and its secret and password as JSON", () => {
   assert.equal(readGspConfig({ url: 'http://10.0.0.5/api', gstin: company.gstin, userName: 'u', clientId: 'c' }, true).config, null);
   assert.match(readGspConfig({ url: 'https://gsp.example.com', gstin: 'X', userName: 'u', clientId: 'c' }, true).problem!, /GSTIN/);
   assert.deepEqual(readGspConfig({ url: ' https://gsp.example.com ', gstin: company.gstin!.toLowerCase(), userName: 'api_sai', clientId: 'AAA' }, true), {
     config: { url: 'https://gsp.example.com', gstin: '21AABCS1234F1Z5', userName: 'api_sai', clientId: 'AAA' },
     problem: null,
   });
-  assert.match(readGspConfig({ url: 'https://gsp.example.com', gstin: company.gstin, userName: 'u', clientId: 'c' }, false).problem!, /client secret:password/);
-  assert.deepEqual(readGspCredential('s3cr:et:pa'), { clientSecret: 's3cr', password: 'et:pa' });
-  assert.equal(readGspCredential('nocolon'), null);
+  assert.match(readGspConfig({ url: 'https://gsp.example.com', gstin: company.gstin, userName: 'u', clientId: 'c' }, false).problem!, /client secret and the API password/);
+  // A colon in either is safe: they are kept as JSON, not joined by one.
+  assert.deepEqual(readGspCredential(gspCredential('s3cr:et', 'pa:ss:wd')), { clientSecret: 's3cr:et', password: 'pa:ss:wd' });
+  assert.equal(readGspCredential('secret:password'), null);
+  assert.equal(readGspCredential(gspCredential('', 'pw')), null);
+  assert.equal(readGspCredential(gspCredential('cs', '')), null);
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+// The GSP provider against a stubbed fetch: what it sends, and how each kind of answer is read
+
+const KEY = 'einvoice-test-integration-key-0123456789';
+process.env.INTEGRATION_KEY = KEY;
+const connection = {
+  id: 'conn-1',
+  updatedAt: new Date('2026-11-01T00:00:00Z'),
+  secretEnc: sealSecret(gspCredential('client:secret', 'api:password'), KEY),
+  config: { url: 'https://gsp.example.com', gstin: company.gstin, userName: 'api_sai', clientId: 'cid' },
+};
+const prismaStub = { integrationConnection: { findFirst: async () => connection, update: async () => connection } } as unknown as PrismaService;
+type Reply = (url: string, init: RequestInit) => Response;
+const reply = (body: unknown, status = 200): Reply => () => new Response(typeof body === 'string' ? body : JSON.stringify(body), { status });
+const signIn = (token: string) => reply({ Status: 1, Data: { AuthToken: token } });
+function gsp(...replies: Reply[]) {
+  const seen: { url: string; init: RequestInit }[] = [];
+  const fetchImpl = async (url: string | URL, init?: RequestInit) => {
+    seen.push({ url: String(url), init: init ?? {} });
+    const next = replies.shift();
+    if (!next) throw new Error(`An unexpected call to ${url}`);
+    return next(String(url), init ?? {});
+  };
+  return { provider: new NicGspProvider(prismaStub, fetchImpl as typeof fetch), seen, left: replies };
+}
+const ctx = { organizationId: 'org-1', gstin: company.gstin! };
+const ackDesc = (irn: string) => ({ AckNo: 112010000000001, AckDt: '2026-11-10 14:05:00', Irn: irn });
+const duplicate = (irn: string) => reply({ Status: 0, ErrorDetails: [{ ErrorCode: '2150', ErrorMessage: 'Duplicate IRN' }], InfoDtls: [{ InfCd: 'DUPIRN', Desc: ackDesc(irn) }] });
+const signedInvoice = (inv: unknown) => `${Buffer.from('{"alg":"RS256"}').toString('base64url')}.${Buffer.from(JSON.stringify({ data: JSON.stringify(inv) })).toString('base64url')}.sig`;
+
+test('a timeout, a 5xx or an answer that is not JSON is no answer: the document is neither made nor refused', async () => {
+  const timeout = gsp(signIn('t1'), () => {
+    throw new DOMException('The operation was aborted due to timeout', 'TimeoutError');
+  });
+  const r = await timeout.provider.generateIrn(ctx, einvoicePayload(raBill));
+  assert.equal(r.ok, false);
+  assert.ok(!r.ok && r.unanswered, 'a timeout is no answer');
+  for (const bad of [reply({ Status: 0 }, 503), reply('<html>Bad gateway</html>')]) {
+    const g = gsp(signIn('t1'), bad);
+    const a = await g.provider.generateIrn(ctx, einvoicePayload(raBill));
+    assert.ok(!a.ok && a.unanswered, 'a 5xx or a page that is not JSON is no answer');
+  }
+  const refused = gsp(signIn('t1'), reply({ Status: 0, ErrorDetails: [{ ErrorCode: '2211', ErrorMessage: 'Invalid HSN code' }] }));
+  const no = await refused.provider.generateIrn(ctx, einvoicePayload(raBill));
+  assert.deepEqual(no, { ok: false, error: '2211: Invalid HSN code', raw: { Status: 0, ErrorDetails: [{ ErrorCode: '2211', ErrorMessage: 'Invalid HSN code' }] } });
+});
+
+test('2150 is taken as made only when the IRP holds the IRN for the same figures; other figures are refused in words', async () => {
+  const payload = einvoicePayload(rmcBill);
+  const irn = irnOf(payload);
+  const same = gsp(signIn('t1'), duplicate(irn), reply({ Status: 1, Data: { Irn: irn, SignedQRCode: 'q.r.s', SignedInvoice: signedInvoice(payload) } }));
+  const ok = await same.provider.generateIrn(ctx, payload);
+  assert.ok(ok.ok && ok.value.duplicate && ok.value.irn === irn && ok.value.signedQr === 'q.r.s');
+  assert.ok(same.seen[2].url.endsWith(`/eicore/v1.03/Invoice/irn/${irn}`));
+
+  const other = { ...payload, ValDtls: { ...payload.ValDtls, AssVal: 38000, TotInvVal: 44840 } };
+  const diff = gsp(signIn('t1'), duplicate(irn), reply({ Status: 1, Data: { Irn: irn, SignedQRCode: 'q.r.s', SignedInvoice: signedInvoice(other) } }));
+  const no = await diff.provider.generateIrn(ctx, payload);
+  assert.ok(!no.ok && !no.unanswered);
+  assert.equal(!no.ok && no.error, `The IRP holds IRN ${irn} for other figures: cancel it there within 24 hours or raise a credit note`);
+
+  // The details may carry the figures in the answer itself, and their absence is not taken as a match.
+  assert.equal(duplicateIrnProblem(payload, irn, readIrnDetails({ Status: 1, Data: { DocDtls: payload.DocDtls, ValDtls: payload.ValDtls } }).figures), null);
+  assert.match(duplicateIrnProblem(payload, irn, readIrnDetails({ Status: 1, Data: { SignedQRCode: 'q' } }).figures)!, /could not be read/);
+  assert.match(duplicateIrnProblem(payload, irn, { no: payload.DocDtls.No, dt: '10/11/2026', assVal: 39000, totInvVal: 46020 })!, /other figures/);
+});
+
+test('every call refuses a redirect; a token the IRP calls invalid (1005) is dropped and the call made once more', async () => {
+  const payload = einvoicePayload(raBill);
+  const made = { Status: 1, Data: { AckNo: 1, AckDt: '2026-11-10 14:05:00', Irn: irnOf(payload), SignedQRCode: 'a.b.c' } };
+  const g = gsp(signIn('old'), reply({ Status: 0, ErrorDetails: [{ ErrorCode: '1005', ErrorMessage: 'Invalid Token' }] }), signIn('new'), reply(made));
+  const r = await g.provider.generateIrn(ctx, payload);
+  assert.ok(r.ok);
+  assert.equal(g.seen.length, 4);
+  assert.equal((g.seen[1].init.headers as Record<string, string>).AuthToken, 'old');
+  assert.equal((g.seen[3].init.headers as Record<string, string>).AuthToken, 'new');
+  assert.ok(g.seen.every((c) => c.init.redirect === 'error'), 'no call follows a redirect');
+  assert.equal((g.seen[0].init.headers as Record<string, string>).client_secret, 'client:secret');
+  assert.match(String(g.seen[0].init.body), /"Password":"api:password"/);
+  // A second 1005 is not chased round again.
+  const twice = gsp(signIn('a'), reply({ Status: 0, ErrorDetails: [{ ErrorCode: '1005' }] }), signIn('b'), reply({ Status: 0, ErrorDetails: [{ ErrorCode: '1005', ErrorMessage: 'Invalid Token' }] }));
+  const no = await twice.provider.generateIrn(ctx, payload);
+  assert.ok(!no.ok && /1005/.test(no.error) && twice.left.length === 0);
+  assert.deepEqual(gstErrorCodes({ status: '0', error: "{'errorCodes':'604, 312'}" }), ['604', '312']);
+});
+
+test('an e-way bill already made on the challan (604) is found by its document and taken, not refused', async () => {
+  const payload = ewayPayload(transfer, { mode: '1', vehicleNo: 'OD02AB1234', vehicleType: 'R', distanceKm: 42 });
+  const found = { status: '1', data: { ewayBillNo: 331000123456, ewayBillDate: '10/11/2026 02:05:00 PM', validUpto: '11/11/2026 11:59:00 PM' } };
+  const g = gsp(signIn('t1'), reply({ status: '0', error: "{'errorCodes':'604'}" }), reply(found));
+  const r = await g.provider.generateEwb(ctx, payload);
+  assert.ok(r.ok && r.value.ewbNo === '331000123456');
+  assert.match(g.seen[2].url, /GetEwayBillGeneratedByConsigner\?docType=CHL&docNo=TRO-2026-0042$/);
+  const look = gsp(signIn('t1'), reply({ status: '0', error: "{'errorCodes':'325'}" }));
+  const none = await look.provider.findEwb(ctx, 'CHL', 'TRO-2026-0042');
+  assert.ok(none.ok && none.value === null, 'no e-way bill on the challan reads as none');
+  assert.deepEqual(readEwbByDoc({ status: '1', data: found.data }), { ok: true, value: { ewbNo: '331000123456', madeAt: new Date('2026-11-10T08:35:00Z'), validUntil: new Date('2026-11-11T18:29:00Z') } });
 });
 
 void (async () => {

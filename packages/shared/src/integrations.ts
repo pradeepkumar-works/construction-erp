@@ -80,7 +80,7 @@ export const INTEGRATION_KIND_INFO: Record<IntegrationKind, IntegrationKindInfo>
 };
 
 /** A GST provider's settings, kept in the connection's config; the client secret and the API password are its sealed
- *  credential, typed as client secret:password. */
+ *  credential, kept as JSON of the two (`gspCredential`), so either may hold a colon. */
 export interface GspConfig {
   /** The GSP's address for NIC's e-invoice API, e.g. https://gsp.example.com/eivital */
   url: string;

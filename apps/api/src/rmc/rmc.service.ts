@@ -588,7 +588,11 @@ export class RmcService {
   async reject(user: RequestUser, id: string, dto: RejectBatchDto): Promise<RmcBatchDto> {
     const b = await this.batchRow(user, id);
     if (!this.batchDto(user, b).canDeliver) throw new BadRequestException(b.status === 'DISPATCHED' ? 'Your role does not mark deliveries' : 'This truck is not on the way');
-    await this.prisma.rmcBatch.update({ where: { id }, data: { status: 'REJECTED', note: dto.note } });
+    // A challan with a live e-way bill keeps it until the e-way bill is cancelled.
+    await this.prisma.$transaction(async (tx) => {
+      await assertNoLiveGstDocument(tx, user.organizationId, 'RMC_BATCH', id);
+      await tx.rmcBatch.update({ where: { id }, data: { status: 'REJECTED', note: dto.note } });
+    });
     await this.audit.log(user, 'RMC_BATCH', id, 'REJECTED', `${b.batchNo}: ${dto.note}`);
     return this.batch(user, id);
   }
@@ -770,11 +774,11 @@ export class RmcService {
     if (r.status !== 'ISSUED') throw new BadRequestException('This bill is already cancelled');
     if (r.tallyExportId) throw new BadRequestException('This bill has gone to Tally. Raise a credit note there instead.');
     if (r.receipts.length) throw new BadRequestException('Money has been received against this bill. Remove that first.');
-    await assertNoLiveGstDocument(this.prisma, user.organizationId, 'RMC_INVOICE', id);
-    await this.prisma.$transaction([
-      this.prisma.rmcBatch.updateMany({ where: { invoiceId: id }, data: { invoiceId: null } }),
-      this.prisma.rmcInvoice.update({ where: { id }, data: { status: 'CANCELLED', cancelledAt: new Date(), cancelNote: note || null } }),
-    ]);
+    await this.prisma.$transaction(async (tx) => {
+      await assertNoLiveGstDocument(tx, user.organizationId, 'RMC_INVOICE', id);
+      await tx.rmcBatch.updateMany({ where: { invoiceId: id }, data: { invoiceId: null } });
+      await tx.rmcInvoice.update({ where: { id }, data: { status: 'CANCELLED', cancelledAt: new Date(), cancelNote: note || null } });
+    });
     await this.audit.log(user, 'RMC_INVOICE', id, 'CANCELLED', note || r.invoiceNo);
     return this.invoice(user, id);
   }

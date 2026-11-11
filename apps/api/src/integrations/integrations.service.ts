@@ -275,10 +275,12 @@ export class IntegrationsService {
     return { ...r.config };
   }
 
+  /** A key sealed, and the last four characters to show: for a GSP those of its client secret, never of the password. */
   private sealed(credential: string) {
     const key = this.integrationKey();
     if (!key) throw new BadRequestException('Keys cannot be saved until INTEGRATION_KEY is set on the server (see DEPLOY.md)');
-    return { secretEnc: sealSecret(credential, key), secretLast4: last4(credential) };
+    const gsp = readGspCredential(credential);
+    return { secretEnc: sealSecret(credential, key), secretLast4: last4(gsp ? gsp.clientSecret : credential) };
   }
 
   async createConnection(user: RequestUser, dto: CreateConnectionDto): Promise<IntegrationSecretDto> {
@@ -288,7 +290,7 @@ export class IntegrationsService {
     await this.checkRefs(user, dto.projectId, info.transport === 'CONNECTOR' ? dto.agentId : null);
     if (info.transport === 'POLL') dto.config = this.feedConfig(dto.config, !!dto.credential);
     if (dto.kind === 'GST_GSP') {
-      if (dto.credential && !readGspCredential(dto.credential)) throw new BadRequestException("Type the GSP's key as client secret:password");
+      if (dto.credential && !readGspCredential(dto.credential)) throw new BadRequestException("Type both the GSP's client secret and the API password");
       dto.config = this.gspConfig(dto.config, !!dto.credential);
     }
     if (dto.kind === 'FUEL_DISPENSER') dto.config = await this.fuel.checkConfig(user, dto.projectId, dto.config);
@@ -326,7 +328,7 @@ export class IntegrationsService {
       dto.config = this.feedConfig(dto.config ?? c.config, hasCredential);
     }
     if (c.kind === 'GST_GSP' && (dto.config !== undefined || dto.credential !== undefined)) {
-      if (dto.credential && !readGspCredential(dto.credential)) throw new BadRequestException("Type the GSP's key as client secret:password");
+      if (dto.credential && !readGspCredential(dto.credential)) throw new BadRequestException("Type both the GSP's client secret and the API password");
       const hasCredential = dto.credential ? true : dto.credential === '' || dto.credential === null ? false : !!c.secretEnc;
       dto.config = this.gspConfig(dto.config ?? c.config, hasCredential);
     }

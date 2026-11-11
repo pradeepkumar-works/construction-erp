@@ -925,7 +925,6 @@ export class RaBillsService {
   private async applyCertificate(user: RequestUser, bill: Awaited<ReturnType<RaBillsService['approvedBill']>>, dto: CertifyBillDto) {
     const id = bill.id;
     assertNotExported(bill, 'This bill');
-    await assertNoLiveGstDocument(this.prisma, bill.organizationId, 'RA_BILL', id);
     if (bill.stage !== 'SENT' && bill.stage !== 'CERTIFIED') throw new BadRequestException(bill.stage === 'PAID' ? 'This bill is already paid' : 'Record the bill as sent first');
     checkNotFuture(dto.date, 'certificate date');
     if (bill.sentDate && dto.date < dateOnly(bill.sentDate)) throw new BadRequestException('The certificate date cannot be before the date the bill was sent');
@@ -950,6 +949,8 @@ export class RaBillsService {
     }
     for (const l of bill.stageLines) if (!passed.has(l.stageId)) passed.set(l.stageId, l.thisPct);
     await this.prisma.$transaction(async (tx) => {
+      // Under the bill's GST lock, so an IRN cannot start between this check and the new figures.
+      await assertNoLiveGstDocument(tx, bill.organizationId, 'RA_BILL', id);
       if (dto.holds) {
         await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`RA:${bill.projectId}`}))`;
         await this.replaceHolds(tx, bill, dto.holds);

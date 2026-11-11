@@ -1,4 +1,4 @@
-import { BadGatewayException, BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadGatewayException, BadRequestException, ConflictException, ForbiddenException, GatewayTimeoutException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, type GstDocument, type GstDocumentKind, type GstSourceKind } from '@prisma/client';
 import {
   GST_SOURCE_DOC,
@@ -10,6 +10,7 @@ import {
   einvoiceNeeded,
   einvoicePayload,
   einvoiceProblems,
+  einvoiceWarnings,
   ewayExtendProblem,
   ewayNeeded,
   ewayPayload,
@@ -39,9 +40,10 @@ import { invoiceAmounts } from '../rmc/rmc-rules';
 import { StockService } from '../stock/stock.service';
 import { isInterState } from '../tally/vouchers';
 import { payloadHash } from './einvoice-rules';
+import { lockGstSource } from './gst-lock';
 import { FakeGstProvider } from './providers/fake-gst.provider';
 import { NicGspProvider } from './providers/nic-gsp.provider';
-import type { GstProvider } from './providers/gst-provider';
+import type { GstProvider, ProviderResult } from './providers/gst-provider';
 import type { CancelGstDocumentDto, ExtendEwayBillDto, GenerateGstDocumentDto } from './einvoice.dto';
 
 const COMPANY_FIX = 'on Company settings';
@@ -50,7 +52,7 @@ const paise = (v: string) => gstPaise(v) ?? 0;
 const rupeesOf = (p: number) => (p / 100).toFixed(2);
 
 /** A record read for its IRN or e-way bill: whether it gets one, why, what it lacks, and what would be sent. */
-interface Built {
+export interface Built {
   docNo: string;
   offered: boolean;
   needed: boolean;
@@ -95,6 +97,15 @@ export class EinvoiceService {
     this.provider = p;
   }
 
+  /** For the race test: read a kind of record through this instead of its service (null puts the service back). */
+  useLoader(sourceKind: GstSourceKind, load: ((user: RequestUser, id: string) => Promise<Built>) | null) {
+    this.loaderOverrides[sourceKind] = load ?? undefined;
+  }
+  private loaderOverrides: Partial<Record<GstSourceKind, (user: RequestUser, id: string) => Promise<Built>>> = {};
+  private load(sourceKind: GstSourceKind, user: RequestUser, id: string): Promise<Built> {
+    return (this.loaderOverrides[sourceKind] ?? this.loaders[sourceKind])(user, id);
+  }
+
   private mayAct(user: RequestUser, kind: GstDocumentKind) {
     return kind === 'IRN' ? canFileEinvoice(user.roleKey) : canMakeEwayBill(user.roleKey);
   }
@@ -134,7 +145,7 @@ export class EinvoiceService {
         seller: co.party,
         buyer: { gstin: b.client?.gstin ?? null, legalName: b.client?.name ?? b.clientName ?? '', address: b.client?.billingAddress ?? null, who: b.client?.name ?? 'the client', fixAt: 'in Clients', stateCode: b.client?.stateCode },
         placeOfSupply: co.billsFromState,
-        lines: [{ description: `Works contract: ${b.billLabel}, ${b.projectName}`, hsn: b.sacCode ?? co.gstSac, isService: true, quantity: null, unit: null, unitPrice: null, taxable: rupeesOf(taxable), gstRate: b.gstRate }],
+        lines: [{ description: `Works contract: ${b.billLabel}, ${b.projectName}`, hsn: b.sacCode ?? co.gstSac, isService: true, quantity: null, unit: null, taxable: rupeesOf(taxable), gstRate: b.gstRate }],
         igst: rupeesOf(tax.igst),
         cgst: rupeesOf(tax.cgst),
         sgst: rupeesOf(tax.sgst),
@@ -155,7 +166,6 @@ export class EinvoiceService {
 
     RMC_INVOICE: async (user, id) => {
       const [i, co] = await Promise.all([this.rmc.invoice(user, id), this.company(user.organizationId)]);
-      const row = await this.prisma.rmcInvoice.findUniqueOrThrow({ where: { id }, select: { order: { select: { rate: true } } } });
       const need = einvoiceNeeded({ buyerGstin: i.gstin, docDate: i.date, einvoiceFrom: co.einvoiceFrom });
       const inter = paise(i.igst) !== 0;
       const pumping = paise(i.pumping) !== 0;
@@ -166,8 +176,8 @@ export class EinvoiceService {
         buyer: { gstin: i.gstin, legalName: i.customer, address: i.customerAddress, who: i.customer, fixAt: 'in Clients', stateCode: i.customerStateCode },
         placeOfSupply: inter ? i.customerStateCode : co.billsFromState,
         lines: [
-          { description: `Ready-mix concrete${i.challans.length ? `, ${[...new Set(i.challans.map((c) => c.grade))].join(', ')}` : ''}`, hsn: RMC_HSN, isService: false, quantity: i.quantity, unit: 'cum', unitPrice: row.order ? money(row.order.rate) : null, taxable: i.concrete, gstRate: '18' },
-          ...(pumping ? [{ description: 'Pumping the concrete', hsn: co.gstSac, isService: true, quantity: null, unit: null, unitPrice: null, taxable: i.pumping, gstRate: '18' }] : []),
+          { description: `Ready-mix concrete${i.challans.length ? `, ${[...new Set(i.challans.map((c) => c.grade))].join(', ')}` : ''}`, hsn: RMC_HSN, isService: false, quantity: i.quantity, unit: 'cum', taxable: i.concrete, gstRate: '18' },
+          ...(pumping ? [{ description: 'Pumping the concrete', hsn: co.gstSac, isService: true, quantity: null, unit: null, taxable: i.pumping, gstRate: '18' }] : []),
         ],
         igst: i.igst,
         cgst: i.cgst,
@@ -179,8 +189,8 @@ export class EinvoiceService {
 
     RMC_BATCH: async (user, id) => {
       const [b, co] = await Promise.all([this.rmc.batch(user, id), this.company(user.organizationId)]);
-      const row = await this.prisma.rmcBatch.findUniqueOrThrow({
-        where: { id },
+      const row = await this.prisma.rmcBatch.findFirstOrThrow({
+        where: { id, organizationId: user.organizationId },
         select: {
           plant: { select: { name: true, siteAddress: true, location: true } },
           order: { select: { rate: true, site: true, client: { select: { name: true, gstin: true, stateCode: true, billingAddress: true } }, project: { select: { name: true, siteAddress: true, location: true } } } },
@@ -216,8 +226,8 @@ export class EinvoiceService {
     STOCK_TRANSFER: async (user, id) => {
       const [e, co] = await Promise.all([this.stock.get(user, id), this.company(user.organizationId)]);
       if (e.type !== 'TRANSFER_OUT') throw new BadRequestException('Only a stock transfer sent to another project gets an e-way bill');
-      const row = await this.prisma.stockEntry.findUniqueOrThrow({
-        where: { id },
+      const row = await this.prisma.stockEntry.findFirstOrThrow({
+        where: { id, organizationId: user.organizationId },
         select: {
           project: { select: { name: true, siteAddress: true, location: true } },
           toProject: { select: { name: true, siteAddress: true, location: true } },
@@ -294,14 +304,15 @@ export class EinvoiceService {
   private reusedNumber(kind: GstDocumentKind, docNo: string, docs: GstDocument[]): string | null {
     if (kind !== 'IRN') return null;
     const gone = docs.find((d) => d.status === 'CANCELLED' && d.docNo === docNo);
-    return gone ? `IRN ${gone.number} for ${docNo} was cancelled, and the IRP does not take the same invoice number again: raise the corrected bill under a new number` : null;
+    // The bill's number stays fixed (it is the RA bill's own), so a cancelled IRN's bill cannot get another here.
+    return gone ? `IRN ${gone.number} for ${docNo} was cancelled. Cancelled IRNs cannot be reused. Raise the corrected invoice outside Nirmaan, or ask support for a revised bill number` : null;
   }
 
   async state(user: RequestUser, sourceKind: GstSourceKind, sourceId: string, now = new Date()): Promise<GstSourceStateDto> {
     const kind = GST_SOURCE_DOC[sourceKind];
     // The record's own read checks access; the documents and the provider are read beside it and shown only if it passes.
     const [built, docs, providerProblem] = await Promise.all([
-      this.loaders[sourceKind](user, sourceId),
+      this.load(sourceKind, user, sourceId),
       this.docsOf(user.organizationId, sourceKind, sourceId),
       this.providerProblem(user.organizationId),
     ]);
@@ -321,6 +332,7 @@ export class EinvoiceService {
       needed: built.needed,
       reason: built.reason,
       problems: live ? [] : problems,
+      warnings: !live && built.invoice ? einvoiceWarnings(built.invoice, now) : [],
       live: live ? this.toDto(live) : null,
       history: docs.filter((d) => d !== live).map((d) => this.toDto(d)),
       canGenerate: may && built.offered && !providerProblem && (!live || live.status === 'PENDING') && !problems.length,
@@ -339,43 +351,57 @@ export class EinvoiceService {
   // ---------------------------------------------------------------------------------------------------------------
   // Making one
 
+  /** The JSON a record's facts make, or what stops it, in words. */
+  private payloadOf(kind: GstDocumentKind, built: Built, transport: EwayTransport | null): { payload: object | null; problems: string[] } {
+    if (kind === 'IRN') return built.problems.length ? { payload: null, problems: built.problems } : { payload: einvoicePayload(built.invoice!), problems: [] };
+    const all = [...built.problems, ...ewayTransportProblems(transport!)];
+    return all.length ? { payload: null, problems: all } : { payload: ewayPayload(built.consignment!, transport!), problems: [] };
+  }
+
   /**
-   * Makes the record's IRN or e-way bill. Everything is checked before anything is written; the same payload returns the
-   * document already made; a PENDING one (an earlier try that got no answer kept) is asked for again.
+   * Makes the record's IRN or e-way bill (ARCHITECTURE "E-invoices and e-way bills", Making one):
+   *
+   * 1. Everything is checked before anything is written.
+   * 2. Under the record's GST lock: the same payload returns the document already made; a PENDING one younger than the
+   *    provider's answer time is still waiting for its answer and is left alone; an older one is claimed (its updatedAt
+   *    touched) to be asked for again with the payload it was made with; else a PENDING row is written.
+   * 3. A new row's record is read again: if it changed in between, the row is marked FAILED and nothing is sent.
+   * 4. The provider is asked outside the transaction. Made: ACTIVE. Refused: FAILED. No answer: the row stays PENDING,
+   *    still locking its record, to be asked for again (an e-way bill looked up by its challan first).
+   *
+   * Every write after the call is conditional on the row still being PENDING, so two answers never overwrite each other.
    */
   async generate(user: RequestUser, sourceKind: GstSourceKind, sourceId: string, dto: GenerateGstDocumentDto): Promise<GstSourceStateDto> {
     const kind = GST_SOURCE_DOC[sourceKind];
     this.assertMayAct(user, kind);
     if (!this.provider) throw new BadRequestException('E-invoicing is not set up on this server: GST_PROVIDER is not set (see DEPLOY.md)');
-    const notReady = await this.provider.ready(user.organizationId);
+    const provider = this.provider;
+    const notReady = await provider.ready(user.organizationId);
     if (notReady) throw new BadRequestException(notReady);
-    const built = await this.loaders[sourceKind](user, sourceId);
+    const built = await this.load(sourceKind, user, sourceId);
     if (!built.offered) throw new BadRequestException(built.reason);
-    let payload: object;
-    let transport: EwayTransport | null = null;
-    if (kind === 'IRN') {
-      if (built.problems.length) throw new BadRequestException(built.problems.join('. '));
-      payload = einvoicePayload(built.invoice!);
-    } else {
-      transport = { mode: dto.mode ?? '1', vehicleNo: dto.vehicleNo ?? null, vehicleType: dto.vehicleType ?? 'R', distanceKm: dto.distanceKm ?? null };
-      const all = [...built.problems, ...ewayTransportProblems(transport)];
-      if (all.length) throw new BadRequestException(all.join('. '));
-      payload = ewayPayload(built.consignment!, transport);
-    }
-    const hash = payloadHash(payload);
+    const transport: EwayTransport | null =
+      kind === 'EWB' ? { mode: dto.mode ?? '1', vehicleNo: dto.vehicleNo ?? null, vehicleType: dto.vehicleType ?? 'R', distanceKm: dto.distanceKm ?? null } : null;
+    const made = this.payloadOf(kind, built, transport);
+    if (!made.payload) throw new BadRequestException(made.problems.join('. '));
+    const hash = payloadHash(made.payload);
     const org = user.organizationId;
+    const what = kind === 'IRN' ? 'e-invoice' : 'e-way bill';
 
-    const row = await this.prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`GST:${org}:${kind}:${sourceKind}:${sourceId}`}))`;
+    const claim = await this.prisma.$transaction(async (tx) => {
+      await lockGstSource(tx, org, sourceKind, sourceId);
       const docs = await tx.gstDocument.findMany({ where: { organizationId: org, kind, sourceKind, sourceId } });
       const live = docs.find((d) => d.status === 'PENDING' || d.status === 'ACTIVE');
       if (live?.status === 'ACTIVE') {
-        if (live.payloadHash === hash) return { doc: live, call: false };
+        if (live.payloadHash === hash) return { doc: live, call: false, resend: false };
         throw new ConflictException(`${built.docNo} already has ${kind === 'IRN' ? 'IRN' : 'e-way bill'} ${live.number}`);
       }
       if (live) {
-        if (live.payloadHash !== hash) throw new ConflictException(`An ${kind === 'IRN' ? 'e-invoice' : 'e-way bill'} for ${built.docNo} is being made with other figures; open it again in a minute`);
-        return { doc: live, call: true };
+        // Asked a moment ago and maybe still waiting for its answer: asking again could make it twice.
+        if (Date.now() - live.updatedAt.getTime() < provider.answerWithinMs) throw new ConflictException(`The ${what} for ${built.docNo} is being made: open it again in a minute`);
+        // Stale: claim it (the touch is the claim, under the lock) and ask again with what was sent the first time.
+        const doc = await tx.gstDocument.update({ where: { id: live.id }, data: { updatedAt: new Date() } });
+        return { doc, call: true, resend: true };
       }
       const reused = this.reusedNumber(kind, built.docNo, docs);
       if (reused) throw new BadRequestException(reused);
@@ -386,44 +412,69 @@ export class EinvoiceService {
           sourceKind,
           sourceId,
           docNo: built.docNo,
-          payload: payload as Prisma.InputJsonValue,
+          payload: made.payload as Prisma.InputJsonValue,
           payloadHash: hash,
-          provider: this.provider!.name,
+          provider: provider.name,
           vehicleNo: transport?.mode === '1' ? normaliseVehicleNo(transport.vehicleNo) : null,
           distanceKm: transport?.distanceKm ?? null,
           createdById: user.id,
         },
       });
-      return { doc, call: true };
+      return { doc, call: true, resend: false };
     });
-    if (!row.call) return this.state(user, sourceKind, sourceId);
+    if (!claim.call) return this.state(user, sourceKind, sourceId);
+    const doc = claim.doc;
 
+    if (!claim.resend) {
+      // The record was read before its row was written; a change that went in between would send old figures.
+      const again = this.payloadOf(kind, await this.load(sourceKind, user, sourceId), transport);
+      if (!again.payload || payloadHash(again.payload) !== hash) {
+        const words = `${built.docNo} changed while its ${what} was being made, so nothing was sent: open it again and generate`;
+        await this.settle(doc, { status: 'FAILED', error: words });
+        await this.audit.log(user, AUDIT_ENTITY[sourceKind], sourceId, kind === 'IRN' ? 'EINVOICE_REFUSED' : 'EWAY_BILL_REFUSED', words);
+        throw new ConflictException(words);
+      }
+    }
+
+    // Always the payload the row was made with: a stale PENDING one is asked for again as it was first sent.
+    const sent = doc.payload as object;
     const ctx = { organizationId: org, gstin: built.invoice?.seller.gstin ?? built.consignment!.from.gstin! };
     if (kind === 'IRN') {
-      const r = await this.provider.generateIrn(ctx, payload as ReturnType<typeof einvoicePayload>);
-      if (!r.ok) return this.fail(user, row.doc, r.error, r.raw);
-      await this.prisma.gstDocument.update({
-        where: { id: row.doc.id },
-        data: { status: 'ACTIVE', number: r.value.irn, ackNo: r.value.ackNo, ackAt: r.value.ackAt, signedQr: r.value.signedQr, response: logDetail(r.raw) as Prisma.InputJsonValue, error: null },
-      });
-      await this.audit.log(user, AUDIT_ENTITY[sourceKind], sourceId, 'EINVOICE_MADE', `IRN ${r.value.irn}, ack ${r.value.ackNo}${r.value.duplicate ? ' (the IRP had it already)' : ''}`);
+      const r = await provider.generateIrn(ctx, sent as ReturnType<typeof einvoicePayload>);
+      if (!r.ok) return this.notMade(user, doc, r);
+      const n = await this.settle(doc, { status: 'ACTIVE', number: r.value.irn, ackNo: r.value.ackNo, ackAt: r.value.ackAt, signedQr: r.value.signedQr, response: logDetail(r.raw) as Prisma.InputJsonValue, error: null });
+      if (n) await this.audit.log(user, AUDIT_ENTITY[sourceKind], sourceId, 'EINVOICE_MADE', `IRN ${r.value.irn}, ack ${r.value.ackNo}${r.value.duplicate ? ' (the IRP had it already, for the same figures)' : ''}`);
     } else {
-      const r = await this.provider.generateEwb(ctx, payload as ReturnType<typeof ewayPayload>);
-      if (!r.ok) return this.fail(user, row.doc, r.error, r.raw);
-      await this.prisma.gstDocument.update({
-        where: { id: row.doc.id },
-        data: { status: 'ACTIVE', number: r.value.ewbNo, ackAt: r.value.madeAt, validUntil: r.value.validUntil, response: logDetail(r.raw) as Prisma.InputJsonValue, error: null },
-      });
-      await this.audit.log(user, AUDIT_ENTITY[sourceKind], sourceId, 'EWAY_BILL_MADE', `E-way bill ${r.value.ewbNo}, ${transport!.distanceKm} km, vehicle ${normaliseVehicleNo(transport!.vehicleNo) || 'none'}`);
+      const payload = sent as ReturnType<typeof ewayPayload>;
+      // A stale one may have been made after all: look it up by its challan before sending it again.
+      const found = claim.resend ? await provider.findEwb(ctx, payload.docType, payload.docNo) : null;
+      if (found && !found.ok && found.unanswered) return this.notMade(user, doc, found);
+      const r = found?.ok && found.value ? { ok: true as const, value: found.value, raw: found.raw } : await provider.generateEwb(ctx, payload);
+      if (!r.ok) return this.notMade(user, doc, r);
+      const n = await this.settle(doc, { status: 'ACTIVE', number: r.value.ewbNo, ackAt: r.value.madeAt, validUntil: r.value.validUntil, response: logDetail(r.raw) as Prisma.InputJsonValue, error: null });
+      if (n) await this.audit.log(user, AUDIT_ENTITY[sourceKind], sourceId, 'EWAY_BILL_MADE', `E-way bill ${r.value.ewbNo}, ${doc.distanceKm ?? '?'} km, vehicle ${doc.vehicleNo || 'none'}`);
     }
     return this.state(user, sourceKind, sourceId);
   }
 
-  /** The provider refused: the row stays as the log, marked FAILED, and the person is told what it said. */
-  private async fail(user: RequestUser, doc: GstDocument, error: string, raw: unknown): Promise<never> {
-    await this.prisma.gstDocument.update({ where: { id: doc.id }, data: { status: 'FAILED', error: error.slice(0, 1000), response: logDetail(raw) as Prisma.InputJsonValue } });
-    await this.audit.log(user, AUDIT_ENTITY[doc.sourceKind], doc.sourceId, doc.kind === 'IRN' ? 'EINVOICE_REFUSED' : 'EWAY_BILL_REFUSED', error.slice(0, 300));
-    throw new BadGatewayException(`${doc.kind === 'IRN' ? 'The IRP' : 'The e-way bill system'} refused it: ${error}`);
+  /** Writes a PENDING row's outcome only while it is still PENDING; the count says whether this write was the one. */
+  private async settle(doc: GstDocument, data: Prisma.GstDocumentUpdateManyMutationInput): Promise<number> {
+    return (await this.prisma.gstDocument.updateMany({ where: { id: doc.id, status: 'PENDING' }, data })).count;
+  }
+
+  /**
+   * The provider did not make it. No answer: the row stays PENDING and keeps its record locked, since the IRP may hold it,
+   * and the person is told to try again. Refused: the row stays as the log, marked FAILED, with what it said.
+   */
+  private async notMade(user: RequestUser, doc: GstDocument, r: Extract<ProviderResult<unknown>, { ok: false }>): Promise<never> {
+    const system = doc.kind === 'IRN' ? 'The IRP' : 'The e-way bill system';
+    if (r.unanswered) {
+      await this.settle(doc, { error: r.error.slice(0, 1000) });
+      throw new GatewayTimeoutException(`${system} did not answer. Try again in a minute.`);
+    }
+    await this.settle(doc, { status: 'FAILED', error: r.error.slice(0, 1000), response: logDetail(r.raw) as Prisma.InputJsonValue });
+    await this.audit.log(user, AUDIT_ENTITY[doc.sourceKind], doc.sourceId, doc.kind === 'IRN' ? 'EINVOICE_REFUSED' : 'EWAY_BILL_REFUSED', r.error.slice(0, 300));
+    throw new BadGatewayException(`${system} refused it: ${r.error}`);
   }
 
   // ---------------------------------------------------------------------------------------------------------------
@@ -433,7 +484,7 @@ export class EinvoiceService {
     const d = await this.prisma.gstDocument.findFirst({ where: { id, organizationId: user.organizationId } });
     if (!d) throw new NotFoundException('E-invoice or e-way bill not found');
     // The record's own read checks the person may see it.
-    await this.loaders[d.sourceKind](user, d.sourceId);
+    await this.load(d.sourceKind, user, d.sourceId);
     this.assertMayAct(user, d.kind);
     if (d.status !== 'ACTIVE') throw new BadRequestException(d.status === 'CANCELLED' ? 'It is already cancelled' : 'It was never made');
     if (!this.provider) throw new BadRequestException('E-invoicing is not set up on this server: GST_PROVIDER is not set (see DEPLOY.md)');
@@ -446,6 +497,7 @@ export class EinvoiceService {
     if (late) throw new BadRequestException(late);
     const ctx = { organizationId: user.organizationId, gstin: '' };
     const r = d.kind === 'IRN' ? await this.provider!.cancelIrn(ctx, d.number!, dto.reason as '1', dto.remark) : await this.provider!.cancelEwb(ctx, d.number!, dto.reason as '1', dto.remark);
+    if (!r.ok && r.unanswered) throw new GatewayTimeoutException(`${d.kind === 'IRN' ? 'The IRP' : 'The e-way bill system'} did not answer. Try again in a minute.`);
     if (!r.ok) throw new BadGatewayException(`${d.kind === 'IRN' ? 'The IRP' : 'The e-way bill system'} did not cancel it: ${r.error}`);
     const n = await this.prisma.gstDocument.updateMany({
       where: { id, status: 'ACTIVE' },
@@ -465,7 +517,8 @@ export class EinvoiceService {
     const at = readGstAddress(dto.fromPlace);
     if (!at) problems.push('Type where the goods are now, with its PIN code');
     if (problems.length) throw new BadRequestException(problems.join('. '));
-    const fromState = Number((d.payload as { fromStateCode?: number }).fromStateCode ?? 0);
+    // Where the goods are now, which the person extending it says: not where they started.
+    const fromState = Number(dto.fromState);
     const r = await this.provider!.extendEwb({ organizationId: user.organizationId, gstin: '' }, d.number!, {
       vehicleNo,
       fromPlace: at!.place,
@@ -476,8 +529,9 @@ export class EinvoiceService {
       reason: dto.reason as '1',
       remark: dto.remark,
     });
+    if (!r.ok && r.unanswered) throw new GatewayTimeoutException('The e-way bill system did not answer. Try again in a minute.');
     if (!r.ok) throw new BadGatewayException(`The e-way bill system did not extend it: ${r.error}`);
-    await this.prisma.gstDocument.update({ where: { id }, data: { validUntil: r.value.validUntil, vehicleNo, extensions: { increment: 1 }, response: logDetail(r.raw) as Prisma.InputJsonValue } });
+    await this.prisma.gstDocument.updateMany({ where: { id, status: 'ACTIVE' }, data: { validUntil: r.value.validUntil, vehicleNo, extensions: { increment: 1 }, response: logDetail(r.raw) as Prisma.InputJsonValue } });
     await this.audit.log(user, AUDIT_ENTITY[d.sourceKind], d.sourceId, 'EWAY_BILL_EXTENDED', `E-way bill ${d.number} to ${iso(r.value.validUntil)}: ${dto.remark}`);
     return this.state(user, d.sourceKind, d.sourceId, now);
   }
