@@ -226,6 +226,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/dpr-form-test.js
+      - name: A company's own fields read each kind one way, ask for required ones by name, keep archived values and leave the DPR's as they were
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/custom-fields-test.js
       - name: Update projects only adds what a project lacks, and a project types file reads strictly
         if: matrix.suite == 'flows'
         working-directory: apps/api

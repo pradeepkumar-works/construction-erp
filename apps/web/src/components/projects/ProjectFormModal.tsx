@@ -11,7 +11,9 @@ import { CONTRACT_MODELS, CONTRACT_MODEL_LABELS, DEFAULT_SITE_RADIUS_M, MAX_COMP
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
-import { useActivityTemplates, useMasterList, useNextProjectCode, useProjectTypes } from '@/lib/queries';
+import { useActivityTemplates, useCustomFields, useMasterList, useNextProjectCode, useProjectTypes } from '@/lib/queries';
+import { CustomFieldsFormSection } from '@/components/custom-fields/CustomFieldsFormSection';
+import { customValuesBody } from '@/components/custom-fields/values';
 import { ClientSelect, UserSelect } from '@/components/common/SearchSelect';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { useAuth } from '@/lib/auth';
@@ -48,6 +50,7 @@ interface FormValues {
   applyTemplate?: boolean;
   /** Copy the team and the contract terms from this project */
   copyFromProjectId?: string;
+  customValues?: Record<string, unknown>;
   /** Attendance extras: where the site is, for GPS check-in */
   siteLat?: number | null;
   siteLng?: number | null;
@@ -105,6 +108,7 @@ export function ProjectFormModal({
   // The company's verticals; a new project's type fills its usual one, and `filledVertical` keeps what we
   // filled, so a vertical chosen by hand stays when the type changes.
   const { data: verticals } = useMasterList('vertical', false, open);
+  const { data: fields } = useCustomFields('PROJECT', open);
   const filledVertical = useRef<string | null>(null);
   // The saved project, handed to `onSaved` once the form has closed (e.g. to open it).
   const saved = useRef<string | null>(null);
@@ -158,6 +162,7 @@ export function ProjectFormModal({
         siteLng: project.siteLng === null ? null : Number(project.siteLng),
         siteRadiusM: project.siteRadiusM,
         siteCheckInStrict: project.siteCheckInStrict,
+        customValues: project.customValues,
       });
     } else {
       form.resetFields();
@@ -243,6 +248,7 @@ export function ProjectFormModal({
         siteLng: values.siteLng ?? (isEdit ? null : undefined),
         siteRadiusM: values.siteRadiusM ?? (isEdit ? null : undefined),
         siteCheckInStrict: !!values.siteCheckInStrict,
+        customValues: customValuesBody(fields, values.customValues),
       };
       if (isEdit && project) return (await api.patch<ProjectDetail>(`/projects/${project.id}`, body)).data;
       return (await api.post<ProjectDetail>('/projects', body)).data;
@@ -460,6 +466,7 @@ export function ProjectFormModal({
             <Checkbox>Refuse a check-in from outside the radius</Checkbox>
           </Form.Item>
         </FormSection>
+        <CustomFieldsFormSection entity="PROJECT" stored={project?.customValues} />
       </Form>
       <ClientFormModal
         open={addClient}

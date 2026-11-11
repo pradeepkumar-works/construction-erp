@@ -6,6 +6,9 @@ import type {
   ConsolidationDto,
   SisterLinkInput,
   SisterLinksDto,
+  CustomFieldDto,
+  CustomFieldEntity,
+  CustomFieldInput,
   SsoCompanyDto,
   SsoSettingsDto,
   SsoSettingsInput,
@@ -5184,3 +5187,25 @@ export const useManagementReport = (key: ManagementReportKey | undefined, params
     enabled: !!key,
     placeholderData: keepPreviousData,
   });
+
+/** The company's own fields on one kind of record, archived ones included (ARCHITECTURE "Custom fields"). */
+export const useCustomFields = (entity: CustomFieldEntity, enabled = true) =>
+  useQuery({
+    queryKey: ['custom-fields', entity],
+    queryFn: async () => (await api.get<CustomFieldDto[]>('/custom-fields', { params: { entity } })).data,
+    staleTime: 5 * 60_000,
+    enabled,
+  });
+
+/** Add a field (`entity` and `kind` set) or change one (`id`); archive or restore with `archived`. */
+export function useSaveCustomField() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { id?: string; entity?: CustomFieldEntity; archived?: boolean; field?: Partial<CustomFieldInput> }) => {
+      if (v.id && v.archived !== undefined) return (await api.post<CustomFieldDto>(`/custom-fields/${v.id}/${v.archived ? 'archive' : 'restore'}`)).data;
+      if (v.id) return (await api.patch<CustomFieldDto>(`/custom-fields/${v.id}`, v.field)).data;
+      return (await api.post<CustomFieldDto>('/custom-fields', { ...v.field, entity: v.entity })).data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['custom-fields'] }),
+  });
+}

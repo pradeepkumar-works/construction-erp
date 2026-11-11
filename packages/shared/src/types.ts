@@ -7,6 +7,7 @@ import type { LetterAction, LetterGate, LetterMarkDto, LetterMode, LetterPriorit
 import type { NavSettingsDto } from './nav-menu';
 import type { DprLineDto } from './dpr-lines';
 import type { DprExtra, DprFormDto } from './dpr-form';
+import type { FieldValues } from './custom-fields';
 import type { AuthGroupDto, CompanyChoiceDto } from './group';
 import type { RaBillStageLineDto, SlippageLineDto } from './stage-billing';
 import type { ObligationBillLineDto } from './contract-obligations';
@@ -202,6 +203,8 @@ export interface ProjectMemberDto {
 
 export interface ProjectSummary {
   id: string;
+  /** Values of the company's own fields (`CustomFieldDef`), by key */
+  customValues: FieldValues;
   code: string;
   name: string;
   /** The built-in kind of its type */
@@ -1483,6 +1486,8 @@ export interface ApprovalMatrixDto {
 
 export interface VendorDto {
   id: string;
+  /** Values of the company's own fields (`CustomFieldDef`), by key */
+  customValues: FieldValues;
   name: string;
   kinds: VendorKind[];
   gstin: string | null;
@@ -2122,6 +2127,8 @@ export interface PurchaseOrderLineDto {
 }
 
 export interface PurchaseOrderDto extends SubmissionBase {
+  /** Values of the company's own fields (`CustomFieldDef`), by key */
+  customValues: FieldValues;
   /**
    * On the order's own record only, for those who see cost: the order against its project's material budget; null
    * when the project has none, absent in lists.

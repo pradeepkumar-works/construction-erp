@@ -1,8 +1,9 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { ArrayUnique, IsArray, IsBoolean, IsEmail, IsIn, IsNotEmpty, IsOptional, IsString, Matches, MaxLength, ValidateIf } from 'class-validator';
+import { ArrayUnique, IsArray, IsBoolean, IsEmail, IsIn, IsNotEmpty, IsObject, IsOptional, IsString, Matches, MaxLength, ValidateIf } from 'class-validator';
 import { GSTIN_PATTERN, IFSC_PATTERN, LIST_SORT_FIELDS, MSME_CATEGORIES, PAN_PATTERN, UDYAM_PATTERN, VENDOR_KINDS, type MsmeCategory, type VendorKind, type VendorSortField } from '@erp/shared';
 import { PageQuery, QueryBool } from '../common/paging';
+import { CUSTOM_VALUES_DOC } from '../custom-fields/custom-fields.dto';
 
 const trim = () => Transform(({ value }) => (typeof value === 'string' ? value.trim().replace(/\s+/g, ' ') : value));
 const upper = () => Transform(({ value }) => (typeof value === 'string' ? value.replace(/\s+/g, '').toUpperCase() || null : value));
@@ -36,6 +37,7 @@ export class CreateVendorDto {
   @ApiPropertyOptional({ enum: MSME_CATEGORIES }) @IsOptional() @nullable() @IsIn(MSME_CATEGORIES as unknown as string[]) msmeCategory?: MsmeCategory | null;
   @ApiPropertyOptional({ example: 'UDYAM-OD-19-0012345' }) @IsOptional() @upper() @nullable() @Matches(UDYAM_PATTERN, { message: 'Udyam number looks like UDYAM-OD-19-0012345' }) udyamNo?: string | null;
   @ApiPropertyOptional() @IsOptional() @blankNull() @IsString() @MaxLength(1000) remarks?: string | null;
+  @ApiPropertyOptional(CUSTOM_VALUES_DOC) @IsOptional() @IsObject() customValues?: Record<string, unknown>;
 }
 
 export class UpdateVendorDto extends PartialType(CreateVendorDto) {

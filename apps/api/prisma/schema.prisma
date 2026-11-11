@@ -1052,6 +1052,7 @@ model Organization {
   tdsChallans           TdsChallan[]
   tdsReturns            TdsReturn[]
   tdsCertificates       TdsCertificate[]
+  customFieldDefs       CustomFieldDef[]
   depreciationLines     DepreciationLine[]
   sisterLinks           SisterLink[]
   namedAsSister         SisterLink[]               @relation("SisterLinkSister")
@@ -1523,6 +1524,8 @@ model Project {
   id                     String         @id @default(uuid())
   organizationId         String
   organization           Organization   @relation(fields: [organizationId], references: [id])
+  /// Values of the company's own fields (`CustomFieldDef`), keyed by field key; read only through `readCustomValues`
+  customValues           Json           @default("{}")
   aiBriefs               AiBrief[]
   documentPages          DocumentPage[]
   photoChecks            PhotoCheck[]
@@ -1820,6 +1823,8 @@ model Vendor {
   id              String        @id @default(uuid())
   organizationId  String
   organization    Organization  @relation(fields: [organizationId], references: [id])
+  /// Values of the company's own fields (`CustomFieldDef`), keyed by field key; read only through `readCustomValues`
+  customValues    Json          @default("{}")
   name            String
   kinds           VendorKind[]
   gstin           String?
@@ -1928,6 +1933,8 @@ model PurchaseOrder {
   id                   String           @id @default(uuid())
   organizationId       String
   organization         Organization     @relation(fields: [organizationId], references: [id])
+  /// Values of the company's own fields (`CustomFieldDef`), keyed by field key; read only through `readCustomValues`
+  customValues         Json             @default("{}")
   projectId            String
   project              Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
   vendorId             String
@@ -2798,6 +2805,33 @@ model DprFormConfig {
   reports DailyReport[]
 
   @@unique([organizationId, typeCode, version])
+}
+
+/// A field of the company's own on its vendors, projects or purchase orders (ARCHITECTURE "Custom fields"). The key is
+/// made once from the name and never changes, nor does the kind; a field no longer wanted is archived, never deleted,
+/// so the values records keep under its key always mean the same
+model CustomFieldDef {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  /// CUSTOM_FIELD_ENTITIES (@erp/shared custom-fields.ts)
+  entity         String
+  key            String
+  label          String
+  labelHi        String?
+  /// FIELD_KINDS
+  kind           String
+  required       Boolean      @default(false)
+  unit           String?
+  min            Decimal?     @db.Decimal(18, 3)
+  max            Decimal?     @db.Decimal(18, 3)
+  options        String[]     @default([])
+  sortOrder      Int          @default(0)
+  archivedAt     DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, entity, key])
 }
 
 /// A company's component kind: its own, or its copy of a built-in kind (same code). Built on a

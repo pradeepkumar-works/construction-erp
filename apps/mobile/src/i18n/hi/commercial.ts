@@ -330,6 +330,9 @@ export const COMMERCIAL: Record<string, string> = {
   'Mark in records your location: it is flagged if you are more than {distance} from {site}.': 'आने की हाज़िरी पर आपकी जगह दर्ज होती है: {site} से {distance} से ज़्यादा दूर होने पर इसे चिह्नित किया जाता है।',
   // Purchase order decision, item master and measure from progress (October review, findings 3, 14, 15)
   'Why this vendor': 'यही वेंडर क्यों',
+  // The company's own fields on an order (item 193)
+  'More details': 'और ब्योरा',
+  '{label} (archived)': '{label} (संग्रहीत)',
   'Quotations on the request': 'माँग पर आए कोटेशन',
   'Reading the quotations…': 'कोटेशन पढ़ रहा है…',
   'No quotation was recorded on this request.': 'इस माँग पर कोई कोटेशन दर्ज नहीं हुआ।',
