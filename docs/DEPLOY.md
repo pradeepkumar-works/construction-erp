@@ -57,7 +57,7 @@ API (`apps/api`):
 | `AI_EVAL_MODELS` | comma-separated models a question may name, only to compare models with `scripts/ai-eval.ts` (`AI_EVAL_MODEL=…`) without redeploying, e.g. `claude-sonnet-5-5,claude-haiku-5-5,google/gemini-3.8-flash`. Leave unset otherwise. |
 | `AI_DEFAULT_MONTHLY_CAP_INR`, `AI_DAILY_QUESTIONS`, `AI_USD_INR` | a company's monthly allowance unless its admin sets one (default 5000), questions per person per day (default 60), and the rupee rate for the cost estimate (default 88) |
 | `AI_DISABLED`, `AI_PROVIDER` | `AI_DISABLED=true` switches the assistant off everywhere (kill switch). `AI_PROVIDER=fake` uses a scripted stand-in instead of the model: for CI and local work only, never production. `AI_PROVIDER=openrouter` or `anthropic` picks the gateway when both keys are set. |
-| `SSO_CALLBACK_URL` | single sign-on (item 195, "Single sign-on" below): the API's own callback, `https://<api>/api/auth/sso/callback`, registered with Microsoft or Google as the redirect URI. Single sign-on also needs `WEB_URL` (where the browser is sent back to) and `INTEGRATION_KEY` (which seals each company's client secret). Unset = the sign-in page offers no single sign-on. `SSO_ENTRA_AUTHORITY` and `SSO_GOOGLE_ISSUER` are for tests only: they point the API at a stand-in provider (`e2e/oidc/standin.mjs`); never set them on a real server. |
+| `SSO_CALLBACK_URL` | single sign-on (item 195, "Single sign-on" below): the API's own callback, `https://<api>/api/auth/sso/callback`, registered with Microsoft or Google as the redirect URI. Single sign-on also needs `WEB_URL` (where the browser is sent back to) and `INTEGRATION_KEY` (which seals each company's client secret). Unset = the sign-in page offers no single sign-on. `SSO_ENTRA_AUTHORITY` and `SSO_GOOGLE_ISSUER` are for tests only: they point a local API at a stand-in provider (`e2e/oidc/standin.mjs`), and are honoured only at http://localhost or 127.0.0.1 and never on a deployed API (NODE_ENV=production or Vercel). |
 | `PROTECTED_ORG_CODES` | comma-separated organisation codes that can never be deleted (default `DEMO`, the public demo company) |
 
 Web (`apps/web`): `NEXT_PUBLIC_API_URL`, e.g. `https://construction-erp-api-pradeep15.vercel.app/api`, and
@@ -78,10 +78,13 @@ it under Admin › Company settings › Sign-in, which shows the redirect URI to
 Accounts in this organizational directory only (single tenant), and a Web redirect URI of `SSO_CALLBACK_URL`. From the
 app's Overview copy the Application (client) ID and the Directory (tenant) ID. Under Certificates & secrets add a client
 secret and copy its Value (shown once; note when it expires and enter a new one before then). API permissions keeps the
-default delegated `openid`, `email` and `profile` (User.Read is not needed). For people whose email in Entra is not their
-sign-in name, add the optional `email` claim to the ID token under Token configuration. Nirmaan accepts only tokens of
-that directory: the tenant id in the token must be the one entered, and a person is known by their directory object id,
-so a renamed mailbox stays the same person.
+default delegated `openid`, `email` and `profile` (User.Read is not needed). Under Token configuration › Add optional
+claim › ID, add `xms_edov` (the directory says it verified the email), `acct` (member or guest) and `email`. Entra's
+email can be typed by anyone who edits a profile, so a person's first sign-in is linked only by an email the directory
+verified (`xms_edov` true) or by a member's sign-in name (`acct` 0), whose domain the directory owns; without these
+claims a first sign-in is refused ("does not vouch for your account's email"), and a guest of the directory is never
+linked. Nirmaan accepts only tokens of that directory: the tenant id in the token must be the one entered, and once
+linked a person is known by their directory object id, so a renamed mailbox stays the same person.
 
 **Google Workspace.** In Google Cloud console, for a project of the Workspace: OAuth consent screen › Internal (only the
 Workspace's accounts), then Credentials › Create credentials › OAuth client ID › Web application, with an Authorized
@@ -89,9 +92,13 @@ redirect URI of `SSO_CALLBACK_URL`. Copy the client ID and secret. Enter the Wor
 token's `hd` must be one of them and its email verified, so a personal Gmail account is refused.
 
 Then, on Sign-in: sign in once through Use single sign-on, and only then turn on Require single sign-on. Requiring it
-refuses passwords for the company's people (platform admins on `PLATFORM_ADMIN_EMAILS` and supplier logins keep theirs);
-the phone app signs in with a password for now, so its sign-in stops for those people too. Add new people gives someone
-from the domains with no sign-in yet a place in the chosen role at their first sign-in.
+refuses website passwords for the company's people and ends the website sessions they opened with one; platform admins
+on `PLATFORM_ADMIN_EMAILS`, client guests and supplier logins keep their passwords. The phone app has no single sign-on
+yet, so until it does Require single sign-on is a rule for the website: a password still works through the phone app.
+New people are invited by a link to the company's sign-in (no password), and Forgot password sends nothing for them. To
+move to another provider, directory, client ID or secret, turn Require off first, change it, sign in through it, then
+require it again. Add new people gives someone from the domains with no sign-in yet a place in the chosen role at their
+first sign-in.
 
 ## WhatsApp and SMS
 
