@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { App, Checkbox, Form, Input, Select, Typography } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
 import { MAX_REPORT_COLUMNS, MAX_REPORT_FILTERS, MAX_REPORT_NAME, REPORT_FILTER_OP_LABELS, filterOpsFor, type ReportCatalogueColumnDto, type ReportDefinition, type ReportFilterOp, type ReportSourceDto, type ReportSourceKey, type SavedReportDto } from '@erp/shared';
 import { useReportSources, useSaveReport } from '@/lib/queries';
 import { MONTH_PICKER_FORMAT } from '@/lib/format';
-import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
+import { FormGrid, FormSection, FormShell, afterFormLeaves } from '@/components/form/FormShell';
 import { LineTable } from '@/components/form/LineTable';
 import { DatePicker } from '@/components/common/DatePicker';
 import { tk } from '@/ds';
@@ -84,6 +84,14 @@ export function ReportForm({ open, report, onClose }: { open: boolean; report?: 
   const router = useRouter();
   const { data: sources } = useReportSources(open);
   const save = useSaveReport();
+  // A new report opens on its own page once the form has closed.
+  const justSaved = useRef<string | null>(null);
+  const close = () => {
+    const id = justSaved.current;
+    justSaved.current = null;
+    onClose();
+    if (id) afterFormLeaves(() => router.push(`/my-reports/${id}`));
+  };
   const sourceKey = Form.useWatch('source', form);
   const chosen = Form.useWatch('columns', form) as string[] | undefined;
   const filters = Form.useWatch('filters', form) as FilterLine[] | undefined;
@@ -130,11 +138,11 @@ export function ReportForm({ open, report, onClose }: { open: boolean; report?: 
     };
     const saved = await save.mutateAsync({ id: report?.id, name: v.name.trim(), shared: !!v.shared, definition });
     message.success(report ? 'Report saved' : 'Report saved. It opens on the reporting month.');
-    if (!report) router.push(`/my-reports/${saved.id}`);
+    if (!report) justSaved.current = saved.id;
   };
 
   return (
-    <FormShell open={open} onClose={onClose} form={form} layout="drawer" title={report ? `Edit ${report.name}` : 'New report'} okText="Save report" onSubmit={submit} projectDefault={false}>
+    <FormShell open={open} onClose={close} form={form} layout="drawer" title={report ? `Edit ${report.name}` : 'New report'} okText="Save report" onSubmit={submit} projectDefault={false}>
       <Form form={form} name="report" layout="vertical" initialValues={{ columns: [], totals: [], filters: [], shared: false, sortDesc: false }}>
         <FormSection title="Report">
           <FormGrid cols={2}>
@@ -160,13 +168,13 @@ export function ReportForm({ open, report, onClose }: { open: boolean; report?: 
           </Form.Item>
           <FormGrid cols={2}>
             <Form.Item name="groupBy" label="Group by" extra="One line per group, with its count and totals, above the rows.">
-              <Select allowClear options={live.filter((c) => c.group).map((c) => ({ value: c.key, label: c.label }))} placeholder="No grouping" />
+              <Select allowClear showSearch={{ optionFilterProp: 'label' }} options={live.filter((c) => c.group).map((c) => ({ value: c.key, label: c.label }))} placeholder="No grouping" />
             </Form.Item>
             <Form.Item name="totals" label="Totals">
-              <Select mode="multiple" options={shown.filter((c) => c.sum).map((c) => ({ value: c.key, label: c.label }))} placeholder={shown.some((c) => c.sum) ? 'Choose the columns to total' : 'No column shown adds up'} disabled={!shown.some((c) => c.sum)} />
+              <Select mode="multiple" showSearch={{ optionFilterProp: 'label' }} options={shown.filter((c) => c.sum).map((c) => ({ value: c.key, label: c.label }))} placeholder={shown.some((c) => c.sum) ? 'Choose the columns to total' : 'No column shown adds up'} disabled={!shown.some((c) => c.sum)} />
             </Form.Item>
             <Form.Item name="sortColumn" label="Sort by">
-              <Select allowClear options={shown.map((c) => ({ value: c.key, label: c.label }))} placeholder="As the list sorts them" />
+              <Select allowClear showSearch={{ optionFilterProp: 'label' }} options={shown.map((c) => ({ value: c.key, label: c.label }))} placeholder="As the list sorts them" />
             </Form.Item>
             <Form.Item name="sortDesc" label="Order" valuePropName="checked">
               <Checkbox>Largest or latest first</Checkbox>
