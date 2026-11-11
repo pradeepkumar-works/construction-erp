@@ -10,7 +10,7 @@ import { kvGet, kvSet } from '../utils/kv';
 import { ApiError, errorMessage, request, uploadFile } from '../api/client';
 import { getStore, type OutboxRow } from './db';
 import { persistPhoto, photoExists, removePhotos } from './photos';
-import { OUTBOX_PATH, type OutboxItem, type OutboxPhoto, type OutboxStatus, type OutboxType } from './types';
+import { OUTBOX_PATH, OUTBOX_PUT, type OutboxItem, type OutboxPhoto, type OutboxStatus, type OutboxType } from './types';
 
 export interface EnqueueInput {
   /** Pre-generated id (from `newId()`), so the form can reference the entry before it is queued. */
@@ -136,8 +136,8 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
         Array.isArray(lines) && photos.some((p) => p.line)
           ? { ...item.payload, lines: lines.map((l) => (photos.some((p) => p.line && p.line === l.id) ? { ...l, attachmentIds: ids(photos.filter((p) => p.line === l.id)) } : l)) }
           : item.payload;
-      const body = item.type === 'ATTENDANCE' ? { ...payload, id: item.id } : { ...payload, id: item.id, attachmentIds: ids(photos.filter((p) => !p.line)) };
-      await request(OUTBOX_PATH[item.type], { method: 'POST', body, token: tok });
+      const body = OUTBOX_PUT[item.type] ? payload : item.type === 'ATTENDANCE' ? { ...payload, id: item.id } : { ...payload, id: item.id, attachmentIds: ids(photos.filter((p) => !p.line)) };
+      await request(OUTBOX_PATH[item.type], { method: OUTBOX_PUT[item.type] ? 'PUT' : 'POST', body, token: tok });
       await removePhotos(photos);
       await remove(item.id);
     },
