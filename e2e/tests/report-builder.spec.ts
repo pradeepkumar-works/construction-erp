@@ -68,6 +68,9 @@ test.beforeAll(async () => {
     { projectId: bridgeId, vendor: 0, qty: '3.333', rate: '1999.99', at: 3 },
     { projectId: bridgeId, vendor: 1, qty: '40', rate: '62.37', at: 4 },
     { projectId: roadId, vendor: 0, qty: '1.111', rate: '77.77', at: 5 },
+    // Today's: the first week a schedule set today sends (lane 7).
+    { projectId: roadId, vendor: 1, qty: '2', rate: '410.10', at: 0 },
+    { projectId: bridgeId, vendor: 0, qty: '5', rate: '99.95', at: 0 },
   ];
   for (const l of lines)
     orders.push(
@@ -209,7 +212,7 @@ test('lane 6: contract columns are not offered without the right to see the cont
   await page.keyboard.press('Escape');
 });
 
-test('lane 7: a weekly schedule sends each person one copy for the week, however often the job runs', async ({ page }, info) => {
+test('lane 7: a weekly schedule sends each person one copy for the week, however often the job runs, and the link opens their rows', async ({ page, browser, baseURL }, info) => {
   const [y, m, d] = localToday().split('-').map(Number);
   const weekday = (new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7;
   await signIn(page, admin.email);
@@ -222,31 +225,55 @@ test('lane 7: a weekly schedule sends each person one copy for the week, however
   await shot(page, info, 'rpt-schedule.png');
   await dialog.getByRole('button', { name: 'Save schedule' }).click();
   await expect(dialog).toBeHidden();
-  // Today's weekday, so the week before today is owed now.
+  // Today's weekday. Set today, the schedule never sends a week that ended before today, so today's run sends nothing.
   await api(admin.token, `/report-builder/reports/${savedId}/schedule`, { method: 'PUT', body: { frequency: 'WEEKLY', weekday, recipientIds: [admin.id, engineer.id] } });
   const saved = await api<SavedReportDto>(admin.token, `/report-builder/reports/${savedId}`);
   expect(saved.schedule?.recipients.map((r) => r.name).sort()).toEqual(['Asha Admin', 'Ravi Site']);
 
-  const job = async () => {
-    const res = await fetch(`${API_URL}/notifications/jobs/report-schedules?date=${localToday()}`, { headers: { 'x-cron-secret': 'e2e-cron' } });
+  // The job is told the day it runs (its `date`), so the test runs it a week ahead instead of moving the schedule's
+  // start by hand: next week's send day owes the seven days from today, which hold today's two orders.
+  const nextWeek = day(-7);
+  const job = async (date = nextWeek) => {
+    const res = await fetch(`${API_URL}/notifications/jobs/report-schedules?date=${date}`, { headers: { 'x-cron-secret': 'e2e-cron' } });
     expect(res.status, await res.clone().text()).toBe(200);
     return (await res.json()) as { sent: number; emailed: number; failed: number };
   };
+  const notices = async (token: string) =>
+    (await api<{ items: { entityType: string | null; entityId: string | null; body: string }[] }>(token, '/notifications?limit=200')).items.filter((n) => n.entityType === 'SAVED_REPORT' && n.entityId === savedId);
+  const today = await job(localToday());
+  expect(today.failed).toBe(0);
+  expect(await notices(admin.token)).toHaveLength(0);
   const first = await job();
   const second = await job();
   expect(first.sent).toBeGreaterThanOrEqual(2);
   expect(second.sent).toBe(0);
   expect(second.emailed).toBe(0);
-  const notices = async (token: string) =>
-    (await api<{ items: { entityType: string | null; entityId: string | null; body: string }[] }>(token, '/notifications?limit=200')).items.filter((n) => n.entityType === 'SAVED_REPORT' && n.entityId === savedId);
   const mine = await notices(admin.token);
   const theirs = await notices(engineer.token);
   expect(mine).toHaveLength(1);
   expect(theirs).toHaveLength(1);
   // Each copy is run as its reader: the engineer's counts only the road's orders of the week.
-  const week = orders.filter((o) => o.poDate >= day(7) && o.poDate <= day(1));
+  const week = orders.filter((o) => o.poDate >= day(0) && o.poDate <= day(-6));
+  expect(week).toHaveLength(2);
   expect(mine[0].body).toContain(`${week.length} orders`);
   expect(theirs[0].body).toContain(`${week.filter((o) => o.projectId === roadId).length} orders`);
+
+  // The report is not shared, yet the engineer's link opens it, with their own rows only.
+  const link = `/my-reports/${savedId}?from=${day(0)}&to=${day(-6)}`;
+  const run = await api<ManagementReportDto>(engineer.token, `/report-builder${link.replace('/my-reports', '/reports').replace('?', '/run?')}`);
+  const rows = run.sections.find((s) => s.key === 'rows')!.rows;
+  expect(rows.map((r) => r.poNo)).toEqual(week.filter((o) => o.projectId === roadId).map((o) => o.poNo));
+  // The engineer, in a browser of their own.
+  const context = await browser.newContext({ baseURL });
+  const theirPage = await context.newPage();
+  await signIn(theirPage, engineer.email);
+  await settle(theirPage, link);
+  await expect(theirPage.getByRole('heading', { level: 1, name: 'Orders by vendor' })).toBeVisible();
+  await expect(theirPage.getByRole('cell', { name: 'E2E reports road' }).first()).toBeVisible();
+  await expect(theirPage.getByRole('cell', { name: 'E2E reports bridge' })).toHaveCount(0);
+  await expect(theirPage.getByRole('button', { name: 'Schedule' })).toHaveCount(0);
+  await shot(theirPage, info, 'rpt-recipient.png');
+  await context.close();
   if (process.env.RPT_API_LOG) {
     const log = await readFile(process.env.RPT_API_LOG, 'utf8');
     expect(log.split(`[email not configured] to=${engineer.email} subject="Orders by vendor`).length - 1).toBe(1);
@@ -267,6 +294,12 @@ test("lane 8: a company's own field on orders is a column with its values", asyn
 });
 
 test('lane 9: a definition with a column the source does not have is refused', async ({ page }, info) => {
+  // A day that is not on the calendar is a 400 that says what to do, never a 500.
+  const impossible = await raw(admin.token, `/report-builder/reports/${savedId}/run?from=2026-02-31&to=2026-03-05`, 'GET');
+  expect(impossible.status).toBe(400);
+  expect(await impossible.text()).toContain('on the calendar');
+  const backwards = await raw(admin.token, `/report-builder/reports/${savedId}/run?from=${day(0)}&to=${day(3)}`, 'GET');
+  expect(await backwards.text()).toContain('Choose a start on or before the end');
   for (const column of ['passwordHash', '__proto__', 'constructor', 'toString']) {
     const res = await raw(admin.token, '/report-builder/run', 'POST', { definition: { ...BY_VENDOR, columns: ['poNo', column] } });
     expect(res.status, column).toBe(400);

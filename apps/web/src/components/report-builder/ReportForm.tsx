@@ -65,14 +65,15 @@ const PREVIEW_ROWS = 10;
 
 /** The report as it stands, a moment after the last change: how many rows, the first few, and what it leaves out. */
 function Preview({ values }: { values: Partial<FormValues> }) {
-  const key = useDebounced(JSON.stringify(definitionOf(values)), 600);
+  const now = JSON.stringify(definitionOf(values));
+  const key = useDebounced(now, 600);
   const definition = useMemo(() => JSON.parse(key) as ReportDefinition | null, [key]);
   const { data, error, isFetching } = useReportPreview(definition);
   const detail = data?.sections.find((x) => x.key === 'rows');
   const caption = { margin: 0, fontSize: tk.type.caption.fontSize };
   return (
     <FormSection title="Preview" help="The report over the reporting month, run as you. Save it to choose the period and project on its page.">
-      {!definition ? (
+      {now === 'null' ? (
         <Typography.Paragraph type="secondary" style={caption}>
           Choose a column to see the report
         </Typography.Paragraph>
@@ -80,7 +81,7 @@ function Preview({ values }: { values: Partial<FormValues> }) {
         <Typography.Paragraph type="danger" style={caption}>
           {errorMessage(error)}
         </Typography.Paragraph>
-      ) : !data || !detail ? (
+      ) : !definition || !data || !detail ? (
         <Typography.Paragraph type="secondary" style={caption}>
           Working it out…
         </Typography.Paragraph>

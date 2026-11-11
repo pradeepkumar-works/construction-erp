@@ -33,7 +33,7 @@ export default function MyReportsPage() {
     return (
       <div className="page-container">
         <PageHeader title="My reports" crumbs={crumbs} />
-        <NoAccess title="Not open to your role" subTitle="Reports are built over orders, bills, indents, stock, vendors or projects, and your role opens none of them. Ask your admin if you need it." />
+        <NoAccess title="Not open to your role" subTitle="Reports are built over orders, bills, indents, stock, vendors or projects. Ask your admin if you need one." />
       </div>
     );
   return <MyReports />;
