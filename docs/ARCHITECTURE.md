@@ -1952,9 +1952,17 @@ where the activity's planned quantity is still zero, takes the item's unit and q
   are done, its start links' have started and the lag lets it start by today; else waiting, naming what on).
 - **Files.** `schedule-files.ts`: MS Project XML and Primavera P6 XER, out (`GET /projects/:id/schedule/export?format=`,
   anyone who sees the project) and in (`POST /projects/:id/schedule/import`, project editors, `dryRun` previews). Days
-  are calendar days, 8 working hours a day. Summary rows and milestones in a file are left out (and listed), activities
-  are matched by name (a match takes the file's dates, the rest are added with unit "job"), and the file's links replace
-  those between the activities it touched, refused whole if they make a loop. The JSON body limit is 4 MB for this.
+  are calendar days, 8 working hours a day. A row keeps the file's own id (MS Project's UID, P6's task_id) as
+  `Activity.scheduleKey` / `Milestone.scheduleKey` (`MSP_XML:12`, `XER:1001`, unique per project), so a second import of
+  the same programme finds each row again even where names repeat ("Approval of drawings" under every discipline); an
+  export writes those ids back. What an import does is the pure `importPlan`: a row finds the activity with its file id,
+  else one no file has claimed whose name is used once in the file and once on the project, else it is added (unit
+  "job", quantity 1). The summary row right above a task (MS Project's outline, P6's PROJWBS node) becomes the parent
+  activity of the new tasks under it, named with the row above it ("Detailed Engineering › Mechanical"), since
+  activities nest one level; a summary row that lands on an activity with progress or on a sub-activity holds no tasks
+  (said in `notes`), and a new one with no new task under it is left out. Milestones go to Milestones (matched the same
+  way; achieved dates are left alone). Links come only between tasks, and the file's links replace those between the
+  activities it touched, refused whole if they make a loop. The JSON body limit is 4 MB for this.
 - **Web.** Project tab Gantt: summary, baseline banner with Freeze / Re-baseline, a week or month scale with the
   plan bar filled to progress, the baseline as a grey bar under it, milestones as diamonds and a line for today,
   and the milestone list. The Activities tab shows the baseline end under a moved planned end. Critical bars have a

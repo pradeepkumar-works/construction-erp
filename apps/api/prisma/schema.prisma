@@ -2664,6 +2664,8 @@ model Activity {
   hiddenWork          Boolean            @default(false)
   /// The stage of pipe work this activity of a pipe zone or main stands for; its lines name a segment (a node for VALVES)
   pipeStage           PipeStage?
+  /// The id of the row in the schedule file it came from (`MSP_XML:12`, `XER:1001`), so a re-import finds it
+  scheduleKey         String?
   sortOrder           Int                @default(0)
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
@@ -2684,6 +2686,7 @@ model Activity {
   subActivities    Activity[]             @relation("ActivityTree")
   drawingNeeds     DrawingNeed[]
 
+  @@unique([projectId, scheduleKey])
   @@index([projectId])
   @@index([organizationId])
   @@index([workElementId])
@@ -2738,10 +2741,13 @@ model Milestone {
   /// The delay recorded for a late client input
   delayId        String?      @unique
   delay          Risk?        @relation(fields: [delayId], references: [id], onDelete: SetNull)
+  /// The id of the milestone in the schedule file it came from, so a re-import finds it
+  scheduleKey    String?
   sortOrder      Int          @default(0)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
+  @@unique([projectId, scheduleKey])
   @@index([projectId])
   @@index([organizationId])
 }
