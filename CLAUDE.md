@@ -478,7 +478,8 @@ and the pre-delivery checklist.
   only through `EinvoiceService.generate` (one live per source, the same payload hash returns it) over a `GstProvider`
   (`GST_PROVIDER=fake` in CI and local work, never a real GSP or the IRP from tests), and a source with a live one is
   locked only by `assertNoLiveGstDocument`. Records show it through `GstDocumentPanel`, papers through `irnBlockHtml`.
-  Keep `src/scripts/einvoice-test.ts` passing.
+  A PENDING row is re-sent only when older than the provider's `answerWithinMs`, with its stored payload, and no answer
+  leaves it PENDING and locked. Keep `src/scripts/einvoice-test.ts` and `src/scripts/einvoice-race-test.ts` passing.
 - RMC (item 104, `apps/api/src/rmc`, ARCHITECTURE "RMC plant"): a plant is a project of type `PLANT`; a truck's materials
   leave the plant's store only through `StockService.issue`, and cubes are a quality test through `QualityService`. Its
   figures are pure functions in `rmc-rules.ts` tested in `src/scripts/rmc-test.ts` (CI runs it); bills and receipts post

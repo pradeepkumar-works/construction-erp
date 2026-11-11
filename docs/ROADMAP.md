@@ -1098,8 +1098,9 @@ GRN on the web and the phone), and a second quality dashboard.
      client, from a company under e-invoicing (Company settings › E-invoicing), get an IRN, its acknowledgement and the
      signed QR from the IRP, printed on the bill; an RMC challan and a stock transfer get an e-way bill with the vehicle,
      distance and value, extended near its end or cancelled. The JSON is NIC's INV-01 and GENEWAYBILL, built and checked
-     in one pure place, made once per payload (the IRP's duplicate answer is taken as made), cancelled within 24 hours
-     (after that a credit note), and a live IRN or e-way bill locks its bill, challan or transfer. NIC is reached through
+     in one pure place, made once per payload (the IRP's duplicate answer is taken as made when its figures match),
+     cancelled within 24 hours (after that a credit note); a live IRN or e-way bill refuses a corrected certificate on
+     the RA bill, the cancel of the RMC bill, the turn-back of the RMC challan and the delete of the stock transfer. NIC is reached through
      the company's GSP (`GST_PROVIDER=gsp`, credentials sealed on a GST provider connection, untested against the live
      IRP); `GST_PROVIDER=fake` stands in for CI. ARCHITECTURE "E-invoices and e-way bills".
 
