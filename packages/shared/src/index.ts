@@ -29,6 +29,7 @@ export * from './subcontract';
 export * from './subcontract-recoveries';
 export * from './labour-compliance';
 export * from './committed-cost';
+export * from './excess-saving';
 export * from './work-order-amendment';
 export * from './tally';
 export * from './quality';

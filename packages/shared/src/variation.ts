@@ -31,6 +31,8 @@ export interface VariationLineDto {
   id: string;
   boqItemId: string | null;
   isNewItem: boolean;
+  /** An existing item's quantity at its own (revised) rate, beyond the deviation limit: approval adds an excess item */
+  ownRate: boolean;
   itemNo: string;
   description: string;
   unit: string;

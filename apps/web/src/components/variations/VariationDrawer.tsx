@@ -65,6 +65,11 @@ export function VariationDrawer({ id, open, onClose }: { id: string | null; open
               New item
             </AppTag>
           ) : null}
+          {l.ownRate ? (
+            <AppTag variant="kind" style={{ marginInlineStart: tk.space[2] }}>
+              Revised rate
+            </AppTag>
+          ) : null}
         </div>
       ),
     },
@@ -236,7 +241,7 @@ function DecisionModal({ open, onClose, variation }: { open: boolean; onClose: (
         lines: variation.lines.map((l) => ({ approvedQty: toNumber(l.qty), approvedRate: toNumber(l.rate) })),
       });
   }, [open, form, variation]);
-  const approvedTotal = (lines ?? []).reduce((s, l, i) => s + (l?.approvedQty ?? 0) * (variation.lines[i]?.isNewItem ? (l?.approvedRate ?? 0) : toNumber(variation.lines[i]?.rate)), 0);
+  const approvedTotal = (lines ?? []).reduce((s, l, i) => s + (l?.approvedQty ?? 0) * (variation.lines[i]?.isNewItem || variation.lines[i]?.ownRate ? (l?.approvedRate ?? 0) : toNumber(variation.lines[i]?.rate)), 0);
   const mutation = useMutation({
     mutationFn: async (v: DecisionValues) =>
       (
@@ -250,7 +255,7 @@ function DecisionModal({ open, onClose, variation }: { open: boolean; onClose: (
                 lines: (v.lines ?? []).map((l, i) => ({
                   id: variation.lines[i].id,
                   approvedQty: String(l.approvedQty ?? 0),
-                  ...(variation.lines[i]?.isNewItem ? { approvedRate: String(l.approvedRate ?? 0) } : {}),
+                  ...(variation.lines[i]?.isNewItem || variation.lines[i]?.ownRate ? { approvedRate: String(l.approvedRate ?? 0) } : {}),
                 })),
               }
             : {}),
@@ -305,7 +310,7 @@ function DecisionModal({ open, onClose, variation }: { open: boolean; onClose: (
                           {/* An omission is approved as a negative quantity. */}
                           <QuantityInput unit={l.unit} min={undefined} />
                         </Form.Item>
-                        {l.isNewItem ? (
+                        {l.isNewItem || l.ownRate ? (
                           <Form.Item name={[f.name, 'approvedRate']} label="Rate" rules={[{ required: true, message: 'Enter the approved rate' }]}>
                             <MoneyInput />
                           </Form.Item>
@@ -321,7 +326,7 @@ function DecisionModal({ open, onClose, variation }: { open: boolean; onClose: (
               )}
             </Form.List>
             <Typography.Paragraph>
-              Approved <Money value={approvedTotal} strong /> of {formatINR(variation.claimedAmount)} claimed. Recording this changes the BOQ quantities and adds new items to the BOQ.
+              Approved <Money value={approvedTotal} strong /> of {formatINR(variation.claimedAmount)} claimed. Recording this changes the BOQ quantities and adds new and excess items to the BOQ.
             </Typography.Paragraph>
           </>
         ) : null}

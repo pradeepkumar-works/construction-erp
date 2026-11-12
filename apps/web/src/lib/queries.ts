@@ -152,6 +152,7 @@ import type {
   VariationDto,
   VariationStatus,
   VariationSummaryDto,
+  ExcessSavingDto,
   BillingDetailsDto,
   BillingInvoiceDto,
   BillingOrderDto,
@@ -4276,6 +4277,13 @@ export const useVariation = (id: string | undefined) =>
     queryKey: ['variations', 'detail', id],
     queryFn: async () => (await api.get<VariationDto>(`/variations/${id}`)).data,
     enabled: !!id,
+  });
+
+/** A project's excess and saving statement (ARCHITECTURE "Excess and saving statement"). */
+export const useExcessSaving = (projectId: string) =>
+  useQuery({
+    queryKey: ['excess-saving', projectId],
+    queryFn: async () => (await api.get<ExcessSavingDto>(`/projects/${projectId}/excess-saving`)).data,
   });
 
 export const useVariationSummary = (projectId?: string, enabled = true) =>

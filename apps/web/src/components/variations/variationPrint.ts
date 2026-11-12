@@ -17,7 +17,7 @@ export function buildVariationPrintHtml(v: VariationDto, letterhead: LetterheadD
       (
         l,
         n,
-      ) => `<tr><td class="c">${n + 1}</td><td><b>${esc(l.itemNo)}</b> ${esc(l.description)}${l.isNewItem ? ' <span class="muted">(new item)</span>' : ''}</td>
+      ) => `<tr><td class="c">${n + 1}</td><td><b>${esc(l.itemNo)}</b> ${esc(l.description)}${l.isNewItem ? ' <span class="muted">(new item)</span>' : l.ownRate ? ' <span class="muted">(beyond the deviation limit, at a revised rate)</span>' : ''}</td>
       <td class="c">${esc(unitLabel(l.unit))}</td><td class="num">${signed(l.qty)}</td><td class="num">${inr(l.rate)}</td><td class="num">${inr(l.amount)}</td>
       ${decided ? `<td class="num">${l.approvedQty !== null ? signed(l.approvedQty) : ''}</td><td class="num">${l.approvedRate !== null ? inr(l.approvedRate) : ''}</td><td class="num">${l.approvedAmount !== null ? inr(l.approvedAmount) : ''}</td>` : ''}</tr>`,
     )
