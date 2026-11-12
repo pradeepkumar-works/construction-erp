@@ -40,7 +40,7 @@ export function Chips<V extends string>({ label, value, options, onChange, clear
               accessibilityState={{ selected: active }}
             >
               {/* A tick as well as the fill, so the choice shows without colour and in glare. */}
-              {active ? <Ionicons name="checkmark" size={18} color={colors.textOnPrimary} /> : null}
+              {active ? <Ionicons name="checkmark" size={18} color={colors.onAction} /> : null}
               <Text maxFontSizeMultiplier={maxFontScale} style={[styles.chipText, active && styles.chipTextActive]}>{o.label}</Text>
             </Touchable>
           );
@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
     borderColor: colors.borderStrong,
     backgroundColor: colors.surface,
   },
-  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  chipActive: { backgroundColor: colors.action, borderColor: colors.action },
   chipText: { fontSize: fontSize.body, fontWeight: '600', color: colors.text },
-  chipTextActive: { color: colors.textOnPrimary },
+  chipTextActive: { color: colors.onAction },
 });

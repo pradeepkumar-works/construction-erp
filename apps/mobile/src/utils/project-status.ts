@@ -1,18 +1,17 @@
 import type { Ionicons } from '@expo/vector-icons';
 import type { ProjectStatus } from '@erp/shared';
-import { colors } from '../theme';
+import { toneOf } from '../theme';
 
-/** How a project's status Pill looks: only a project on hold shows paused, a finished one a tick. */
+const ICON: Record<ProjectStatus, keyof typeof Ionicons.glyphMap> = {
+  PLANNED: 'time-outline',
+  ACTIVE: 'play-circle-outline',
+  ON_HOLD: 'pause-circle-outline',
+  COMPLETED: 'checkmark-circle-outline',
+  CLOSED: 'checkmark-circle-outline',
+};
+
+/** How a project's status Pill looks: its meaning's colours (`statusTone('project', …)`) with a shape of its own. */
 export function projectStatusPill(status: ProjectStatus): { fg: string; bg: string; icon: keyof typeof Ionicons.glyphMap } {
-  switch (status) {
-    case 'ACTIVE':
-      return { fg: colors.success, bg: colors.successSoft, icon: 'play-circle-outline' };
-    case 'ON_HOLD':
-      return { fg: colors.neutral, bg: colors.neutralSoft, icon: 'pause-circle-outline' };
-    case 'COMPLETED':
-    case 'CLOSED':
-      return { fg: colors.neutral, bg: colors.neutralSoft, icon: 'checkmark-circle-outline' };
-    default:
-      return { fg: colors.neutral, bg: colors.neutralSoft, icon: 'time-outline' };
-  }
+  const { fg, bg } = toneOf('project', status);
+  return { fg, bg, icon: ICON[status] ?? 'time-outline' };
 }

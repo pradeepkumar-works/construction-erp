@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { SafetyIncidentType, WorkPermitDto, WorkPermitStatus } from '@erp/shared';
 import { WORK_PERMIT_STATUS_LABELS } from '@erp/shared';
-import { colors, maxFontScale, radius, spacing, type Tone, toneIcon, touch, typography } from '../theme';
+import { colors, maxFontScale, radius, spacing, type Tone, toneIcon, toneOf, touch, typography } from '../theme';
 import { Touchable } from './Touchable';
 import { formatDateTime } from '../utils/format';
 import { useT } from '../i18n/LanguageContext';
@@ -22,10 +22,10 @@ export const INCIDENT_TONE: Record<SafetyIncidentType, Tone> = {
 };
 
 export const PERMIT_TONE: Record<WorkPermitStatus, Tone> = {
-  REQUESTED: { fg: colors.warning, bg: colors.warningSoft, icon: toneIcon.waiting },
-  ISSUED: { fg: colors.success, bg: colors.successSoft, icon: toneIcon.done },
-  REJECTED: { fg: colors.danger, bg: colors.dangerSoft, icon: toneIcon.failed },
-  CLOSED: { fg: colors.neutral, bg: colors.neutralSoft, icon: toneIcon.closed },
+  REQUESTED: toneOf('workPermit', 'REQUESTED'),
+  ISSUED: toneOf('workPermit', 'ISSUED'),
+  REJECTED: toneOf('workPermit', 'REJECTED'),
+  CLOSED: toneOf('workPermit', 'CLOSED'),
 };
 
 /** "Live" for an issued permit still in its window, "Expired" once it has run out. */

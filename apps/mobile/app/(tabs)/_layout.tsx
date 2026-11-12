@@ -73,5 +73,5 @@ export default function TabsLayout() {
 const styles = StyleSheet.create({
   label: { fontSize: fontSize.small, fontWeight: '600', textAlign: 'center', backgroundColor: 'transparent' },
   labelBeside: { fontSize: fontSize.secondary, marginStart: 5, marginEnd: 12 },
-  badge: { backgroundColor: colors.danger, color: colors.textOnPrimary, fontSize: fontSize.small, fontWeight: '700' },
+  badge: { backgroundColor: colors.countFill, color: colors.onCount, fontSize: fontSize.small, fontWeight: '700' },
 });

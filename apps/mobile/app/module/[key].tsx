@@ -10,7 +10,7 @@ import { useOpenNode } from '../../src/launcher/open';
 import { phoneTarget } from '../../src/launcher/routes';
 import { useTileMenu } from '../../src/launcher/TileMenu';
 import { useLauncher } from '../../src/launcher/useLauncher';
-import { familyTint, maxFontScale, spacing, typography } from '../../src/theme';
+import { maxFontScale, tileInk, spacing, typography } from '../../src/theme';
 import { useT } from '../../src/i18n/LanguageContext';
 
 /**
@@ -46,7 +46,7 @@ export default function ModuleScreen() {
   } else if (module) {
     for (const sub of module.subs) groups.push({ title: sub.label, nodes: sub.nodes });
   }
-  const tint = module ? familyTint[module.family] : null;
+  const tint = module ? tileInk : null;
 
   return (
     <Screen refreshing={launcher.refreshing} onRefresh={launcher.refresh}>

@@ -1,5 +1,5 @@
 import type { DefectPriority, DefectStatus } from '@erp/shared';
-import { colors, toneIcon, type Tone } from '../theme';
+import { colors, toneIcon, toneOf, type Tone } from '../theme';
 
 /** Each priority and status with a shape as well as a colour. */
 export const DEFECT_TONE: Record<DefectPriority, Tone> = {
@@ -9,7 +9,7 @@ export const DEFECT_TONE: Record<DefectPriority, Tone> = {
 };
 
 export const DEFECT_STATUS_TONE: Record<DefectStatus, Tone> = {
-  OPEN: { fg: colors.warning, bg: colors.warningSoft, icon: toneIcon.open },
-  FIXED: { fg: colors.info, bg: colors.infoSoft, icon: 'construct-outline' },
-  CLOSED: { fg: colors.success, bg: colors.successSoft, icon: toneIcon.done },
+  OPEN: toneOf('defect', 'OPEN', toneIcon.open),
+  FIXED: toneOf('defect', 'FIXED', 'construct-outline'),
+  CLOSED: toneOf('defect', 'CLOSED', toneIcon.done),
 };

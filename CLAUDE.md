@@ -615,7 +615,10 @@ and the pre-delivery checklist.
   without checking `node_modules/expo/bundledNativeModules.json` for the SDK-pinned version.
 - Mobile theme: `src/theme.ts` picks the light or dark palette once at start-up (Profile > Appearance, stored in
   expo-sqlite's kv-store, `src/utils/kv.ts`; a new choice reloads the app with `reloadAppAsync`), so use
-  `colors`/`statusTone`, never hex; field outlines are `borderStrong`, scrims `scrim`/`scrimDeep`. Text styles
+  `colors`, never hex. The palette is the web's Quiet look (neutral greys, the primary button `action`, blue only for
+  links, the chosen item, data and AI, Inter for titles, one-ink tiles through `tileInk`); a status's colour is only
+  `toneOf(kind, status)` over the shared `statusTone`, never a map of a screen's own; field outlines are `borderStrong`,
+  scrims `scrim`/`scrimDeep`, a waiting count `countFill`. Text styles
   cap growth with `maxFontSizeMultiplier={maxFontScale}` and rows use `minHeight`. Loading is `Loading` (a `Skeleton`),
   a set of actions is a `BottomSheet` (`SheetActions`), and approving goes through `reviewSubmission()` (`src/api/review.ts`).
   A result (approved, sent, outbox drained) is `useSnackbar().show()` (bar, spoken, haptic) or `confirmResult()`.

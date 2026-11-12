@@ -1,17 +1,17 @@
 import type { NcrSeverity, NcrStatus, TestResult } from '@erp/shared';
-import { colors, toneIcon, type Tone } from '../theme';
+import { colors, toneIcon, toneOf, type Tone } from '../theme';
 
 /** Each result, status and severity with a shape as well as a colour. */
 export const TEST_RESULT_TONE: Record<TestResult, Tone> = {
-  PENDING: { fg: colors.neutral, bg: colors.neutralSoft, icon: toneIcon.waiting },
-  PASS: { fg: colors.success, bg: colors.successSoft, icon: toneIcon.done },
-  FAIL: { fg: colors.danger, bg: colors.dangerSoft, icon: toneIcon.failed },
+  PENDING: toneOf('testResult', 'PENDING'),
+  PASS: toneOf('testResult', 'PASS'),
+  FAIL: toneOf('testResult', 'FAIL'),
 };
 
 export const NCR_STATUS_TONE: Record<NcrStatus, Tone> = {
-  OPEN: { fg: colors.danger, bg: colors.dangerSoft, icon: toneIcon.alert },
-  ACTION_TAKEN: { fg: colors.info, bg: colors.infoSoft, icon: 'construct-outline' },
-  CLOSED: { fg: colors.neutral, bg: colors.neutralSoft, icon: toneIcon.closed },
+  OPEN: toneOf('ncr', 'OPEN', toneIcon.alert),
+  ACTION_TAKEN: toneOf('ncr', 'ACTION_TAKEN', 'construct-outline'),
+  CLOSED: toneOf('ncr', 'CLOSED'),
 };
 
 export const SEVERITY_TONE: Record<NcrSeverity, Tone> = {

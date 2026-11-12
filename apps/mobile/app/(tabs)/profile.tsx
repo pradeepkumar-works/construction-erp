@@ -82,7 +82,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   pushBtn: { marginVertical: spacing.sm },
   hero: { alignItems: 'center', marginBottom: spacing.xl, gap: 2 },
-  avatar: { width: 76, height: 76, borderRadius: 38, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm },
+  avatar: { width: 76, height: 76, borderRadius: 38, backgroundColor: colors.neutral, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm },
   avatarText: { color: colors.textOnPrimary, fontSize: 28, fontWeight: '800' },
   apiRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
   api: { ...typography.bodyStrong, flex: 1 },

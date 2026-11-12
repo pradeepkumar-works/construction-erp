@@ -6,12 +6,11 @@ import { useAuth } from '../src/auth/AuthContext';
 import { IconButton, Input, Screen, SectionTitle, Touchable } from '../src/components';
 import { NavIcon } from '../src/components/NavIcon';
 import { findInMenu, menuPages } from '../src/home/find';
-import { familyOf } from '../src/home/menu';
 import { useOpenNode } from '../src/launcher/open';
 import { phoneTarget, visitNode } from '../src/launcher/routes';
 import { useTileMenu } from '../src/launcher/TileMenu';
 import { useLauncher } from '../src/launcher/useLauncher';
-import { colors, familyTint, maxFontScale, spacing, typography } from '../src/theme';
+import { colors, maxFontScale, spacing, tileInk, typography } from '../src/theme';
 import { timeAgo } from '../src/utils/format';
 import { useT } from '../src/i18n/LanguageContext';
 
@@ -127,7 +126,7 @@ export default function FindScreen() {
 /** A module of the company's menu: its icon in its colour, its name and line. */
 function ModuleRow({ module, onOpen }: { module: NavMenuModule; onOpen: () => void }) {
   const t = useT();
-  const tint = familyTint[module.family];
+  const tint = tileInk;
   return (
     <Touchable accessibilityRole="button" accessibilityLabel={t(module.label)} onPress={onOpen} style={styles.row}>
       <View style={[styles.chip, { backgroundColor: tint.bg }]}>
@@ -151,7 +150,7 @@ function PageRow({ node, place, pinned, onOpen, onMenu, onPin }: { node: NavNode
   const t = useT();
   const target = navTarget(node);
   const web = phoneTarget(target)?.kind === 'web' || phoneTarget(target)?.kind === 'project';
-  const tint = familyTint[familyOf(node)];
+  const tint = tileInk;
   const sub = [place, web ? t('Opens on the web') : null].filter(Boolean).join(' · ');
   return (
     <View style={styles.row}>

@@ -20,11 +20,11 @@ interface Props {
 }
 
 const palette: Record<Variant, { bg: string; fg: string; border: string }> = {
-  primary: { bg: colors.brand, fg: colors.onBrand, border: colors.brand },
+  primary: { bg: colors.action, fg: colors.onAction, border: colors.action },
   accent: { bg: colors.accent, fg: colors.textOnPrimary, border: colors.accent },
   success: { bg: colors.success, fg: colors.textOnPrimary, border: colors.success },
   danger: { bg: colors.danger, fg: colors.textOnPrimary, border: colors.danger },
-  secondary: { bg: colors.surface, fg: colors.primary, border: colors.primary },
+  secondary: { bg: colors.surface, fg: colors.text, border: colors.borderStrong },
   ghost: { bg: 'transparent', fg: colors.primary, border: 'transparent' },
 };
 
