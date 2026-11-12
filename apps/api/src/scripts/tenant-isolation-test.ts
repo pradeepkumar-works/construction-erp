@@ -26,7 +26,7 @@ const CHILD_TABLES = new Set([
   'AttendanceLine', 'DebitNoteLine', 'DesignRoundItem', 'DesignSubmissionDoc', 'DocumentRevision', 'LetterSeriesCounter',
   'MaterialRequestItem', 'MeasurementLine', 'ProjectBudgetLine', 'ProjectMember', 'PurchaseOrderLine', 'PushToken',
   'QualityTestReading', 'QuotationLine', 'RaBillHoldRelease', 'RaBillItem', 'RaBillPvLine', 'RaBillSecuredAdvance',
-  'RaBillStageLine', 'SubcontractBillLine', 'SubcontractBillMaterial', 'TransmittalItem', 'VendorBillLine',
+  'RaBillStageLine', 'SubcontractBillLine', 'SubcontractBillMaterial', 'SubcontractBillCharge', 'TransmittalItem', 'VendorBillLine',
   'WorkOrderAmendmentLine', 'WorkOrderLine',
   '_prisma_migrations',
 ]);

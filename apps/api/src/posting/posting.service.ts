@@ -286,8 +286,9 @@ export class PostingService {
     // the bill kept back to its ledgers (retention, advance, TDS, material recovered, other).
     for (const b of subBills) {
       const v = b.workOrder.vendor;
-      const label = subBillLabel(b.workOrder.woNo, b.billNo, b.isFinal);
-      const l = new Lines(name).dr('SUBCONTRACT', b.grossAmount, cc);
+      const label = subBillLabel(b.workOrder.woNo, b.billNo, b.isFinal, b.isRelease);
+      // Retention paid back comes off what is held for them (Dr retention payable) and is owed to them with the rest.
+      const l = new Lines(name).dr('SUBCONTRACT', b.grossAmount, cc).dr('RETENTION_PAYABLE', b.retentionReleased);
       gstLines(l, 'dr', 'INPUT', b.gstAmount, isInterState(cfg.stateCode, gstStateCode(v.gstin) ?? v.stateCode));
       l.cr(tallyVendorKey(b.workOrder.vendorId), b.netPayable, { fallback: v.name, party: true })
         .cr('RETENTION_PAYABLE', b.retentionAmount)
@@ -305,7 +306,9 @@ export class PostingService {
         projectId: b.project.id,
         projectCode: b.project.code,
         projectName: b.project.name,
-        narration: `${label} of ${v.name} on ${b.project.name}: work ₹${b.grossAmount.toFixed(2)}, measured up to ${dateOnly(b.measuredUpTo)}`,
+        narration: b.isRelease
+          ? `${label} of ${v.name} on ${b.project.name}: retention ₹${b.retentionReleased.toFixed(2)} paid back${b.otherDeduction.isZero() ? '' : `, less back-charges ₹${b.otherDeduction.toFixed(2)}`}`
+          : `${label} of ${v.name} on ${b.project.name}: work ₹${b.grossAmount.toFixed(2)}, measured up to ${dateOnly(b.measuredUpTo)}${b.retentionReleased.isZero() ? '' : `, retention ₹${b.retentionReleased.toFixed(2)} paid back`}`,
         billRef: { name: label, type: 'New Ref' },
         lines: l.lines,
       });

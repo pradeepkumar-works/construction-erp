@@ -736,6 +736,8 @@ export class PayablesService {
           ...SUB_BILL_PAYABLE,
           paidAmount: true,
           retentionAmount: true,
+          retentionReleased: true,
+          isRelease: true,
           tdsAmount: true,
           advanceRecoveryAmount: true,
           workOrderId: true,
@@ -800,9 +802,9 @@ export class PayablesService {
     };
     for (const b of vbills) take('VENDOR_BILL', b.id, b.billNo, b.vendor, b.project, b.invoiceDate, b.dueDate, vendorBillPayable(b), b.paidAmount);
     for (const b of sbills) {
-      take('SUBCONTRACT_BILL', b.id, subBillLabel(b.workOrder.woNo, b.billNo, b.isFinal), b.workOrder.vendor, b.project, b.billDate, b.dueDate, subBillPayable(b), b.paidAmount);
+      take('SUBCONTRACT_BILL', b.id, subBillLabel(b.workOrder.woNo, b.billNo, b.isFinal, b.isRelease), b.workOrder.vendor, b.project, b.billDate, b.dueDate, subBillPayable(b), b.paidAmount);
       for (const t of tallies(b.workOrder.vendor, b.project)) {
-        t.retentionHeld = t.retentionHeld.add(b.retentionAmount);
+        t.retentionHeld = t.retentionHeld.add(b.retentionAmount).sub(b.retentionReleased);
         t.tdsDeducted = t.tdsDeducted.add(b.tdsAmount);
       }
     }

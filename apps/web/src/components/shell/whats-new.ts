@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-sub-retention',
+    date: '2026-11-19',
+    title: 'Subcontractor retention is paid back, and back-charges say what they were for',
+    points: [
+      'A work order shows the retention held from its subcontractor and what has been paid back. Release retention makes a bill that only pays it back, after the final bill or the defects period, and offers half of what is held.',
+      'A running bill can also pay back some retention with its work.',
+      'Back-charges on a bill each name what they were for (cleaning, damage, labour or machines supplied, rework, water and power, a safety lapse, delay or other), from a list the company keeps in Masters, and the work order sums them by kind.',
+    ],
+  },
+  {
     id: '2026-11-site-photos',
     date: '2026-11-19',
     title: 'Site photos show where and when they were taken',

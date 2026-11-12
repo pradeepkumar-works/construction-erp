@@ -191,6 +191,14 @@ const sb: SubcontractBillFacts = {
 };
 
 test('subcontract bill: a clean bill has only ticks (advance recovery capped below its %)', () => assert.deepEqual(flags(subcontractBillChecks(sb)), []));
+test('subcontract bill: retention paid back adds to the net payable', () => {
+  const f = clone(sb);
+  f.retentionReleased = 12500;
+  f.netPayable = sb.netPayable + 12500;
+  assert.deepEqual(flags(subcontractBillChecks(f)), []);
+  f.netPayable = sb.netPayable;
+  assert.equal(flagged(subcontractBillChecks(f), 'totals').length, 1, 'a net that leaves the release out does not add up');
+});
 test('subcontract bill: rate above the work order', () => {
   const f = clone(sb);
   f.lines[0].woRate = 280;

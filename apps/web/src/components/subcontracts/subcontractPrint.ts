@@ -120,23 +120,23 @@ ${PRINT_FONT_LINKS}
 <body>
   <div class="head">
     <div><div class="brand">${esc(orgName)}</div><div class="org">${esc(b.projectName)}</div></div>
-    <div style="text-align:right"><h1>${b.isFinal ? 'Final' : 'Running'} bill ${b.billNo}</h1><div>${esc(b.woNo)} · ${esc(formatDate(b.billDate))}</div>${draft ? `<div class="draft" style="margin-top:4px">Not certified</div>` : ''}</div>
+    <div style="text-align:right"><h1>${b.isRelease ? 'Retention release' : b.isFinal ? 'Final bill' : 'Running bill'} ${b.billNo}</h1><div>${esc(b.woNo)} · ${esc(formatDate(b.billDate))}</div>${draft ? `<div class="draft" style="margin-top:4px">Not certified</div>` : ''}</div>
   </div>
   <div class="meta">
     <div><b>Contractor</b>${vendorBlock(b)}</div>
     <div><b>Work</b>${esc(b.woTitle)}</div>
-    <div><b>Work measured up to</b>${esc(formatDate(b.measuredUpTo))}</div>
+    ${b.isRelease ? '' : `<div><b>Work measured up to</b>${esc(formatDate(b.measuredUpTo))}</div>`}
     <div><b>Their invoice</b>${esc(b.invoiceNo ?? '-')}</div>
     <div><b>Payment due</b>${esc(formatDate(b.dueDate))}</div>
   </div>
-  <h2>Abstract of work</h2>
+  ${b.isRelease ? '' : `<h2>Abstract of work</h2>
   <table>
     <thead><tr><th class="c">#</th><th>Item</th><th class="c">Unit</th><th class="num">Rate (₹)</th><th class="num">Previous</th><th class="num">This bill</th><th class="num">Up to date</th><th class="num">Previous (₹)</th><th class="num">This bill (₹)</th><th class="num">Up to date (₹)</th></tr></thead>
     <tbody>
       ${rows}
       <tr class="total"><td colspan="7">Value of work</td><td class="num">${inr(b.grossPrevious)}</td><td class="num">${inr(b.grossAmount)}</td><td class="num">${inr(b.grossUpto)}</td></tr>
     </tbody>
-  </table>
+  </table>`}
   ${materials ? `<h2>Material issued and recovered</h2><table><thead><tr><th>Item</th><th class="num">Quantity</th><th class="num">Rate (₹)</th><th class="num">Amount (₹)</th></tr></thead><tbody>${materials}</tbody></table>` : ''}
   <h2>Amount payable</h2>
   <table style="width:60%;margin-left:auto">
@@ -144,8 +144,9 @@ ${PRINT_FONT_LINKS}
     <tr><td>GST ${esc(b.gstRate)}%</td><td class="num">${inr(b.gstAmount)}</td></tr>
     ${b.deductions
       .filter((d) => toNumber(d.amount) > 0)
-      .map((d) => `<tr><td>Less ${esc(d.label)}${d.pct ? ` @ ${esc(d.pct)}%` : ''}${d.key === 'other' && b.otherDeductionNote ? ` (${esc(b.otherDeductionNote)})` : ''}</td><td class="num">(${inr(d.amount)})</td></tr>`)
+      .map((d) => `<tr><td>Less ${d.key === 'backCharge' ? 'back-charge, ' : ''}${esc(d.label)}${d.pct ? ` @ ${esc(d.pct)}%` : ''}</td><td class="num">(${inr(d.amount)})</td></tr>`)
       .join('')}
+    ${toNumber(b.retentionReleased) > 0 ? `<tr><td>Add retention paid back</td><td class="num">${inr(b.retentionReleased)}</td></tr>` : ''}
     <tr class="total"><td>Net payable</td><td class="num">${inr(b.netPayable)}</td></tr>
   </table>
   <div class="words">${esc(rupeesInWords(b.netPayable))}</div>

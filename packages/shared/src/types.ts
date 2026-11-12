@@ -2334,6 +2334,9 @@ export interface WorkOrderDto extends SubmissionBase {
   advancePaid: string;
   /** Advances asked for on requests that are not rejected */
   advanceRequested: string;
+  /** Retention its approved bills kept and have not paid back yet, and what they paid back */
+  retentionHeld: string;
+  retentionReleased: string;
   tdsPct: string;
   paymentDays: number | null;
   /** Sum of the lines before GST */
@@ -2358,6 +2361,8 @@ export interface WorkOrderDto extends SubmissionBase {
   amendments: WorkOrderAmendmentBriefDto[];
   /** The amendment still in draft, waiting or sent back, if any (at most one) */
   openAmendment: WorkOrderAmendmentBriefDto | null;
+  /** Only on GET /work-orders/:id: back-charges on its approved bills by kind, largest first */
+  backCharges?: { kindCode: string; kindName: string; amount: string; count: number }[];
   /** Only on GET /work-orders/:id */
   bills?: { id: string; billNo: number; label: string; isFinal: boolean; billDate: string; grossAmount: string; netPayable: string; status: SubmissionStatus }[];
 }
@@ -2455,11 +2460,20 @@ export interface SubcontractBillMaterialDto {
 }
 
 export interface SubcontractBillDeductionDto {
-  key: 'retention' | 'advanceRecovery' | 'tds' | 'material' | 'excessMaterial' | 'other';
+  key: 'retention' | 'advanceRecovery' | 'tds' | 'material' | 'excessMaterial' | 'other' | 'backCharge';
   label: string;
   /** Percentage of the work value, for the percentage deductions */
   pct: string | null;
   amount: string;
+}
+
+export interface SubcontractBillChargeDto {
+  /** A code of the `backCharge` master */
+  kindCode: string;
+  /** Its name in the company's list */
+  kindName: string;
+  amount: string;
+  note: string | null;
 }
 
 export interface SubcontractBillDto extends SubmissionBase {
@@ -2492,8 +2506,17 @@ export interface SubcontractBillDto extends SubmissionBase {
   excessRecovery: string;
   otherDeduction: string;
   otherDeductionNote: string | null;
+  /** Back-charges by kind (ARCHITECTURE "Subcontracts", Back-charges); their sum is `otherDeduction` */
+  charges: SubcontractBillChargeDto[];
   deductions: SubcontractBillDeductionDto[];
   totalDeductions: string;
+  /** Retention held on earlier bills paid back on this one */
+  retentionReleased: string;
+  /** Only pays back retention: takes no work */
+  isRelease: boolean;
+  /** Retention held on the work order before this bill, the most it can release; only on GET /subcontract-bills/:id */
+  retentionHeldBefore?: string;
+  /** gross + GST − deductions + retention released */
   netPayable: string;
   /** Debit notes against it that are not cancelled */
   debitNoteAmount: string;

@@ -16,7 +16,7 @@ export const BUDGET_REVISION_OTHER = 'other';
  * new one and switch the old one off, as with units.
  */
 
-export const MASTER_LISTS = ['trade', 'designation', 'department', 'itemCategory', 'equipmentCategory', 'letterCategory', 'letterParty', 'ncrCategory', 'ncrRootCause', 'instrumentKind', 'vertical', 'workTrade', 'exitClearance', 'reviewStage', 'position', 'budgetRevision'] as const;
+export const MASTER_LISTS = ['trade', 'designation', 'department', 'itemCategory', 'equipmentCategory', 'letterCategory', 'letterParty', 'ncrCategory', 'ncrRootCause', 'instrumentKind', 'vertical', 'workTrade', 'exitClearance', 'reviewStage', 'position', 'budgetRevision', 'backCharge'] as const;
 export type MasterList = (typeof MASTER_LISTS)[number];
 
 export interface MasterStandardEntry {
@@ -391,6 +391,27 @@ export const MASTER_LIST_DEFS: Record<MasterList, MasterListDef> = {
     usedOn: 'budget revisions',
     manage: (role) => P.canApproveBudget(role),
     standard: entries(['Variation', 'वेरिएशन'], ['Rate change', 'दर में बदलाव'], ['Scope change', 'काम के दायरे में बदलाव'], ['Estimate corrected', 'अनुमान सुधारा'], ['Other', 'अन्य']),
+  },
+  backCharge: {
+    key: 'backCharge',
+    label: 'Back-charge kinds',
+    singular: 'back-charge kind',
+    description: "What a subcontractor is charged for on their bill, such as cleaning, damage, or labour or machinery supplied on their behalf.",
+    slug: 'back-charge',
+    node: 'subcontracts.backCharges',
+    usedOn: 'subcontractor bills',
+    manage: (role) => P.canPrepareSubcontractBill(role),
+    standard: entries(
+      ['Cleaning and debris', 'सफ़ाई और मलबा'],
+      ['Damage to work or property', 'काम या संपत्ति का नुकसान'],
+      ['Labour supplied', 'दिए गए मज़दूर'],
+      ['Machinery or tools supplied', 'दी गई मशीन या औज़ार'],
+      ['Rework of defective work', 'खराब काम दोबारा करना'],
+      ['Water and power', 'पानी और बिजली'],
+      ['Safety lapse', 'सुरक्षा में चूक'],
+      ['Delay', 'देरी'],
+      ['Other', 'अन्य'],
+    ),
   },
   position: {
     key: 'position',

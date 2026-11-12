@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import {
   canIssueWorkOrder,
   canPrepareSubcontractBill,
+  backChargesByKind,
   canViewWorkOrders,
   contractorTdsPct,
   subBillLabel,
@@ -27,6 +28,7 @@ import { dateRange, ilike, pageArgs, paginated, searchWords } from '../common/pa
 import { D, MSME_MAX_PAYMENT_DAYS, ZERO, parseGstRate, parseQty, parseRate, sum } from '../purchasing/purchase-math';
 import { CloseWorkOrderDto, CreateWorkOrderDto, ListWorkOrdersQuery, MarginQuery, UpdateWorkOrderDto, WoLineInput } from './subcontracts.dto';
 import { todayIn } from '../notifications/time';
+import { MastersService } from '../masters/masters.service';
 
 const round2 = (v: Prisma.Decimal) => v.toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
 export const pctStr = (d: Prisma.Decimal) => d.toFixed(2).replace(/\.?0+$/, '') || '0';
@@ -42,7 +44,7 @@ const include = {
     orderBy: [{ sortOrder: 'asc' as const }, { id: 'asc' as const }],
     include: { boqItem: { select: { itemNo: true } }, billLines: { where: { bill: { status: { not: 'REJECTED' as const } } }, select: { thisQty: true } } },
   },
-  bills: { where: { status: { not: 'REJECTED' as const } }, select: { grossAmount: true, advanceRecoveryAmount: true } },
+  bills: { where: { status: { not: 'REJECTED' as const } }, select: { grossAmount: true, advanceRecoveryAmount: true, retentionAmount: true, retentionReleased: true, status: true } },
   measurements: { where: { status: 'APPROVED' as const }, select: { boqItemId: true, totalQty: true } },
   // Advances: paid with no bill, and asked for on open requests.
   advances: { where: { subcontractBillId: null }, select: { amount: true, tdsAmount: true, otherDeduction: true } },
@@ -96,6 +98,7 @@ export class WorkOrdersService {
     private audit: AuditService,
     private lifecycle: SubmissionLifecycleService,
     private attachments: AttachmentsService,
+    private masters: MastersService,
   ) {}
 
   toDto(r: Row): WorkOrderDto {
@@ -138,6 +141,11 @@ export class WorkOrdersService {
       advanceRecovered: money(sum(r.bills, (b) => b.advanceRecoveryAmount)),
       advancePaid: money(sum(r.advances, (p) => p.amount.add(p.tdsAmount).add(p.otherDeduction))),
       advanceRequested: money(sum(r.paymentRequests, (p) => p.amount)),
+      ...(() => {
+        const approved = r.bills.filter((b) => b.status === 'APPROVED');
+        const released = sum(approved, (b) => b.retentionReleased);
+        return { retentionHeld: money(Prisma.Decimal.max(sum(approved, (b) => b.retentionAmount).sub(released), ZERO)), retentionReleased: money(released) };
+      })(),
       tdsPct: pctStr(r.tdsPct),
       paymentDays: r.paymentDays,
       value: money(r.value),
@@ -222,14 +230,20 @@ export class WorkOrdersService {
     const bills = await this.prisma.subcontractBill.findMany({
       where: { workOrderId: id },
       orderBy: { billNo: 'asc' },
-      select: { id: true, billNo: true, isFinal: true, billDate: true, grossAmount: true, netPayable: true, status: true },
+      select: { id: true, billNo: true, isFinal: true, isRelease: true, billDate: true, grossAmount: true, netPayable: true, status: true },
     });
+    const [charges, kinds] = await Promise.all([
+      this.prisma.subcontractBillCharge.findMany({ where: { bill: { workOrderId: id, status: 'APPROVED' } }, select: { kindCode: true, amount: true } }),
+      this.masters.entriesFor(user.organizationId, 'backCharge'),
+    ]);
+    const kindName = new Map(kinds.map((k) => [k.code, k.name]));
     return {
       ...this.toDto(row),
+      backCharges: backChargesByKind(charges.map((c) => ({ kindCode: c.kindCode, amount: money(c.amount) }))).map((c) => ({ ...c, kindName: kindName.get(c.kindCode) ?? c.kindCode })),
       bills: bills.map((b) => ({
         id: b.id,
         billNo: b.billNo,
-        label: subBillLabel(row.woNo, b.billNo, b.isFinal),
+        label: subBillLabel(row.woNo, b.billNo, b.isFinal, b.isRelease),
         isFinal: b.isFinal,
         billDate: dateOnly(b.billDate),
         grossAmount: money(b.grossAmount),

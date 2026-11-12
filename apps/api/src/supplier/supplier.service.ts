@@ -526,6 +526,7 @@ export class SupplierService {
           netPayable: true,
           advanceRecoveryAmount: true,
           retentionAmount: true,
+          retentionReleased: true,
           debitNoteAmount: true,
           paidAmount: true,
           project: { select: { name: true } },
@@ -636,7 +637,7 @@ export class SupplierService {
       paid: money(paid),
       deducted: money(deducted),
       balance: money(s.balance),
-      retentionHeld: money(sum(sbills.filter((b) => b.status === 'APPROVED'), (b) => b.retentionAmount)),
+      retentionHeld: money(sum(sbills.filter((b) => b.status === 'APPROVED'), (b) => b.retentionAmount.sub(b.retentionReleased))),
       bills,
       payments: payments.map(
         (p): SupplierPaymentDto => ({

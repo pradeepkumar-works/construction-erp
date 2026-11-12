@@ -48,6 +48,8 @@ export const NAV: Record<string, string> = {
   'The activities under the BOQ, with their planned dates and quantities.': 'BOQ के तहत गतिविधियाँ, उनकी योजना वाली तारीख़ों और मात्रा के साथ।',
   'Budget and cash flow': 'बजट और कैश फ़्लो',
   'Budget revision reasons': 'बजट संशोधन के कारण',
+  'Back-charge kinds': 'बैक-चार्ज के प्रकार',
+  'What a subcontractor is charged for on their bill, such as cleaning or damage.': 'उप-ठेकेदार के बिल पर किस बात का चार्ज लगा, जैसे सफ़ाई या नुकसान।',
   "Why a project's budget is revised, such as a variation or a rate change.": 'प्रोजेक्ट का बजट क्यों संशोधित हुआ, जैसे वेरिएशन या दर में बदलाव।',
   'Budget per cost head and the planned cash flow.': 'हर लागत मद का बजट और योजना वाला कैश फ़्लो।',
   'Earned value': 'अर्जित मूल्य',

@@ -2444,10 +2444,15 @@ model SubcontractBill {
   materialRecovery      Decimal          @db.Decimal(18, 2)
   /// Material used beyond the norm and its wastage, recovered from the reconciliation
   excessRecovery        Decimal          @default(0) @db.Decimal(18, 2)
+  /// Back-charges (the sum of its `charges`), or an older bill's single other recovery
   otherDeduction        Decimal          @default(0) @db.Decimal(18, 2)
   otherDeductionNote    String?
   totalDeductions       Decimal          @db.Decimal(18, 2)
-  /// gross + GST - deductions
+  /// Retention held on earlier bills of the work order paid back on this one (ARCHITECTURE "Subcontracts", Retention release)
+  retentionReleased     Decimal          @default(0) @db.Decimal(18, 2)
+  /// A bill that only pays back retention (after the final bill, at the end of the defects period): it takes no work
+  isRelease             Boolean          @default(false)
+  /// gross + GST - deductions + retention released
   netPayable            Decimal          @db.Decimal(18, 2)
   /// Debit notes against the bill that are not cancelled; what is payable drops by them
   debitNoteAmount       Decimal          @default(0) @db.Decimal(18, 2)
@@ -2472,6 +2477,7 @@ model SubcontractBill {
 
   lines            SubcontractBillLine[]
   materials        SubcontractBillMaterial[]
+  charges          SubcontractBillCharge[]
   measurements     MeasurementSheet[]
   issues           StockEntry[]
   attachments      Attachment[]
@@ -2509,6 +2515,20 @@ model SubcontractBillLine {
 }
 
 /// Material issued to the subcontractor and recovered in a bill: quantity of one item at its rate when the bill was made.
+/// A back-charge on a subcontractor's bill: cleaning, damage, labour or machinery supplied on their behalf (ARCHITECTURE "Subcontracts", Back-charges)
+model SubcontractBillCharge {
+  id        String          @id @default(uuid())
+  billId    String
+  bill      SubcontractBill @relation(fields: [billId], references: [id], onDelete: Cascade)
+  /// A code of the `backCharge` master
+  kindCode  String
+  amount    Decimal         @db.Decimal(18, 2)
+  note      String?
+  sortOrder Int             @default(0)
+
+  @@index([billId])
+}
+
 model SubcontractBillMaterial {
   id       String          @id @default(uuid())
   billId   String

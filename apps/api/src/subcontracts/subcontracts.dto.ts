@@ -2,7 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNotEmpty, IsNumberString, IsOptional, IsString, IsUUID, Max, MaxLength, Min, ValidateIf, ValidateNested } from 'class-validator';
 import { IsQuantity } from '../common/quantity';
-import { LIST_SORT_FIELDS, SUBMISSION_STATUSES, type SubcontractBillSortField, type SubmissionStatus, type WorkOrderSortField } from '@erp/shared';
+import { BACK_CHARGES_MAX, LIST_SORT_FIELDS, SUBMISSION_STATUSES, type SubcontractBillSortField, type SubmissionStatus, type WorkOrderSortField } from '@erp/shared';
 import { PageQuery, QueryBool } from '../common/paging';
 import { CLIENT_ID_DOC } from '../common/idempotency';
 
@@ -84,11 +84,25 @@ export class OwnItemQtyInput {
   @ApiProperty({ example: '1', description: 'Quantity in this bill' }) @num() @IsQuantity() quantity: string;
 }
 
+export class BackChargeInputDto {
+  @ApiProperty({ example: 'cleaning-and-debris', description: 'A code of the backCharge master' }) @IsString() @MaxLength(80) kindCode: string;
+  @ApiProperty({ example: '4500' }) @num() @IsNumberString() amount: string;
+  @ApiPropertyOptional({ example: 'Debris left at block B after plastering' }) @IsOptional() @trim() @IsString() @MaxLength(200) note?: string | null;
+}
+
 class SubBillFields {
   @ApiPropertyOptional({ default: false }) @IsOptional() @IsBoolean() isFinal?: boolean;
   @ApiPropertyOptional({ example: 'SC/24-25/017', description: "The subcontractor's own invoice number" }) @IsOptional() @trim() @IsString() @MaxLength(60) invoiceNo?: string | null;
-  @ApiPropertyOptional({ example: '0', description: 'Any other recovery (₹)' }) @IsOptional() @num() @IsNumberString() otherDeduction?: string;
+  @ApiPropertyOptional({ example: '0', description: 'Any other recovery (₹). Older clients: comes in as one "Other" back-charge; `charges` wins when both are sent' }) @IsOptional() @num() @IsNumberString() otherDeduction?: string;
   @ApiPropertyOptional() @IsOptional() @trim() @IsString() @MaxLength(200) otherDeductionNote?: string | null;
+  @ApiPropertyOptional({ type: [BackChargeInputDto], description: 'Back-charges by kind, replacing those on the bill' })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(BACK_CHARGES_MAX)
+  @ValidateNested({ each: true })
+  @Type(() => BackChargeInputDto)
+  charges?: BackChargeInputDto[];
+  @ApiPropertyOptional({ example: '25000', description: 'Retention held on earlier bills paid back on this one (₹), at most what is held' }) @IsOptional() @num() @IsNumberString() retentionRelease?: string;
   @ApiPropertyOptional() @IsOptional() @trim() @IsString() @MaxLength(1000) remarks?: string | null;
   @ApiPropertyOptional({ type: [OwnItemQtyInput], description: "Quantities in this bill for the work order's own items; BOQ items come from approved measurements" })
   @IsOptional()
@@ -106,6 +120,10 @@ export class CreateSubcontractBillDto extends SubBillFields {
   @ApiProperty({ description: 'An approved, open work order' }) @IsUUID() workOrderId: string;
   @ApiProperty({ example: '2026-10-14' }) @IsDateString() billDate: string;
   @ApiPropertyOptional({ example: '2026-10-13', description: 'Approved measurements and material issues up to this day (default the bill date)' }) @IsOptional() @IsDateString() measuredUpTo?: string;
+  @ApiPropertyOptional({ default: false, description: 'A bill that only pays back retention (`retentionRelease`): it takes no work, and may follow the final bill and the order being closed' })
+  @IsOptional()
+  @IsBoolean()
+  isRelease?: boolean;
 }
 
 export class UpdateSubcontractBillDto extends SubBillFields {

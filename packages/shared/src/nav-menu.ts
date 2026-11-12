@@ -226,7 +226,7 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
       sub('orders', 'Work orders', 'subcontracts.orders'),
       sub('bills', 'Subcontractor bills', 'subcontracts.bills'),
       sub('labour', 'Labour contractors', 'payroll.contractors'),
-      sub('masters', 'Masters', 'subcontracts.vendors', 'site.trades'),
+      sub('masters', 'Masters', 'subcontracts.vendors', 'site.trades', 'subcontracts.backCharges'),
     ],
   },
   {
