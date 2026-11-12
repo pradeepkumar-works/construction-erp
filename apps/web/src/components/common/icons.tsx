@@ -19,6 +19,7 @@ import {
   CalculatorIcon,
   CameraIcon,
   CalendarCheckIcon,
+  CalendarDaysIcon,
   CalendarClockIcon,
   CarIcon,
   ChartAreaIcon,
@@ -230,6 +231,7 @@ export const CarOutlined = lucide(CarIcon, 'car');
 export const CaretDownOutlined = lucide(ChevronDownIcon, 'caret-down');
 export const CaretRightOutlined = lucide(ChevronRightIcon, 'caret-right');
 export const CarryOutOutlined = lucide(CalendarCheckIcon, 'carry-out');
+export const CalendarOutlined = lucide(CalendarDaysIcon, 'calendar');
 export const CheckCircleFilled = disc('check-circle', ['m7.5 12.5 3 3 6-6.5']);
 export const CheckCircleOutlined = lucide(CircleCheckIcon, 'check-circle');
 export const CheckOutlined = lucide(CheckIcon, 'check');

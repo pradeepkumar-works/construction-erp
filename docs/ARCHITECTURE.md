@@ -1971,6 +1971,32 @@ where the activity's planned quantity is still zero, takes the item's unit and q
   their links allow, with Move them; Export and Import take MS Project XML or P6 XER. Project tab Look-ahead: the three
   weeks as a grid of days per activity, critical ones marked, what is ready and what waits.
 
+### Working calendar
+
+- **What it is.** The days a project's schedule counts. Off (`Project.workingCalendar` false, the default) every day
+  counts, as before. On, the schedule leaves out the project's weekly days off (`Project.scheduleDaysOff`, 0 Sunday to
+  6 Saturday, at most three, offered the site's staff weekly off by `weeklyOffOf` when first turned on), the company's
+  and the site's holidays (`Holiday`, kept in Staff › Holidays) and its breaks (`ScheduleBreak`: first and last day and
+  why, such as the monsoon; at most 200 days, not overlapping; a `tenant_isolation` policy).
+- **Rules.** Pure in `@erp/shared/working-calendar.ts`, tested in `src/scripts/working-calendar-test.ts`:
+  `nonWorkingReason` / `isWorkingDay`, `workingDaysIn`, `addWorkingDays`, `nonWorkingDays` (what a chart shades),
+  `workWeekWords`, and the checks `daysOffProblem` and `breakProblem`. `dayClock(calendar)` numbers the working days
+  (a day off moves forward to the next one, or back for an end), and `criticalPath` takes that clock: an activity's
+  length is the working days between its planned dates (at least one), lags and float are working days, and dates come
+  back through the clock. With the calendar off the clock is the plain day count. The planned dates stay the plan: a
+  break added inside an activity's dates does not stretch it, while one the links push into a break carries its
+  working days past it (Move them writes those dates).
+- **Reading it.** `WorkingCalendarService.calendarOf(projectId)` is the one read, used by the Gantt (`GanttDto.calendar`:
+  on, `daysOff`, the week in words, and the holidays and breaks over the chart) and the look-ahead (each week's
+  `daysOff`). Changed only through the same service: `GET`/`PATCH /projects/:id/working-calendar`,
+  `POST /projects/:id/working-calendar/breaks`, `DELETE …/breaks/:id` (project editors; audited
+  `WORKING_CALENDAR_SET`, `SCHEDULE_BREAK_ADDED`, `SCHEDULE_BREAK_REMOVED`).
+- **Not on it.** The straight-line expected progress and the contract's completion date and extensions stay on calendar
+  days, as contracts count them; schedule files still read and write calendar dates.
+- **Web.** Schedule tab: a Calendar button opens the working calendar (the switch, days off, breaks, the holidays);
+  the summary line names the working week, the Gantt shades holidays and breaks (and weekly days off at the week scale),
+  and the look-ahead counts each week's working days and leaves days off out of its day grid.
+
 ### Named worker register
 
 A site labour register, not HR: no PF, ESI or payslips (those stay with Payroll Inputs).

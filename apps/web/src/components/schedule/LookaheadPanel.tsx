@@ -5,29 +5,38 @@ import { Flex, Statistic, Table, Typography } from 'antd';
 import { tk } from '@/ds';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
-import { LOOKAHEAD_READINESS_LABELS, type LookaheadActivityDto } from '@erp/shared';
+import { LOOKAHEAD_READINESS_LABELS, WEEKDAY_NAMES, type LookaheadActivityDto } from '@erp/shared';
 import { useLookahead } from '@/lib/queries';
 import dayjs from 'dayjs';
-import { formatDate, formatDayMonth, formatPct } from '@/lib/format';
+import { formatDate, formatDayMonth, formatPct, plural } from '@/lib/format';
 import { Loading, QueryError } from '@/components/common/QueryState';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const big = { content: { fontSize: tk.type.subhead.fontSize } };
 
 type Row = LookaheadActivityDto & { overdue: boolean };
+type Week = { from: string; to: string; daysOff: { date: string }[] };
 
-/** Which days of a week an activity runs, in words: "all week", "from Wed", "Tue to Thu". */
-function daysIn(a: Row, week: { from: string; to: string }): { on: boolean[]; text: string } | null {
+/** Which days of a week an activity runs, in words: "all week", "from Wed", "Tue to Thu"; days off on the working calendar are not. */
+function daysIn(a: Row, week: Week): { on: boolean[]; text: string } | null {
   if (a.plannedStart > week.to || a.plannedEnd < week.from) return null;
   const start = dayjs(week.from);
   const on = DAYS.map((_, i) => {
     const d = start.add(i, 'day').format('YYYY-MM-DD');
-    return d >= a.plannedStart && d <= a.plannedEnd;
+    return d >= a.plannedStart && d <= a.plannedEnd && !week.daysOff.some((x) => x.date === d);
   });
+  if (!on.includes(true)) return null;
   const first = on.indexOf(true);
   const last = on.lastIndexOf(true);
   const text = first === 0 && last === 6 ? 'all week' : first === 0 ? `to ${DAYS[last]}` : last === 6 ? `from ${DAYS[first]}` : first === last ? DAYS[first] : `${DAYS[first]} to ${DAYS[last]}`;
   return { on, text };
+}
+
+/** A week's working days on the calendar, naming its holidays and breaks: "5 working days, Holi". */
+function weekDaysWords(daysOff: { date: string; reason: string }[]) {
+  const weekdays = new Set(Object.values(WEEKDAY_NAMES));
+  const named = [...new Set(daysOff.map((d) => d.reason).filter((r) => !weekdays.has(r)))];
+  return `${plural(7 - daysOff.length, 'working day')}${named.length ? `, ${named.join(', ')}` : ''}`;
 }
 
 /**
@@ -46,7 +55,7 @@ export function LookaheadPanel({ projectId }: { projectId: string }) {
   const ready = starting.filter((a) => a.readiness === 'READY').length;
   const waiting = starting.filter((a) => a.readiness === 'WAITING').length;
 
-  const bar = (a: Row, week: { from: string; to: string }, first: boolean) => {
+  const bar = (a: Row, week: Week, first: boolean) => {
     // Past its end and still open: it carries into this week.
     if (a.overdue && first) return <span style={{ color: tk.color.tone.danger.fg, fontSize: tk.type.caption.fontSize }}>Still open</span>;
     const d = daysIn(a, week);
@@ -109,6 +118,7 @@ export function LookaheadPanel({ projectId }: { projectId: string }) {
           <span className="text-muted" style={{ display: 'block', fontWeight: 'normal', fontSize: tk.type.caption.fontSize }} translate="no">
             {`${formatDayMonth(w.from)} to ${formatDayMonth(w.to)}`}
           </span>
+          {w.daysOff.length ? <span className="text-muted" style={{ display: 'block', fontWeight: 'normal', fontSize: tk.type.caption.fontSize }}>{weekDaysWords(w.daysOff)}</span> : null}
         </span>
       ),
       key: w.from,

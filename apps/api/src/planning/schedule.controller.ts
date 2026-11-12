@@ -2,7 +2,8 @@ import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Query
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { BASELINE_ROLES, PROJECT_EDITOR_ROLES } from '@erp/shared';
 import { ScheduleService } from './schedule.service';
-import { CreateLinkDto, CreateMilestoneDto, ExportScheduleQuery, FreezeBaselineDto, ImportScheduleDto, UpdateLinkDto, UpdateMilestoneDto } from './schedule.dto';
+import { CreateLinkDto, CreateMilestoneDto, CreateScheduleBreakDto, ExportScheduleQuery, FreezeBaselineDto, ImportScheduleDto, UpdateLinkDto, UpdateMilestoneDto, UpdateWorkingCalendarDto } from './schedule.dto';
+import { WorkingCalendarService } from './working-calendar.service';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { Roles } from '../common/decorators';
 import { RolesGuard } from '../common/roles.guard';
@@ -12,7 +13,36 @@ import { RolesGuard } from '../common/roles.guard';
 @UseGuards(RolesGuard)
 @Controller('projects/:projectId')
 export class ScheduleController {
-  constructor(private schedule: ScheduleService) {}
+  constructor(
+    private schedule: ScheduleService,
+    private calendar: WorkingCalendarService,
+  ) {}
+
+  @ApiOperation({ summary: 'The working calendar the schedule counts on: weekly days off, holidays and breaks' })
+  @Get('working-calendar')
+  workingCalendar(@CurrentUser() user: RequestUser, @Param('projectId') projectId: string) {
+    return this.calendar.get(user, projectId);
+  }
+
+  @ApiOperation({ summary: 'Turn the working calendar on or off, or set its weekly days off' })
+  @Patch('working-calendar')
+  @Roles(...PROJECT_EDITOR_ROLES)
+  setWorkingCalendar(@CurrentUser() user: RequestUser, @Param('projectId') projectId: string, @Body() dto: UpdateWorkingCalendarDto) {
+    return this.calendar.update(user, projectId, dto);
+  }
+
+  @ApiOperation({ summary: 'Add a break: days the site stops (a monsoon shutdown), left out of the schedule' })
+  @Post('working-calendar/breaks')
+  @Roles(...PROJECT_EDITOR_ROLES)
+  addBreak(@CurrentUser() user: RequestUser, @Param('projectId') projectId: string, @Body() dto: CreateScheduleBreakDto) {
+    return this.calendar.addBreak(user, projectId, dto);
+  }
+
+  @Delete('working-calendar/breaks/:id')
+  @Roles(...PROJECT_EDITOR_ROLES)
+  removeBreak(@CurrentUser() user: RequestUser, @Param('projectId') projectId: string, @Param('id', ParseUUIDPipe) id: string) {
+    return this.calendar.removeBreak(user, projectId, id);
+  }
 
   @Get('gantt')
   gantt(@CurrentUser() user: RequestUser, @Param('projectId') projectId: string) {

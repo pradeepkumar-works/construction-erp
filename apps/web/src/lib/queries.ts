@@ -466,6 +466,7 @@ import type {
   MeetingLinkOptionsDto,
   MaterialApprovalListDto,
   LookaheadDto,
+  WorkingCalendarDto,
   SitePhotosDto,
   EarnedValueDto,
   EvBasis,
@@ -917,13 +918,16 @@ export const useGantt = (projectId: string | undefined) =>
     enabled: !!projectId,
   });
 
-/** Three weeks from this Monday on a project; under the activities key so a change to the plan refreshes it. */
 /** A project's photo timeline (ARCHITECTURE "Site photos", Photo timeline); the last 30 days unless a range is given. */
 export const useSitePhotos = (projectId: string, range: { from?: string; to?: string }) =>
   useQuery({ queryKey: ['site-photos', projectId, range.from ?? null, range.to ?? null], queryFn: async () => (await api.get<SitePhotosDto>(`/site-photos/${projectId}`, { params: range })).data });
 
+/** Three weeks from this Monday on a project; under the activities key so a change to the plan refreshes it. */
 export const useLookahead = (projectId: string | undefined) =>
   useQuery({ queryKey: ['activities', projectId, 'lookahead'], queryFn: async () => (await api.get<LookaheadDto>(`/projects/${projectId}/lookahead`)).data, enabled: !!projectId });
+/** A project's working calendar (ARCHITECTURE "Working calendar"); under the activities key, as it moves the Gantt. */
+export const useWorkingCalendar = (projectId: string | undefined, enabled = true) =>
+  useQuery({ queryKey: ['activities', projectId, 'working-calendar'], queryFn: async () => (await api.get<WorkingCalendarDto>(`/projects/${projectId}/working-calendar`)).data, enabled: !!projectId && enabled });
 /** Links, moving to the links' dates and importing a schedule file: the Gantt, look-ahead and activities refresh. */
 export function useScheduleAction<T = unknown>(projectId: string) {
   const qc = useQueryClient();

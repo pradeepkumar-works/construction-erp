@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-working-calendar',
+    date: '2026-11-19',
+    title: 'A working calendar for each project’s schedule',
+    points: [
+      'Turn on the working calendar from the Schedule tab’s Calendar button, and pick the site’s weekly days off.',
+      'Add breaks when the whole site stops, such as the monsoon, beside the holidays from Staff.',
+      'The critical path, float, lags and the look-ahead then count only working days, and the Gantt shades the days off.',
+    ],
+  },
+  {
     id: '2026-11-excess-saving',
     date: '2026-11-19',
     title: 'Revised rates past the deviation limit, and the excess and saving statement',
