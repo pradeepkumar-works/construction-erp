@@ -158,45 +158,25 @@ export class ManagementService {
     if (!project) throw new NotFoundException('Project not found');
     const months = lastMonths(today, 12);
     const since = parseDate(`${months[0]}-01`);
-    const [{ rows, pending }, trend, forecasts, executed, receivables, risks, pos, wos] = await Promise.all([
+    const [{ rows, pending }, trend, forecasts, executed, receivables, risks] = await Promise.all([
       this.build(user, [project], today),
       this.months(user.organizationId, [projectId], months),
       this.budget.forecasts(user.organizationId, [{ id: projectId, contractValue: project.contractValue ? new Prisma.Decimal(project.contractValue) : null }]),
       this.cost.compute(user.organizationId, [projectId], { gte: since }),
       this.receivables.summary(user, { projectId }),
       this.prisma.risk.findMany({ where: { projectId, status: { not: 'CLOSED' } }, orderBy: [{ score: 'desc' }, { riskNo: 'asc' }], select: { id: true, riskNo: true, title: true, kind: true, score: true, daysLost: true, dueDate: true } }),
-      this.prisma.purchaseOrder.findMany({
-        where: { projectId, status: 'APPROVED', closedAt: null },
-        select: { id: true, poNo: true, poDate: true, subtotal: true, freight: true, vendor: { select: { name: true } }, vendorBills: { where: { status: 'APPROVED' }, select: { subtotal: true, freight: true } } },
-        orderBy: { poDate: 'desc' },
-      }),
-      this.prisma.workOrder.findMany({
-        where: { projectId, status: 'APPROVED', closedAt: null },
-        select: { id: true, woNo: true, woDate: true, value: true, vendor: { select: { name: true } }, bills: { where: { status: 'APPROVED' }, select: { grossAmount: true } } },
-        orderBy: { woDate: 'desc' },
-      }),
     ]);
     const f = forecasts.get(projectId)!;
     const done = project.physicalProgressPct;
     const heads = COST_HEADS.map((h) => {
       const budget = f.headBudget ? N(f.headBudget[h]) : null;
       const actual = N(f.heads[h]);
-      const fc = forecastCost(actual, budget, done);
+      const fc = forecastCost(actual, budget, done, N(f.committed[h]));
       return { head: h, label: COST_HEAD_LABELS[h], budget: budget === null ? null : m(budget), actual: m(actual), forecast: fc === null ? null : m(fc) };
     });
     const acc = executed.get(projectId)!;
-    const orders = [
-      ...pos.map((p) => {
-        const value = N(p.subtotal) + N(p.freight);
-        const billed = p.vendorBills.reduce((s, b) => s + N(b.subtotal) + N(b.freight), 0);
-        return { kind: 'PO' as const, id: p.id, number: p.poNo, vendorName: p.vendor.name, date: dateOnly(p.poDate), value: m(value), billed: m(billed), open: m(Math.max(0, value - billed)) };
-      }),
-      ...wos.map((w) => {
-        const value = N(w.value);
-        const billed = w.bills.reduce((s, b) => s + N(b.grossAmount), 0);
-        return { kind: 'WO' as const, id: w.id, number: w.woNo, vendorName: w.vendor.name, date: dateOnly(w.woDate), value: m(value), billed: m(billed), open: m(Math.max(0, value - billed)) };
-      }),
-    ].filter((o) => N(o.open) > 0);
+    // The open orders behind the commitment, as the Budget tab lists them (ARCHITECTURE "Committed cost").
+    const orders = f.commitments.map((c) => ({ kind: c.kind, id: c.id, number: c.number, vendorName: c.vendorName, date: c.date, value: c.value, done: c.done, open: c.balance }));
     return {
       asOf: today,
       project: rows[0],
@@ -214,7 +194,7 @@ export class ManagementService {
     const ids = projects.map((p) => p.id);
     if (!ids.length) return { rows: [], pending: [] };
     const organizationId = user.organizationId;
-    const [extra, boq, activities, progress, measured, bills, receivables, forecasts, pos, wos, risks, submitted, openingMissing] = await Promise.all([
+    const [extra, boq, activities, progress, measured, bills, receivables, forecasts, risks, submitted, openingMissing] = await Promise.all([
       this.prisma.project.findMany({ where: { id: { in: ids } }, select: { id: true, lumpSumValue: true, client: { select: { name: true } }, risks: { where: { eotGrantedDays: { not: null } }, select: { eotGrantedDays: true } } } }),
       this.prisma.boqItem.findMany({ where: { projectId: { in: ids } }, select: { id: true, projectId: true, rate: true, originalQty: true, revisedQty: true } }),
       this.prisma.activity.findMany({ where: { projectId: { in: ids } }, select: { id: true, projectId: true, boqItemId: true, plannedQty: true, plannedStart: true, plannedEnd: true, _count: { select: { subActivities: true } } } }),
@@ -226,14 +206,6 @@ export class ManagementService {
       }),
       this.receivables.summary(user),
       this.budget.forecasts(organizationId, projects.map((p) => ({ id: p.id, contractValue: p.contractValue ? new Prisma.Decimal(p.contractValue) : null }))),
-      this.prisma.purchaseOrder.findMany({
-        where: { organizationId, projectId: { in: ids }, status: 'APPROVED', closedAt: null },
-        select: { projectId: true, subtotal: true, freight: true, vendorBills: { where: { status: 'APPROVED' }, select: { subtotal: true, freight: true } } },
-      }),
-      this.prisma.workOrder.findMany({
-        where: { organizationId, projectId: { in: ids }, status: 'APPROVED', closedAt: null },
-        select: { projectId: true, value: true, bills: { where: { status: 'APPROVED' }, select: { grossAmount: true } } },
-      }),
       this.prisma.risk.findMany({ where: { organizationId, projectId: { in: ids }, status: { not: 'CLOSED' } }, select: { projectId: true, score: true } }),
       this.lifecycle.submitted(user),
       this.opening.missing(ids),
@@ -302,11 +274,9 @@ export class ManagementService {
 
         // Cost (the opening cost in it), commitments and the forecast.
         const cost = N(total(f.heads));
-        const committed =
-          pos.filter((o) => o.projectId === p.id).reduce((s, o) => s + Math.max(0, N(o.subtotal) + N(o.freight) - o.vendorBills.reduce((t, b) => t + N(b.subtotal) + N(b.freight), 0)), 0) +
-          wos.filter((o) => o.projectId === p.id).reduce((s, o) => s + Math.max(0, N(o.value) - o.bills.reduce((t, b) => t + N(b.grossAmount), 0)), 0);
+        const committed = N(total(f.committed));
         const budget = f.bac ? N(f.bac) : null;
-        const fc = forecastCost(cost, budget, p.physicalProgressPct);
+        const fc = forecastCost(cost, budget, p.physicalProgressPct, committed);
         const contractValue = p.revisedContractValue ? N(p.revisedContractValue) : null;
         const forecastMargin = fc !== null && contractValue !== null ? contractValue - fc : null;
         const margin = workDone - cost;

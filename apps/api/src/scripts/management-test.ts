@@ -81,6 +81,12 @@ test('forecast cost is actual plus the budget still to spend, left out without a
   assert.equal(forecastCost(1200, 1000, 120), 1200);
 });
 
+test('forecast cost never ends below what is already ordered', () => {
+  assert.equal(forecastCost(400, 1000, 50, 300), 900);
+  assert.equal(forecastCost(400, 1000, 50, 750), 1150);
+  assert.equal(forecastCost(400, null, 50, 750), null);
+});
+
 test('margin on billing is left out when the billing is a sliver of the cost', () => {
   assert.equal(billedMarginPct(1000, 800), 20);
   assert.equal(billedMarginPct(386_596, 9_909_267), null);

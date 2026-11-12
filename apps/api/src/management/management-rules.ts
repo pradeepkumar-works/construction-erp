@@ -1,5 +1,5 @@
 import type { ApprovalAgeingDto, HealthLevel, HealthReasonDto, PortfolioScheduleDto, PortfolioScheduleState, SubmissionType } from '@erp/shared';
-import { APPROVAL_OLD_DAYS, FORECAST_MIN_DONE_PCT, UNBILLED_WATCH_DAYS, projectScheduleStatus, timeElapsedPct, type ProjectScheduleState } from '@erp/shared';
+import { APPROVAL_OLD_DAYS, FORECAST_MIN_DONE_PCT, UNBILLED_WATCH_DAYS, costToComplete, projectScheduleStatus, timeElapsedPct, type ProjectScheduleState } from '@erp/shared';
 import { rupees } from '../briefs/brief-rules';
 import { formatDay } from '../common/serialize';
 
@@ -69,10 +69,13 @@ export function unbilledDays(unbilled: number, billedUpTo: string | null, startD
 /** Unbilled work is worth a word from ₹1 lakh or half a percent of the contract, whichever is more. */
 export const unbilledMatters = (unbilled: number, contractValue: number | null) => unbilled >= Math.max(100_000, (contractValue ?? 0) * 0.005);
 
-/** Cost at completion: actual plus the budget for the work still to do. Null without a budget, or too early to say. */
-export function forecastCost(actual: number, budget: number | null, donePct: number): number | null {
+/**
+ * Cost at completion: actual plus the budget for the work still to do, or what is already ordered when that is more
+ * (`costToComplete`, ARCHITECTURE "Committed cost"). Null without a budget, or too early to say.
+ */
+export function forecastCost(actual: number, budget: number | null, donePct: number, committed = 0): number | null {
   if (budget === null || donePct < FORECAST_MIN_DONE_PCT) return null;
-  return actual + budget * (1 - Math.min(100, donePct) / 100);
+  return actual + costToComplete(budget * (1 - Math.min(100, donePct) / 100), committed);
 }
 
 // Schedule: the shared rule (`projectScheduleStatus`), the same one behind the project page's chip and the watch list

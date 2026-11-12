@@ -486,6 +486,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/labour-compliance-test.js
+      - name: Open orders commit what they still have to deliver or bill, and the forecast never ends below it
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/committed-cost-test.js
       - name: Consultants check their share of the measurements before certifying, hidden work is countersigned above its sign-off, and site orders run to their compliance
         if: matrix.suite == 'flows'
         working-directory: apps/api

@@ -1,7 +1,8 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import type { BudgetBoqItemDto, BudgetFigures, BudgetHeadDto, BudgetOpenVersionDto, BudgetVersionDto, CostHead, ProjectBudgetDto } from '@erp/shared';
+import type { BudgetBoqItemDto, BudgetFigures, BudgetHeadDto, BudgetOpenVersionDto, BudgetVersionDto, CommitmentDto, CostHead, ProjectBudgetDto } from '@erp/shared';
 import {
+  COMMITMENT_HEAD,
   COST_HEADS,
   approvedVersionOf,
   budgetAmountProblem,
@@ -12,10 +13,14 @@ import {
   canApproveBudget,
   canSetBudget,
   canViewCost,
+  costToComplete,
   formatINR,
   isEditableBudget,
   openVersionOf,
+  overCommitted,
+  poBalance,
   variationLabel,
+  woBalance,
 } from '@erp/shared';
 import { activityBoqOf } from '../common/boq-links';
 import { PrismaService } from '../prisma/prisma.service';
@@ -23,11 +28,11 @@ import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
 import { isUniqueViolation } from '../common/idempotency';
-import { dec, iso, money } from '../common/serialize';
+import { dateOnly, dec, iso, money } from '../common/serialize';
 import { MastersService } from '../masters/masters.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { VariationsService } from '../variations/variations.service';
-import { type Acc, CostService, Heads, ZERO, total } from './cost.service';
+import { type Acc, CostService, Heads, ZERO, emptyHeads, total } from './cost.service';
 import { DecideBudgetDto, SaveBudgetVersionDto } from './cost.dto';
 
 type D = Prisma.Decimal;
@@ -79,7 +84,13 @@ export interface Forecast {
   revisedContractValue: D | null;
   /** The opening cost in `heads` and `executed` (ARCHITECTURE "Opening cost") */
   opening: Acc['opening'];
+  /** Ordered on approved orders and not yet in actual cost, by head (ARCHITECTURE "Committed cost") */
+  committed: Heads;
+  commitments: CommitmentDto[];
 }
+
+/** A head's cost to complete as a decimal: its budget for the work left, or what is ordered when that is more. */
+const toComplete = (budgetLeft: D | null, committed: D) => new Dec(costToComplete(budgetLeft === null ? null : budgetLeft.toNumber(), committed.toNumber()));
 
 /**
  * Budget and forecast to complete. A project's budget comes in versions: each is set by cost head, with a budgeted cost
@@ -102,11 +113,12 @@ export class BudgetService {
   /** Budget, actual and forecast for each project, all time, on its approved budget. */
   async forecasts(organizationId: string, projects: { id: string; contractValue: D | null }[]): Promise<Map<string, Forecast>> {
     const ids = projects.map((p) => p.id);
-    const [accs, boq, budgets, approved] = await Promise.all([
+    const [accs, boq, budgets, approved, commitments] = await Promise.all([
       this.cost.compute(organizationId, ids, undefined),
       this.prisma.boqItem.findMany({ where: { projectId: { in: ids } }, select: { projectId: true, rate: true, originalQty: true, revisedQty: true, budgetRate: true } }),
       this.prisma.projectBudget.findMany({ where: { projectId: { in: ids }, status: 'APPROVED' } }),
       this.variations.approvedByProject(ids),
+      this.commitments(ids),
     ]);
     const budgetOf = new Map(budgets.map((b) => [b.projectId, b]));
     const out = new Map<string, Forecast>();
@@ -124,6 +136,14 @@ export class BudgetService {
       const pct = boqValue.gt(0) ? Dec.min(ONE, acc.executed.div(boqValue)) : ZERO;
       const bac = headBudget ? total(headBudget) : boqBudget;
       const actual = total(acc.heads);
+      const c = commitments.get(p.id) ?? { heads: emptyHeads(), list: [] };
+      const left = ONE.minus(pct);
+      // The forecast never ends below what is already ordered: by head where the budget is by head, else in total.
+      const eac = headBudget
+        ? COST_HEADS.reduce((sum, h) => sum.plus(acc.heads[h]).plus(toComplete(headBudget[h].mul(left), c.heads[h])), ZERO).toDecimalPlaces(2)
+        : bac
+          ? actual.plus(toComplete(bac.mul(left), total(c.heads))).toDecimalPlaces(2)
+          : null;
       out.set(p.id, {
         projectId: p.id,
         heads: acc.heads,
@@ -134,11 +154,68 @@ export class BudgetService {
         pct,
         bac,
         actual,
-        eac: bac ? actual.plus(bac.mul(ONE.minus(pct))).toDecimalPlaces(2) : null,
+        eac,
         revisedContractValue: p.contractValue ? p.contractValue.plus(approved.get(p.id) ?? ZERO) : null,
         opening: acc.opening,
+        committed: c.heads,
+        commitments: c.list,
       });
     }
+    return out;
+  }
+
+  /**
+   * What each project has ordered and not yet costed (ARCHITECTURE "Committed cost"): approved, open purchase orders'
+   * undelivered value and work orders' value less what approved bills charged, before GST.
+   */
+  async commitments(projectIds: string[]): Promise<Map<string, { heads: Heads; list: CommitmentDto[] }>> {
+    const open = { projectId: { in: projectIds }, status: 'APPROVED' as const, closedAt: null };
+    const [pos, wos] = await Promise.all([
+      this.prisma.purchaseOrder.findMany({
+        where: open,
+        select: { id: true, projectId: true, poNo: true, poDate: true, vendor: { select: { name: true } }, lines: { select: { id: true, itemName: true, quantity: true, rate: true, amount: true }, orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] } },
+      }),
+      this.prisma.workOrder.findMany({ where: open, select: { id: true, projectId: true, woNo: true, woDate: true, title: true, value: true, vendor: { select: { name: true } } } }),
+    ]);
+    const lineIds = pos.flatMap((o) => o.lines.map((l) => l.id));
+    const [received, billed] = await Promise.all([
+      lineIds.length ? this.prisma.stockTxn.groupBy({ by: ['purchaseOrderLineId'], where: { purchaseOrderLineId: { in: lineIds } }, _sum: { quantity: true } }) : [],
+      wos.length ? this.prisma.subcontractBill.groupBy({ by: ['workOrderId'], where: { workOrderId: { in: wos.map((w) => w.id) }, status: 'APPROVED' }, _sum: { grossAmount: true } }) : [],
+    ]);
+    const got = new Map(received.map((r) => [r.purchaseOrderLineId!, r._sum.quantity ?? ZERO]));
+    const charged = new Map(billed.map((b) => [b.workOrderId, b._sum.grossAmount ?? ZERO]));
+    const out = new Map<string, { heads: Heads; list: CommitmentDto[] }>();
+    const add = (projectId: string, row: CommitmentDto) => {
+      let c = out.get(projectId);
+      if (!c) out.set(projectId, (c = { heads: emptyHeads(), list: [] }));
+      const head = COMMITMENT_HEAD[row.kind];
+      c.heads[head] = c.heads[head].plus(row.balance);
+      c.list.push(row);
+    };
+    for (const o of pos) {
+      const balance = poBalance(o.lines.map((l) => ({ quantity: l.quantity.toString(), rate: l.rate.toString(), received: (got.get(l.id) ?? ZERO).toString() })), false);
+      if (balance <= 0) continue;
+      const value = o.lines.reduce((s, l) => s.plus(l.amount), ZERO);
+      const items = o.lines.map((l) => l.itemName);
+      add(o.projectId, {
+        kind: 'PO',
+        id: o.id,
+        number: o.poNo,
+        date: dateOnly(o.poDate),
+        vendorName: o.vendor.name,
+        title: items.length > 2 ? `${items.slice(0, 2).join(', ')} and ${items.length - 2} more` : items.join(', '),
+        value: money(value),
+        done: money(Dec.max(ZERO, value.minus(balance))),
+        balance: money(new Dec(balance)),
+      });
+    }
+    for (const w of wos) {
+      const done = charged.get(w.id) ?? ZERO;
+      const balance = woBalance(w.value.toString(), done.toString(), false);
+      if (balance <= 0) continue;
+      add(w.projectId, { kind: 'WO', id: w.id, number: w.woNo, date: dateOnly(w.woDate), vendorName: w.vendor.name, title: w.title, value: money(w.value), done: money(done), balance: money(new Dec(balance)) });
+    }
+    for (const c of out.values()) c.list.sort((a, b) => Number(b.balance) - Number(a.balance));
     return out;
   }
 
@@ -182,13 +259,17 @@ export class BudgetService {
       const budget = f.headBudget?.[head] ?? null;
       const actual = f.heads[head];
       const earned = budget ? budget.mul(f.pct) : null;
+      const committed = f.committed[head];
+      const over = overCommitted(budget === null ? null : budget.toNumber(), actual.toNumber(), committed.toNumber());
       return {
         head,
         budget: money(budget),
         actual: money(actual),
         earned: money(earned),
-        forecast: budget ? money(actual.plus(budget.minus(earned!))) : null,
+        committed: money(committed),
+        forecast: budget ? money(actual.plus(toComplete(budget.minus(earned!), committed))) : null,
         variance: earned ? money(earned.minus(actual)) : null,
+        overCommitted: over === null ? null : money(new Dec(over)),
       };
     });
     const earned = f.bac ? f.bac.mul(f.pct) : null;
@@ -215,6 +296,8 @@ export class BudgetService {
       actualCost: money(f.actual),
       costVariance: earned ? money(earned.minus(f.actual)) : null,
       forecastAtCompletion: money(f.eac),
+      committedCost: money(total(f.committed)),
+      commitments: f.commitments,
       forecastToComplete: f.eac ? money(f.eac.minus(f.actual)) : null,
       revisedContractValue: money(f.revisedContractValue),
       forecastMargin: f.eac && f.revisedContractValue ? money(f.revisedContractValue.minus(f.eac)) : null,
