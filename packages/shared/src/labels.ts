@@ -1,4 +1,4 @@
-import type { ContractModel, WorkElementLevel, WorkElementType, PipeNodeKind, PipeMaterial, PipeScope, PipeStage, LdPeriod, GrnQcStatus, ComplianceDocKind, ComplianceDocStatus, DefectPhase, DefectPriority, DefectStatus, ImprestEntryKind, ImprestEntryStatus, WorkerIdType, WorkerSkill, EquipmentDocType, MaintenanceKind, MaintenanceStatus, BillStage, ReceiptKind, VendorKind, MsmeCategory, EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, WorkLocation, DelayParty, PasswordTokenPurpose, RiskCategory, RiskKind, RiskStatus, RoleKey, SafetyIncidentStatus, SafetyIncidentType, StockEntryType, SubmissionStatus, SubmissionType, Weather, WorkPermitStatus, WorkPermitType, PpeKind, PpeIssueStatus, RfiStatus, RfiPriority, PaymentRequestKind, PaymentBatchStatus, GstDocumentKind, GstDocumentStatus, GstSourceKind, TdsReturnForm, TdsReturnStatus, FundPurpose, VendorBillKind, HireFuelBy, DebitNoteReason, BoqResourceKind, StockAdjustmentReason, FuelNormUnit, EquipmentPartKind, ApprovalStepAction, MarkupKind, MarkupStatus, MarkupColor, NavPinKind, NavVisitKind, AccessRequestStatus, NavLayout, NavLook, NavModuleSet, NavSidebarLook, NavPaint, NavPalette, CompanyKind, CheckLevel, SiteOrderStatus, ProgrammeStatus, EotBasis, EotStatus, BudgetStatus, IsDiscipline } from './enums';
+import type { ContractModel, WorkElementLevel, WorkElementType, PipeNodeKind, PipeMaterial, PipeScope, PipeStage, LdPeriod, GrnQcStatus, ComplianceDocKind, ComplianceDocStatus, DefectPhase, DefectPriority, DefectStatus, ImprestEntryKind, ImprestEntryStatus, WorkerIdType, WorkerSkill, EquipmentDocType, MaintenanceKind, MaintenanceStatus, BillStage, ReceiptKind, VendorKind, MsmeCategory, LabourPaperKind, LabourChallanKind, EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, WorkLocation, DelayParty, PasswordTokenPurpose, RiskCategory, RiskKind, RiskStatus, RoleKey, SafetyIncidentStatus, SafetyIncidentType, StockEntryType, SubmissionStatus, SubmissionType, Weather, WorkPermitStatus, WorkPermitType, PpeKind, PpeIssueStatus, RfiStatus, RfiPriority, PaymentRequestKind, PaymentBatchStatus, GstDocumentKind, GstDocumentStatus, GstSourceKind, TdsReturnForm, TdsReturnStatus, FundPurpose, VendorBillKind, HireFuelBy, DebitNoteReason, BoqResourceKind, StockAdjustmentReason, FuelNormUnit, EquipmentPartKind, ApprovalStepAction, MarkupKind, MarkupStatus, MarkupColor, NavPinKind, NavVisitKind, AccessRequestStatus, NavLayout, NavLook, NavModuleSet, NavSidebarLook, NavPaint, NavPalette, CompanyKind, CheckLevel, SiteOrderStatus, ProgrammeStatus, EotBasis, EotStatus, BudgetStatus, IsDiscipline } from './enums';
 
 export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
   ROAD: 'Road or infrastructure',
@@ -399,6 +399,19 @@ export const VENDOR_KIND_LABELS: Record<VendorKind, string> = {
   SUBCONTRACTOR: 'Subcontractor',
   LABOUR_CONTRACTOR: 'Labour contractor',
   SERVICE: 'Services',
+};
+
+export const LABOUR_PAPER_KIND_LABELS: Record<LabourPaperKind, string> = {
+  CLRA_LICENCE: 'Labour licence (CLRA)',
+  PF_CODE: 'PF code',
+  ESI_CODE: 'ESI code',
+  WC_POLICY: 'Workmen’s compensation policy',
+  BOCW_REGISTRATION: 'BOCW registration',
+};
+
+export const LABOUR_CHALLAN_KIND_LABELS: Record<LabourChallanKind, string> = {
+  PF: 'PF challan',
+  ESI: 'ESI challan',
 };
 
 export const MSME_CATEGORY_LABELS: Record<MsmeCategory, string> = {

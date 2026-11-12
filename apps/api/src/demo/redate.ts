@@ -90,6 +90,9 @@ async function moveOrganization(tx: Tx, organizationId: string, datedOn: string,
       organizationId,
     );
     await tx.$executeRawUnsafe(`UPDATE "StaffLoan" SET "startMonth" = ${next(`"startMonth"`)} WHERE "organizationId" = $1`, organizationId);
+    // A contractor's PF or ESI challan is one per wage month, so it moves through a marked value too.
+    await tx.$executeRawUnsafe(`UPDATE "LabourChallan" SET "month" = '~' || "month" WHERE "organizationId" = $1`, organizationId);
+    await tx.$executeRawUnsafe(`UPDATE "LabourChallan" SET "month" = ${next(`substr("month", 2)`)} WHERE "organizationId" = $1`, organizationId);
     const years = Number(today.slice(0, 4)) - Number(datedOn.slice(0, 4));
     if (years) {
       await tx.$executeRawUnsafe(`UPDATE "LeaveOpening" SET "year" = "year" + 100000 WHERE "organizationId" = $1`, organizationId);

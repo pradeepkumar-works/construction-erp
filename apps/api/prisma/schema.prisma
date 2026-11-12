@@ -239,6 +239,21 @@ enum ExpenseCategory {
   OTHER
 }
 
+/// A contractor's standing labour-law papers (ARCHITECTURE "Contract labour compliance")
+enum LabourPaperKind {
+  CLRA_LICENCE
+  PF_CODE
+  ESI_CODE
+  WC_POLICY
+  BOCW_REGISTRATION
+}
+
+/// A contractor's monthly contribution challans
+enum LabourChallanKind {
+  PF
+  ESI
+}
+
 enum VendorKind {
   SUPPLIER
   HIRE_AGENCY
@@ -916,6 +931,8 @@ model Organization {
   imprests              Imprest[]
   imprestEntries        ImprestEntry[]
   complianceDocs        ComplianceDoc[]
+  labourPapers          LabourPaper[]
+  labourChallans        LabourChallan[]
   handovers             ProjectHandover[]
   defects               Defect[]
   closeoutItems         CloseoutItem[]
@@ -1447,6 +1464,9 @@ model User {
   imprestRequests         ImprestEntry[]             @relation("ImprestRequester")
   imprestDecisions        ImprestEntry[]             @relation("ImprestDecider")
   complianceDocs          ComplianceDoc[]
+  labourPapersAdded       LabourPaper[]              @relation("LabourPaperCreator")
+  labourChallansAdded     LabourChallan[]            @relation("LabourChallanCreator")
+  subBillLabourHolds      SubcontractBill[]          @relation("SubBillLabourHoldRelease")
   handoversRecorded       ProjectHandover[]
   omStaffRecorded         OmStaffMonth[]
   serviceLevelEntered     ServiceLevelDay[]
@@ -1676,6 +1696,7 @@ model Project {
   workerAttendance   WorkerAttendance[]
   imprests           Imprest[]
   complianceDocs     ComplianceDoc[]
+  labourPapers       LabourPaper[]
   handover           ProjectHandover?
   defects            Defect[]
   closeoutItems      CloseoutItem[]
@@ -1883,6 +1904,8 @@ model Vendor {
   tdsDeductions     TdsDeduction[]
   tdsCertificates   TdsCertificate[]
   sisterLinks       SisterLink[]
+  labourPapers      LabourPaper[]
+  labourChallans    LabourChallan[]
 
   @@unique([organizationId, name])
 }
@@ -2412,68 +2435,73 @@ model WorkOrderAmendmentLine {
 /// items) at the work order rates, GST, and the recoveries: retention, advance, TDS, material issued to them. Approved
 /// through the approval matrix (submission type SUBCONTRACT_BILL); paid in payables.
 model SubcontractBill {
-  id                    String           @id @default(uuid())
-  organizationId        String
-  organization          Organization     @relation(fields: [organizationId], references: [id])
-  projectId             String
-  project               Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  workOrderId           String
-  workOrder             WorkOrder        @relation(fields: [workOrderId], references: [id])
+  id                     String           @id @default(uuid())
+  organizationId         String
+  organization           Organization     @relation(fields: [organizationId], references: [id])
+  projectId              String
+  project                Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  workOrderId            String
+  workOrder              WorkOrder        @relation(fields: [workOrderId], references: [id])
   /// 1, 2, 3 ... per work order
-  billNo                Int
-  isFinal               Boolean          @default(false)
-  billDate              DateTime         @db.Date
+  billNo                 Int
+  isFinal                Boolean          @default(false)
+  billDate               DateTime         @db.Date
   /// Approved measurements and material issues up to this day, not taken by an earlier bill
-  measuredUpTo          DateTime         @db.Date
+  measuredUpTo           DateTime         @db.Date
   /// The subcontractor's own invoice number, when they give one
-  invoiceNo             String?
+  invoiceNo              String?
   /// Bill date + the work order's payment days (45 at most for micro and small enterprises)
-  dueDate               DateTime         @db.Date
-  grossPrevious         Decimal          @db.Decimal(18, 2)
-  grossAmount           Decimal          @db.Decimal(18, 2)
-  grossUpto             Decimal          @db.Decimal(18, 2)
-  gstRate               Decimal          @db.Decimal(5, 2)
-  gstAmount             Decimal          @db.Decimal(18, 2)
-  retentionPct          Decimal          @db.Decimal(5, 2)
-  advanceRecoveryPct    Decimal          @db.Decimal(5, 2)
-  tdsPct                Decimal          @db.Decimal(5, 2)
-  retentionAmount       Decimal          @db.Decimal(18, 2)
-  advanceRecoveryAmount Decimal          @db.Decimal(18, 2)
-  tdsAmount             Decimal          @db.Decimal(18, 2)
+  dueDate                DateTime         @db.Date
+  grossPrevious          Decimal          @db.Decimal(18, 2)
+  grossAmount            Decimal          @db.Decimal(18, 2)
+  grossUpto              Decimal          @db.Decimal(18, 2)
+  gstRate                Decimal          @db.Decimal(5, 2)
+  gstAmount              Decimal          @db.Decimal(18, 2)
+  retentionPct           Decimal          @db.Decimal(5, 2)
+  advanceRecoveryPct     Decimal          @db.Decimal(5, 2)
+  tdsPct                 Decimal          @db.Decimal(5, 2)
+  retentionAmount        Decimal          @db.Decimal(18, 2)
+  advanceRecoveryAmount  Decimal          @db.Decimal(18, 2)
+  tdsAmount              Decimal          @db.Decimal(18, 2)
   /// Material issued to them from stock, at the item's rate
-  materialRecovery      Decimal          @db.Decimal(18, 2)
+  materialRecovery       Decimal          @db.Decimal(18, 2)
   /// Material used beyond the norm and its wastage, recovered from the reconciliation
-  excessRecovery        Decimal          @default(0) @db.Decimal(18, 2)
+  excessRecovery         Decimal          @default(0) @db.Decimal(18, 2)
   /// Back-charges (the sum of its `charges`), or an older bill's single other recovery
-  otherDeduction        Decimal          @default(0) @db.Decimal(18, 2)
-  otherDeductionNote    String?
-  totalDeductions       Decimal          @db.Decimal(18, 2)
+  otherDeduction         Decimal          @default(0) @db.Decimal(18, 2)
+  otherDeductionNote     String?
+  totalDeductions        Decimal          @db.Decimal(18, 2)
   /// Retention held on earlier bills of the work order paid back on this one (ARCHITECTURE "Subcontracts", Retention release)
-  retentionReleased     Decimal          @default(0) @db.Decimal(18, 2)
+  retentionReleased      Decimal          @default(0) @db.Decimal(18, 2)
+  /// Paid although the contractor's labour papers are missing: when, by whom and why (ARCHITECTURE "Contract labour compliance")
+  labourHoldReleasedAt   DateTime?
+  labourHoldReleasedById String?
+  labourHoldReleasedBy   User?            @relation("SubBillLabourHoldRelease", fields: [labourHoldReleasedById], references: [id])
+  labourHoldNote         String?
   /// A bill that only pays back retention (after the final bill, at the end of the defects period): it takes no work
-  isRelease             Boolean          @default(false)
+  isRelease              Boolean          @default(false)
   /// gross + GST - deductions + retention released
-  netPayable            Decimal          @db.Decimal(18, 2)
+  netPayable             Decimal          @db.Decimal(18, 2)
   /// Debit notes against the bill that are not cancelled; what is payable drops by them
-  debitNoteAmount       Decimal          @default(0) @db.Decimal(18, 2)
+  debitNoteAmount        Decimal          @default(0) @db.Decimal(18, 2)
   /// Settled by payments so far (paid + deducted at payment), kept in step by payables
-  paidAmount            Decimal          @default(0) @db.Decimal(18, 2)
+  paidAmount             Decimal          @default(0) @db.Decimal(18, 2)
   /// The day the last payment settled it in full; null while anything is outstanding
-  paidDate              DateTime?        @db.Date
-  remarks               String?
-  status                SubmissionStatus @default(DRAFT)
-  submittedById         String
-  submittedBy           User             @relation("SubBillSubmitter", fields: [submittedById], references: [id])
-  submittedAt           DateTime?
-  reviewedById          String?
-  reviewedBy            User?            @relation("SubBillReviewer", fields: [reviewedById], references: [id])
-  reviewedAt            DateTime?
-  reviewNote            String?
+  paidDate               DateTime?        @db.Date
+  remarks                String?
+  status                 SubmissionStatus @default(DRAFT)
+  submittedById          String
+  submittedBy            User             @relation("SubBillSubmitter", fields: [submittedById], references: [id])
+  submittedAt            DateTime?
+  reviewedById           String?
+  reviewedBy             User?            @relation("SubBillReviewer", fields: [reviewedById], references: [id])
+  reviewedAt             DateTime?
+  reviewNote             String?
   /// Set once the voucher is in a Tally export; undoing the export clears it
-  tallyExportId         String?
-  tallyExport           TallyExport?     @relation(fields: [tallyExportId], references: [id], onDelete: SetNull)
-  createdAt             DateTime         @default(now())
-  updatedAt             DateTime         @updatedAt
+  tallyExportId          String?
+  tallyExport            TallyExport?     @relation(fields: [tallyExportId], references: [id], onDelete: SetNull)
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
 
   lines            SubcontractBillLine[]
   materials        SubcontractBillMaterial[]
@@ -4919,6 +4947,12 @@ model Attachment {
   /// A material or sample approval request's catalogue, test certificates and photos
   materialApprovalId String?
   materialApproval   MaterialApproval?  @relation(fields: [materialApprovalId], references: [id], onDelete: Cascade)
+  /// A contractor's labour licence, code, policy or registration
+  labourPaperId      String?
+  labourPaper        LabourPaper?       @relation(fields: [labourPaperId], references: [id], onDelete: Cascade)
+  /// A contractor's PF or ESI challan
+  labourChallanId    String?
+  labourChallan      LabourChallan?     @relation(fields: [labourChallanId], references: [id], onDelete: Cascade)
   /// When the PDF's text was read into DocumentPage (Ask the contract); null = not yet
   textIndexedAt      DateTime?
   /// Pages with text found; 0 for a scanned PDF or one that could not be read
@@ -10781,4 +10815,61 @@ model GstDocument {
   updatedAt      DateTime          @updatedAt
 
   @@index([organizationId, sourceKind, sourceId])
+}
+
+/// A contractor's standing labour-law paper (ARCHITECTURE "Contract labour compliance"): a labour licence for one site,
+/// a PF or ESI code, a workmen's compensation policy or a BOCW registration. Rules in `@erp/shared/labour-compliance.ts`.
+model LabourPaper {
+  id             String          @id @default(uuid())
+  organizationId String
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  vendorId       String
+  vendor         Vendor          @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  kind           LabourPaperKind
+  /// The site a labour licence is for; null for the papers that hold everywhere
+  projectId      String?
+  project        Project?        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  number         String
+  validFrom      DateTime?       @db.Date
+  validTo        DateTime?       @db.Date
+  /// Most workers a licence allows or a policy covers
+  workers        Int?
+  note           String?
+  createdById    String
+  createdBy      User            @relation("LabourPaperCreator", fields: [createdById], references: [id])
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  attachments Attachment[]
+
+  @@index([organizationId, vendorId])
+  @@index([projectId])
+}
+
+/// A contractor's PF or ESI challan for one wage month, due by the 15th of the month after.
+model LabourChallan {
+  id             String            @id @default(uuid())
+  organizationId String
+  organization   Organization      @relation(fields: [organizationId], references: [id])
+  vendorId       String
+  vendor         Vendor            @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  kind           LabourChallanKind
+  /// Wage month, YYYY-MM
+  month          String
+  amount         Decimal           @db.Decimal(18, 2)
+  /// Members or insured persons on the challan
+  workers        Int?
+  paidOn         DateTime          @db.Date
+  /// Challan number or TRRN
+  reference      String
+  note           String?
+  createdById    String
+  createdBy      User              @relation("LabourChallanCreator", fields: [createdById], references: [id])
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  attachments Attachment[]
+
+  @@unique([organizationId, vendorId, kind, month])
+  @@index([organizationId, month])
 }

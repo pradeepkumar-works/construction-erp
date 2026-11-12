@@ -102,6 +102,7 @@ import { AttendanceModule } from './attendance/attendance.module';
 import { WorkersModule } from './workers/workers.module';
 import { ImprestModule } from './imprest/imprest.module';
 import { ComplianceModule } from './compliance/compliance.module';
+import { LabourComplianceModule } from './labour-compliance/labour-compliance.module';
 import { HandoverModule } from './handover/handover.module';
 import { MaterialRequestsModule } from './material-requests/material-requests.module';
 import { EnquiriesModule } from './enquiries/enquiries.module';
@@ -132,6 +133,7 @@ import { VitalsController } from './vitals.controller';
     WorkersModule,
     ImprestModule,
     ComplianceModule,
+    LabourComplianceModule,
     HandoverModule,
     MaterialRequestsModule,
     EnquiriesModule,

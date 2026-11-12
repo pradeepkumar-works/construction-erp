@@ -3,6 +3,7 @@ import type { PoBudgetCheckDto } from './po-budget';
 import type { BudgetOpenVersionDto, BudgetVersionDto } from './budget-versions';
 import type { MachineEngineDto } from './telematics';
 import type { VendorRecordDto } from './vendor-score';
+import type { LabourHoldDto } from './labour-compliance';
 import type { LetterAction, LetterGate, LetterMarkDto, LetterMode, LetterPriority, LetterStatus } from './correspondence';
 import type { NavSettingsDto } from './nav-menu';
 import type { DprLineDto } from './dpr-lines';
@@ -2516,6 +2517,8 @@ export interface SubcontractBillDto extends SubmissionBase {
   isRelease: boolean;
   /** Retention held on the work order before this bill, the most it can release; only on GET /subcontract-bills/:id */
   retentionHeldBefore?: string;
+  /** Labour papers missing as of the bill's date, and the hold's release (ARCHITECTURE "Contract labour compliance"); on one bill only */
+  labourHold?: LabourHoldDto;
   /** gross + GST − deductions + retention released */
   netPayable: string;
   /** Debit notes against it that are not cancelled */

@@ -372,8 +372,9 @@ const ANOMALIES: { kind: 'vendor-bill' | 'expense' | 'subcontract-bill'; find: s
   { kind: 'expense', find: 'Hydraulic hose for grader GRD-01', expect: ['duplicate:'] },
   { kind: 'expense', find: 'JCB hire for trench backfilling, 1 day', expect: ['cash:'] },
   { kind: 'expense', find: 'Waterproofing compound, 2 buckets', expect: ['gstin:'] },
-  // Attendance cross-check: 9 more helper man-days than the head count.
-  { kind: 'subcontract-bill', find: 'SJC/LAB/26/014', expect: ['mandays:'] },
+  // Attendance cross-check: 9 more helper man-days than the head count. Labour compliance: the contractor has no
+  // labour licence for the site (seed-labour-compliance.ts), so the bill is held.
+  { kind: 'subcontract-bill', find: 'SJC/LAB/26/014', expect: ['mandays:', 'labour:'] },
 ];
 
 async function runDemo(): Promise<number> {

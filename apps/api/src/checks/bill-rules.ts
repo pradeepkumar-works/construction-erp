@@ -266,6 +266,11 @@ export interface SubcontractBillFacts {
    * absent when the bill has none. Counts only; workers are never named on a bill.
    */
   manDays?: { lineId: string; no: number; description: string; billed: number; supported: number | null; excess: number; excessInr: number; flagged: boolean; sources: string; span: string; link: Link }[];
+  /**
+   * The contractor's labour papers as of the bill's date (`LabourComplianceService.forBill`, ARCHITECTURE "Contract labour
+   * compliance"): what is missing, and who released the payment hold; absent when not loaded.
+   */
+  labour?: { problems: { key: string; text: string }[]; releasedByName: string | null; note: string | null };
 }
 
 export function subcontractBillChecks(f: SubcontractBillFacts): Check[] {
@@ -323,8 +328,19 @@ export function subcontractBillChecks(f: SubcontractBillFacts): Check[] {
       ),
     );
 
+  const link = { label: 'Labour compliance', href: '/labour-compliance' };
+  const labour = (f.labour?.problems ?? []).map((p) =>
+    flag(
+      `labour:${p.key}`,
+      p.text,
+      f.labour?.releasedByName ? `Payment released by ${f.labour.releasedByName}: ${f.labour.note ?? ''}` : 'Payment is held until it is recorded in Labour compliance or management releases the hold.',
+      [link],
+    ),
+  );
+
   return [
     ...(f.invoiceNo ? rule('duplicates', 'No other bill for this invoice', duplicates) : []),
+    ...(f.labour ? rule('labour', 'Labour papers and challans in order', labour) : []),
     ...rule('wo-qty', 'Quantities within the work order', pastOrder),
     ...(f.manDays?.length ? rule('mandays', "Man-days within the site's head count and roll call", days) : []),
     ...(f.lines.some((l) => l.measuredToDate !== null) ? rule('measured', 'Quantities match the measurement book', measured) : []),

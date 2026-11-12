@@ -406,6 +406,15 @@ export const APPROVED_MAKE_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_M
 export const canManageApprovedMakes = (role: RoleKey) => APPROVED_MAKE_ROLES.includes(role);
 /** Prepare subcontractor bills and see the margin per BOQ item: the billing roles. */
 export const canPrepareSubcontractBill = (role: RoleKey) => BILLING_ROLES.includes(role);
+/**
+ * Contract labour compliance (ARCHITECTURE "Contract labour compliance"): those who bill subcontractors and HR keep the
+ * contractors' licences, codes, policies and challans; site and store staff who see work orders read them.
+ */
+export const LABOUR_COMPLIANCE_ROLES: RoleKey[] = [...BILLING_ROLES, 'HR_MANAGER'];
+export const canKeepLabourCompliance = (role: RoleKey) => LABOUR_COMPLIANCE_ROLES.includes(role);
+export const canViewLabourCompliance = (role: RoleKey) => canKeepLabourCompliance(role) || role === 'SITE_ENGINEER' || role === 'PROCUREMENT_MANAGER';
+/** Pay a subcontractor's bill although their labour papers are missing, with a reason: admin and management only. */
+export const canReleaseLabourHold = (role: RoleKey) => role === 'ADMIN' || role === 'MANAGEMENT';
 /** Add and edit vendors: admin, management, project managers, procurement, accounts and stores. */
 export const VENDOR_EDITOR_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'PROCUREMENT_MANAGER', 'ACCOUNTS_MANAGER', 'STORE_MANAGER'];
 export const canEditVendors = (role: RoleKey) => VENDOR_EDITOR_ROLES.includes(role);
