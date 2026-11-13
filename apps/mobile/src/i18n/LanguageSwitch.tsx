@@ -40,7 +40,7 @@ export function LanguageSwitch() {
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', borderWidth: 1.5, borderColor: colors.borderStrong, borderRadius: radius.pill, padding: 2, alignSelf: 'flex-start' },
   option: { minHeight: touch.min - 4, paddingHorizontal: spacing.md, justifyContent: 'center', borderRadius: radius.pill },
-  active: { backgroundColor: colors.primary },
+  active: { backgroundColor: colors.action },
   text: { fontSize: fontSize.secondary, fontWeight: '600', color: colors.text },
-  activeText: { color: colors.textOnPrimary },
+  activeText: { color: colors.onAction },
 });

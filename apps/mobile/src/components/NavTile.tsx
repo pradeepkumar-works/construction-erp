@@ -1,8 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { NavNode } from '@erp/shared';
-import { familyOf } from '../home/menu';
-import { colors, familyTint, fontSize, maxFontScale, spacing, typography } from '../theme';
+import { colors, fontSize, maxFontScale, spacing, tileInk, typography } from '../theme';
 import { useT } from '../i18n/LanguageContext';
 import { NavIcon } from './NavIcon';
 import { Touchable } from './Touchable';
@@ -19,7 +18,7 @@ function useTileLabel() {
 export function NavRow({ node, badge, web, onOpen, onMenu }: { node: NavNode; badge?: number; web: boolean; onOpen: () => void; onMenu: () => void }) {
   const t = useT();
   const label = useTileLabel();
-  const tint = familyTint[familyOf(node)];
+  const tint = tileInk;
   return (
     <Touchable
       accessibilityRole={web ? 'link' : 'button'}
@@ -65,8 +64,8 @@ export function NavRow({ node, badge, web, onOpen, onMenu }: { node: NavNode; ba
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  badge: { position: 'absolute', top: -6, right: -12, minWidth: 22, height: 22, paddingHorizontal: 6, borderRadius: 11, backgroundColor: colors.danger, alignItems: 'center', justifyContent: 'center' },
-  badgeText: { color: colors.textOnPrimary, fontSize: fontSize.small, fontWeight: '700' },
+  badge: { position: 'absolute', top: -6, right: -12, minWidth: 22, height: 22, paddingHorizontal: 6, borderRadius: 11, backgroundColor: colors.countFill, alignItems: 'center', justifyContent: 'center' },
+  badgeText: { color: colors.onCount, fontSize: fontSize.small, fontWeight: '700' },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 64, paddingVertical: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
   rowChip: { width: 36, height: 36, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
   rowBadge: { position: 'relative', top: 0, right: 0 },

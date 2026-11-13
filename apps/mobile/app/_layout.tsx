@@ -9,9 +9,9 @@ import { NotificationsProvider } from '../src/notifications/NotificationsContext
 import { OfflineProvider } from '../src/offline';
 import { LanguageProvider, useT } from '../src/i18n/LanguageContext';
 import { Loading, SnackbarProvider } from '../src/components';
-import { useFonts, Archivo_700Bold, Archivo_800ExtraBold } from '@expo-google-fonts/archivo';
+import { useFonts, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 import { PRODUCT_NAME } from '@erp/shared';
-import { colors, scheme } from '../src/theme';
+import { colors, fonts, scheme } from '../src/theme';
 
 /** Navigation chrome (cards, headers, tab bar defaults) in the palette src/theme.ts picked at launch. */
 const navigationTheme = {
@@ -25,7 +25,7 @@ SystemUI.setBackgroundColorAsync(colors.bg).catch(() => undefined);
 function RootNavigator() {
   const { user, ready } = useAuth();
   // If the fonts fail to load the app carries on with the system font.
-  const [fontsLoaded, fontError] = useFonts({ Archivo_700Bold, Archivo_800ExtraBold });
+  const [fontsLoaded, fontError] = useFonts({ Inter_600SemiBold, Inter_700Bold });
   const t = useT();
   if (!ready || (!fontsLoaded && !fontError)) return <Loading text={t('Starting {product}…', { product: PRODUCT_NAME })} />;
   const signedIn = !!user;
@@ -34,7 +34,7 @@ function RootNavigator() {
       screenOptions={{
         headerStyle: { backgroundColor: colors.surface },
         headerTintColor: colors.text,
-        headerTitleStyle: { fontFamily: 'Archivo_700Bold' },
+        headerTitleStyle: { fontFamily: fonts.display },
         headerBackButtonDisplayMode: 'minimal',
         contentStyle: { backgroundColor: colors.bg },
       }}

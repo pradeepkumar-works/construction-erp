@@ -1,5 +1,5 @@
 import type { RiskLevel, RiskStatus } from '@erp/shared';
-import { colors, toneIcon, type Tone } from '../theme';
+import { colors, toneIcon, toneOf, type Tone } from '../theme';
 
 /** Each level and status with a shape as well as a colour. */
 export const LEVEL_TONE: Record<RiskLevel, Tone> = {
@@ -9,7 +9,7 @@ export const LEVEL_TONE: Record<RiskLevel, Tone> = {
 };
 
 export const RISK_STATUS_TONE: Record<RiskStatus, Tone> = {
-  OPEN: { fg: colors.danger, bg: colors.dangerSoft, icon: toneIcon.alert },
-  MONITORING: { fg: colors.primary, bg: colors.primarySoft, icon: toneIcon.watch },
-  CLOSED: { fg: colors.neutral, bg: colors.neutralSoft, icon: toneIcon.closed },
+  OPEN: toneOf('risk', 'OPEN', toneIcon.alert),
+  MONITORING: toneOf('risk', 'MONITORING', toneIcon.watch),
+  CLOSED: toneOf('risk', 'CLOSED'),
 };

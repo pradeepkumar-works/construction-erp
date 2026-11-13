@@ -26,22 +26,22 @@ import type { TranslateVars } from '../src/i18n/translate';
 import { Button, Card, Chips, DatePicker, EmptyState, ErrorBanner, ErrorState, Input, Loading, Pill, ReasonSheet, Screen, SectionTitle, useSnackbar } from '../src/components';
 import { DraftNotice, useFormDraft, useLeaveGuard } from '../src/forms/draft';
 import { ErrorSummary, useErrorSummary } from '../src/forms/errors';
-import { colors, fontSize, maxFontScale, spacing, type Tone, toneIcon, typography } from '../src/theme';
+import { colors, fontSize, maxFontScale, spacing, type Tone, toneIcon, toneOf, typography } from '../src/theme';
 import { formatDate, formatTime, isIsoDate, today } from '../src/utils/format';
 import { metres } from '../src/utils/location';
 import { useFaceMark } from '../src/home/faceMark';
 
 const STATUS_TONE: Record<LeaveStatus, Tone> = {
-  PENDING: { fg: colors.warning, bg: colors.warningSoft, icon: toneIcon.waiting },
-  APPROVED: { fg: colors.success, bg: colors.successSoft, icon: toneIcon.done },
-  REJECTED: { fg: colors.danger, bg: colors.dangerSoft, icon: toneIcon.failed },
-  CANCELLED: { fg: colors.neutral, bg: colors.neutralSoft, icon: 'remove-circle-outline' },
+  PENDING: toneOf('leave', 'PENDING'),
+  APPROVED: toneOf('leave', 'APPROVED'),
+  REJECTED: toneOf('leave', 'REJECTED'),
+  CANCELLED: toneOf('leave', 'CANCELLED', 'remove-circle-outline'),
 };
 
 const OVERTIME_TONE: Record<OvertimeStatus, Tone> = {
-  PENDING: { fg: colors.warning, bg: colors.warningSoft, icon: toneIcon.waiting },
-  APPROVED: { fg: colors.success, bg: colors.successSoft, icon: toneIcon.done },
-  REJECTED: { fg: colors.danger, bg: colors.dangerSoft, icon: toneIcon.failed },
+  PENDING: toneOf('overtime', 'PENDING'),
+  APPROVED: toneOf('overtime', 'APPROVED'),
+  REJECTED: toneOf('overtime', 'REJECTED'),
 };
 
 const clock = (iso: string | null) => (iso ? formatTime(iso) : '-');

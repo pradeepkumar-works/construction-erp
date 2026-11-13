@@ -8,15 +8,15 @@ import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
 import { AttachmentGallery, Button, Card, Chips, ErrorBanner, ErrorState, Input, KeyValue, Loading, PhotoPicker, Screen, SubmissionHeader, SubmitterActions, type LocalPhoto } from '../../src/components';
 import { attachmentIds, photosFailed, photosQueued, photosUploading } from '../../src/forms/common';
-import { colors, fontSize, maxFontScale, radius, spacing, typography } from '../../src/theme';
+import { colors, fontSize, maxFontScale, radius, spacing, toneOf, typography } from '../../src/theme';
 import { formatDate } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 import { useFieldChain } from '../../src/forms/keyboard';
 
 const RESULT_TONE: Record<InspectionResult, { fg: string; bg: string }> = {
-  PASS: { fg: colors.success, bg: colors.successSoft },
-  FAIL: { fg: colors.danger, bg: colors.dangerSoft },
-  NA: { fg: colors.neutral, bg: colors.neutralSoft },
+  PASS: toneOf('inspectionResult', 'PASS'),
+  FAIL: toneOf('inspectionResult', 'FAIL'),
+  NA: toneOf('inspectionResult', 'NA'),
 };
 
 /** English labels; shown through t(). */

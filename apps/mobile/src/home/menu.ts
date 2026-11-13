@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { isGuest, isSupplier, menuWaiting, navMenuFor, navNode, navSettingsOf, navTarget, type AuthUser, type NavFamily, type NavMenuModule, type NavNode } from '@erp/shared';
+import { isGuest, isSupplier, menuWaiting, navMenuFor, navNode, navSettingsOf, navTarget, type AuthUser, type NavMenuModule, type NavNode } from '@erp/shared';
 import type { Launcher } from '../launcher/useLauncher';
 
 /** One icon of Home's menu: a page of the tree (My work, a pin) or a module of the company's menu. */
@@ -28,11 +28,4 @@ export function useHomeMenu(user: AuthUser | null, launcher: Pick<Launcher, 'pin
     for (const m of menu) items.push({ kind: 'module', key: m.key, module: m, badge: waiting[m.key] });
     return items;
   }, [user, pins, badges, approvals]);
-}
-
-/** A node's colour family: its own, else its module's. */
-export function familyOf(node: NavNode): NavFamily {
-  let n: NavNode | undefined = navTarget(node);
-  while (n && !n.family) n = n.parent ? navNode(n.parent) : undefined;
-  return n?.family ?? 'admin';
 }

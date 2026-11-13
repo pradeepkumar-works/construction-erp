@@ -25,7 +25,7 @@ import { canSaveOffline, localUri, openPdf, savedFileIds } from '../../src/offli
 import { Button, Card, EmptyState, ErrorBanner, ErrorState, Input, Loading, Pill, Screen, Touchable, slopFor, useSnackbar } from '../../src/components';
 import { BottomSheet, SheetActions, type SheetAction } from '../../src/components/BottomSheet';
 import { absoluteUrl } from '../../src/config';
-import { colors, fontSize, markupInk, maxFontScale, radius, spacing, toneIcon, touch, typography } from '../../src/theme';
+import { colors, fontSize, markupInk, maxFontScale, radius, spacing, toneIcon, toneOf, touch, typography } from '../../src/theme';
 import { formatDate } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 
@@ -178,7 +178,7 @@ export default function DrawingScreen() {
         {rev ? (
           <View style={styles.pills}>
             <Pill text={t('Rev {rev}', { rev: rev.revision })} fg={colors.text} bg={colors.neutralSoft} />
-            <Pill text={t(REVISION_STATUS_LABELS[rev.status])} fg={buildable ? colors.success : colors.warning} bg={buildable ? colors.successSoft : colors.warningSoft} icon={buildable ? toneIcon.done : toneIcon.warning} />
+            <Pill text={t(REVISION_STATUS_LABELS[rev.status])} {...toneOf('revision', rev.status, buildable ? toneIcon.done : toneIcon.warning)} />
           </View>
         ) : null}
         {rev && !buildable ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.warn}>{t(rev.status === 'AS_BUILT' ? 'As-built record' : 'Not for construction')}</Text> : null}

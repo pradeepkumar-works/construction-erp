@@ -9,7 +9,7 @@ import { Button } from '../components/Button';
 import { Skeleton } from '../components/Skeleton';
 import { Touchable } from '../components/Touchable';
 import { useT } from '../i18n/LanguageContext';
-import { colors, familyTint, fonts, fontSize, maxFontScale, radius, spacing, type IconName } from '../theme';
+import { colors, fonts, fontSize, maxFontScale, radius, spacing, type IconName } from '../theme';
 import { formatDayMonth, formatMonth, formatTime, formatWeekdayDayMonth, today } from '../utils/format';
 import { useFaceMark } from './faceMark';
 
@@ -173,7 +173,7 @@ export function DayCard({ refreshKey }: { refreshKey?: number }) {
 function HrTile({ icon, label, value, urgent, first, onPress }: { icon: IconName; label: string; value: string; urgent?: boolean; first?: boolean; onPress: () => void }) {
   return (
     <Touchable onPress={onPress} accessibilityRole="button" accessibilityLabel={`${label}, ${value}`} style={[styles.hrTile, first && styles.hrFirst]}>
-      <Ionicons name={icon} size={20} color={familyTint.people.fg} />
+      <Ionicons name={icon} size={20} color={colors.textMuted} />
       <Text style={styles.hrLabel} numberOfLines={1} maxFontSizeMultiplier={1.3}>
         {label}
       </Text>

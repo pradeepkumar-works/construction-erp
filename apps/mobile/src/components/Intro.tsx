@@ -109,6 +109,6 @@ const styles = StyleSheet.create({
   text: { ...typography.body, color: colors.textMuted, marginTop: spacing.sm, textAlign: 'center', lineHeight: 22, maxWidth: 360 },
   dots: { flexDirection: 'row', justifyContent: 'center', gap: spacing.sm, marginVertical: spacing.lg },
   dot: { width: 8, height: 8, borderRadius: radius.pill, backgroundColor: colors.border },
-  dotOn: { width: 22, backgroundColor: colors.primary },
+  dotOn: { width: 22, backgroundColor: colors.action },
   footer: { paddingHorizontal: spacing.xl, paddingBottom: spacing.lg },
 });
