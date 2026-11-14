@@ -29,7 +29,8 @@ else
     DATABASE_URL="$OWNER_URL" npx tsx prisma/seed-town.ts
   elif [ "$SEED_MODULES_ON_BUILD" = "true" ]; then
     echo "SEED_MODULES_ON_BUILD=true: adding what each module's demo data is missing (idempotent, users and passwords kept)"
-    DATABASE_URL="$OWNER_URL" npx tsx prisma/seed.ts --modules
+    # Demo data only: a failed top-up held every API deploy from #355 to #360 while the web went ahead, so it warns instead.
+    DATABASE_URL="$OWNER_URL" npx tsx prisma/seed.ts --modules || echo "WARNING: the module seed failed (above); deploying the API without it"
   elif [ "$SEED_GROUP_ON_BUILD" = "true" ]; then
     echo "SEED_GROUP_ON_BUILD=true: adding only the demo group's companies (idempotent)"
     DATABASE_URL="$OWNER_URL" npx tsx prisma/seed-companies.ts
