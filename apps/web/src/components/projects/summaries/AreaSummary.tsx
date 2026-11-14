@@ -4,7 +4,6 @@ import React from 'react';
 import Link from 'next/link';
 import { Flex, Skeleton, Typography } from 'antd';
 import {
-  NAV_TREE,
   SUBMISSION_TYPE_PLURAL_LABELS,
   projectTabHref,
   submissionListHref,
@@ -140,7 +139,7 @@ function Finish({ finish }: { finish: NonNullable<ProjectAreaDto['finish']> }) {
   );
 }
 
-/** The group's other tabs, each with its line from the navigation tree. */
+/** The group's other tabs, by name. */
 function Pages({ projectId, area }: { projectId: string; area: ProjectArea }) {
   const tabs = useGroupTabs();
   if (!tabs.length) return null;
@@ -148,17 +147,13 @@ function Pages({ projectId, area }: { projectId: string; area: ProjectArea }) {
     <Section title={`${AREA_LABELS[area]} pages`}>
       <nav aria-label={`${AREA_LABELS[area]} pages`}>
         <ul style={{ ...list, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 16rem), 1fr))', columnGap: tk.space[6] }}>
-          {tabs.map((t) => {
-            const line = NAV_TREE.find((n) => n.projectTab === t.key && !n.projectQuery)?.description;
-            return (
-              <li key={t.key}>
-                <Link href={projectTabHref(projectId, t.key)} className="text-link" style={{ ...row, ...rowLink }}>
-                  <span style={name}>{t.label}</span>
-                  {line ? <span style={{ ...quiet, display: 'block' }}>{line}</span> : null}
-                </Link>
-              </li>
-            );
-          })}
+          {tabs.map((t) => (
+            <li key={t.key}>
+              <Link href={projectTabHref(projectId, t.key)} className="text-link" style={{ ...row, ...rowLink }}>
+                <span style={name}>{t.label}</span>
+              </Link>
+            </li>
+          ))}
         </ul>
       </nav>
     </Section>

@@ -258,7 +258,7 @@ export default function GroupPage() {
     <div className="page-container">
       <PageHeader
         title="Group companies"
-        subtitle={group ? <span translate="no">{group.name}</span> : 'Run a parent company and its child companies from one sign-in.'}
+        subtitle={group ? <span translate="no">{group.name}</span> : undefined}
         extra={newButton}
       />
       {!allowed ? (

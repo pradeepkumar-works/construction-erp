@@ -78,9 +78,6 @@ export function HindranceSuggestions({ projectId, onRecorded }: { projectId?: st
       <Typography.Title level={2} id="hindrances-title" style={{ fontSize: tk.type.body.fontSize, margin: `0 0 ${tk.space[1]}` }}>
         {data.length === 1 ? '1 hindrance from the DPRs to record' : `${data.length} hindrances from the DPRs to record`}
       </Typography.Title>
-      <Typography.Paragraph type="secondary" style={{ marginBottom: tk.space[2] }}>
-        Read from what the site wrote under issues. Recording one starts its notice clock when the client or a third party is answerable.
-      </Typography.Paragraph>
       {shown.map((s) => (
         <HindranceRow key={s.id} s={s} onRecorded={onRecorded} showProject={!projectId} />
       ))}

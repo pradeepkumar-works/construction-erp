@@ -41,7 +41,6 @@ const tile = (m: NavMenuModule, waiting: Record<string, TileBadge>, group?: stri
   node: navNode(m.key),
   label: m.label,
   icon: m.icon,
-  description: m.description,
   href: moduleScreenHref(m.key),
   badge: waiting[m.key],
   group: group ?? null,

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Checkbox, Descriptions, Form, Input, InputNumber, Select, Typography } from 'antd';
+import { App, Button, Checkbox, Descriptions, Form, Input, InputNumber, Select } from 'antd';
 import { tk } from '@/ds';
 import { EditOutlined } from '@/components/common/icons';
 import type { LeaveYearStart, PaidDaysBasis, PayrollSettingsDto } from '@erp/shared';
@@ -167,16 +167,13 @@ export function PayrollSettings() {
   if (error || !s) return <QueryError error={error} onRetry={() => refetch()} />;
   return (
     <div style={{ padding: tk.space[4], maxWidth: 960 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: tk.space[3], flexWrap: 'wrap', marginBottom: tk.space[3] }}>
-        <Typography.Paragraph type="secondary" style={{ margin: 0, maxWidth: 640 }}>
-          Every run uses these when it is prepared or worked out again. Runs already approved keep what they paid.
-        </Typography.Paragraph>
-        {admin && (
+      {admin && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: tk.space[3] }}>
           <Button icon={<EditOutlined />} onClick={() => setEditing(true)}>
             Change settings
           </Button>
-        )}
-      </div>
+        </div>
+      )}
       <Descriptions size="small" bordered column={{ xs: 1, sm: 2 }}>
         <Descriptions.Item label="PF">
           {pct(s.pfEmployeePct)} employee, {pct(s.pfEmployerPct)} company ({pct(s.epsPct)} to pension)

@@ -28,7 +28,7 @@ export default function SupplierHomePage() {
     <div className="page-container">
       <PageHeader
         title="Home"
-        subtitle={data ? <span translate="no">{`${data.vendor.name} with ${data.organizationName}`}</span> : 'Your orders, invoices and payments'}
+        subtitle={data ? <span translate="no">{`${data.vendor.name} with ${data.organizationName}`}</span> : undefined}
       />
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {isLoading ? <PageSkeleton header={false} shape="home" /> : null}

@@ -11,6 +11,7 @@ import { formatDate } from '@/lib/format';
 import { AppTag } from '@/components/common/AppTag';
 import { QueryError } from '@/components/common/QueryState';
 import { Figures } from '@/components/figures';
+import { TitleHelp } from '@/components/common/Help';
 import s from './DepartmentHome.module.css';
 
 function Stage({ pipeline, row }: { pipeline: DepartmentPipelineDto; row: PipelineRowDto }) {
@@ -42,16 +43,13 @@ function Pipeline({ p }: { p: DepartmentPipelineDto }) {
   return (
     <Card
       size="small"
-      title={p.title}
+      title={<TitleHelp help={p.note}>{p.title}</TitleHelp>}
       extra={
         <Link href={p.href} className="text-link">
           Open the list
         </Link>
       }
     >
-      <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
-        {p.note}
-      </Typography.Paragraph>
       <ol className={s.stages} aria-label={`${p.title} by stage`}>
         {p.stages.map((st) => (
           <li key={st.key} className={s.stage}>

@@ -136,7 +136,7 @@ export function LookaheadPanel({ projectId }: { projectId: string }) {
         <Statistic title="Past planned finish" value={data.overdue.length} styles={data.overdue.length ? { content: { fontSize: tk.type.subhead.fontSize, color: tk.color.tone.danger.fg } } : big} />
       </div>
       <Typography.Paragraph type="secondary" style={{ marginBottom: tk.space[2] }}>
-        {`The three weeks from Monday ${formatDate(data.weeks[0]?.from)}. An activity is ready when what it waits on has started or finished as its links need; links are set on the Schedule tab.`}
+        {`The three weeks from Monday ${formatDate(data.weeks[0]?.from)}.`}
       </Typography.Paragraph>
       <Table<Row>
         className="lookahead-table"

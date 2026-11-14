@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useId, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button, Card, Flex, Typography } from 'antd';
@@ -30,28 +30,19 @@ const PROJECTS_DEPARTMENT = 'project-management';
 /** HR and payroll's screen is the HR dashboard (head count, joining documents, who joins and leaves), as People's is. */
 const HR_DEPARTMENT = 'hr-payroll';
 
-/** One page of a sub-module: its icon in ink, its name, what waits there (with its word, in full), and the line on what it is for.
- *  A project tab with no project chosen in the header asks for the project. */
+/** One page of a sub-module: its icon in ink, its name and what waits there (with its word, in full). A project tab with no
+ *  project chosen in the header asks for the project. */
 function PageRow({ node, badge, projectId, onPick }: { node: NavNode; badge?: TileBadge; projectId: string | undefined; onPick: (n: NavNode) => void }) {
   const to = navDestination(node);
   const href = !to ? null : to.kind === 'page' ? to.href : projectId ? projectTabHref(projectId, to.tab, to.query) : null;
-  const descId = useId();
-  // The name says what waits there; the line under it describes it, as a Home tile does.
   const waiting = badge ? `${badge.count.toLocaleString('en-IN')} ${badge.word}` : null;
-  const a11y = { 'aria-label': waiting ? `${node.label}, ${waiting}` : undefined, 'aria-describedby': waiting && node.description ? descId : undefined };
+  const a11y = { 'aria-label': waiting ? `${node.label}, ${waiting}` : undefined };
   const body = (
     <>
       <span className={s.chip} aria-hidden>
         <TreeIcon name={node.icon} />
       </span>
-      <span className={s.text}>
-        <span className={s.label}>{node.label}</span>
-        {node.description && (
-          <span id={descId} className={s.desc}>
-            {node.description}
-          </span>
-        )}
-      </span>
+      <span className={s.label}>{node.label}</span>
       {waiting && (
         <span className={badge?.info ? s.count : s.badge} translate="no" aria-hidden>
           {waiting}
