@@ -19,7 +19,6 @@ export interface TileEntry {
   node?: NavNode;
   label?: string;
   icon?: string;
-  description?: string;
   /** Where it goes, for a tile that is not a node. */
   href?: string;
   /** What waits on the user there, said with its word ("53 to approve"), in full; the tile's name says it too. */
@@ -52,18 +51,16 @@ export const nodeBadge = (badges: LauncherBadgesDto | undefined, id: string): Ti
 /** A tile's menu (Pin to Home, Unpin, Move left…): drawn as ⋮ on the tile, and opened by right-click, a long press or Shift F10. */
 export type TileMenu = (entry: TileEntry, index: number) => MenuProps['items'];
 
-/** One tile: the icon in ink, the name, what waits there and a line on what it is for; the whole tile a link (or a button
- *  that asks for the project, for a project tab with no project chosen in the header). */
+/** One tile: the icon in ink, the name and what waits there; the whole tile a link (or a button that asks for the project,
+ *  for a project tab with no project chosen in the header). What a page is for is said in Search and Discover, not here. */
 function Tile({ entry, tabIndex, onFocus, onKeyDown, onPickProject }: { entry: TileEntry; tabIndex: number; onFocus: () => void; onKeyDown: (e: React.KeyboardEvent) => void; onPickProject: (node: NavNode) => void }) {
   const [projectId] = useProjectScope();
   const { node } = entry;
   const to = node ? navDestination(node) : null;
   const label = entry.label ?? node?.label ?? '';
-  const description = entry.description ?? node?.description;
-  const descId = useId();
   const tagId = useId();
-  // The name is the label (and what waits); the mark and the line under it describe it, so a tile reads like its sidebar link.
-  const describedBy = [entry.tag && tagId, description && descId].filter(Boolean).join(' ') || undefined;
+  // The name is the label (and what waits); a Discover mark describes it, so a tile reads like its sidebar link.
+  const describedBy = entry.tag ? tagId : undefined;
   const waiting = entry.badge?.count ? `${entry.badge.count.toLocaleString('en-IN')} ${entry.badge.word}` : null;
   const a11y = { 'aria-label': waiting ? `${label}, ${waiting}` : label, 'aria-describedby': describedBy };
   const className = entry.locked ? `${s.tile} ${s.locked}` : s.tile;
@@ -81,11 +78,6 @@ function Tile({ entry, tabIndex, onFocus, onKeyDown, onPickProject }: { entry: T
       {waiting && (
         <span className={entry.badge?.info ? s.count : s.badge} aria-hidden translate="no">
           {waiting}
-        </span>
-      )}
-      {description && (
-        <span id={descId} className={s.desc}>
-          {description}
         </span>
       )}
     </>

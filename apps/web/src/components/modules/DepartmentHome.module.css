@@ -33,7 +33,7 @@
   align-items: center;
   gap: var(--s-3);
   width: 100%;
-  min-height: 3.5rem;
+  min-height: 2.75rem;
   padding: var(--s-2);
   border: 0;
   border-radius: var(--r-md);
@@ -67,21 +67,10 @@
   color: var(--c-text-base);
 }
 
-.text {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  flex: 1;
-}
-
 .label {
-  font-weight: 600;
-}
-
-.desc {
-  color: var(--c-text-muted);
-  font-size: var(--t-caption);
-  line-height: 1.4;
+  flex: 1;
+  min-width: 0;
+  font-weight: 500;
 }
 
 /* What waits there with its word ("12 to approve"), in the waiting tone, as a waiting tag. */

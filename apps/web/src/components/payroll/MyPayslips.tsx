@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Table, Typography } from 'antd';
+import { Table } from 'antd';
 import { tk } from '@/ds';
 import type { PayslipDto } from '@erp/shared';
 import { useMyPayslips } from '@/lib/queries';
@@ -18,9 +18,6 @@ export function MyPayslips() {
   if (error) return <QueryError error={error} onRetry={() => refetch()} />;
   return (
     <div style={{ padding: tk.space[4] }}>
-      <Typography.Paragraph type="secondary" style={{ maxWidth: 640 }}>
-        Each month&apos;s payslip shows here once the salary is approved. Open one to see the details or print it.
-      </Typography.Paragraph>
       <Table<PayslipDto>
         rowKey="id"
         size="small"

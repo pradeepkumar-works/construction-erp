@@ -243,7 +243,6 @@ function MaterialApprovalsPage() {
   );
   const s = requests.data?.summary;
   const filtered = !!page.params.q || (view === 'requests' && (status !== 'open' || kind !== 'all'));
-  const makeCount = makes.data?.length ?? 0;
 
   return (
     <div className="page-container">
@@ -306,11 +305,6 @@ function MaterialApprovalsPage() {
           />
         ) : (
           <>
-            {makeCount ? (
-              <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
-                A purchase order line for one of these materials is flagged when it names another make, or none.
-              </Typography.Paragraph>
-            ) : null}
             <DataTable<ApprovedMakeDto>
               columns={makeColumns}
               visible={makeChoice.visible}

@@ -81,7 +81,6 @@ export function CorrectionList() {
 
   return (
     <div style={{ padding: tk.space[4] }}>
-      <Typography.Paragraph type="secondary">Days your staff asked to correct. You recommend your reports&apos; to HR; HR&apos;s approval changes the day.</Typography.Paragraph>
       <Table<AttendanceCorrectionDto> rowKey="id" size="small" columns={columns} dataSource={data} pagination={false} scroll={{ x: 1370 }} locale={{ emptyText: 'No corrections waiting on you' }} />
       <Modal
         open={!!rejecting}

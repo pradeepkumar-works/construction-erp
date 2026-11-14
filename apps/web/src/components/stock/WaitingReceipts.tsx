@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button, Typography } from 'antd';
 import { tk } from '@/ds';
 import type { ReceiptWait, StockEntryDto, StockEntrySortField } from '@erp/shared';
-import { LIST_SORT_FIELDS, RECEIPT_BILL_WITHIN_DAYS, RECEIPT_CHECK_WITHIN_DAYS, canCheckGrn, canRaiseDebitNote, canRecordVendorBill } from '@erp/shared';
+import { LIST_SORT_FIELDS, canCheckGrn, canRaiseDebitNote, canRecordVendorBill } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useWaitingReceipts } from '@/lib/queries';
 import { formatDate, formatQty, NO_VALUE } from '@/lib/format';
@@ -22,23 +22,20 @@ import { GrnQcModal } from './GrnQc';
 import { StockTypeTag } from './StockTypeTag';
 
 /** What each queue is, in its own words. */
-const WORDS: Record<ReceiptWait, { search: string; empty: string; intro: string; action: string }> = {
+const WORDS: Record<ReceiptWait, { search: string; empty: string; action: string }> = {
   CHECK: {
     search: 'Search material to check',
     empty: 'Nothing to check. Every receipt is accepted or rejected.',
-    intro: `Goods received at the sites in the last ${RECEIPT_CHECK_WITHIN_DAYS} days that nobody has accepted or rejected yet, oldest first. Check each lot before it goes into the work; what you reject goes to accounts for a debit note.`,
     action: 'Check',
   },
   BILL: {
     search: 'Search goods received',
     empty: "Nothing waiting. Every receipt against an order has the supplier's bill.",
-    intro: `Goods received against an order in the last ${RECEIPT_BILL_WITHIN_DAYS} days that no vendor bill covers yet, oldest first. Record the bill when it comes; it starts from what was received at the order's rates.`,
     action: 'Record vendor bill',
   },
   DEBIT_NOTE: {
     search: 'Search rejected and returned material',
     empty: 'Nothing to raise. Every rejection and return has its debit note.',
-    intro: "Material QA/QC rejected or the store sent back to the vendor, with no debit note yet. The note takes it off the vendor's bill.",
     action: 'New debit note',
   },
 };
@@ -153,9 +150,6 @@ export function WaitingReceipts({ waiting, projectId: fixedProject }: { waiting:
 
   return (
     <>
-      <Typography.Paragraph type="secondary" style={{ marginBottom: tk.space[2] }}>
-        {words.intro}
-      </Typography.Paragraph>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <ListToolbar filters={frame.filterState} projectId={frame.projectFilter} onProject={frame.setProjectFilter} hideProject={!!fixedProject} search={page.search} onSearch={page.setSearch} searchPlaceholder="Entry, supplier, item" searchLabel={words.search} />
       <DataTable<StockEntryDto>

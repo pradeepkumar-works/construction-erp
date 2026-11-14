@@ -28,7 +28,7 @@ export default function SupplierProfilePage() {
   );
   return (
     <div className="page-container">
-      <PageHeader title="Profile" subtitle={data ? <span translate="no">{data.name}</span> : 'The details the company pays and writes to'} extra={change} />
+      <PageHeader title="Profile" subtitle={data ? <span translate="no">{data.name}</span> : undefined} extra={change} />
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {isLoading ? <PageSkeleton header={false} shape="record" /> : null}
       {data ? (

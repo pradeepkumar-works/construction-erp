@@ -9,6 +9,15 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-quieter-screens',
+    date: '2026-11-19',
+    title: 'Quieter module screens and Home',
+    points: [
+      'Home’s modules and each module’s overview show the page names and what waits there, without a sentence under each.',
+      'What a page is for still shows in Search, and a pipeline’s explanation sits behind its ⓘ.',
+    ],
+  },
+  {
     id: '2026-11-working-calendar',
     date: '2026-11-19',
     title: 'A working calendar for each project’s schedule',

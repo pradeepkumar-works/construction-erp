@@ -458,9 +458,6 @@ function FinaliseStep({ request, row, cs, buyer, onNext }: { request: MaterialRe
       <Typography.Title level={2} style={{ fontSize: tk.type.lead.fontSize, margin: `0 0 ${tk.space[3]}` }}>
         Comparative statement
       </Typography.Title>
-      <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
-        Rates item by item
-      </Typography.Paragraph>
       {cs ? <ComparativeTable request={request} data={cs} /> : null}
       <ChooseInsteadModal
         choice={choosing}

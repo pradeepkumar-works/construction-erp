@@ -16,7 +16,7 @@ export function pinEntry(pin: NavPinDto): TileEntry {
     const node = navNode(pin.target)!;
     return { key: pin.id, node };
   }
-  return { key: pin.id, label: pin.label, icon: 'folder-kanban', description: 'Project', href: `/projects/${pin.target}` };
+  return { key: pin.id, label: pin.label, icon: 'folder-kanban', href: `/projects/${pin.target}` };
 }
 
 const icon = (name: string) => <TreeIcon name={name} />;

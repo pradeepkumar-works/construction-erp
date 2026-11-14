@@ -220,13 +220,8 @@ function FlagRow({ node, flag }: { node: NavNode; flag: LauncherFlagDto | undefi
         <span aria-hidden style={{ fontSize: tk.type.lead.fontSize, color: tk.color.text.muted, display: 'inline-flex' }}>
           <TreeIcon name={node.icon} />
         </span>
-        <div style={{ minWidth: 0 }}>
-          <div id={id} style={{ fontWeight: tk.type.title.fontWeight }}>
-            {node.label}
-          </div>
-          <Typography.Text type="secondary" style={{ fontSize: tk.type.caption.fontSize }}>
-            {node.description}
-          </Typography.Text>
+        <div id={id} style={{ minWidth: 0, fontWeight: tk.type.title.fontWeight }}>
+          {node.label}
         </div>
       </Flex>
       <Flex gap={tk.space[3]} align="center" wrap>
