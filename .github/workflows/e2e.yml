@@ -598,6 +598,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: DATABASE_URL="$RUNTIME_URL" node dist/scripts/dpr-one-per-day-test.js
+      - name: A project manager who creates a project for another manager, or hands theirs over, stays on its team
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: DATABASE_URL="$RUNTIME_URL" node dist/scripts/project-creator-test.js
       - name: A DPR's approval and its work lines land together, and a failed step leaves the DPR submitted
         if: matrix.suite == 'flows'
         working-directory: apps/api
