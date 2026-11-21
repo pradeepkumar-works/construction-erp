@@ -317,6 +317,7 @@ export class ProjectsService {
     const terms = await this.startingTerms(user, dto);
     const row = await this.prisma.project.create({ data: { ...data, ...terms, organization: { connect: { id: user.organizationId } } }, include: projectInclude });
     await this.audit.log(user, 'PROJECT', row.id, 'CREATED');
+    const joined = await this.keepOnTeam(user, row.id);
     if (type && dto.breakdown?.length) {
       const kinds = await this.types.kinds(user.organizationId);
       await this.structure.layOutUnchecked(user, row.id, layOutBreakdown(type, kinds, dto.breakdown));
@@ -326,7 +327,19 @@ export class ProjectsService {
       await this.joinTeam(user, row.id, await this.teamOf(dto.copyFromProjectId, row.projectManagerId));
       return this.toDetail(await this.prisma.project.findUniqueOrThrow({ where: { id: row.id }, include: projectInclude }));
     }
-    return this.toDetail(row);
+    return joined ? this.get(user, row.id) : this.toDetail(row);
+  }
+
+  /**
+   * Whoever creates a project for another manager, or hands their own to one, stays on its team: a project
+   * manager sees only the projects they manage or are on, so without this it would be "not found" for them
+   * the moment it is saved. True when they were added.
+   */
+  private async keepOnTeam(user: RequestUser, projectId: string): Promise<boolean> {
+    if (await this.access.userSeesProject(user, projectId)) return false;
+    await this.prisma.projectMember.createMany({ data: [{ projectId, userId: user.id }], skipDuplicates: true });
+    await this.audit.log(user, 'PROJECT', projectId, 'MEMBER_ADDED', user.fullName);
+    return true;
   }
 
   /**
@@ -396,6 +409,7 @@ export class ProjectsService {
     await this.audit.log(user, 'PROJECT', row.id, 'UPDATED');
     // The dates arriving for the first time spread the activities that have none.
     if (!before.startDate && row.startDate) await this.templates.spreadUndated(user, id);
+    if (await this.keepOnTeam(user, id)) return this.get(user, id);
     return this.toDetail(row);
   }
 

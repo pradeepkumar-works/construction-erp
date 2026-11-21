@@ -17,7 +17,7 @@ export interface Check {
   links: Link[];
 }
 
-import { ENGINE_HOURS_TOLERANCE } from '@erp/shared';
+import { ENGINE_HOURS_TOLERANCE, billedPastReported } from '@erp/shared';
 
 /** Rupee and quantity amounts within this much are the same (rounding on each line). */
 const MONEY_TOLERANCE = 1;
@@ -243,7 +243,14 @@ export interface SubcontractBillFacts {
     earlierBilled: number;
     /** On the approved measurement sheets of this bill and the earlier ones; null for the work order's own items (no BOQ item). */
     measuredToDate: number | null;
+    /**
+     * Approved on the daily reports under the work order up to the bill's day (`MeasurementsService.underOrder`); null
+     * for the order's own items and for an order no DPR line names (the site may not tag its lines).
+     */
+    reportedToDate?: number | null;
   }[];
+  /** Where the DPR figures come from */
+  reportedLink?: Link;
   grossAmount: number;
   gstRate: number;
   gstAmount: number;
@@ -300,6 +307,21 @@ export function subcontractBillChecks(f: SubcontractBillFacts): Check[] {
       ),
     );
 
+  const reportedLines = f.lines.filter((l) => l.reportedToDate !== null && l.reportedToDate !== undefined);
+  const reported = reportedLines.flatMap((l) => {
+    const over = billedPastReported({ uptoQty: l.uptoQty, reported: l.reportedToDate! });
+    return over === null
+      ? []
+      : [
+          flag(
+            `reported:${l.id}:${fig(l.uptoQty)}:${fig(l.reportedToDate!)}`,
+            `Line ${l.no} is billed to ${qty(l.uptoQty)} ${l.unit}; the approved daily reports under this order show ${qty(l.reportedToDate!)} ${l.unit}`,
+            `${l.description}: ${qty(over)} ${l.unit} (${inr(over * l.rate)}) more than the site reported. Check the DPR lines name this work order, or the measurement.`,
+            f.reportedLink ? [f.reportedLink] : [],
+          ),
+        ];
+  });
+
   const duplicates = f.invoiceNo ? f.duplicates.map((d) => flag(`duplicate:${d.href}`, `Invoice ${f.invoiceNo} already billed on ${d.label}`, null, [d])) : [];
 
   const base = Math.max(f.grossAmount, 0);
@@ -344,6 +366,7 @@ export function subcontractBillChecks(f: SubcontractBillFacts): Check[] {
     ...rule('wo-qty', 'Quantities within the work order', pastOrder),
     ...(f.manDays?.length ? rule('mandays', "Man-days within the site's head count and roll call", days) : []),
     ...(f.lines.some((l) => l.measuredToDate !== null) ? rule('measured', 'Quantities match the measurement book', measured) : []),
+    ...(reportedLines.length ? rule('reported', 'Quantities within what the daily reports show', reported) : []),
     ...rule('rates', 'Rates as on the work order', rates),
     ...rule('prev', 'Previous quantities match earlier bills', previous),
     ...totals,

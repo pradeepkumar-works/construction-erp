@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { MeasurementsModule } from '../measurements/measurements.module';
 import { PurchasingModule } from '../purchasing/purchasing.module';
 import { SubcontractsModule } from '../subcontracts/subcontracts.module';
 import { ExpensesModule } from '../expenses/expenses.module';
@@ -10,5 +11,5 @@ import { BillChecksController } from './bill-checks.controller';
 import { BillChecksService } from './bill-checks.service';
 
 /** Bill checks before approval. */
-@Module({ imports: [PurchasingModule, SubcontractsModule, ExpensesModule, RaBillsModule, AiModule, AttendanceCheckModule, TelematicsModule], controllers: [BillChecksController], providers: [BillChecksService], exports: [BillChecksService] })
+@Module({ imports: [MeasurementsModule, PurchasingModule, SubcontractsModule, ExpensesModule, RaBillsModule, AiModule, AttendanceCheckModule, TelematicsModule], controllers: [BillChecksController], providers: [BillChecksService], exports: [BillChecksService] })
 export class BillChecksModule {}

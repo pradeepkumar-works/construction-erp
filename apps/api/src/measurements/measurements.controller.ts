@@ -1,7 +1,8 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, ForbiddenException, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { canViewWorkOrders } from '@erp/shared';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { MeasurementsService } from './measurements.service';
-import { CreateMeasurementDto, ListMeasurementsQuery, ToMeasureQuery, UpdateMeasurementDto } from './measurements.dto';
+import { CreateMeasurementDto, ListMeasurementsQuery, ToMeasureQuery, UnderOrderQuery, UpdateMeasurementDto } from './measurements.dto';
 import { CurrentUser, RequestUser } from '../common/current-user';
 
 @ApiTags('measurements')
@@ -23,7 +24,19 @@ export class MeasurementsController {
   })
   @Get('to-measure')
   toMeasure(@CurrentUser() user: RequestUser, @Query() q: ToMeasureQuery) {
-    return this.measurements.toMeasure(user, q.projectId);
+    return this.measurements.toMeasure(user, q.projectId, q.workOrderId);
+  }
+
+  @ApiOperation({
+    summary: 'A work order against the daily reports',
+    description:
+      'Per BOQ line of the order: the approved quantity on days that name the order (DPR lines), what the sheets tagged to it hold, ' +
+      'what its bills took and what is reported and still to measure. The subcontractor’s bill pays only the measured quantity.',
+  })
+  @Get('under-order')
+  underOrder(@CurrentUser() user: RequestUser, @Query() q: UnderOrderQuery) {
+    if (!canViewWorkOrders(user.roleKey)) throw new ForbiddenException('Your role cannot see work orders');
+    return this.measurements.underOrder(user, q.workOrderId, q.upTo);
   }
 
   @Get(':id')

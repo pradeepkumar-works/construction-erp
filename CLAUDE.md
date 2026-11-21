@@ -496,6 +496,11 @@ and the pre-delivery checklist.
   `amendmentLineProblem`; the order as it stood after an amendment is only `workOrderAsOf`, and a bill's previous value is
   what earlier bills charged (`subBillLines`), never today's rate (`@erp/shared/work-order-amendment.ts`). Keep
   `src/scripts/work-order-amendment-test.ts` passing.
+- From the DPR to the subcontractor's bill (ARCHITECTURE "Subcontracts", From the DPR to the bill): a DPR line's work order
+  feeds the measurement and checks the bill, never prices it; what an order has reported, measured and billed is only
+  `MeasurementsService.underOrder` (`orderToMeasure`, `billedPastReported` in `@erp/shared/work-order-progress.ts`), shown
+  by `OrderSiteProgress`, and a sheet from those days starts through `toMeasure(…, workOrderId)`. Keep
+  `src/scripts/bill-checks-test.ts` passing.
 - Supplier portal (item 105, `apps/api/src/supplier`, ARCHITECTURE "Supplier portal"): a `SUPPLIER` login has a `vendorId`
   and sees only that vendor; its routes are `@SupplierAllowed()` (`/supplier/*` also `@SupplierOnly()`), and every query
   filters by `supplierVendor(user)`. Logins are given from Vendors, never Users. Its figures are in `supplier-rules.ts`

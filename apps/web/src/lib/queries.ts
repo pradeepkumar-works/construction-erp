@@ -230,6 +230,7 @@ import type {
   AuthOptionsDto,
   MeasurementSheetDto,
   ToMeasureItemDto,
+  WorkOrderProgressDto,
   StandardNormPlanDto,
   InspectionDto,
   ChecklistTemplateDto,
@@ -1688,11 +1689,19 @@ export const useMeasurements = (filters?: MeasurementFilters) =>
 export const useMeasurement = (id: string | undefined) => useQuery({ ...recordQuery<MeasurementSheetDto>('/measurements', id), enabled: !!id });
 
 /** Work approved on site that no measurement sheet holds yet. */
-export const useToMeasure = (projectId: string | undefined, enabled = true) =>
+export const useToMeasure = (projectId: string | undefined, enabled = true, workOrderId?: string) =>
   useQuery({
-    queryKey: ['to-measure', projectId],
-    queryFn: async () => (await api.get<ToMeasureItemDto[]>('/measurements/to-measure', { params: { projectId } })).data,
+    queryKey: ['to-measure', projectId, workOrderId ?? null],
+    queryFn: async () => (await api.get<ToMeasureItemDto[]>('/measurements/to-measure', { params: clean({ projectId, workOrderId }) })).data,
     enabled: !!projectId && enabled,
+  });
+
+/** A work order against the daily reports: reported on approved DPR lines, measured and billed per BOQ line, up to a day. */
+export const useWorkOrderProgress = (workOrderId: string | undefined, upTo?: string, enabled = true) =>
+  useQuery({
+    queryKey: ['work-orders', 'site-progress', workOrderId, upTo ?? null],
+    queryFn: async () => (await api.get<WorkOrderProgressDto>('/measurements/under-order', { params: clean({ workOrderId, upTo }) })).data,
+    enabled: !!workOrderId && enabled,
   });
 
 export interface InspectionFilters extends ListFilters {

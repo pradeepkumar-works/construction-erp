@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-dpr-to-sub-bill',
+    date: '2026-11-21',
+    title: 'Subcontractor bills against the daily reports',
+    points: [
+      'A work order, and each bill on it, shows what the approved daily reports record under the order beside what is measured and billed.',
+      'Measure from daily reports starts a measurement sheet from those days, tagged to the order, so the next bill takes it once approved.',
+      'A bill that claims more than the daily reports show under its order is flagged in its checks.',
+    ],
+  },
+  {
     id: '2026-11-quieter-screens',
     date: '2026-11-19',
     title: 'Quieter module screens and Home',

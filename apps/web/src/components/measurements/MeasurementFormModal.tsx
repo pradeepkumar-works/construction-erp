@@ -52,6 +52,8 @@ export interface MeasurementPrefill {
   remarks?: string;
   /** Where it was measured, when what filled the lines in knows */
   location?: string;
+  /** The subcontractor's work order the days were reported under, so their bill takes the sheet */
+  workOrderId?: string;
 }
 
 /** Record a measurement sheet against a BOQ item, or (with `sheet`) fix a returned one and resubmit it. */
@@ -106,7 +108,7 @@ export function MeasurementFormModal({
         photos: sheet.attachments,
       });
     } else {
-      form.setFieldsValue({ projectId, boqItemId, date: dayjs(), lines: prefill?.lines.length ? prefill.lines : [{ nos: 1 }], remarks: prefill?.remarks, location: prefill?.location });
+      form.setFieldsValue({ projectId, boqItemId, date: dayjs(), lines: prefill?.lines.length ? prefill.lines : [{ nos: 1 }], remarks: prefill?.remarks, location: prefill?.location, workOrderId: prefill?.workOrderId });
     }
   }, [open, projectId, boqItemId, sheet, prefill, form]);
 

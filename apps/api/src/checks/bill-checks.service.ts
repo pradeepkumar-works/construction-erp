@@ -8,6 +8,7 @@ import { AuditService } from '../common/audit.service';
 import { ProjectAccessService } from '../common/project-access.service';
 import { dateOnly, formatDay } from '../common/serialize';
 import { TelematicsService } from '../telematics/telematics.service';
+import { MeasurementsService } from '../measurements/measurements.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
 import { VendorBillsService } from '../purchasing/vendor-bills.service';
@@ -61,6 +62,7 @@ export class BillChecksService {
     private raBills: RaBillsService,
     private attendance: AttendanceCheckService,
     private telematics: TelematicsService,
+    private measurements: MeasurementsService,
   ) {}
 
   async get(user: RequestUser, kind: CheckKind, id: string): Promise<BillChecksDto> {
@@ -392,6 +394,9 @@ export class BillChecksService {
         : Promise.resolve([]),
       this.attendance.forBill(user.organizationId, id),
     ]);
+    // What the site reported under the order up to the bill's day; an order no DPR names is not held to it.
+    const site = bill.isRelease ? null : await this.measurements.underOrder(user, bill.workOrderId, dateOnly(bill.measuredUpTo) ?? undefined);
+    const reportedOf = (boqItemId: string | null) => (site?.reported && boqItemId ? (site.lines.find((x) => x.boqItemId === boqItemId) ?? null) : null);
     const span = attendance ? (attendance.from === attendance.to ? day(attendance.from) : `${day(attendance.from)} to ${day(attendance.to)}`) : '';
     const checks = subcontractBillChecks({
       invoiceNo: bill.invoiceNo,
@@ -410,7 +415,9 @@ export class BillChecksService {
         amount: n(l.amount),
         earlierBilled: n(billed.find((b) => b.workOrderLineId === l.workOrderLineId)?._sum.thisQty),
         measuredToDate: l.workOrderLine.boqItemId ? n(measured.find((m) => m.boqItemId === l.workOrderLine.boqItemId)?._sum.totalQty) : null,
+        reportedToDate: reportedOf(l.workOrderLine.boqItemId) ? Number(reportedOf(l.workOrderLine.boqItemId)!.reportedQty) : null,
       })),
+      reportedLink: { label: 'Daily reports', href: `/dpr?projectId=${bill.projectId}` },
       grossAmount: n(bill.grossAmount),
       gstRate: n(bill.gstRate),
       gstAmount: n(bill.gstAmount),

@@ -32,6 +32,7 @@ import { Section } from '@/components/common/Section';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
 import { Money } from '@/components/common/Money';
 import { FormShell } from '@/components/form/FormShell';
+import { OrderSiteProgress } from './OrderSiteProgress';
 
 
 interface RecordProps {
@@ -376,6 +377,11 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
             ...(data.isRelease
               ? []
               : [
+            {
+              key: 'site',
+              title: `Against the daily reports, up to ${formatDate(data.measuredUpTo)}`,
+              children: <OrderSiteProgress workOrderId={data.workOrderId} upTo={data.measuredUpTo} />,
+            },
             {
               key: 'measurements',
               title: 'Measurements',

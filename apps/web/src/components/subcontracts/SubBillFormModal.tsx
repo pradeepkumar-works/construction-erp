@@ -10,7 +10,8 @@ import type { AttachmentDto, SubcontractBillDto, WorkOrderLineDto } from '@erp/s
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
 import { useWorkOrder, useWorkOrders } from '@/lib/queries';
-import { formatINR, formatQty, toNumber } from '@/lib/format';
+import { formatDate, formatINR, formatQty, toNumber } from '@/lib/format';
+import { OrderSiteProgress, useMeasureOrder } from './OrderSiteProgress';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
@@ -71,6 +72,8 @@ export function SubBillFormModal({
   const { data: wo, isLoading: woLoading } = useWorkOrder(open ? woId : undefined);
   const isRelease = bill ? bill.isRelease : !!release;
   const kinds = useMasterOptions('back-charge', null, open);
+  const measure = useMeasureOrder();
+  const upTo = Form.useWatch('measuredUpTo', form)?.format('YYYY-MM-DD');
   /** What this bill may pay back: held before it (editing), else held on the order now. */
   const held = bill ? bill.retentionHeldBefore : wo?.retentionHeld;
 
@@ -136,6 +139,7 @@ export function SubBillFormModal({
   });
 
   return (
+    <>
     <FormShell
       open={open}
       onClose={onClose}
@@ -183,17 +187,23 @@ export function SubBillFormModal({
         {wo && !isRelease && (boqLines.length > 0 || ownLines.length > 0) && (
           <FormSection title="Work in this bill">
             {boqLines.length > 0 && (
-              <Alert
-                type="info"
-                showIcon
-                style={{ marginBottom: tk.space[3] }}
-                title="BOQ items are billed as measured"
-                description={
-                  <span>
-                    {boqLines.map((l) => `${l.itemNo}: ${formatQty(l.measuredQty)} of ${formatQty(l.quantity)} ${unitLabel(l.unit)} measured, ${formatQty(billedElsewhere(l))} billed before`).join(' · ')}. Only approved measurements tagged to {wo.woNo} count.
-                  </span>
-                }
-              />
+              <>
+                <Alert
+                  type="info"
+                  showIcon
+                  style={{ marginBottom: tk.space[3] }}
+                  title="BOQ items are billed as measured"
+                  description={
+                    <span>
+                      {boqLines.map((l) => `${l.itemNo}: ${formatQty(l.measuredQty)} of ${formatQty(l.quantity)} ${unitLabel(l.unit)} measured, ${formatQty(billedElsewhere(l))} billed before`).join(' · ')}. Only approved measurements tagged to {wo.woNo} count.
+                    </span>
+                  }
+                />
+                <Typography.Text strong>Against the daily reports{upTo ? `, up to ${formatDate(upTo)}` : ''}</Typography.Text>
+                <div style={{ margin: `${tk.space[2]} 0 ${tk.space[4]}` }}>
+                  <OrderSiteProgress workOrderId={wo.id} upTo={upTo} onMeasure={measure.measure} />
+                </div>
+              </>
             )}
             {ownLines.length > 0 && (
               <>
@@ -299,5 +309,8 @@ export function SubBillFormModal({
         </FormSection>
       </Form>
     </FormShell>
+    {/* A measurement sheet is a form of its own, so it stays outside this one. */}
+    {measure.modals}
+    </>
   );
 }
