@@ -5,11 +5,13 @@ import {
   MEASURE_TOLERANCE_PCT,
   measureOverBoq,
   measurementLineQty,
+  orderLineProgress,
   unmeasuredEntries,
   type MeasurementSheetDto,
   type MeasurementSortField,
   type Paginated,
   type ProgressForMeasure,
+  type WorkOrderProgressDto,
   type SortOrder,
   type ToMeasureItemDto,
 } from '@erp/shared';
@@ -157,10 +159,12 @@ export class MeasurementsService {
    * with the days that make up the remainder (`unmeasuredEntries`) so a sheet can start from them. Only activities
    * recording the item's own unit count; the rest are named, not converted.
    */
-  async toMeasure(user: RequestUser, projectId: string): Promise<ToMeasureItemDto[]> {
+  async toMeasure(user: RequestUser, projectId: string, workOrderId?: string): Promise<ToMeasureItemDto[]> {
     await this.access.assertCanAccessProject(user, projectId);
+    // Under a work order: only the days that name it, against only the sheets tagged to it.
+    const approved: Prisma.ProgressEntryWhereInput = { status: 'APPROVED', ...(workOrderId ? { workOrderId } : {}) };
     const items = await this.prisma.boqItem.findMany({
-      where: { projectId, organizationId: user.organizationId, activities: { some: { progressEntries: { some: { status: 'APPROVED' } } } } },
+      where: { projectId, organizationId: user.organizationId, activities: { some: { progressEntries: { some: approved } } } },
       orderBy: [{ sortOrder: 'asc' }, { itemNo: 'asc' }],
       select: {
         id: true,
@@ -173,12 +177,12 @@ export class MeasurementsService {
             name: true,
             unit: true,
             progressEntries: {
-              where: { status: 'APPROVED' },
+              where: approved,
               select: { id: true, date: true, quantity: true, location: true, dailyReportId: true },
             },
           },
         },
-        measurements: { where: { status: { not: 'REJECTED' } }, select: { totalQty: true } },
+        measurements: { where: { status: { not: 'REJECTED' }, ...(workOrderId ? { workOrderId } : {}) }, select: { totalQty: true } },
       },
     });
     const out: ToMeasureItemDto[] = [];
@@ -212,9 +216,68 @@ export class MeasurementsService {
         toMeasureAmount: money(new Prisma.Decimal(toMeasureQty).mul(item.rate)),
         entries: left.map((e) => ({ id: e.id, date: e.date, quantity: dec(e.quantity), location: e.location, activityName: e.activityName, fromDpr: e.fromDpr })),
         otherUnitActivities,
+        ...(workOrderId ? { workOrderId } : {}),
       });
     }
     return out;
+  }
+
+  /**
+   * A work order against the daily reports (ARCHITECTURE "Subcontracts", From the DPR to the bill): per BOQ line of the
+   * order, what approved days name the order for, what the sheets tagged to it hold and what its bills took, up to a
+   * day when one is given. The bill pays only the measured quantity; this says what is reported and still to measure.
+   */
+  async underOrder(user: RequestUser, workOrderId: string, upTo?: string): Promise<WorkOrderProgressDto> {
+    const order = await this.prisma.workOrder.findFirst({
+      where: { id: workOrderId, organizationId: user.organizationId },
+      select: { id: true, woNo: true, projectId: true, lines: { where: { boqItemId: { not: null } }, orderBy: { sortOrder: 'asc' }, include: { boqItem: { select: { itemNo: true, unit: true } } } } },
+    });
+    if (!order) throw new NotFoundException('Work order not found');
+    await this.access.assertCanAccessProject(user, order.projectId);
+    const day = upTo ? { lte: parseDate(upTo) } : undefined;
+    const boqItemIds = order.lines.map((l) => l.boqItemId!);
+    const [entries, measured, billed] = await Promise.all([
+      this.prisma.progressEntry.findMany({
+        where: { organizationId: user.organizationId, workOrderId, status: 'APPROVED', date: day },
+        select: { date: true, quantity: true, activity: { select: { name: true, unit: true, boqItemId: true } } },
+      }),
+      this.prisma.measurementSheet.groupBy({ by: ['boqItemId'], where: { workOrderId, boqItemId: { in: boqItemIds }, status: { not: 'REJECTED' }, date: day }, _sum: { totalQty: true } }),
+      this.prisma.subcontractBillLine.groupBy({ by: ['workOrderLineId'], where: { bill: { workOrderId, status: { not: 'REJECTED' } } }, _sum: { thisQty: true } }),
+    ]);
+    return {
+      workOrderId: order.id,
+      woNo: order.woNo,
+      projectId: order.projectId,
+      upTo: upTo ?? null,
+      reported: entries.length > 0,
+      lines: order.lines.map((l) => {
+        const unit = l.boqItem?.unit ?? l.unit;
+        const sameUnit = (u: string) => u.trim().toLowerCase() === unit.trim().toLowerCase();
+        const mine = entries.filter((e) => e.activity.boqItemId === l.boqItemId);
+        const counted = mine.filter((e) => sameUnit(e.activity.unit));
+        const days = [...new Set(counted.map((e) => dateOnly(e.date)!))].sort();
+        const f = orderLineProgress({
+          reported: counted.reduce((s, e) => s + Number(e.quantity), 0),
+          measured: Number(measured.find((m) => m.boqItemId === l.boqItemId)?._sum.totalQty ?? 0),
+          billed: Number(billed.find((b) => b.workOrderLineId === l.id)?._sum.thisQty ?? 0),
+        });
+        return {
+          workOrderLineId: l.id,
+          boqItemId: l.boqItemId!,
+          itemNo: l.boqItem?.itemNo ?? '',
+          description: l.description,
+          unit,
+          orderQty: dec(l.quantity),
+          reportedQty: dec(f.reported),
+          measuredQty: dec(f.measured),
+          billedQty: dec(f.billed),
+          toMeasureQty: dec(f.toMeasure),
+          days: days.length,
+          lastReportedOn: days[days.length - 1] ?? null,
+          otherUnitActivities: [...new Set(mine.filter((e) => !sameUnit(e.activity.unit)).map((e) => e.activity.name))],
+        };
+      }),
+    };
   }
 
   async get(user: RequestUser, id: string): Promise<MeasurementSheetDto> {

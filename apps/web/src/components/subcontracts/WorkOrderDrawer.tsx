@@ -25,6 +25,7 @@ import { FormShell } from '@/components/form/FormShell';
 import { SubBillFormModal } from './SubBillFormModal';
 import { openWoPrint } from './subcontractPrint';
 import { Section } from '@/components/common/Section';
+import { OrderSiteProgress, useMeasureOrder } from './OrderSiteProgress';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
 import { TargetRequests, useTargetRequests } from '@/components/payables/TargetRequests';
 import { projectContext } from '@/components/record/RecordParts';
@@ -60,6 +61,7 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
   const [closing, setClosing] = useState(false);
   const [closeForm] = Form.useForm<{ note: string }>();
   const [amending, setAmending] = useState<WorkOrderAmendmentDto | null>(null);
+  const measure = useMeasureOrder();
   const issuer = !!user && canIssueWorkOrder(user.roleKey);
   const billingRole = !!user && canPrepareSubcontractBill(user.roleKey);
 
@@ -312,6 +314,9 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
                   },
                 ]
               : []),
+            ...(approved && data.lines.some((l) => l.boqItemId)
+              ? [{ key: 'site', title: 'Against the daily reports', children: <OrderSiteProgress workOrderId={data.id} onMeasure={data.open ? measure.measure : undefined} /> }]
+              : []),
             ...(data.terms ? [{ key: 'terms', title: 'Terms', children: <div style={{ whiteSpace: 'pre-wrap' }}>{data.terms}</div> }] : []),
             ...(approved
               ? [
@@ -430,6 +435,7 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
       </FormShell>
       <SubBillFormModal open={!!billing} workOrderId={data?.id} release={billing === 'release'} onClose={() => setBilling(false)} />
       <WoAmendmentForm open={!!amending} amendment={amending} onClose={() => setAmending(null)} />
+      {measure.modals}
       {deleteDialog}
     </RecordFrame>
   );

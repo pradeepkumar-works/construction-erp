@@ -1912,6 +1912,23 @@ async function topUp(organizationId: string, passwordHash: string) {
   await markDemoDated(prisma, organizationId);
 }
 
+/**
+ * The daily reports name the subcontractor's work order (ARCHITECTURE "Subcontracts", From the DPR to the bill): the
+ * approved GSB and WMM days of the road project go under its work order, so the order and its bills show what the site
+ * reported against what is measured. Only where no day names the order yet.
+ */
+async function seedOrderProgress(organizationId: string) {
+  const wo = await prisma.workOrder.findFirst({
+    where: { organizationId, title: 'GSB and WMM, Km 10 to 22', status: 'APPROVED' },
+    select: { id: true, projectId: true, lines: { where: { boqItemId: { not: null } }, select: { boqItemId: true } } },
+  });
+  if (!wo || (await prisma.progressEntry.count({ where: { workOrderId: wo.id } }))) return;
+  await prisma.progressEntry.updateMany({
+    where: { organizationId, projectId: wo.projectId, workOrderId: null, activity: { boqItemId: { in: wo.lines.map((l) => l.boqItemId!) } } },
+    data: { workOrderId: wo.id },
+  });
+}
+
 async function modulesPass(organizationId: string, passwordHash: string) {
   await seedAttendance(organizationId);
   await seedStock(organizationId);
@@ -1931,6 +1948,7 @@ async function modulesPass(organizationId: string, passwordHash: string) {
   await seedPurchasing(organizationId);
   await seedSplitQuotes(organizationId);
   await seedSubcontracts(organizationId);
+  await seedOrderProgress(organizationId);
   await seedPayables(organizationId);
   await seedPaymentRequests(organizationId);
   await seedHireBills(organizationId);

@@ -3520,6 +3520,18 @@ retention, advance, TDS and material recovery (`apps/api/src/subcontracts`).
   a draft is recomputed on every save. An issue recovered in an approved bill cannot be deleted. The previous value
   is what earlier bills charged (`SubcontractBillLine.prevAmount`, the sum of their own line amounts, `subBillLines`),
   never the previous quantity at today's rate, so an amended rate applies only to work billed after it.
+- **From the DPR to the bill** (rules in `@erp/shared/work-order-progress.ts`). A DPR work line names the work order it
+  was done under (`ProgressEntry.workOrderId`); once the DPR is approved, that is what the site says the subcontractor
+  did. The bill still pays only what the measurement book holds under the order, so the daily reports feed the
+  measurement and check the bill, never price it. `MeasurementsService.underOrder` (`GET /measurements/under-order`,
+  `workOrderId`, `upTo`) gives per BOQ line of the order the approved quantity on days naming it (activities recording
+  the item's own unit), what the sheets tagged to it hold, what its bills took and what is reported and still to
+  measure (`orderToMeasure`). `GET /measurements/to-measure` takes `workOrderId`: only the days that name the order,
+  walked off only its own sheets, and the sheet started from them is tagged to the order, so the next bill takes it once
+  approved. The bill's checks gain "Quantities within what the daily reports show" (`billedPastReported`, up to the
+  bill's "measured up to"); an order no approved day names is not held to it, since a site may not tag its lines, nor
+  are the order's own items. Web: `OrderSiteProgress` on the work order's record, the bill form and the bill's record,
+  with Measure from daily reports (`useMeasureOrder`); the Measure from progress list takes a work order too.
 - **Retention release and back-charges** (rules in `@erp/shared/subcontract-recoveries.ts`). A bill may pay back
   retention held on the order (`SubcontractBill.retentionReleased`): what earlier bills kept less what they paid back
   (`retentionHeld`, approved bills before it), checked by `retentionReleaseProblem` in `recompute`. A retention

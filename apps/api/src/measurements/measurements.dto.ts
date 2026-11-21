@@ -66,6 +66,12 @@ export class ListMeasurementsQuery extends PageQuery {
 }
 
 /** The project whose unmeasured work to list. */
+export class UnderOrderQuery {
+  @ApiProperty() @IsUUID() workOrderId: string;
+  @ApiPropertyOptional({ example: '2026-11-20', description: 'Only days and sheets up to this day' }) @IsOptional() @IsDateString() upTo?: string;
+}
+
 export class ToMeasureQuery {
   @ApiProperty() @IsUUID() projectId: string;
+  @ApiPropertyOptional({ description: 'Only days reported under this work order, against the sheets tagged to it' }) @IsOptional() @IsUUID() workOrderId?: string;
 }

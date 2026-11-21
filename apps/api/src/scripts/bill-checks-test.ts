@@ -22,6 +22,7 @@ import {
   subcontractBillChecks,
   vendorBillChecks,
 } from '../checks/bill-rules';
+import { billedPastReported, orderToMeasure } from '@erp/shared';
 
 const cases: [string, () => void][] = [];
 const test = (name: string, fn: () => void) => cases.push([name, fn]);
@@ -198,6 +199,36 @@ test('subcontract bill: retention paid back adds to the net payable', () => {
   assert.deepEqual(flags(subcontractBillChecks(f)), []);
   f.netPayable = sb.netPayable;
   assert.equal(flagged(subcontractBillChecks(f), 'totals').length, 1, 'a net that leaves the release out does not add up');
+});
+test('subcontract bill: billed past what the approved daily reports show under the order', () => {
+  const f = clone(sb);
+  f.lines[0].reportedToDate = 260;
+  const c = flagged(subcontractBillChecks(f), 'reported:')[0];
+  assert.equal(c.title, 'Line 1 is billed to 300 Cum; the approved daily reports under this order show 260 Cum');
+  assert.match(c.detail!, /40 Cum \(₹12,000\) more than the site reported/);
+});
+test('subcontract bill: within the daily reports passes, and the rule shows as a tick', () => {
+  const f = clone(sb);
+  f.lines[0].reportedToDate = 320;
+  const checks = subcontractBillChecks(f);
+  assert.deepEqual(flags(checks), []);
+  assert.ok(checks.some((c) => c.key === 'reported' && c.ok), 'the rule is listed once the order has DPR days');
+});
+test('subcontract bill: an order no DPR names, and its own items, are not held to the daily reports', () => {
+  const f = clone(sb);
+  f.lines[0].reportedToDate = null;
+  const checks = subcontractBillChecks(f);
+  assert.deepEqual(flags(checks), []);
+  assert.ok(!checks.some((c) => c.key.startsWith('reported')), 'no rule without DPR days');
+  assert.ok(!subcontractBillChecks(sb).some((c) => c.key.startsWith('reported')));
+});
+test('work order against the DPR: to measure is reported less measured, never below zero', () => {
+  assert.equal(orderToMeasure(120.5, 100), 20.5);
+  assert.equal(orderToMeasure(80, 100), 0);
+  assert.equal(orderToMeasure(0.1 + 0.2, 0.3), 0);
+  assert.equal(billedPastReported({ uptoQty: 100, reported: 100 }), null);
+  assert.equal(billedPastReported({ uptoQty: 100.0004, reported: 100 }), null);
+  assert.equal(billedPastReported({ uptoQty: 100.25, reported: 100 }), 0.25);
 });
 test('subcontract bill: rate above the work order', () => {
   const f = clone(sb);

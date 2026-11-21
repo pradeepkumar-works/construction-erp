@@ -2097,6 +2097,8 @@ export interface ToMeasureItemDto {
   entries: ToMeasureEntryDto[];
   /** Activities of this item that record another unit, so their days are not offered */
   otherUnitActivities: string[];
+  /** Set when only work reported under one work order was asked for: the sheet is tagged to it */
+  workOrderId?: string | null;
 }
 
 /** Quotations of one request side by side: per line, each vendor's rate and the lowest. */

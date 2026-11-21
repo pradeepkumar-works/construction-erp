@@ -1,11 +1,13 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { HelpLink } from '@/components/common/Help';
-import { Button, Grid, Modal, Table, Typography } from 'antd';
+import { Button, Grid, Modal, Select, Table, Typography } from 'antd';
 import { tk } from '@/ds';
 import type { ToMeasureItemDto } from '@erp/shared';
-import { useToMeasure } from '@/lib/queries';
+import { useToMeasure, useWorkOrders } from '@/lib/queries';
+import { useAuth } from '@/lib/auth';
+import { canViewWorkOrders } from '@erp/shared';
 import { formatDate, formatQty } from '@/lib/format';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { EmptyArt } from '@/components/common/EmptyArt';
@@ -30,6 +32,7 @@ export function progressPrefill(item: ToMeasureItemDto): MeasurementPrefill {
     // Every day in one place: that is the sheet's location. Several, and the quantity surveyor says where.
     location: places.length === 1 ? places[0] : undefined,
     remarks: `Measured from approved progress, ${span} (${days.length} ${days.length === 1 ? 'day' : 'days'}).`,
+    workOrderId: item.workOrderId ?? undefined,
   };
 }
 
@@ -64,16 +67,24 @@ export function MeasureFromProgressModal({
   open,
   onClose,
   projectId,
+  workOrder,
   onStart,
 }: {
   open: boolean;
   onClose: () => void;
   projectId: string;
+  /** Only the days the site reported under this subcontractor's work order; the sheet is tagged to it */
+  workOrder?: { id: string; woNo: string } | null;
   onStart: (item: ToMeasureItemDto) => void;
 }) {
+  const { user } = useAuth();
+  const seesWos = !!user && canViewWorkOrders(user.roleKey);
+  const [picked, setPicked] = useState<string | undefined>();
+  const orders = useWorkOrders({ projectId, open: true, pageSize: 100 }, open && seesWos && !workOrder);
+  const workOrderId = workOrder?.id ?? picked;
   // On a phone each row is one block instead of three columns, so the table never scrolls sideways.
   const wide = Grid.useBreakpoint().md !== false;
-  const { data, isLoading, error, refetch } = useToMeasure(projectId, open);
+  const { data, isLoading, error, refetch } = useToMeasure(projectId, open, workOrderId);
   const start = (r: ToMeasureItemDto) => {
     onStart(r);
     onClose();
@@ -93,15 +104,30 @@ export function MeasureFromProgressModal({
   );
 
   return (
-    <Modal open={open} onCancel={onClose} title="Measure from progress" footer={null} width={820} destroyOnHidden>
+    <Modal open={open} onCancel={onClose} title={workOrder ? `Measure from daily reports · ${workOrder.woNo}` : 'Measure from progress'} footer={null} width={820} destroyOnHidden>
+      {!workOrder && (orders.data?.items.length ?? 0) > 0 ? (
+        <Select
+          allowClear
+          showSearch={{ optionFilterProp: 'label' }}
+          aria-label="Work order"
+          placeholder="All work, or only a subcontractor's work order"
+          style={{ width: '100%', maxWidth: 420, marginBottom: tk.space[3] }}
+          value={picked}
+          onChange={setPicked}
+          options={(orders.data?.items ?? []).map((o) => ({ value: o.id, label: `${o.woNo} · ${o.vendorName}` }))}
+        />
+      ) : null}
       {error ? (
         <QueryError error={error} onRetry={() => refetch()} />
       ) : isLoading ? (
         <PageSkeleton shape="list" />
       ) : data?.length ? (
         <>
-          <HelpLink>Work the site got approved that no measurement sheet holds yet. Start a sheet and its approved days come in as lines, oldest first, for you to check against
-            the book.</HelpLink>
+          <HelpLink>
+            {workOrderId
+              ? 'Work the daily reports show under this work order that no sheet of the order holds yet. Start a sheet and those days come in as lines, tagged to the order, so the subcontractor’s next bill takes it once approved.'
+              : 'Work the site got approved that no measurement sheet holds yet. Start a sheet and its approved days come in as lines, oldest first, for you to check against the book.'}
+          </HelpLink>
           <Table<ToMeasureItemDto>
             rowKey="boqItemId"
             size="small"
@@ -134,7 +160,11 @@ export function MeasureFromProgressModal({
         </>
       ) : (
         <EmptyArt art="approved" title="Nothing waiting to be measured">
-          <Typography.Text type="secondary">Every BOQ item with approved progress is measured up to date. A day shows here once its daily report is approved.</Typography.Text>
+          <Typography.Text type="secondary">
+            {workOrderId
+              ? 'Every approved day reported under this work order is measured. A day shows here once its daily report is approved and its line names the order.'
+              : 'Every BOQ item with approved progress is measured up to date. A day shows here once its daily report is approved.'}
+          </Typography.Text>
         </EmptyArt>
       )}
     </Modal>
