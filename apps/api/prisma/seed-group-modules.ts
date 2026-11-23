@@ -84,6 +84,7 @@ async function debitNoteNotAccepted(prisma: Db, organizationId: string) {
   const gst = new Prisma.Decimal(900);
   const total = amount.add(gst);
   const date = new Date(Math.max(day(-4).getTime(), bill.invoiceDate.getTime()));
+  // The Vercel build is far from the database: these nine round trips took 5.2 s there, past Prisma's 5 s default.
   const id = await prisma.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`PAY:${bill.id}`}))`;
     const noteNo = await nextDocNo(tx, organizationId, 'DN', async (prefix) =>
@@ -102,7 +103,7 @@ async function debitNoteNotAccepted(prisma: Db, organizationId: string) {
     await tx.vendorBill.update({ where: { id: bill.id }, data: { debitNoteAmount: s._sum.total ?? new Prisma.Decimal(0) } });
     await syncPaid(tx, 'VENDOR_BILL', bill.id);
     return row.id;
-  });
+  }, { maxWait: 15_000, timeout: 60_000 });
   await prisma.auditLog.createMany({
     data: [
       { organizationId, entityType: 'DEBIT_NOTE', entityId: id, action: 'CREATED', actorId: accounts.id, createdAt: date },

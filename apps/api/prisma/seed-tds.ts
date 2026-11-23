@@ -79,6 +79,6 @@ export async function seedTds(prisma: PrismaClient, organizationId: string) {
         data: { organizationId, form, bsrCode: '0510308', challanSerial: String(serial++).padStart(5, '0'), depositedOn: new Date(`${on}T00:00:00Z`), tax: rows.reduce((t, r) => t.add(r.tdsAmount), D(0)), createdById: accounts.id },
       });
       await tx.tdsDeduction.updateMany({ where: { id: { in: rows.map((r) => r.id) }, challanId: null }, data: { challanId: c.id } });
-    });
+    }, { maxWait: 15_000, timeout: 60_000 });
   }
 }
