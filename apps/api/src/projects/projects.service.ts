@@ -5,6 +5,7 @@ import {
   COPIED_TERMS,
   ROLE_LABELS,
   nextProjectCode,
+  seesEveryProject,
   termsFor,
   type NextProjectCodeDto,
   type Paginated,
@@ -322,8 +323,12 @@ export class ProjectsService {
       await this.structure.layOutUnchecked(user, row.id, layOutBreakdown(type, kinds, dto.breakdown));
     }
     if (dto.applyTemplate) await this.templates.applyUnchecked(user, row.id);
-    if (dto.copyFromProjectId) {
-      await this.joinTeam(user, row.id, await this.teamOf(dto.copyFromProjectId, row.projectManagerId));
+    // Whoever makes a project can open it: a project manager who names someone else (or no one) as its manager
+    // joins its team, else the project they just saved is "Not found" to them.
+    const team = dto.copyFromProjectId ? await this.teamOf(dto.copyFromProjectId, row.projectManagerId) : [];
+    if (!seesEveryProject(user) && row.projectManagerId !== user.id && !team.includes(user.id)) team.push(user.id);
+    if (team.length) {
+      await this.joinTeam(user, row.id, team);
       return this.toDetail(await this.prisma.project.findUniqueOrThrow({ where: { id: row.id }, include: projectInclude }));
     }
     return this.toDetail(row);
